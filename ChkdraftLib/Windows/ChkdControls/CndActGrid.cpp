@@ -29,7 +29,7 @@ CndActGrid::~CndActGrid()
 bool CndActGrid::CreateThis(HWND hParent, int x, int y, int width, int height, u32 id)
 {
     GridViewControl::CreateThis(hParent, 2, 40, 100, 100, id);
-    GridViewControl::SetFont(defaultFont, false);
+    GridViewControl::setDefaultFont(false);
     for ( int i = 0; i<9; i++ )
         GridViewControl::AddColumn(0, " - ", 50, LVCFMT_CENTER);
     GridViewControl::AddColumn(0, "", 14, LVCFMT_CENTER);

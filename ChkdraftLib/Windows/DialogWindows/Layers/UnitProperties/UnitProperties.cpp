@@ -94,7 +94,7 @@ bool UnitPropertiesWindow::CreateSubWindows(HWND hWnd)
 
     listUnits.CreateThis(hWnd, 9, 10, 549, 449, false, false, Id::UnitList);
     listUnits.EnableFullRowSelect();
-    listUnits.SetFont(13, 5, "Tahoma", false);
+    listUnits.setFont(5, 13, "Tahoma", false);
 
     listUnits.AddColumn(0, "Unit Type", 200, LVCFMT_LEFT);
     listUnits.AddColumn(1, "Owner", 100, LVCFMT_LEFT);

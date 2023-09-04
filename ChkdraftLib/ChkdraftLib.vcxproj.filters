@@ -176,9 +176,6 @@
     <ClInclude Include="Mapping\Undos\ChkdUndos\UnitChange.h">
       <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
     </ClInclude>
-    <ClInclude Include="Mapping\Undos\ChkdUndos\TileChange.h">
-      <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
-    </ClInclude>
     <ClInclude Include="Mapping\Undos\ChkdUndos\LocationMove.h">
       <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
     </ClInclude>
@@ -350,6 +347,27 @@
     <ClInclude Include="Windows\DialogWindows\MapSettings\ColorProperties.h">
       <Filter>Header Files\Windows\Dialog Windows\Map Settings</Filter>
     </ClInclude>
+    <ClInclude Include="Windows\ChkdControls\IsomTree.h">
+      <Filter>Header Files\Windows\Chkd Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="Mapping\Undos\ChkdUndos\IsomChange.h">
+      <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="Mapping\Undos\ChkdUndos\MtxmChange.h">
+      <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="Mapping\Undos\ChkdUndos\TileChange.h">
+      <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="Windows\ChkdControls\DoodadTree.h">
+      <Filter>Header Files\Windows\Chkd Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="Mapping\Undos\ChkdUndos\DoodadCreateDel.h">
+      <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="Mapping\Undos\ChkdUndos\DoodadChange.h">
+      <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Chkdraft.cpp">
@@ -395,9 +413,6 @@
       <Filter>Source Files\Mapping\Undos\ChkdUndos</Filter>
     </ClCompile>
     <ClCompile Include="Mapping\Undos\ChkdUndos\LocationMove.cpp">
-      <Filter>Source Files\Mapping\Undos\ChkdUndos</Filter>
-    </ClCompile>
-    <ClCompile Include="Mapping\Undos\ChkdUndos\TileChange.cpp">
       <Filter>Source Files\Mapping\Undos\ChkdUndos</Filter>
     </ClCompile>
     <ClCompile Include="Mapping\Undos\ChkdUndos\UnitChange.cpp">
@@ -567,6 +582,27 @@
     </ClCompile>
     <ClCompile Include="Windows\DialogWindows\MapSettings\ColorProperties.cpp">
       <Filter>Source Files\Windows\Dialog Windows\Map Settings</Filter>
+    </ClCompile>
+    <ClCompile Include="Windows\ChkdControls\IsomTree.cpp">
+      <Filter>Source Files\Windows\Chkd Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="Mapping\Undos\ChkdUndos\IsomChange.cpp">
+      <Filter>Source Files\Mapping\Undos\ChkdUndos</Filter>
+    </ClCompile>
+    <ClCompile Include="Mapping\Undos\ChkdUndos\MtxmChange.cpp">
+      <Filter>Source Files\Mapping\Undos\ChkdUndos</Filter>
+    </ClCompile>
+    <ClCompile Include="Mapping\Undos\ChkdUndos\TileChange.cpp">
+      <Filter>Source Files\Mapping\Undos\ChkdUndos</Filter>
+    </ClCompile>
+    <ClCompile Include="Windows\ChkdControls\DoodadTree.cpp">
+      <Filter>Source Files\Windows\Chkd Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="Mapping\Undos\ChkdUndos\DoodadCreateDel.cpp">
+      <Filter>Source Files\Mapping\Undos\ChkdUndos</Filter>
+    </ClCompile>
+    <ClCompile Include="Mapping\Undos\ChkdUndos\DoodadChange.cpp">
+      <Filter>Source Files\Mapping\Undos\ChkdUndos</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

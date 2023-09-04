@@ -10,15 +10,17 @@ namespace WinLib {
         public:
             virtual ~DropdownControl();
             bool CreateThis(HWND hParent, int x, int y, int width, int height, bool editable, bool alwaysList,
-                u64 id, const std::vector<std::string> & items, HFONT font);
+                u64 id, const std::vector<std::string> & items);
             void SetSel(int index);
             void ClearEditSel();
             int GetSel();
+            int GetSelData();
             bool GetItemText(int index, std::string & dest);
             int GetNumItems();
 
             void ClearItems();
             int AddItem(const std::string & item); // Returns 0-based index of new item, negative if there's an error
+            int AddItem(const std::string & item, int data);
             int RemoveItem(int index);
 
             template <typename numType>

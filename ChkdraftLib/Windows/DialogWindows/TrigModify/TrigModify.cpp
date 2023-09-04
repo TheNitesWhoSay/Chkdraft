@@ -43,6 +43,12 @@ bool TrigModifyWindow::CreateThis(HWND hParent, u32 trigIndex)
 
 bool TrigModifyWindow::DestroyThis()
 {
+    ClassDialog::Hide();
+    generalWindow.DestroyThis();
+    playersWindow.DestroyThis();
+    conditionsWindow.DestroyThis();
+    actionsWindow.DestroyThis();
+    trigModifyTextWindow.DestroyThis();
     return ClassDialog::DestroyDialog();
 }
 
@@ -197,14 +203,14 @@ BOOL TrigModifyWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 
         case WM_INITDIALOG:
             {
-                SetSmallIcon((HANDLE)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_PROGRAM_ICON), IMAGE_ICON, 16, 16, 0 ));
+                SetSmallIcon(WinLib::ResourceManager::getIcon(IDI_PROGRAM_ICON, 16, 16));
                 tabs.FindThis(hWnd, IDC_TRIGMODIFYTABS);
                 const std::vector<std::string> tabLabels = { "General", "Players", "Conditions", "Actions", "Text" };
                 for ( size_t i=0; i<tabLabels.size(); i++ )
                     tabs.InsertTab((u32)i, tabLabels[i]);
                 CreateSubWindows(hWnd);
                 DoSize();
-                ReplaceChildFonts(defaultFont);
+                defaultChildFonts();
                 RedrawWindow(hWnd, NULL, NULL, RDW_INVALIDATE);
             }
             break;

@@ -17,7 +17,7 @@ enum_t(Id, u32, {
     BUTTON_SWITCH,
 });
 
-StringEditorWindow::StringEditorWindow() : extended(false), currSelString(0), numVisibleStrings(0), stringListDC(NULL), fileBrowser(getSaveTextFilters(), "Save Text", false, true)
+StringEditorWindow::StringEditorWindow() : extended(false), currSelString(0), numVisibleStrings(0), stringListDc(std::nullopt), fileBrowser(getSaveTextFilters(), "Save Text", false, true)
 {
 
 }
@@ -41,6 +41,15 @@ bool StringEditorWindow::CreateThis(HWND hParent, u64 windowId)
     }
     else
         return false;
+}
+
+bool StringEditorWindow::DestroyThis()
+{
+    ClassWindow::Hide();
+    stringGuide.DestroyThis();
+    stringPreviewWindow.DestroyThis();
+    ClassWindow::DestroyThis();
+    return true;
 }
 
 void StringEditorWindow::RefreshWindow()
@@ -240,7 +249,7 @@ LRESULT StringEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
             break;
 
         case WinLib::LB::WM_PREMEASUREITEMS: // Measuring is time sensative, load necessary items for measuring all strings once
-            stringListDC = listStrings.getDC();
+            stringListDc.emplace(listStrings.getHandle());
             break;
 
         case WM_MEASUREITEM:
@@ -248,18 +257,21 @@ LRESULT StringEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
                 MEASUREITEMSTRUCT* mis = (MEASUREITEMSTRUCT*)lParam;
                 auto str = CM->getString<RawString>((size_t)mis->itemData, extended ? Chk::StrScope::Editor : Chk::StrScope::Game);
 
-                if ( str && GetStringDrawSize(stringListDC, mis->itemWidth, mis->itemHeight, *str) )
+                if ( str && GetStringDrawSize(*stringListDc, mis->itemWidth, mis->itemHeight, *str) )
                 {
                     mis->itemWidth += 5;
                     mis->itemHeight += 2;
+
+                    if ( mis->itemHeight > 255 )
+                        mis->itemHeight = 255;
+
+                    return TRUE;
                 }
-                return TRUE;
             }
             break;
 
         case WinLib::LB::WM_POSTMEASUREITEMS: // Release items loaded for measurement
-            listStrings.ReleaseDC(stringListDC);
-            stringListDC = NULL;
+            stringListDc = std::nullopt;
             break;
 
         case WinLib::LB::WM_PREDRAWITEMS:
@@ -274,18 +286,13 @@ LRESULT StringEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 
                 if ( pdis->itemID != -1 && ( drawSelection || drawEntire ) )
                 {
+                    WinLib::DeviceContext dc { pdis->hDC };
                     auto str = CM->getString<RawString>((size_t)pdis->itemData, this->extended ? Chk::StrScope::Editor : Chk::StrScope::Game);
                     if ( CM != nullptr && str )
                     {
-                        HBRUSH hBackground = CreateSolidBrush(RGB(0, 0, 0)); // Same color as in WM_CTLCOLORLISTBOX
-                        if ( hBackground != NULL )
-                        {
-                            FillRect(pdis->hDC, &pdis->rcItem, hBackground); // Draw far background
-                            DeleteObject(hBackground);
-                            hBackground = NULL;
-                        }
+                        dc.fillRect(pdis->rcItem, RGB(0, 0, 0)); // Draw far background, same color as in WM_CTLCOLORLISTBOX
                         SetBkMode(pdis->hDC, TRANSPARENT);
-                        DrawString(pdis->hDC, pdis->rcItem.left+3, pdis->rcItem.top+1, pdis->rcItem.right-pdis->rcItem.left,
+                        DrawString(dc, pdis->rcItem.left+3, pdis->rcItem.top+1, pdis->rcItem.right-pdis->rcItem.left,
                             RGB(16, 252, 24), *str);
                     }
                     if ( isSelected )

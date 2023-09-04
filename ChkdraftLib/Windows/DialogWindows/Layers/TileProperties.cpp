@@ -42,7 +42,9 @@ BOOL TilePropWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 
         TileNode tileNode = CM->GetSelections().getFirstTile();
         tileNode.value = tile;
-        CM->SetTile(tileNode.xc, tileNode.yc, tile);
+        CM->beginTerrainOperation();
+        CM->setTileValue(tileNode.xc, tileNode.yc, tile);
+        CM->finalizeTerrainOperation();
         EndDialog(hWnd, IDOK);
         break;
     }
@@ -78,39 +80,26 @@ BOOL TilePropWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
         case WM_PAINT:
             {
-                RECT rect;
-                GetClientRect(hWnd, &rect);
-                int width = 32,
-                    height = 32;
-                PAINTSTRUCT ps;
-                HDC hDC = BeginPaint(hWnd, &ps),
-                    MemhDC = CreateCompatibleDC(hDC);
-                HBITMAP Membitmap = CreateCompatibleBitmap(hDC, width, height);
-                SelectObject(MemhDC, Membitmap);
-
-                u16 tile = 0;
-                editTileValue.GetEditNum<u16>(tile);
-
                 const Sc::Terrain::Tiles & tiles = chkd.scData.terrain.get(CM->getTileset());
-
-                HBRUSH brush = CreateSolidBrush(RGB(166, 156, 132));
-                FillRect(MemhDC, &rect, brush);
-                DeleteObject(brush);
-
-                BITMAPINFO bmi = GetBMI(32, 32);
-                DrawTile(MemhDC, CM->getPalette(), tiles, 0, 0, tile, bmi, 0, 0, 0);
-                BitBlt(hDC, 55, 50, width, height, MemhDC, 0, 0, SRCCOPY);
-
-                BITMAPINFO bmiMini = GetBMI(8, 8);
-                for ( int yMiniTile=0; yMiniTile<4; yMiniTile++ )
+                if ( auto tile = editTileValue.GetEditNum<u16>() )
                 {
-                    for ( int xMiniTile=0; xMiniTile<4; xMiniTile++ )
-                        DrawMiniTileElevation(hDC, tiles, 350+xMiniTile*9, 50+yMiniTile*9, tile, xMiniTile, yMiniTile, bmiMini);
+                    BITMAPINFO bmi = GetBMI(32, 32);
+                    WinLib::DeviceContext tileDc(WindowsItem::getHandle(), RECT{55, 50, 55+32, 50+32}); // Setup buffer to draw tile graphics
+
+                    DrawTile(tileDc, CM->getPalette(), tiles, 0, 0, *tile, bmi, 0, 0, 0);
+                    tileDc.flushBuffer();
+
+                    tileDc.setBuffer(RECT{350, 50, 350+36, 50+36}); // Setup buffer to draw elevations
+                    tileDc.fillRect(RECT{0, 0, 36, 36}, RGB(166, 156, 132));
+                    BITMAPINFO bmiMini = GetBMI(8, 8);
+                    for ( int yMiniTile=0; yMiniTile<4; yMiniTile++ )
+                    {
+                        for ( int xMiniTile=0; xMiniTile<4; xMiniTile++ )
+                            DrawMiniTileElevation(tileDc, tiles, xMiniTile*9, yMiniTile*9, *tile, xMiniTile, yMiniTile, bmiMini);
+                    }
+                    tileDc.flushBuffer();
+                    tileDc.release();
                 }
-                
-                DeleteObject(Membitmap);
-                DeleteDC    (MemhDC);
-                DeleteDC    (hDC);
             }
             break;
 

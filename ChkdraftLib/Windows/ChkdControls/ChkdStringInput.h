@@ -59,6 +59,7 @@ class ChkdStringInputDialog : public WinLib::ClassDialog
                 GameStringWindow(ChkdStringInputDialog & parent);
                 virtual ~GameStringWindow();
                 bool CreateThis(HWND hParent, u64 windowId);
+                bool DestroyThis();
                 void DoSize();
                 void ApplyChanges();
                 void FocusThis();
@@ -86,6 +87,7 @@ class ChkdStringInputDialog : public WinLib::ClassDialog
                 EditorStringWindow(ChkdStringInputDialog & parent);
                 virtual ~EditorStringWindow();
                 bool CreateThis(HWND hParent, u64 windowId);
+                bool DestroyThis();
                 void DoSize();
                 void ApplyChanges();
                 void FocusThis();

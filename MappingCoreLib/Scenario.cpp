@@ -23,7 +23,7 @@ std::unordered_map<Chk::SectionName, size_t> sectionMemberIndex {
     {SectionName::TYPE, Member::type}, {SectionName::VER, Member::version}, {SectionName::IVER, Member::iVersion}, {SectionName::IVE2, Member::i2Version},
     {SectionName::VCOD, Member::validation}, {SectionName::IOWN, Member::iownSlotTypes}, {SectionName::OWNR, Member::slotTypes}, {SectionName::ERA, Member::tileset},
     {SectionName::DIM, Member::dimensions}, {SectionName::SIDE, Member::playerRaces}, {SectionName::MTXM, Member::tiles}, {SectionName::PUNI, Member::unitAvailability},
-    {SectionName::UPGR, Member::origUpgradeLeveling}, {SectionName::PTEC, Member::origTechnologyAvailability}, {SectionName::UNIT, Member::units}, {SectionName::ISOM, Member::isomTiles},
+    {SectionName::UPGR, Member::origUpgradeLeveling}, {SectionName::PTEC, Member::origTechnologyAvailability}, {SectionName::UNIT, Member::units}, {SectionName::ISOM, Member::isomRects},
     {SectionName::TILE, Member::editorTiles}, {SectionName::DD2, Member::doodads}, {SectionName::THG2, Member::sprites}, {SectionName::MASK, Member::tileFog},
     {SectionName::STR, Member::strings}, {SectionName::UPRP, Member::createUnitProperties}, {SectionName::UPUS, Member::createUnitPropertiesUsed}, {SectionName::MRGN, Member::locations},
     {SectionName::TRIG, Member::triggers}, {SectionName::MBRF, Member::briefingTriggers}, {SectionName::FORC, Member::forces}, {SectionName::SPRP, Member::scenarioProperties},
@@ -81,7 +81,7 @@ Scenario::Scenario(Sc::Terrain::Tileset tileset, u16 width, u16 height) :
     tiles(size_t(width)*size_t(height), u16(0)),
     editorTiles(size_t(width)*size_t(height), u16(0)),
     tileFog(size_t(width)*size_t(height), u8(0)),
-    isomTiles((size_t(width) / size_t(2) + size_t(1)) * (size_t(height) + size_t(1))),
+    isomRects((size_t(width) / size_t(2) + size_t(1)) * (size_t(height) + size_t(1))),
     tailData({}), tailLength(0), mapIsProtected(false), jumpCompress(false)
 {{
     strings.push_back(std::nullopt); // 0 (always unused)
@@ -92,6 +92,8 @@ Scenario::Scenario(Sc::Terrain::Tileset tileset, u16 width, u16 height) :
     strings.push_back("Force 2"); // 5
     strings.push_back("Force 3"); // 6
     strings.push_back("Force 4"); // 7
+    for ( size_t i=strings.size(); i<=1024; ++i )
+        strings.push_back(std::nullopt);
 
     for ( size_t i=0; i<Chk::LocationId::Anywhere; i++ ) // Note: Index 0 is unused
         locations.push_back(Chk::Location{});
@@ -177,7 +179,7 @@ void Scenario::clear()
     tiles.clear();
     editorTiles.clear();
     tileFog.clear();
-    isomTiles.clear();
+    isomRects.clear();
 
     unitAvailability = Chk::PUNI{};
     unitSettings = Chk::UNIx{};
@@ -2016,15 +2018,15 @@ void Scenario::setSoundPathStringId(size_t soundIndex, size_t soundPathStringId,
 
 void Scenario::setSwitchNameStringId(size_t switchIndex, size_t switchNameStringId, Chk::StrScope storageScope)
 {
-	if ( switchIndex < Chk::TotalSwitches )
+    if ( switchIndex < Chk::TotalSwitches )
     {
         if ( storageScope == Chk::StrScope::Game )
-		    this->switchNames[switchIndex] = u32(switchNameStringId);
+            this->switchNames[switchIndex] = u32(switchNameStringId);
         else
             this->editorStringOverrides.switchName[switchIndex] = u32(switchNameStringId);
     }
     else
-		throw std::out_of_range(std::string("switchIndex: ") + std::to_string((u32)switchIndex) + " is out of range for the SWNM section!");
+        throw std::out_of_range(std::string("switchIndex: ") + std::to_string((u32)switchIndex) + " is out of range for the SWNM section!");
 }
 
 void Scenario::setLocationNameStringId(size_t locationId, size_t locationNameStringId, Chk::StrScope storageScope)
@@ -3355,16 +3357,6 @@ void Scenario::setTileset(Sc::Terrain::Tileset tileset)
     this->tileset = tileset;
 }
 
-size_t Scenario::getTileWidth() const
-{
-    return this->dimensions.tileWidth;
-}
-
-size_t Scenario::getTileHeight() const
-{
-    return this->dimensions.tileHeight;
-}
-
 size_t Scenario::getPixelWidth() const
 {
     return this->dimensions.tileWidth * Sc::Terrain::PixelsPerTile;
@@ -3375,14 +3367,14 @@ size_t Scenario::getPixelHeight() const
     return this->dimensions.tileHeight * Sc::Terrain::PixelsPerTile;
 }
 
-void setIsomDimensions(std::vector<Chk::IsomEntry> & tiles, u16 newTileWidth, u16 newTileHeight, u16 /*oldTileWidth*/, u16 /*oldTileHeight*/, s32 /*leftEdge*/, s32 /*topEdge*/)
+void setIsomDimensions(std::vector<Chk::IsomRect> & tiles, u16 newTileWidth, u16 newTileHeight, u16 /*oldTileWidth*/, u16 /*oldTileHeight*/, s32 /*leftEdge*/, s32 /*topEdge*/)
 {
     size_t oldNumIndices = tiles.size();
-    size_t newNumIndices = (size_t)newTileWidth * (size_t)newTileHeight;
+    size_t newNumIndices = (size_t(newTileWidth) / size_t(2) + size_t(1)) * (size_t(newTileHeight) + size_t(1));
     if ( oldNumIndices < newNumIndices )
     {
         for ( size_t i=oldNumIndices; i<newNumIndices; i++ )
-            tiles.push_back(Chk::IsomEntry());
+            tiles.push_back(Chk::IsomRect());
     }
     else if ( oldNumIndices > newNumIndices )
     {
@@ -3492,7 +3484,7 @@ void setMtxmOrTileDimensions(std::vector<u16> & tiles, u16 newTileWidth, u16 new
             for ( s64 row = currTileHeight-1; row >= 0; row-- )
             {
                 s64 rowOffset = row*currTileWidth;
-                s64 start = rowOffset + numColumnsAdded;
+                s64 start = rowOffset + currTileWidth;
                 tiles.insert(tiles.begin() + size_t(start), size_t(numColumnsAdded), u16(0));
             }
             currTileWidth += numColumnsAdded;
@@ -3533,7 +3525,7 @@ void Scenario::setTileWidth(u16 newTileWidth, u16 sizeValidationFlags, s32 leftE
 {
     u16 tileWidth = this->dimensions.tileWidth;
     u16 tileHeight = this->dimensions.tileHeight;
-    ::setIsomDimensions(this->isomTiles, newTileWidth, tileHeight, tileWidth, tileHeight, leftEdge, 0);
+    ::setIsomDimensions(this->isomRects, newTileWidth, tileHeight, tileWidth, tileHeight, leftEdge, 0);
     ::setMtxmOrTileDimensions(this->tiles, newTileWidth, tileHeight, tileWidth, tileHeight, leftEdge, 0);
     ::setMtxmOrTileDimensions(this->editorTiles, newTileWidth, tileHeight, tileWidth, tileHeight, leftEdge, 0);
     this->dimensions.tileWidth = newTileWidth;
@@ -3544,7 +3536,7 @@ void Scenario::setTileHeight(u16 newTileHeight, u16 sizeValidationFlags, s32 top
 {
     u16 tileWidth = this->dimensions.tileWidth;
     u16 tileHeight = this->dimensions.tileHeight;
-    ::setIsomDimensions(this->isomTiles, tileWidth, newTileHeight, tileWidth, tileHeight, 0, topEdge);
+    ::setIsomDimensions(this->isomRects, tileWidth, newTileHeight, tileWidth, tileHeight, 0, topEdge);
     ::setMtxmOrTileDimensions(this->tiles, tileWidth, newTileHeight, tileWidth, tileHeight, 0, topEdge);
     ::setMtxmOrTileDimensions(this->editorTiles, tileWidth, newTileHeight, tileWidth, tileHeight, 0, topEdge);
     this->dimensions.tileHeight = newTileHeight;
@@ -3555,7 +3547,7 @@ void Scenario::setDimensions(u16 newTileWidth, u16 newTileHeight, u16 sizeValida
 {
     u16 tileWidth = this->dimensions.tileWidth;
     u16 tileHeight = this->dimensions.tileHeight;
-    ::setIsomDimensions(this->isomTiles, newTileWidth, newTileHeight, tileWidth, tileHeight, leftEdge, topEdge);
+    ::setIsomDimensions(this->isomRects, newTileWidth, newTileHeight, tileWidth, tileHeight, leftEdge, topEdge);
     ::setMtxmOrTileDimensions(this->tiles, newTileWidth, newTileHeight, tileWidth, tileHeight, leftEdge, topEdge);
     ::setMtxmOrTileDimensions(this->editorTiles, newTileWidth, newTileHeight, tileWidth, tileHeight, leftEdge, topEdge);
     this->dimensions.tileWidth = newTileWidth;
@@ -3621,20 +3613,314 @@ inline void Scenario::setTilePx(size_t pixelXc, size_t pixelYc, u16 tileValue, C
     setTile(pixelXc / Sc::Terrain::PixelsPerTile, pixelYc / Sc::Terrain::PixelsPerTile, tileValue, scope);
 }
 
-Chk::IsomEntry & Scenario::getIsomEntry(size_t isomIndex)
+Chk::IsomRect & Scenario::getIsomRect(size_t isomRectIndex)
 {
-    if ( isomIndex < this->isomTiles.size() )
-        return this->isomTiles[isomIndex];
+    if ( isomRectIndex < this->isomRects.size() )
+        return this->isomRects[isomRectIndex];
     else
-        throw std::out_of_range(std::string("IsomIndex: ") + std::to_string(isomIndex) + " is past the end of the ISOM section!");
+        throw std::out_of_range(std::string("IsomRectIndex: ") + std::to_string(isomRectIndex) + " is past the end of the ISOM section!");
 }
 
-const Chk::IsomEntry & Scenario::getIsomEntry(size_t isomIndex) const
+const Chk::IsomRect & Scenario::getIsomRect(size_t isomRectIndex) const
 {
-    if ( isomIndex < this->isomTiles.size() )
-        return this->isomTiles[isomIndex];
+    if ( isomRectIndex < this->isomRects.size() )
+        return this->isomRects[isomRectIndex];
     else
-        throw std::out_of_range(std::string("IsomIndex: ") + std::to_string(isomIndex) + " is past the end of the ISOM section!");
+        throw std::out_of_range(std::string("IsomRectIndex: ") + std::to_string(isomRectIndex) + " is past the end of the ISOM section!");
+}
+    
+bool Scenario::placeIsomTerrain(Chk::IsomDiamond isomDiamond, size_t terrainType, size_t brushExtent, Chk::IsomCache & cache)
+{
+    uint16_t isomValue = cache.getTerrainTypeIsomValue(terrainType);
+    if ( isomValue == 0 || !isomDiamond.isValid() || size_t(isomValue) >= cache.isomLinks.size() || cache.isomLinks[size_t(isomValue)].terrainType == 0 )
+        return false;
+
+    int brushMin = int(brushExtent) / -2;
+    int brushMax = brushMin + int(brushExtent);
+    if ( brushExtent%2 == 0 ) {
+        ++brushMin;
+        ++brushMax;
+    }
+
+    cache.resetChangedArea();
+
+    std::deque<Chk::IsomDiamond> diamondsToUpdate {};
+    for ( int brushOffsetX=brushMin; brushOffsetX<brushMax; ++brushOffsetX )
+    {
+        for ( int brushOffsetY=brushMin; brushOffsetY<brushMax; ++brushOffsetY )
+        {
+            size_t brushX = isomDiamond.x + brushOffsetX - brushOffsetY;
+            size_t brushY = isomDiamond.y + brushOffsetX + brushOffsetY;
+            if ( isInBounds({brushX, brushY}) )
+            {
+                setDiamondIsomValues({brushX, brushY}, isomValue, true, cache);
+                if ( brushOffsetX == brushMin || brushOffsetX == brushMax-1 || brushOffsetY == brushMin || brushOffsetY == brushMax-1 )
+                { // Mark diamonds on the edge of the brush for radial updates
+                    for ( auto i : Chk::IsomDiamond::neighbors )
+                    {
+                        Chk::IsomDiamond neighbor = Chk::IsomDiamond{brushX, brushY}.getNeighbor(i);
+                        if ( diamondNeedsUpdate(neighbor) )
+                            diamondsToUpdate.push_back(Chk::IsomDiamond{neighbor.x, neighbor.y});
+                    }
+                }
+            }
+        }
+    }
+    radiallyUpdateTerrain(true, diamondsToUpdate, cache);
+    return true;
+}
+
+void Scenario::copyIsomFrom(const Scenario & sourceMap, int32_t xTileOffset, int32_t yTileOffset, bool undoable, Chk::IsomCache & destCache)
+{
+    size_t sourceIsomWidth = sourceMap.getTileWidth()/2 + 1;
+    size_t sourceIsomHeight = sourceMap.getTileHeight() + 1;
+
+    if ( undoable )
+    {
+        for ( size_t y=0; y<destCache.isomHeight; ++y )
+        {
+            for ( size_t x=0; x<destCache.isomWidth; ++x )
+                addIsomUndo({x, y}, destCache);
+        }
+    }
+
+    int32_t diamondX = xTileOffset / 2;
+    int32_t diamondY = yTileOffset;
+
+    Sc::BoundingBox sourceRc { sourceIsomWidth, sourceIsomHeight, destCache.isomWidth, destCache.isomHeight, diamondX, diamondY };
+
+    for ( size_t y=sourceRc.top; y<sourceRc.bottom; ++y )
+    {
+        const Chk::IsomRect* sourceRow = &sourceMap.isomRects[y*sourceIsomWidth + sourceRc.left];
+        Chk::IsomRect* destRow = &isomRects[(y+diamondY)*destCache.isomWidth + sourceRc.left + diamondX];
+        std::memcpy(destRow, sourceRow, sizeof(Chk::IsomRect)*(sourceRc.right-sourceRc.left));
+    }
+
+    if ( undoable )
+    {
+        // Clear out-of-bounds isom values
+        for ( size_t y=sourceIsomHeight; y<destCache.isomHeight; ++y )
+        {
+            for ( size_t x=0; x<destCache.isomWidth; ++x )
+                isomRectAt({x, y}).clear();
+        }
+
+        if ( sourceIsomWidth < destCache.isomWidth )
+        {
+            for ( size_t y=0; y<destCache.isomHeight; ++y )
+            {
+                for ( size_t x=sourceIsomWidth; x<destCache.isomWidth; ++x )
+                    isomRectAt({x, y}).clear();
+            }
+        }
+
+        for ( size_t y=0; y<destCache.isomHeight; ++y )
+        {
+            for ( size_t x=0; x<destCache.isomWidth; ++x )
+                destCache.undoMap[y*destCache.isomWidth + x]->setNewValue(getIsomRect({x, y})); // Update undo info for this position
+        }
+    }
+}
+
+void Scenario::updateTilesFromIsom(Chk::IsomCache & cache)
+{
+    for ( size_t y=cache.changedArea.top; y<=cache.changedArea.bottom; ++y )
+    {
+        for ( size_t x=cache.changedArea.left; x<=cache.changedArea.right; ++x )
+        {
+            Chk::IsomRect & isomRect = isomRectAt({x, y});
+            if ( isomRect.isLeftOrRightModified() )
+                updateTileFromIsom({x, y}, cache);
+
+            isomRect.clearEditorFlags();
+        }
+    }
+    cache.resetChangedArea();
+}
+
+bool Scenario::resizeIsom(int32_t xTileOffset, int32_t yTileOffset, size_t oldMapWidth, size_t oldMapHeight, bool fixBorders, Chk::IsomCache & cache)
+{
+    int32_t xDiamondOffset = xTileOffset/2;
+    int32_t yDiamondOffset = yTileOffset;
+    size_t oldIsomWidth = oldMapWidth/2 + 1;
+    size_t oldIsomHeight = oldMapHeight + 1;
+    Sc::BoundingBox sourceRc { oldIsomWidth, oldIsomHeight, cache.isomWidth, cache.isomHeight, xDiamondOffset, yDiamondOffset };
+    Sc::BoundingBox innerArea {
+        sourceRc.left+xDiamondOffset, sourceRc.top+yDiamondOffset, sourceRc.right+xDiamondOffset-1, sourceRc.bottom+yDiamondOffset-1
+    };
+
+    std::vector<Chk::IsomDiamond> edges {};
+    for ( size_t y=innerArea.top; y<=innerArea.bottom; ++y )
+    {
+        for ( size_t x=innerArea.left+(innerArea.left+y)%2; x<innerArea.right+1; x+= 2 )
+        {
+            if ( (x+y)%2 != 0 )
+                continue;
+
+            bool fullyInside = true;
+            bool fullyOutside = true;
+            uint16_t isomValue = 0;
+            for ( auto i : Sc::Isom::quadrants )
+            {
+                Chk::IsomRect::Point rectCoords = Chk::IsomDiamond{x, y}.getRectangleCoords(i);
+                if ( isInBounds(rectCoords) )
+                {
+                    if ( rectCoords.x >= innerArea.left && rectCoords.x < innerArea.right &&
+                        rectCoords.y >= innerArea.top && rectCoords.y < innerArea.bottom )
+                    {
+                        isomValue = getIsomRect(rectCoords).getIsomValue(Sc::Isom::ProjectedQuadrant{i}.firstSide) >> 4;
+                        fullyOutside = false;
+                    }
+                    else
+                        fullyInside = false;
+                }
+            }
+
+            if ( fullyOutside ) // Do not update diamonds completely outside the inner area
+                continue;
+
+            if ( !fullyInside ) // Update diamonds that are partially inside and mark them for radial updates
+            {
+                for ( auto i : Sc::Isom::quadrants )
+                {
+                    Chk::IsomRect::Point rectCoords = Chk::IsomDiamond{x, y}.getRectangleCoords(i);
+                    if ( (rectCoords.x < innerArea.left || rectCoords.x >= innerArea.right || // Quadrant is outside inner area
+                        rectCoords.y < innerArea.top || rectCoords.y >= innerArea.bottom) )
+                    {
+                        setIsomValue(rectCoords, Sc::Isom::quadrants[size_t(i)], isomValue, false, cache);
+                    }
+                }
+
+                if ( fixBorders )
+                {
+                    for ( auto i : Chk::IsomDiamond::neighbors )
+                    {
+                        Chk::IsomDiamond neighbor = Chk::IsomDiamond{x, y}.getNeighbor(i);
+                        if ( isInBounds(neighbor) && (
+                            neighbor.x < innerArea.left || neighbor.x > innerArea.right || // Neighbor is outside inner area
+                            neighbor.y < innerArea.top || neighbor.y > innerArea.bottom) )
+                        {
+                            edges.push_back(neighbor);
+                        }
+                    }
+                }
+            }
+
+            for ( auto i : Sc::Isom::quadrants )
+            {
+                Chk::IsomRect::Point rectCoords = Chk::IsomDiamond{x, y}.getRectangleCoords(i);
+                if ( isInBounds(rectCoords) )
+                    isomRectAt(rectCoords).setModified(i);
+            }
+        }
+    }
+
+    // Order edges by distance from top-left over difference between x&y over x-coordinates
+    std::sort(edges.begin(), edges.end(), [](const Chk::IsomDiamond & l, const Chk::IsomDiamond & r) {
+        auto lDistance = l.x + l.y;
+        auto rDistance = r.x + r.y;
+        if ( lDistance != rDistance )
+            return lDistance < rDistance; // Order by distance from top-left corner
+
+        lDistance = std::max(l.x, l.y) - std::min(l.x, l.y);
+        rDistance = std::max(r.x, r.y) - std::min(r.x, r.y);
+        if ( lDistance != rDistance )
+            return lDistance < rDistance; // Order by difference between x & y
+        else
+            return l.x < r.x; // Order by x difference
+    });
+
+    // Update all the edges
+    std::deque<Chk::IsomDiamond> diamondsToUpdate;
+    for ( const auto & edge : edges )
+    {
+        if ( diamondNeedsUpdate({edge.x, edge.y}) )
+            diamondsToUpdate.push_back({edge.x, edge.y});
+    }
+    radiallyUpdateTerrain(false, diamondsToUpdate, cache);
+
+    // Clear the changed and visited flags
+    for ( size_t y=cache.changedArea.top; y<=cache.changedArea.bottom; ++y )
+    {
+        for ( size_t x=cache.changedArea.left; x<=cache.changedArea.right; ++x )
+            isomRectAt({x, y}).clearEditorFlags();
+    }
+
+    for ( size_t y=innerArea.top; y<=innerArea.bottom; ++y )
+    {
+        for ( size_t x=innerArea.left+(innerArea.left+y)%2; x<=innerArea.right; x+=2 )
+        {
+            if ( (x+y)%2 != 0 )
+                continue;
+
+            bool fullyOutside = true;
+            for ( auto i : Sc::Isom::quadrants )
+            {
+                Chk::IsomRect::Point rectCoords = Chk::IsomDiamond{x, y}.getRectangleCoords(i);
+                if ( isInBounds(rectCoords) &&
+                    rectCoords.x >= innerArea.left && rectCoords.x < innerArea.right && // Inside inner area
+                    rectCoords.y >= innerArea.top && rectCoords.y < innerArea.bottom )
+                {
+                    fullyOutside = false;
+                    break;
+                }
+            }
+
+            if ( !fullyOutside ) // Only update diamonds that are at least partially inside
+            {
+                for ( auto i : Sc::Isom::quadrants )
+                {
+                    Chk::IsomRect::Point rectCoords = Chk::IsomDiamond{x, y}.getRectangleCoords(i);
+                    if ( isInBounds(rectCoords) )
+                        isomRectAt(rectCoords).setModified(i);
+                }
+            }
+        }
+    }
+    diamondsToUpdate.clear();
+
+    cache.setAllChanged();
+
+    // Clear off the changed flags for the inner area
+    for ( size_t y=innerArea.top; y<innerArea.bottom; ++y )
+    {
+        for ( size_t x=innerArea.left; x<innerArea.right; ++x )
+            isomRectAt({x, y}).clearEditorFlags();
+    }
+
+    for ( size_t y=0; y<cache.isomHeight; ++y )
+    {
+        for ( size_t x=y%2; x<cache.isomWidth; x+=2 )
+        {
+            if ( (x+y)%2 != 0 )
+                continue;
+
+            bool fullyInside = true;
+            for ( auto i : Sc::Isom::quadrants )
+            {
+                Chk::IsomRect::Point rectCoords = Chk::IsomDiamond{x, y}.getRectangleCoords(i);
+                if ( isInBounds(rectCoords) &&
+                    (rectCoords.x < innerArea.left || rectCoords.x >= innerArea.right || // Quadrant is outside the inner area
+                        rectCoords.y < innerArea.top || rectCoords.y < innerArea.bottom) )
+                {
+                    fullyInside = false;
+                    break;
+                }
+            }
+
+            if ( !fullyInside ) // Mark diamonds partially or fully outside the inner area as modified
+            {
+                for ( auto i : Sc::Isom::quadrants )
+                {
+                    Chk::IsomRect::Point rectCoords = Chk::IsomDiamond{x, y}.getRectangleCoords(i);
+                    if ( isInBounds(rectCoords) )
+                        isomRectAt(rectCoords).setModified(i);
+                }
+            }
+        }
+    }
+
+    return true;
 }
 
 void Scenario::validateSizes(u16 sizeValidationFlags, u16 prevWidth, u16 prevHeight)
@@ -3665,6 +3951,11 @@ void Scenario::fixTerrainToDimensions()
 {
     auto tileWidth = this->dimensions.tileWidth;
     auto tileHeight = this->dimensions.tileHeight;
+    auto expectedIsomSize = this->getIsomWidth()*this->getIsomHeight();
+    if ( this->isomRects.size() < expectedIsomSize )
+        isomRects.insert(this->isomRects.end(), expectedIsomSize-this->isomRects.size(), Chk::IsomRect{});
+    if ( this->editorTiles.size() != size_t(tileWidth)*size_t(tileHeight) )
+        setMtxmOrTileDimensions(this->editorTiles, tileWidth, tileHeight, tileWidth, tileHeight, 0, 0);
     if ( this->tiles.size() != size_t(tileWidth)*size_t(tileHeight) )
         setMtxmOrTileDimensions(this->tiles, tileWidth, tileHeight, tileWidth, tileHeight, 0, 0);
 }
@@ -3754,7 +4045,7 @@ void Scenario::moveSprite(size_t spriteIndexFrom, size_t spriteIndexTo)
             auto sprite = sprites[spriteIndexFrom];
             auto toErase = std::next(sprites.begin(), spriteIndexFrom);
             sprites.erase(toErase);
-            auto insertPosition = std::next(sprites.begin(), spriteIndexTo-1);
+            auto insertPosition = spriteIndexTo == 0 ? sprites.begin() : std::next(sprites.begin(), spriteIndexTo-1);
             sprites.insert(insertPosition, sprite);
         }
     }
@@ -3805,6 +4096,33 @@ const Chk::Doodad & Scenario::getDoodad(size_t doodadIndex) const
     return doodads[doodadIndex];
 }
 
+Chk::DoodadCache Scenario::getDoodadCache(const Sc::Terrain::Tiles & tileset) const
+{
+    std::vector<bool> doodadPresence(size_t(dimensions.tileWidth)*size_t(dimensions.tileHeight), false);
+    for ( const auto & doodad : doodads )
+    {
+        if ( auto doodadGroupIndex = tileset.getDoodadGroupIndex(doodad.type) )
+        {
+            const auto & doodadDat = (Sc::Terrain::DoodadCv5 &)tileset.tileGroups[*doodadGroupIndex];
+            const auto & placability = tileset.doodadPlacibility[doodad.type];
+            
+            bool evenWidth = doodadDat.tileWidth % 2 == 0;
+            bool evenHeight = doodadDat.tileHeight % 2 == 0;
+            size_t left = (size_t(doodad.xc) - 16*size_t(doodadDat.tileWidth))/32;
+            size_t top = (size_t(doodad.yc) - 16*size_t(doodadDat.tileHeight))/32;
+            for ( size_t y=0; y<size_t(doodadDat.tileHeight); ++y )
+            {
+                for ( size_t x=0; x<size_t(doodadDat.tileWidth); ++x )
+                {
+                    if ( placability.tileGroup[y*doodadDat.tileWidth+x] != 0 )
+                        doodadPresence[(top+y)*dimensions.tileWidth+(left+x)] = true;
+                }
+            }
+        }
+    }
+    return Chk::DoodadCache{doodadPresence};
+}
+
 size_t Scenario::addDoodad(const Chk::Doodad & doodad)
 {
     doodads.push_back(doodad);
@@ -3844,7 +4162,7 @@ void Scenario::moveDoodad(size_t doodadIndexFrom, size_t doodadIndexTo)
             auto doodad = doodads[doodadIndexFrom];
             auto toErase = std::next(doodads.begin(), doodadIndexFrom);
             doodads.erase(toErase);
-            auto insertPosition = std::next(doodads.begin(), doodadIndexTo-1);
+            auto insertPosition = doodadIndexTo == 0 ? doodads.begin() : std::next(doodads.begin(), doodadIndexTo-1);
             doodads.insert(insertPosition, doodad);
         }
     }
@@ -3917,7 +4235,7 @@ void Scenario::moveUnit(size_t unitIndexFrom, size_t unitIndexTo)
             auto unit = units[unitIndexFrom];
             auto toErase = std::next(units.begin(), unitIndexFrom);
             units.erase(toErase);
-            auto insertPosition = std::next(units.begin(), unitIndexTo-1);
+            auto insertPosition = unitIndexTo == 0 ? units.begin() : std::next(units.begin(), unitIndexTo-1);
             units.insert(insertPosition, unit);
         }
     }
@@ -4025,7 +4343,7 @@ bool Scenario::moveLocation(size_t locationIdFrom, size_t locationIdTo, bool loc
             auto location = locations[locationIdFrom];
             auto toErase = std::next(locations.begin(), locationIdFrom);
             locations.erase(toErase);
-            auto insertPosition = std::next(locations.begin(), locationIdTo-1);
+            auto insertPosition = locationIdTo == 0 ? locations.begin() : std::next(locations.begin(), locationIdTo-1);
             locations.insert(insertPosition, location);
 
             if ( lockAnywhere && locationIdMin < Chk::LocationId::Anywhere && locationIdMax > Chk::LocationId::Anywhere )
@@ -6236,7 +6554,7 @@ void Scenario::moveTrigger(size_t triggerIndexFrom, size_t triggerIndexTo)
             auto trigger = this->triggers[triggerIndexFrom];
             auto toErase = std::next(this->triggers.begin(), triggerIndexFrom);
             this->triggers.erase(toErase);
-            auto insertPosition = std::next(this->triggers.begin(), triggerIndexTo-1);
+            auto insertPosition = triggerIndexTo == 0 ? this->triggers.begin() : std::next(this->triggers.begin(), triggerIndexTo-1);
             this->triggers.insert(insertPosition, trigger);
         }
     }
@@ -6503,7 +6821,7 @@ void Scenario::moveBriefingTrigger(size_t briefingTriggerIndexFrom, size_t brief
             auto briefingTrigger = briefingTriggers[briefingTriggerIndexFrom];
             auto toErase = std::next(briefingTriggers.begin(), briefingTriggerIndexFrom);
             briefingTriggers.erase(toErase);
-            auto insertPosition = std::next(briefingTriggers.begin(), briefingTriggerIndexTo-1);
+            auto insertPosition = briefingTriggerIndexTo == 0 ? briefingTriggers.begin() : std::next(briefingTriggers.begin(), briefingTriggerIndexTo-1);
             briefingTriggers.insert(insertPosition, briefingTrigger);
         }
     }
@@ -6947,5 +7265,257 @@ void Scenario::deleteTriggerString(size_t stringId, Chk::StrScope storageScope)
             if ( extendedTrig.notesStringId == stringId )
                 extendedTrig.notesStringId = Chk::StringId::NoString;
         }
+    }
+}
+
+void Scenario::addIsomUndo(Chk::IsomRect::Point point, Chk::IsomCache & cache)
+{
+    if ( !cache.undoMap[point.y*cache.isomWidth + point.x] ) // if undoMap entry doesn't already exist at this position...
+    {
+        Chk::IsomRectUndo isomRectUndo(Chk::IsomDiamond{point.x, point.y}, getIsomRect(point), Chk::IsomRect{});
+        cache.undoMap[point.y*cache.isomWidth + point.x] = isomRectUndo; // add undoMap entry at position
+        cache.addIsomUndo(isomRectUndo);
+    }
+}
+
+bool Scenario::diamondNeedsUpdate(Chk::IsomDiamond isomDiamond) const
+{
+    return isInBounds(isomDiamond) &&
+        !centralIsomValueModified(isomDiamond) &&
+        getCentralIsomValue(isomDiamond) != 0;
+}
+
+void Scenario::setIsomValue(Chk::IsomRect::Point isomDiamond, Sc::Isom::Quadrant shapeQuadrant, uint16_t isomValue, bool undoable, Chk::IsomCache & cache)
+{
+    if ( isInBounds(isomDiamond) )
+    {
+        Chk::IsomRectUndo* isomUndo = nullptr;
+        size_t isomRectIndex = isomDiamond.y*cache.isomWidth + size_t(isomDiamond.x);
+        if ( undoable && isomRectIndex < cache.undoMap.size() )
+        {
+            addIsomUndo(isomDiamond, cache);
+            isomUndo = cache.undoMap[isomRectIndex] ? &cache.undoMap[isomRectIndex].value() : nullptr;
+        }
+
+        Chk::IsomRect & rect = isomRectAt(isomDiamond);
+        rect.set(shapeQuadrant, isomValue);
+        rect.setModified(shapeQuadrant);
+        cache.changedArea.expandToInclude(isomDiamond.x, isomDiamond.y);
+
+        if ( isomUndo != nullptr ) // Update the undo if it was present prior to the changes
+            isomUndo->setNewValue(rect);
+    }
+}
+
+void Scenario::setDiamondIsomValues(Chk::IsomDiamond isomDiamond, uint16_t isomValue, bool undoable, Chk::IsomCache & cache)
+{
+    setIsomValue(isomDiamond.getRectangleCoords(Sc::Isom::Quadrant::TopLeft), Sc::Isom::Quadrant::TopLeft, isomValue, undoable, cache);
+    setIsomValue(isomDiamond.getRectangleCoords(Sc::Isom::Quadrant::TopRight), Sc::Isom::Quadrant::TopRight, isomValue, undoable, cache);
+    setIsomValue(isomDiamond.getRectangleCoords(Sc::Isom::Quadrant::BottomRight), Sc::Isom::Quadrant::BottomRight, isomValue, undoable, cache);
+    setIsomValue(isomDiamond.getRectangleCoords(Sc::Isom::Quadrant::BottomLeft), Sc::Isom::Quadrant::BottomLeft, isomValue, undoable, cache);
+}
+
+void Scenario::loadNeighborInfo(Chk::IsomDiamond isomDiamond, IsomNeighbors & neighbors, Span<Sc::Isom::ShapeLinks> isomLinks) const
+{
+    for ( auto i : Chk::IsomDiamond::neighbors ) // Gather info about the four neighboring isom diamonds/isom shapes
+    {
+        Chk::IsomDiamond neighbor = isomDiamond.getNeighbor(i);
+        if ( isInBounds(neighbor) )
+        {
+            uint16_t isomValue = getCentralIsomValue(neighbor);
+            neighbors[i].modified = centralIsomValueModified(neighbor);
+            neighbors[i].isomValue = isomValue;
+            if ( isomValue < isomLinks.size() )
+            {
+                neighbors[i].linkId = isomLinks[isomValue].getLinkId(Sc::Isom::OppositeQuadrant(i));
+                if ( neighbors[i].modified && isomLinks[isomValue].terrainType > neighbors.maxModifiedOfFour )
+                    neighbors.maxModifiedOfFour = isomLinks[isomValue].terrainType;
+            }
+        }
+    }
+}
+
+uint16_t Scenario::countNeighborMatches(const Sc::Isom::ShapeLinks & shapeLinks, IsomNeighbors & neighbors, Span<Sc::Isom::ShapeLinks> isomLinks) const
+{
+    auto terrainType = shapeLinks.terrainType;
+    uint16_t totalMatches = 0;
+    for ( auto quadrant : Sc::Isom::quadrants ) // For each quadrant in the shape (and each neighbor which overlaps with said quadrant)
+    {
+        const auto & neighborShape = isomLinks[neighbors[quadrant].isomValue];
+        auto neighborTerrainType = neighborShape.terrainType;
+        auto neighborLinkId = neighbors[quadrant].linkId;
+        auto quadrantLinkId = shapeLinks.getLinkId(quadrant);
+
+        if ( neighborLinkId == quadrantLinkId && (quadrantLinkId < Sc::Isom::LinkId::OnlyMatchSameType || terrainType == neighborTerrainType) )
+            ++totalMatches;
+        else if ( neighbors[quadrant].modified ) // There was no match with a neighbor that was already modified, so this isomValue can't be valid
+            return uint16_t(0);
+    }
+    return totalMatches;
+}
+
+void Scenario::searchForBestMatch(uint16_t startingTerrainType, IsomNeighbors & neighbors, Chk::IsomCache & cache) const
+{
+    bool searchUntilHigherTerrainType = startingTerrainType == cache.terrainTypes.size()/2+1; // The final search always searches until end or higher types
+    bool searchUntilEnd = startingTerrainType == 0; // If startingTerrainType is zero, the whole table after start must be searched
+
+    uint16_t isomValue = cache.getTerrainTypeIsomValue(startingTerrainType);
+    for ( ; isomValue < cache.isomLinks.size(); ++isomValue )
+    {
+        auto terrainType = cache.isomLinks[isomValue].terrainType;
+        if ( !searchUntilEnd && terrainType != startingTerrainType && (!searchUntilHigherTerrainType || terrainType > startingTerrainType) )
+            break; // Do not search the rest of the table
+
+        auto matchCount = countNeighborMatches(cache.isomLinks[isomValue], neighbors, cache.isomLinks);
+        if ( matchCount > neighbors.bestMatch.matchCount )
+            neighbors.bestMatch = {isomValue, matchCount};
+    }
+}
+
+std::optional<uint16_t> Scenario::findBestMatchIsomValue(Chk::IsomDiamond isomDiamond, Chk::IsomCache & cache) const
+{
+    IsomNeighbors neighbors {};
+    loadNeighborInfo(isomDiamond, neighbors, cache.isomLinks);
+
+    uint16_t prevIsomValue = getCentralIsomValue(isomDiamond);
+    if ( prevIsomValue < cache.isomLinks.size() )
+    {
+        uint8_t prevTerrainType = cache.isomLinks[prevIsomValue].terrainType; // Y = maxOfFour, x = prevTerrainType
+        uint16_t mappedTerrainType = cache.terrainTypeMap[size_t(neighbors.maxModifiedOfFour)*cache.terrainTypes.size() + size_t(prevTerrainType)];
+        searchForBestMatch(mappedTerrainType, neighbors, cache);
+    }
+    searchForBestMatch(uint16_t(neighbors.maxModifiedOfFour), neighbors, cache);
+    searchForBestMatch(uint16_t(cache.terrainTypes.size()/2 + 1), neighbors, cache);
+
+    if ( neighbors.bestMatch.isomValue == prevIsomValue ) // This ISOM diamond was already the best possible value
+        return std::nullopt;
+    else
+        return neighbors.bestMatch.isomValue;
+}
+
+void Scenario::radiallyUpdateTerrain(bool undoable, std::deque<Chk::IsomDiamond> & diamondsToUpdate, Chk::IsomCache & cache)
+{
+    while ( !diamondsToUpdate.empty() )
+    {
+        Chk::IsomDiamond isomDiamond = diamondsToUpdate.front();
+        diamondsToUpdate.pop_front();
+        if ( diamondNeedsUpdate(isomDiamond) && !getIsomRect(isomDiamond).isVisited() )
+        {
+            isomRectAt(isomDiamond).setVisited();
+            cache.changedArea.expandToInclude(isomDiamond.x, isomDiamond.y);
+            if ( auto bestMatch = findBestMatchIsomValue(isomDiamond, cache) )
+            {
+                if ( *bestMatch != 0 )
+                    setDiamondIsomValues(isomDiamond, *bestMatch, undoable, cache);
+
+                for ( auto i : Chk::IsomDiamond::neighbors )
+                {
+                    Chk::IsomDiamond neighbor = isomDiamond.getNeighbor(i);
+                    if ( diamondNeedsUpdate(neighbor) )
+                        diamondsToUpdate.push_back({neighbor.x, neighbor.y});
+                }
+            }
+        }
+    }
+}
+    
+void Scenario::updateTileFromIsom(Chk::IsomDiamond isomDiamond, Chk::IsomCache & cache)
+{
+    if ( isomDiamond.x+1 >= cache.isomWidth || isomDiamond.y+1 >= cache.isomHeight )
+        return;
+
+    size_t leftTileX = 2*isomDiamond.x;
+    size_t rightTileX = leftTileX+1;
+
+    size_t totalConnections = cache.tileGroups.size();
+
+    uint32_t isomRectHash = getIsomRect(isomDiamond).getHash(cache.isomLinks);
+    auto foundPotentialGroups = cache.hashToTileGroup->find(isomRectHash);
+    if ( foundPotentialGroups != cache.hashToTileGroup->end() )
+    {
+        const std::vector<uint16_t> & potentialGroups = foundPotentialGroups->second;
+        uint16_t destTileGroup = potentialGroups[0];
+
+        // Lookup the isom group for this row using the above rows stack-bottom connection
+        if ( isomDiamond.y > 0 )
+        {
+            auto aboveTileGroup = Sc::Terrain::getTileGroup(getTileValue(leftTileX, isomDiamond.y-1));
+            if ( aboveTileGroup < cache.tileGroups.size() )
+            {
+                uint16_t tileGroupBottom = cache.tileGroups[aboveTileGroup].stackConnections.bottom;
+                for ( size_t i=0; i<potentialGroups.size(); ++i )
+                {
+                    if ( cache.tileGroups[potentialGroups[i]].stackConnections.top == tileGroupBottom )
+                    {
+                        destTileGroup = potentialGroups[i];
+                        break;
+                    }
+                }
+            }
+        }
+
+        uint16_t destSubTile = cache.getRandomSubtile(destTileGroup) % 16;
+        cache.setTileValue(leftTileX, isomDiamond.y, 16*destTileGroup + destSubTile);
+        cache.setTileValue(rightTileX, isomDiamond.y, 16*(destTileGroup+1) + destSubTile);
+
+        // Find the top row of the tile-group stack (note: this is a tad performance sensitive, consider pre-linking stacks)
+        size_t stackTopY = isomDiamond.y;
+        auto curr = Sc::Terrain::getTileGroup(getTileValue(leftTileX, stackTopY));
+        for ( ; stackTopY > 0 && curr < totalConnections && cache.tileGroups[curr].stackConnections.top != 0; --stackTopY )
+        {
+            auto above = Sc::Terrain::getTileGroup(getTileValue(leftTileX, stackTopY-1));
+            if ( above >= totalConnections || cache.tileGroups[curr].stackConnections.top != cache.tileGroups[above].stackConnections.bottom )
+                break;
+
+            curr = above;
+        }
+
+        cache.setTileValue(leftTileX, stackTopY, 16*Sc::Terrain::getTileGroup(getTileValue(leftTileX, stackTopY)) + destSubTile);
+        cache.setTileValue(rightTileX, stackTopY, 16*Sc::Terrain::getTileGroup(getTileValue(rightTileX, stackTopY)) + destSubTile);
+
+        // Set tile values for the rest of the stack
+        auto tileHeight = getTileHeight();
+        for ( size_t y=stackTopY+1; y<tileHeight; ++y )
+        {
+            auto tileGroup = Sc::Terrain::getTileGroup(getTileValue(leftTileX, y-1));
+            auto nextTileGroup = Sc::Terrain::getTileGroup(getTileValue(leftTileX, y));
+
+            if ( tileGroup >= cache.tileGroups.size() || nextTileGroup >= cache.tileGroups.size() ||
+                cache.tileGroups[tileGroup].stackConnections.bottom == 0 || cache.tileGroups[nextTileGroup].stackConnections.top == 0 )
+            {
+                break;
+            }
+
+            uint16_t bottomConnection = cache.tileGroups[tileGroup].stackConnections.bottom;
+            uint16_t leftTileGroup = Sc::Terrain::getTileGroup(getTileValue(leftTileX, y));
+            uint16_t rightTileGroup = Sc::Terrain::getTileGroup(getTileValue(rightTileX, y));
+            if ( bottomConnection != cache.tileGroups[nextTileGroup].stackConnections.top )
+            {
+                isomRectHash = getIsomRect({isomDiamond.x, y}).getHash(cache.isomLinks);
+
+                auto foundPotentialGroups = cache.hashToTileGroup->find(isomRectHash);
+                if ( foundPotentialGroups != cache.hashToTileGroup->end() )
+                {
+                    const std::vector<uint16_t> & potentialGroups = foundPotentialGroups->second;
+                    for ( size_t i=0; i<potentialGroups.size(); ++i )
+                    {
+                        if ( cache.tileGroups[potentialGroups[i]].stackConnections.top == bottomConnection )
+                        {
+                            leftTileGroup = potentialGroups[i];
+                            rightTileGroup = leftTileGroup + 1;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            cache.setTileValue(leftTileX, y, 16*leftTileGroup + destSubTile);
+            cache.setTileValue(rightTileX, y, 16*rightTileGroup + destSubTile);
+        }
+    }
+    else
+    {
+        cache.setTileValue(leftTileX, isomDiamond.y, 0);
+        cache.setTileValue(rightTileX, isomDiamond.y, 0);
     }
 }

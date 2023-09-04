@@ -41,7 +41,8 @@ bool SwitchesWindow::CreateThis(HWND hParent, u64 windowId)
 
 bool SwitchesWindow::DestroyThis()
 {
-    return false;
+    ClassWindow::DestroyThis();
+    return true;
 }
 
 void SwitchesWindow::RefreshWindow()
@@ -227,7 +228,7 @@ void SwitchesWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
     }
 }
 
-void SwitchesWindow::NotifyTreeSelChanged(LPARAM newValue)
+void SwitchesWindow::NotifyTreeItemSelected(LPARAM newValue)
 {
     if ( !refreshingSwitchList )
     {

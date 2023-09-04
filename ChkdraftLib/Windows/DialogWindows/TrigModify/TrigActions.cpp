@@ -16,7 +16,7 @@ enum_t(Id, u32, {
     BUTTON_EDITSOUND
 });
 
-TrigActionsWindow::TrigActionsWindow() : hBlack(NULL), trigIndex(0), gridActions(*this, 64),
+TrigActionsWindow::TrigActionsWindow() : trigIndex(0), gridActions(*this, 64),
     suggestions(gridActions.GetSuggestions()), stringEditEnabled(false), soundEditEnabled(false), unitPropertiesEditEnabled(false), isPasting(false)
 {
 
@@ -49,7 +49,8 @@ bool TrigActionsWindow::CreateThis(HWND hParent, u64 windowId)
 bool TrigActionsWindow::DestroyThis()
 {
     suggestions.Hide();
-    return false;
+    ClassWindow::DestroyThis();
+    return true;
 }
 
 void TrigActionsWindow::RefreshWindow(u32 trigIndex)
@@ -251,9 +252,9 @@ void TrigActionsWindow::Paste()
 
 void TrigActionsWindow::RedrawThis()
 {
-    HDC hDC = GetDC(getHandle());
-    EraseBackground(getHandle(), WM_ERASEBKGND, (WPARAM)hDC, 0);
-    ReleaseDC(hDC);
+    auto dc = this->getDeviceContext();
+    EraseBackground(getHandle(), WM_ERASEBKGND, (WPARAM)dc.getDcHandle(), 0);
+    dc.release();
     ClassWindow::RedrawThis();
     gridActions.RedrawThis();
 }
@@ -509,8 +510,7 @@ BOOL TrigActionsWindow::GridItemDeleting(u16 gridItemX, u16 gridItemY)
 
 void TrigActionsWindow::DrawSelectedAction()
 {
-    HDC hDC = GetDC(getHandle());
-    if ( hDC != NULL )
+    if ( auto dc = this->getDeviceContext() )
     {
         const Chk::Trigger & trig = CM->getTrigger(trigIndex);
         int focusedX = -1,
@@ -525,20 +525,16 @@ void TrigActionsWindow::DrawSelectedAction()
             ttg.clearScenario();
 
             UINT width = 0, height = 0;
-            GetStringDrawSize(hDC, width, height, str);
-            HBRUSH hBackground = CreateSolidBrush(GetSysColor(COLOR_MENU));
-            RECT rect;
+            GetStringDrawSize(dc, width, height, str);
+            RECT rect {};
             rect.left = gridActions.Left() + 5;
             rect.right = gridActions.Right() - 5;
             rect.top = gridActions.Top() - height - 1;
             rect.bottom = gridActions.Top() - 1;
-            FillRect(hDC, &rect, hBackground);
-            DeleteObject(hBackground);
-
-            SetBkMode(hDC, TRANSPARENT);
-            DrawString(hDC, gridActions.Left() + 6, gridActions.Top() - height - 1, 500, RGB(0, 0, 0), str);
+            dc.fillSysRect(rect, COLOR_MENU);
+            dc.setBkMode(TRANSPARENT);
+            DrawString(dc, gridActions.Left() + 6, gridActions.Top() - height - 1, 500, RGB(0, 0, 0), str);
         }
-        ReleaseDC(hDC);
     }
 }
 
@@ -547,31 +543,29 @@ int TrigActionsWindow::GetGridItemWidth(int gridItemX, int gridItemY)
     std::string text;
     if ( gridActions.item(gridItemX, gridItemY).getText(text) )
     {
-        HDC hDC = GetDC(getHandle());
-        UINT width = 0, height = 0;
-        if ( GetStringDrawSize(hDC, width, height, text) )
-            return width + 2;
-
-        ReleaseDC(hDC);
+        if ( auto dc = this->getDeviceContext() )
+        {
+            UINT width = 0, height = 0;
+            if ( GetStringDrawSize(dc, width, height, text) )
+                return width + 2;
+        }
     }
     return 0;
 }
 
 void TrigActionsWindow::PreDrawItems()
 {
-    HDC hDC = GetDC(getHandle());
-    EraseBackground(getHandle(), WM_ERASEBKGND, (WPARAM)hDC, 0);
-    ReleaseDC(hDC);
-    hBlack = CreateSolidBrush(RGB(0, 0, 0));
+    if ( auto dc = this->getDeviceContext() )
+        EraseBackground(getHandle(), WM_ERASEBKGND, (WPARAM)dc.getDcHandle(), 0);
 }
 
-void TrigActionsWindow::SysColorRect(HDC hDC, RECT & rect, DWORD color)
+void TrigActionsWindow::SysColorRect(const WinLib::DeviceContext & dc, RECT & rect, DWORD color)
 {
-    SetBkColor(hDC, GetSysColor(color));
-    FillRect(hDC, &rect, GetSysColorBrush(color));
+    dc.setBkColor(GetSysColor(color));
+    dc.fillSysRect(rect, color);
 }
 
-void TrigActionsWindow::DrawItemBackground(HDC hDC, int gridItemX, int gridItemY, RECT & rcItem, int width, int xStart)
+void TrigActionsWindow::DrawItemBackground(const WinLib::DeviceContext & dc, int gridItemX, int gridItemY, RECT & rcItem, int width, int xStart)
 {
     RECT rcFill;
     rcFill.top = rcItem.top;
@@ -580,14 +574,14 @@ void TrigActionsWindow::DrawItemBackground(HDC hDC, int gridItemX, int gridItemY
     rcFill.right = xStart + width - 1;
 
     if ( gridActions.isFocused(gridItemX, gridItemY) )
-        SysColorRect(hDC, rcFill, COLOR_ACTIVEBORDER);
+        SysColorRect(dc, rcFill, COLOR_ACTIVEBORDER);
     else if ( gridActions.item(gridItemX, gridItemY).isSelected() )
-        SysColorRect(hDC, rcFill, COLOR_HIGHLIGHT);
+        SysColorRect(dc, rcFill, COLOR_HIGHLIGHT);
     else
-        SysColorRect(hDC, rcFill, COLOR_WINDOW);
+        SysColorRect(dc, rcFill, COLOR_WINDOW);
 }
 
-void TrigActionsWindow::DrawItemFrame(HDC hDC, RECT & rcItem, int width, int & xStart)
+void TrigActionsWindow::DrawItemFrame(const WinLib::DeviceContext & dc, RECT & rcItem, int width, int & xStart)
 {
     RECT rcFill = {};
     rcFill.top = rcItem.top - 1;
@@ -595,23 +589,23 @@ void TrigActionsWindow::DrawItemFrame(HDC hDC, RECT & rcItem, int width, int & x
     rcFill.left = xStart - 1;
     rcFill.right = xStart + width;
 
-    ::FrameRect(hDC, &rcFill, hBlack);
+    dc.frameRect(rcFill, RGB(0, 0, 0));
 }
 
-void TrigActionsWindow::DrawGridViewItem(HDC hDC, int gridItemX, int gridItemY, RECT & rcItem, int & xStart)
+void TrigActionsWindow::DrawGridViewItem(const WinLib::DeviceContext & dc, int gridItemX, int gridItemY, RECT & rcItem, int & xStart)
 {
     if ( gridItemX == 0 && gridItemY >= 0 && gridItemY < Chk::Trigger::MaxActions )
         gridActions.checkEnabled[gridItemY].MoveTo(rcItem.left, rcItem.top);
 
     int width = ListView_GetColumnWidth(gridActions.getHandle(), gridItemX);
-    DrawItemBackground(hDC, gridItemX, gridItemY, rcItem, width, xStart);
+    DrawItemBackground(dc, gridItemX, gridItemY, rcItem, width, xStart);
 
     std::string text;
     if ( gridActions.item(gridItemX, gridItemY).getText(text) )
-        DrawString(hDC, xStart + 1, rcItem.top, width - 2, RGB(0, 0, 0), text);
+        DrawString(dc, xStart + 1, rcItem.top, width - 2, RGB(0, 0, 0), text);
 
     if ( !gridActions.item(gridItemX, gridItemY).isDisabled() )
-        DrawItemFrame(hDC, rcItem, width, xStart);
+        DrawItemFrame(dc, rcItem, width, xStart);
 
     xStart += width;
 }
@@ -631,7 +625,7 @@ void TrigActionsWindow::DrawGridViewRow(UINT gridId, PDRAWITEMSTRUCT pdis)
 
             int numColumns = gridActions.GetNumColumns();
             for ( int x = 0; x<numColumns; x++ )
-                DrawGridViewItem(pdis->hDC, x, pdis->itemID, rcItem, itemStart);
+                DrawGridViewItem(WinLib::DeviceContext{pdis->hDC}, x, pdis->itemID, rcItem, itemStart);
         }
     }
 }
@@ -641,24 +635,22 @@ void TrigActionsWindow::DrawTouchups(HDC hDC)
     RECT rect = {};
     if ( gridActions.GetEditItemRect(rect) )
     {
+        WinLib::DeviceContext dc {hDC};
         rect.left -= 1;
         rect.top -= 1;
-        HBRUSH hHighlight = CreateSolidBrush(RGB(0, 0, 200));
-        ::FrameRect(hDC, &rect, hHighlight);
+        dc.frameRect(rect, RGB(0, 0, 200));
         rect.left -= 1;
         rect.top -= 1;
         rect.right += 1;
         rect.bottom += 1;
-        ::FrameRect(hDC, &rect, hHighlight);
-        DeleteObject(hHighlight);
+        dc.frameRect(rect, RGB(0, 0, 200));
     }
     gridActions.RedrawHeader();
 }
 
 void TrigActionsWindow::PostDrawItems()
 {
-    DeleteObject(hBlack);
-    hBlack = NULL;
+
 }
 
 void TrigActionsWindow::SuggestNothing()

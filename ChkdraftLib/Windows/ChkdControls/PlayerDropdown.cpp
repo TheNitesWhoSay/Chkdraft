@@ -16,7 +16,7 @@ bool PlayerDropdown::CreateThis(HWND hParent, int x, int y, int width, int heigh
         playerStrings = { "Player 01", "Player 02", "Player 03", "Player 04", "Player 05", "Player 06",
             "Player 07", "Player 08", "Player 09", "Player 10", "Player 11", "Player 12 (Neutral)" };
 
-    if ( DropdownControl::CreateThis(hParent, x, y, width, height, true, false, id, playerStrings, defaultFont) )
+    if ( DropdownControl::CreateThis(hParent, x, y, width, height, true, false, id, playerStrings) )
     {
         SendMessage(getHandle(), CB_LIMITTEXT, 0, 0);
         DropdownControl::SetSel(0);

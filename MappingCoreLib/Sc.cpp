@@ -1607,7 +1607,199 @@ const std::vector<std::string> Sc::Terrain::TilesetNames = {
     "Twilight"
 };
 
-bool Sc::Terrain::Tiles::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, const std::string & tilesetName)
+void Sc::Terrain::Tiles::populateTerrainTypeMap(size_t tilesetIndex)
+{
+    const auto & compressedTerrainTypeMap = Isom::compressedTerrainTypeMaps[tilesetIndex];
+
+    size_t totalTerrainTypes = terrainTypes.size();
+    terrainTypeMap.assign(totalTerrainTypes*totalTerrainTypes, uint16_t(0));
+    std::vector<uint16_t> tempTypeMap(totalTerrainTypes*totalTerrainTypes, 0);
+    std::vector<uint16_t> rowData {};
+
+    // The compressedTerrainTypeMap maps terrain types to terrain types that isom searches start at, separated by zeroes
+    for ( size_t i=0; compressedTerrainTypeMap[i] != 0; ++i )
+    {
+        for ( size_t j=totalTerrainTypes*size_t(compressedTerrainTypeMap[i++]); compressedTerrainTypeMap[i] != 0; ++i,++j )
+            tempTypeMap[j] = compressedTerrainTypeMap[i];
+    }
+
+    // This expand the compressed type map to a square letting you use two types as x and y coordinates to get search start terrain types
+    for ( int i=int(totalTerrainTypes)-1; i>=0; --i )
+    {
+        rowData.assign(totalTerrainTypes, 0);
+        std::deque<uint16_t> terrainTypeStack { uint16_t(i) };
+        terrainTypeMap[totalTerrainTypes*i+terrainTypeStack[0]] = i;
+
+        while ( !terrainTypeStack.empty() )
+        {
+            uint16_t destRow = terrainTypeStack.front();
+            terrainTypeStack.pop_front();
+
+            size_t start = i*totalTerrainTypes;
+            for ( size_t j=destRow*totalTerrainTypes; tempTypeMap[j] != 0; ++j )
+            {
+                auto tempPath = tempTypeMap[j];
+                if ( terrainTypeMap[start+tempPath] == 0 )
+                {
+                    uint16_t nextValue = rowData[destRow] == 0 ? tempPath : rowData[destRow];
+                    terrainTypeStack.push_back(tempPath);
+                    terrainTypeMap[start+tempPath] = nextValue;
+                    rowData[tempPath] = nextValue;
+                }
+            }
+        }
+    }
+}
+
+void Sc::Terrain::Tiles::generateIsomLinks()
+{
+    size_t totalTileGroups = std::min(size_t(1024), tileGroups.size());
+    Span<TileGroup> tilesetCv5s((TileGroup*)&tileGroups[0], totalTileGroups);
+
+    std::vector<std::vector<uint16_t>> terrainTypeTileGroups(terrainTypes.size(), std::vector<uint16_t>{});
+    for ( uint16_t i=0; i<totalTileGroups; i +=2 )
+    {
+        if ( tilesetCv5s[i].terrainType > 0 )
+            terrainTypeTileGroups[tilesetCv5s[i].terrainType].push_back(i);
+    }
+
+    std::vector<Isom::TerrainTypeInfo> solidBrushes {};
+    std::vector<Isom::TerrainTypeInfo> otherTerrainTypes {};
+    size_t i = 1;
+    for ( ; i<=terrainTypes.size()/2; ++i )
+    {
+        if ( terrainTypes[i].isomValue != 0 )
+            solidBrushes.push_back(terrainTypes[i]);
+    }
+    for ( ; i<terrainTypes.size(); ++i )
+    {
+        if ( terrainTypes[i].isomValue != 0 )
+            otherTerrainTypes.push_back({uint16_t(i), terrainTypes[i].isomValue});
+    }
+    std::sort(solidBrushes.begin(), solidBrushes.end(), [](const Isom::TerrainTypeInfo & l, const Isom::TerrainTypeInfo & r) {
+        return l.isomValue < r.isomValue;
+    });
+    std::sort(otherTerrainTypes.begin(), otherTerrainTypes.end(), [](const Isom::TerrainTypeInfo & l, const Isom::TerrainTypeInfo & r) {
+        return l.isomValue < r.isomValue;
+    });
+
+    for ( const auto & solidBrush : solidBrushes )
+    {
+        while ( isomLinks.size() < size_t(solidBrush.isomValue) )
+            isomLinks.push_back(Isom::ShapeLinks{});
+
+        auto tileGroup = terrainTypeTileGroups[solidBrush.index][0];
+        const auto & links = tilesetCv5s[tileGroup].links;
+        isomLinks.push_back(
+            Isom::ShapeLinks{uint8_t(solidBrush.index),
+                {links.right, links.bottom, solidBrush.linkId},
+                {links.left, links.bottom, solidBrush.linkId},
+                {links.left, links.top, solidBrush.linkId},
+                {links.top, links.right, solidBrush.linkId}
+            }
+        );
+    }
+
+    size_t totalSolidBrushEntries = isomLinks.size();
+    while ( isomLinks.size() < otherTerrainTypes[0].isomValue )
+        isomLinks.push_back(Isom::ShapeLinks{});
+
+    for ( const auto & otherTerrainType : otherTerrainTypes )
+    {
+        // In the isomLink table there are 14 shapes/entries per terrain types that are not solid brushes
+        size_t terrainTypeIsomLinkStart = isomLinks.size();
+        for ( size_t i=0; i<14; ++i )
+            isomLinks.push_back(Isom::ShapeLinks{uint8_t(otherTerrainType.index)});
+
+        const auto & tileGroupIndexes = terrainTypeTileGroups[otherTerrainType.index]; // All tile group indexes that belong to this terrain type
+        Isom::TerrainTypeShapes & shapes = (Isom::TerrainTypeShapes &)isomLinks[terrainTypeIsomLinkStart]; // Treat these 14 entries as a shapes struct
+        Isom::ShapeTileGroup shapeTileGroups[14] {}; // Record all tile group indexes that get used as shape quadrants
+
+        for ( auto tileGroupIndex : tileGroupIndexes )
+        {
+            const auto & tileGroup = tilesetCv5s[tileGroupIndex];
+
+            bool noStackAbove = (tileGroup.stackConnections.top == 0);
+            for ( size_t shapeIndex=0; shapeIndex<Isom::shapes.size(); ++shapeIndex )
+            {
+                if ( !tileGroup.links.isShapeQuadrant() )
+                    continue; // Tile groups that have all hard links or no hard links do not refer to shape quadrants
+
+                // If this tile group matches any quadrants of this shape, update shape links & shapeTileGroups
+                const auto & checkShape = Isom::shapes[shapeIndex];
+                if ( checkShape.matches(Isom::Quadrant::TopLeft, tileGroup.links, noStackAbove) )
+                {
+                    shapes[shapeIndex].topLeft.right = tileGroup.links.right;
+                    shapes[shapeIndex].topLeft.bottom = tileGroup.links.bottom;
+                    shapeTileGroups[shapeIndex].topLeft = tileGroupIndex;
+                }
+                if ( checkShape.matches(Isom::Quadrant::TopRight, tileGroup.links, noStackAbove) )
+                {
+                    shapes[shapeIndex].topRight.left = tileGroup.links.left;
+                    shapes[shapeIndex].topRight.bottom = tileGroup.links.bottom;
+                    shapeTileGroups[shapeIndex].topRight = tileGroupIndex;
+                }
+                if ( checkShape.matches(Isom::Quadrant::BottomRight, tileGroup.links, noStackAbove) )
+                {
+                    shapes[shapeIndex].bottomRight.left = tileGroup.links.left;
+                    shapes[shapeIndex].bottomRight.top = tileGroup.links.top;
+                    shapeTileGroups[shapeIndex].bottomRight = tileGroupIndex;
+                }
+                if ( checkShape.matches(Isom::Quadrant::BottomLeft, tileGroup.links, noStackAbove) )
+                {
+                    shapes[shapeIndex].bottomLeft.top = tileGroup.links.top;
+                    shapes[shapeIndex].bottomLeft.right = tileGroup.links.right;
+                    shapeTileGroups[shapeIndex].bottomLeft = tileGroupIndex;
+                }
+            }
+        }
+
+        shapes.populateJutInEastWest(tilesetCv5s, shapeTileGroups);
+        shapes.populateEmptyQuadrantLinks();
+        shapes.populateHardcodedLinkIds();
+        shapes.populateLinkIdsToSolidBrushes(tilesetCv5s, shapeTileGroups, totalSolidBrushEntries, isomLinks);
+    }
+}
+
+void Sc::Terrain::Tiles::loadIsom(size_t tilesetIndex)
+{
+    Span<Isom::TerrainTypeInfo> terrainTypeInfo = Isom::tilesetTerrainTypes[tilesetIndex];
+    this->terrainTypes = terrainTypeInfo;
+    populateTerrainTypeMap(tilesetIndex);
+
+    for ( size_t i=0; i<tileGroups.size(); i+=2 )
+    {
+        const auto & groupLinks = tileGroups[i].links;
+        uint32_t left = uint32_t(groupLinks.left);
+        uint32_t top = uint32_t(groupLinks.top);
+        uint32_t right = uint32_t(groupLinks.right);
+        uint32_t bottom = uint32_t(groupLinks.bottom);
+
+        uint32_t tileGroupHash = (((left << 6 | top) << 6 | right) << 6 | bottom) << 6;
+        if ( left >= 48 || top >= 48 || right >= 48 || bottom >= 48 )
+            tileGroupHash |= tileGroups[i].terrainType;
+
+        auto existing = hashToTileGroup.find(tileGroupHash);
+        if ( existing != hashToTileGroup.end() )
+            existing->second.push_back(uint16_t(i));
+        else
+            hashToTileGroup.insert(std::make_pair(tileGroupHash, std::vector<uint16_t>{uint16_t(i)}));
+    }
+
+    generateIsomLinks();
+
+    for ( const auto & terrainType : terrainTypeInfo )
+    {
+        if ( terrainType.brushSortOrder >= 0 )
+            brushes.push_back(terrainType);
+    }
+    std::sort(brushes.begin(), brushes.end(), [&](const Isom::TerrainTypeInfo & l, const Isom::TerrainTypeInfo & r) {
+        return l.brushSortOrder < r.brushSortOrder;
+    });
+    defaultBrush = terrainTypeInfo[Isom::defaultBrushIndex[tilesetIndex]];
+}
+
+bool Sc::Terrain::Tiles::load(size_t tilesetIndex, const std::vector<ArchiveFilePtr> & orderedSourceFiles, const std::string & tilesetName, Sc::TblFilePtr statTxt)
 {
     const std::string tilesetMpqDirectory = "tileset";
     const std::string mpqFilePath = makeMpqFilePath(tilesetMpqDirectory, tilesetName);
@@ -1617,6 +1809,7 @@ bool Sc::Terrain::Tiles::load(const std::vector<ArchiveFilePtr> & orderedSourceF
     const std::string vx4FilePath = makeExtMpqFilePath(mpqFilePath, "vx4");
     const std::string vx4exFilePath = makeExtMpqFilePath(mpqFilePath, "vx4ex");
     const std::string wpeFilePath = makeExtMpqFilePath(mpqFilePath, "wpe");
+    const std::string ddDataFilePath = makeExtMpqFilePath(makeMpqFilePath(mpqFilePath, "dddata"), "bin");
     
     auto cv5Data = Sc::Data::GetAsset(orderedSourceFiles, cv5FilePath);
     auto vf4Data = Sc::Data::GetAsset(orderedSourceFiles, vf4FilePath);
@@ -1624,8 +1817,9 @@ bool Sc::Terrain::Tiles::load(const std::vector<ArchiveFilePtr> & orderedSourceF
     bool isVx4ex = false;
     auto vx4Data = Sc::Data::GetAsset(orderedSourceFiles, isVx4ex, vx4exFilePath, vx4FilePath);
     auto wpeData = Sc::Data::GetAsset(orderedSourceFiles, wpeFilePath);
+    auto ddData = Sc::Data::GetAsset(orderedSourceFiles, ddDataFilePath);
 
-    if ( cv5Data && vf4Data && vr4Data && vx4Data && wpeData )
+    if ( cv5Data && vf4Data && vr4Data && vx4Data && wpeData && ddData )
     {
         if ( cv5Data->size() % sizeof(Sc::Terrain::TileGroup) == 0 &&
             vf4Data->size() % sizeof(Sc::Terrain::TileFlags) == 0 &&
@@ -1634,10 +1828,10 @@ bool Sc::Terrain::Tiles::load(const std::vector<ArchiveFilePtr> & orderedSourceF
             wpeData->size() == sizeof(Sc::Terrain::WpeDat) )
         {
             size_t numTileGroups = Cv5Dat::tileGroupsSize(cv5Data->size());
-            size_t numDoodads = Cv5Dat::doodadsSize(cv5Data->size());
             size_t numTileFlags = Vf4Dat::size(vf4Data->size());
             size_t numMiniTilePixels = Vr4Dat::size(vr4Data->size());
             size_t numTileGraphics = Vx4Dat::size(isVx4ex, vx4Data->size());
+            size_t totalDoodadDats = DdData::size(ddData->size());
 
             if ( numTileGroups > 0 )
             {
@@ -1646,14 +1840,6 @@ bool Sc::Terrain::Tiles::load(const std::vector<ArchiveFilePtr> & orderedSourceF
             }
             else
                 tileGroups.clear();
-
-            if ( numDoodads > 0 )
-            {
-                Doodad* rawDoodads = (Doodad*)&cv5Data.value()[Cv5Dat::MaxTileGroups];
-                doodads.assign(&rawDoodads[0], &rawDoodads[numDoodads]);
-            }
-            else
-                doodads.clear();
 
             if ( numTileFlags > 0 )
             {
@@ -1706,6 +1892,49 @@ bool Sc::Terrain::Tiles::load(const std::vector<ArchiveFilePtr> & orderedSourceF
                 throw std::logic_error("Unrecognized color swap required to load system colors, please update the code!");
             }
 
+            if ( totalDoodadDats > 0 )
+            {
+                DoodadPlacibility* rawDoodadPlacibility = (DoodadPlacibility*)&ddData.value()[0];
+                doodadPlacibility.assign(&rawDoodadPlacibility[0], &rawDoodadPlacibility[totalDoodadDats]);
+            }
+            else
+                doodadPlacibility.clear();
+
+            for ( size_t tileGroupIndex=0; tileGroupIndex<tileGroups.size(); ++tileGroupIndex )
+            {
+                const auto & doodad = (const DoodadCv5 &)tileGroups[tileGroupIndex];
+                if ( doodad.index == 1 && doodad.doodadName != 0 )
+                {
+                    bool newGroup = true;
+                    for ( auto & existingGroup : doodadGroups )
+                    {
+                        if ( doodad.doodadName == existingGroup.nameIndex )
+                        {
+                            const auto & previousDoodad = (const DoodadCv5 &)tileGroups[existingGroup.doodadStartTileGroup.back()];
+                            if ( doodad.ddDataIndex != previousDoodad.ddDataIndex )
+                            {
+                                doodadIdToTileGroup.try_emplace(doodad.ddDataIndex, u16(tileGroupIndex));
+                                existingGroup.doodadStartTileGroup.push_back(u16(tileGroupIndex));
+                            }
+
+                            newGroup = false;
+                            break;
+                        }
+                    }
+
+                    if ( newGroup )
+                    {
+                        doodadIdToTileGroup.try_emplace(doodad.ddDataIndex, u16(tileGroupIndex));
+                        doodadGroups.push_back({doodad.doodadName, statTxt == nullptr ? "" : statTxt->getString(doodad.doodadName), {u16(tileGroupIndex)}});
+                    }
+                }
+            }
+            std::sort(doodadGroups.begin(), doodadGroups.end(), [&](auto & l, auto & r) {
+                return l.name < r.name;
+            });
+
+            loadIsom(tilesetIndex);
+
             return true;
         }
         else
@@ -1717,6 +1946,15 @@ bool Sc::Terrain::Tiles::load(const std::vector<ArchiveFilePtr> & orderedSourceF
     return false;
 }
 
+std::optional<uint16_t> Sc::Terrain::Tiles::getDoodadGroupIndex(uint16_t doodadId) const
+{
+    auto found = doodadIdToTileGroup.find(doodadId);
+    if ( found != doodadIdToTileGroup.end() )
+        return found->second;
+    else
+        return std::nullopt;
+}
+
 const Sc::Terrain::Tiles & Sc::Terrain::get(const Tileset & tileset) const
 {
     if ( tileset < NumTilesets )
@@ -1725,12 +1963,12 @@ const Sc::Terrain::Tiles & Sc::Terrain::get(const Tileset & tileset) const
         return tilesets[tileset % NumTilesets];
 }
 
-bool Sc::Terrain::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles)
+bool Sc::Terrain::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, Sc::TblFilePtr statTxt)
 {
     auto start = std::chrono::high_resolution_clock::now();
     bool success = true;
     for ( size_t i=0; i<NumTilesets; i++ )
-        success &= tilesets[i].load(orderedSourceFiles, TilesetNames[i]);
+        success &= tilesets[i].load(i, orderedSourceFiles, TilesetNames[i], statTxt);
     
     auto finish = std::chrono::high_resolution_clock::now();
     logger.debug() << "Terrain loading completed in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
@@ -3406,6 +3644,143 @@ bool Sc::Pcx::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, const
     return false;
 }
 
+void Sc::Isom::TerrainTypeShapes::populateJutInEastWest(Span<TileGroup> tilesetCv5s, Span<ShapeTileGroup> shapeTileGroups) {
+    // The right sides of JutInE are not always present in CV5, when missing they're filled by a merge of EdgeNe/EdgeSe
+    if ( jutInEast.topRight.left == Link::None )
+    {
+        jutInEast.topRight.left = tilesetCv5s[shapeTileGroups[Shape::EdgeNorthEast].bottomLeft].links.left;
+        jutInEast.topRight.bottom = tilesetCv5s[shapeTileGroups[Shape::EdgeNorthEast].bottomLeft].links.bottom;
+        jutInEast.bottomRight.left = tilesetCv5s[shapeTileGroups[Shape::EdgeSouthEast].topLeft].links.left;
+        jutInEast.bottomRight.top = tilesetCv5s[shapeTileGroups[Shape::EdgeSouthEast].topLeft].links.top;
+    }
+
+    // The left sides of JutInW are not always present in CV5, when missing they're filled in by a merge of EdgeNw/EdgeSw
+    if ( jutInWest.topLeft.right == Link::None )
+    {
+        jutInWest.topLeft.right = tilesetCv5s[shapeTileGroups[Shape::EdgeNorthWest].bottomRight].links.right;
+        jutInWest.topLeft.bottom = tilesetCv5s[shapeTileGroups[Shape::EdgeNorthWest].bottomRight].links.bottom;
+        jutInWest.bottomLeft.top = tilesetCv5s[shapeTileGroups[Shape::EdgeSouthWest].topRight].links.top;
+        jutInWest.bottomLeft.right = tilesetCv5s[shapeTileGroups[Shape::EdgeSouthWest].topRight].links.right;
+    }
+}
+
+// Populate the links in quadrants that are not part of the primary shape using adjacent link values
+void Sc::Isom::TerrainTypeShapes::populateEmptyQuadrantLinks() {
+    edgeNorthWest.topLeft.right = edgeNorthWest.topRight.left;
+    edgeNorthWest.topLeft.bottom = edgeNorthWest.bottomLeft.top;
+
+    edgeNorthEast.topRight.left = edgeNorthEast.topLeft.right;
+    edgeNorthEast.topRight.bottom = edgeNorthEast.bottomRight.top;
+
+    edgeSouthEast.bottomRight.left = edgeSouthEast.bottomLeft.right;
+    edgeSouthEast.bottomRight.top = edgeSouthEast.topRight.bottom;
+
+    edgeSouthWest.bottomLeft.top = edgeSouthWest.topLeft.bottom;
+    edgeSouthWest.bottomLeft.right = edgeSouthWest.bottomRight.left;
+
+    jutOutNorth.topLeft.bottom = jutOutNorth.bottomLeft.top;
+    jutOutNorth.topLeft.right = jutOutNorth.topLeft.bottom;
+    jutOutNorth.topRight.bottom = jutOutNorth.bottomRight.top;
+    jutOutNorth.topRight.left = jutOutNorth.topRight.bottom;
+
+    auto fillLink = jutOutEast.topLeft.right;
+    jutOutEast.topRight.left = fillLink;
+    jutOutEast.topRight.bottom = fillLink;
+    jutOutEast.bottomRight.left = fillLink;
+    jutOutEast.bottomRight.top = fillLink;
+                
+    jutOutSouth.bottomRight.top = jutOutSouth.topRight.bottom;
+    jutOutSouth.bottomRight.left = jutOutSouth.bottomRight.top;
+    jutOutSouth.bottomLeft.top = jutOutSouth.topLeft.bottom;
+    jutOutSouth.bottomLeft.right = jutOutSouth.bottomLeft.top;
+
+    fillLink = jutOutWest.topRight.left;
+    jutOutWest.topLeft.right = fillLink;
+    jutOutWest.topLeft.bottom = fillLink;
+    jutOutWest.bottomLeft.right = fillLink;
+    jutOutWest.bottomLeft.top = fillLink;
+}
+
+// Fill in the hardcoded linkIds (which are always the same for the set of 14 shapes making up one terrain type)
+void Sc::Isom::TerrainTypeShapes::populateHardcodedLinkIds()
+{
+    for ( size_t shapeIndex=0; shapeIndex<shapes.size(); ++shapeIndex )
+    {
+        const auto & shape = shapes[shapeIndex];
+        if ( shape.topLeft.linkId >= LinkId::OnlyMatchSameType )
+            (*this)[shapeIndex].topLeft.linkId = shape.topLeft.linkId;
+        if ( shape.topRight.linkId >= LinkId::OnlyMatchSameType )
+            (*this)[shapeIndex].topRight.linkId = shape.topRight.linkId;
+        if ( shape.bottomRight.linkId >= LinkId::OnlyMatchSameType )
+            (*this)[shapeIndex].bottomRight.linkId = shape.bottomRight.linkId;
+        if ( shape.bottomLeft.linkId >= LinkId::OnlyMatchSameType )
+            (*this)[shapeIndex].bottomLeft.linkId = shape.bottomLeft.linkId;
+    }
+}
+
+void Sc::Isom::TerrainTypeShapes::fillOuterLinkIds(LinkId linkId)
+{
+    edgeNorthWest.topLeft.linkId = linkId;
+                
+    edgeNorthEast.topRight.linkId = linkId;
+                
+    edgeSouthEast.bottomRight.linkId = linkId;
+                
+    edgeSouthWest.bottomLeft.linkId = linkId;
+                
+    jutOutNorth.topLeft.linkId = linkId;
+    jutOutNorth.topRight.linkId = linkId;
+                
+    jutOutEast.topRight.linkId = linkId;
+    jutOutEast.bottomRight.linkId = linkId;
+                
+    jutOutWest.topLeft.linkId = linkId;
+    jutOutWest.bottomLeft.linkId = linkId;
+                
+    jutOutSouth.bottomRight.linkId = linkId;
+    jutOutSouth.bottomLeft.linkId = linkId;
+}
+
+void Sc::Isom::TerrainTypeShapes::fillInnerLinkIds(LinkId linkId)
+{
+    edgeNorthWest.bottomRight.linkId = linkId;
+                
+    edgeNorthEast.bottomLeft.linkId = linkId;
+                
+    edgeSouthEast.topLeft.linkId = linkId;
+                
+    edgeSouthWest.topRight.linkId = linkId;
+                
+    jutInEast.topRight.linkId = linkId;
+    jutInEast.bottomRight.linkId = linkId;
+                
+    jutInWest.topLeft.linkId = linkId;
+    jutInWest.bottomLeft.linkId = linkId;
+                
+    jutInNorth.bottomRight.linkId = linkId;
+    jutInNorth.bottomLeft.linkId = linkId;
+                
+    jutInSouth.topLeft.linkId = linkId;
+    jutInSouth.topRight.linkId = linkId;
+}
+
+void Sc::Isom::TerrainTypeShapes::populateLinkIdsToSolidBrushes(Span<TileGroup> tilesetCv5s, Span<ShapeTileGroup> shapeTileGroups,
+    size_t totalSolidBrushEntries, const std::vector<ShapeLinks> & isomLinks)
+{
+    // Using completed edge links, lookup and fill in the linkIds to the solid brushes
+    for ( size_t i=0; i<totalSolidBrushEntries; ++i )
+    {
+        auto brushLink = isomLinks[i].topLeft.right; // Arbitrary quadrant/direction since links/ids are all the same across a given solid brush
+        auto brushLinkId = isomLinks[i].topLeft.linkId;
+
+        if ( brushLink == tilesetCv5s[shapeTileGroups[Shape::EdgeNorthWest].topRight].links.left ) // Found the outer solid brush
+            fillOuterLinkIds(brushLinkId);
+
+        if ( brushLink == tilesetCv5s[shapeTileGroups[Shape::EdgeNorthWest].bottomRight].links.right ) // Found the inner solid brush
+            fillInnerLinkIds(brushLinkId);
+    }
+}
+
 bool Sc::Data::load(Sc::DataFile::BrowserPtr dataFileBrowser, const std::vector<Sc::DataFile::Descriptor> & dataFiles,
     const std::string & expectedStarCraftDirectory, FileBrowserPtr<u32> starCraftBrowser)
 {
@@ -3424,9 +3799,16 @@ bool Sc::Data::load(Sc::DataFile::BrowserPtr dataFileBrowser, const std::vector<
         logger.error("No archives selected, many features will not work without the game files.\n\nInstall or locate StarCraft for the best experience.");
         return false;
     }
+
+    Sc::TblFilePtr statTxt = Sc::TblFilePtr(new Sc::TblFile());
+    if ( !statTxt->load(orderedSourceFiles, "Rez\\stat_txt.tbl") )
+        CHKD_ERR("Failed to load stat_txt.tbl");
     
-    if ( !terrain.load(orderedSourceFiles) )
+    if ( !terrain.load(orderedSourceFiles, statTxt) )
         CHKD_ERR("Failed to load terrain");
+
+    if ( !ai.load(orderedSourceFiles, statTxt) )
+        CHKD_ERR("Failed to load AiScripts");
 
     if ( !upgrades.load(orderedSourceFiles) )
         CHKD_ERR("Failed to load upgrades");
@@ -3451,13 +3833,6 @@ bool Sc::Data::load(Sc::DataFile::BrowserPtr dataFileBrowser, const std::vector<
 
     if ( !tselect.load(orderedSourceFiles, "game\\tselect.pcx") )
         CHKD_ERR("Failed to load tselect.pcx");
-
-    Sc::TblFilePtr statTxt = Sc::TblFilePtr(new Sc::TblFile());
-    if ( !statTxt->load(orderedSourceFiles, "Rez\\stat_txt.tbl") )
-        CHKD_ERR("Failed to load stat_txt.tbl");
-
-    if ( !ai.load(orderedSourceFiles, statTxt) )
-        CHKD_ERR("Failed to load AiScripts");
     
     auto finish = std::chrono::high_resolution_clock::now();
     logger.debug() << "StarCraft data loading completed in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;

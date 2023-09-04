@@ -300,7 +300,7 @@ std::optional<std::string> fileToString(const std::string & fileName)
             return success ? str : std::nullopt;
         }
     }
-    catch ( std::exception ) { }
+    catch ( ... ) { }
     return std::nullopt;
 }
 
@@ -342,7 +342,7 @@ bool makeFileCopy(const std::string & inFilePath, const std::string & outFilePat
             inFile.close();
         }
     }
-    catch ( std::exception ) { }
+    catch ( ... ) { }
 
     if ( inFile.is_open() )
         inFile.close();
@@ -403,12 +403,13 @@ std::optional<std::string> getModuleDirectory(bool includeTrailingSeparator)
 
 bool getDefaultScPath(std::string & data)
 {
-    return ""; // TODO: Implement me
+    data = getDefaultScPath();
+    return true;
 }
 
 std::string getDefaultScPath()
 {
-    return ""; // TODO: Implement me
+    return "C:\\Program Files (x86)\\StarCraft"; // TODO: More logic
 }
 
 // Windows registry functions

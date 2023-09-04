@@ -86,7 +86,7 @@ bool MapPropertiesWindow::CreateThis(HWND hParent, u64 windowId)
         {
             mapTitle = CM->getScenarioName<ChkdString>();
             mapDescription = CM->getScenarioDescription<ChkdString>();
-            currTileset = CM->getTileset(),
+            currTileset = CM->getTileset() % Sc::Terrain::NumTilesets,
             currWidth = (u16)CM->getTileWidth(),
             currHeight = (u16)CM->getTileHeight();
         }
@@ -103,9 +103,15 @@ bool MapPropertiesWindow::CreateThis(HWND hParent, u64 windowId)
         std::string sCurrHeight(std::to_string(currHeight));
 
         textMapTileset.CreateThis(hMapProperties, 5, 185, 100, 20, "Map Tileset", 0);
-        dropMapTileset.CreateThis(hMapProperties, 5, 205, 185, 400, false, false, Id::CB_MAPTILESET, tilesetNames, defaultFont);
+        dropMapTileset.CreateThis(hMapProperties, 5, 205, 185, 400, false, false, Id::CB_MAPTILESET, tilesetNames);
         textNewMapTerrain.CreateThis(hMapProperties, 195, 185, 100, 20, "[New] Terrain", 0);
-        dropNewMapTerrain.CreateThis(hMapProperties, 195, 205, 185, 400, false, false, Id::CB_NEWMAPTERRAIN, initTerrains[currTileset], defaultFont);
+
+        const auto & tileset = chkd.scData.terrain.get(Sc::Terrain::Tileset(currTileset));
+        dropNewMapTerrain.CreateThis(hMapProperties, 195, 205, 185, 400, false, false, Id::CB_NEWMAPTERRAIN, {});
+        for ( const auto & brushType : tileset.brushes )
+            dropNewMapTerrain.AddItem(std::string(brushType.name), brushType.index);
+
+        dropNewMapTerrain.SetSel(tileset.defaultBrush.brushSortOrder);
         textNewMapWidth.CreateThis(hMapProperties, 385, 185, 50, 20, "Width", 0);
         editMapWidth.CreateThis(hMapProperties, 385, 205, 50, 20, false, Id::EDIT_NEWMAPWIDTH);
         editMapWidth.SetText(sCurrWidth);
@@ -130,9 +136,9 @@ bool MapPropertiesWindow::CreateThis(HWND hParent, u64 windowId)
 
                 groupMapPlayers[yBox*4+xBox].CreateThis(hMapProperties, 5+146*xBox, 242+95*yBox, 141, 91, sPlayers[yBox*4+xBox], 0);
                 textPlayerOwner[yBox*4+xBox].CreateThis(hMapProperties, 13+146*xBox, 257+95*yBox, 50, 20, "Owner", 0);
-                dropPlayerOwner[yBox*4+xBox].CreateThis(hMapProperties, 60+146*xBox, 257+95*yBox, 80, 140, false, false, Id::CB_P1OWNER+player, playerOwners, defaultFont);
+                dropPlayerOwner[yBox*4+xBox].CreateThis(hMapProperties, 60+146*xBox, 257+95*yBox, 80, 140, false, false, Id::CB_P1OWNER+player, playerOwners);
                 textPlayerRace[yBox*4+xBox].CreateThis(hMapProperties, 13+146*xBox, 282+95*yBox, 50, 20, "Race", 0);
-                dropPlayerRaces[yBox*4+xBox].CreateThis(hMapProperties, 60+146*xBox, 282+95*yBox, 80, 110, false, false, Id::CB_P1RACE+player, playerRaces, defaultFont);
+                dropPlayerRaces[yBox*4+xBox].CreateThis(hMapProperties, 60+146*xBox, 282+95*yBox, 80, 110, false, false, Id::CB_P1RACE+player, playerRaces);
 
                 if ( yBox < 2 )
                 {
@@ -144,7 +150,7 @@ bool MapPropertiesWindow::CreateThis(HWND hParent, u64 windowId)
                     colorSelections.insert(colorSelections.end(), playerColors.begin(), playerColors.end());
 
                     textPlayerColor[player].CreateThis(hMapProperties, 13+146*xBox, 307+95*yBox, 50, 20, "Color", 0);
-                    dropPlayerColor[player].CreateThis(hMapProperties, 60+146*xBox, 307+95*yBox, 80, 140, true, false, Id::CB_P1COLOR+player, colorSelections, defaultFont);
+                    dropPlayerColor[player].CreateThis(hMapProperties, 60+146*xBox, 307+95*yBox, 80, 140, true, false, Id::CB_P1COLOR+player, colorSelections);
                     buttonColorProperties[player].CreateThis(hMapProperties, dropPlayerColor[player].Left()-20, 307+95*yBox, 20, 19, "", Id::BUTTON_P1COLOR+player, true);
                     buttonColorProperties[player].SetImageFromResourceId(IDB_PROPERTIES);
                 }
@@ -157,6 +163,12 @@ bool MapPropertiesWindow::CreateThis(HWND hParent, u64 windowId)
         return false;
 }
 
+bool MapPropertiesWindow::DestroyThis()
+{
+    ClassWindow::DestroyThis();
+    return true;
+}
+
 void MapPropertiesWindow::RefreshWindow()
 {
     refreshing = true;
@@ -164,7 +176,7 @@ void MapPropertiesWindow::RefreshWindow()
     {
         auto mapTitle = CM->getScenarioName<ChkdString>();
         auto mapDescription = CM->getScenarioDescription<ChkdString>();
-        u16 tileset = CM->getTileset(),
+        u16 tilesetIndex = CM->getTileset(),
             currWidth = (u16)CM->getTileWidth(),
             currHeight = (u16)CM->getTileHeight();
 
@@ -179,9 +191,16 @@ void MapPropertiesWindow::RefreshWindow()
 
         possibleTitleUpdate = false;
         possibleDescriptionUpdate = false;
-        dropMapTileset.SetSel(tileset);
+        dropMapTileset.SetSel(tilesetIndex);
         dropMapTileset.ClearEditSel();
-        dropNewMapTerrain.SetSel(0);
+
+        std::vector<std::string> initTerrains {};
+        const auto & tileset = chkd.scData.terrain.get(Sc::Terrain::Tileset(tilesetIndex));
+        dropNewMapTerrain.ClearItems();
+        for ( const auto & brushType : tileset.brushes )
+            dropNewMapTerrain.AddItem(std::string(brushType.name), brushType.index);
+        
+        dropNewMapTerrain.SetSel(tileset.defaultBrush.brushSortOrder);
         dropNewMapTerrain.ClearEditSel();
         editMapWidth.SetText(sCurrWidth);
         editMapHeight.SetText(sCurrHeight);
@@ -259,12 +278,11 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
         if ( HIWORD(wParam) == BN_CLICKED )
         {
             Sc::Terrain::Tileset newTileset = (Sc::Terrain::Tileset)SendMessage(GetDlgItem(hWnd, Id::CB_MAPTILESET), CB_GETCURSEL, 0, 0);
+            size_t newMapTerrain = dropNewMapTerrain.GetSelData();
             CM->setTileset(newTileset);
             u16 newWidth, newHeight;
             if ( editMapWidth.GetEditNum<u16>(newWidth) && editMapHeight.GetEditNum<u16>(newHeight) )
-                CM->setDimensions(newWidth, newHeight);
-
-            // Apply new terrain...
+                CM->setDimensions(newWidth, newHeight, Scenario::SizeValidationFlag::Default, 0, 0, newMapTerrain);
 
             CM->notifyChange(false);
             CM->Redraw(true);
@@ -281,11 +299,12 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             {
                 while ( SendMessage(hMapNewTerrain, CB_DELETESTRING, 0, 0) != CB_ERR );
 
-                for ( auto tileset : initTerrains.at(currTileset) )
-                    SendMessage(hMapNewTerrain, CB_ADDSTRING, 0, (LPARAM)icux::toUistring(tileset).c_str());
+                const auto & tileset = chkd.scData.terrain.get(Sc::Terrain::Tileset(currTileset));
+                for ( const auto & brushType : tileset.brushes )
+                    SendMessage(hMapNewTerrain, CB_ADDSTRING, 0, (LPARAM)icux::toUistring(std::string(brushType.name)).c_str());
 
-                SendMessage(hMapNewTerrain, WM_SETFONT, (WPARAM)defaultFont, MAKELPARAM(TRUE, 0));
-                SendMessage(hMapNewTerrain, CB_SETCURSEL, 0, 0);
+                SendMessage(hMapNewTerrain, WM_SETFONT, (WPARAM)WinLib::ResourceManager::getDefaultFont(), MAKELPARAM(TRUE, 0));
+                SendMessage(hMapNewTerrain, CB_SETCURSEL, (WPARAM)tileset.defaultBrush.brushSortOrder, NULL);
                 PostMessage(hMapNewTerrain, CB_SETEDITSEL, 0, MAKELPARAM(-1, 0));
             }
         }

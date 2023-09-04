@@ -207,10 +207,10 @@ s32 round(T value)
 }
 
 template <typename T>
-inline std::string to_hex_string(const T & t)
+inline std::string to_hex_string(const T & t, bool prefix = true)
 {
     char buf[36];
-    std::snprintf(buf, sizeof(buf)/sizeof(char), "0x%X", t);
+    std::snprintf(buf, sizeof(buf)/sizeof(char), (prefix ? "0x%X" : "%X"), t);
     return std::string(buf);
 }
 
@@ -230,5 +230,25 @@ inline std::string to_hex_string(const T & t)
 
 /** enum_t "enum type (scoped)" documentation minimized for expansion visibility, see definition for description and usage */
 #define enum_t(name, type, ...) struct name ## _ { enum type ## _ : type __VA_ARGS__; }; using name = name ## _::type ## _;
+
+template <typename T>
+class Span {
+    const T* data = nullptr;
+    size_t length = 0;
+
+public:
+    constexpr Span() {}
+    template <size_t N> constexpr Span(T const (&data)[N]) : data(&data[0]), length(N) {}
+    constexpr Span(const T* data, size_t length) : data(data), length(length) {}
+    constexpr const size_t size() const { return length; }
+    constexpr const T* begin() const { return data; }
+    constexpr const T* end() const { return data + length; }
+    constexpr const T & operator[](size_t index) const {
+        if ( index < length )
+            return data[index];
+        else
+            throw std::out_of_range("Span index out of bounds");
+    }
+};
 
 #endif

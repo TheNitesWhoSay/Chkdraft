@@ -49,9 +49,12 @@ void TerrainPaletteWindow::DoScroll()
 
 void TerrainPaletteWindow::DoPaint()
 {
-    if ( CM != nullptr && StartBufferedPaint() != NULL )
+    if ( CM != nullptr )
     {
-        HDC paintDc = GetPaintDc();
+        WinLib::DeviceContext dc(WindowsItem::getHandle(), cliWidth(), cliHeight());
+        dc.setFont(4, 14, "Microsoft Sans Serif");
+        dc.setBkMode(TRANSPARENT);
+        dc.setTextColor(RGB(255, 255, 0));
         BITMAPINFO bmi = GetBMI(32, 32);
 
         const Sc::Terrain::Tiles & tiles = chkd.scData.terrain.get(CM->getTileset());
@@ -71,7 +74,7 @@ void TerrainPaletteWindow::DoPaint()
             {
                 if ( tileHighlighted && tileValue == numHighlighted )
                 {
-                    DrawTile(paintDc, CM->getPalette(), tiles, s16(column*PIXELS_PER_TILE), s16(row*PIXELS_PER_TILE - yOffset),
+                    DrawTile(dc, CM->getPalette(), tiles, s16(column*PIXELS_PER_TILE), s16(row*PIXELS_PER_TILE - yOffset),
                         tileValue, bmi, 0, 0, 0);
 
                     COLORREF selClr = RGB(255, 255, 255);
@@ -81,38 +84,34 @@ void TerrainPaletteWindow::DoPaint()
                         rectBottom = rectTop + PIXELS_PER_TILE;
 
                     for ( int i = rectLeft; i<rectRight; i += 2 )
-                        SetPixel(paintDc, i, rectTop, selClr);
+                        dc.setPixel(i, rectTop, selClr);
                     for ( int i = rectLeft + 1; i<rectRight; i += 2 )
-                        SetPixel(paintDc, i, rectBottom, selClr);
+                        dc.setPixel(i, rectBottom, selClr);
                     for ( int i = rectTop; i<rectBottom; i += 2 )
-                        SetPixel(paintDc, rectLeft, i, selClr);
+                        dc.setPixel(rectLeft, i, selClr);
                     for ( int i = rectTop + 1; i <= rectBottom; i += 2 )
-                        SetPixel(paintDc, rectRight, i, selClr);
+                        dc.setPixel(rectRight, i, selClr);
                 }
                 else
                 {
                     if ( CM->DisplayingElevations() )
-                        DrawTileElevation(paintDc, tiles, s16(column*PIXELS_PER_TILE), s16(row*PIXELS_PER_TILE - yOffset), tileValue, bmi);
+                        DrawTileElevation(dc, tiles, s16(column*PIXELS_PER_TILE), s16(row*PIXELS_PER_TILE - yOffset), tileValue, bmi);
                     else
-                        DrawTile(paintDc, CM->getPalette(), tiles, s16(column*PIXELS_PER_TILE), s16(row*PIXELS_PER_TILE - yOffset), tileValue, bmi, 0, 0, 0);
+                        DrawTile(dc, CM->getPalette(), tiles, s16(column*PIXELS_PER_TILE), s16(row*PIXELS_PER_TILE - yOffset), tileValue, bmi, 0, 0, 0);
 
                     if ( CM->DisplayingTileNums() )
                     {
-                        SetPaintFont(14, 4, "Microsoft Sans Serif");
-                        SetBkMode(paintDc, TRANSPARENT);
-                        SetTextColor(paintDc, RGB(255, 255, 0));
-
                         char TileHex[8];
-                        WinLib::rect nullRect = {};
+                        RECT nullRect {};
                         std::snprintf(TileHex, 8, "%hu", tileValue);
-                        PaintText(TileHex, column*PIXELS_PER_TILE + 3, row*PIXELS_PER_TILE - yOffset + 2, false, true, nullRect);
+                        dc.drawText(TileHex, column*PIXELS_PER_TILE + 3, row*PIXELS_PER_TILE - yOffset + 2, nullRect, false, true);
                     }
                 }
 
                 tileValue++;
             }
         }
-        WindowsItem::EndPaint();
+        dc.flushBuffer();
     }
 }
 
@@ -127,6 +126,7 @@ void TerrainPaletteWindow::LButtonDown(WPARAM wParam, int xc, int yc)
             tileNum = yTileCoord*TILES_PER_ROW + xTileCoord;
 
         chkd.maps.clipboard.endPasting();
+        CM->setSubLayer(TerrainSubLayer::Rectangular);
         chkd.maps.clipboard.addQuickTile(tileNum, -16, -16);
         chkd.maps.startPaste(true);
 

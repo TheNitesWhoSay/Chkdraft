@@ -289,6 +289,7 @@
     <ClInclude Include="ClassDialog.h" />
     <ClInclude Include="ClassWindow.h" />
     <ClInclude Include="DataTypes.h" />
+    <ClInclude Include="DeviceContext.h" />
     <ClInclude Include="DragListControl.h" />
     <ClInclude Include="DropdownControl.h" />
     <ClInclude Include="EditControl.h" />
@@ -299,9 +300,9 @@
     <ClInclude Include="ListBoxControl.h" />
     <ClInclude Include="ListViewControl.h" />
     <ClInclude Include="MdiClient.h" />
-    <ClInclude Include="Painting.h" />
     <ClInclude Include="Popup.h" />
     <ClInclude Include="RadioButtonControl.h" />
+    <ClInclude Include="ResourceManager.h" />
     <ClInclude Include="RichEditControl.h" />
     <ClInclude Include="StatusControl.h" />
     <ClInclude Include="TabControl.h" />
@@ -329,7 +330,6 @@
     <ClCompile Include="ListBoxControl.cpp" />
     <ClCompile Include="ListViewControl.cpp" />
     <ClCompile Include="MdiClient.cpp" />
-    <ClCompile Include="Painting.cpp" />
     <ClCompile Include="Popup.cpp" />
     <ClCompile Include="RadioButtonControl.cpp" />
     <ClCompile Include="RichEditControl.cpp" />

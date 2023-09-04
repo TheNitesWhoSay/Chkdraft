@@ -25,7 +25,7 @@ enum_t(Id, u32, {
     DROP_CUSTOMMPQPATH
 });
 
-SoundEditorWindow::SoundEditorWindow() : wavQuality(WavQuality::Uncompressed), selectedSoundListIndex(-1), soundListDC(NULL)
+SoundEditorWindow::SoundEditorWindow() : wavQuality(WavQuality::Uncompressed), selectedSoundListIndex(-1), soundListDc(std::nullopt)
 {
 
 }
@@ -48,6 +48,12 @@ bool SoundEditorWindow::CreateThis(HWND hParent, u64 windowId)
     }
     else
         return false;
+}
+
+bool SoundEditorWindow::DestroyThis()
+{
+    ClassWindow::DestroyThis();
+    return true;
 }
 
 void SoundEditorWindow::RefreshWindow()
@@ -565,25 +571,27 @@ LRESULT SoundEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
             break;
 
         case WinLib::LB::WM_PREMEASUREITEMS: // Measuring is time sensative, load necessary items for measuring all strings once
-            soundListDC = listMapSounds.getDC();
+            soundListDc.emplace(listMapSounds.getHandle());
             break;
 
         case WM_MEASUREITEM:
         {
             MEASUREITEMSTRUCT* mis = (MEASUREITEMSTRUCT*)lParam;
             auto str = CM->getString<RawString>((size_t)mis->itemData);
-            if ( str && GetStringDrawSize(soundListDC, mis->itemWidth, mis->itemHeight, *str) )
+            if ( str && GetStringDrawSize(*soundListDc, mis->itemWidth, mis->itemHeight, *str) )
             {
                 mis->itemWidth += 5;
                 mis->itemHeight += 2;
+
+                if ( mis->itemHeight > 255 )
+                    mis->itemHeight = 255;
             }
             return TRUE;
         }
         break;
 
         case WinLib::LB::WM_POSTMEASUREITEMS: // Release items loaded for measurement
-            listMapSounds.ReleaseDC(soundListDC);
-            soundListDC = NULL;
+            soundListDc = std::nullopt;
             break;
 
         case WinLib::LB::WM_PREDRAWITEMS:
@@ -598,18 +606,13 @@ LRESULT SoundEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 
             if ( pdis->itemID != -1 && ( drawSelection || drawEntire ) )
             {
+                WinLib::DeviceContext dc { pdis->hDC };
                 auto str = CM->getString<RawString>((size_t)pdis->itemData);
                 if ( CM != nullptr && str )
                 {
-                    HBRUSH hBackground = CreateSolidBrush(RGB(0, 0, 0)); // Same color as in WM_CTLCOLORLISTBOX
-                    if ( hBackground != NULL )
-                    {
-                        FillRect(pdis->hDC, &pdis->rcItem, hBackground); // Draw far background
-                        DeleteObject(hBackground);
-                        hBackground = NULL;
-                    }
+                    dc.fillRect(pdis->rcItem, RGB(0, 0, 0)); // Same color as in WM_CTLCOLORLISTBOX
                     SetBkMode(pdis->hDC, TRANSPARENT);
-                    DrawString(pdis->hDC, pdis->rcItem.left+3, pdis->rcItem.top+1, pdis->rcItem.right-pdis->rcItem.left,
+                    DrawString(dc, pdis->rcItem.left+3, pdis->rcItem.top+1, pdis->rcItem.right-pdis->rcItem.left,
                         RGB(16, 252, 24), *str);
                 }
                 if ( isSelected )
@@ -672,12 +675,12 @@ void SoundEditorWindow::CreateSubWindows(HWND hWnd)
     buttonBrowse.CreateThis(hWnd, 502, 434, 80, 20, "Browse", Id::BUTTON_BROWSEFORSOUND);
     textCompressionLevel.CreateThis(hWnd, 5, 459, 100, 20, "Compression Level", Id::TEXT_COMPRESSIONLEVEL);
     const std::vector<std::string> compressionLevels = { "Uncompressed", "Low Quality", "Medium Quality", "High Quality" };
-    dropCompressionLevel.CreateThis(hWnd, 140, 459, 150, 200, false, false, Id::DROP_COMPRESSIONQUALITY, compressionLevels, defaultFont);
+    dropCompressionLevel.CreateThis(hWnd, 140, 459, 150, 200, false, false, Id::DROP_COMPRESSIONQUALITY, compressionLevels);
     dropCompressionLevel.SetSel(0);
     checkVirtualFile.CreateThis(hWnd, 300, 459, 100, 20, false, "Virtual File", Id::CHECK_VIRTUALFILE);
     buttonAddFile.CreateThis(hWnd, 502, 459, 80, 20, "Add File", Id::BUTTON_ADDFILE);
     textCustomMpqString.CreateThis(hWnd, 5, 484, 100, 20, "Custom MPQ Path", Id::TEXT_CUSTOMMPQSTRING);
-    dropCustomMpqString.CreateThis(hWnd, 140, 484, 150, 200, true, true, Id::DROP_CUSTOMMPQPATH, {}, defaultFont);
+    dropCustomMpqString.CreateThis(hWnd, 140, 484, 150, 200, true, true, Id::DROP_CUSTOMMPQPATH, {});
     checkCustomMpqString.CreateThis(hWnd, 300, 484, 150, 20, false, "Use Custom Path", Id::CHECK_CUSTOMMPQPATH);
 
     size_t numVirtualSounds = Sc::Sound::virtualSoundPaths.size();

@@ -31,7 +31,7 @@ bool MainToolbar::CreateThis(HWND hParent, u64 windowId)
 
         // Load Save-As image from resource and store the resulting index as STD_FILESAVEAS
         HIMAGELIST hImages = ImageList_Create(16, 16, 0, 1, 1);
-        HBITMAP hBmp = (HBITMAP)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDB_SAVEAS), IMAGE_BITMAP, 16, 16, LR_DEFAULTCOLOR);
+        HBITMAP hBmp = WinLib::ResourceManager::getBitmap(IDB_SAVEAS, 16, 16, LR_DEFAULTCOLOR);
         ImageList_Add(hImages, hBmp, NULL);
         TBADDBITMAP tb; tb.hInst = NULL; tb.nID = (UINT_PTR)hBmp;
         int STD_FILESAVEAS = (int)SendMessage(hTool, TB_ADDBITMAP, 0, (LPARAM)&tb);
@@ -68,14 +68,14 @@ bool MainToolbar::CreateThis(HWND hParent, u64 windowId)
 
         // Add layer ComboBox to toolbar
         const std::vector<std::string> layerStrings = { "Terrain", "Doodads", "Fog of War", "Locations", "Units", "Sprites", "Preview Fog", "Copy\\Cut\\Paste\\Brush" };
-        layerBox.CreateThis(hTool, 277, 2, 110, 200, false, false, Id::COMBOBOX_LAYER, layerStrings, defaultFont);
+        layerBox.CreateThis(hTool, 277, 2, 110, 200, false, false, Id::COMBOBOX_LAYER, layerStrings);
         layerBox.SetSel(0);
         ShowWindow(layerBox.getHandle(), SW_HIDE); // Hide until a map is open
 
         // Add zoom ComboBox to toolbar
         const std::vector<std::string> zoomStrings = { "400% Zoom", "300% Zoom", "200% Zoom", "150% Zoom", "100% Zoom", "66% Zoom",
                                       "50% Zoom", "33% Zoom", "25% Zoom", "10% Zoom"};
-        zoomBox.CreateThis(hTool, 395, 2, 80, 200, false, false, Id::COMBOBOX_ZOOM, zoomStrings, defaultFont);
+        zoomBox.CreateThis(hTool, 395, 2, 80, 200, false, false, Id::COMBOBOX_ZOOM, zoomStrings);
         zoomBox.SetSel(4);
         ShowWindow(zoomBox.getHandle(), SW_HIDE); // Hide until a map is open
 
@@ -85,7 +85,7 @@ bool MainToolbar::CreateThis(HWND hParent, u64 windowId)
 
         // Add terrain ComboBox to toolbar
         const std::vector<std::string> terrPalette = { "Isometrical", "Rectangular", "Subtile", "Tileset Indexed", "Copy/Cut/Paste" };
-        terrainBox.CreateThis(hTool, 483, 2, 100, 200, false, false, Id::COMBOBOX_TERRAIN, terrPalette, defaultFont);
+        terrainBox.CreateThis(hTool, 483, 2, 100, 200, false, false, Id::COMBOBOX_TERRAIN, terrPalette);
         terrainBox.SetSel(0);
         ShowWindow(terrainBox.getHandle(), SW_HIDE); // Hide until a map is open
 

@@ -67,6 +67,12 @@ bool UpgradeSettingsWindow::CreateThis(HWND hParent, u64 windowId)
         return false;
 }
 
+bool UpgradeSettingsWindow::DestroyThis()
+{
+    ClassWindow::DestroyThis();
+    return true;
+}
+
 void UpgradeSettingsWindow::RefreshWindow()
 {
     refreshing = true;

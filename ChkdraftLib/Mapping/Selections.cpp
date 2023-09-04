@@ -291,11 +291,39 @@ void Selections::finishMove()
     }
 }
 
+void Selections::addDoodad(size_t index)
+{
+    if ( !doodadIsSelected(index) )
+        selDoodads.insert(selDoodads.begin(), index);
+}
+
+void Selections::removeDoodad(size_t index)
+{
+    auto toErase = std::find(selDoodads.begin(), selDoodads.end(), index);
+    if ( toErase != selDoodads.end() )
+        selDoodads.erase(toErase);
+}
+
+void Selections::removeDoodads()
+{
+    selDoodads.clear();
+}
+
 bool Selections::unitIsSelected(u16 index)
 {
     for ( u16 & unitIndex : selUnits )
     {
         if ( unitIndex == index )
+            return true;
+    }
+    return false;
+}
+
+bool Selections::doodadIsSelected(size_t index)
+{
+    for ( size_t doodadIndex : selDoodads )
+    {
+        if ( doodadIndex == index )
             return true;
     }
     return false;
@@ -349,10 +377,23 @@ std::vector<u16> & Selections::getUnits()
     return selUnits;
 }
 
+std::vector<size_t> & Selections::getDoodads()
+{
+    return selDoodads;
+}
+
 u16 Selections::getFirstUnit()
 {
     if ( selUnits.size() > 0 )
         return selUnits[0];
+    else
+        return 0;
+}
+
+u16 Selections::getFirstDoodad()
+{
+    if ( selDoodads.size() > 0 )
+        return u16(selDoodads[0]);
     else
         return 0;
 }

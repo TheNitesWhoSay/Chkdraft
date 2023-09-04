@@ -260,7 +260,7 @@ bool MapFile::openTemporaryMpq()
                 temporaryMpqPath = temporaryMpq.getFilePath();
                 return true;
             }
-        } catch ( std::exception ) {
+        } catch ( ... ) {
             CHKD_ERR("Failed to setup temporary asset storage, out of memory!");
         }
     }

@@ -81,7 +81,7 @@ class TriggersWindow : public WinLib::ClassWindow
         PeerListBox listGroups;
         WinLib::ListBoxControl listTriggers;
         TextTrigGenerator textTrigGenerator; // Text trig generator for assisting trigger display
-        HDC trigListDC; // Trig list HDC for speeding up trigger measurement
+        std::optional<WinLib::DeviceContext> trigListDc; // Trig list HDC for speeding up trigger measurement
         std::hash<std::string> strHash; // A hasher to help generate tables
         struct CommentSize {
             std::string str;
@@ -93,9 +93,9 @@ class TriggersWindow : public WinLib::ClassWindow
 
         bool ShowTrigger(const Chk::Trigger & trigger); // Checks if trigger should currently be shown
         void ClearGroups();
-        bool GetTriggerDrawSize(HDC hDC, UINT & width, UINT & height, Scenario & chk, u32 triggerNum, const Chk::Trigger & trigger);
-        void DrawGroup(HDC hDC, RECT & rcItem, bool isSelected, u8 groupNum);
-        void DrawTrigger(HDC hDC, RECT & rcItem, bool isSelected, Scenario & chk, u32 triggerNum, const Chk::Trigger & trigger);
+        bool GetTriggerDrawSize(const WinLib::DeviceContext & dc, UINT & width, UINT & height, Scenario & chk, u32 triggerNum, const Chk::Trigger & trigger);
+        void DrawGroup(const WinLib::DeviceContext & dc, RECT & rcItem, bool isSelected, u8 groupNum);
+        void DrawTrigger(const WinLib::DeviceContext & dc, RECT & rcItem, bool isSelected, Scenario & chk, u32 triggerNum, const Chk::Trigger & trigger);
         void PrepDoubleBuffer(HWND hWnd, HDC hDC);
 };
 

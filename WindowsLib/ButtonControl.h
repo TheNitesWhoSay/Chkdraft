@@ -13,9 +13,6 @@ namespace WinLib {
             LRESULT ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
             bool SetText(const std::string & newText); // Sets new text content
             bool SetImageFromResourceId(u64 resourceId);
-
-        private:
-            HBITMAP image;
     };
 
 }

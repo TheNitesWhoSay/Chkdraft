@@ -59,7 +59,8 @@ bool TrigPlayersWindow::CreateThis(HWND hParent, u64 windowId)
 
 bool TrigPlayersWindow::DestroyThis()
 {
-    return false;
+    ClassWindow::DestroyThis();
+    return true;
 }
 
 void TrigPlayersWindow::RefreshWindow(u32 trigIndex)

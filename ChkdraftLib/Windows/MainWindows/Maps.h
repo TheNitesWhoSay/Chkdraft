@@ -22,7 +22,7 @@ class Maps : public WinLib::MdiClient
         GuiMapPtr GetMap(u16 mapId);
         u16 GetMapID(GuiMapPtr guiMap);
 
-        bool NewMap(Sc::Terrain::Tileset tileset, u16 width, u16 height);
+        bool NewMap(Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex);
         bool OpenMap(const std::string & fileName);
         bool OpenMap(FileBrowserPtr<SaveType> fileBrowser = MapFile::getDefaultOpenMapBrowser());
         bool SaveCurr(bool saveAs);
@@ -33,6 +33,7 @@ class Maps : public WinLib::MdiClient
         void SetGrid(s16 xSize, s16 ySize);
         void SetGridColor(u8 red, u8 green, u8 blue);
         void ChangeLayer(Layer newLayer);
+        void ChangeSubLayer(TerrainSubLayer subLayer);
         void ChangeZoom(bool increment);
         void ChangePlayer(u8 newPlayer);
         void cut();

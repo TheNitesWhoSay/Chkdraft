@@ -1,6 +1,7 @@
 #ifndef WINDOWSITEM_H
 #define WINDOWSITEM_H
 #include "DataTypes.h"
+#include "DeviceContext.h"
 #include <list>
 #include <optional>
 #include <string>
@@ -23,6 +24,7 @@ namespace WinLib {
             bool operator==(HWND hWnd); // Tests whether the encapsulated handle equals this handle
             HWND getHandle();
             HWND getParent();
+            DeviceContext getDeviceContext();
 
             int GetWinTextLen();
             std::optional<std::string> GetWinText();
@@ -36,15 +38,16 @@ namespace WinLib {
             bool getClientRect(RECT & rect);
             LONG cliWidth();
             LONG cliHeight();
-            HDC getDC(); // Gets the current device context
             bool isEnabled();
 
             LONG GetWinLong(int index);
             void SetWinLong(int index, LONG newLong);
 
-            void SetFont(HFONT font, bool redrawImmediately);
-            void SetFont(int height, int width, const std::string & fontString, bool redrawImmediately);
-            void ReplaceChildFonts(HFONT hFont);
+            void setFont(int width, int height, const std::string & fontName, bool redrawImmediately = true);
+            void setDefaultFont(bool redrawImmediately = true);
+            void replaceChildFonts(int width, int height, const std::string & fontName);
+            void defaultChildFonts();
+
             void LockCursor(); // Prevents cursor from leaving this window
             void UnlockCursor(); // Globally unlocks the cursor
             void TrackMouse(DWORD hoverTime); // Causes mouse tracking messages to be sent to this window
@@ -58,12 +61,11 @@ namespace WinLib {
             void ShowNormal();
             void Show();
             void Hide();
-            void SetSmallIcon(HANDLE hIcon);
-            void SetMedIcon(HANDLE hIcon);
+            void SetSmallIcon(HICON hIcon);
+            void SetMedIcon(HICON hIcon);
             bool SetWinText(const std::string & newText);
             bool AddTooltip(const std::string & text);
 
-            bool ReleaseDC(HDC hDC);
             void FocusThis();
             void UpdateWindow();
             virtual void EnableThis();
@@ -95,35 +97,11 @@ namespace WinLib {
 
             std::string & WindowClassName();
 
-            HDC StartSimplePaint();
-            HDC StartBufferedPaint();
-            HDC GetPaintDc();
-            void SetPaintFont(int height, int width, const std::string & fontString);
-            void PaintText(const std::string & str, int x, int y, bool clipped, bool opaque, const rect & rc);
-            void EndPaint();
-
-            int PaintWidth();
-            int PaintHeight();
-
-            void FillPaintArea(HBRUSH hBrush);
-            void FrameRect(HBRUSH hBrush, RECT & rect);
-
         private:
             HWND windowsItemHandle; // Handle to the window this class encapsulates
             HWND tooltipHandle; // Handle to any tooltip created for this class
             std::string windowClassName; // May contain the window class title before the window is created
             static std::list<std::string> registeredClasses; // Contains the names of all window classes registered by this class
-            HFONT hFont;
-
-            RECT paintRect;
-            int paintWidth;
-            int paintHeight;
-            HDC paintDc;
-            HDC paintFinalDc;
-            HFONT paintFont;
-            HBITMAP paintMemBitmap;
-            enum class PaintStatus { NotPainting, SimplePaint, BufferedPaint };
-            PaintStatus paintStatus;
     };
 
     #define MAX_LPSZMENUNAME_LENGTH 256

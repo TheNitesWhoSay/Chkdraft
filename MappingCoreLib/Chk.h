@@ -20,7 +20,7 @@
 namespace Chk {
 #pragma pack(push, 1)
 
-    struct Unit; struct IsomEntry; struct Doodad; struct Sprite; struct Cuwp; struct Location; struct Condition; struct Action; struct Trigger; struct StringProperties;
+    struct Unit; struct IsomRect; struct Doodad; struct Sprite; struct Cuwp; struct Location; struct Condition; struct Action; struct Trigger; struct StringProperties;
     struct ExtendedTrigData; struct TriggerGroup;
 
     enum_t(Type, u32, { // u32
@@ -150,15 +150,163 @@ namespace Chk {
             hitpointPercent, shieldPercent, energyPercent, resourceAmount, hangerAmount, stateFlags, unused, relationClassId)
     }; // 36 (0x24) bytes
 
-    __declspec(align(1)) struct IsomEntry { // 8 bytes
-        u16 left;
-        u16 top;
-        u16 right;
-        u16 bottom;
+    struct IsomRect
+    {
+        using Side = Sc::Isom::Side;
 
-        REFLECT(IsomEntry, left, top, right, bottom)
+        struct EditorFlag_ {
+            enum uint16_t_ : uint16_t {
+                Modified = 0x0001,
+                Visited = 0x8000,
+
+                xModified = 0xFFFE,
+                xVisited = 0x7FFF,
+
+                ClearAll = 0x7FFE
+            };
+        };
+        using EditorFlag = EditorFlag_::uint16_t_;
+
+        struct Point
+        {
+            size_t x;
+            size_t y;
+        };
+
+        struct IsomDiamond // A "diamond" exists along the isometric coordinate space and has a projection to an 8x4 rectangular shape with four quadrants
+        {
+            struct Neighbor_ {
+                enum int_ : int {
+                    UpperLeft,
+                    UpperRight,
+                    LowerRight,
+                    LowerLeft
+                };
+            };
+            using Neighbor = Neighbor_::int_;
+            static constexpr Neighbor neighbors[] { Neighbor::UpperLeft, Neighbor::UpperRight, Neighbor::LowerRight, Neighbor::LowerLeft };
+
+            size_t x;
+            size_t y;
+
+            constexpr IsomDiamond getNeighbor(Neighbor neighbor) const {
+                switch ( neighbor ) {
+                    case Neighbor::UpperLeft: return { x - 1, y - 1 };
+                    case Neighbor::UpperRight: return { x + 1, y - 1 };
+                    case Neighbor::LowerRight: return { x + 1, y + 1 };
+                    default: /*Neighbor::LowerLeft*/ return { x - 1, y + 1 };
+                }
+            }
+            constexpr Point getRectangleCoords(Sc::Isom::Quadrant quadrant) const {
+                switch ( quadrant ) {
+                    case Sc::Isom::Quadrant::TopLeft: return Point { x - 1, y - 1 };
+                    case Sc::Isom::Quadrant::TopRight: return Point { x, y - 1 };
+                    case Sc::Isom::Quadrant::BottomRight: return Point { x, y }; // Diamond (x, y) is the same as the diamonds bottom-right rectangle (x, y)
+                    default: /*Sc::Isom::Quadrant::BottomLeft*/ return Point { x - 1, y };
+                }
+            }
+            constexpr operator Point() const { return { x, y }; } // Conversion implies going to the bottom-right rectangle for the isom diamond
+            constexpr bool isValid() const { return (x+y)%2 == 0; }
+
+            static constexpr IsomDiamond fromMapCoordinates(size_t x, size_t y)
+            {
+                s32 calcX = s32(x) - s32(y)*2;
+                s32 calcY = s32(x)/2 + s32(y);
+                calcX -= ((calcX-64) & 127);
+                calcY -= ((calcY-32) & 63);
+                return { size_t(((calcY + 32 + (calcX / 2 + 64 / 2)) / 32) / 2), size_t(((calcY + 32 - (calcX / 2 + 64 / 2)) / 2) / 32) };
+            }
+
+            static constexpr IsomDiamond none() { return {std::numeric_limits<size_t>::max(), std::numeric_limits<size_t>::max()}; }
+
+            constexpr bool operator!=(const IsomDiamond & other) { return this->x != other.x || this->y != other.y; }
+        };
+
+        uint16_t left = 0;
+        uint16_t top = 0;
+        uint16_t right = 0;
+        uint16_t bottom = 0;
+
+        constexpr IsomRect() = default;
+        constexpr IsomRect(uint16_t left, uint16_t top, uint16_t right, uint16_t bottom) : left(left), top(top), right(right), bottom(bottom) {}
+
+        constexpr uint16_t & side(Side side) {
+            switch ( side ) {
+                case Side::Left: return left;
+                case Side::Top: return top;
+                case Side::Right: return right;
+                default: /*Side::Bottom*/ return bottom;
+            }
+        }
+
+        constexpr uint16_t getIsomValue(Side side) const {
+            switch ( side ) {
+                case Side::Left: return left & EditorFlag::ClearAll;
+                case Side::Top: return top & EditorFlag::ClearAll;
+                case Side::Right: return right & EditorFlag::ClearAll;
+                default: /*Side::Bottom*/ return bottom & EditorFlag::ClearAll;
+            }
+        }
+
+        constexpr void setIsomValue(Side side, uint16_t value) {
+            this->side(side) = value;
+        }
+
+        constexpr uint32_t getHash(Span<Sc::Isom::ShapeLinks> isomLinks) const
+        {
+            uint32_t hash = 0;
+            uint16_t lastTerrainType = 0;
+            for ( auto side : Sc::Isom::sides )
+            {
+                auto isomValue = this->getIsomValue(side);
+                const auto & shapeLinks = isomLinks[isomValue >> 4];
+                auto edgeLink = shapeLinks.getEdgeLink(isomValue);
+                hash = (hash | uint32_t(edgeLink)) << 6;
+
+                if ( shapeLinks.terrainType != 0 && edgeLink > Sc::Isom::Link::SoftLinks )
+                    lastTerrainType = shapeLinks.terrainType;
+            }
+            return hash | lastTerrainType; // 6 bits per component (left, top, right, bottom, terrainType)
+        }
+
+        constexpr void set(Sc::Isom::ProjectedQuadrant quadrant, uint16_t value) {
+            setIsomValue(quadrant.firstSide, (value << 4) | quadrant.firstEdgeFlags);
+            setIsomValue(quadrant.secondSide, (value << 4) | quadrant.secondEdgeFlags);
+        }
+
+        constexpr bool isLeftModified() const { return left & EditorFlag::Modified; }
+
+        constexpr bool isLeftOrRightModified() const { return ((left | right) & EditorFlag::Modified) == EditorFlag::Modified; }
+
+        constexpr void setModified(Sc::Isom::ProjectedQuadrant quadrant) {
+            this->side(quadrant.firstSide) |= EditorFlag::Modified;
+            this->side(quadrant.secondSide) |= EditorFlag::Modified;
+        }
+
+        constexpr bool isVisited() const { return (right & EditorFlag::Visited) == EditorFlag::Visited; }
+
+        constexpr void setVisited() { right |= EditorFlag::Visited; }
+
+        constexpr void clearEditorFlags() {
+            left &= EditorFlag::ClearAll;
+            top &= EditorFlag::ClearAll;
+            right &= EditorFlag::ClearAll;
+            bottom &= EditorFlag::ClearAll;
+        }
+
+        constexpr void clear() {
+            left = 0;
+            top = 0;
+            right = 0;
+            bottom = 0;
+        }
+
+        REFLECT(IsomRect, left, top, right, bottom)
     };
-    
+    static_assert(sizeof(IsomRect) == 8, "IsomRect must be exactly 8 bytes!");
+
+    using IsomDiamond = IsomRect::IsomDiamond;
+
     __declspec(align(1)) struct Doodad
     {
         enum_t(Enabled, u8, {
@@ -178,7 +326,15 @@ namespace Chk {
     __declspec(align(1)) struct Sprite
     {
         enum_t(SpriteFlags, u16, {
+            BitZero = BIT_0, // Used by at least one doodad-sprite
+            BitFour = BIT_4, // Used by at least one doodad-sprite
+            BitSeven = BIT_7, // Used by at least one doodad-sprite
+            BitEight = BIT_8, // Used by at least one doodad-sprite
+            BitNine = BIT_9, // Used by at least one doodad-sprite
+            BitTen = BIT_10, // Used by at least one doodad-sprite
             DrawAsSprite = BIT_12, // If deselected this is a SpriteUnit
+            BitThirteen = BIT_13, // Used by at least one doodad-sprite
+            OverlayFlipped = BIT_14,
             Disabled = BIT_15 // Only valid if draw as sprite is unchecked, disables the unit
         });
 
@@ -986,7 +1142,7 @@ namespace Chk {
         sizePlusOneStep = BIT_7
     });
     
-    enum_t(StrScope, u32, { // u32
+    enum_t(StrScope, u32, { // u32 // TODO: Rename this to just "Scope"
         None = 0,
         Game = BIT_1,
         Editor = BIT_2,
@@ -1249,7 +1405,7 @@ namespace Chk {
     }; // Size: Multiple of 36 (validated)
     
     __declspec(align(1)) struct ISOM {
-        //IsomEntry isomData[0]; // IsomEntry isomData[tileWidth/2 + 1][tileHeight + 1]; // Access x*2, width*y
+        //IsomRect isomRect[0]; // IsomRect isomRects[tileWidth/2 + 1][tileHeight + 1]; // Access x*2, width*y
     }; // Size: (tileWidth / 2 + 1) * (tileHeight + 1) * 8 (not validated)
     
     __declspec(align(1)) struct TILE {
@@ -1641,7 +1797,7 @@ namespace Chk {
     };
     
     std::ostream & operator<< (std::ostream & out, const Unit & unit);
-    std::ostream & operator<< (std::ostream & out, const IsomEntry & isomEntry);
+    std::ostream & operator<< (std::ostream & out, const IsomRect & isomRect);
     std::ostream & operator<< (std::ostream & out, const Doodad & doodad);
     std::ostream & operator<< (std::ostream & out, const Sprite & sprite);
     std::ostream & operator<< (std::ostream & out, const Location & location);
@@ -1832,6 +1988,138 @@ namespace Chk {
             StrProp strProp; // Additional color and font details, if this string is extended and gets stored
 
             static void adopt(ScStr* parent, ScStr* child, size_t parentLength, size_t childLength, const char* parentSubString);
+    };
+
+    struct IsomRectUndo {
+        Chk::IsomDiamond diamond {};
+        Chk::IsomRect oldValue {};
+        Chk::IsomRect newValue {};
+
+        constexpr void setOldValue(const Chk::IsomRect & oldValue) {
+            this->oldValue.left = oldValue.left & Chk::IsomRect::EditorFlag::ClearAll;
+            this->oldValue.right = oldValue.right & Chk::IsomRect::EditorFlag::ClearAll;
+            this->oldValue.top = oldValue.top & Chk::IsomRect::EditorFlag::ClearAll;
+            this->oldValue.bottom = oldValue.bottom & Chk::IsomRect::EditorFlag::ClearAll;
+        }
+
+        constexpr void setNewValue(const Chk::IsomRect & newValue) {
+            this->newValue.left = newValue.left & Chk::IsomRect::EditorFlag::ClearAll;
+            this->newValue.right = newValue.right & Chk::IsomRect::EditorFlag::ClearAll;
+            this->newValue.top = newValue.top & Chk::IsomRect::EditorFlag::ClearAll;
+            this->newValue.bottom = newValue.bottom & Chk::IsomRect::EditorFlag::ClearAll;
+        }
+
+        IsomRectUndo(Chk::IsomDiamond diamond, const Chk::IsomRect & oldValue, const Chk::IsomRect & newValue)
+            : diamond(diamond)
+        {
+            setOldValue(oldValue);
+            setNewValue(newValue);
+        }
+    };
+
+    // IsomCache holds all the data required to edit isometric terrain which is not a part of scenario; as well as methods that operate on said data exclusively
+    // IsomCache is invalidated & must be re-created whenever tileset, map width, or map height changes
+    struct IsomCache
+    {
+        Sc::Terrain::Tileset tileset; // If tileset changes the cache should be recreated with the new tileset
+        size_t isomWidth; // This is a sort of isometric width, not tileWidth
+        size_t isomHeight; // This is a sort of isometric height, not tileHeight
+        Sc::BoundingBox changedArea {};
+
+        std::vector<std::optional<IsomRectUndo>> undoMap {}; // Undo per x, y coordinate
+
+        Span<Sc::Terrain::TileGroup> tileGroups {};
+        Span<Sc::Isom::ShapeLinks> isomLinks {};
+        Span<Sc::Isom::TerrainTypeInfo> terrainTypes {};
+        Span<uint16_t> terrainTypeMap {};
+        const std::unordered_map<uint32_t, std::vector<uint16_t>>* hashToTileGroup;
+
+        inline IsomCache(Sc::Terrain::Tileset tileset, size_t tileWidth, size_t tileHeight, const Sc::Terrain::Tiles & tilesetData) :
+            tileset(tileset),
+            isomWidth(tileWidth/2 + 1),
+            isomHeight(tileHeight + 1),
+            tileGroups(&tilesetData.tileGroups[0], tilesetData.tileGroups.size()),
+            isomLinks(&tilesetData.isomLinks[0], tilesetData.isomLinks.size()),
+            terrainTypes(&tilesetData.terrainTypes[0], tilesetData.terrainTypes.size()),
+            terrainTypeMap(&tilesetData.terrainTypeMap[0], tilesetData.terrainTypeMap.size()),
+            hashToTileGroup(&tilesetData.hashToTileGroup),
+            undoMap(isomWidth*isomHeight, std::nullopt)
+        {
+            resetChangedArea();
+        }
+
+        constexpr void resetChangedArea()
+        {
+            changedArea.left = isomWidth;
+            changedArea.right = 0;
+            changedArea.top = isomHeight;
+            changedArea.bottom = 0;
+        }
+
+        constexpr void setAllChanged()
+        {
+            changedArea.left = 0;
+            changedArea.right = isomWidth-1;
+            changedArea.top = 0;
+            changedArea.bottom = isomHeight-1;
+        }
+
+        constexpr uint16_t getTerrainTypeIsomValue(size_t terrainType) const
+        {
+            return terrainType < terrainTypes.size() ? terrainTypes[terrainType].isomValue : 0;
+        }
+
+        inline uint16_t getRandomSubtile(uint16_t tileGroup) const
+        {
+            if ( tileGroup < tileGroups.size() )
+            {
+                size_t totalCommon = 0;
+                size_t totalRare = 0;
+                for ( ; totalCommon < 16 && tileGroups[tileGroup].megaTileIndex[totalCommon] != 0; ++totalCommon );
+                for ( ; totalCommon+totalRare+1 < 16 && tileGroups[tileGroup].megaTileIndex[totalCommon+totalRare+1] != 0; ++totalRare );
+
+                if ( totalRare != 0 && std::rand() <= RAND_MAX / 20 ) // 1 in 20 chance of using a rare tile
+                    return 16*tileGroup + uint16_t(totalCommon + 1 + (std::rand() % totalRare)); // Select particular rare tile
+                else if ( totalCommon != 0 ) // Use a common tile
+                    return 16*tileGroup + uint16_t(std::rand() % totalCommon); // Select particular common tile
+            }
+            return 16*tileGroup; // Default/fall-back to first tile in group
+        }
+
+        virtual inline void setTileValue(size_t tileX, size_t tileY, uint16_t tileValue) {} // Does nothing unless overridden
+
+        virtual inline void addIsomUndo(const IsomRectUndo & /*isomUndo*/) {} // Does nothing unless overridden
+
+        // Call when one undoable operation is complete, e.g. resize a map, or mouse up after pasting/brushing some terrain
+        // When changing lots of terrain (e.g. by holding the mouse button and moving around), undos are blocked from being added to the same tiles multiple times
+        // Calling this method clears out said blockers
+        inline void finalizeUndoableOperation()
+        {
+            undoMap.assign(isomWidth*isomHeight, std::nullopt); // Clears out the undoMap so new entries can be set
+        }
+    };
+
+    // When tiles change doodads may be invalidated and need to be removed (depending on editor configuration settings)
+    // It can be very expensive to check for doodads when performing a lot of tile operations at once (e.g. dragging around an ISOM brush or tile-paste)
+    // DoodadCache provides a constant-runtime means of checking whether a tile includes a doodad and potentially requires further operations
+    class DoodadCache
+    {
+        std::vector<bool> doodadPresence {};
+
+    public:
+        DoodadCache() = default;
+
+        DoodadCache(std::vector<bool> & doodadPresence) {
+            this->doodadPresence.swap(doodadPresence);
+        }
+
+        bool tileOccupied(size_t x, size_t y, size_t tileWidth) const {
+            return doodadPresence[tileWidth*y+x];
+        }
+
+        void swap(DoodadCache & other) {
+            this->doodadPresence.swap(other.doodadPresence);
+        }
     };
 }
 

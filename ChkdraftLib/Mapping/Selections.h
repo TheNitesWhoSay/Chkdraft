@@ -65,8 +65,14 @@ class Selections
         void finishSwap();
         void finishMove();
 
+        void addDoodad(size_t index);
+        void removeDoodad(size_t index);
+        void removeDoodads();
+
         bool unitIsSelected(u16 index);
+        bool doodadIsSelected(size_t doodadIndex);
         bool hasUnits() { return selUnits.size() > 0; }
+        bool hasDoodads() { return selDoodads.size() > 0; }
         bool hasTiles() { return selTiles.size() > 0; }
         u16 numUnits();
         u16 numUnitsUnder(u16 index);
@@ -74,7 +80,9 @@ class Selections
         std::vector<TileNode> & getTiles();
         TileNode getFirstTile();
         std::vector<u16> & getUnits();
+        std::vector<size_t> & getDoodads();
         u16 getFirstUnit();
+        u16 getFirstDoodad();
         u16 getLastUnit();
         u16 getHighestIndex();
         u16 getLowestIndex();
@@ -91,6 +99,7 @@ class Selections
         POINT endDrag;
 
         std::vector<u16> selUnits;
+        std::vector<size_t> selDoodads;
         std::vector<TileNode> selTiles;
 
         u16 selectedLocation;

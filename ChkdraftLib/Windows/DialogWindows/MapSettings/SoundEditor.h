@@ -10,6 +10,7 @@ class SoundEditorWindow : public WinLib::ClassWindow
         SoundEditorWindow();
         virtual ~SoundEditorWindow();
         bool CreateThis(HWND hParent, u64 windowId);
+        bool DestroyThis();
         void RefreshWindow();
 
     protected:
@@ -64,7 +65,7 @@ class SoundEditorWindow : public WinLib::ClassWindow
 
         int selectedSoundListIndex;
         WavQuality wavQuality;
-        HDC soundListDC; // Sound list HDC for speeding up string measurement
+        std::optional<WinLib::DeviceContext> soundListDc; // Sound list HDC for speeding up string measurement
         std::map<u32/*stringId*/, u16/*soundIndex*/> soundMap;
         static FileBrowserPtr<u32> getDefaultSoundBrowser();
         static FileBrowserPtr<u32> getDefaultSoundSaver();

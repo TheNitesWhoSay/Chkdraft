@@ -26,7 +26,8 @@ bool CountersWindow::CreateThis(HWND hParent, u64 windowId)
 
 bool CountersWindow::DestroyThis()
 {
-    return false;
+    ClassWindow::DestroyThis();
+    return true;
 }
 
 void CountersWindow::RefreshWindow()

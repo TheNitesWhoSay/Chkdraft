@@ -1502,9 +1502,9 @@ std::ostream & Chk::operator<< (std::ostream & out, const Chk::Unit & unit)
     return out;
 }
 
-std::ostream & Chk::operator<< (std::ostream & out, const Chk::IsomEntry & isomEntry)
+std::ostream & Chk::operator<< (std::ostream & out, const Chk::IsomRect & isomRect)
 {
-    out.write(reinterpret_cast<const char*>(&isomEntry), sizeof(Chk::IsomEntry));
+    out.write(reinterpret_cast<const char*>(&isomRect), sizeof(Chk::IsomRect));
     return out;
 }
 

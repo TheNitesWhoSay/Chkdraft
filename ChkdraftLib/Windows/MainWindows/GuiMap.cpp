@@ -1,23 +1,23 @@
 #include "GuiMap.h"
 #include "../../Chkdraft.h"
+#include "../../Mapping/Undos/ChkdUndos/IsomChange.h"
 #include "../../Mapping/Undos/ChkdUndos/TileChange.h"
+#include "../../Mapping/Undos/ChkdUndos/MtxmChange.h"
 #include "../../Mapping/Undos/ChkdUndos/UnitChange.h"
 #include "../../Mapping/Undos/ChkdUndos/UnitCreateDel.h"
 #include "../../Mapping/Undos/ChkdUndos/LocationCreateDel.h"
 #include "../../Mapping/Undos/ChkdUndos/LocationMove.h"
 #include "../../Mapping/Undos/ChkdUndos/LocationChange.h"
+#include "../../Mapping/Undos/ChkdUndos/DoodadChange.h"
+#include "../../Mapping/Undos/ChkdUndos/DoodadCreateDel.h"
 #include "../../../CrossCutLib/Logger.h"
 #include <WindowsX.h>
 
 bool GuiMap::doAutoBackups = false;
 
-GuiMap::GuiMap(Clipboard & clipboard, const std::string & filePath)
-    : MapFile(filePath), clipboard(clipboard), selections(*this), graphics(*this, selections),
-    screenLeft(0), screenTop(0),
-    bitmapHeight(0), bitmapWidth(0), currLayer(Layer::Terrain), currPlayer(0), zoom(1), RedrawMiniMap(true), RedrawMap(true),
-    dragging(false), snapLocations(true), locSnapTileOverGrid(true), lockAnywhere(true),
-    snapUnits(true), stackUnits(false), mapId(0), unsavedChanges(false), changeLock(false), undos(*this),
-    minSecondsBetweenBackups(1800), lastBackupTime(-1), panStartX(-1), panStartY(-1), panCurrentX(0), panCurrentY(0), panTimerID(0)
+GuiMap::GuiMap(Clipboard & clipboard, const std::string & filePath) : MapFile(filePath),
+    Chk::IsomCache(Scenario::tileset, Scenario::dimensions.tileWidth, Scenario::dimensions.tileHeight, chkd.scData.terrain.get(Scenario::tileset)),
+    clipboard(clipboard)
 {
     SetWinText(MapFile::getFileName());
     int layerSel = chkd.mainToolbar.layerBox.GetSel();
@@ -25,13 +25,9 @@ GuiMap::GuiMap(Clipboard & clipboard, const std::string & filePath)
         currLayer = (Layer)layerSel;
 }
 
-GuiMap::GuiMap(Clipboard & clipboard, FileBrowserPtr<SaveType> fileBrowser)
-    : MapFile(fileBrowser), clipboard(clipboard), selections(*this), graphics(*this, selections),
-    screenLeft(0), screenTop(0),
-    bitmapHeight(0), bitmapWidth(0), currLayer(Layer::Terrain), currPlayer(0), zoom(1), RedrawMiniMap(true), RedrawMap(true),
-    dragging(false), snapLocations(true), locSnapTileOverGrid(true), lockAnywhere(true),
-    snapUnits(true), stackUnits(false), mapId(0), unsavedChanges(false), changeLock(false), undos(*this),
-    minSecondsBetweenBackups(1800), lastBackupTime(-1), panStartX(-1), panStartY(-1), panCurrentX(0), panCurrentY(0), panTimerID(0)
+GuiMap::GuiMap(Clipboard & clipboard, FileBrowserPtr<SaveType> fileBrowser) : MapFile(fileBrowser),
+    Chk::IsomCache(Scenario::tileset, Scenario::dimensions.tileWidth, Scenario::dimensions.tileHeight, chkd.scData.terrain.get(Scenario::tileset)),
+    clipboard(clipboard)
 {
     SetWinText(MapFile::getFileName());
     int layerSel = chkd.mainToolbar.layerBox.GetSel();
@@ -39,14 +35,17 @@ GuiMap::GuiMap(Clipboard & clipboard, FileBrowserPtr<SaveType> fileBrowser)
         currLayer = (Layer)layerSel;
 }
 
-GuiMap::GuiMap(Clipboard & clipboard, Sc::Terrain::Tileset tileset, u16 width, u16 height)
-    : MapFile(tileset, width, height), clipboard(clipboard), selections(*this), graphics(*this, selections),
-    screenLeft(0), screenTop(0),
-    bitmapHeight(0), bitmapWidth(0), currLayer(Layer::Terrain), currPlayer(0), zoom(1), RedrawMiniMap(true), RedrawMap(true),
-    dragging(false), snapLocations(true), locSnapTileOverGrid(true), lockAnywhere(true),
-    snapUnits(true), stackUnits(false), mapId(0), unsavedChanges(false), changeLock(false), undos(*this),
-    minSecondsBetweenBackups(1800), lastBackupTime(-1), panStartX(-1), panStartY(-1), panCurrentX(0), panCurrentY(0), panTimerID(0)
+GuiMap::GuiMap(Clipboard & clipboard, Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex)
+    : MapFile(tileset, width, height),
+    Chk::IsomCache(Scenario::tileset, Scenario::dimensions.tileWidth, Scenario::dimensions.tileHeight, chkd.scData.terrain.get(Scenario::tileset)),
+    clipboard(clipboard)
 {
+    uint16_t val = ((Chk::IsomCache::getTerrainTypeIsomValue(terrainTypeIndex) << 4) | Chk::IsomRect::EditorFlag::Modified);
+    Scenario::isomRects.assign(Scenario::getIsomWidth()*Scenario::getIsomHeight(), Chk::IsomRect{val, val, val, val});
+    Chk::IsomCache::setAllChanged();
+    refreshDoodadCache();
+    Scenario::updateTilesFromIsom(*this);
+
     graphics.updatePalette();
     int layerSel = chkd.mainToolbar.layerBox.GetSel();
     if ( layerSel != CB_ERR )
@@ -99,20 +98,17 @@ bool GuiMap::SaveFile(bool saveAs)
         return false;
 }
 
-bool GuiMap::SetTile(s32 x, s32 y, u16 tileNum)
+bool GuiMap::setDoodadTile(size_t x, size_t y, u16 tileNum)
 {
-    u16 xSize = (u16)Scenario::getTileWidth();
-    if ( x > xSize || y > (u16)Scenario::getTileHeight() )
+    if ( x > Scenario::getTileWidth() || y > Scenario::getTileHeight() )
         return false;
 
-    undos.AddUndo(TileChange::Make((u16)x, (u16)y, Scenario::getTile((u16)x, (u16)y)));
-
-    Scenario::setTile(x, y, tileNum);
+    Scenario::setTile(x, y, tileNum, Chk::StrScope::Game);
 
     RECT rcTile;
-    rcTile.left   = x*32-screenLeft;
+    rcTile.left   = s32(x)*32-screenLeft;
     rcTile.right  = rcTile.left+32;
-    rcTile.top    = y*32-screenTop;
+    rcTile.top    = s32(y)*32-screenTop;
     rcTile.bottom = rcTile.top+32;
 
     RedrawMap = true;
@@ -121,10 +117,151 @@ bool GuiMap::SetTile(s32 x, s32 y, u16 tileNum)
     return true;
 }
 
+void GuiMap::setTileValue(size_t tileX, size_t tileY, uint16_t tileValue)
+{
+    if ( tileX < Scenario::dimensions.tileWidth && tileY < Scenario::dimensions.tileHeight )
+    {
+        if ( tileChanges != nullptr )
+        {
+            tileChanges->Insert(TileChange::Make(uint16_t(tileX), uint16_t(tileY), Scenario::getTile(tileX, tileY, Chk::StrScope::Editor)));
+            tileChanges->Insert(MtxmChange::Make(uint16_t(tileX), uint16_t(tileY), Scenario::getTile(tileX, tileY, Chk::StrScope::Game)));
+        }
+
+        Scenario::editorTiles[tileY*Scenario::dimensions.tileWidth + tileX] = tileValue;
+        if ( !doodadCache.tileOccupied(tileX, tileY, Scenario::dimensions.tileWidth) )
+            Scenario::tiles[tileY*Scenario::dimensions.tileWidth + tileX] = tileValue;
+        else if ( !allowIllegalDoodads )
+            validateTileDoodads(tileX, tileY, tileValue);
+    }
+}
+
+void GuiMap::beginTerrainOperation()
+{
+    refreshDoodadCache();
+    if ( this->tileChanges == nullptr )
+        tileChanges = ReversibleActions::Make();
+}
+
+void GuiMap::finalizeTerrainOperation()
+{
+    clipboard.clearPreviousPasteLoc();
+    if ( tileChanges != nullptr )
+    {
+        undos.AddUndo(tileChanges);
+        tileChanges = nullptr;
+        Chk::IsomCache::finalizeUndoableOperation();
+    }
+}
+
+void GuiMap::validateTileDoodads(size_t tileX, size_t tileY, uint16_t tileValue)
+{
+    const auto & tileset = chkd.scData.terrain.get(Scenario::getTileset());
+    for ( int doodadIndex=int(doodads.size())-1; doodadIndex>=0; --doodadIndex )
+    {
+        const auto & doodad = doodads[doodadIndex];
+        if ( auto doodadGroupIndex = tileset.getDoodadGroupIndex(doodad.type) )
+        {
+            const auto & doodadDat = (Sc::Terrain::DoodadCv5 &)tileset.tileGroups[*doodadGroupIndex];
+            const auto & placability = tileset.doodadPlacibility[doodad.type];
+
+            bool evenWidth = doodadDat.tileWidth % 2 == 0;
+            bool evenHeight = doodadDat.tileHeight % 2 == 0;
+            size_t left = (size_t(doodad.xc) - 16*size_t(doodadDat.tileWidth))/32;
+            size_t top = (size_t(doodad.yc) - 16*size_t(doodadDat.tileHeight))/32;
+            size_t right = left + size_t(doodadDat.tileWidth);
+            size_t bottom = top + size_t(doodadDat.tileHeight);
+
+            if ( tileX >= left && tileX < right && tileY >= top && tileY < bottom ) // Tile within dimensions, though not necessarily part of the doodad
+            {
+                size_t y = tileY-top;
+                const auto & tileGroup = tileset.tileGroups[(*doodadGroupIndex)+y];
+                size_t x = tileX-left;
+                if ( tileset.tileGroups[(*doodadGroupIndex)+y].megaTileIndex[x] != 0 ) // Tile is part of the doodad
+                {
+                    auto doodadTilePlacability = placability.tileGroup[y*doodadDat.tileWidth+x];
+                    if ( doodadTilePlacability != 0 && tileValue/16 != doodadTilePlacability ) // This tile of this doodad is illegal given the new tileValue
+                    {
+                        tileChanges->Insert(DoodadCreateDel::Make(u16(doodadIndex), doodad));
+                        if ( !sprites.empty() )
+                        {
+                            for ( int i=int(sprites.size())-1; i>=0; --i )
+                            {
+                                const auto & sprite = sprites[i];
+                                if ( sprite.type == doodadDat.overlayIndex && sprite.xc == doodad.xc && sprite.yc == doodad.yc )
+                                    Scenario::deleteSprite(i);
+                            }
+                        }
+                        for ( y=top; y<bottom; ++y )
+                        {
+                            for ( x=left; x<right; ++x )
+                                Scenario::tiles[y*size_t(dimensions.tileWidth)+x] = Scenario::editorTiles[y*size_t(dimensions.tileWidth)+x];
+                        }
+                        Scenario::deleteDoodad(doodadIndex);
+                        refreshDoodadCache();
+                    }
+                }
+            }
+        }
+    }
+}
+
 void GuiMap::setTileset(Sc::Terrain::Tileset tileset)
 {
     Scenario::setTileset(tileset);
     graphics.updatePalette();
+    (Chk::IsomCache &)(*this) = {Scenario::tileset, Scenario::getTileWidth(), Scenario::getTileHeight(), chkd.scData.terrain.get(Scenario::tileset)};
+}
+
+// From Scenario.cpp
+void setMtxmOrTileDimensions(std::vector<u16> & tiles, u16 newTileWidth, u16 newTileHeight, u16 oldTileWidth, u16 oldTileHeight, s32 leftEdge, s32 topEdge);
+
+void GuiMap::setDimensions(u16 newTileWidth, u16 newTileHeight, u16 sizeValidationFlags, s32 leftEdge, s32 topEdge, size_t newTerrainType)
+{
+    Scenario destMap(this->getTileset(), u16(this->getTileWidth()), u16(this->getTileHeight()));
+    (Chk::IsomCache &)(*this) = {Scenario::tileset, newTileWidth, newTileHeight, chkd.scData.terrain.get(Scenario::tileset)};
+
+    destMap.editorTiles = this->editorTiles;
+    destMap.tiles = this->tiles;
+    setMtxmOrTileDimensions(destMap.tiles, newTileWidth, newTileHeight, (uint16_t)this->getTileWidth(), (uint16_t)this->getTileHeight(), 0, 0);
+    setMtxmOrTileDimensions(destMap.editorTiles, newTileWidth, newTileHeight, (uint16_t)this->getTileWidth(), (uint16_t)this->getTileHeight(), 0, 0);
+    uint16_t isomValue = ((Chk::IsomCache::getTerrainTypeIsomValue(newTerrainType) << 4) | Chk::IsomRect::EditorFlag::Modified);
+
+    destMap.dimensions = {newTileWidth, newTileHeight};
+    destMap.isomRects.assign((newTileWidth/2+1)*(newTileHeight+1), Chk::IsomRect{ isomValue, isomValue, isomValue, isomValue });
+    
+    destMap.copyIsomFrom(*this, leftEdge, topEdge, false, *this);
+    destMap.resizeIsom(leftEdge, topEdge, this->getTileWidth(), this->getTileHeight(), false, *this);
+    destMap.updateTilesFromIsom(*this);
+
+    Sc::BoundingBox tileRect { this->getTileWidth(), this->getTileHeight(), newTileWidth, newTileHeight, leftEdge, topEdge };
+    size_t destStartX = leftEdge < 0 ? 0 : leftEdge;
+    size_t destStartY = topEdge < 0 ? 0 : topEdge;
+    size_t copyHeight = tileRect.bottom-tileRect.top;
+    size_t copyWidth = tileRect.right-tileRect.left;
+    for ( size_t y=0; y<copyHeight; ++y )
+    {
+        for ( size_t x=0; x<copyWidth; ++x )
+        {
+            destMap.editorTiles[(y+destStartY)*newTileWidth+(x+destStartX)] = this->editorTiles[(y+tileRect.top)*this->getTileWidth()+(x+tileRect.left)];
+            destMap.tiles[(y+destStartY)*newTileWidth+(x+destStartX)] = this->tiles[(y+tileRect.top)*this->getTileWidth()+(x+tileRect.left)];
+        }
+    }
+    
+    std::swap(this->dimensions, destMap.dimensions);
+    std::swap(this->isomRects, destMap.isomRects);
+    std::swap(this->editorTiles, destMap.editorTiles);
+    std::swap(this->tiles, destMap.tiles);
+    (Chk::IsomCache &)(*this) = {Scenario::tileset, Scenario::getTileWidth(), Scenario::getTileHeight(), chkd.scData.terrain.get(Scenario::tileset)};
+}
+
+bool GuiMap::placeIsomTerrain(Chk::IsomDiamond isomDiamond, size_t terrainType, size_t brushExtent)
+{
+    if ( Scenario::placeIsomTerrain(isomDiamond, terrainType, brushExtent, *this) )
+    {
+        Scenario::updateTilesFromIsom(*this);
+        return true;
+    }
+    return false;
 }
 
 Layer GuiMap::getLayer()
@@ -140,6 +277,16 @@ bool GuiMap::setLayer(Layer newLayer)
     selections.setDrags(-1, -1);
     currLayer = newLayer;
     return true;
+}
+
+TerrainSubLayer GuiMap::getSubLayer()
+{
+    return currTerrainSubLayer;
+}
+
+void GuiMap::setSubLayer(TerrainSubLayer newTerrainSubLayer)
+{
+    this->currTerrainSubLayer = newTerrainSubLayer;
 }
 
 double GuiMap::getZoom()
@@ -339,6 +486,9 @@ void GuiMap::EdgeDrag(HWND hWnd, int x, int y)
 {
     if ( isDragging() )
     {
+        auto mapX = x + screenLeft;
+        auto mapY = y + screenTop;
+
         if ( x < 0 )
             x = 0;
         if ( y < 0 )
@@ -347,8 +497,11 @@ void GuiMap::EdgeDrag(HWND hWnd, int x, int y)
         RECT rcMap;
         GetClientRect(hWnd, &rcMap);
         TrackMouse(defaultHoverTime);
+        bool onEdge = false;
         if ( x == 0 ) // Cursor on the left
         {
+            mapX = rcMap.left + screenLeft;
+            onEdge = true;
             if ( (screenLeft+16)/32 > 0 )
                 selections.setEndDrag( ((screenLeft +16)/32-1)*32, selections.getEndDrag().y );
             if ( screenLeft > 0 )
@@ -356,12 +509,16 @@ void GuiMap::EdgeDrag(HWND hWnd, int x, int y)
         }
         else if ( x >= rcMap.right-2 ) // Cursor on the right
         {
+            mapX = rcMap.right-2 + screenLeft;
+            onEdge = true;
             if ( size_t((screenLeft+rcMap.right)/32) < Scenario::getTileWidth() )
                 selections.setEndDrag( ((screenLeft+rcMap.right)/32+1)*32, selections.getEndDrag().y );
             screenLeft = selections.getEndDrag().x - rcMap.right;
         }
         if ( y == 0 ) // Cursor on the top
         {
+            mapY = rcMap.top + screenTop;
+            onEdge = true;
             if ( (screenTop+16)/32 > 0 )
                 selections.setEndDrag( selections.getEndDrag().x, ((screenTop+16)/32-1)*32 );
             if ( screenTop > 0 )
@@ -369,12 +526,21 @@ void GuiMap::EdgeDrag(HWND hWnd, int x, int y)
         }
         else if ( y >= rcMap.bottom-2 ) // Cursor on the bottom
         {
+            mapY = rcMap.bottom-2 + screenTop;
+            onEdge = true;
             if ( size_t((screenTop+rcMap.bottom)/32) < Scenario::getTileHeight() )
                 selections.setEndDrag( selections.getEndDrag().x, ((screenTop+rcMap.bottom)/32+1)*32 );
             screenTop = selections.getEndDrag().y - rcMap.bottom;
         }
-        Scroll(true, true, true);
-        Redraw(false);
+
+        if ( onEdge )
+        {
+            Scroll(true, true, true);
+            if ( clipboard.isPasting() )
+                paste(mapX, mapY);
+
+            Redraw(false);
+        }
     }
 }
 
@@ -395,6 +561,8 @@ void GuiMap::refreshScenario()
 {
     selections.removeTiles();
     selections.removeUnits();
+    chkd.mainPlot.leftBar.mainTree.isomTree.UpdateIsomTree();
+    chkd.mainPlot.leftBar.mainTree.doodadTree.UpdateDoodadTree();
     chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
 
     if ( chkd.unitWindow.getHandle() != nullptr )
@@ -418,6 +586,11 @@ void GuiMap::clearSelectedTiles()
     selections.removeTiles();
 }
 
+void GuiMap::clearSelectedDoodads()
+{
+    selections.removeDoodads();
+}
+
 void GuiMap::clearSelectedUnits()
 {
     selections.removeUnits();
@@ -425,171 +598,228 @@ void GuiMap::clearSelectedUnits()
 
 void GuiMap::clearSelection()
 {
-    if ( this != nullptr )
-    {
-        selections.removeTiles();
-        selections.removeUnits();
-    }
+    selections.removeTiles();
+    selections.removeUnits();
 }
 
 void GuiMap::selectAll()
 {
-    if ( this != nullptr )
+    switch ( currLayer )
     {
-        switch ( currLayer )
-        {
-            case Layer::Terrain:
+        case Layer::Terrain:
+            {
+                if ( selections.hasTiles() )
+                    selections.removeTiles();
+
+                u16 tileValue,
+                    width = (u16)Scenario::getTileWidth(),
+                    height = (u16)Scenario::getTileHeight(),
+                    x=0, y=0;
+
+                for ( x=0; x<width; x++ ) // Add the top row
                 {
-                    if ( selections.hasTiles() )
-                        selections.removeTiles();
-
-                    u16 tileValue,
-                        width = (u16)Scenario::getTileWidth(),
-                        height = (u16)Scenario::getTileHeight(),
-                        x=0, y=0;
-
-                    for ( x=0; x<width; x++ ) // Add the top row
-                    {
-                        tileValue = Scenario::getTile(x, 0);
-                        selections.addTile(tileValue, x, y, TileNeighbor::Top);
-                    }
-
-                    for ( y=0; y<height-1; y++ ) // Add the middle rows
-                    {
-                        tileValue = Scenario::getTile(0, y);
-                        selections.addTile(tileValue, 0, y, TileNeighbor::Left); // Add the left tile
-
-                        for ( x=1; x<width-1; x++ )
-                        {
-                            tileValue = Scenario::getTile(x, y);
-                            selections.addTile(tileValue, x, y, TileNeighbor::None); // Add the middle portion of the row
-                        }
-                        tileValue = Scenario::getTile(width-1, y);
-                        selections.addTile(tileValue, width-1, y, TileNeighbor::Right); // Add the right tile
-                    }
-
-                    tileValue = Scenario::getTile(0, height-1);
-                    selections.addTile(tileValue, 0, height-1, TileNeighbor(TileNeighbor::Left|TileNeighbor::Bottom));
-
-                    for ( x=1; x<width-1; x++ ) // Add the bottom row
-                    {
-                        tileValue = Scenario::getTile(x, height-1);
-                        selections.addTile(tileValue, x, height-1, TileNeighbor::Bottom);
-                    }
-                    tileValue = Scenario::getTile(width-1, height-1);
-                    selections.addTile(tileValue, width-1, height-1, TileNeighbor(TileNeighbor::Right|TileNeighbor::Bottom));
-
-                    RedrawWindow(getHandle(), NULL, NULL, RDW_INVALIDATE);
+                    tileValue = Scenario::getTile(x, 0);
+                    selections.addTile(tileValue, x, y, TileNeighbor::Top);
                 }
-                break;
-            case Layer::Units:
+
+                for ( y=0; y<height-1; y++ ) // Add the middle rows
                 {
-                    chkd.unitWindow.SetChangeHighlightOnly(true);
-                    for ( u16 i=0; i<Scenario::numUnits(); i++ )
+                    tileValue = Scenario::getTile(0, y);
+                    selections.addTile(tileValue, 0, y, TileNeighbor::Left); // Add the left tile
+
+                    for ( x=1; x<width-1; x++ )
                     {
-                        if ( !selections.unitIsSelected(i) )
-                        {
-                            selections.addUnit(i);
-                            if ( chkd.unitWindow.getHandle() != nullptr )
-                                chkd.unitWindow.FocusAndSelectIndex(i);
-                        }
+                        tileValue = Scenario::getTile(x, y);
+                        selections.addTile(tileValue, x, y, TileNeighbor::None); // Add the middle portion of the row
                     }
-                    chkd.unitWindow.SetChangeHighlightOnly(false);
-                    Redraw(true);
+                    tileValue = Scenario::getTile(width-1, y);
+                    selections.addTile(tileValue, width-1, y, TileNeighbor::Right); // Add the right tile
                 }
-                break;
-        }
+
+                tileValue = Scenario::getTile(0, height-1);
+                selections.addTile(tileValue, 0, height-1, TileNeighbor(TileNeighbor::Left|TileNeighbor::Bottom));
+
+                for ( x=1; x<width-1; x++ ) // Add the bottom row
+                {
+                    tileValue = Scenario::getTile(x, height-1);
+                    selections.addTile(tileValue, x, height-1, TileNeighbor::Bottom);
+                }
+                tileValue = Scenario::getTile(width-1, height-1);
+                selections.addTile(tileValue, width-1, height-1, TileNeighbor(TileNeighbor::Right|TileNeighbor::Bottom));
+
+                RedrawWindow(getHandle(), NULL, NULL, RDW_INVALIDATE);
+            }
+            break;
+        case Layer::Units:
+            {
+                chkd.unitWindow.SetChangeHighlightOnly(true);
+                for ( u16 i=0; i<Scenario::numUnits(); i++ )
+                {
+                    if ( !selections.unitIsSelected(i) )
+                    {
+                        selections.addUnit(i);
+                        if ( chkd.unitWindow.getHandle() != nullptr )
+                            chkd.unitWindow.FocusAndSelectIndex(i);
+                    }
+                }
+                chkd.unitWindow.SetChangeHighlightOnly(false);
+                Redraw(true);
+            }
+            break;
+        case Layer::Doodads:
+            for ( size_t i=0; i<Scenario::numDoodads(); ++i )
+            {
+                if ( !selections.doodadIsSelected(i) )
+                    selections.addDoodad(i);
+            }
+            Redraw(true);
+            break;
     }
 }
 
 void GuiMap::deleteSelection()
 {
-    if ( this != nullptr )
+    switch ( currLayer )
     {
-        switch ( currLayer )
-        {
-            case Layer::Terrain:
+        case Layer::Terrain:
+            {
+                if ( tileChanges == nullptr )
+                    tileChanges = ReversibleActions::Make();
+
+                u16 xSize = (u16)Scenario::getTileWidth();
+
+                beginTerrainOperation();
+                auto & selTiles = selections.getTiles();
+                for ( auto & tile : selTiles )
+                    setTileValue(tile.xc, tile.yc, Scenario::getTile(tile.xc, tile.yc, Chk::StrScope::Both));
+
+                selections.removeTiles();
+                finalizeTerrainOperation();
+            }
+            break;
+
+        case Layer::Doodads:
+            {
+                auto doodadsUndo = ReversibleActions::Make();
+                for ( int i=0; i<selections.getDoodads().size(); ++i )
                 {
-                    u16 xSize = (u16)Scenario::getTileWidth();
+                    auto selDoodad = selections.getDoodads()[i];
+                    const auto & doodad = doodads[selDoodad];
+                    doodadsUndo->Insert(DoodadCreateDel::Make(u16(selDoodad), doodad));
 
-                    auto & selTiles = selections.getTiles();
-                    for ( auto & tile : selTiles )
+                    const auto & tileset = chkd.scData.terrain.get(Scenario::getTileset());
+                    if ( auto doodadGroupIndex = tileset.getDoodadGroupIndex(doodad.type) )
                     {
-                        undos.AddUndo(TileChange::Make(tile.xc, tile.yc, Scenario::getTile(tile.xc, tile.yc)));
-                        Scenario::setTile(tile.xc, tile.yc, 0);
-                    }
+                        const auto & doodadDat = (Sc::Terrain::DoodadCv5 &)tileset.tileGroups[*doodadGroupIndex];
+                        bool evenWidth = doodadDat.tileWidth%2 == 0;
+                        bool evenHeight = doodadDat.tileHeight%2 == 0;
+                        auto xStart = evenWidth ? (doodad.xc+16)/32 - doodadDat.tileWidth/2 : doodad.xc/32 - (doodadDat.tileWidth-1)/2;
+                        auto yStart = evenHeight ? (doodad.yc+16)/32 - doodadDat.tileHeight/2 : doodad.yc/32 - (doodadDat.tileHeight-1)/2;
 
-                    selections.removeTiles();
-                }
-                break;
-
-            case Layer::Units:
-                {
-                    if ( chkd.unitWindow.getHandle() != nullptr )
-                        SendMessage(chkd.unitWindow.getHandle(), WM_COMMAND, MAKEWPARAM(IDC_BUTTON_DELETE, NULL), 0);
-                    else
-                    {
-                        auto deletes = ReversibleActions::Make();
-                        while ( selections.hasUnits() )
+                        for ( u16 y=0; y<doodadDat.tileHeight; ++y )
                         {
-                            // Get the highest index in the selection
-                            u16 index = selections.getHighestIndex();
-                            selections.removeUnit(index);
+                            auto yc = yStart+y; 
+                            u16 tileGroupIndex = *doodadGroupIndex + y;
+                            const auto & tileGroup = tileset.tileGroups[tileGroupIndex];
+                            for ( u16 x=0; x<doodadDat.tileWidth; ++x )
+                            {
+                                auto xc = xStart+x;
+                                if ( tileGroup.megaTileIndex[x] != 0 )
+                                {
+                                    auto currDoodadTile = 16*tileGroupIndex + x;
+                                    auto currFinalTile = Scenario::getTile(xc, yc, Chk::StrScope::Game);
+                                    auto underlyingTile = Scenario::getTile(xc, yc, Chk::StrScope::Editor);
+                                    if ( currDoodadTile == currFinalTile && currDoodadTile != underlyingTile )
+                                        Scenario::setTile(xc, yc, underlyingTile, Chk::StrScope::Game);
+                                }
+                            }
+                        }
+
+                        if ( !sprites.empty() )
+                        {
+                            for ( int i=int(sprites.size())-1; i>=0; --i )
+                            {
+                                const auto & sprite = sprites[i];
+                                if ( sprite.type == doodadDat.overlayIndex && sprite.xc == doodad.xc && sprite.yc == doodad.yc )
+                                    Scenario::deleteSprite(i);
+                            }
+                        }
+                    }
+                    Scenario::deleteDoodad(selDoodad);
+                }
+
+                selections.removeDoodads();
+                undos.AddUndo(doodadsUndo);
+            }
+            break;
+
+        case Layer::Units:
+            {
+                if ( chkd.unitWindow.getHandle() != nullptr )
+                    SendMessage(chkd.unitWindow.getHandle(), WM_COMMAND, MAKEWPARAM(IDC_BUTTON_DELETE, NULL), 0);
+                else
+                {
+                    auto deletes = ReversibleActions::Make();
+                    while ( selections.hasUnits() )
+                    {
+                        // Get the highest index in the selection
+                        u16 index = selections.getHighestIndex();
+                        selections.removeUnit(index);
                             
-                            const Chk::Unit & delUnit = Scenario::getUnit(index);
-                            deletes->Insert(UnitCreateDel::Make(index, delUnit));
-                            Scenario::deleteUnit(index);
-                        }
-                        undos.AddUndo(deletes);
+                        const Chk::Unit & delUnit = Scenario::getUnit(index);
+                        deletes->Insert(UnitCreateDel::Make(index, delUnit));
+                        Scenario::deleteUnit(index);
                     }
+                    undos.AddUndo(deletes);
                 }
-                break;
+            }
+            break;
 
-            case Layer::Locations:
-                {
-                    if ( chkd.locationWindow.getHandle() != NULL )
-                        chkd.locationWindow.DestroyThis();
+        case Layer::Locations:
+            {
+                if ( chkd.locationWindow.getHandle() != NULL )
+                    chkd.locationWindow.DestroyThis();
                 
-                    u16 index = selections.getSelectedLocation();
-                    if ( index != NO_LOCATION && index < Scenario::numLocations() )
+                u16 index = selections.getSelectedLocation();
+                if ( index != NO_LOCATION && index < Scenario::numLocations() )
+                {
+                    Chk::Location & loc = Scenario::getLocation(index);
+                    undos.AddUndo(LocationCreateDel::Make(index));
+
+                    chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
+
+                    loc.elevationFlags = 0;
+                    loc.left = 0;
+                    loc.right = 0;
+                    loc.top = 0;
+                    loc.bottom = 0;
+                    u16 stringNum = loc.stringId;
+                    loc.stringId = 0;
+                    if ( stringNum > 0 )
                     {
-                        Chk::Location & loc = Scenario::getLocation(index);
-                        undos.AddUndo(LocationCreateDel::Make(index));
-
-                        chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
-
-                        loc.elevationFlags = 0;
-                        loc.left = 0;
-                        loc.right = 0;
-                        loc.top = 0;
-                        loc.bottom = 0;
-                        u16 stringNum = loc.stringId;
-                        loc.stringId = 0;
-                        if ( stringNum > 0 )
-                        {
-                            Scenario::deleteString(stringNum);
-                            refreshScenario();
-                        }
-
-                        selections.selectLocation(NO_LOCATION);
+                        Scenario::deleteString(stringNum);
+                        refreshScenario();
                     }
-                }
-                break;
-        }
 
-        RedrawMap = true;
-        RedrawMiniMap = true;
-        RedrawWindow(getHandle(), NULL, NULL, RDW_INVALIDATE);
+                    selections.selectLocation(NO_LOCATION);
+                }
+            }
+            break;
     }
+
+    RedrawMap = true;
+    RedrawMiniMap = true;
+    RedrawWindow(getHandle(), NULL, NULL, RDW_INVALIDATE);
 }
 
 void GuiMap::paste(s32 mapClickX, s32 mapClickY)
 {
+    selections.removeTiles();
     s32 xc = mapClickX, yc = mapClickY;
     if ( currLayer == Layer::Units )
         this->snapUnitCoordinate(xc, yc);
 
-    clipboard.doPaste(currLayer, xc, yc, *this, undos, stackUnits);
+    clipboard.doPaste(currLayer, currTerrainSubLayer, xc, yc, *this, undos, stackUnits);
 
     Redraw(true);
 }
@@ -629,22 +859,24 @@ void GuiMap::AddUndo(ReversiblePtr action)
 
 void GuiMap::undo()
 {
+    
     switch ( currLayer )
     {
         case Layer::Terrain:
-            undos.doUndo(UndoTypes::TileChange, this);
-            //undoStacks.doUndo(UNDO_TERRAIN, scenario(), selections());
+        case Layer::Doodads:
+            selections.removeTiles();
+            selections.removeDoodads();
+            undos.doUndo(UndoTypes::TerrainChange, this);
             break;
         case Layer::Units:
+            selections.removeUnits();
             undos.doUndo(UndoTypes::UnitChange, this);
-            //undoStacks.doUndo(UNDO_UNIT, scenario(), selections());
             if ( chkd.unitWindow.getHandle() != nullptr )
                 chkd.unitWindow.RepopulateList();
             break;
         case Layer::Locations:
             {
                 undos.doUndo(UndoTypes::LocationChange, this);
-                //undoStacks.doUndo(UNDO_LOCATION, scenario(), selections());
                 if ( chkd.locationWindow.getHandle() != NULL )
                 {
                     if ( CM->numLocations() > 0 )
@@ -665,18 +897,19 @@ void GuiMap::redo()
     switch ( currLayer )
     {
         case Layer::Terrain:
-            undos.doRedo(UndoTypes::TileChange, this);
-            //undoStacks.doRedo(UNDO_TERRAIN, scenario(), selections());
+        case Layer::Doodads:
+            selections.removeTiles();
+            selections.removeDoodads();
+            undos.doRedo(UndoTypes::TerrainChange, this);
             break;
         case Layer::Units:
+            selections.removeUnits();
             undos.doRedo(UndoTypes::UnitChange, this);
-            //undoStacks.doRedo(UNDO_UNIT, scenario(), selections());
             if ( chkd.unitWindow.getHandle() != nullptr )
                 chkd.unitWindow.RepopulateList();
             break;
         case Layer::Locations:
             undos.doRedo(UndoTypes::LocationChange, this);
-            //undoStacks.doRedo(UNDO_LOCATION, scenario(), selections());
             if ( chkd.locationWindow.getHandle() != NULL )
             {
                 if ( CM->numLocations() == 0 )
@@ -742,7 +975,7 @@ bool GuiMap::EnsureBitmapSize(u32 desiredWidth, u32 desiredHeight)
             graphicBits.resize(bitmapWidth*bitmapHeight);
             return true;
         }
-        catch ( std::bad_alloc ) {}
+        catch ( ... ) {}
     }
     bitmapWidth = 0;
     bitmapHeight = 0;
@@ -752,15 +985,16 @@ bool GuiMap::EnsureBitmapSize(u32 desiredWidth, u32 desiredHeight)
 
 void GuiMap::PaintMap(GuiMapPtr currMap, bool pasting)
 {
-    if ( WindowsItem::StartSimplePaint() != NULL )
+    WinLib::DeviceContext dc(WindowsItem::getHandle());
+    if ( dc )
     {
-        u16 scaledWidth = PaintWidth(),
-            scaledHeight = PaintHeight();
+        u16 scaledWidth = dc.getWidth(),
+            scaledHeight = dc.getHeight();
 
         if ( zoom < 1 || zoom > 1 )
         {
-            scaledWidth = (u16(((double)PaintWidth()) / zoom)) / 32 * 32,
-            scaledHeight = (u16(((double)PaintHeight()) / zoom)) / 32 * 32;
+            scaledWidth = (u16(((double)dc.getWidth()) / zoom)) / 32 * 32,
+            scaledHeight = (u16(((double)dc.getHeight()) / zoom)) / 32 * 32;
         }
         u32 bitmapSize = (u32)scaledWidth*(u32)scaledHeight * 4;
 
@@ -768,64 +1002,65 @@ void GuiMap::PaintMap(GuiMapPtr currMap, bool pasting)
         {
             RedrawMap = false;
 
-            mapBuffer.SetSize(GetPaintDc(), scaledWidth, scaledHeight);
+            mapBuffer.setBuffer(scaledWidth, scaledHeight, dc.getDcHandle());
             if ( currMap == nullptr || currMap.get() == this ) // Only redraw minimap for active window
                 RedrawWindow(chkd.mainPlot.leftBar.miniMap.getHandle(), NULL, NULL, RDW_INVALIDATE | RDW_UPDATENOW);
 
             // Terrain, Grid, Units, Sprites, Debug
-            graphics.DrawMap(bitmapWidth, bitmapHeight, screenLeft, screenTop, graphicBits, mapBuffer.GetPaintDc(), !lockAnywhere);
+            graphics.DrawMap(mapBuffer, bitmapWidth, bitmapHeight, screenLeft, screenTop, graphicBits, !lockAnywhere);
         }
 
-        toolsBuffer.SetSize(GetPaintDc(), scaledWidth, scaledHeight);
-        BitBlt(toolsBuffer.GetPaintDc(), 0, 0, scaledWidth, scaledHeight, mapBuffer.GetPaintDc(), 0, 0, SRCCOPY);
-        if ( currMap == nullptr || currMap.get() == this )
-        { // Drag and paste graphics
-            graphics.DrawTools(toolsBuffer.GetPaintDc(), toolsBuffer.GetPaintBitmap(), scaledWidth, scaledHeight,
-                screenLeft, screenTop, selections, pasting, clipboard, *this);
+        if ( mapBuffer )
+        {
+            toolsBuffer.setBuffer(scaledWidth, scaledHeight, dc.getDcHandle());
+            mapBuffer.flushBuffer(toolsBuffer);
+            if ( currMap == nullptr || currMap.get() == this )
+            { // Drag and paste graphics
+                graphics.DrawTools(toolsBuffer, scaledWidth, scaledHeight,
+                    screenLeft, screenTop, selections, pasting, clipboard, *this);
 
-            if ( currLayer != Layer::Locations )
-                DrawSelectingFrame(toolsBuffer.GetPaintDc(), selections, screenLeft, screenTop, bitmapWidth, bitmapHeight, zoom);
+                if ( currLayer != Layer::Locations )
+                    DrawSelectingFrame(toolsBuffer, selections, screenLeft, screenTop, bitmapWidth, bitmapHeight, zoom);
+            }
+            SetStretchBltMode(dc.getDcHandle(), HALFTONE);
+            if ( zoom == 1 )
+                toolsBuffer.bitBlt(dc.getDcHandle(), 0, 0, dc.getWidth(), dc.getHeight(), 0, 0, SRCCOPY);
+            else
+                toolsBuffer.stretchBlt(dc.getDcHandle(), 0, 0, dc.getWidth(), dc.getHeight(), 0, 0, scaledWidth, scaledHeight, SRCCOPY);
         }
-        SetStretchBltMode(GetPaintDc(), HALFTONE);
-        if ( zoom == 1 )
-            BitBlt(GetPaintDc(), 0, 0, PaintWidth(), PaintHeight(), toolsBuffer.GetPaintDc(), 0, 0, SRCCOPY);
-        else
-            StretchBlt(GetPaintDc(), 0, 0, PaintWidth(), PaintHeight(), toolsBuffer.GetPaintDc(), 0, 0, scaledWidth, scaledHeight, SRCCOPY);
+        dc.validateRect();
     }
-    WindowsItem::EndPaint();
 }
 
-void GuiMap::PaintMiniMap(HDC miniMapDc, int miniMapWidth, int miniMapHeight)
+void GuiMap::PaintMiniMap(const WinLib::DeviceContext & dc)
 {
-    if ( this != nullptr && miniMapDc != NULL )
+    if ( dc )
     {
-        if ( RedrawMiniMap && miniMapBuffer.SetSize(miniMapDc, miniMapWidth, miniMapHeight) )
+        if ( RedrawMiniMap && miniMapBuffer.setBuffer(dc.getWidth(), dc.getHeight(), dc.getDcHandle()) )
         {
             RedrawMiniMap = false;
-            DrawMiniMap(miniMapBuffer.GetPaintDc(), getPalette(), (u16)Scenario::getTileWidth(), (u16)Scenario::getTileHeight(),
+            DrawMiniMap(miniMapBuffer, getPalette(), (u16)Scenario::getTileWidth(), (u16)Scenario::getTileHeight(),
                 MiniMapScale((u16)Scenario::getTileWidth(), (u16)Scenario::getTileHeight()), *this);
         }
 
-        if ( miniMapBuffer.GetPaintDc() != NULL )
+        if ( miniMapBuffer )
         {
-            BitBlt(miniMapDc, 0, 0, miniMapWidth, miniMapHeight, miniMapBuffer.GetPaintDc(), 0, 0, SRCCOPY);
-            DrawMiniMapBox(miniMapDc, screenLeft, screenTop, bitmapWidth, bitmapHeight,
+            miniMapBuffer.flushBuffer(dc);
+            DrawMiniMapBox(dc, screenLeft, screenTop, bitmapWidth, bitmapHeight,
                 (u16)Scenario::getTileWidth(), (u16)Scenario::getTileHeight(),
                 MiniMapScale((u16)Scenario::getTileWidth(), (u16)Scenario::getTileHeight()));
+            dc.flushBuffer();
         }
     }
 }
 
 void GuiMap::Redraw(bool includeMiniMap)
 {
-    if ( this != nullptr )
-    {
-        RedrawMap = true;
-        if ( includeMiniMap )
-            RedrawMiniMap = true;
+    RedrawMap = true;
+    if ( includeMiniMap )
+        RedrawMiniMap = true;
 
-        RedrawWindow(getHandle(), NULL, NULL, RDW_INVALIDATE);
-    }
+    RedrawWindow(getHandle(), NULL, NULL, RDW_INVALIDATE);
 }
 
 void GuiMap::ValidateBorder(s32 screenWidth, s32 screenHeight)
@@ -900,6 +1135,13 @@ bool GuiMap::DisplayingElevations()
     return graphics.DisplayingElevations();
 }
 
+void GuiMap::ToggleDisplayIsomValues()
+{
+    graphics.ToggleDisplayIsomValues();
+    UpdateTerrainViewMenuItems();
+    Redraw(false);
+}
+
 void GuiMap::ToggleTileNumSource(bool MTXMoverTILE)
 {
     graphics.ToggleTileNumSource(MTXMoverTILE);
@@ -947,41 +1189,35 @@ void GuiMap::ToggleUnitStack()
 
 void GuiMap::ToggleLocationNameClip()
 {
-    if ( this != nullptr )
-    {
-        graphics.ToggleLocationNameClip();
-        chkd.mainMenu.SetCheck(ID_LOCATIONS_CLIPNAMES, graphics.ClippingLocationNames());
-        Redraw(false);
-    }
+    graphics.ToggleLocationNameClip();
+    chkd.mainMenu.SetCheck(ID_LOCATIONS_CLIPNAMES, graphics.ClippingLocationNames());
+    Redraw(false);
 }
 
 void GuiMap::SetLocationSnap(LocationSnap locationSnap)
 {
-    if ( this != nullptr )
+    bool prevSnapLocations = snapLocations;
+    if ( locationSnap == LocationSnap::NoSnap )
+        snapLocations = false;
+    else
+        snapLocations = true;
+
+    if ( locationSnap == LocationSnap::SnapToTile )
     {
-        bool prevSnapLocations = snapLocations;
-        if ( locationSnap == LocationSnap::NoSnap )
+        if ( prevSnapLocations && locSnapTileOverGrid )
             snapLocations = false;
         else
-            snapLocations = true;
-
-        if ( locationSnap == LocationSnap::SnapToTile )
-        {
-            if ( prevSnapLocations && locSnapTileOverGrid )
-                snapLocations = false;
-            else
-                locSnapTileOverGrid = true;
-        }
-        else if ( locationSnap == LocationSnap::SnapToGrid )
-        {
-            if ( prevSnapLocations && !locSnapTileOverGrid )
-                snapLocations = false;
-            else
-                locSnapTileOverGrid = false;
-        }
-
-        UpdateLocationMenuItems();
+            locSnapTileOverGrid = true;
     }
+    else if ( locationSnap == LocationSnap::SnapToGrid )
+    {
+        if ( prevSnapLocations && !locSnapTileOverGrid )
+            snapLocations = false;
+        else
+            locSnapTileOverGrid = false;
+    }
+
+    UpdateLocationMenuItems();
 }
 
 void GuiMap::ToggleLockAnywhere()
@@ -997,6 +1233,17 @@ void GuiMap::ToggleLockAnywhere()
 bool GuiMap::LockAnywhere()
 {
     return lockAnywhere;
+}
+
+void GuiMap::ToggleAllowIllegalDoodadPlacement()
+{
+    allowIllegalDoodads = !allowIllegalDoodads;
+    UpdateDoodadMenuItems();
+}
+
+bool GuiMap::AllowIllegalDoodadPlacement()
+{
+    return allowIllegalDoodads;
 }
 
 bool GuiMap::GetSnapIntervals(u32 & x, u32 & y, u32 & xOffset, u32 & yOffset)
@@ -1065,6 +1312,11 @@ void GuiMap::UpdateLocationMenuItems()
     chkd.mainMenu.SetCheck(ID_LOCATIONS_SNAPTOACTIVEGRID, snapLocations && !locSnapTileOverGrid);
     chkd.mainMenu.SetCheck(ID_LOCATIONS_NOSNAP, !snapLocations);
     chkd.mainMenu.SetCheck(ID_LOCATIONS_LOCKANYWHERE, lockAnywhere);
+}
+
+void GuiMap::UpdateDoodadMenuItems()
+{
+    chkd.mainMenu.SetCheck(ID_DOODADS_ALLOWILLEGALPLACEMENT, allowIllegalDoodads);
 }
 
 void GuiMap::UpdateZoomMenuItems()
@@ -1151,6 +1403,11 @@ void GuiMap::UpdateGridColorMenu()
 void GuiMap::UpdateTerrainViewMenuItems()
 {
     chkd.mainMenu.SetCheck(ID_TERRAIN_DISPLAYTILEELEVATIONS, graphics.DisplayingElevations());
+    
+    if ( graphics.DisplayingIsomNums() )
+        chkd.mainMenu.SetCheck(ID_TERRAIN_DISPLAYISOMVALUES, true);
+    else
+        chkd.mainMenu.SetCheck(ID_TERRAIN_DISPLAYISOMVALUES, false);
 
     chkd.mainMenu.SetCheck(ID_TERRAIN_DISPLAYTILEVALUES, false);
     chkd.mainMenu.SetCheck(ID_TERRAIN_DISPLAYTILEVALUESMTXM, false);
@@ -1258,6 +1515,7 @@ void GuiMap::removeAsterisk()
 void GuiMap::updateMenu()
 {
     UpdateLocationMenuItems();
+    UpdateDoodadMenuItems();
     chkd.mainToolbar.layerBox.SetSel((int)currLayer);
     UpdateZoomMenuItems();
     chkd.mainToolbar.playerBox.SetSel(currPlayer);
@@ -1276,7 +1534,7 @@ bool GuiMap::CreateThis(HWND hClient, const std::string & title)
         HBRUSH hBackground = (HBRUSH)(COLOR_APPWORKSPACE+1);
 
         if ( !RegisterWindowClass(CS_DBLCLKS, NULL, hCursor, hBackground, NULL, "MdiChild", NULL, true) )
-            DestroyCursor(hCursor);
+            return false;
     }
 
     return CreateMdiChild(title, WS_MAXIMIZE, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, hClient);
@@ -1284,29 +1542,26 @@ bool GuiMap::CreateThis(HWND hClient, const std::string & title)
 
 void GuiMap::ReturnKeyPress()
 {
-    if ( this != nullptr )
+    if ( currLayer == Layer::Units )
     {
-        if ( currLayer == Layer::Units )
+        if ( selections.hasUnits() )
         {
-            if ( selections.hasUnits() )
-            {
-                if ( chkd.unitWindow.getHandle() == nullptr )
-                    chkd.unitWindow.CreateThis(chkd.getHandle());
-                ShowWindow(chkd.unitWindow.getHandle(), SW_SHOW);
-            }
+            if ( chkd.unitWindow.getHandle() == nullptr )
+                chkd.unitWindow.CreateThis(chkd.getHandle());
+            ShowWindow(chkd.unitWindow.getHandle(), SW_SHOW);
         }
-        else if ( currLayer == Layer::Locations )
+    }
+    else if ( currLayer == Layer::Locations )
+    {
+        if ( selections.getSelectedLocation() != NO_LOCATION )
         {
-            if ( selections.getSelectedLocation() != NO_LOCATION )
+            if ( chkd.locationWindow.getHandle() == NULL )
             {
-                if ( chkd.locationWindow.getHandle() == NULL )
-                {
-                    if ( chkd.locationWindow.CreateThis(chkd.getHandle()) )
-                        ShowWindow(chkd.locationWindow.getHandle(), SW_SHOWNORMAL);
-                }
-                else
-                    ShowWindow(chkd.locationWindow.getHandle(), SW_SHOW);
+                if ( chkd.locationWindow.CreateThis(chkd.getHandle()) )
+                    ShowWindow(chkd.locationWindow.getHandle(), SW_SHOWNORMAL);
             }
+            else
+                ShowWindow(chkd.locationWindow.getHandle(), SW_SHOW);
         }
     }
 }
@@ -1335,7 +1590,7 @@ LRESULT GuiMap::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
         case WM_CLOSE: return ConfirmWindowClose(hWnd); break;
         case WM_DESTROY: return DestroyWindow(hWnd); break;
         case WM_RBUTTONUP: RButtonUp(); break;
-        case WM_LBUTTONDBLCLK: LButtonDoubleClick(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)); break;
+        case WM_LBUTTONDBLCLK: LButtonDoubleClick(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), wParam); break;
         case WM_LBUTTONDOWN: LButtonDown(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), wParam); break;
         case WM_MBUTTONDOWN: MButtonDown(hWnd, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), wParam); break;
         case WM_MBUTTONUP: MButtonUp(hWnd, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), wParam); break;
@@ -1446,10 +1701,12 @@ void GuiMap::RButtonUp()
     Redraw(true);
 }
 
-void GuiMap::LButtonDoubleClick(int x, int y)
+void GuiMap::LButtonDoubleClick(int x, int y, WPARAM wParam)
 {
     if ( currLayer == Layer::Locations )
         doubleClickLocation(x, y);
+    else
+        LButtonDown(x, y, wParam);
 }
 
 void GuiMap::LButtonDown(int x, int y, WPARAM wParam)
@@ -1486,7 +1743,14 @@ void GuiMap::LButtonDown(int x, int y, WPARAM wParam)
             {
                 chkd.tilePropWindow.DestroyThis();
                 if ( chkd.maps.clipboard.isPasting() )
+                {
+                    if ( currLayer == Layer::Terrain )
+                    {
+                        refreshDoodadCache();
+                        tileChanges = ReversibleActions::Make();
+                    }
                     paste(mapClickX, mapClickY);
+                }
                 else
                 {
                     if ( selections.hasTiles() )
@@ -1502,12 +1766,12 @@ void GuiMap::LButtonDown(int x, int y, WPARAM wParam)
                             selections.setDrags(x1, y1);
                         selections.setLocationFlags(getLocSelFlags(mapClickX, mapClickY));
                     }
-
-                    SetCapture(getHandle());
-                    TrackMouse(defaultHoverTime);
-                    setDragging(true);
-                    Redraw(false);
                 }
+
+                SetCapture(getHandle());
+                TrackMouse(defaultHoverTime);
+                setDragging(true);
+                Redraw(false);
             }
             break;
     }
@@ -1568,22 +1832,33 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
 
         case MK_LBUTTON:
             {
-                // If pasting, move paste
-                if ( chkd.maps.clipboard.isPasting() )
-                {
-                    s32 xc = mapHoverX, yc = mapHoverY;
-                    if ( currLayer == Layer::Units )
-                        snapUnitCoordinate(xc, yc);
-
-                    selections.setEndDrag(xc, yc);
-                    if ( !chkd.maps.clipboard.isPreviousPasteLoc(u16(xc), u16(yc)) )
-                        paste((s16)xc, (s16)yc);
-                }
 
                 if ( isDragging() )
                 {
-                    RECT rcMap;
+                    RECT rcMap {};
                     GetClientRect(hWnd, &rcMap);
+
+                    // If pasting, move paste
+                    if ( chkd.maps.clipboard.isPasting() )
+                    {
+                        s32 xc = mapHoverX, yc = mapHoverY;
+                        if ( xc < rcMap.left + screenLeft )
+                            xc = rcMap.left + screenLeft;
+                        else if ( xc > rcMap.right-2 + screenLeft )
+                            xc = rcMap.right-2 + screenLeft;
+                        if ( yc < rcMap.top + screenTop )
+                            yc = rcMap.top + screenTop;
+                        else if ( yc > rcMap.bottom-2 + screenTop )
+                            yc = rcMap.bottom-2 + screenTop;
+
+                        if ( currLayer == Layer::Units )
+                            snapUnitCoordinate(xc, yc);
+
+                        selections.setEndDrag(xc, yc);
+                        if ( !chkd.maps.clipboard.isPreviousPasteLoc(u16(xc), u16(yc)) )
+                            paste((s16)xc, (s16)yc);
+                    }
+
                     if ( x == 0 || y == 0 || x >= rcMap.right-2 || y >= rcMap.bottom-2 )
                         EdgeDrag(hWnd, x, y);
 
@@ -1699,6 +1974,7 @@ void GuiMap::MouseWheel(HWND hWnd, int x, int y, int z, WPARAM wParam)
 
 void GuiMap::LButtonUp(HWND hWnd, int x, int y, WPARAM wParam)
 {
+    finalizeTerrainOperation();
     ReleaseCapture();
     if ( isDragging() )
     {
@@ -1708,18 +1984,19 @@ void GuiMap::LButtonUp(HWND hWnd, int x, int y, WPARAM wParam)
         x = s16(x/getZoom() + screenLeft);
         y = s16(y/getZoom() + screenTop);
 
-        if ( chkd.maps.clipboard.isPasting() )
-            paste((s16)x, (s16)y);
-    
-        if ( currLayer == Layer::Terrain )
-            TerrainLButtonUp(hWnd, x, y, wParam);
-        else if ( currLayer == Layer::Locations )
-            LocationLButtonUp(hWnd, x, y, wParam);
-        else if ( currLayer == Layer::Units )
-            UnitLButtonUp(hWnd, x, y, wParam);
+        if ( !clipboard.isPasting() )
+        {
+            if ( currLayer == Layer::Terrain )
+                FinalizeTerrainSelection(hWnd, x, y, wParam);
+            else if ( currLayer == Layer::Locations )
+                FinalizeLocationDrag(hWnd, x, y, wParam);
+            else if ( currLayer == Layer::Units )
+                FinalizeUnitSelection(hWnd, x, y, wParam);
+            else if ( currLayer == Layer::Doodads )
+                FinalizeDoodadSelection(hWnd, x, y, wParam);
+        }
 
         selections.setStartDrag(-1, -1);
-        selections.setEndDrag(-1, -1);
         setDragging(false);
         RedrawWindow(hWnd, NULL, NULL, RDW_INVALIDATE);
     }
@@ -1758,7 +2035,7 @@ void GuiMap::PanTimerTimeout()
     Scroll(true, true, true);
 }
 
-void GuiMap::TerrainLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
+void GuiMap::FinalizeTerrainSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 {
     selections.setEndDrag((mapX+16)/32, (mapY+16)/32);
     selections.setStartDrag(selections.getStartDrag().x/32, selections.getStartDrag().y/32);
@@ -1798,7 +2075,7 @@ void GuiMap::TerrainLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
     }
 }
 
-void GuiMap::LocationLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
+void GuiMap::FinalizeLocationDrag(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 {
     if ( selections.hasMoved() ) // attempt to move, resize, or create location
     {
@@ -1821,6 +2098,7 @@ void GuiMap::LocationLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
             newLocation.right = endX;
             newLocation.bottom = endY;
             newLocation.elevationFlags = 0;
+            selections.setDrags(-1, -1);
 
             size_t newLocationId = Scenario::addLocation(newLocation);
             if ( newLocationId != Chk::LocationId::NoLocation )
@@ -1828,7 +2106,8 @@ void GuiMap::LocationLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
                 Scenario::setLocationName<RawString>(newLocationId, "Location " + std::to_string(newLocationId), Chk::StrScope::Game);
                 Scenario::deleteUnusedStrings(Chk::StrScope::Both);
                 undos.AddUndo(LocationCreateDel::Make((u16)newLocationId));
-                chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
+                selections.selectLocation(u16(newLocationId));
+                chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree(true);
                 refreshScenario();
             }
             else
@@ -1955,12 +2234,15 @@ void GuiMap::LocationLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
                 Redraw(false);
                 if ( chkd.locationWindow.getHandle() != NULL )
                     chkd.locationWindow.RefreshLocationInfo();
+
+                selections.setDrags(-1, -1);
             }
         }
     }
     else // attempt to select location, if you aren't resizing
     {
         selections.selectLocation(selections.getStartDrag().x, selections.getStartDrag().y, !LockAnywhere());
+        selections.setDrags(-1, -1);
         if ( chkd.locationWindow.getHandle() != NULL )
             chkd.locationWindow.RefreshLocationInfo();
     
@@ -1969,7 +2251,7 @@ void GuiMap::LocationLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
     selections.setLocationFlags(LocSelFlags::None);
 }
 
-void GuiMap::UnitLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
+void GuiMap::FinalizeUnitSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 {
     selections.setEndDrag(mapX, mapY);
     selections.sortDragPoints();
@@ -2037,6 +2319,42 @@ void GuiMap::UnitLButtonUp(HWND hWnd, int mapX, int mapY, WPARAM wParam)
     Redraw(true);
 }
 
+void GuiMap::FinalizeDoodadSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam)
+{
+    selections.setEndDrag(mapX, mapY);
+    selections.sortDragPoints();
+    if ( wParam != MK_CONTROL ) // Remove selected doodads
+        selections.removeDoodads();
+        
+    size_t numDoodads = Scenario::numDoodads();
+    for ( size_t i=0; i<numDoodads; i++ )
+    {
+        const Chk::Doodad & doodad = Scenario::getDoodad(i);
+        const auto & tileset = chkd.scData.terrain.get(getTileset());
+        if ( auto doodadGroupIndex = tileset.getDoodadGroupIndex(doodad.type) )
+        {
+            const auto & doodadDat = (Sc::Terrain::DoodadCv5 &)tileset.tileGroups[size_t(*doodadGroupIndex)];
+            s32 doodadWidth = 32*s32(doodadDat.tileWidth);
+            s32 doodadHeight = 32*s32(doodadDat.tileHeight);
+            s32 left = s32(doodad.xc) - doodadWidth/2;
+            s32 top = s32(doodad.yc) - doodadHeight/2;
+            s32 right = s32(doodad.xc) + doodadWidth/2;
+            s32 bottom = s32(doodad.yc) + doodadHeight/2;
+
+            s32 selLeft = selections.getStartDrag().x;
+            s32 selTop = selections.getStartDrag().y;
+            s32 selRight = selections.getEndDrag().x;
+            s32 selBottom = selections.getEndDrag().y;
+            bool inBounds = left <= selRight && top <= selBottom && right >= selLeft && bottom >= selTop;
+            if ( inBounds )
+                selections.addDoodad(i);
+            else if ( selections.doodadIsSelected(i) )
+                selections.removeDoodad(i);
+        }
+    }
+    Redraw(true);
+}
+
 LRESULT GuiMap::ConfirmWindowClose(HWND hWnd)
 {
     if ( CanExit() )
@@ -2088,4 +2406,16 @@ bool GuiMap::TryBackup(bool & outCopyFailed)
         }
     }
     return false;
+}
+
+void GuiMap::addIsomUndo(const Chk::IsomRectUndo & isomUndo)
+{
+    if ( tileChanges != nullptr )
+        tileChanges->Insert(IsomChange::Make(isomUndo));
+}
+
+void GuiMap::refreshDoodadCache()
+{
+    auto newDoodadCache = Scenario::getDoodadCache(chkd.scData.terrain.get(Scenario::getTileset()));
+    this->doodadCache.swap(newDoodadCache);
 }

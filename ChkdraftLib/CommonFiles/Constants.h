@@ -52,8 +52,6 @@ constexpr DWORD defaultHoverTime = 10;
 
 constexpr u16 NO_LOCATION = 0xFFFF;
 
-extern const HFONT defaultFont;
-
 extern const std::vector<double> defaultZooms;
 
 extern const std::vector<u32> onOffMenuItems;
@@ -85,17 +83,6 @@ constexpr int numScStringColors = 28; // Could make StringGuide dynamic with res
 
 extern const std::vector<std::string> tilesetNames;
 
-extern const std::vector<std::string> badlandsInitTerrain;
-extern const std::vector<std::string> spaceInitTerrain;
-extern const std::vector<std::string> installInitTerrain;
-extern const std::vector<std::string> ashInitTerrain;
-extern const std::vector<std::string> jungInitTerrain;
-extern const std::vector<std::string> desertInitTerrain;
-extern const std::vector<std::string> iceInitTerrain;
-extern const std::vector<std::string> twilightInitTerrain;
-
-extern const std::vector<std::vector<std::string>> initTerrains;
-
 
 /** Used for identifying layers, should be equivilant
     to the zero-based position in the layer combobox */
@@ -108,6 +95,10 @@ enum class Layer {
     Sprites,
     FogView,
     CutCopyPaste
+};
+enum class TerrainSubLayer {
+    Isom,
+    Rectangular
 };
 
 // Generally for trees...

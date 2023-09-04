@@ -104,7 +104,7 @@ void MpqFile::save()
                 for ( size_t assetIndex = 0; assetIndex < numAddedMpqAssets; assetIndex ++ )
                     filestringMpqPaths[assetIndex] = addedMpqAssetPaths[assetIndex].c_str();
 
-               if ( SFileAddListFileEntries(hMpq, filestringMpqPaths.get(), (DWORD)numAddedMpqAssets) &&
+               if ( SUCCEEDED(SFileAddListFileEntries(hMpq, filestringMpqPaths.get(), (DWORD)numAddedMpqAssets)) &&
                     SFileCompactArchive(hMpq, NULL, false) )
                {
                     addedMpqAssetPaths.clear();
@@ -132,7 +132,7 @@ void MpqFile::close()
                 for ( size_t assetIndex = 0; assetIndex < numAddedMpqAssets; assetIndex ++ )
                     filestringMpqPaths[assetIndex] = addedMpqAssetPaths[assetIndex].c_str();
 
-               if ( SFileAddListFileEntries(hMpq, filestringMpqPaths.get(), (DWORD)numAddedMpqAssets) &&
+               if ( SUCCEEDED(SFileAddListFileEntries(hMpq, filestringMpqPaths.get(), (DWORD)numAddedMpqAssets)) &&
                     SFileCompactArchive(hMpq, NULL, false) )
                {
                     addedMpqAssetPaths.clear();

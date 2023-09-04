@@ -9,6 +9,7 @@ class StringGuideWindow : public WinLib::ClassWindow
     public:
         virtual ~StringGuideWindow();
         bool CreateThis(HWND hParent);
+        bool DestroyThis();
 
     protected:
         LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
