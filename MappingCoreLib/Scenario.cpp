@@ -2018,15 +2018,15 @@ void Scenario::setSoundPathStringId(size_t soundIndex, size_t soundPathStringId,
 
 void Scenario::setSwitchNameStringId(size_t switchIndex, size_t switchNameStringId, Chk::StrScope storageScope)
 {
-	if ( switchIndex < Chk::TotalSwitches )
+    if ( switchIndex < Chk::TotalSwitches )
     {
         if ( storageScope == Chk::StrScope::Game )
-		    this->switchNames[switchIndex] = u32(switchNameStringId);
+            this->switchNames[switchIndex] = u32(switchNameStringId);
         else
             this->editorStringOverrides.switchName[switchIndex] = u32(switchNameStringId);
     }
     else
-		throw std::out_of_range(std::string("switchIndex: ") + std::to_string((u32)switchIndex) + " is out of range for the SWNM section!");
+        throw std::out_of_range(std::string("switchIndex: ") + std::to_string((u32)switchIndex) + " is out of range for the SWNM section!");
 }
 
 void Scenario::setLocationNameStringId(size_t locationId, size_t locationNameStringId, Chk::StrScope storageScope)
