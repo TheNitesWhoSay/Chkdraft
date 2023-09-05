@@ -48,10 +48,11 @@ namespace WinLib
         WORD resourceId;
         int width;
         int height;
+        UINT fuLoad;
 
         friend constexpr bool operator==(const IconInfo & l, const IconInfo & r)
         {
-            return l.resourceId == r.resourceId && l.width == r.width && l.height == r.height;
+            return l.resourceId == r.resourceId && l.width == r.width && l.height == r.height && l.fuLoad == r.fuLoad;
         }
     };
 }
@@ -84,7 +85,7 @@ template <> struct std::hash<WinLib::IconInfo>
 {
     size_t operator()(const WinLib::IconInfo & iconInfo) const noexcept
     {
-        return (((size_t(iconInfo.width) << 8) + iconInfo.height) << 1) + iconInfo.resourceId;
+        return (((((size_t(iconInfo.width) << 8) + iconInfo.height) << 1) + iconInfo.resourceId) << 1) + iconInfo.fuLoad;
     }
 };
 
@@ -131,7 +132,7 @@ namespace WinLib
         HICON hImage = NULL;
 
         Icon(const IconInfo & info)
-            : hImage((HICON)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(info.resourceId), IMAGE_ICON, info.width, info.height, 0)) {}
+            : hImage((HICON)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(info.resourceId), IMAGE_ICON, info.width, info.height, info.fuLoad)) {}
         ~Icon() { if ( hImage != NULL ) ::DestroyIcon((HICON)hImage); }
     };
 
@@ -204,9 +205,9 @@ namespace WinLib
             return insertion.second ? insertion.first->second.hImage : NULL;
         }
 
-        static HICON getIcon(WORD resourceId, int width, int height)
+        static HICON getIcon(WORD resourceId, int width, int height, UINT fuLoad = 0)
         {
-            IconInfo iconInfo { resourceId, width, height };
+            IconInfo iconInfo { resourceId, width, height, fuLoad };
             auto found = icons.find(iconInfo);
             if ( found != icons.end() )
                 return found->second.hImage;
@@ -215,9 +216,15 @@ namespace WinLib
             return insertion.second ? insertion.first->second.hImage : NULL;
         }
 
-        static HCURSOR getCursor(WORD resourceId)
+        static HCURSOR getCursor(
+            #ifdef WINDOWS_UTF16
+            LPCWSTR lpCursorName
+            #else
+            LPCSTR lpCursorName
+            #endif
+            )
         {
-        
+            return LoadCursor(NULL, lpCursorName);
         }
     };
 }

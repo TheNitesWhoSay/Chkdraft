@@ -247,6 +247,11 @@ namespace WinLib {
             ::SendMessage(getHandle(), WM_SETFONT, (WPARAM)hFont, MAKELPARAM(redrawImmediately ? TRUE : FALSE, 0));
     }
 
+    void WindowsItem::setFont(HFONT hFont, bool redrawImmediately)
+    {
+        ::SendMessage(getHandle(), WM_SETFONT, (WPARAM)hFont, MAKELPARAM(redrawImmediately ? TRUE : FALSE, 0));
+    }
+
     void WindowsItem::setDefaultFont(bool redrawImmediately)
     {
         HFONT hFont = ResourceManager::getDefaultFont();
@@ -257,6 +262,12 @@ namespace WinLib {
     void WindowsItem::replaceChildFonts(int width, int height, const std::string & fontName)
     {
         HFONT hFont = ResourceManager::getFont(width, height, fontName);
+        if ( hFont != NULL )
+            ::EnumChildWindows(getHandle(), (WNDENUMPROC)WinLib::SetFont, (LPARAM)hFont);
+    }
+
+    void WindowsItem::replaceChildFonts(HFONT hFont)
+    {
         if ( hFont != NULL )
             ::EnumChildWindows(getHandle(), (WNDENUMPROC)WinLib::SetFont, (LPARAM)hFont);
     }

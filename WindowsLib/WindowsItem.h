@@ -44,8 +44,10 @@ namespace WinLib {
             void SetWinLong(int index, LONG newLong);
 
             void setFont(int width, int height, const std::string & fontName, bool redrawImmediately = true);
+            void setFont(HFONT hFont, bool redrawImmediately = true);
             void setDefaultFont(bool redrawImmediately = true);
             void replaceChildFonts(int width, int height, const std::string & fontName);
+            void replaceChildFonts(HFONT hFont);
             void defaultChildFonts();
 
             void LockCursor(); // Prevents cursor from leaving this window

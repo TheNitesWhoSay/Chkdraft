@@ -441,6 +441,11 @@ namespace WinLib {
             return SetBkMode(hDC, mode);
         }
 
+        int setStretchBltMode(int mode) const
+        {
+            return SetStretchBltMode(hDC, mode);
+        }
+
         COLORREF setBkColor(COLORREF color) const
         {
             return SetBkColor(hDC, color);
@@ -468,6 +473,54 @@ namespace WinLib {
         {
             icux::uistring sysText = icux::toUistring(text);
             return TabbedTextOut(hDC, x, y, sysText.c_str(), (int)sysText.size(), 0, NULL, 0) != 0;
+        }
+
+        void drawWrappableText(const std::string & text, const RECT & textArea)
+        {
+            auto width = textArea.right-textArea.left;
+            auto height = textArea.bottom-textArea.top;
+            icux::uistring str = icux::toUistring(text);
+
+            SIZE strSize = {};
+            RECT nullRect = {};
+            ::GetTextExtentPoint32(hDC, &str[0], (int)str.size(), &strSize);
+            s32 lineHeight = strSize.cy;
+
+            if ( strSize.cx < width )
+                ::ExtTextOut(hDC, textArea.left, textArea.top, ETO_OPAQUE, &nullRect, &str[0], (UINT)str.length(), 0);
+            else if ( height > lineHeight ) // Can word wrap
+            {
+                size_t lastCharPos = str.size() - 1;
+                s32 prevBottom = textArea.top;
+
+                while ( (textArea.top+height) - prevBottom > lineHeight && str.size() > 0 )
+                {
+                    // Binary search for the character length of this line
+                    size_t floor = 0;
+                    size_t ceil = str.size();
+                    while ( ceil - 1 > floor )
+                    {
+                        lastCharPos = (ceil - floor) / 2 + floor;
+                        ::GetTextExtentPoint32(hDC, &str[0], (int)lastCharPos, &strSize);
+                        if ( strSize.cx > width )
+                            ceil = lastCharPos;
+                        else
+                            floor = lastCharPos;
+                    }
+                    ::GetTextExtentPoint32(hDC, &str[0], (int)floor + 1, &strSize); // Correct last character if needed
+                    if ( strSize.cx > width )
+                        lastCharPos = floor;
+                    else
+                        lastCharPos = ceil;
+                    // End binary search
+
+                    ::ExtTextOut(hDC, textArea.left, prevBottom, ETO_OPAQUE, &nullRect, &str[0], (UINT)lastCharPos, 0);
+                    //while ( str[lastCharPos] == ' ' || str[lastCharPos] == '\t' )
+                    //    lastCharPos++;
+                    str = str.substr(lastCharPos, str.size());
+                    prevBottom += lineHeight;
+                }
+            }
         }
 
         std::uint16_t getTextWidth(const std::string & text) const
@@ -517,9 +570,19 @@ namespace WinLib {
             return ::BitBlt(dest, x, y, cx, cy, hDC, x1, y1, rop) != 0;
         }
 
-        bool stretchBlt(HDC dest, int xDest, int yDest, int wDest, int hDest, int xSrc, int ySrc, int wSrc, int hSrc, DWORD rop)
+        bool copySelfToBuffer() const
         {
-            return ::StretchBlt(dest, xDest, yDest, wDest, hDest, hDC, xSrc, ySrc, wSrc, hSrc, rop);
+            return ::BitBlt(hDC, drawArea.left, drawArea.top, drawArea.right-drawArea.left, drawArea.bottom-drawArea.top, parentDC, drawArea.left, drawArea.top, SRCCOPY) != 0;
+        }
+
+        bool stretchBlt(const DeviceContext & dest, int xDest, int yDest, int wDest, int hDest, int xSrc, int ySrc, int wSrc, int hSrc, DWORD rop) const
+        {
+            return ::StretchBlt(dest.getDcHandle(), xDest, yDest, wDest, hDest, hDC, xSrc, ySrc, wSrc, hSrc, rop);
+        }
+
+        bool drawIconEx(int xLeft, int yTop, HICON hIcon, int cxWidth, int cyWidth, UINT istepIfAniCur, HBRUSH hbrFlickerFreeDraw, UINT diFlags) const
+        {
+            return ::DrawIconEx(getDcHandle(), xLeft, yTop, hIcon, cxWidth, cyWidth, istepIfAniCur, hbrFlickerFreeDraw, diFlags) != 0;
         }
     };
 
