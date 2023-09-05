@@ -135,7 +135,7 @@ namespace WinLib {
     });
 
     // First user-message used by a given set of sub-windows
-    #define MSG_FIRST (TV::TV_LAST+1)
+    #define MSG_FIRST (WinLib::TV::TV_LAST+1)
 
     // First identifier used by a given set of sub-windows
     #define ID_FIRST 41001
