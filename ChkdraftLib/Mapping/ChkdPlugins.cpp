@@ -93,3 +93,88 @@ LRESULT CALLBACK PluginProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     }
     return 0;
 }
+
+bool signalRecompileError(const std::string & errorMessage)
+{
+    logger.error(errorMessage);
+    Error(errorMessage);
+    return false;
+}
+
+bool runMpqRecompiler()
+{
+    MapFile inputMapFile(MapFile::getDefaultOpenMapBrowser());
+    if ( inputMapFile.getFilePath().empty() || inputMapFile.empty() )
+        return signalRecompileError("Failed to open input file");
+    else if ( !inputMapFile.open(inputMapFile.getFilePath(), true, false) )
+        return signalRecompileError("Failed to open input file");
+    else
+        logger.info("Successfully opened input file");
+    
+    MpqFile outputFile{};
+    auto saveMapBrowser = MapFile::getDefaultSaveMapBrowser();
+    std::string outputFilePath = inputMapFile.getFilePath();
+    SaveType saveType = inputMapFile.getSaveType();
+    if ( !saveMapBrowser->browseForSavePath(outputFilePath, saveType) )
+        return signalRecompileError("Failed to get a save file path");
+    if ( outputFilePath == inputMapFile.getFilePath() )
+        return signalRecompileError("Input and output file paths must differ!");
+    else if ( findFile(outputFilePath) && !removeFile(outputFilePath) )
+        return signalRecompileError("File to overwrite could not be removed!");
+    else if ( !outputFile.open(outputFilePath, false) )
+        return signalRecompileError("Failed to create output file!");
+    else
+        logger.info("Successfully created output file");
+
+    if ( auto scenarioFile = inputMapFile.getFile("staredit\\scenario.chk") )
+    {
+        if ( outputFile.addFile("staredit\\scenario.chk", *scenarioFile) )
+            logger.info() << "Added scenario file" << std::endl;
+        else
+            return signalRecompileError("Error adding scenario file");
+    }
+    else
+        return signalRecompileError("Error getting scenario file");
+
+    bool warn = false;
+    for ( auto soundPath : inputMapFile.soundPaths )
+    {
+        if ( soundPath != Chk::StringId::UnusedSound )
+        {
+            if ( auto soundPathStr = inputMapFile.getString<RawString>(size_t(soundPath)) )
+            {
+                if ( auto soundFile = inputMapFile.getFile(soundPathStr->c_str()) )
+                {
+                    if ( outputFile.addFile(*soundPathStr, *soundFile) )
+                        logger.info() << "Added " << *soundPathStr << std::endl;
+                    else
+                    {
+                        warn = true;
+                        logger.warn() << "Failed to transfer sound to new MPQ: " << *soundPathStr << std::endl;
+                    }
+                }
+                else
+                {
+                    warn = true;
+                    logger.warn() << "Failed to get sound for transfer to new MPQ: " << *soundPathStr << std::endl;
+                }
+            }
+        }
+    }
+    inputMapFile.close();
+
+    outputFile.save();
+    outputFile.close();
+
+    if ( warn )
+    {
+        logger.info() << "Recompile success with warnings shown above." << std::endl;
+        mb("Recompile success with warnings (see logs)");
+    }
+    else
+    {
+        logger.info() << "Recompile success" << std::endl;
+        mb("Recompile success!");
+    }
+    return true;
+}
