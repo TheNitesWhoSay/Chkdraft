@@ -49,6 +49,8 @@ bool TrigModifyWindow::DestroyThis()
     conditionsWindow.DestroyThis();
     actionsWindow.DestroyThis();
     trigModifyTextWindow.DestroyThis();
+    this->trigIndex = NO_TRIGGER;
+    this->currTab = Tab::General;
     return ClassDialog::DestroyDialog();
 }
 

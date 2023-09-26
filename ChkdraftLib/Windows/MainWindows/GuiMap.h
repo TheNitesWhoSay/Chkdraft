@@ -57,6 +57,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
 /*   Sel/Paste  */  void clearSelectedTiles();
                     void clearSelectedDoodads();
                     void clearSelectedUnits();
+                    void clearSelectedSprites();
                     void clearSelection();
                     void selectAll();
                     void deleteSelection();
@@ -165,6 +166,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     void FinalizeLocationDrag(HWND hWnd, int mapX, int mapY, WPARAM wParam);
                     void FinalizeUnitSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam);
                     void FinalizeDoodadSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam);
+                    void FinalizeSpriteSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam);
                     LRESULT ConfirmWindowClose(HWND hWnd);
 
                     bool GetBackupPath(time_t currTime, std::string & outFilePath);

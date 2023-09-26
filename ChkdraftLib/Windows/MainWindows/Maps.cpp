@@ -2,6 +2,7 @@
 #include "../../Chkdraft.h"
 #include "../../Mapping/Undos/ChkdUndos/UnitChange.h"
 #include "../../Mapping/Undos/ChkdUndos/DoodadChange.h"
+#include "../../Mapping/Undos/ChkdUndos/SpriteChange.h"
 #include <memory>
 #include <string>
 #include <utility>
@@ -368,6 +369,26 @@ void Maps::ChangePlayer(u8 newPlayer)
             }
             currentlyActiveMap->AddUndo(doodadPlayerChangeUndo);
         }
+        else if ( currentlyActiveMap->GetSelections().hasSprites() )
+        {
+            if ( clipboard.isPasting() )
+            {
+                auto & sprites = clipboard.getSprites();
+                for ( auto & pasteSprite : sprites )
+                    pasteSprite.sprite.owner = newPlayer;
+            }
+        }
+
+        currentlyActiveMap->PlayerChanged(newPlayer);
+    }
+    else if ( currentlyActiveMap->getLayer() == Layer::Sprites )
+    {
+        if ( clipboard.isPasting() )
+        {
+            auto & sprites = clipboard.getSprites();
+            for ( auto & pasteSprite : sprites )
+                pasteSprite.sprite.owner = newPlayer;
+        }
 
         currentlyActiveMap->PlayerChanged(newPlayer);
     }
@@ -467,6 +488,21 @@ void Maps::startPaste(bool isQuickPaste)
         if ( clipboard.hasUnits() || clipboard.hasQuickUnits() )
         {
             currentlyActiveMap->clearSelectedUnits();
+            clipboard.beginPasting(isQuickPaste);
+
+            TRACKMOUSEEVENT tme;
+            tme.cbSize = sizeof(TRACKMOUSEEVENT);
+            tme.dwFlags = TME_HOVER;
+            tme.hwndTrack = currentlyActiveMap->getHandle();
+            tme.dwHoverTime = defaultHoverTime;
+            TrackMouseEvent(&tme);
+        }
+    }
+    else if ( currentlyActiveMap->getLayer() == Layer::Sprites )
+    {
+        if ( clipboard.hasSprites() || clipboard.hasQuickSprites() )
+        {
+            currentlyActiveMap->clearSelectedSprites();
             clipboard.beginPasting(isQuickPaste);
 
             TRACKMOUSEEVENT tme;

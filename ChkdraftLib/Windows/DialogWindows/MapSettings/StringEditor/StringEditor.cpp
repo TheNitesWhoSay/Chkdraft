@@ -49,6 +49,10 @@ bool StringEditorWindow::DestroyThis()
     stringGuide.DestroyThis();
     stringPreviewWindow.DestroyThis();
     ClassWindow::DestroyThis();
+    this->extended = false;
+    this->currSelString = 0;
+    this->numVisibleStrings = 0;
+    this->stringListDc = std::nullopt;
     return true;
 }
 

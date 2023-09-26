@@ -48,6 +48,7 @@ bool CUWPsWindow::CreateThis(HWND hParent, u64 windowId)
 bool CUWPsWindow::DestroyThis()
 {
     ClassWindow::DestroyThis();
+    this->selectedCuwp = -1;
     return true;
 }
 

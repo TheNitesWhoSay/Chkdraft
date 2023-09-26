@@ -38,13 +38,25 @@ class PasteDoodadNode
         const Sc::Terrain::DoodadPlacibility* doodadPlacibility;
         
         constexpr bool isSprite() const { return (spriteFlags & Chk::Sprite::SpriteFlags::DrawAsSprite) == Chk::Sprite::SpriteFlags::DrawAsSprite; }
-        constexpr bool overlayFlipped() const { return (spriteFlags & Chk::Sprite::SpriteFlags::OverlayFlipped) == Chk::Sprite::SpriteFlags::OverlayFlipped; }
+        constexpr bool overlayFlipped() const { return (spriteFlags & Chk::Sprite::SpriteFlags::OverlayFlipped_Deprecated) == Chk::Sprite::SpriteFlags::OverlayFlipped_Deprecated; }
         
         PasteDoodadNode(u16 startTileGroup, s32 tileX, s32 tileY);
         PasteDoodadNode(const Chk::Doodad & doodad);
         virtual ~PasteDoodadNode();
 
         bool isPlaceable(const Scenario & scenario, s32 xTileStart, s32 yTileStart) const;
+};
+
+class PasteSpriteNode
+{
+    public:
+        Chk::Sprite sprite;
+        s32 xc;
+        s32 yc;
+        
+        PasteSpriteNode() = delete;
+        PasteSpriteNode(const Chk::Sprite & sprite);
+        virtual ~PasteSpriteNode();
 };
 
 class PasteUnitNode
@@ -71,6 +83,7 @@ class Clipboard
         bool hasTiles();
         bool hasDoodads();
         bool hasUnits() { return copyUnits.size() > 0; }
+        bool hasSprites() { return copySprites.size() > 0; }
         void copy(GuiMap & map, Layer layer);
 
         void setQuickIsom(size_t terrainTypeIndex);
@@ -81,6 +94,9 @@ class Clipboard
 
         void addQuickUnit(const Chk::Unit & unit);
         bool hasQuickUnits() { return quickUnits.size() > 0; }
+        
+        void addQuickSprite(const Chk::Sprite & sprite);
+        bool hasQuickSprites() { return quickSprites.size() > 0; }
 
         void beginPasting(bool isQuickPaste);
         void endPasting();
@@ -92,6 +108,7 @@ class Clipboard
         std::vector<PasteTileNode> & getTiles();
         std::vector<PasteDoodadNode> & getDoodads();
         std::vector<PasteUnitNode> & getUnits();
+        std::vector<PasteSpriteNode> & getSprites();
         bool isPasting() { return pasting; }
         bool isQuickPasting() { return pasting && quickPaste; }
         bool isPreviousPasteLoc(u16 x, u16 y) { return x == prevPaste.x && y == prevPaste.y; }
@@ -104,6 +121,7 @@ class Clipboard
         void pasteDoodads(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos);
         void fillPasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos);
         void pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos, bool allowStack);
+        void pasteSprites(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos);
 
 
     private:
@@ -119,6 +137,8 @@ class Clipboard
         std::vector<PasteTileNode> quickTiles;
         std::vector<PasteDoodadNode> copyDoodads;
         std::vector<PasteDoodadNode> quickDoodads;
+        std::vector<PasteSpriteNode> copySprites;
+        std::vector<PasteSpriteNode> quickSprites;
         std::vector<PasteUnitNode> copyUnits;
         std::vector<PasteUnitNode> quickUnits;
 
@@ -127,6 +147,7 @@ class Clipboard
         void ClearCopyTiles();
         void ClearCopyDoodads();
         void ClearCopyUnits();
+        void ClearCopySprites();
         void ClearQuickItems();
 };
 

@@ -4,6 +4,7 @@
 #include "../Mapping/Undos/ChkdUndos/MtxmChange.h"
 #include "../Mapping/Undos/ChkdUndos/UnitCreateDel.h"
 #include "../Mapping/Undos/ChkdUndos/DoodadCreateDel.h"
+#include "../Mapping/Undos/ChkdUndos/SpriteCreateDel.h"
 #include <set>
 
 extern Logger logger;
@@ -151,6 +152,18 @@ bool PasteDoodadNode::isPlaceable(const Scenario & scenario, s32 xTileStart, s32
     return true;
 }
 
+PasteSpriteNode::PasteSpriteNode(const Chk::Sprite & sprite)
+{
+    this->sprite = sprite;
+    this->xc = sprite.xc;
+    this->yc = sprite.yc;
+}
+
+PasteSpriteNode::~PasteSpriteNode()
+{
+
+}
+
 PasteUnitNode::PasteUnitNode(const Chk::Unit & unit)
 {
     this->unit = unit;
@@ -177,6 +190,7 @@ Clipboard::~Clipboard()
 {
     ClearCopyTiles();
     ClearCopyDoodads();
+    ClearCopySprites();
     ClearQuickItems();
 }
 
@@ -307,6 +321,44 @@ void Clipboard::copy(GuiMap & map, Layer layer)
             }
         }
     }
+    else if ( layer == Layer::Sprites )
+    {
+        ClearCopySprites();
+        if ( selections.hasSprites() )
+        {
+            size_t firstSpriteIndex = selections.getFirstSprite();
+            const Chk::Sprite & currSprite = map.getSprite(firstSpriteIndex);
+            edges.left = currSprite.xc;
+            edges.right = currSprite.xc;
+            edges.top = currSprite.yc;
+            edges.bottom = currSprite.yc;
+
+            auto & selectedSprites = selections.getSprites();
+            for ( size_t spriteIndex : selectedSprites )
+            {
+                const Chk::Sprite & currSprite = map.getSprite(spriteIndex);
+                PasteSpriteNode add(currSprite);
+
+                if      ( add.xc < edges.left   ) edges.left   = add.xc;
+                else if ( add.xc > edges.right  ) edges.right  = add.xc;
+                if      ( add.yc < edges.top    ) edges.top    = add.yc;
+                else if ( add.yc > edges.bottom ) edges.bottom = add.yc;
+
+                copySprites.push_back(add);
+            }
+
+            POINT middle; // Determine where the new middle of the paste is
+            middle.x = edges.left+(edges.right-edges.left)/2;
+            middle.y = edges.top+(edges.bottom-edges.top)/2;
+
+            // Update sprites position relative to the cursor
+            for ( auto & sprite : copySprites )
+            {
+                sprite.xc -= middle.x;
+                sprite.yc -= middle.y;
+            }
+        }
+    }
 }
 
 void Clipboard::setQuickIsom(size_t terrainTypeIndex)
@@ -335,6 +387,11 @@ void Clipboard::addQuickTile(u16 index, s32 xc, s32 yc)
 void Clipboard::addQuickUnit(const Chk::Unit & unit)
 {
     quickUnits.push_back(unit);
+}
+
+void Clipboard::addQuickSprite(const Chk::Sprite & sprite)
+{
+    quickSprites.push_back(sprite);
 }
 
 void Clipboard::beginPasting(bool isQuickPaste)
@@ -376,6 +433,9 @@ void Clipboard::doPaste(Layer layer, TerrainSubLayer terrainSubLayer, s32 mapCli
         case Layer::Units:
             pasteUnits(mapClickX, mapClickY, map, undos, allowStack);
             break;
+        case Layer::Sprites:
+            pasteSprites(mapClickX, mapClickY, map, undos);
+            break;
     }
 }
 
@@ -401,6 +461,14 @@ std::vector<PasteUnitNode> & Clipboard::getUnits()
         return quickUnits;
     else
         return copyUnits;
+}
+
+std::vector<PasteSpriteNode> & Clipboard::getSprites()
+{
+    if ( quickPaste )
+        return quickSprites;
+    else
+        return copySprites;
 }
 
 void Clipboard::ClearCopyTiles()
@@ -430,12 +498,23 @@ void Clipboard::ClearCopyUnits()
     edges.bottom = -1;
 }
 
+void Clipboard::ClearCopySprites()
+{
+    copySprites.clear();
+    edges.left = -1;
+    edges.top = -1;
+    edges.right = -1;
+    edges.bottom = -1;
+}
+
 void Clipboard::ClearQuickItems()
 {
     this->terrainTypeIndex = 0;
     this->prevIsomPaste = Chk::IsomDiamond::none();
     quickTiles.clear();
     quickUnits.clear();
+    quickDoodads.clear();
+    quickSprites.clear();
 }
 
 void Clipboard::toggleFillSimilarTiles()
@@ -656,4 +735,24 @@ void Clipboard::pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & u
         }
     }
     CM->AddUndo(unitCreates);
+}
+
+void Clipboard::pasteSprites(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos)
+{
+    auto spriteCreates = ReversibleActions::Make();
+    auto & pasteSprites = getSprites();
+    for ( auto & pasteSprite : pasteSprites )
+    {
+        pasteSprite.sprite.xc = u16(mapClickX + pasteSprite.xc);
+        pasteSprite.sprite.yc = u16(mapClickY + pasteSprite.yc);
+        if ( mapClickX + (s32(pasteSprite.xc)) >= 0 && mapClickY + (s32(pasteSprite.yc)) >= 0 )
+        {
+            prevPaste.x = pasteSprite.sprite.xc;
+            prevPaste.y = pasteSprite.sprite.yc;
+            size_t numSprites = map.numSprites();
+            map.addSprite(pasteSprite.sprite);
+            spriteCreates->Insert(SpriteCreateDel::Make((u16)numSprites));
+        }
+    }
+    CM->AddUndo(spriteCreates);
 }

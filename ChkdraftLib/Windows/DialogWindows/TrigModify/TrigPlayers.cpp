@@ -60,6 +60,9 @@ bool TrigPlayersWindow::CreateThis(HWND hParent, u64 windowId)
 bool TrigPlayersWindow::DestroyThis()
 {
     ClassWindow::DestroyThis();
+    this->trigIndex = 0;
+    this->refreshing = true;
+    this->advancedMode = true;
     return true;
 }
 

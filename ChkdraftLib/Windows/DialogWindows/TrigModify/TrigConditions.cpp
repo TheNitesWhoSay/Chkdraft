@@ -50,6 +50,8 @@ bool TrigConditionsWindow::DestroyThis()
 {
     suggestions.Hide();
     ClassWindow::DestroyThis();
+    this->trigIndex = 0;
+    this->isPasting = false;
     return true;
 }
 

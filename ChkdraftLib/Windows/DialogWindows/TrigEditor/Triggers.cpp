@@ -67,6 +67,12 @@ bool TriggersWindow::CreateThis(HWND hParent, u64 windowId)
 bool TriggersWindow::DestroyThis()
 {
     ClassWindow::DestroyThis();
+    this->currTrigger = NO_TRIGGER;
+    this->displayAll = true;
+    this->numVisibleTrigs = 0;
+    this->changeGroupHighlightOnly = false;
+    this->trigListDc = std::nullopt;
+    this->drawingAll = false;
     return true;
 }
 

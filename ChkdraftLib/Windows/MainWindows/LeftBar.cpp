@@ -84,6 +84,21 @@ void LeftBar::NotifyTreeItemSelected(LPARAM newValue)
                 chkd.locationWindow.RefreshLocationInfo();
             CM->viewLocation(u16(itemData));
             break;
+
+        case TreeTypeSprite: // itemData = sprite index
+            CM->clearSelectedSprites();
+            chkd.maps.endPaste();
+            if ( CM->getLayer() != Layer::Sprites )
+                chkd.maps.ChangeLayer(Layer::Sprites);
+
+            Chk::Sprite sprite {};
+            sprite.type = (Sc::Sprite::Type)itemData;
+            sprite.owner = CM->getCurrPlayer();
+            sprite.flags = Chk::Sprite::toPureSpriteFlags(chkd.scData.terrain.doodadSpriteFlags[itemData]); // TODO: sprite-units?
+
+            chkd.maps.clipboard.addQuickSprite(sprite);
+            chkd.maps.startPaste(true);
+            break;
         }
     }
 }
