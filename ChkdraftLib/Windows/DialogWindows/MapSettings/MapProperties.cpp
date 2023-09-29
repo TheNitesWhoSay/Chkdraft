@@ -166,6 +166,9 @@ bool MapPropertiesWindow::CreateThis(HWND hParent, u64 windowId)
 bool MapPropertiesWindow::DestroyThis()
 {
     ClassWindow::DestroyThis();
+    this->possibleTitleUpdate = false;
+    this->possibleDescriptionUpdate = false;
+    this->refreshing = false;
     return true;
 }
 

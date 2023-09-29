@@ -53,6 +53,9 @@ bool SoundEditorWindow::CreateThis(HWND hParent, u64 windowId)
 bool SoundEditorWindow::DestroyThis()
 {
     ClassWindow::DestroyThis();
+    this->wavQuality = WavQuality::Uncompressed;
+    this->selectedSoundListIndex = -1;
+    this->soundListDc = std::nullopt;
     return true;
 }
 

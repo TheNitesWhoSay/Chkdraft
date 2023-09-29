@@ -6,6 +6,7 @@
 #include "UnitTree.h"
 #include "IsomTree.h"
 #include "DoodadTree.h"
+#include "SpriteTree.h"
 
 class MainTree : public WinLib::TreeViewControl
 {
@@ -15,6 +16,7 @@ class MainTree : public WinLib::TreeViewControl
         DoodadTree doodadTree;
         UnitTree unitTree;
         LocationTree locTree;
+        SpriteTree spriteTree;
 
         void BuildMainTree();
 

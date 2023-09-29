@@ -56,6 +56,9 @@ bool TrigGeneralWindow::CreateThis(HWND hParent, u64 windowId)
 bool TrigGeneralWindow::DestroyThis()
 {
     ClassWindow::DestroyThis();
+    this->trigIndex = 0;
+    this->refreshing = true;
+    this->advancedMode = false;
     return true;
 }
 

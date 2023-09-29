@@ -19,6 +19,8 @@ Selections::~Selections()
 {
     removeTiles();
     removeUnits();
+    removeDoodads();
+    removeSprites();
 }
 
 void Selections::setStartDrag(s32 x, s32 y)
@@ -309,6 +311,24 @@ void Selections::removeDoodads()
     selDoodads.clear();
 }
 
+void Selections::addSprite(size_t index)
+{
+    if ( !spriteIsSelected(index) )
+        selSprites.insert(selSprites.begin(), index);
+}
+
+void Selections::removeSprite(size_t index)
+{
+    auto toErase = std::find(selSprites.begin(), selSprites.end(), index);
+    if ( toErase != selSprites.end() )
+        selSprites.erase(toErase);
+}
+
+void Selections::removeSprites()
+{
+    selSprites.clear();
+}
+
 bool Selections::unitIsSelected(u16 index)
 {
     for ( u16 & unitIndex : selUnits )
@@ -324,6 +344,16 @@ bool Selections::doodadIsSelected(size_t index)
     for ( size_t doodadIndex : selDoodads )
     {
         if ( doodadIndex == index )
+            return true;
+    }
+    return false;
+}
+
+bool Selections::spriteIsSelected(size_t index)
+{
+    for ( size_t spriteIndex : selSprites )
+    {
+        if ( spriteIndex == index )
             return true;
     }
     return false;
@@ -382,6 +412,11 @@ std::vector<size_t> & Selections::getDoodads()
     return selDoodads;
 }
 
+std::vector<size_t> & Selections::getSprites()
+{
+    return selSprites;
+}
+
 u16 Selections::getFirstUnit()
 {
     if ( selUnits.size() > 0 )
@@ -398,7 +433,15 @@ u16 Selections::getFirstDoodad()
         return 0;
 }
 
-u16 Selections::getHighestIndex()
+size_t Selections::getFirstSprite()
+{
+    if ( selSprites.size() > 0 )
+        return selSprites[0];
+    else
+        return 0;
+}
+
+u16 Selections::getHighestUnitIndex()
 {
     int highestIndex = -1;
     for ( u16 & unitIndex : selUnits )
@@ -413,15 +456,37 @@ u16 Selections::getHighestIndex()
         return (u16)highestIndex;
 }
 
-u16 Selections::getLowestIndex()
+u16 Selections::getLowestUnitIndex()
 {
-    u16 highestIndex = u16_max;
+    u16 lowestIndex = u16_max;
     for ( u16 & unitIndex : selUnits )
     {
-        if ( unitIndex < highestIndex )
-            highestIndex = unitIndex;
+        if ( unitIndex < lowestIndex )
+            lowestIndex = unitIndex;
     }
-    return highestIndex;
+    return lowestIndex;
+}
+
+size_t Selections::getHighestSpriteIndex()
+{
+    int highestIndex = -1;
+    for ( size_t spriteIndex : selSprites )
+    {
+        if ( (int)spriteIndex > highestIndex )
+            highestIndex = (int)spriteIndex;
+    }
+    return size_t(highestIndex);
+}
+
+size_t Selections::getLowestSpriteIndex()
+{
+    size_t lowestIndex = std::numeric_limits<size_t>::max();
+    for ( size_t spriteIndex : selSprites )
+    {
+        if ( spriteIndex < lowestIndex )
+            lowestIndex = spriteIndex;
+    }
+    return lowestIndex;
 }
 
 void Selections::sortUnits(bool ascending)

@@ -51,6 +51,8 @@ bool TrigModifyTextWindow::CreateThis(HWND hParent, u64 windowId)
 bool TrigModifyTextWindow::DestroyThis()
 {
     ClassWindow::DestroyThis();
+    this->trigIndex = 0;
+    this->autoCompile = false;
     return true;
 }
 

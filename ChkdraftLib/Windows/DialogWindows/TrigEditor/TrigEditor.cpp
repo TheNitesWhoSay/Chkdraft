@@ -48,6 +48,7 @@ bool TrigEditorWindow::DestroyThis()
     countersWindow.DestroyThis();
     cuwpsWindow.DestroyThis();
     switchesWindow.DestroyThis();
+    this->currTab = Tab::Triggers;
     return ClassDialog::DestroyDialog();
 }
 

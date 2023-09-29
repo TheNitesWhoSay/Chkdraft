@@ -70,6 +70,9 @@ bool UpgradeSettingsWindow::CreateThis(HWND hParent, u64 windowId)
 bool UpgradeSettingsWindow::DestroyThis()
 {
     ClassWindow::DestroyThis();
+    this->selectedUpgrade = -1;
+    this->isDisabled = true;
+    this->refreshing = false;
     return true;
 }
 

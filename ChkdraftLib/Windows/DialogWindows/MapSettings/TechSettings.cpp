@@ -54,6 +54,9 @@ bool TechSettingsWindow::CreateThis(HWND hParent, u64 windowId)
 bool TechSettingsWindow::DestroyThis()
 {
     ClassWindow::DestroyThis();
+    this->selectedTech = -1;
+    this->refreshing = false;
+    this->isDisabled = true;
     return true;
 }
 

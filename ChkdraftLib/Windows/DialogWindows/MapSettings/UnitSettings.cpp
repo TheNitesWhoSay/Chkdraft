@@ -70,6 +70,10 @@ bool UnitSettingsWindow::CreateThis(HWND hParent, u64 windowId)
 bool UnitSettingsWindow::DestroyThis()
 {
     ClassWindow::DestroyThis();
+    this->selectedUnitType = Sc::Unit::Type::NoUnit;
+    this->possibleUnitNameUpdate = false;
+    this->isDisabled = true;
+    this->refreshing = false;
     return true;
 }
 

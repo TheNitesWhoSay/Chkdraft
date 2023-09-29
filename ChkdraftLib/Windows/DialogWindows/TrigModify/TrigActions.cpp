@@ -50,6 +50,11 @@ bool TrigActionsWindow::DestroyThis()
 {
     suggestions.Hide();
     ClassWindow::DestroyThis();
+    this->trigIndex = 0;
+    this->isPasting = false;
+    this->stringEditEnabled = false;
+    this->soundEditEnabled = false;
+    this->unitPropertiesEditEnabled = false;
     return true;
 }
 

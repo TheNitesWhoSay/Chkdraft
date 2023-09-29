@@ -88,6 +88,7 @@ bool ForcesWindow::CreateThis(HWND hParent, u64 windowId)
 bool ForcesWindow::DestroyThis()
 {
     ClassWindow::DestroyThis();
+    this->playerBeingDragged = 255;
     return true;
 }
 

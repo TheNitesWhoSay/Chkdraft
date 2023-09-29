@@ -495,13 +495,15 @@ void Graphics::DrawSprites(ChkdBitmap & bitmap)
                 Chk::PlayerColor color = (sprite.owner < Sc::Player::TotalSlots ?
                     map.getPlayerColor(sprite.owner) : (Chk::PlayerColor)sprite.owner);
 
+                bool isSelected = selections.spriteIsSelected(spriteId);
+
                 if ( isSprite )
                     SpriteToBits(bitmap, palette, color, u16(screenWidth), u16(screenHeight),
-                        screenLeft, screenTop, (u16)sprite.type, sprite.xc, sprite.yc, false);
+                        screenLeft, screenTop, (u16)sprite.type, sprite.xc, sprite.yc, false, isSelected);
                 else
                     UnitToBits(bitmap, palette, color, u16(screenWidth), u16(screenHeight),
                         screenLeft, screenTop, (u16)sprite.type, sprite.xc, sprite.yc,
-                        frame, false);
+                        frame, isSelected);
             }
         }
     }
@@ -1026,10 +1028,27 @@ void UnitToBits(ChkdBitmap & bitmap, ChkdPalette & palette, u8 color, u16 bitWid
 }
 
 void SpriteToBits(ChkdBitmap & bitmap, ChkdPalette & palette, u8 color, u16 bitWidth, u16 bitHeight,
-                   s32 xStart, s32 yStart, u16 spriteID, u16 spriteXC, u16 spriteYC, bool flipped)
+                   s32 xStart, s32 yStart, u16 spriteID, u16 spriteXC, u16 spriteYC, bool flipped, bool selected)
 {
     const Sc::Sprite::GrpFile & curr = chkd.scData.sprites.getGrp(chkd.scData.sprites.getImage(chkd.scData.sprites.getSprite(spriteID).imageFile).grpFile).get();
     Sc::SystemColor remapped[8];
+    if ( selected )
+    {
+        u32 selectionGrpId = spriteID >= 130 && spriteID <= 517 ?
+            chkd.scData.sprites.getImage(chkd.scData.sprites.getSprite(spriteID).selectionCircleImage+561).grpFile :
+            chkd.scData.sprites.getImage(chkd.scData.sprites.getSprite(130).selectionCircleImage+561).grpFile;
+
+        if ( selectionGrpId < chkd.scData.sprites.numGrps() )
+        {
+            const Sc::Sprite::GrpFile & selCirc = chkd.scData.sprites.getGrp(selectionGrpId).get();
+            u16 offsetY = spriteYC + chkd.scData.sprites.getSprite(spriteID).selectionCircleOffset;
+            std::memcpy(remapped, &palette[0], sizeof(remapped));
+            std::memcpy(&palette[0], &chkd.scData.tselect.palette[0], sizeof(remapped));
+            GrpToBits(bitmap, palette, bitWidth, bitHeight, xStart, yStart, selCirc, spriteXC, offsetY, 0, 0, false);
+            std::memcpy(&palette[0], remapped, sizeof(remapped));
+        }
+    }
+
     std::memcpy(remapped, &palette[8], sizeof(remapped));
     std::memcpy(&palette[8], &chkd.scData.tunit.palette[color < 16 ? 8*color : 8*(color%16)], sizeof(remapped));
     GrpToBits(bitmap, palette, bitWidth, bitHeight, xStart, yStart, curr, spriteXC, spriteYC, 0, color, flipped);
@@ -1498,13 +1517,13 @@ void DrawPasteGraphics(const WinLib::DeviceContext & dc, ChkdPalette & palette, 
                         if ( doodad.isSprite() )
                         {
                             SpriteToBits(graphicBits, palette, Chk::PlayerColor::Azure_NeutralColor, width, height,
-                                0, 0, doodad.overlayIndex, u16(xStart+tileWidth*16), u16(yStart+tileHeight*16), doodad.overlayFlipped());
+                                0, 0, doodad.overlayIndex, u16(xStart+tileWidth*16), u16(yStart+tileHeight*16), doodad.overlayFlipped(), false);
                         }
                         else // Overlay is unit index
                         {
                             auto spriteIndex = chkd.scData.units.getFlingy(chkd.scData.units.getUnit(Sc::Unit::Type(doodad.overlayIndex)).graphics).sprite;
                             SpriteToBits(graphicBits, palette, Chk::PlayerColor::Azure_NeutralColor, width, height,
-                                0, 0, spriteIndex, u16(xStart+tileWidth*16), u16(yStart+tileHeight*16), doodad.overlayFlipped());
+                                0, 0, spriteIndex, u16(xStart+tileWidth*16), u16(yStart+tileHeight*16), doodad.overlayFlipped(), false);
                         }
                     }
                 }
@@ -1538,6 +1557,38 @@ void DrawPasteGraphics(const WinLib::DeviceContext & dc, ChkdPalette & palette, 
                 {
                     UnitToBits(graphicBits, palette, color, width, height, sScreenLeft, sScreenTop,
                         (u16)pasteUnit.unit.type, u16(cursor.x+ pasteUnit.xc), u16(cursor.y+ pasteUnit.yc), 0, false );
+                }
+            }
+        }
+
+        dc.setBitsToDevice(0, 0, width, height, 0, 0, 0, height, &graphicBits[0], &bmi);
+    }
+    else if ( layer == Layer::Sprites )
+    {
+        ChkdBitmap graphicBits;
+        graphicBits.resize(((size_t)width)*((size_t)height));
+
+        BITMAPINFO bmi = GetBMI(width, height);
+        dc.getDiBits(0, height, &graphicBits[0], &bmi);
+
+        u16 tileset = map.getTileset();
+
+        s32 sScreenLeft = screenLeft;
+        s32 sScreenTop = screenTop;
+
+        POINT cursor = selections.getEndDrag();
+        if ( cursor.x != -1 && cursor.y != -1 )
+        {
+            std::vector<PasteSpriteNode> sprites = clipboard.getSprites();
+            for ( auto & pasteSprite : sprites )
+            {
+                Chk::PlayerColor color = (pasteSprite.sprite.owner < Sc::Player::TotalSlots ?
+                    map.getPlayerColor(pasteSprite.sprite.owner) : (Chk::PlayerColor)pasteSprite.sprite.owner);
+
+                if ( cursor.y + pasteSprite.yc >= 0 )
+                {
+                    SpriteToBits(graphicBits, palette, color, width, height, sScreenLeft, sScreenTop,
+                        (u16)pasteSprite.sprite.type, u16(cursor.x + pasteSprite.xc), u16(cursor.y + pasteSprite.yc), false, false);
                 }
             }
         }

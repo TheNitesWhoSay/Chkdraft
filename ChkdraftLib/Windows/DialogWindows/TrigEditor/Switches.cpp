@@ -42,6 +42,9 @@ bool SwitchesWindow::CreateThis(HWND hParent, u64 windowId)
 bool SwitchesWindow::DestroyThis()
 {
     ClassWindow::DestroyThis();
+    this->selectedSwitch = -1;
+    this->refreshing = false;
+    this->refreshingSwitchList = false;
     return true;
 }
 

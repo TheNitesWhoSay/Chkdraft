@@ -38,6 +38,7 @@ bool MapSettingsWindow::DestroyThis()
     stringEditorWindow.DestroyThis();
     soundEditorWindow.DestroyThis();
     ClassDialog::DestroyDialog();
+    this->currTab = Tab::MapProperties;
     return true;
 }
 

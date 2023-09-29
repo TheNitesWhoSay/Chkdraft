@@ -266,9 +266,9 @@ void UnitPropertiesWindow::RepopulateList()
             auto unitName = CM->getUnitName<ChkdString>(unit.type, true);
             WindowsItem::SetWinText(*unitName);
 
-            int row = listUnits.GetItemRow(selections.getHighestIndex());
+            int row = listUnits.GetItemRow(selections.getHighestUnitIndex());
             listUnits.EnsureVisible(row, false);
-            row = listUnits.GetItemRow(selections.getLowestIndex());
+            row = listUnits.GetItemRow(selections.getLowestUnitIndex());
             listUnits.EnsureVisible(row, false);
         }
     }
@@ -618,9 +618,9 @@ void UnitPropertiesWindow::NotifyMoveUpPressed()
     }
 
     ListView_SortItems(hUnitList, ForwardCompareLvItems, this);
-    int row = listUnits.GetItemRow(selections.getHighestIndex());
+    int row = listUnits.GetItemRow(selections.getHighestUnitIndex());
     listUnits.EnsureVisible(row, false);
-    row = listUnits.GetItemRow(selections.getLowestIndex());
+    row = listUnits.GetItemRow(selections.getLowestUnitIndex());
     listUnits.EnsureVisible(row, false);
     unitChanges->Insert(UnitIndexMoveBoundary::Make());
 
@@ -657,9 +657,9 @@ void UnitPropertiesWindow::NotifyMoveDownPressed()
         CM->AddUndo(unitChanges);
 
     ListView_SortItems(hUnitList, ForwardCompareLvItems, this);
-    int row = listUnits.GetItemRow(selections.getLowestIndex());
+    int row = listUnits.GetItemRow(selections.getLowestUnitIndex());
     listUnits.EnsureVisible(row, false);
-    row = listUnits.GetItemRow(selections.getHighestIndex());
+    row = listUnits.GetItemRow(selections.getHighestUnitIndex());
     listUnits.EnsureVisible(row, false);
     listUnits.SetRedraw(true);
 }
@@ -726,7 +726,7 @@ void UnitPropertiesWindow::NotifyDeletePressed()
     auto unitDeletes = ReversibleActions::Make();
     while ( selections.hasUnits() )
     {
-        u16 index = selections.getHighestIndex();
+        u16 index = selections.getHighestUnitIndex();
         selections.removeUnit(index);
         listUnits.RemoveRow(index);
 

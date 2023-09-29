@@ -88,6 +88,9 @@ namespace Sc {
         using BrowserPtr = std::shared_ptr<Browser>;
     };
 
+    class TblFile;
+    using TblFilePtr = std::shared_ptr<TblFile>;
+
     class Player {
     public:
         static constexpr size_t Total = 12;
@@ -714,7 +717,7 @@ namespace Sc {
             inline bool framesAreValid(const std::string & archiveFileName) const;
         };
 
-        bool load(const std::vector<ArchiveFilePtr> & orderedSourceFiles);
+        bool load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, Sc::TblFilePtr imagesTbl);
         const Grp & getGrp(size_t grpIndex);
         const ImageDatEntry & getImage(size_t imageIndex) const;
         const DatEntry & getSprite(size_t spriteIndex) const;
@@ -726,6 +729,23 @@ namespace Sc {
         std::vector<Grp> grps;
         std::vector<ImageDatEntry> images;
         std::vector<DatEntry> sprites;
+
+    public:
+        struct TreeSprite
+        {
+            size_t spriteIndex;
+            std::string spriteName;
+        };
+
+        struct SpriteGroup
+        {
+            std::string groupName;
+            std::vector<SpriteGroup> subGroups;
+            std::vector<TreeSprite> memberSprites;
+        };
+
+        std::vector<SpriteGroup> spriteGroups;
+        Sc::TblFilePtr imagesTbl;
     };
 
     class Upgrade {
@@ -966,7 +986,6 @@ namespace Sc {
     private:
         std::vector<std::string> strings;
     };
-    using TblFilePtr = std::shared_ptr<TblFile>;
 
     class Ai {
     public:
@@ -3005,18 +3024,19 @@ namespace Sc {
             });
 
             enum_t(Flags, u16, {
-                BitZero = BIT_0,
-                // Bits 1-3 Unused
-                BitFour = BIT_4,
-                // Bits 5 & 6 Unused
-                BitSeven = BIT_7,
-                BitEight = BIT_8,
-                BitNine = BIT_9,
-                BitTen = BIT_10,
-                // Bit_11 Unused
-                SpriteOverlay = BIT_12, // in SC, receeding creep
-                UnitOverlay = BIT_13,
-                OverlayFlipped = BIT_14, // in SC, temporary creep
+                BitZero = BIT_0, // Set in staredit, not read by SC
+                // Bits 1-3 Unused in staredit/SC
+                BitFour = BIT_4, // Scmdraft notes "(Provides Cover?)", the flag is set in some doodads and is not read by SC
+                // Bits 5 & 6 Unused in staredit/SC
+                BitSeven = BIT_7, // Scmdraft notes "(Always set!)"; set for doodads which include an overlay (& some which do not) and is not read by SC
+                BitEight = BIT_8, // Set in staredit, not read by SC
+                BitNine = BIT_9, // Scmdraft notes "(Medium Ground Lvl?), it's set for some doodads, and is not read by SC
+                BitTen = BIT_10, // Scmdraft notes "(High Ground Lvl?), it's set for some doodads, and is not read by SC
+                // Bit_11 Unused in staredit/SC
+                DrawAsSprite = BIT_12, // Indicates whether this sprite should be treated as a unit; in SC: receeding creep
+                IsUnit = BIT_13, // Set in staredit, but is not read by SC - rather SpriteOverlay or !SpriteOverlay is checked
+                OverlayFlipped_Deprecated = BIT_14, // In SC: temporary creep
+                SpriteUnitDiabled = BIT_15 // If the SpriteOverlay flag is NOT set (this is a sprite-unit), then the unit is disabled
             });
 
             u16 index; // Always 1 for doodads, internally modified to the cv5 index by Chkdraft during data load
@@ -3066,7 +3086,8 @@ namespace Sc {
 
             void loadIsom(size_t tilesetIndex);
 
-            bool load(size_t tilesetIndex, const std::vector<ArchiveFilePtr> & orderedSourceFiles, const std::string & tilesetName, Sc::TblFilePtr statTxt);
+            bool load(size_t tilesetIndex, const std::vector<ArchiveFilePtr> & orderedSourceFiles, const std::string & tilesetName, Sc::TblFilePtr statTxt,
+                std::array<u16, Sprite::TotalSprites> & doodadSpriteFlags, std::array<u16, Unit::TotalTypes> & doodadUnitFlags);
 
             static inline size_t getGroupIndex(const u16 & tileIndex) { return size_t(tileIndex / 16); }
 
@@ -3078,6 +3099,10 @@ namespace Sc {
         const Tiles & get(const Tileset & tileset) const;
         bool load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, Sc::TblFilePtr statTxt);
         const std::array<SystemColor, NumColors> & getColorPalette(Tileset tileset) const;
+        void mergeSpriteFlags(const Sc::Unit & unitData);
+
+        std::array<u16, Sprite::TotalSprites> doodadSpriteFlags {};
+        std::array<u16, Unit::TotalTypes> doodadUnitFlags {};
 
     private:
         Tiles tilesets[NumTilesets];
@@ -3088,6 +3113,8 @@ namespace Sc {
         e.g. StarCraft asset files like "arr\\units.dat" or "tileset\badlands.cv5"
     */
     class Data {
+        bool loadSpriteGroups(Sc::TblFilePtr imagesTbl);
+
     public:
         Terrain terrain;
         Unit units;

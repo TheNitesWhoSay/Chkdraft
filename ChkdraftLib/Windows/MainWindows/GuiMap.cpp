@@ -10,6 +10,8 @@
 #include "../../Mapping/Undos/ChkdUndos/LocationChange.h"
 #include "../../Mapping/Undos/ChkdUndos/DoodadChange.h"
 #include "../../Mapping/Undos/ChkdUndos/DoodadCreateDel.h"
+#include "../../Mapping/Undos/ChkdUndos/SpriteChange.h"
+#include "../../Mapping/Undos/ChkdUndos/SpriteCreateDel.h"
 #include "../../../CrossCutLib/Logger.h"
 #include <WindowsX.h>
 
@@ -560,7 +562,9 @@ u8 GuiMap::GetPlayerOwnerStringId(u8 player)
 void GuiMap::refreshScenario()
 {
     selections.removeTiles();
+    selections.removeDoodads();
     selections.removeUnits();
+    selections.removeSprites();
     chkd.mainPlot.leftBar.mainTree.isomTree.UpdateIsomTree();
     chkd.mainPlot.leftBar.mainTree.doodadTree.UpdateDoodadTree();
     chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
@@ -596,9 +600,16 @@ void GuiMap::clearSelectedUnits()
     selections.removeUnits();
 }
 
+void GuiMap::clearSelectedSprites()
+{
+    selections.removeUnits();
+}
+
 void GuiMap::clearSelection()
 {
     selections.removeTiles();
+    selections.removeDoodads();
+    selections.removeSprites();
     selections.removeUnits();
 }
 
@@ -671,6 +682,14 @@ void GuiMap::selectAll()
             {
                 if ( !selections.doodadIsSelected(i) )
                     selections.addDoodad(i);
+            }
+            Redraw(true);
+            break;
+        case Layer::Sprites:
+            for ( size_t i=0; i<Scenario::numSprites(); ++i )
+            {
+                if ( !selections.spriteIsSelected(i) )
+                    selections.addSprite(i);
             }
             Redraw(true);
             break;
@@ -763,7 +782,7 @@ void GuiMap::deleteSelection()
                     while ( selections.hasUnits() )
                     {
                         // Get the highest index in the selection
-                        u16 index = selections.getHighestIndex();
+                        u16 index = selections.getHighestUnitIndex();
                         selections.removeUnit(index);
                             
                         const Chk::Unit & delUnit = Scenario::getUnit(index);
@@ -805,6 +824,23 @@ void GuiMap::deleteSelection()
                 }
             }
             break;
+
+        case Layer::Sprites:
+            {
+                auto deletes = ReversibleActions::Make();
+                while ( selections.hasSprites() )
+                {
+                    // Get the highest index in the selection
+                    auto index = selections.getHighestSpriteIndex();
+                    selections.removeSprite(index);
+
+                    const Chk::Sprite & delSprite = Scenario::getSprite(index);
+                    deletes->Insert(SpriteCreateDel::Make(index, delSprite));
+                    Scenario::deleteSprite(index);
+                }
+                undos.AddUndo(deletes);
+            }
+            break;
     }
 
     RedrawMap = true;
@@ -826,20 +862,36 @@ void GuiMap::paste(s32 mapClickX, s32 mapClickY)
 
 void GuiMap::PlayerChanged(u8 newPlayer)
 {
-    auto unitChanges = ReversibleActions::Make();
-    auto & selUnits = selections.getUnits();
-    for ( u16 unitIndex : selUnits )
+    if ( currLayer == Layer::Units )
     {
-        Chk::Unit & unit = Scenario::getUnit(unitIndex);
-        unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::Owner, unit.owner));
-        unit.owner = newPlayer;
+        auto unitChanges = ReversibleActions::Make();
+        auto & selUnits = selections.getUnits();
+        for ( u16 unitIndex : selUnits )
+        {
+            Chk::Unit & unit = Scenario::getUnit(unitIndex);
+            unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::Owner, unit.owner));
+            unit.owner = newPlayer;
 
-        if ( chkd.unitWindow.getHandle() != nullptr )
-            chkd.unitWindow.ChangeUnitsDisplayedOwner(unitIndex, newPlayer);
+            if ( chkd.unitWindow.getHandle() != nullptr )
+                chkd.unitWindow.ChangeUnitsDisplayedOwner(unitIndex, newPlayer);
+        }
+        chkd.unitWindow.ChangeDropdownPlayer(newPlayer);
+        undos.AddUndo(unitChanges);
+        Redraw(true);
     }
-    chkd.unitWindow.ChangeDropdownPlayer(newPlayer);
-    undos.AddUndo(unitChanges);
-    Redraw(true);
+    else if ( currLayer == Layer::Sprites )
+    {
+        auto spriteChanges = ReversibleActions::Make();
+        auto & selSprites = selections.getSprites();
+        for ( size_t spriteIndex : selSprites )
+        {
+            Chk::Sprite & sprite = Scenario::getSprite(spriteIndex);
+            spriteChanges->Insert(SpriteChange::Make(spriteIndex, sprite));
+            sprite.owner = newPlayer;
+        }
+        undos.AddUndo(spriteChanges);
+        Redraw(true);
+    }
 }
 
 Selections & GuiMap::GetSelections()
@@ -888,6 +940,10 @@ void GuiMap::undo()
                 chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
             }
             break;
+        case Layer::Sprites:
+            selections.removeSprites();
+            undos.doUndo(UndoTypes::SpriteChange, this);
+            break;
     }
     Redraw(true);
 }
@@ -918,6 +974,10 @@ void GuiMap::redo()
                     chkd.locationWindow.RefreshLocationInfo();
             }
             refreshScenario();
+            break;
+        case Layer::Sprites:
+            selections.removeSprites();
+            undos.doRedo(UndoTypes::SpriteChange, this);
             break;
     }
     Redraw(true);
@@ -1994,6 +2054,8 @@ void GuiMap::LButtonUp(HWND hWnd, int x, int y, WPARAM wParam)
                 FinalizeUnitSelection(hWnd, x, y, wParam);
             else if ( currLayer == Layer::Doodads )
                 FinalizeDoodadSelection(hWnd, x, y, wParam);
+            else if ( currLayer == Layer::Sprites )
+                FinalizeSpriteSelection(hWnd, x, y, wParam);
         }
 
         selections.setStartDrag(-1, -1);
@@ -2350,6 +2412,50 @@ void GuiMap::FinalizeDoodadSelection(HWND hWnd, int mapX, int mapY, WPARAM wPara
                 selections.addDoodad(i);
             else if ( selections.doodadIsSelected(i) )
                 selections.removeDoodad(i);
+        }
+    }
+    Redraw(true);
+}
+
+void GuiMap::FinalizeSpriteSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam)
+{
+    selections.setEndDrag(mapX, mapY);
+    selections.sortDragPoints();
+    if ( wParam != MK_CONTROL )
+        selections.removeSprites();
+
+    size_t numSprites = Scenario::numSprites();
+    for ( size_t i=0; i<numSprites; ++i )
+    {
+        int spriteLeft = 0, spriteRight = 0,
+            spriteTop = 0, spriteBottom = 0;
+
+        const Chk::Sprite & sprite = Scenario::getSprite(i);
+        const auto & grp = chkd.scData.sprites.getGrp(chkd.scData.sprites.getImage(chkd.scData.sprites.getSprite(size_t(sprite.type)).imageFile).grpFile).get();
+
+        if ( (u16)sprite.type < (u16)Sc::Sprite::TotalSprites )
+        {
+            spriteLeft = sprite.xc - grp.grpWidth/2;
+            spriteRight = sprite.xc + grp.grpWidth/2;
+            spriteTop = sprite.yc - grp.grpHeight/2;
+            spriteBottom = sprite.yc + grp.grpHeight/2;
+        }
+        else
+        {
+            spriteLeft = sprite.xc - chkd.scData.units.getUnit(Sc::Unit::Type::TerranMarine).unitSizeLeft;
+            spriteRight = sprite.xc + chkd.scData.units.getUnit(Sc::Unit::Type::TerranMarine).unitSizeRight;
+            spriteTop = sprite.yc - chkd.scData.units.getUnit(Sc::Unit::Type::TerranMarine).unitSizeUp;
+            spriteBottom = sprite.yc + chkd.scData.units.getUnit(Sc::Unit::Type::TerranMarine).unitSizeDown;
+        }
+
+        if ( selections.getStartDrag().x <= spriteRight && selections.getEndDrag().x >= spriteLeft &&
+            selections.getStartDrag().y <= spriteBottom && selections.getEndDrag().y >= spriteTop )
+        {
+            bool wasSelected = selections.spriteIsSelected(i);
+            if ( wasSelected )
+                selections.removeSprite(i);
+            else
+                selections.addSprite(i);
         }
     }
     Redraw(true);

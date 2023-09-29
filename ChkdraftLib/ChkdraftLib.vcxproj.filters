@@ -368,6 +368,15 @@
     <ClInclude Include="Mapping\Undos\ChkdUndos\DoodadChange.h">
       <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
     </ClInclude>
+    <ClInclude Include="Windows\ChkdControls\SpriteTree.h">
+      <Filter>Header Files\Windows\Chkd Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="Mapping\Undos\ChkdUndos\SpriteCreateDel.h">
+      <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="Mapping\Undos\ChkdUndos\SpriteChange.h">
+      <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Chkdraft.cpp">
@@ -602,6 +611,15 @@
       <Filter>Source Files\Mapping\Undos\ChkdUndos</Filter>
     </ClCompile>
     <ClCompile Include="Mapping\Undos\ChkdUndos\DoodadChange.cpp">
+      <Filter>Source Files\Mapping\Undos\ChkdUndos</Filter>
+    </ClCompile>
+    <ClCompile Include="Windows\ChkdControls\SpriteTree.cpp">
+      <Filter>Source Files\Windows\Chkd Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="Mapping\Undos\ChkdUndos\SpriteCreateDel.cpp">
+      <Filter>Source Files\Mapping\Undos\ChkdUndos</Filter>
+    </ClCompile>
+    <ClCompile Include="Mapping\Undos\ChkdUndos\SpriteChange.cpp">
       <Filter>Source Files\Mapping\Undos\ChkdUndos</Filter>
     </ClCompile>
   </ItemGroup>

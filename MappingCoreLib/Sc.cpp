@@ -4,6 +4,7 @@
 #include "CascArchive.h"
 #include <algorithm>
 #include <chrono>
+#include <set>
 
 extern Logger logger;
 
@@ -1799,7 +1800,8 @@ void Sc::Terrain::Tiles::loadIsom(size_t tilesetIndex)
     defaultBrush = terrainTypeInfo[Isom::defaultBrushIndex[tilesetIndex]];
 }
 
-bool Sc::Terrain::Tiles::load(size_t tilesetIndex, const std::vector<ArchiveFilePtr> & orderedSourceFiles, const std::string & tilesetName, Sc::TblFilePtr statTxt)
+bool Sc::Terrain::Tiles::load(size_t tilesetIndex, const std::vector<ArchiveFilePtr> & orderedSourceFiles, const std::string & tilesetName, Sc::TblFilePtr statTxt,
+    std::array<u16, Sprite::TotalSprites> & doodadSpriteFlags, std::array<u16, Unit::TotalTypes> & doodadUnitFlags)
 {
     const std::string tilesetMpqDirectory = "tileset";
     const std::string mpqFilePath = makeMpqFilePath(tilesetMpqDirectory, tilesetName);
@@ -1905,6 +1907,13 @@ bool Sc::Terrain::Tiles::load(size_t tilesetIndex, const std::vector<ArchiveFile
                 const auto & doodad = (const DoodadCv5 &)tileGroups[tileGroupIndex];
                 if ( doodad.index == 1 && doodad.doodadName != 0 )
                 {
+                    if ( doodad.overlayIndex != 0 )
+                    {
+                        if ( (doodad.flags & Doodad::Flags::DrawAsSprite) == Doodad::Flags::DrawAsSprite )
+                            doodadSpriteFlags[doodad.overlayIndex] = doodad.flags;
+                        else
+                            doodadUnitFlags[doodad.overlayIndex] = doodad.flags;
+                    }
                     bool newGroup = true;
                     for ( auto & existingGroup : doodadGroups )
                     {
@@ -1967,8 +1976,10 @@ bool Sc::Terrain::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, S
 {
     auto start = std::chrono::high_resolution_clock::now();
     bool success = true;
+    this->doodadSpriteFlags.fill(0);
+    this->doodadUnitFlags.fill(0);
     for ( size_t i=0; i<NumTilesets; i++ )
-        success &= tilesets[i].load(i, orderedSourceFiles, TilesetNames[i], statTxt);
+        success &= tilesets[i].load(i, orderedSourceFiles, TilesetNames[i], statTxt, doodadSpriteFlags, doodadUnitFlags);
     
     auto finish = std::chrono::high_resolution_clock::now();
     logger.debug() << "Terrain loading completed in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
@@ -1981,6 +1992,12 @@ const std::array<Sc::SystemColor, Sc::NumColors> & Sc::Terrain::getColorPalette(
         return tilesets[tileset].systemColorPalette;
     else
         return tilesets[tileset % Terrain::NumTilesets].systemColorPalette;
+}
+
+void Sc::Terrain::mergeSpriteFlags(const Sc::Unit & unitData)
+{
+    for ( size_t i=0; i<Sc::Unit::TotalTypes; ++i )
+        doodadSpriteFlags[unitData.getFlingy(unitData.getUnit(Sc::Unit::Type(i)).graphics).sprite] = doodadUnitFlags[i];
 }
 
 bool Sc::Weapon::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles)
@@ -2176,25 +2193,21 @@ bool Sc::Sprite::Grp::framesAreValid(const std::string & assetArchivePath) const
     return true;
 }
 
-bool Sc::Sprite::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles)
+bool Sc::Sprite::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, Sc::TblFilePtr imagesTbl)
 {
     logger.debug("Loading Sprites...");
     auto start = std::chrono::high_resolution_clock::now();
-    TblFile tblFile;
-    if ( !tblFile.load(orderedSourceFiles, "arr\\images.tbl") )
-    {
-        logger.info() << "Failed to load arr\\images.tbl" << std::endl;
-        return false;
-    }
+
+    this->imagesTbl = imagesTbl;
 
     Sc::Sprite::Grp blankGrp;
     blankGrp.makeBlank();
     
     grps.push_back(blankGrp);
-    size_t numStrings = tblFile.numStrings();
+    size_t numStrings = imagesTbl->numStrings();
     for ( size_t i=1; i<=numStrings; i++ )
     {
-        const std::string & imageFilePath = tblFile.getString(i);
+        const std::string & imageFilePath = imagesTbl->getString(i);
         Sc::Sprite::Grp grp;
         if ( getMpqFileExtension(imageFilePath).compare(".grp") == 0 )
         {
@@ -3781,6 +3794,241 @@ void Sc::Isom::TerrainTypeShapes::populateLinkIdsToSolidBrushes(Span<TileGroup> 
     }
 }
 
+bool Sc::Data::loadSpriteGroups(Sc::TblFilePtr imagesTbl)
+{
+    constexpr auto totalSprites = Sc::Sprite::TotalSprites;
+
+    auto & doodads = sprites.spriteGroups.emplace_back(Sc::Sprite::SpriteGroup{"Doodads"});
+    for ( u16 tilesetIndex = Sc::Terrain::Tileset::Badlands; tilesetIndex < Sc::Terrain::NumTilesets; ++tilesetIndex )
+    {
+        std::string tilesetName = terrain.TilesetNames[tilesetIndex];
+        tilesetName[0] = std::toupper(tilesetName[0]);
+        auto & tilesetDoodads = doodads.subGroups.emplace_back(Sc::Sprite::SpriteGroup{tilesetName});
+        const auto & tileset = terrain.get(Sc::Terrain::Tileset(tilesetIndex));
+        for ( const auto & doodadGroup : tileset.doodadGroups )
+        {
+            auto & doodadGroupSprites = tilesetDoodads.subGroups.emplace_back(Sc::Sprite::SpriteGroup{doodadGroup.name});
+            Sc::Sprite::SpriteGroup* spriteGroup = nullptr;
+            for ( const auto & doodadStartTileGroup : doodadGroup.doodadStartTileGroup )
+            {
+                const auto & doodadDat = (Sc::Terrain::DoodadCv5 &)tileset.tileGroups[doodadStartTileGroup];
+                bool hasSprite = (doodadDat.flags & Sc::Terrain::Doodad::Flags::DrawAsSprite) == Sc::Terrain::Doodad::Flags::DrawAsSprite;
+                if ( hasSprite )
+                {
+                    const auto & spriteDat = sprites.getSprite(doodadDat.overlayIndex);
+                    const auto & imageDat = sprites.getImage(spriteDat.imageFile);
+                    const auto & imageFileStr = imagesTbl->getString(imageDat.grpFile);
+                    std::string imageFileName = getSystemFileName(imageFileStr);
+
+                    doodadGroupSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{doodadDat.overlayIndex, imageFileName});
+                }
+            }
+
+            switch ( tilesetIndex )
+            {
+                case Sc::Terrain::Tileset::Badlands:
+                    if ( doodadGroup.name == "Asphalt" )
+                    {
+                        doodadGroupSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{112, "LCSignCC.grp (unused)"});
+                        doodadGroupSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{113, "LCSignCC.grp (unused)"});
+                        doodadGroupSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{114, "LCSignCC.grp (unused)"});
+                        doodadGroupSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{115, "LCSignCC.grp (unused)"});
+                        doodadGroupSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{116, "LCSignCC.grp (unused)"});
+                        doodadGroupSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{117, "LCSignCC.grp (unused)"});
+                        doodadGroupSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{118, "LCSignCC.grp (unused)"});
+                        doodadGroupSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{125, "LCSignCC.grp (unused)"});
+                        doodadGroupSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{126, "LCSignCC.grp (unused)"});
+                        doodadGroupSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{129, "LCSignCC.grp (unused)"});
+                    }
+                    break;
+                case Sc::Terrain::Tileset::Desert:
+                    if ( doodadGroup.name == "High Dirt" )
+                    {
+                        doodadGroupSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{452, "HDPLNT03.grp (unused)"});
+                        doodadGroupSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{471, "HDLbox01.grp (flipped, unused)"});
+                    }
+                    else if ( doodadGroup.name == "Dirt" )
+                        doodadGroupSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{475, "LDLbox01.grp (flipped, unused)"});
+                    else if ( doodadGroup.name == "Sand Dunes" )
+                        doodadGroupSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{477, "LDMachn1.grp (flipped, unused)"});
+                    break;
+                case Sc::Terrain::Tileset::Arctic:
+                    if ( doodadGroup.name == "High Snow" )
+                    {
+                        doodadGroupSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{406, "HDradarl.grp (unused)"});
+                        doodadGroupSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{410, "HDSTre01.grp (unused)"});
+                        doodadGroupSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{411, "HDSTre02.grp (unused)"});
+                        doodadGroupSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{412, "HDSTre03.grp (unused)"});
+                        doodadGroupSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{413, "HDSTre04.grp (unused)"});
+                        doodadGroupSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{439, "HDRadr02.grp (flipped, unused)"});
+                    }
+                    else if ( doodadGroup.name == "Snow" )
+                    {
+                        doodadGroupSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{416, "HDTwr02.grp (unused)"});
+                        doodadGroupSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{435, "LDRck01.grp (flipped, unused)"});
+                        doodadGroupSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{436, "LDRck02.grp (flipped, unused)"});
+                    }
+                    break;
+                case Sc::Terrain::Tileset::Twilight:
+                    if ( doodadGroup.name == "Dirt" )
+                        doodadGroupSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{393, "Lddrill.grp (unused)"});
+                    break;
+            }
+
+            if ( doodadGroupSprites.memberSprites.empty() )
+                tilesetDoodads.subGroups.pop_back();
+            else
+            {
+                std::sort(tilesetDoodads.subGroups.back().memberSprites.begin(), tilesetDoodads.subGroups.back().memberSprites.end(),
+                    [](const auto & l, const auto & r) { return l.spriteIndex < r.spriteIndex; });
+            }
+        }
+    }
+    
+    auto & unitSprites = sprites.spriteGroups.emplace_back(Sc::Sprite::SpriteGroup{"Units"});
+    for ( size_t i=0; i<Sc::Unit::TotalTypes; ++i )
+    {
+        const auto & unitDat = units.getUnit(Sc::Unit::Type(i));
+        const auto & flingyDat = units.getFlingy(unitDat.graphics);
+        const auto & spriteDat = sprites.getSprite(flingyDat.sprite);
+        const auto & imageDat = sprites.getImage(spriteDat.imageFile);
+        const auto & imageFileStr = imagesTbl->getString(imageDat.grpFile);
+        std::string imageFileName = getSystemFileName(imageFileStr);
+
+        unitSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{flingyDat.sprite, units.defaultDisplayNames[i]});
+    }
+    
+    auto & remains = sprites.spriteGroups.emplace_back(Sc::Sprite::SpriteGroup{"Remains"});
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{230, "Ghost Remains"});
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{236, "Marine Remains"});
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{490, "Medic Remains"});
+
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{134, "Broodling Remains"});
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{139, "Defiler Remains"});
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{141, "Drone Remains"});
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{143, "Egg Remains"});
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{147, "Hydralisk Remains"});
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{150, "Larva Remains"});
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{158, "Ultralisk Remains"});
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{160, "Zergling Remains"});
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{484, "Lurker Remains"});
+
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{192, "Dragoon Remains"});
+    
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{186, "Zerg Building Rubble - Small"});
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{187, "Zerg Building Rubble - Large"});
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{223, "Protoss Building Rubble - Small"});
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{224, "Protoss Building Rubble - Large"});
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{273, "Terran Building Rubble - Small"});
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{274, "Terran Building Rubble - Large"});
+
+    auto & construction = sprites.spriteGroups.emplace_back(Sc::Sprite::SpriteGroup{"Construction"});
+    construction.memberSprites.push_back(Sc::Sprite::TreeSprite{270, "Terran Construction - Large"});
+    construction.memberSprites.push_back(Sc::Sprite::TreeSprite{271, "Terran Construction - Small"});
+    construction.memberSprites.push_back(Sc::Sprite::TreeSprite{182, "Zergling Building Spawn - Small"});
+    construction.memberSprites.push_back(Sc::Sprite::TreeSprite{183, "Zergling Building Spawn - Medium"});
+    construction.memberSprites.push_back(Sc::Sprite::TreeSprite{184, "Zergling Building Spawn - Large"});
+    construction.memberSprites.push_back(Sc::Sprite::TreeSprite{319, "Egg Spawn"});
+
+    auto & explosions = sprites.spriteGroups.emplace_back(Sc::Sprite::SpriteGroup{"Explosions"});
+    explosions.memberSprites.push_back(Sc::Sprite::TreeSprite{136, "Infested Terran Explosion"});
+    explosions.memberSprites.push_back(Sc::Sprite::TreeSprite{185, "Zerg Building Explosion"});
+    explosions.memberSprites.push_back(Sc::Sprite::TreeSprite{222, "Explosion - Large"});
+    explosions.memberSprites.push_back(Sc::Sprite::TreeSprite{267, "Nuke Hit"});
+    explosions.memberSprites.push_back(Sc::Sprite::TreeSprite{272, "Building Explosion - Large"});
+    explosions.memberSprites.push_back(Sc::Sprite::TreeSprite{316, "Small Explosion (Unused)"});
+    explosions.memberSprites.push_back(Sc::Sprite::TreeSprite{317, "Double Explosion"});
+    explosions.memberSprites.push_back(Sc::Sprite::TreeSprite{131, "Scourge Death"});
+    explosions.memberSprites.push_back(Sc::Sprite::TreeSprite{132, "Scourge Explosion"});
+    explosions.memberSprites.push_back(Sc::Sprite::TreeSprite{145, "Guardian Death"});
+    explosions.memberSprites.push_back(Sc::Sprite::TreeSprite{152, "Mutalisk Death"});
+    explosions.memberSprites.push_back(Sc::Sprite::TreeSprite{154, "Overlord Death"});
+    explosions.memberSprites.push_back(Sc::Sprite::TreeSprite{156, "Queen Death"});
+    explosions.memberSprites.push_back(Sc::Sprite::TreeSprite{483, "Devourer Death"});
+    
+    std::set<u16> knownWeaponSprites {};
+    auto & weaponSprites = sprites.spriteGroups.emplace_back(Sc::Sprite::SpriteGroup{"Weapons"});
+    for ( size_t i=0; i<Weapon::Total; ++i )
+    {
+        const auto & weapon = weapons.get(Sc::Weapon::Type(i));
+        const auto & flingyDat = units.getFlingy(weapon.graphics);
+        if ( knownWeaponSprites.find(flingyDat.sprite) == knownWeaponSprites.end() )
+        {
+            knownWeaponSprites.insert(flingyDat.sprite);
+            const auto & spriteDat = sprites.getSprite(flingyDat.sprite);
+            const auto & imageDat = sprites.getImage(spriteDat.imageFile);
+            const auto & imageFileStr = imagesTbl->getString(imageDat.grpFile);
+            std::string imageFileName = getSystemFileName(imageFileStr);
+
+            weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{flingyDat.sprite, imageFileName});
+        }
+    }
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{309, "smoke.grp"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{310, "GreSmoke.grp"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{332, "spooge.grp"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{365, "SporeHit.grp"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{367, "SpoTrail.grp"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{368, "gSmoke.grp"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{371, "plasma.grp"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{372, "PlasDrip.grp"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{373, "HKTrail.grp"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{374, "ehaMed.grp"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{375, "ehaMed.grp"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{376, "ehaMed.grp"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{378, "flamer.grp"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{505, "bsmoke.grp"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{513, "ZDvHit.grp"});
+    
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{354, "PDripHit.grp"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{369, "dragbull.grp (unused)"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{511, "Spike.grp"});
+
+    std::sort(weaponSprites.memberSprites.begin(), weaponSprites.memberSprites.end(),
+        [](const auto & l, const auto & r) { return l.spriteIndex < r.spriteIndex; });
+
+    auto & abilities = sprites.spriteGroups.emplace_back(Sc::Sprite::SpriteGroup{"Abilities"});
+    abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{231, "Nuke Target Dot"});
+    abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{322, "Burrowing Dust"});
+    abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{361, "Stasis"});
+    abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{364, "Ensnare"});
+    abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{379, "Recall Field"});
+    abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{380, "Scanner Sweep Hit"});
+    abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{500, "Feedback - Small"});
+    abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{501, "Feedback - Medium"});
+    abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{502, "Feedback - Large"});
+    abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{507, "Neutron Flare"});
+    abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{514, "Maelstrom Hit"});
+    abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{351, "Yamato Gun"});
+
+    abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{323, "Building Landing Dust 1"});
+    abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{324, "Building Landing Dust 2"});
+    abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{325, "Building Landing Dust 3"});
+    abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{326, "Building Landing Dust 4"});
+    abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{327, "Building Landing Dust 5"});
+    abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{328, "Building Lifting Dust 1"});
+    abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{329, "Building Lifting Dust 2"});
+    abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{330, "Building Lifting Dust 3"});
+    abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{331, "Building Lifting Dust 4"});
+
+    auto & misc = sprites.spriteGroups.emplace_back(Sc::Sprite::SpriteGroup{"Misc"});
+    misc.memberSprites.push_back(Sc::Sprite::TreeSprite{318, "Cursor"});
+    misc.memberSprites.push_back(Sc::Sprite::TreeSprite{320, "High Templar Glow"});
+    misc.memberSprites.push_back(Sc::Sprite::TreeSprite{321, "Psi Field - Right Upper"});
+    misc.memberSprites.push_back(Sc::Sprite::TreeSprite{344, "Magna Pulse"});
+    misc.memberSprites.push_back(Sc::Sprite::TreeSprite{300, "White Circle"});
+    misc.memberSprites.push_back(Sc::Sprite::TreeSprite{504, "White Circle"});
+    misc.memberSprites.push_back(Sc::Sprite::TreeSprite{247, "Science Vessel Turret"});
+    misc.memberSprites.push_back(Sc::Sprite::TreeSprite{377, "Bunker Overlay"});
+
+    misc.memberSprites.push_back(Sc::Sprite::TreeSprite{311, "Vespene Puff 1"});
+    misc.memberSprites.push_back(Sc::Sprite::TreeSprite{312, "Vespene Puff 2"});
+    misc.memberSprites.push_back(Sc::Sprite::TreeSprite{313, "Vespene Puff 3"});
+    misc.memberSprites.push_back(Sc::Sprite::TreeSprite{314, "Vespene Puff 4"});
+    misc.memberSprites.push_back(Sc::Sprite::TreeSprite{315, "Vespene Puff 5"});
+
+    return true;
+}
+
 bool Sc::Data::load(Sc::DataFile::BrowserPtr dataFileBrowser, const std::vector<Sc::DataFile::Descriptor> & dataFiles,
     const std::string & expectedStarCraftDirectory, FileBrowserPtr<u32> starCraftBrowser)
 {
@@ -3818,11 +4066,17 @@ bool Sc::Data::load(Sc::DataFile::BrowserPtr dataFileBrowser, const std::vector<
 
     if ( !units.load(orderedSourceFiles) )
         CHKD_ERR("Failed to load unit dat");
+    else
+        terrain.mergeSpriteFlags(units);
 
     if ( !weapons.load(orderedSourceFiles) )
         CHKD_ERR("Failed to load Weapons.dat");
+    
+    Sc::TblFilePtr imagesTbl = Sc::TblFilePtr(new Sc::TblFile());
+    if ( !imagesTbl->load(orderedSourceFiles, "arr\\images.tbl") )
+        CHKD_ERR("Failed to load arr\\images.tbl");
 
-    if ( !sprites.load(orderedSourceFiles) )
+    if ( !sprites.load(orderedSourceFiles, imagesTbl) )
         CHKD_ERR("Failed to load sprites!");
 
     if ( !tunit.load(orderedSourceFiles, "game\\tunit.pcx") )
@@ -3833,6 +4087,9 @@ bool Sc::Data::load(Sc::DataFile::BrowserPtr dataFileBrowser, const std::vector<
 
     if ( !tselect.load(orderedSourceFiles, "game\\tselect.pcx") )
         CHKD_ERR("Failed to load tselect.pcx");
+
+    if ( !loadSpriteGroups(imagesTbl) )
+        CHKD_ERR("Failed to load sprite groups");
     
     auto finish = std::chrono::high_resolution_clock::now();
     logger.debug() << "StarCraft data loading completed in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
