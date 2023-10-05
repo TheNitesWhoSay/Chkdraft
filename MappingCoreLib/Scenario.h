@@ -458,7 +458,7 @@ struct Scenario
     void insertTrigger(size_t triggerIndex, const Chk::Trigger & trigger);
     void deleteTrigger(size_t triggerIndex);
     void moveTrigger(size_t triggerIndexFrom, size_t triggerIndexTo);
-    std::vector<Chk::Trigger> replaceRange(size_t beginIndex, size_t endIndex, std::vector<Chk::Trigger> & triggers);
+    std::vector<Chk::Trigger> replaceTriggerRange(size_t beginIndex, size_t endIndex, std::vector<Chk::Trigger> & triggers);
         
     bool hasTriggerExtension(size_t triggerIndex) const;
     Chk::ExtendedTrigData & getTriggerExtension(size_t triggerIndex, bool addIfNotFound = false);
@@ -480,6 +480,7 @@ struct Scenario
     void insertBriefingTrigger(size_t briefingTriggerIndex, const Chk::Trigger & briefingTrigger);
     void deleteBriefingTrigger(size_t briefingTriggerIndex);
     void moveBriefingTrigger(size_t briefingTriggerIndexFrom, size_t briefingTriggerIndexTo);
+    std::vector<Chk::Trigger> replaceBriefingTriggerRange(size_t beginIndex, size_t endIndex, std::vector<Chk::Trigger> & triggers);
 
     size_t addSound(size_t stringId);
     bool stringIsSound(size_t stringId) const;

@@ -31,6 +31,7 @@ class Chkdraft : public WinLib::ClassWindow
                     TerrainPaletteWindow terrainPalWindow; // Modeless terrain palette
                     TilePropWindow tilePropWindow; // Modeless tile properties
                     TextTrigWindow textTrigWindow; // Modeless text triggers
+                    BriefingTextTrigWindow briefingTextTrigWindow; // Modeless briefing text triggers
                     LitWindow litWindow; // Modeless lit window
                     MapSettingsWindow mapSettingsWindow; // Modeless map settings
                     TrigEditorWindow trigEditorWindow; // Modeless trig editor

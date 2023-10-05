@@ -6561,7 +6561,7 @@ void Scenario::moveTrigger(size_t triggerIndexFrom, size_t triggerIndexTo)
     fixTriggerExtensions();
 }
 
-std::vector<Chk::Trigger> Scenario::replaceRange(size_t beginIndex, size_t endIndex, std::vector<Chk::Trigger> & triggers)
+std::vector<Chk::Trigger> Scenario::replaceTriggerRange(size_t beginIndex, size_t endIndex, std::vector<Chk::Trigger> & triggers)
 {
     if ( beginIndex == 0 && endIndex == this->triggers.size() )
     {
@@ -6825,6 +6825,27 @@ void Scenario::moveBriefingTrigger(size_t briefingTriggerIndexFrom, size_t brief
             briefingTriggers.insert(insertPosition, briefingTrigger);
         }
     }
+}
+
+std::vector<Chk::Trigger> Scenario::replaceBriefingTriggerRange(size_t beginIndex, size_t endIndex, std::vector<Chk::Trigger> & briefingTriggers)
+{
+    if ( beginIndex == 0 && endIndex == this->briefingTriggers.size() )
+    {
+        this->briefingTriggers.swap(briefingTriggers);
+        return briefingTriggers;
+    }
+    else if ( beginIndex < endIndex && endIndex <= this->briefingTriggers.size() )
+    {
+        auto begin = this->briefingTriggers.begin()+beginIndex;
+        auto end = this->briefingTriggers.begin()+endIndex;
+        std::vector<Chk::Trigger> replacedBriefingTriggers(this->briefingTriggers.begin()+beginIndex, this->briefingTriggers.end()+endIndex);
+        this->briefingTriggers.erase(begin, end);
+        this->briefingTriggers.insert(this->briefingTriggers.begin()+beginIndex, briefingTriggers.begin(), briefingTriggers.end());
+        return replacedBriefingTriggers;
+    }
+    else
+        throw std::out_of_range(std::string("Range [") + std::to_string(beginIndex) + ", " + std::to_string(endIndex) +
+            ") is invalid for briefing trigger list of size: " + std::to_string(briefingTriggers.size()));
 }
 
 size_t Scenario::addSound(size_t stringId)

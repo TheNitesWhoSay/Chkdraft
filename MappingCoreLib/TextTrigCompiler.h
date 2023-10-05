@@ -68,11 +68,18 @@ class TextTrigCompiler
             FlagSectionStart_EndOfTrigger = 9,
             ExecutionFlags = 10,
             EndOfTrigger = 11,
-            Last = 12
+            Last = 12,
+
+            Briefing_Trigger_EndOfText = Trigger_EndOfText, // 0
+            Briefing_Player_EndOfPlayers = Player_EndOfPlayers, // 1
+            Briefing_OpenTriggerBody = OpenTriggerBody, // 2
+            Briefing_ActionStart_EndOfTrigger = SectionStart_EndOfTrigger, // 3
+            Briefing_ActionArg_EndOfAction = 4,
+            Briefing_EndOfTrigger = 5,
+            Briefing_Last = Last // 12
         });
 
         TextTrigCompiler(bool useAddressesForMemory, u32 deathTableOffset);
-        virtual ~TextTrigCompiler();
         bool compileTriggers(std::string & trigText, Scenario & chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd); // Compiles text, overwrites TRIG and STR upon success
         bool compileTrigger(std::string & trigText, Scenario & chk, Sc::Data & scData, size_t trigIndex); // Compiles text, fills trigger upon success
 
@@ -89,7 +96,7 @@ class TextTrigCompiler
         void clearCompiler(); // Clears data loaded for a run of the compiler
         bool cleanText(std::string & text, std::vector<RawString> & stringContents, std::stringstream & error) const; // Remove spacing and standardize line endings
 
-        bool parseTriggers(std::string & text, std::vector<RawString> & stringContents, std::vector<Chk::Trigger> & output, std::stringstream & error); // Parse trigger, generate a trig section in buffer output
+        bool parseTriggers(std::string & text, std::vector<RawString> & stringContents, std::vector<Chk::Trigger> & output, std::stringstream & error);
         inline bool parsePartZero(std::string & text, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting);
         inline bool parsePartOne(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting, size_t & playerEnd, size_t & lineEnd);
         inline bool parsePartTwo(std::string & text, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting);
@@ -158,7 +165,6 @@ class TextTrigCompiler
         template <size_t N> inline void copyUpperCaseNoSpace(std::array<char, N> & dest, const std::string & source, size_t pos, size_t end) const;
         template <size_t N> inline void copyUpperCaseNoSpace(std::array<char, N> & dest, const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, size_t pos, size_t end) const;
 
-    private:
 
         bool useAddressesForMemory; // If true, uses 1.16.1 addresses for memory conditions and actions
         u32 deathTableOffset;
@@ -184,6 +190,35 @@ class TextTrigCompiler
         void prepTriggerString(const Scenario & scenario, std::unordered_multimap<size_t, std::unique_ptr<StringTableNode>> & stringHashTable, const u32 & stringId, const bool & inReplacedRange, const Chk::StrScope & scope);
 
         bool buildNewMap(Scenario & scenario, size_t trigIndexBegin, size_t trigIndexEnd, std::vector<Chk::Trigger> & triggers, std::stringstream & error) const; // Builds the new TRIG and STR sections
+};
+
+class BriefingTextTrigCompiler : private TextTrigCompiler
+{
+    public:
+
+        BriefingTextTrigCompiler();
+        bool compileBriefingTriggers(std::string & trigText, Scenario & chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd); // Compiles text, overwrites TRIG and STR upon success
+        bool compileBriefingTrigger(std::string & trigText, Scenario & chk, Sc::Data & scData, size_t trigIndex); // Compiles text, fills trigger upon success
+
+        bool parseBriefingActionName(std::string text, Chk::Action::Type & actionType) const;
+        bool parseBriefingActionArg(std::string actionArgText, Chk::Action::Argument argument, Chk::Action & action, const Scenario & chk, Sc::Data & scData, size_t trigIndex, size_t actionIndex, bool silent = false);
+
+    private:
+
+        bool parseBriefingTriggers(std::string & text, std::vector<RawString> & stringContents, std::vector<Chk::Trigger> & output, std::stringstream & error);
+        inline bool parseBriefingTriggerStartOrEndOfText(std::string & text, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting);
+        inline bool parseBriefingActionStartOrEndOfTrigger(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting,
+            u8 & flags, size_t & actionEnd, size_t & lineEnd, Chk::Action::VirtualType & actionType, u32 & argIndex, u32 & numActions, Chk::Action* & currAction);
+        inline bool parseBriefingActionArgOrEndOfAction(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting,
+            u32 & argIndex, size_t & argEnd, Chk::Action* & currAction, Chk::Action::VirtualType & actionType, size_t trigIndex, size_t actionIndex);
+        
+        bool parseBriefingActionName(const std::string & arg, Chk::Action::VirtualType & actionType) const;
+        bool parseBriefingAction(std::string & text, size_t pos, size_t end, Chk::Action::VirtualType & actionType, u8 & flags); // Find the equivilant actionType
+        bool parseBriefingActionArg(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Action & currAction, size_t pos, size_t end, Chk::Action::Argument argument, std::stringstream & error, size_t trigIndex, size_t actionIndex); // Parse an argument belonging to an action
+
+        bool parseBriefingSlot(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end) const;
+
+        bool buildNewMap(Scenario & scenario, size_t trigIndexBegin, size_t trigIndexEnd, std::vector<Chk::Trigger> & briefingTriggers, std::stringstream & error) const; // Builds the new MBRF and STR sections
 };
 
 // Returns the position of the next unescaped quote, pos must be greater than the position of the string's open quote, returns npos on failure

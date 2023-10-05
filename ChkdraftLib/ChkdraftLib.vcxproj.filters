@@ -377,6 +377,9 @@
     <ClInclude Include="Mapping\Undos\ChkdUndos\SpriteChange.h">
       <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
     </ClInclude>
+    <ClInclude Include="Windows\DialogWindows\TextTrig\BriefingTextTrig.h">
+      <Filter>Header Files\Windows\Dialog Windows\Text Trig</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Chkdraft.cpp">
@@ -621,6 +624,9 @@
     </ClCompile>
     <ClCompile Include="Mapping\Undos\ChkdUndos\SpriteChange.cpp">
       <Filter>Source Files\Mapping\Undos\ChkdUndos</Filter>
+    </ClCompile>
+    <ClCompile Include="Windows\DialogWindows\TextTrig\BriefingTextTrig.cpp">
+      <Filter>Source Files\Windows\Dialog Windows\Text Trig</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

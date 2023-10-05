@@ -99,6 +99,7 @@
     <ClInclude Include="Windows\DialogWindows\MapSettings\UpgradeSettings.h" />
     <ClInclude Include="Windows\DialogWindows\MapSettings\SoundEditor.h" />
     <ClInclude Include="Windows\DialogWindows\NewMap\NewMap.h" />
+    <ClInclude Include="Windows\DialogWindows\TextTrig\BriefingTextTrig.h" />
     <ClInclude Include="Windows\DialogWindows\TextTrig\LIT.h" />
     <ClInclude Include="Windows\DialogWindows\TextTrig\TextTrig.h" />
     <ClInclude Include="Windows\DialogWindows\TrigEditor\Counters.h" />
@@ -182,6 +183,7 @@
     <ClCompile Include="Windows\DialogWindows\MapSettings\UpgradeSettings.cpp" />
     <ClCompile Include="Windows\DialogWindows\MapSettings\SoundEditor.cpp" />
     <ClCompile Include="Windows\DialogWindows\NewMap\NewMap.cpp" />
+    <ClCompile Include="Windows\DialogWindows\TextTrig\BriefingTextTrig.cpp" />
     <ClCompile Include="Windows\DialogWindows\TextTrig\LIT.cpp" />
     <ClCompile Include="Windows\DialogWindows\TextTrig\TextTrig.cpp" />
     <ClCompile Include="Windows\DialogWindows\TrigEditor\Counters.cpp" />
