@@ -785,9 +785,9 @@ namespace Chk {
             BriefingMissionObjectives = 4,
             BriefingShowPortrait = 5,
             BriefingHidePortrait = 6,
-            BriefingDisplayTalkingPortrait = 7,
+            BriefingDisplaySpeakingPortrait = 7,
             BriefingTransmission = 8,
-            BriefingEnableSkipTutorial = 9
+            BriefingSkipTutorialEnabled = 9
         });
         enum_t(VirtualType, s32, { // s32
             CenterView = 10,
@@ -861,9 +861,11 @@ namespace Chk {
             BriefingMissionObjectives = 4,
             BriefingShowPortrait = 5,
             BriefingHidePortrait = 6,
-            BriefingDisplayTalkingPortrait = 7,
+            BriefingDisplaySpeakingPortrait = 7,
             BriefingTransmission = 8,
-            BriefingEnableSkipTutorial = 9
+            BriefingSkipTutorialEnabled = 9,
+
+            BriefingCustom = -3
         });
         enum_t(ExtendedBaseType, s32, { // s32
             SetMemory = (u8)Type::SetDeaths, // SetDeaths
@@ -906,7 +908,9 @@ namespace Chk {
             SecondaryTypeIndex = 25, // NumUnits (0=all), SwitchAction, UnitOrder, ModifyType
             Padding = 26,
             MaskFlag = 27,
-            MemoryOffset = 28
+            MemoryOffset = 28,
+
+            BriefingSlot = 29
         };
         enum class ArgField : u32 { // u32
             LocationId = 0,
@@ -943,6 +947,12 @@ namespace Chk {
             Enabled = 0x4353, // "SC" in little-endian; 'S' = 0x53, 'C' = 0x43
             Disabled = 0
         });
+        enum_t(BriefingSlot, u32, {
+            Slot1 = 0,
+            Slot2 = 1,
+            Slot3 = 2,
+            Slot4 = 3
+        });
         struct Argument {
             ArgType type;
             ArgField field;
@@ -971,16 +981,28 @@ namespace Chk {
         void toggleDisabled();
         static const Argument & getClassicArg(Type actionType, size_t argIndex);
         static const Argument & getClassicArg(VirtualType actionType, size_t argIndex);
+        static const Argument & getBriefingClassicArg(Type actionType, size_t argIndex);
+        static const Argument & getBriefingClassicArg(VirtualType actionType, size_t argIndex);
         static ArgType getClassicArgType(Type actionType, size_t argIndex);
         static ArgType getClassicArgType(VirtualType actionType, size_t argIndex);
+        static ArgType getBriefingClassicArgType(Type actionType, size_t argIndex);
+        static ArgType getBriefingClassicArgType(VirtualType actionType, size_t argIndex);
         static const Argument & getTextArg(Type actionType, size_t argIndex);
         static const Argument & getTextArg(VirtualType actionType, size_t argIndex);
+        static const Argument & getBriefingTextArg(Type actionType, size_t argIndex);
+        static const Argument & getBriefingTextArg(VirtualType actionType, size_t argIndex);
         static ArgType getTextArgType(Type actionType, size_t argIndex);
         static ArgType getTextArgType(VirtualType actionType, size_t argIndex);
+        static ArgType getBriefingTextArgType(Type actionType, size_t argIndex);
+        static ArgType getBriefingTextArgType(VirtualType actionType, size_t argIndex);
         static u8 getDefaultFlags(Type actionType);
         static u8 getDefaultFlags(VirtualType actionType);
+        static u8 getBriefingDefaultFlags(Type actionType);
+        static u8 getBriefingDefaultFlags(VirtualType actionType);
         bool hasStringArgument() const;
         bool hasSoundArgument() const;
+        bool hasBriefingStringArgument() const;
+        bool hasBriefingSoundArgument() const;
         inline bool locationUsed(size_t locationId) const;
         inline bool stringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyTrigger) const;
         inline bool gameStringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyTrigger) const;
@@ -1003,6 +1025,7 @@ namespace Chk {
         static Argument textArguments[NumActionTypes][MaxArguments];
         static u8 defaultFlags[NumActionTypes];
         static std::unordered_map<VirtualType, VirtualAction> virtualActions;
+        static std::unordered_map<VirtualType, VirtualAction> virtualBriefingActions;
         static bool actionUsesLocationArg[NumActionTypes];
         static bool actionUsesSecondaryLocationArg[NumActionTypes];
         static bool actionUsesStringArg[NumActionTypes];

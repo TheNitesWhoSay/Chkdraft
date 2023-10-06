@@ -79,6 +79,13 @@
     <ClInclude Include="Windows\ChkdControls\TechTree.h" />
     <ClInclude Include="Windows\ChkdControls\UnitTree.h" />
     <ClInclude Include="Windows\ChkdControls\UpgradeTree.h" />
+    <ClInclude Include="Windows\DialogWindows\BriefingEditor\BriefingEditor.h" />
+    <ClInclude Include="Windows\DialogWindows\BriefingEditor\BriefingTemplates.h" />
+    <ClInclude Include="Windows\DialogWindows\BriefingEditor\BriefingTrigActions.h" />
+    <ClInclude Include="Windows\DialogWindows\BriefingEditor\BriefingTriggers.h" />
+    <ClInclude Include="Windows\DialogWindows\BriefingEditor\BriefingTrigModify.h" />
+    <ClInclude Include="Windows\DialogWindows\BriefingEditor\BriefingTrigModifyText.h" />
+    <ClInclude Include="Windows\DialogWindows\BriefingEditor\BriefingTrigPlayers.h" />
     <ClInclude Include="Windows\DialogWindows\DialogWindows.h" />
     <ClInclude Include="Windows\DialogWindows\Layers\LocationProperties.h" />
     <ClInclude Include="Windows\DialogWindows\Layers\TerrainPalette.h" />
@@ -99,6 +106,7 @@
     <ClInclude Include="Windows\DialogWindows\MapSettings\UpgradeSettings.h" />
     <ClInclude Include="Windows\DialogWindows\MapSettings\SoundEditor.h" />
     <ClInclude Include="Windows\DialogWindows\NewMap\NewMap.h" />
+    <ClInclude Include="Windows\DialogWindows\TextTrig\BriefingTextTrig.h" />
     <ClInclude Include="Windows\DialogWindows\TextTrig\LIT.h" />
     <ClInclude Include="Windows\DialogWindows\TextTrig\TextTrig.h" />
     <ClInclude Include="Windows\DialogWindows\TrigEditor\Counters.h" />
@@ -163,6 +171,13 @@
     <ClCompile Include="Windows\ChkdControls\TechTree.cpp" />
     <ClCompile Include="Windows\ChkdControls\UnitTree.cpp" />
     <ClCompile Include="Windows\ChkdControls\UpgradeTree.cpp" />
+    <ClCompile Include="Windows\DialogWindows\BriefingEditor\BriefingEditor.cpp" />
+    <ClCompile Include="Windows\DialogWindows\BriefingEditor\BriefingTemplates.cpp" />
+    <ClCompile Include="Windows\DialogWindows\BriefingEditor\BriefingTrigActions.cpp" />
+    <ClCompile Include="Windows\DialogWindows\BriefingEditor\BriefingTriggers.cpp" />
+    <ClCompile Include="Windows\DialogWindows\BriefingEditor\BriefingTrigModify.cpp" />
+    <ClCompile Include="Windows\DialogWindows\BriefingEditor\BriefingTrigModifyText.cpp" />
+    <ClCompile Include="Windows\DialogWindows\BriefingEditor\BriefingTrigPlayers.cpp" />
     <ClCompile Include="Windows\DialogWindows\Layers\LocationProperties.cpp" />
     <ClCompile Include="Windows\DialogWindows\Layers\TerrainPalette.cpp" />
     <ClCompile Include="Windows\DialogWindows\Layers\TileProperties.cpp" />
@@ -182,6 +197,7 @@
     <ClCompile Include="Windows\DialogWindows\MapSettings\UpgradeSettings.cpp" />
     <ClCompile Include="Windows\DialogWindows\MapSettings\SoundEditor.cpp" />
     <ClCompile Include="Windows\DialogWindows\NewMap\NewMap.cpp" />
+    <ClCompile Include="Windows\DialogWindows\TextTrig\BriefingTextTrig.cpp" />
     <ClCompile Include="Windows\DialogWindows\TextTrig\LIT.cpp" />
     <ClCompile Include="Windows\DialogWindows\TextTrig\TextTrig.cpp" />
     <ClCompile Include="Windows\DialogWindows\TrigEditor\Counters.cpp" />

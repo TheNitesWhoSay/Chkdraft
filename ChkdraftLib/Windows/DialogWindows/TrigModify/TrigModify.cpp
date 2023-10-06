@@ -79,7 +79,6 @@ void TrigModifyWindow::ChangeTab(Tab tab)
 void TrigModifyWindow::RefreshWindow(u32 trigIndex)
 {
     this->trigIndex = trigIndex;
-    //Show();
     WindowsItem::SetWinText("Modify Trigger #" + std::to_string(trigIndex));
     generalWindow.RefreshWindow(trigIndex);
     playersWindow.RefreshWindow(trigIndex);
@@ -186,6 +185,8 @@ BOOL TrigModifyWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
                 trigModifyTextWindow.ParentHidden();
             else if ( wParam == FALSE && currTab == Tab::Conditions )
                 conditionsWindow.HideSuggestions();
+            else if ( wParam == FALSE && currTab == Tab::Actions )
+                actionsWindow.HideSuggestions();
             return FALSE;
             break;
 
@@ -193,13 +194,19 @@ BOOL TrigModifyWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
             if ( LOWORD(wParam) != WA_INACTIVE )
                 chkd.SetCurrDialog(hWnd);
             else // LOWORD(wParam) == WA_INACTIVE
+            {
                 conditionsWindow.HideSuggestions();
+                actionsWindow.HideSuggestions();
+            }
             return FALSE;
             break;
 
         case WM_NCACTIVATE:
             if ( (BOOL)wParam == FALSE )
+            {
                 conditionsWindow.HideSuggestions();
+                actionsWindow.HideSuggestions();
+            }
             return FALSE;
             break;
 

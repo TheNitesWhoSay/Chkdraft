@@ -32,6 +32,7 @@
 #define IDB_PROPERTIES                  155
 #define IDD_DIALOG6                     157
 #define IDD_INPUTCRGBCOLOR              157
+#define IDD_BRIEFTRIGEDIT               158
 #define IDC_LIST_TILESET                1007
 #define IDC_LIST_DEFAULTTERRAIN         1008
 #define IDC_EDIT_TRIGTEXT               1009
@@ -150,6 +151,7 @@
 #define IDC_TAB_STRINGTYPES             1118
 #define IDC_BUTTON4                     1119
 #define IDC_LOCNAME_PROPERTIES          1119
+#define IDC_BRIEFTRIGEDITTABS           1120
 #define ID_FILE_NEW1                    40025
 #define ID_FILE_OPEN1                   40026
 #define ID_ADVANCED_OPENBACKUPDATABASE  40027
@@ -322,14 +324,15 @@
 #define ID_LOGGER_TOGGLELOGGER          40653
 #define ID_LOGGER_TOGGLELINENUMBERS     40654
 #define ID_TOOLS_MPQRECOMPILER          40655
+#define ID_TOOLS_MPQRECOMPILER40656     40656
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        159
-#define _APS_NEXT_COMMAND_VALUE         40656
-#define _APS_NEXT_CONTROL_VALUE         1120
+#define _APS_NEXT_RESOURCE_VALUE        160
+#define _APS_NEXT_COMMAND_VALUE         40657
+#define _APS_NEXT_CONTROL_VALUE         1121
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

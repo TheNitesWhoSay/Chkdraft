@@ -312,6 +312,7 @@ LRESULT ForcesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                                             SendMessage(GetDlgItem(hWnd, Id::LB_F1PLAYERS+force), LB_SELECTSTRING, -1, (LPARAM)icux::toUistring(ssPlayer.str()).c_str());
                                             CM->notifyChange(false);
                                             chkd.trigEditorWindow.RefreshWindow();
+                                            chkd.briefingTrigEditorWindow.RefreshWindow();
                                             SetFocus(getHandle());
                                         }
                                     }

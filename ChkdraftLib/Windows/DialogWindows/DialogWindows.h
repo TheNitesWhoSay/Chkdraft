@@ -8,8 +8,10 @@
 #include "NewMap/NewMap.h"
 #include "Layers/TerrainPalette.h"
 #include "TextTrig/TextTrig.h"
+#include "TextTrig/BriefingTextTrig.h"
 #include "TextTrig/LIT.h"
 #include "TrigEditor/TrigEditor.h"
+#include "BriefingEditor/BriefingEditor.h"
 #include "MapProtection/ChangePassword.h"
 #include "MapProtection/EnterPassword.h"
 

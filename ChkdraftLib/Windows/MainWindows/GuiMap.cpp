@@ -581,6 +581,7 @@ void GuiMap::refreshScenario()
     if ( chkd.mapSettingsWindow.getHandle() != NULL )
         chkd.mapSettingsWindow.RefreshWindow();
     chkd.trigEditorWindow.RefreshWindow();
+    chkd.briefingTrigEditorWindow.RefreshWindow();
 
     Redraw(true);
 }
@@ -1726,6 +1727,7 @@ void GuiMap::ActivateMap(HWND hWnd)
     chkd.mapSettingsWindow.DestroyThis();
     chkd.terrainPalWindow.DestroyThis();
     chkd.trigEditorWindow.DestroyThis();
+    chkd.briefingTrigEditorWindow.DestroyThis();
     
     if ( hWnd != NULL )
     {

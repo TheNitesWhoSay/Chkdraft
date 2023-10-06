@@ -24,9 +24,9 @@ const std::vector<u32> onOffMenuItems =
     ID_LOCATIONS_NOSNAP, ID_LOCATIONS_SNAPTOACTIVEGRID, ID_LOCATIONS_SNAPTOTILE, ID_LOCATIONS_LOCKANYWHERE, ID_LOCATIONS_CLIPNAMES,
     ID_DOODADS_ALLOWILLEGALPLACEMENT,
     ID_CUTCOPYPASTE_FILLSIMILARTILES,
-    ID_TRIGGERS_CLASSICMAPTRIGGERS, ID_SCENARIO_DESCRIPTION, ID_SCENARIO_FORCES, ID_SCENARIO_UNITSETTINGS, ID_SCENARIO_UPGRADESETTINGS, ID_SCENARIO_TECHSETTINGS,
+    ID_TRIGGERS_CLASSICMAPTRIGGERS, ID_TRIGGERS_CLASSICMISSIONBRIEFING, ID_SCENARIO_DESCRIPTION, ID_SCENARIO_FORCES, ID_SCENARIO_UNITSETTINGS, ID_SCENARIO_UPGRADESETTINGS, ID_SCENARIO_TECHSETTINGS,
     ID_SCENARIO_STRINGS, ID_SCENARIO_SOUNDEDITOR,
-    ID_TRIGGERS_TRIGGEREDITOR, ID_TOOLS_PASSWORD, ID_TOOLS_LITTRIGGERS,
+    ID_TRIGGERS_TRIGGEREDITOR, ID_TRIGGERS_MISSIONBRIEFINGEDITOR, ID_TOOLS_PASSWORD, ID_TOOLS_LITTRIGGERS,
     ID_WINDOWS_CASCADE, ID_WINDOWS_TILEHORIZONTALLY, ID_WINDOWS_TILEVERTICALLY, ID_WINDOW_CLOSE
 };
 
@@ -302,6 +302,8 @@ const std::vector<std::string> triggerPlayers = {
     "Force 1", "Force 2", "Force 3", "Force 4", "Unused 1", "Unused 2",
     "Unused 3", "Unused 4", "Non AV Players" };
 
+const std::vector<std::string> briefingTriggerSlots = { "Slot 1", "Slot 2", "Slot 3", "Slot 4" };
+
 const std::vector<std::string> triggerConditions =
 {
     "Accumulate", "Always", "Bring", "Command", "Command The Least",
@@ -324,6 +326,18 @@ const std::vector<std::string> triggerActions =
     "Set Deaths", "Set Doodad State", "Set Invincibility", "Set Mission Objectives", "Set Next Scenario", "Set Resources",
     "Set Score", "Set Switch", "Talking Portrait", "Transmission", "Unmute Unit Speech", "Unpause Game", "Unpause Timer",
     "Victory", "Wait"
+};
+
+const std::vector<std::string> briefingTriggerActions =
+{
+    "Display Speaking Portrait",
+    "Hide Portrait",
+    "Mission Objectives",
+    "Play WAV",
+    "Show Portrait",
+    "Text Message",
+    "Transmission",
+    "Wait"
 };
 
 const std::vector<std::string> triggerScores =

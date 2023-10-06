@@ -21,11 +21,6 @@ TextTrigCompiler::TextTrigCompiler(bool useAddressesForMemory, u32 deathTableOff
 
 }
 
-TextTrigCompiler::~TextTrigCompiler()
-{
-
-}
-
 bool TextTrigCompiler::compileTriggers(std::string & text, Scenario & chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd)
 {
     logger.info() << "Starting trigger compilation to replace range [" << trigIndexBegin << ", " << trigIndexEnd << ")..." << std::endl;
@@ -348,7 +343,7 @@ bool TextTrigCompiler::parseTriggers(std::string & text, std::vector<RawString> 
 {
     text.push_back('\0'); // Add a terminating null character
 
-    u8 flags;
+    u8 flags = 0;
     size_t pos = 0,
         lineEnd = 0,
         playerEnd = 0,
@@ -3747,7 +3742,7 @@ bool TextTrigCompiler::prepScriptTable(Sc::Data & scData)
 bool TextTrigCompiler::buildNewMap(Scenario & scenario, size_t trigIndexBegin, size_t trigIndexEnd, std::vector<Chk::Trigger> & triggers, std::stringstream & error) const
 {
     auto strBackup = scenario.copyStrings();
-    std::vector<Chk::Trigger> replacedTriggers = scenario.replaceRange(trigIndexBegin, trigIndexEnd, triggers);
+    std::vector<Chk::Trigger> replacedTriggers = scenario.replaceTriggerRange(trigIndexBegin, trigIndexEnd, triggers);
     bool success = true;
     try {
         scenario.deleteUnusedStrings(Chk::StrScope::Both);
@@ -3778,7 +3773,648 @@ bool TextTrigCompiler::buildNewMap(Scenario & scenario, size_t trigIndexBegin, s
     if ( !success )
     {
         size_t unreplaceEndIndex = trigIndexBegin + replacedTriggers.size();
-        auto unused = scenario.replaceRange(trigIndexBegin, unreplaceEndIndex, replacedTriggers);
+        auto unused = scenario.replaceTriggerRange(trigIndexBegin, unreplaceEndIndex, replacedTriggers);
+        scenario.swapStrings(strBackup);
+    }
+    return success;
+}
+
+BriefingTextTrigCompiler::BriefingTextTrigCompiler()
+    : TextTrigCompiler(false, 0x58A364) // These parameters aren't actually used for briefing triggers which have no EUDs
+{
+
+}
+
+bool BriefingTextTrigCompiler::compileBriefingTriggers(std::string & text, Scenario & chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd)
+{
+    logger.info() << "Starting briefing trigger compilation to replace range [" << trigIndexBegin << ", " << trigIndexEnd << ")..." << std::endl;
+    auto start = std::chrono::high_resolution_clock::now();
+    if ( !TextTrigCompiler::loadCompiler(chk, scData, trigIndexBegin, trigIndexEnd) )
+        return false;
+    
+    try
+    {
+        std::vector<RawString> stringContents;
+        std::stringstream compilerError;
+        if ( TextTrigCompiler::cleanText(text, stringContents, compilerError) )
+        {
+            std::vector<Chk::Trigger> briefingTriggers;
+            std::stringstream buildError;
+
+            if ( parseBriefingTriggers(text, stringContents, briefingTriggers, compilerError) )
+            {
+                if ( BriefingTextTrigCompiler::buildNewMap(chk, trigIndexBegin, trigIndexEnd, briefingTriggers, buildError) )
+                {
+                    auto finish = std::chrono::high_resolution_clock::now();
+                    logger.info() << "Briefing trigger compilation completed without error in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
+                    return true;
+                }
+                else
+                    compilerError << "No text errors, but build of new MBRF/STR section failed." << std::endl << std::endl << buildError.str();
+            }
+        }
+        CHKD_ERR(compilerError.str());
+    }
+    catch ( std::bad_alloc ) { CHKD_ERR("Compilation aborted due to low memory."); }
+    return false;
+}
+
+bool BriefingTextTrigCompiler::compileBriefingTrigger(std::string & trigText, Scenario & chk, Sc::Data & scData, size_t trigIndex)
+{
+    if ( !TextTrigCompiler::loadCompiler(chk, scData, trigIndex, trigIndex+1) )
+        return false;
+
+    try
+    {
+        std::vector<RawString> stringContents;
+        std::stringstream compilerError;
+        if ( TextTrigCompiler::cleanText(trigText, stringContents, compilerError) )
+        {
+            std::vector<Chk::Trigger> triggers;
+            std::stringstream buildError;
+
+            if ( parseBriefingTriggers(trigText, stringContents, triggers, compilerError) )
+            {
+                if ( triggers.size() == 1 )
+                {
+                    if ( buildNewMap(chk, trigIndex, trigIndex+1, triggers, buildError) )
+                        return true;
+                    else
+                        compilerError << "No text errors, but build of new MBRF/STR section failed." << std::endl << std::endl << buildError.str();
+                }
+                else
+                    compilerError << "Expected 1 briefing trigger but found " << triggers.size() << " briefing triggers.";
+            }
+        }
+        CHKD_ERR(compilerError.str());
+
+    }
+    catch ( std::bad_alloc ) { CHKD_ERR("Compilation aborted due to low memory."); }
+    return false;
+}
+
+bool BriefingTextTrigCompiler::parseBriefingActionName(std::string text, Chk::Action::Type & actionType) const
+{
+    std::vector<RawString> stringContents;
+    std::stringstream unused {};
+    if ( !cleanText(text, stringContents, unused) )
+        return false;
+
+    Chk::Action::VirtualType newActionType = Chk::Action::VirtualType::NoAction;
+    if ( parseBriefingActionName(text, newActionType) )
+    {
+        if ( ((s32)newActionType) < 0 )
+            actionType = extendedToRegularActionType(newActionType);
+        else
+            actionType = (Chk::Action::Type)newActionType;
+
+        return true;
+    }
+    else
+    {
+        u32 temp = 0;
+        if ( parseLong(text, temp, 0, text.size()) )
+        {
+            if ( ((s32)temp) < 0 )
+                actionType = extendedToRegularActionType((Chk::Action::VirtualType)temp);
+            else
+                actionType = (Chk::Action::Type)temp;
+
+            return true;
+        }
+    }
+    return false;
+}
+
+bool BriefingTextTrigCompiler::parseBriefingActionArg(std::string actionArgText, Chk::Action::Argument argument, Chk::Action & action, const Scenario & chk, Sc::Data & scData, size_t trigIndex, size_t actionIndex, bool silent)
+{
+    u32 dataTypesToLoad = 0;
+    switch ( argument.type )
+    {
+        case Chk::Action::ArgType::Location: dataTypesToLoad |= ScenarioDataFlag::Locations; break;
+        case Chk::Action::ArgType::String: dataTypesToLoad |= ScenarioDataFlag::Strings; break;
+        case Chk::Action::ArgType::Player: dataTypesToLoad |= ScenarioDataFlag::Groups; break;
+        case Chk::Action::ArgType::Unit: dataTypesToLoad |= ScenarioDataFlag::Units; break;
+        case Chk::Action::ArgType::Script: dataTypesToLoad |= ScenarioDataFlag::Scripts; break;
+        case Chk::Action::ArgType::Switch: dataTypesToLoad |= ScenarioDataFlag::Switches; break;
+        case Chk::Action::ArgType::Number: dataTypesToLoad |= ScenarioDataFlag::Groups | ScenarioDataFlag::Locations | ScenarioDataFlag::Scripts; break;
+        case Chk::Action::ArgType::TypeIndex: dataTypesToLoad |= ScenarioDataFlag::Units; break;
+    }
+
+    if ( !loadCompiler(chk, scData, trigIndex, trigIndex+1, (ScenarioDataFlag)dataTypesToLoad) )
+        return false;
+    
+    std::string txac = actionArgText;
+    std::stringstream argumentError;
+    std::vector<RawString> stringContents = { actionArgText };
+    size_t nextString = 0;
+    if ( parseBriefingActionArg(txac, stringContents, nextString, action, 0, txac.size(), argument, argumentError, trigIndex, actionIndex) )
+        return true;
+    else
+    {
+        std::stringstream errorMessage;
+        errorMessage << "Unable to parse action arg: \"" << actionArgText << "\" " << argumentError.str();
+        if ( !silent )
+            CHKD_ERR(errorMessage.str());
+    }
+    return false;
+}
+
+bool BriefingTextTrigCompiler::parseBriefingTriggers(std::string & text, std::vector<RawString> & stringContents, std::vector<Chk::Trigger> & output, std::stringstream & error)
+{
+    text.push_back('\0'); // Add a terminating null character
+    
+    u8 flags = 0;
+    size_t pos = 0,
+        lineEnd = 0,
+        playerEnd = 0,
+        actionEnd = 0,
+        flagsEnd = 0,
+        argEnd = 0,
+        nextString = 0,
+        trigIndex = 0;
+
+    Expecting expecting = Expecting::Briefing_Trigger_EndOfText;
+    u32 line = 1,
+        argIndex = 0,
+        numActions = 0;
+
+    Chk::Action::VirtualType actionId = Chk::Action::VirtualType::BriefingNoAction;
+    Chk::Trigger currTrig {};
+    Chk::Action* currAction = &currTrig.actions[0];
+
+    while ( pos < text.size() )
+    {
+        if ( text[pos] == '\n' ) // Line End
+        {
+            pos ++;
+            line ++;
+        }
+        else
+        {
+            switch ( expecting )
+            {
+                case Expecting::Briefing_Trigger_EndOfText:
+                    //      briefing
+                    // or   %NULL
+                    if ( !BriefingTextTrigCompiler::parseBriefingTriggerStartOrEndOfText(text, error, pos, line, expecting) )
+                        return false;
+                    break;
+                case Expecting::Briefing_Player_EndOfPlayers:
+                    //      %PlayerName,
+                    // or   %PlayerName:Value,
+                    // or   %PlayerName:Value)
+                    // or   %PlayerName)
+                    // or   )
+                    if ( !TextTrigCompiler::parsePartOne(text, stringContents, nextString, currTrig, error, pos, line, expecting, playerEnd, lineEnd) )
+                        return false;
+                    break;
+                case Expecting::Briefing_OpenTriggerBody:
+                    //      {
+                    if ( !TextTrigCompiler::parsePartTwo(text, error, pos, line, expecting) )
+                        return false;
+                    break;
+                case Expecting::Briefing_ActionStart_EndOfTrigger:
+                    //      %ActionName(
+                    // or   ;%ActionName(
+                    // or   }
+                    if ( !BriefingTextTrigCompiler::parseBriefingActionStartOrEndOfTrigger(text, currTrig, error, pos, line, expecting, flags, actionEnd, lineEnd,
+                        actionId, argIndex, numActions, currAction) )
+                        return false;
+                    break;
+                case Expecting::Briefing_ActionArg_EndOfAction:
+                    //      );
+                    // or   %ActionArg,
+                    // or   %ActionArg);
+                    if ( !BriefingTextTrigCompiler::parseBriefingActionArgOrEndOfAction(text, stringContents, nextString, error, pos, line, expecting, argIndex, argEnd, currAction, actionId, trigIndex, numActions-1) )
+                        return false;
+                    break;
+                case Expecting::Briefing_EndOfTrigger:
+                    //      }
+                    if ( !TextTrigCompiler::parsePartEleven(text, error, pos, line, expecting) )
+                        return false;
+                    break;
+                case Expecting::Briefing_Last: // Trigger end was found, reset
+                {
+                    numActions = 0;
+                    currTrig.conditions[0].conditionType = Chk::Condition::Type::IsBriefing;
+
+                    output.push_back(currTrig);
+                    currTrig = Chk::Trigger {};
+                    trigIndex++;
+                    expecting = Expecting::Briefing_Trigger_EndOfText;
+                    if ( text[pos] == '\0' ) // End of Text
+                    {
+                        error << "Success!";
+                        return true;
+                    }
+                }
+                break;
+            }
+        }
+    }
+    return true;
+}
+
+bool BriefingTextTrigCompiler::parseBriefingTriggerStartOrEndOfText(std::string & text, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting)
+{
+    //      briefing
+    // or   %NULL
+    if ( text.compare(pos, 9, "BRIEFING(") == 0 )
+    {
+        pos += 9;
+        expecting = Expecting::Briefing_Player_EndOfPlayers;
+    }
+    else if ( text.compare(pos, 8, "BRIEFING") == 0 )
+    {
+        pos += 8;
+        while ( text[pos] == '\n' )
+        {
+            pos ++;
+            line ++;
+        }
+        if ( text[pos] == '(' )
+        {
+            pos ++;
+            expecting = Expecting::Briefing_Player_EndOfPlayers;
+        }
+        else
+        {
+            error << "Line: " << line << std::endl << std::endl << "Expected: \'(\'";
+            return false;
+        }
+    }
+    else if ( text[pos] == '\0' ) // End of text
+    {
+        pos ++;
+    }
+    else
+    {
+        error << "Line: " << line << std::endl << std::endl << "Expected: \"Briefing\" or End of Text";
+        return false;
+    }
+    return true;
+}
+
+bool BriefingTextTrigCompiler::parseBriefingActionStartOrEndOfTrigger(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting,
+    u8 & flags, size_t & actionEnd, size_t & lineEnd, Chk::Action::VirtualType & actionType, u32 & argIndex, u32 & numActions, Chk::Action* & currAction)
+{
+    //      %ActionName(
+    // or   ;%ActionName(
+    // or   }
+    if ( text[pos] == ';' ) // Disabled action
+    {
+        pos ++;
+        actionEnd = text.find('(', pos);
+        if ( actionEnd != std::string::npos )
+        {
+            lineEnd = text.find('\n', pos);
+            if ( lineEnd == std::string::npos )
+                lineEnd = text.length();
+
+            actionEnd = std::min(actionEnd, lineEnd);
+
+            if ( parseBriefingAction(text, pos, actionEnd, actionType, flags) )
+            {
+                argIndex = 0;
+                if ( numActions > Chk::Trigger::MaxActions )
+                {
+                    error << "Line: " << line << std::endl << std::endl << "Action Max Exceeded!";
+                    return false;
+                }
+                currAction = &output.action(numActions);
+                currAction->flags = flags | Chk::Action::Flags::Disabled;
+                if ( actionType < 0 )
+                    currAction->actionType = extendedToRegularActionType(actionType);
+                else
+                    currAction->actionType = (Chk::Action::Type)actionType;
+                numActions ++;
+
+                pos = actionEnd+1;
+                expecting = Expecting::Briefing_ActionArg_EndOfAction;
+            }
+            else
+            {
+                error << "Line: " << line << std::endl << std::endl << "Expected: Action Name or \'}\'";
+                return false;
+            }
+        }
+    }
+    else if ( text[pos] == '}' )
+    {
+        pos ++;
+        expecting = Expecting::Briefing_Last;
+    }
+    else
+    {
+        actionEnd = text.find('(', pos);
+        if ( actionEnd != std::string::npos )
+        {
+            lineEnd = text.find('\n', pos);
+            if ( lineEnd == std::string::npos )
+                lineEnd = text.length();
+
+            actionEnd = std::min(actionEnd, lineEnd);
+
+            if ( parseBriefingAction(text, pos, actionEnd, actionType, flags) )
+            {
+                argIndex = 0;
+                if ( numActions > Chk::Trigger::MaxActions )
+                {
+                    error << "Line: " << line << std::endl << std::endl << "Action Max Exceeded!";
+                    return false;
+                }
+                currAction = &output.action(numActions);
+                currAction->flags = flags;
+                if ( (s32)actionType < 0 )
+                    currAction->actionType = extendedToRegularActionType(actionType);
+                else
+                    currAction->actionType = (Chk::Action::Type)actionType;
+                numActions ++;
+
+                pos = actionEnd+1;
+                expecting = Expecting::Briefing_ActionArg_EndOfAction;
+            }
+            else
+            {
+                error << "Line: " << line << std::endl << std::endl << "Expected: Action Name or \'}\'";
+                return false;
+            }
+        }
+        else
+        {
+            error << "Line: " << line << std::endl << std::endl << "Expected: \'(\'";
+            return false;
+        }
+    }
+    return true;
+}
+
+bool BriefingTextTrigCompiler::parseBriefingActionArgOrEndOfAction(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting,
+    u32 & argIndex, size_t & argEnd, Chk::Action* & currAction, Chk::Action::VirtualType & actionType, size_t trigIndex, size_t actionIndex)
+{
+    //      );
+    // or   %ActionArg,
+    // or   %ActionArg);
+    Chk::Action::Argument argument = Chk::Action::getBriefingTextArg(actionType, argIndex);
+    Chk::Action::ArgType argType = argument.type;
+    if ( text[pos] == ')' ) // Action End
+    {
+        if ( argType != Chk::Action::ArgType::NoType )
+        {
+            error << "Line: " << line << std::endl << std::endl << "Expected: Action Argument";
+            return false;
+        }
+
+        pos ++;
+        while ( text[pos] == '\n' )
+        {
+            pos ++;
+            line ++;
+        }
+
+        if ( text[pos] == ';' )
+        {
+            pos ++;
+            expecting = Expecting::Briefing_ActionStart_EndOfTrigger;
+        }
+        else
+        {
+            error << "Line: " << line << std::endl << std::endl << "Expected: \';\'";
+            return false;
+        }
+    }
+    else if ( argType == Chk::Action::ArgType::NoType )
+    {
+        error << "Line: " << line << std::endl << std::endl << "Expected: \')\'";
+        return false;
+    }
+    else if ( Chk::Action::getBriefingTextArgType(actionType, (size_t)argIndex+1) == Chk::Action::ArgType::NoType )
+    {
+        argEnd = text.find(')', pos);
+        if ( argEnd != std::string::npos )
+        {
+            std::stringstream argumentError;
+            if ( parseBriefingActionArg(text, stringContents, nextString, *currAction, pos, argEnd, argument, argumentError, trigIndex, actionIndex) )
+            {
+                pos = argEnd;
+                argIndex ++;
+            }
+            else
+            {
+                error << "Line: " << line << std::endl << std::endl << "Expected: Action Argument" << std::endl << std::endl << argumentError.str();
+                return false;
+            }
+        }
+        else
+        {
+            error << "Line: " << line << std::endl << std::endl << "Expected: \')\'";
+            return false;
+        }
+    }
+    else
+    {
+        argEnd = text.find(',', pos);
+        if ( argEnd != std::string::npos ) // Has argument
+        {
+            std::stringstream argumentError;
+            if ( parseBriefingActionArg(text, stringContents, nextString, *currAction, pos, argEnd, argument, argumentError, trigIndex, actionIndex) )
+            {
+                pos = argEnd+1;
+                argIndex ++;
+            }
+            else
+            {
+                error << "Line: " << line << std::endl << std::endl << "Expected: Action Argument" << std::endl << std::endl << argumentError.str();
+                return false;
+            }
+        }
+        else
+        {
+            error << "Line: " << line << std::endl << std::endl << "Expected: Additional Arguments";
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool BriefingTextTrigCompiler::parseBriefingActionName(const std::string & arg, Chk::Action::VirtualType & actionType) const
+{
+    char currChar = arg[0];
+    switch ( currChar )
+    {
+    case 'D':
+        if ( arg.compare(1, 22, "ISPLAYSPEAKINGPORTRAIT") == 0 )
+            actionType = Chk::Action::VirtualType::BriefingDisplaySpeakingPortrait;
+        break;
+    case 'H':
+        if ( arg.compare(1, 11, "IDEPORTRAIT") == 0 )
+            actionType = Chk::Action::VirtualType::BriefingHidePortrait;
+        break;
+    case 'M':
+        if ( arg.compare(1, 16, "ISSIONOBJECTIVES") == 0 )
+            actionType = Chk::Action::VirtualType::BriefingMissionObjectives;
+        break;
+    case 'P':
+        if ( arg.compare(1, 6, "LAYWAV") == 0 || arg.compare(1, 8, "LAYSOUND") == 0 )
+            actionType = Chk::Action::VirtualType::BriefingPlaySound;
+        break;
+    case 'S':
+        if ( arg.compare(1, 11, "HOWPORTRAIT") == 0 )
+            actionType = Chk::Action::VirtualType::BriefingShowPortrait;
+        break;
+    case 'T':
+        if ( arg.compare(1, 10, "EXTMESSAGE") == 0 )
+            actionType = Chk::Action::VirtualType::BriefingTextMessage;
+        else if ( arg.compare(1, 11, "RANSMISSION") == 0 )
+            actionType = Chk::Action::VirtualType::BriefingTransmission;
+        break;
+    case 'W':
+        if ( arg.compare(1, 3, "AIT") == 0 )
+            actionType = Chk::Action::VirtualType::BriefingWait;
+        break;
+    }
+
+    return actionType != Chk::Action::VirtualType::NoAction;
+}
+
+bool BriefingTextTrigCompiler::parseBriefingAction(std::string & text, size_t pos, size_t end, Chk::Action::VirtualType & actionType, u8 & flags)
+{
+    actionType = Chk::Action::VirtualType::BriefingNoAction;
+    u16 number = 0;
+
+    size_t size = end - pos;
+    std::string arg;
+
+    for ( u32 i=0; i<size; i++ ) // Copy argument to arg buffer
+    {
+        char character = text[i+pos];
+        if ( character > 96 && character < 123 ) // lower-case
+            arg.push_back(character-32); // Capitalize
+        else if ( character != ' ' && character != '\t' ) // Ignore spaces and tabs
+            arg.push_back(character);
+    }
+
+    char currChar = arg[0];
+
+    switch ( currChar )
+    {
+    case 'D':
+        if ( arg.compare(1, 22, "ISPLAYSPEAKINGPORTRAIT") == 0 )
+            actionType = Chk::Action::VirtualType::BriefingDisplaySpeakingPortrait;
+        break;
+    case 'H':
+        if ( arg.compare(1, 11, "IDEPORTRAIT") == 0 )
+            actionType = Chk::Action::VirtualType::BriefingHidePortrait;
+        break;
+    case 'M':
+        if ( arg.compare(1, 16, "ISSIONOBJECTIVES") == 0 )
+            actionType = Chk::Action::VirtualType::BriefingMissionObjectives;
+        break;
+    case 'P':
+        if ( arg.compare(1, 6, "LAYWAV") == 0 || arg.compare(1, 8, "LAYSOUND") == 0 )
+            actionType = Chk::Action::VirtualType::BriefingPlaySound;
+        break;
+    case 'S':
+        if ( arg.compare(1, 11, "HOWPORTRAIT") == 0 )
+            actionType = Chk::Action::VirtualType::BriefingShowPortrait;
+        break;
+    case 'T':
+        if ( arg.compare(1, 10, "EXTMESSAGE") == 0 )
+            actionType = Chk::Action::VirtualType::BriefingTextMessage;
+        else if ( arg.compare(1, 11, "RANSMISSION") == 0 )
+            actionType = Chk::Action::VirtualType::BriefingTransmission;
+        break;
+    case 'W':
+        if ( arg.compare(1, 3, "AIT") == 0 )
+            actionType = Chk::Action::VirtualType::BriefingWait;
+        break;
+    }
+
+    flags = Chk::Action::getBriefingDefaultFlags(actionType);
+
+    return actionType != Chk::Action::VirtualType::NoAction;
+}
+
+bool BriefingTextTrigCompiler::parseBriefingActionArg(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Action & currAction, size_t pos, size_t end, Chk::Action::Argument argument, std::stringstream & error, size_t trigIndex, size_t actionIndex)
+{
+    if ( argument.type == Chk::Action::ArgType::BriefingSlot )
+    {
+        returnMsg( parseBriefingSlot(text, stringContents, nextString, currAction.group, pos, end) ||
+            parseLong(text, currAction.group, pos, end),
+            "Expected briefing slot or 4-byte briefing-slot number" );
+    }
+    else
+        return TextTrigCompiler::parseActionArg(text, stringContents, nextString, currAction, pos, end, argument, error, trigIndex, actionIndex);
+}
+
+bool BriefingTextTrigCompiler::parseBriefingSlot(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end) const
+{
+    std::string str;
+    if ( text[pos] == '\"' ) // If quoted, ignore quotes
+    {
+        str = stringContents[nextString];
+        nextString ++;
+    }
+    else if ( parseLong(text, dest, pos, end) )
+        return true;
+    else
+        str = text.substr(pos, end-pos);
+
+    size_t size = str.size();
+
+    if ( size < 12 )
+    {
+        std::array<char, 12> sl;
+        copyUpperCaseNoSpace(sl, str);
+
+        // Check if it's a standard slot name
+        if ( sl[0] == 'S' && sl[1] == 'L' && sl[2] == 'O' && sl[3] == 'T' &&
+            ( dest = atoi(&sl[4]) ) )
+        {
+            dest --; // 0 based
+            return true;
+        }
+    }
+    return false;
+}
+
+bool BriefingTextTrigCompiler::buildNewMap(Scenario & scenario, size_t trigIndexBegin, size_t trigIndexEnd, std::vector<Chk::Trigger> & briefingTriggers, std::stringstream & error) const
+{
+    auto strBackup = scenario.copyStrings();
+    std::vector<Chk::Trigger> replacedBriefingTriggers = scenario.replaceBriefingTriggerRange(trigIndexBegin, trigIndexEnd, briefingTriggers);
+    bool success = true;
+    try {
+        scenario.deleteUnusedStrings(Chk::StrScope::Both);
+        for ( auto str : unassignedStrings )
+        {
+            str->stringId = (u32)scenario.addString<RawString>(str->scStr.str, Chk::StrScope::Game);
+            if ( str->stringId != Chk::StringId::NoString )
+            {
+                for ( auto assignee : str->assignees )
+                {
+                    if ( assignee.isSound )
+                        scenario.briefingTriggers[assignee.trigIndex+trigIndexBegin].actions[assignee.actionIndex].soundStringId = str->stringId;
+                    else
+                        scenario.briefingTriggers[assignee.trigIndex+trigIndexBegin].actions[assignee.actionIndex].stringId = str->stringId;
+                }
+            }
+            else
+            {
+                success = false;
+                break;
+            }
+        }
+    } catch ( std::exception & e ) {
+        error << e.what() << std::endl;
+        success = false;
+    }
+
+    if ( !success )
+    {
+        size_t unreplaceEndIndex = trigIndexBegin + replacedBriefingTriggers.size();
+        auto unused = scenario.replaceBriefingTriggerRange(trigIndexBegin, unreplaceEndIndex, replacedBriefingTriggers);
         scenario.swapStrings(strBackup);
     }
     return success;

@@ -293,6 +293,13 @@ bool Chkdraft::DlgKeyListener(HWND hWnd, UINT & msg, WPARAM wParam, LPARAM lPara
                             trigEditorWindow.triggersWindow.trigModifyWindow.actionsWindow.ProcessKeyDown(wParam, lParam);
                             return true;
                         }
+                        else if ( GetParent(GetParent(hWnd)) == briefingTrigEditorWindow.briefingTriggersWindow.briefingTrigModifyWindow.briefingActionsWindow.getHandle() ||
+                            GetParent(hWnd) == briefingTrigEditorWindow.briefingTriggersWindow.briefingTrigModifyWindow.briefingActionsWindow.getHandle() )
+                        {
+                            msg = WM_NULL; // Dirty fix to prevent tabs from being focused
+                            briefingTrigEditorWindow.briefingTriggersWindow.briefingTrigModifyWindow.briefingActionsWindow.ProcessKeyDown(wParam, lParam);
+                            return true;
+                        }
                         break;
                     case VK_RETURN:
                         if ( GetParent(GetParent(hWnd)) == trigEditorWindow.triggersWindow.trigModifyWindow.conditionsWindow.getHandle() ||
@@ -305,6 +312,12 @@ bool Chkdraft::DlgKeyListener(HWND hWnd, UINT & msg, WPARAM wParam, LPARAM lPara
                             GetParent(hWnd) == trigEditorWindow.triggersWindow.trigModifyWindow.actionsWindow.getHandle() )
                         {
                             trigEditorWindow.triggersWindow.trigModifyWindow.actionsWindow.ProcessKeyDown(wParam, lParam);
+                            return true;
+                        }
+                        else if ( GetParent(GetParent(hWnd)) == briefingTrigEditorWindow.briefingTriggersWindow.briefingTrigModifyWindow.briefingActionsWindow.getHandle() ||
+                            GetParent(hWnd) == briefingTrigEditorWindow.briefingTriggersWindow.briefingTrigModifyWindow.briefingActionsWindow.getHandle() )
+                        {
+                            briefingTrigEditorWindow.briefingTriggersWindow.briefingTrigModifyWindow.briefingActionsWindow.ProcessKeyDown(wParam, lParam);
                             return true;
                         }
                         if ( GetParent(hWnd) == unitWindow.getHandle() )
@@ -583,12 +596,14 @@ LRESULT Chkdraft::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 
         // Scenario
     case ID_TRIGGERS_CLASSICMAPTRIGGERS: trigEditorWindow.CreateThis(getHandle()); break;
+    case ID_TRIGGERS_CLASSICMISSIONBRIEFING: briefingTrigEditorWindow.CreateThis(getHandle()); break;
     case ID_SCENARIO_DESCRIPTION: case ID_SCENARIO_FORCES: case ID_SCENARIO_UNITSETTINGS:
     case ID_SCENARIO_UPGRADESETTINGS: case ID_SCENARIO_TECHSETTINGS: case ID_SCENARIO_STRINGS:
     case ID_SCENARIO_SOUNDEDITOR: OpenMapSettings(LOWORD(wParam)); break;
 
         // Tools
     case ID_TRIGGERS_TRIGGEREDITOR: textTrigWindow.CreateThis(getHandle()); break;
+    case ID_TRIGGERS_MISSIONBRIEFINGEDITOR: briefingTextTrigWindow.CreateThis(getHandle()); break;
     case ID_TOOLS_LITTRIGGERS: ifmapopen(litWindow.CreateThis(getHandle())); break;
     case ID_TOOLS_PASSWORD: ifmapopen(changePasswordWindow.CreateThis(getHandle())) break;
     case ID_TOOLS_MPQRECOMPILER: runMpqRecompiler(); break;
@@ -712,6 +727,7 @@ void Chkdraft::MinimizeDialogs()
     ShowWindow(terrainPalWindow.getHandle(), SW_HIDE);
     ShowWindow(mapSettingsWindow.getHandle(), SW_HIDE);
     ShowWindow(trigEditorWindow.getHandle(), SW_HIDE);
+    ShowWindow(briefingTrigEditorWindow.getHandle(), SW_HIDE);
 }
 
 void Chkdraft::RestoreDialogs()
@@ -721,6 +737,7 @@ void Chkdraft::RestoreDialogs()
     ShowWindow(terrainPalWindow.getHandle(), SW_SHOW);
     ShowWindow(mapSettingsWindow.getHandle(), SW_SHOW);
     ShowWindow(trigEditorWindow.getHandle(), SW_SHOW);
+    ShowWindow(briefingTrigEditorWindow.getHandle(), SW_SHOW);
 }
 
 void Chkdraft::OpenMapSettings(u16 menuId)

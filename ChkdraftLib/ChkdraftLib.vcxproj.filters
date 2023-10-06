@@ -120,6 +120,12 @@
     <Filter Include="Source Files\Windows\Main Windows">
       <UniqueIdentifier>{a8e75d41-7652-4243-8e98-b22db6afb347}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Windows\Dialog Windows\Briefing Editor">
+      <UniqueIdentifier>{a8784dc4-4774-4656-9732-5e08f6cdcf49}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Windows\Dialog Windows\Briefing Editor">
+      <UniqueIdentifier>{8b9bc5a7-6055-470d-83bd-0b219a543773}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Chkdraft.h">
@@ -377,6 +383,30 @@
     <ClInclude Include="Mapping\Undos\ChkdUndos\SpriteChange.h">
       <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
     </ClInclude>
+    <ClInclude Include="Windows\DialogWindows\TextTrig\BriefingTextTrig.h">
+      <Filter>Header Files\Windows\Dialog Windows\Text Trig</Filter>
+    </ClInclude>
+    <ClInclude Include="Windows\DialogWindows\BriefingEditor\BriefingEditor.h">
+      <Filter>Header Files\Windows\Dialog Windows\Briefing Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="Windows\DialogWindows\BriefingEditor\BriefingTriggers.h">
+      <Filter>Header Files\Windows\Dialog Windows\Briefing Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="Windows\DialogWindows\BriefingEditor\BriefingTemplates.h">
+      <Filter>Header Files\Windows\Dialog Windows\Briefing Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="Windows\DialogWindows\BriefingEditor\BriefingTrigModify.h">
+      <Filter>Header Files\Windows\Dialog Windows\Briefing Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="Windows\DialogWindows\BriefingEditor\BriefingTrigPlayers.h">
+      <Filter>Header Files\Windows\Dialog Windows\Briefing Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="Windows\DialogWindows\BriefingEditor\BriefingTrigActions.h">
+      <Filter>Header Files\Windows\Dialog Windows\Briefing Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="Windows\DialogWindows\BriefingEditor\BriefingTrigModifyText.h">
+      <Filter>Header Files\Windows\Dialog Windows\Briefing Editor</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Chkdraft.cpp">
@@ -621,6 +651,30 @@
     </ClCompile>
     <ClCompile Include="Mapping\Undos\ChkdUndos\SpriteChange.cpp">
       <Filter>Source Files\Mapping\Undos\ChkdUndos</Filter>
+    </ClCompile>
+    <ClCompile Include="Windows\DialogWindows\TextTrig\BriefingTextTrig.cpp">
+      <Filter>Source Files\Windows\Dialog Windows\Text Trig</Filter>
+    </ClCompile>
+    <ClCompile Include="Windows\DialogWindows\BriefingEditor\BriefingEditor.cpp">
+      <Filter>Source Files\Windows\Dialog Windows\Briefing Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Windows\DialogWindows\BriefingEditor\BriefingTriggers.cpp">
+      <Filter>Source Files\Windows\Dialog Windows\Briefing Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Windows\DialogWindows\BriefingEditor\BriefingTemplates.cpp">
+      <Filter>Source Files\Windows\Dialog Windows\Briefing Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Windows\DialogWindows\BriefingEditor\BriefingTrigActions.cpp">
+      <Filter>Source Files\Windows\Dialog Windows\Briefing Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Windows\DialogWindows\BriefingEditor\BriefingTrigModify.cpp">
+      <Filter>Source Files\Windows\Dialog Windows\Briefing Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Windows\DialogWindows\BriefingEditor\BriefingTrigModifyText.cpp">
+      <Filter>Source Files\Windows\Dialog Windows\Briefing Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Windows\DialogWindows\BriefingEditor\BriefingTrigPlayers.cpp">
+      <Filter>Source Files\Windows\Dialog Windows\Briefing Editor</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

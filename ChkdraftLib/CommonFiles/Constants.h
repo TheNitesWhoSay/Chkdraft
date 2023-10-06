@@ -72,9 +72,13 @@ extern const std::vector<std::string> playerColors;
 
 extern const std::vector<std::string> triggerPlayers;
 
+extern const std::vector<std::string> briefingTriggerSlots;
+
 extern const std::vector<std::string> triggerConditions;
 
 extern const std::vector<std::string> triggerActions;
+
+extern const std::vector<std::string> briefingTriggerActions;
 
 extern const std::vector<std::string> triggerScores;
 
