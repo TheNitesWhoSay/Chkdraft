@@ -1,5 +1,5 @@
-#ifndef TRIGACTIONS_H
-#define TRIGACTIONS_H
+#ifndef BRIEFINGTRIGACTIONS_H
+#define BRIEFINGTRIGACTIONS_H
 #include "../../../CommonFiles/CommonFiles.h"
 #include "../../../../WindowsLib/WindowsUi.h"
 #include "../../../../MappingCoreLib/MappingCore.h"
@@ -7,14 +7,14 @@
 #include <string>
 #include <vector>
 
-class TrigActionsWindow : public WinLib::ClassWindow, public ICndActGridUser
+class BriefingTrigActionsWindow : public WinLib::ClassWindow, public ICndActGridUser
 {
     public:
-        TrigActionsWindow();
-        virtual ~TrigActionsWindow();
+        BriefingTrigActionsWindow();
+        virtual ~BriefingTrigActionsWindow();
         bool CreateThis(HWND hParent, u64 windowId);
         bool DestroyThis();
-        void RefreshWindow(u32 trigIndex);
+        void RefreshWindow(u32 briefingTrigIndex);
         void DoSize();
         void ProcessKeyDown(WPARAM wParam, LPARAM lParam);
         void HideSuggestions();
@@ -25,7 +25,6 @@ class TrigActionsWindow : public WinLib::ClassWindow, public ICndActGridUser
         virtual void RedrawThis();
 
     protected:
-        void InitializeScriptTable();
         void CreateSubWindows(HWND hWnd);
         virtual LRESULT Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr);
         virtual LRESULT Command(HWND hWnd, WPARAM wParam, LPARAM lParam);
@@ -36,15 +35,12 @@ class TrigActionsWindow : public WinLib::ClassWindow, public ICndActGridUser
         WinLib::EditControl editListItem;
         WinLib::ButtonControl buttonEditSound;
         WinLib::ButtonControl buttonEditString;
-        WinLib::ButtonControl buttonUnitProperties;
-        u32 trigIndex;
+        u32 briefingTrigIndex;
         bool stringEditEnabled;
         bool soundEditEnabled;
-        bool unitPropertiesEditEnabled;
         bool isPasting;
 
         std::hash<std::string> strHash; // A hasher to help generate tables
-        std::unordered_multimap<size_t/*stringHash*/, std::pair<u32, std::string/*scriptId*/>> scriptTable; // Scripts in format: description (id)
 
         Suggestions & suggestions;
 
@@ -72,24 +68,12 @@ class TrigActionsWindow : public WinLib::ClassWindow, public ICndActGridUser
         void SuggestNothing();
         void SuggestLocation();
         void SuggestString();
-        void SuggestPlayer();
+        void SuggestSlot();
         void SuggestUnit();
-        void SuggestNumUnits();
-        void SuggestCUWP();
-        void SuggestTextFlags();
         void SuggestAmount();
-        void SuggestScoreType();
-        void SuggestResourceType();
-        void SuggestStateMod();
-        void SuggestPercent();
-        void SuggestOrder();
         void SuggestSound();
         void SuggestDuration();
-        void SuggestScript();
-        void SuggestAllyState();
         void SuggestNumericMod();
-        void SuggestSwitch();
-        void SuggestSwitchMod();
         void SuggestActionType();
         void SuggestFlags();
         void SuggestNumber(); // Amount, Group2, LocDest, UnitPropNum, ScriptNum
@@ -103,9 +87,6 @@ class TrigActionsWindow : public WinLib::ClassWindow, public ICndActGridUser
         void EnableSoundEdit();
         void DisableSoundEdit();
         void ButtonEditSound();
-        void EnableUnitPropertiesEdit();
-        void DisableUnitPropertiesEdit();
-        void ButtonEditUnitProperties();
 
         void GridEditStart(u16 gridItemX, u16 gridItemY);
         void NewSelection(u16 gridItemX, u16 gridItemY);

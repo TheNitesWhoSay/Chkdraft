@@ -684,6 +684,7 @@ void Maps::DisableMapping()
         chkd.litWindow.DestroyThis();
         chkd.mapSettingsWindow.DestroyThis();
         chkd.trigEditorWindow.DestroyThis();
+        chkd.briefingTrigEditorWindow.DestroyThis();
         chkd.changePasswordWindow.DestroyThis();
         chkd.enterPasswordWindow.DestroyThis();
 

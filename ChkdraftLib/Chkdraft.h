@@ -35,6 +35,7 @@ class Chkdraft : public WinLib::ClassWindow
                     LitWindow litWindow; // Modeless lit window
                     MapSettingsWindow mapSettingsWindow; // Modeless map settings
                     TrigEditorWindow trigEditorWindow; // Modeless trig editor
+                    BriefingTrigEditorWindow briefingTrigEditorWindow; // Modeless briefing trig editor
                     ChangePasswordDialog changePasswordWindow; // Modeless password editor
                     EnterPasswordDialog enterPasswordWindow; // Modeless login window
 

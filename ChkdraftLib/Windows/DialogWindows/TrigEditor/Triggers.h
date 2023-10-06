@@ -96,7 +96,6 @@ class TriggersWindow : public WinLib::ClassWindow
         bool GetTriggerDrawSize(const WinLib::DeviceContext & dc, UINT & width, UINT & height, Scenario & chk, u32 triggerNum, const Chk::Trigger & trigger);
         void DrawGroup(const WinLib::DeviceContext & dc, RECT & rcItem, bool isSelected, u8 groupNum);
         void DrawTrigger(const WinLib::DeviceContext & dc, RECT & rcItem, bool isSelected, Scenario & chk, u32 triggerNum, const Chk::Trigger & trigger);
-        void PrepDoubleBuffer(HWND hWnd, HDC hDC);
 };
 
 #endif

@@ -126,7 +126,7 @@ ChkdString TextTrigGenerator::getTrigString(size_t stringId) const
 ChkdString TextTrigGenerator::getTrigSound(size_t stringId) const
 {
     if ( stringId == 0 )
-        return ChkdString("No WAV");
+        return ChkdString("No Sound");
     else
         return getTrigString(stringId);
 }
@@ -580,7 +580,7 @@ inline void TextTrigGenerator::appendString(StringBuffer & output, const size_t 
 inline void TextTrigGenerator::appendSound(StringBuffer & output, const size_t & stringId) const
 {
     if ( stringId == 0 )
-        output += "No WAV";
+        output += "No Sound";
     else if ( stringId < stringTable.size() || (65536 - stringId) < extendedStringTable.size() )
     {
         if ( stringId < stringTable.size() )
@@ -1095,6 +1095,11 @@ bool BriefingTextTrigGenerator::generateBriefingTextTrigs(const Scenario & map, 
 bool BriefingTextTrigGenerator::generateBriefingTextTrigs(const Scenario & map, size_t briefingTrigIndex, std::string & briefingTrigString)
 {
     return briefingTrigIndex < map.numBriefingTriggers() && loadScenario(map, true, false) && buildBriefingTextTrig(map.getBriefingTrigger(briefingTrigIndex), briefingTrigString);
+}
+
+bool BriefingTextTrigGenerator::loadScenario(const Scenario & map)
+{
+    return loadScenario(map, false, true);
 }
 
 void BriefingTextTrigGenerator::clearScenario()

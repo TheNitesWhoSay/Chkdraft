@@ -981,8 +981,12 @@ namespace Chk {
         void toggleDisabled();
         static const Argument & getClassicArg(Type actionType, size_t argIndex);
         static const Argument & getClassicArg(VirtualType actionType, size_t argIndex);
+        static const Argument & getBriefingClassicArg(Type actionType, size_t argIndex);
+        static const Argument & getBriefingClassicArg(VirtualType actionType, size_t argIndex);
         static ArgType getClassicArgType(Type actionType, size_t argIndex);
         static ArgType getClassicArgType(VirtualType actionType, size_t argIndex);
+        static ArgType getBriefingClassicArgType(Type actionType, size_t argIndex);
+        static ArgType getBriefingClassicArgType(VirtualType actionType, size_t argIndex);
         static const Argument & getTextArg(Type actionType, size_t argIndex);
         static const Argument & getTextArg(VirtualType actionType, size_t argIndex);
         static const Argument & getBriefingTextArg(Type actionType, size_t argIndex);
@@ -997,6 +1001,8 @@ namespace Chk {
         static u8 getBriefingDefaultFlags(VirtualType actionType);
         bool hasStringArgument() const;
         bool hasSoundArgument() const;
+        bool hasBriefingStringArgument() const;
+        bool hasBriefingSoundArgument() const;
         inline bool locationUsed(size_t locationId) const;
         inline bool stringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyTrigger) const;
         inline bool gameStringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyTrigger) const;

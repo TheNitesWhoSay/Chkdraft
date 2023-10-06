@@ -490,6 +490,28 @@ const Chk::Action::Argument & Chk::Action::getClassicArg(VirtualType actionType,
     return Chk::Action::noArg;
 }
 
+const Chk::Action::Argument & Chk::Action::getBriefingClassicArg(Chk::Action::Type actionType, size_t argIndex)
+{
+    if ( actionType < NumBriefingActionTypes && argIndex < MaxArguments )
+        return classicBriefingArguments[actionType][argIndex];
+    else
+        return Chk::Action::noArg;
+}
+
+const Chk::Action::Argument & Chk::Action::getBriefingClassicArg(Chk::Action::VirtualType actionType, size_t argIndex)
+{
+    if ( argIndex < MaxArguments )
+    {
+        if ( (size_t)actionType < NumBriefingActionTypes )
+            return classicBriefingArguments[actionType][argIndex];
+
+        auto virtualAction = virtualBriefingActions.find(actionType);
+        if ( virtualAction != virtualBriefingActions.end() )
+            return virtualAction->second.arguments[argIndex];
+    }
+    return Chk::Action::noArg;
+}
+
 Chk::Action::ArgType Chk::Action::getClassicArgType(Type actionType, size_t argIndex)
 {
     if ( actionType < NumActionTypes && argIndex < MaxArguments )
@@ -507,6 +529,28 @@ Chk::Action::ArgType Chk::Action::getClassicArgType(VirtualType actionType, size
 
         auto virtualAction = virtualActions.find(actionType);
         if ( virtualAction != virtualActions.end() )
+            return virtualAction->second.arguments[argIndex].type;
+    }
+    return Chk::Action::ArgType::NoType;
+}
+
+Chk::Action::ArgType Chk::Action::getBriefingClassicArgType(Chk::Action::Type actionType, size_t argIndex)
+{
+    if ( actionType < NumBriefingActionTypes && argIndex < MaxArguments )
+        return classicBriefingArguments[actionType][argIndex].type;
+    else
+        return Chk::Action::ArgType::NoType;
+}
+
+Chk::Action::ArgType Chk::Action::getBriefingClassicArgType(Chk::Action::VirtualType actionType, size_t argIndex)
+{
+    if ( argIndex < MaxArguments )
+    {
+        if ( (size_t)actionType < NumBriefingActionTypes )
+            return classicBriefingArguments[actionType][argIndex].type;
+
+        auto virtualAction = virtualBriefingActions.find(actionType);
+        if ( virtualAction != virtualBriefingActions.end() )
             return virtualAction->second.arguments[argIndex].type;
     }
     return Chk::Action::ArgType::NoType;
@@ -654,6 +698,26 @@ bool Chk::Action::hasSoundArgument() const
     for ( u8 i = 0; i < Chk::Action::MaxArguments; i++ )
     {
         if ( Chk::Action::getClassicArgType(actionType, i) == Chk::Action::ArgType::Sound )
+            return true;
+    }
+    return false;
+}
+
+bool Chk::Action::hasBriefingStringArgument() const
+{
+    for ( u8 i = 0; i < Chk::Action::MaxArguments; i++ )
+    {
+        if ( Chk::Action::getBriefingClassicArgType(actionType, i) == Chk::Action::ArgType::String )
+            return true;
+    }
+    return false;
+}
+
+bool Chk::Action::hasBriefingSoundArgument() const
+{
+    for ( u8 i = 0; i < Chk::Action::MaxArguments; i++ )
+    {
+        if ( Chk::Action::getBriefingClassicArgType(actionType, i) == Chk::Action::ArgType::Sound )
             return true;
     }
     return false;

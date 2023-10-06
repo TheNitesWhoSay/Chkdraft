@@ -25,7 +25,6 @@ class TrigConditionsWindow : public WinLib::ClassWindow, public ICndActGridUser
 
     protected:
         void CreateSubWindows(HWND hWnd);
-        void OnLeave();
         virtual LRESULT Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr);
         LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -41,14 +40,12 @@ class TrigConditionsWindow : public WinLib::ClassWindow, public ICndActGridUser
         void ChangeConditionType(Chk::Condition & condition, Chk::Condition::Type newType);
         bool TransformCondition(Chk::Condition & condition, Chk::Condition::Type newType, bool refreshImmediately);
         void RefreshConditionAreas();
-        void ClearArgument(Chk::Condition & condition, u8 argNum);
         void UpdateConditionName(u8 conditionNum, const std::string & newText, bool refreshImmediately);
         void UpdateConditionArg(u8 conditionNum, u8 argNum, const std::string & newText, bool refreshImmediately);
         BOOL GridItemChanging(u16 gridItemX, u16 gridItemY, const std::string & str);
         BOOL GridItemDeleting(u16 gridItemX, u16 gridItemY);
         void DrawSelectedCondition();
         int GetGridItemWidth(int gridItemX, int gridItemY);
-        void CheckEnabledClicked(int conditionNum);
 
         void PreDrawItems();
         void SysColorRect(const WinLib::DeviceContext & dc, RECT & rect, DWORD color);
@@ -78,7 +75,6 @@ class TrigConditionsWindow : public WinLib::ClassWindow, public ICndActGridUser
         void GridEditStart(u16 gridItemX, u16 gridItemY);
         void NewSuggestion(std::string & str);
 
-        void Activate(WPARAM wParam, LPARAM lParam);
         LRESULT ShowWindow(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 };
 
