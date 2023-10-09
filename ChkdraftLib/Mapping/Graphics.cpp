@@ -176,6 +176,8 @@ void Graphics::DrawMap(const WinLib::DeviceContext & dc, u16 bitWidth, u16 bitHe
 
     if ( map.getLayer() == Layer::Locations )
         DrawLocations(bitmap, showAnywhere);
+    else if ( map.getLayer() == Layer::FogEdit )
+        DrawFog(bitmap);
 
     BITMAPINFO bmi = GetBMI(screenWidth, screenHeight);
     dc.setBitsToDevice(0, 0, screenWidth, screenHeight, 0, 0, 0, screenHeight, bitmap.data(), &bmi);
@@ -192,26 +194,14 @@ void Graphics::DrawMap(const WinLib::DeviceContext & dc, u16 bitWidth, u16 bitHe
 
 void Graphics::DrawTerrain(ChkdBitmap & bitmap)
 {
-    u32 maxRowX, maxRowY;
-
     Sc::Terrain::Tileset tileset = map.getTileset();
-
-    u16 yTile, xTile;
     const Sc::Terrain::Tiles & tiles = chkd.scData.terrain.get(tileset);
+    u32 maxRowY = screenHeight > (s32)mapHeight*32 || (screenTop+screenHeight)/32+1 > mapHeight ? mapHeight : (screenTop+screenHeight)/32+1;
+    u32 maxRowX = screenWidth > (s32)mapWidth*32 || (screenLeft+screenWidth)/32+1 > mapWidth ? mapWidth : (screenLeft+screenWidth)/32+1;
 
-    if ( screenHeight > (s32)mapHeight*32 || (screenTop+screenHeight)/32+1 > mapHeight )
-        maxRowY = mapHeight;
-    else
-        maxRowY = (screenTop+screenHeight)/32+1;
-
-    if ( screenWidth > (s32)mapWidth*32 || (screenLeft+screenWidth)/32+1 > mapWidth )
-        maxRowX = mapWidth;
-    else
-        maxRowX = (screenLeft+screenWidth)/32+1;
-
-    for ( yTile = (u16)(screenTop/32); yTile < maxRowY; yTile++ ) // Cycle through all rows on the screen
+    for ( u16 yTile = (u16)(screenTop/32); yTile < maxRowY; yTile++ ) // Cycle through all rows on the screen
     {
-        for ( xTile = (u16)(screenLeft/32); xTile < maxRowX; xTile++ ) // Cycle through all columns on the screen
+        for ( u16 xTile = (u16)(screenLeft/32); xTile < maxRowX; xTile++ ) // Cycle through all columns on the screen
         {
             TileToBits(bitmap, palette, tiles, s32(xTile)*32-screenLeft, s32(yTile)*32-screenTop,
                 u16(screenWidth), u16(screenHeight), map.getTile(xTile, yTile));
@@ -435,6 +425,38 @@ void Graphics::DrawLocations(ChkdBitmap & bitmap, bool showAnywhere)
             {
                 for ( s32 x = leftMost; x < rightMost; x++ )
                     bitmap[bottomMost*screenWidth + x] = Sc::SystemColor(255, 255, 255);
+            }
+        }
+    }
+}
+
+void Graphics::DrawFog(ChkdBitmap & bitmap)
+{
+    u8 currPlayer = map.getCurrPlayer();
+    if ( currPlayer >= 8 )
+        currPlayer = 0;
+
+    u8 currPlayerMask = u8Bits[currPlayer];
+    Sc::Terrain::Tileset tileset = map.getTileset();
+    const Sc::Terrain::Tiles & tiles = chkd.scData.terrain.get(tileset);
+    u32 maxRowY = screenHeight > (s32)mapHeight*32 || (screenTop+screenHeight)/32+1 > mapHeight ? mapHeight : (screenTop+screenHeight)/32+1;
+    u32 maxRowX = screenWidth > (s32)mapWidth*32 || (screenLeft+screenWidth)/32+1 > mapWidth ? mapWidth : (screenLeft+screenWidth)/32+1;
+
+    for ( u16 yTile = (u16)(screenTop/32); yTile < maxRowY; yTile++ ) // Cycle through all rows on the screen
+    {
+        for ( u16 xTile = (u16)(screenLeft/32); xTile < maxRowX; xTile++ ) // Cycle through all columns on the screen
+        {
+            if ( (map.getFog(xTile, yTile) & currPlayerMask) != 0 ) // Covered in fog
+            {
+                s64 xStart = s32(xTile)*32-screenLeft;
+                s64 yStart = s32(yTile)*32-screenTop;
+                s64 yEnd = std::min(yStart + 32, s64(screenHeight));
+                s64 xEnd = std::min(xStart + 32, s64(screenWidth));
+                for ( s64 yc = std::max(s64(0), yStart); yc < yEnd; yc++ )
+                {
+                    for ( s64 xc = std::max(s64(0), xStart); xc < xEnd; xc++ )
+                        bitmap[size_t(yc*screenWidth + xc)].darken();
+                }
             }
         }
     }
@@ -1264,7 +1286,7 @@ void DrawTools(const WinLib::DeviceContext & dc, ChkdPalette & palette, u16 widt
     else if ( map.getLayer() == Layer::Doodads ) // Draw selected doodads
         DrawDoodadSel(dc, width, height, screenLeft, screenTop, selections, map);
 
-    if ( pasting ) // Draw paste graphics
+    if ( pasting || map.getLayer() == Layer::FogEdit ) // Draw paste graphics
         DrawPasteGraphics(dc, palette, width, height, screenLeft, screenTop, selections, clipboard, map, map.getLayer(), map.getSubLayer());
 }
 
@@ -1595,6 +1617,25 @@ void DrawPasteGraphics(const WinLib::DeviceContext & dc, ChkdPalette & palette, 
 
         dc.setBitsToDevice(0, 0, width, height, 0, 0, 0, height, &graphicBits[0], &bmi);
     }
+    else if ( layer == Layer::FogEdit )
+    {
+        const auto brushWidth = clipboard.getFogBrush().width;
+        const auto brushHeight = clipboard.getFogBrush().height;
+        s32 hoverTileX = (selections.getEndDrag().x + (brushWidth % 2 == 0 ? 16 : 0))/32;
+        s32 hoverTileY = (selections.getEndDrag().y + (brushHeight % 2 == 0 ? 16 : 0))/32;
+
+        const auto startX = 32*(hoverTileX - brushWidth/2) - screenLeft;
+        const auto startY = 32*(hoverTileY - brushHeight/2) - screenTop;
+        const auto endX = startX+32*brushWidth;
+        const auto endY = startY+32*brushHeight;
+
+        dc.setPen(PS_SOLID, 0, RGB(0, 255, 255));
+        dc.moveTo(startX, startY); // From top-right...
+        dc.lineTo(endX, startY); // Draw top
+        dc.lineTo(endX, endY); // Draw right
+        dc.lineTo(startX, endY); // Draw bottom
+        dc.lineTo(startX, startY); // Draw left
+    }
 }
 
 void DrawTempLocs(const WinLib::DeviceContext & dc, u32 screenLeft, u32 screenTop, Selections & selections, GuiMap & map)
@@ -1805,6 +1846,28 @@ void DrawMiniMapUnits(ChkdBitmap & bitmap, u16 bitWidth, u16 bitHeight, u16 xSiz
     }
 }
 
+void DrawMiniMapFog(ChkdBitmap & bitmap, const ChkdPalette & palette, s64 bitWidth, s64 bitHeight, s64 xSize, s64 ySize,
+                       s64 xOffset, s64 yOffset, float scale, const Sc::Terrain::Tiles & tiles, GuiMap & map)
+{
+    u8 currPlayer = map.getCurrPlayer();
+    if ( currPlayer >= 8 )
+        currPlayer = 0;
+
+    u8 currPlayerMask = u8Bits[currPlayer];
+    for ( s64 yc=0; yc<128-2*yOffset; yc++ ) // Cycle through all minimap pixel rows
+    {
+        s64 yTile = (s64)(yc/scale); // Get the yc of tile used for the pixel
+        for ( s64 xc=0; xc<128-2*xOffset; xc++ ) // Cycle through all minimap pixel columns
+        {
+            s64 xTile = (s64)(xc/scale); // Get the xc of the tile used for the pixel
+
+            u8 fog = map.getFog(size_t(xTile), size_t(yTile));
+            if ( (fog & currPlayerMask) != 0 )
+                bitmap[size_t((yc + yOffset) * 128 + xc + xOffset)].darken();
+        }
+    }
+}
+
 void DrawMiniMap(const WinLib::DeviceContext & dc, const ChkdPalette & palette, u16 xSize, u16 ySize, float scale, GuiMap & map)
 {
     ChkdBitmap graphicBits;
@@ -1819,6 +1882,8 @@ void DrawMiniMap(const WinLib::DeviceContext & dc, const ChkdPalette & palette, 
     const Sc::Terrain::Tiles & tiles = chkd.scData.terrain.get(tileset);
     DrawMiniMapTiles(graphicBits, palette, 128, 128, xSize, ySize, xOffset, yOffset, scale, tiles, map);
     DrawMiniMapUnits(graphicBits, 128, 128, xSize, ySize, xOffset, yOffset, scale, tiles, map);
+    if ( map.getLayer() == Layer::FogEdit )
+        DrawMiniMapFog(graphicBits, palette, 128, 128, xSize, ySize, xOffset, yOffset, scale, tiles, map);
     dc.setBitsToDevice(xOffset, yOffset, 128-2*xOffset, 128-2*yOffset, xOffset, yOffset, 0, 128, &graphicBits[0], &bmi);
 
     // Draw Map Borders

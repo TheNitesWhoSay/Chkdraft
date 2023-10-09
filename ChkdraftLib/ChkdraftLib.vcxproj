@@ -50,6 +50,7 @@
     <ClInclude Include="Mapping\Settings.h" />
     <ClInclude Include="Mapping\Undos\ChkdUndos\DoodadChange.h" />
     <ClInclude Include="Mapping\Undos\ChkdUndos\DoodadCreateDel.h" />
+    <ClInclude Include="Mapping\Undos\ChkdUndos\FogChange.h" />
     <ClInclude Include="Mapping\Undos\ChkdUndos\IsomChange.h" />
     <ClInclude Include="Mapping\Undos\ChkdUndos\LocationChange.h" />
     <ClInclude Include="Mapping\Undos\ChkdUndos\LocationCreateDel.h" />
@@ -143,6 +144,7 @@
     <ClCompile Include="Mapping\Settings.cpp" />
     <ClCompile Include="Mapping\Undos\ChkdUndos\DoodadChange.cpp" />
     <ClCompile Include="Mapping\Undos\ChkdUndos\DoodadCreateDel.cpp" />
+    <ClCompile Include="Mapping\Undos\ChkdUndos\FogChange.cpp" />
     <ClCompile Include="Mapping\Undos\ChkdUndos\IsomChange.cpp" />
     <ClCompile Include="Mapping\Undos\ChkdUndos\LocationChange.cpp" />
     <ClCompile Include="Mapping\Undos\ChkdUndos\LocationCreateDel.cpp" />

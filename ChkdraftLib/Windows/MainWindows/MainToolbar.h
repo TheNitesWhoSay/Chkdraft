@@ -11,6 +11,8 @@ class MainToolbar : public WinLib::ToolbarControl
         WinLib::DropdownControl zoomBox;
         PlayerDropdown playerBox;
         WinLib::DropdownControl terrainBox;
+        WinLib::DropdownControl brushWidth;
+        WinLib::DropdownControl brushHeight;
 
         virtual ~MainToolbar();
         bool CreateThis(HWND hParent, u64 windowId);

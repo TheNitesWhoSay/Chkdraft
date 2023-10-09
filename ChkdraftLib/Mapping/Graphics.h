@@ -84,6 +84,7 @@ class Graphics
         void DrawTileElevations(ChkdBitmap & bitmap);
         void DrawGrid(ChkdBitmap & bitmap);
         void DrawLocations(ChkdBitmap & bitmap, bool showAnywhere);
+        void DrawFog(ChkdBitmap & bitmap);
         void DrawUnits(ChkdBitmap & bitmap);
         void DrawSprites(ChkdBitmap & bitmap);
         void DrawSprite(ChkdBitmap & bitmap);

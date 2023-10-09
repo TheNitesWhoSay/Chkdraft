@@ -5,7 +5,9 @@ enum_t(Id, u32, {
     COMBOBOX_LAYER = ID_FIRST,
     COMBOBOX_PLAYER,
     COMBOBOX_ZOOM,
-    COMBOBOX_TERRAIN
+    COMBOBOX_TERRAIN,
+    COMBOBOX_BRUSHWIDTH,
+    COMBOBOX_BRUSHHEIGHT
 });
 
 MainToolbar::~MainToolbar()
@@ -88,6 +90,17 @@ bool MainToolbar::CreateThis(HWND hParent, u64 windowId)
         terrainBox.CreateThis(hTool, 483, 2, 100, 200, false, false, Id::COMBOBOX_TERRAIN, terrPalette);
         terrainBox.SetSel(0);
         ShowWindow(terrainBox.getHandle(), SW_HIDE); // Hide until a map is open
+
+        // Add brush-width ComboBox to toolbar
+        const std::vector<std::string> brushSizes = { "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "13", "14" };
+        brushWidth.CreateThis(hTool, 566, 2, 60, 215, false, false, Id::COMBOBOX_BRUSHWIDTH, brushSizes);
+        brushWidth.SetSel(0);
+        brushWidth.Hide();
+
+        // Add brush-height ComboBox to toolbar
+        brushHeight.CreateThis(hTool, 634, 2, 60, 215, false, false, Id::COMBOBOX_BRUSHHEIGHT, brushSizes);
+        brushHeight.SetSel(0);
+        brushHeight.Hide();
 
         return true;
     }
