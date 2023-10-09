@@ -806,4 +806,8 @@ void Chkdraft::ComboSelChanged(HWND hCombo, u16 comboId)
         else if ( itemIndex == 4 ) // Cut/Copy/Paste
             maps.ChangeSubLayer(TerrainSubLayer::Rectangular);
     }
+    else if ( hCombo == mainToolbar.brushWidth.getHandle() )
+        maps.clipboard.setFogBrushSize(itemIndex+1, mainToolbar.brushHeight.GetSel()+1);
+    else if ( hCombo == mainToolbar.brushHeight.getHandle() )
+        maps.clipboard.setFogBrushSize(mainToolbar.brushWidth.GetSel()+1, itemIndex+1);
 }

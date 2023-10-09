@@ -12,6 +12,7 @@
 #include "../../Mapping/Undos/ChkdUndos/DoodadCreateDel.h"
 #include "../../Mapping/Undos/ChkdUndos/SpriteChange.h"
 #include "../../Mapping/Undos/ChkdUndos/SpriteCreateDel.h"
+#include "../../Mapping/Undos/ChkdUndos/FogChange.h"
 #include "../../../CrossCutLib/Logger.h"
 #include <WindowsX.h>
 
@@ -137,6 +138,17 @@ void GuiMap::setTileValue(size_t tileX, size_t tileY, uint16_t tileValue)
     }
 }
 
+void GuiMap::setFogValue(size_t tileX, size_t tileY, u8 fogValue)
+{
+    if ( tileX < Scenario::dimensions.tileWidth && tileY < Scenario::dimensions.tileHeight )
+    {
+        if ( fogChanges != nullptr )
+            fogChanges->Insert(FogChange::Make(uint16_t(tileX), uint16_t(tileY), Scenario::getFog(tileX, tileY)));
+
+        Scenario::setFog(tileX, tileY, fogValue);
+    }
+}
+
 void GuiMap::beginTerrainOperation()
 {
     refreshDoodadCache();
@@ -152,6 +164,16 @@ void GuiMap::finalizeTerrainOperation()
         undos.AddUndo(tileChanges);
         tileChanges = nullptr;
         Chk::IsomCache::finalizeUndoableOperation();
+    }
+}
+
+void GuiMap::finalizeFogOperation()
+{
+    clipboard.clearPreviousPasteLoc();
+    if ( fogChanges != nullptr )
+    {
+        undos.AddUndo(fogChanges);
+        fogChanges = nullptr;
     }
 }
 
@@ -312,7 +334,7 @@ void GuiMap::setZoom(double newScale)
     RedrawWindow(getHandle(), NULL, NULL, RDW_INVALIDATE);
 }
 
-u8 GuiMap::getCurrPlayer()
+u8 GuiMap::getCurrPlayer() const
 {
     return currPlayer;
 }
@@ -945,6 +967,9 @@ void GuiMap::undo()
             selections.removeSprites();
             undos.doUndo(UndoTypes::SpriteChange, this);
             break;
+        case Layer::FogEdit:
+            undos.doUndo(UndoTypes::FogChange, this);
+            break;
     }
     Redraw(true);
 }
@@ -979,6 +1004,9 @@ void GuiMap::redo()
         case Layer::Sprites:
             selections.removeSprites();
             undos.doRedo(UndoTypes::SpriteChange, this);
+            break;
+        case Layer::FogEdit:
+            undos.doRedo(UndoTypes::FogChange, this);
             break;
     }
     Redraw(true);
@@ -1777,65 +1805,91 @@ void GuiMap::LButtonDown(int x, int y, WPARAM wParam)
     u32 mapClickX = (s32(((double)x)/getZoom()) + screenLeft),
         mapClickY = (s32(((double)y)/getZoom()) + screenTop);
 
-    switch ( wParam )
+    if ( currLayer == Layer::FogEdit )
     {
+        switch ( wParam )
+        {
         case MK_SHIFT|MK_LBUTTON: // Shift + LClick
-            if ( currLayer == Layer::Terrain )
-                openTileProperties(mapClickX, mapClickY);
-            break;
-    
         case MK_CONTROL|MK_LBUTTON: // Ctrl + LClick
-            {
-                chkd.tilePropWindow.DestroyThis();
-                if ( !chkd.maps.clipboard.isPasting() )
+            clipboard.initFogBrush(mapClickX, mapClickY, *this, true);
+            setDragging(true);
+            this->fogChanges = ReversibleActions::Make();
+            clipboard.doPaste(currLayer, currTerrainSubLayer, mapClickX, mapClickY, *this, undos, false);
+            LockCursor();
+            TrackMouse(defaultHoverTime);
+            break;
+        case MK_LBUTTON: // LClick
+            clipboard.initFogBrush(mapClickX, mapClickY, *this, false);
+            setDragging(true);
+            this->fogChanges = ReversibleActions::Make();
+            clipboard.doPaste(currLayer, currTerrainSubLayer, mapClickX, mapClickY, *this, undos, false);
+            LockCursor();
+            TrackMouse(defaultHoverTime);
+            break;
+        }
+    }
+    else
+    {
+        switch ( wParam )
+        {
+            case MK_SHIFT|MK_LBUTTON: // Shift + LClick
+                if ( currLayer == Layer::Terrain )
+                    openTileProperties(mapClickX, mapClickY);
+                break;
+    
+            case MK_CONTROL|MK_LBUTTON: // Ctrl + LClick
                 {
-                    if ( currLayer == Layer::Terrain ) // Ctrl + Click tile
-                        selections.setDrags( (mapClickX+16)/32*32, (mapClickY+16)/32*32 );
-                    else if ( currLayer == Layer::Doodads || currLayer == Layer::Units || currLayer == Layer::Sprites )
-                        selections.setDrags(mapClickX, mapClickY);
+                    chkd.tilePropWindow.DestroyThis();
+                    if ( !chkd.maps.clipboard.isPasting() )
+                    {
+                        if ( currLayer == Layer::Terrain ) // Ctrl + Click tile
+                            selections.setDrags( (mapClickX+16)/32*32, (mapClickY+16)/32*32 );
+                        else if ( currLayer == Layer::Doodads || currLayer == Layer::Units || currLayer == Layer::Sprites )
+                            selections.setDrags(mapClickX, mapClickY);
 
-                    LockCursor();
+                        LockCursor();
+                        TrackMouse(defaultHoverTime);
+                        setDragging(true);
+                    }
+                }
+                break;
+    
+            case MK_LBUTTON: // LClick
+                {
+                    chkd.tilePropWindow.DestroyThis();
+                    if ( chkd.maps.clipboard.isPasting() )
+                    {
+                        if ( currLayer == Layer::Terrain )
+                        {
+                            refreshDoodadCache();
+                            tileChanges = ReversibleActions::Make();
+                        }
+                        paste(mapClickX, mapClickY);
+                    }
+                    else
+                    {
+                        if ( selections.hasTiles() )
+                            selections.removeTiles();
+                                
+                        selections.setDrags(mapClickX, mapClickY);
+                        if ( currLayer == Layer::Terrain )
+                            selections.setDrags( (mapClickX+16)/32*32, (mapClickY+16)/32*32 );
+                        else if ( currLayer == Layer::Locations )
+                        {
+                            u32 x1 = mapClickX, y1 = mapClickY;
+                            if ( SnapLocationDimensions(x1, y1, x1, y1, LocSnapFlags(LocSnapFlags::SnapX1|LocSnapFlags::SnapY1)) )
+                                selections.setDrags(x1, y1);
+                            selections.setLocationFlags(getLocSelFlags(mapClickX, mapClickY));
+                        }
+                    }
+
+                    SetCapture(getHandle());
                     TrackMouse(defaultHoverTime);
                     setDragging(true);
+                    Redraw(false);
                 }
-            }
-            break;
-    
-        case MK_LBUTTON: // LClick
-            {
-                chkd.tilePropWindow.DestroyThis();
-                if ( chkd.maps.clipboard.isPasting() )
-                {
-                    if ( currLayer == Layer::Terrain )
-                    {
-                        refreshDoodadCache();
-                        tileChanges = ReversibleActions::Make();
-                    }
-                    paste(mapClickX, mapClickY);
-                }
-                else
-                {
-                    if ( selections.hasTiles() )
-                        selections.removeTiles();
-                                
-                    selections.setDrags(mapClickX, mapClickY);
-                    if ( currLayer == Layer::Terrain )
-                        selections.setDrags( (mapClickX+16)/32*32, (mapClickY+16)/32*32 );
-                    else if ( currLayer == Layer::Locations )
-                    {
-                        u32 x1 = mapClickX, y1 = mapClickY;
-                        if ( SnapLocationDimensions(x1, y1, x1, y1, LocSnapFlags(LocSnapFlags::SnapX1|LocSnapFlags::SnapY1)) )
-                            selections.setDrags(x1, y1);
-                        selections.setLocationFlags(getLocSelFlags(mapClickX, mapClickY));
-                    }
-                }
-
-                SetCapture(getHandle());
-                TrackMouse(defaultHoverTime);
-                setDragging(true);
-                Redraw(false);
-            }
-            break;
+                break;
+        }
     }
 }
 
@@ -1862,69 +1916,25 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
     std::snprintf(newPos, 64, "%i, %i (%i, %i)", mapHoverX, mapHoverY, mapHoverX / 32, mapHoverY / 32);
     chkd.statusBar.SetText(0, newPos);
     
-    switch ( wParam )
+    if ( currLayer == Layer::FogEdit )
     {
-        case MK_CONTROL|MK_LBUTTON:
-            {
-                RECT rcMap;
-                GetClientRect(hWnd, &rcMap);
-
-                if ( x == 0 || y == 0 || x == rcMap.right-2 || y == rcMap.bottom-2 )
-                    EdgeDrag(hWnd, x, y);
-
-                selections.setEndDrag(mapHoverX, mapHoverY);
-                if ( currLayer == Layer::Terrain )
-                    selections.setEndDrag( (mapHoverX+16)/32*32, (mapHoverY+16)/32*32 );
-                else if ( currLayer == Layer::Locations )
+        selections.setEndDrag(mapHoverX, mapHoverY);
+        if ( dragging )
+            clipboard.doPaste(currLayer, currTerrainSubLayer, mapHoverX, mapHoverY, *this, undos, false);
+    }
+    else
+    {
+        switch ( wParam )
+        {
+            case MK_CONTROL|MK_LBUTTON:
                 {
-                    u32 x2 = mapHoverX, y2 = mapHoverY;
-                    if ( SnapLocationDimensions(x2, y2, x2, y2, LocSnapFlags(LocSnapFlags::SnapX2|LocSnapFlags::SnapY2)) )
-                        selections.setEndDrag(x2, y2);
-                }
-                else if ( currLayer == Layer::Units )
-                {
-                    s32 xc = mapHoverX, yc = mapHoverY;
-                    if ( snapUnitCoordinate(xc, yc) )
-                        selections.setEndDrag(xc, yc);
-                }
-
-                PaintMap(nullptr, chkd.maps.clipboard.isPasting());
-            }
-            break;
-
-        case MK_LBUTTON:
-            {
-
-                if ( isDragging() )
-                {
-                    RECT rcMap {};
+                    RECT rcMap;
                     GetClientRect(hWnd, &rcMap);
 
-                    // If pasting, move paste
-                    if ( chkd.maps.clipboard.isPasting() )
-                    {
-                        s32 xc = mapHoverX, yc = mapHoverY;
-                        if ( xc < rcMap.left + screenLeft )
-                            xc = rcMap.left + screenLeft;
-                        else if ( xc > rcMap.right-2 + screenLeft )
-                            xc = rcMap.right-2 + screenLeft;
-                        if ( yc < rcMap.top + screenTop )
-                            yc = rcMap.top + screenTop;
-                        else if ( yc > rcMap.bottom-2 + screenTop )
-                            yc = rcMap.bottom-2 + screenTop;
-
-                        if ( currLayer == Layer::Units )
-                            snapUnitCoordinate(xc, yc);
-
-                        selections.setEndDrag(xc, yc);
-                        if ( !chkd.maps.clipboard.isPreviousPasteLoc(u16(xc), u16(yc)) )
-                            paste((s16)xc, (s16)yc);
-                    }
-
-                    if ( x == 0 || y == 0 || x >= rcMap.right-2 || y >= rcMap.bottom-2 )
+                    if ( x == 0 || y == 0 || x == rcMap.right-2 || y == rcMap.bottom-2 )
                         EdgeDrag(hWnd, x, y);
 
-                    selections.setEndDrag( mapHoverX, mapHoverY );
+                    selections.setEndDrag(mapHoverX, mapHoverY);
                     if ( currLayer == Layer::Terrain )
                         selections.setEndDrag( (mapHoverX+16)/32*32, (mapHoverY+16)/32*32 );
                     else if ( currLayer == Layer::Locations )
@@ -1939,43 +1949,96 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
                         if ( snapUnitCoordinate(xc, yc) )
                             selections.setEndDrag(xc, yc);
                     }
-                }
-                PaintMap(nullptr, chkd.maps.clipboard.isPasting());
-            }
-            break;
 
-        default:
-            {
-                if ( chkd.maps.clipboard.isPasting() == true )
-                {
-                    if ( GetKeyState(VK_SPACE) & 0x8000 )
-                    {
-                        RECT rcMap;
-                        GetClientRect(hWnd, &rcMap);
-    
-                        if ( x == 0 || x == rcMap.right-2 || y == 0 || y == rcMap.bottom-2 )
-                        {
-                            if      ( x == 0 )
-                                screenLeft -= 32;
-                            else if ( x == rcMap.right-2 )
-                                screenLeft += 32;
-                            if      ( y == 0 )
-                                screenTop -= 32;
-                            else if ( y == rcMap.bottom-2 )
-                                screenTop += 32;
-    
-                            Scroll(true, true, true);
-                        }
-                    }
-
-                    if ( currLayer == Layer::Units )
-                        snapUnitCoordinate(mapHoverX, mapHoverY);
-
-                    selections.setEndDrag(mapHoverX, mapHoverY);
                     PaintMap(nullptr, chkd.maps.clipboard.isPasting());
                 }
-            }
-            break;
+                break;
+
+            case MK_LBUTTON:
+                {
+
+                    if ( isDragging() )
+                    {
+                        RECT rcMap {};
+                        GetClientRect(hWnd, &rcMap);
+
+                        // If pasting, move paste
+                        if ( chkd.maps.clipboard.isPasting() )
+                        {
+                            s32 xc = mapHoverX, yc = mapHoverY;
+                            if ( xc < rcMap.left + screenLeft )
+                                xc = rcMap.left + screenLeft;
+                            else if ( xc > rcMap.right-2 + screenLeft )
+                                xc = rcMap.right-2 + screenLeft;
+                            if ( yc < rcMap.top + screenTop )
+                                yc = rcMap.top + screenTop;
+                            else if ( yc > rcMap.bottom-2 + screenTop )
+                                yc = rcMap.bottom-2 + screenTop;
+
+                            if ( currLayer == Layer::Units )
+                                snapUnitCoordinate(xc, yc);
+
+                            selections.setEndDrag(xc, yc);
+                            if ( !chkd.maps.clipboard.isPreviousPasteLoc(u16(xc), u16(yc)) )
+                                paste((s16)xc, (s16)yc);
+                        }
+
+                        if ( x == 0 || y == 0 || x >= rcMap.right-2 || y >= rcMap.bottom-2 )
+                            EdgeDrag(hWnd, x, y);
+
+                        selections.setEndDrag( mapHoverX, mapHoverY );
+                        if ( currLayer == Layer::Terrain )
+                            selections.setEndDrag( (mapHoverX+16)/32*32, (mapHoverY+16)/32*32 );
+                        else if ( currLayer == Layer::Locations )
+                        {
+                            u32 x2 = mapHoverX, y2 = mapHoverY;
+                            if ( SnapLocationDimensions(x2, y2, x2, y2, LocSnapFlags(LocSnapFlags::SnapX2|LocSnapFlags::SnapY2)) )
+                                selections.setEndDrag(x2, y2);
+                        }
+                        else if ( currLayer == Layer::Units )
+                        {
+                            s32 xc = mapHoverX, yc = mapHoverY;
+                            if ( snapUnitCoordinate(xc, yc) )
+                                selections.setEndDrag(xc, yc);
+                        }
+                    }
+                    PaintMap(nullptr, chkd.maps.clipboard.isPasting());
+                }
+                break;
+
+            default:
+                {
+                    if ( chkd.maps.clipboard.isPasting() == true )
+                    {
+                        if ( GetKeyState(VK_SPACE) & 0x8000 )
+                        {
+                            RECT rcMap;
+                            GetClientRect(hWnd, &rcMap);
+    
+                            if ( x == 0 || x == rcMap.right-2 || y == 0 || y == rcMap.bottom-2 )
+                            {
+                                if      ( x == 0 )
+                                    screenLeft -= 32;
+                                else if ( x == rcMap.right-2 )
+                                    screenLeft += 32;
+                                if      ( y == 0 )
+                                    screenTop -= 32;
+                                else if ( y == rcMap.bottom-2 )
+                                    screenTop += 32;
+    
+                                Scroll(true, true, true);
+                            }
+                        }
+
+                        if ( currLayer == Layer::Units )
+                            snapUnitCoordinate(mapHoverX, mapHoverY);
+
+                        selections.setEndDrag(mapHoverX, mapHoverY);
+                        PaintMap(nullptr, chkd.maps.clipboard.isPasting());
+                    }
+                }
+                break;
+        }
     }
 }
 
@@ -1990,7 +2053,7 @@ void GuiMap::MouseHover(HWND hWnd, int x, int y, WPARAM wParam)
     
         default:
             {
-                if ( chkd.maps.clipboard.isPasting() == true )
+                if ( chkd.maps.clipboard.isPasting() == true || (CM->getLayer() == Layer::FogEdit && dragging) )
                 {
                     RECT rcMap;
                     GetClientRect(hWnd, &rcMap);
@@ -2059,13 +2122,18 @@ void GuiMap::LButtonUp(HWND hWnd, int x, int y, WPARAM wParam)
             else if ( currLayer == Layer::Sprites )
                 FinalizeSpriteSelection(hWnd, x, y, wParam);
         }
+        if ( currLayer == Layer::FogEdit )
+        {
+            clipboard.doPaste(currLayer, currTerrainSubLayer, x, y,*this, undos, false);
+            finalizeFogOperation();
+        }
 
         selections.setStartDrag(-1, -1);
         setDragging(false);
         RedrawWindow(hWnd, NULL, NULL, RDW_INVALIDATE);
     }
 
-    if ( !chkd.maps.clipboard.isPasting() )
+    if ( !chkd.maps.clipboard.isPasting() || (currLayer == Layer::FogEdit && !dragging) )
         ClipCursor(NULL);
 }
 

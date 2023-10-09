@@ -23,8 +23,10 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
 
 /*   Chk Accel  */  bool setDoodadTile(size_t x, size_t y, u16 tileNum);
                     void setTileValue(size_t tileX, size_t tileY, uint16_t tileValue) final;
+                    void setFogValue(size_t tileX, size_t tileY, u8 fogValue);
                     void beginTerrainOperation();
                     void finalizeTerrainOperation();
+                    void finalizeFogOperation();
                     void validateTileDoodads(size_t tileX, size_t tileY, uint16_t tileValue);
                     virtual void setTileset(Sc::Terrain::Tileset tileset);
                     void setDimensions(u16 newTileWidth, u16 newTileHeight, u16 sizeValidationFlags = SizeValidationFlag::Default, s32 leftEdge = 0, s32 topEdge = 0, size_t newTerrainType = 0);
@@ -36,7 +38,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     void setSubLayer(TerrainSubLayer newTerrainSubLayer);
                     double getZoom();
                     void setZoom(double newScale);
-                    u8 getCurrPlayer();
+                    u8 getCurrPlayer() const;
                     bool setCurrPlayer(u8 newPlayer);
                     bool isDragging();
                     void setDragging(bool dragging);
@@ -190,6 +192,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     Layer currLayer = Layer::Terrain;
                     TerrainSubLayer currTerrainSubLayer = TerrainSubLayer::Isom;
                     std::shared_ptr<ReversibleActions> tileChanges = nullptr;
+                    std::shared_ptr<ReversibleActions> fogChanges = nullptr;
                     Chk::DoodadCache doodadCache;
                     u8 currPlayer = 0;
                     double zoom = 1.0;

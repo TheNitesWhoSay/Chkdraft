@@ -260,6 +260,17 @@ void Maps::ChangeLayer(Layer newLayer)
         else
             ShowWindow(chkd.mainToolbar.terrainBox.getHandle(), SW_HIDE);
 
+        if ( newLayer == Layer::FogEdit )
+        {
+            chkd.mainToolbar.brushWidth.Show();
+            chkd.mainToolbar.brushHeight.Show();
+        }
+        else
+        {
+            chkd.mainToolbar.brushWidth.Hide();
+            chkd.mainToolbar.brushHeight.Hide();
+        }
+
         currentlyActiveMap->setLayer(newLayer);
 
         chkd.tilePropWindow.DestroyThis();

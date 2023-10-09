@@ -178,6 +178,8 @@ constexpr u64 size_1tb = 0x10000000000;
 
 const u8 u8Bits[] = { BIT_0, BIT_1, BIT_2, BIT_3, BIT_4, BIT_5, BIT_6, BIT_7 };
 
+const u8 xU8Bits[] = { x8BIT_0, x8BIT_1, x8BIT_2, x8BIT_3, x8BIT_4, x8BIT_5, x8BIT_6, x8BIT_7 };
+
 const u16 u16Bits[] = { BIT_0, BIT_1, BIT_2, BIT_3, BIT_4, BIT_5, BIT_6, BIT_7,
 BIT_8, BIT_9, BIT_10, BIT_11, BIT_12, BIT_13, BIT_14, BIT_15 };
 

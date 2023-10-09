@@ -73,6 +73,14 @@ class PasteUnitNode
         PasteUnitNode(); // Disallow ctor
 };
 
+struct FogBrush
+{
+    u32 width = 1;
+    u32 height = 1;
+    bool setFog = false; // If false, clearing fog
+    bool allPlayers = false;
+};
+
 class Clipboard
 {
     public:
@@ -98,6 +106,10 @@ class Clipboard
         void addQuickSprite(const Chk::Sprite & sprite);
         bool hasQuickSprites() { return quickSprites.size() > 0; }
 
+        const auto & getFogBrush() { return this->fogBrush; }
+        void setFogBrushSize(u32 width, u32 height);
+        void initFogBrush(s32 mapClickX, s32 mapClickY, const GuiMap & map, bool allPlayers);
+
         void beginPasting(bool isQuickPaste);
         void endPasting();
 
@@ -122,6 +134,7 @@ class Clipboard
         void fillPasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos);
         void pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos, bool allowStack);
         void pasteSprites(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos);
+        void pasteFog(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos);
 
 
     private:
@@ -141,6 +154,7 @@ class Clipboard
         std::vector<PasteSpriteNode> quickSprites;
         std::vector<PasteUnitNode> copyUnits;
         std::vector<PasteUnitNode> quickUnits;
+        FogBrush fogBrush {};
 
         POINT prevPaste;
 

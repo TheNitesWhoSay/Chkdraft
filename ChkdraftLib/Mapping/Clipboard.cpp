@@ -5,6 +5,7 @@
 #include "../Mapping/Undos/ChkdUndos/UnitCreateDel.h"
 #include "../Mapping/Undos/ChkdUndos/DoodadCreateDel.h"
 #include "../Mapping/Undos/ChkdUndos/SpriteCreateDel.h"
+#include "../Mapping/Undos/ChkdUndos/FogChange.h"
 #include <set>
 
 extern Logger logger;
@@ -394,6 +395,39 @@ void Clipboard::addQuickSprite(const Chk::Sprite & sprite)
     quickSprites.push_back(sprite);
 }
 
+void Clipboard::setFogBrushSize(u32 width, u32 height)
+{
+    if ( width == 0 )
+        this->fogBrush.width = 1;
+    else if ( width > 256 )
+        this->fogBrush.width = 256;
+    else
+        this->fogBrush.width = width;
+
+    if ( height == 0 )
+        this->fogBrush.height = 1;
+    else if ( height > 256 )
+        this->fogBrush.height = 256;
+    else
+        this->fogBrush.height = height;
+}
+
+void Clipboard::initFogBrush(s32 mapClickX, s32 mapClickY, const GuiMap & map, bool allPlayers)
+{
+    s32 tileClickX = mapClickX/32;
+    s32 tileClickY = mapClickY/32;
+
+    auto currPlayer = map.getCurrPlayer();
+    if ( currPlayer >= u8(8) )
+        currPlayer = u8(0);
+
+    this->fogBrush.setFog = (map.getFog(tileClickX, tileClickY) & u8Bits[currPlayer]) == 0;
+    this->fogBrush.allPlayers = allPlayers;
+
+    pasting = true;
+    quickPaste = true;
+}
+
 void Clipboard::beginPasting(bool isQuickPaste)
 {
     quickPaste = isQuickPaste;
@@ -435,6 +469,9 @@ void Clipboard::doPaste(Layer layer, TerrainSubLayer terrainSubLayer, s32 mapCli
             break;
         case Layer::Sprites:
             pasteSprites(mapClickX, mapClickY, map, undos);
+            break;
+        case Layer::FogEdit:
+            pasteFog(mapClickX, mapClickY, map, undos);
             break;
     }
 }
@@ -755,4 +792,65 @@ void Clipboard::pasteSprites(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos &
         }
     }
     CM->AddUndo(spriteCreates);
+}
+
+void Clipboard::pasteFog(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos)
+{
+    const auto width = this->fogBrush.width;
+    const auto height = this->fogBrush.height;
+    mapClickX += width % 2 == 0 ? 16 : 0;
+    mapClickY += height % 2 == 0 ? 16 : 0;
+    if ( mapClickX/16 != prevPaste.x || mapClickY/16 != prevPaste.y )
+    {
+        prevPaste.x = mapClickX/16;
+        prevPaste.y = mapClickY/16;
+
+        bool setFog = this->fogBrush.setFog;
+        bool allPlayers = this->fogBrush.allPlayers;
+
+        s32 brushWidth = s32(fogBrush.width);
+        s32 brushHeight = s32(fogBrush.height);
+        s32 hoverTileX = mapClickX/32;
+        s32 hoverTileY = mapClickY/32;
+
+        s32 startX = hoverTileX - brushWidth/2;
+        s32 startY = hoverTileY - brushHeight/2;
+        s32 endX = startX+brushWidth;
+        s32 endY = startY+brushHeight;
+        
+        if ( startX < 0 )
+            startX = 0;
+        if ( startY < 0 )
+            startY = 0;
+        if ( endX > map.getTileWidth() )
+            endX = (s32)map.getTileWidth();
+        if ( endY > map.getTileHeight() )
+            endY = (s32)map.getTileHeight();
+
+        for ( s32 y=startY; y<endY; ++y )
+        {
+            for ( s32 x=startX; x<endX; ++x )
+            {
+                if ( allPlayers )
+                {
+                    if ( setFog )
+                        map.setFogValue(x, y, u8(0xFF));
+                    else
+                        map.setFogValue(x, y, u8(0));
+                }
+                else
+                {
+                    u8 currPlayer = map.getCurrPlayer();
+                    if ( currPlayer < 8 )
+                    {
+                        if ( setFog )
+                            map.setFogValue(x, y, map.getFog(x, y) | u8Bits[currPlayer]);
+                        else
+                            map.setFogValue(x, y, map.getFog(x, y) & xU8Bits[currPlayer]);
+                    }
+                }
+            }
+        }
+        CM->Redraw(true);
+    }
 }
