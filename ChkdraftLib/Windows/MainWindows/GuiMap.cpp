@@ -1921,6 +1921,8 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
         selections.setEndDrag(mapHoverX, mapHoverY);
         if ( dragging )
             clipboard.doPaste(currLayer, currTerrainSubLayer, mapHoverX, mapHoverY, *this, undos, false);
+        
+        Redraw(dragging);
     }
     else
     {
