@@ -2501,25 +2501,8 @@ void GuiMap::FinalizeSpriteSelection(HWND hWnd, int mapX, int mapY, WPARAM wPara
             spriteTop = 0, spriteBottom = 0;
 
         const Chk::Sprite & sprite = Scenario::getSprite(i);
-        const auto & grp = chkd.scData.sprites.getGrp(chkd.scData.sprites.getImage(chkd.scData.sprites.getSprite(size_t(sprite.type)).imageFile).grpFile).get();
-
-        if ( (u16)sprite.type < (u16)Sc::Sprite::TotalSprites )
-        {
-            spriteLeft = sprite.xc - grp.grpWidth/2;
-            spriteRight = sprite.xc + grp.grpWidth/2;
-            spriteTop = sprite.yc - grp.grpHeight/2;
-            spriteBottom = sprite.yc + grp.grpHeight/2;
-        }
-        else
-        {
-            spriteLeft = sprite.xc - chkd.scData.units.getUnit(Sc::Unit::Type::TerranMarine).unitSizeLeft;
-            spriteRight = sprite.xc + chkd.scData.units.getUnit(Sc::Unit::Type::TerranMarine).unitSizeRight;
-            spriteTop = sprite.yc - chkd.scData.units.getUnit(Sc::Unit::Type::TerranMarine).unitSizeUp;
-            spriteBottom = sprite.yc + chkd.scData.units.getUnit(Sc::Unit::Type::TerranMarine).unitSizeDown;
-        }
-
-        if ( selections.getStartDrag().x <= spriteRight && selections.getEndDrag().x >= spriteLeft &&
-            selections.getStartDrag().y <= spriteBottom && selections.getEndDrag().y >= spriteTop )
+        if ( selections.getStartDrag().x <= sprite.xc && selections.getEndDrag().x >= sprite.xc &&
+             selections.getStartDrag().y <= sprite.yc && selections.getEndDrag().y >= sprite.yc )
         {
             bool wasSelected = selections.spriteIsSelected(i);
             if ( wasSelected )

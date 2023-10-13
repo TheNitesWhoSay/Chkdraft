@@ -4,6 +4,7 @@
 #include "../../MappingCoreLib/MappingCore.h"
 #include "Selections.h"
 #include "Undos/Undos.h"
+#include <chrono>
 class GuiMap;
 
 void StringToWindowsClipboard(const std::string & str);
@@ -155,8 +156,11 @@ class Clipboard
         std::vector<PasteUnitNode> copyUnits;
         std::vector<PasteUnitNode> quickUnits;
         FogBrush fogBrush {};
+        std::chrono::time_point<std::chrono::steady_clock> lastPasteTime = std::chrono::steady_clock::now();
 
         POINT prevPaste;
+
+        bool isNearPrevPaste(s32 mapClickX, s32 mapClickY);
 
         void ClearCopyTiles();
         void ClearCopyDoodads();

@@ -508,6 +508,13 @@ std::vector<PasteSpriteNode> & Clipboard::getSprites()
         return copySprites;
 }
 
+bool Clipboard::isNearPrevPaste(s32 mapClickX, s32 mapClickY)
+{
+    auto xDiff = LONG(mapClickX) < prevPaste.x ? prevPaste.x-LONG(mapClickX) : LONG(mapClickX)-prevPaste.x;
+    auto yDiff = LONG(mapClickY) < prevPaste.y ? prevPaste.y-LONG(mapClickY) : LONG(mapClickY)-prevPaste.y;
+    return xDiff < 32 && yDiff < 32;
+}
+
 void Clipboard::ClearCopyTiles()
 {
     copyTiles.clear();
@@ -726,6 +733,12 @@ void Clipboard::fillPasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap & map, Und
 
 void Clipboard::pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos, bool allowStack)
 {
+    auto currPasteTime = std::chrono::steady_clock::now();
+    if ( allowStack && std::chrono::duration_cast<std::chrono::milliseconds>(currPasteTime - this->lastPasteTime).count() < 250 && isNearPrevPaste(mapClickX, mapClickY) )
+        return; // Prevent unintentional repeat-pastes
+    else
+        this->lastPasteTime = currPasteTime;
+
     auto unitCreates = ReversibleActions::Make();
     auto & pasteUnits = getUnits();
     for ( auto & pasteUnit : pasteUnits )
@@ -776,6 +789,12 @@ void Clipboard::pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & u
 
 void Clipboard::pasteSprites(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos)
 {
+    auto currPasteTime = std::chrono::steady_clock::now();
+    if ( std::chrono::duration_cast<std::chrono::milliseconds>(currPasteTime - this->lastPasteTime).count() < 250 && isNearPrevPaste(mapClickX, mapClickY) )
+        return; // Prevent unintentional repeat-pastes
+    else
+        this->lastPasteTime = currPasteTime;
+
     auto spriteCreates = ReversibleActions::Make();
     auto & pasteSprites = getSprites();
     for ( auto & pasteSprite : pasteSprites )
