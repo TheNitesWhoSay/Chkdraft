@@ -561,6 +561,11 @@ void Clipboard::ClearQuickItems()
     quickSprites.clear();
 }
 
+bool Clipboard::getFillSimilarTiles()
+{
+    return fillSimilarTiles;
+}
+
 void Clipboard::toggleFillSimilarTiles()
 {
     fillSimilarTiles = !fillSimilarTiles;

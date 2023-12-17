@@ -1990,9 +1990,25 @@ namespace Sc {
             uint16_t bottom;
         };
         __declspec(align(1)) struct TileGroup {
+
+            enum_t(Flags, uint16_t, {
+                Walkable = BIT_0, // Overwritten for individual tiles based on VF4
+                Unwalkable = BIT_2, // Overwritten for individual tiles based on VF4
+                HasDoodadCover = BIT_4,
+                Creep = BIT_6, // Zerg buildings placable when combined with temporary creep
+                Unbuildable = BIT_7,
+                BlocksView = BIT_8, // Overwritten for individual tiles based on VF4
+                MidGround = BIT_9, // Overwritten for individual tiles based on VF4
+                HighGround = BIT_10, // Overwritten for individual tiles based on VF4
+                Occupied = BIT_11, // Unbuildable until a building on this tile gets removed
+                RecedingCreep = BIT_12,
+                CliffEdge = BIT_13, // Overwritten for individual tiles based on VF4
+                TemporaryCreep = BIT_14, // Zerg buildings placable when combined with creep flag
+                Startable = BIT_15 // Start locations & beacons may be placed here
+            });
+
             uint16_t terrainType;
-            uint8_t buildability;
-            uint8_t groundHeight;
+            uint16_t flags;
             DirectionalLinks links;
             Rect stackConnections;
             uint16_t megaTileIndex[16]; // megaTileIndex - to VF4/VX4

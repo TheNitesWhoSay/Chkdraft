@@ -242,8 +242,8 @@ void Maps::ChangeLayer(Layer newLayer)
         if ( chkd.mainToolbar.layerBox.GetSel() != (int)newLayer )
             chkd.mainToolbar.layerBox.SetSel((int)newLayer);
 
-        if ( newLayer == Layer::FogEdit || newLayer == Layer::Units ||
-             newLayer == Layer::Sprites || newLayer == Layer::FogView || newLayer == Layer::Doodads )
+        if ( newLayer == Layer::FogEdit || newLayer == Layer::Units || newLayer == Layer::Sprites ||
+             newLayer == Layer::FogView || newLayer == Layer::Doodads || newLayer == Layer::CutCopyPaste )
             // Layers where player#'s are relevant
         {
             ChangePlayer(currentlyActiveMap->getCurrPlayer());
@@ -269,6 +269,23 @@ void Maps::ChangeLayer(Layer newLayer)
         {
             chkd.mainToolbar.brushWidth.Hide();
             chkd.mainToolbar.brushHeight.Hide();
+        }
+
+        if ( newLayer == Layer::CutCopyPaste )
+        {
+            chkd.mainToolbar.checkTerrain.Show();
+            chkd.mainToolbar.checkDoodads.Show();
+            chkd.mainToolbar.checkSprites.Show();
+            chkd.mainToolbar.checkUnits.Show();
+            chkd.mainToolbar.checkFog.Show();
+        }
+        else
+        {
+            chkd.mainToolbar.checkTerrain.Hide();
+            chkd.mainToolbar.checkDoodads.Hide();
+            chkd.mainToolbar.checkSprites.Hide();
+            chkd.mainToolbar.checkUnits.Hide();
+            chkd.mainToolbar.checkFog.Hide();
         }
 
         currentlyActiveMap->setLayer(newLayer);
@@ -409,6 +426,56 @@ void Maps::ChangePlayer(u8 newPlayer)
     std::snprintf(race, sizeof(race), "Terran");
     std::snprintf(playerText, sizeof(playerText), "Player %i: %s %s", currentlyActiveMap->getCurrPlayer() + 1, color, race);
     chkd.statusBar.SetText(2, playerText);
+}
+
+bool Maps::toggleCutCopyPasteTerrain()
+{
+    if ( currentlyActiveMap != nullptr )
+    {
+        currentlyActiveMap->toggleCutCopyPasteTerrain();
+        return currentlyActiveMap->getCutCopyPasteTerrain();
+    }
+    return false;
+}
+
+bool Maps::toggleCutCopyPasteDoodads()
+{
+    if ( currentlyActiveMap != nullptr )
+    {
+        currentlyActiveMap->toggleCutCopyPasteDoodads();
+        return currentlyActiveMap->getCutCopyPasteDoodads();
+    }
+    return false;
+}
+
+bool Maps::toggleCutCopyPasteSprites()
+{
+    if ( currentlyActiveMap != nullptr )
+    {
+        currentlyActiveMap->toggleCutCopyPasteSprites();
+        return currentlyActiveMap->getCutCopyPasteSprites();
+    }
+    return false;
+}
+
+bool Maps::toggleCutCopyPasteUnits()
+{
+    if ( currentlyActiveMap != nullptr )
+    {
+        currentlyActiveMap->toggleCutCopyPasteUnits();
+        return currentlyActiveMap->getCutCopyPasteUnits();
+    }
+    return false;
+}
+
+bool Maps::toggleCutCopyPasteFog()
+{
+    if ( currentlyActiveMap != nullptr )
+    {
+        currentlyActiveMap->toggleCutCopyPasteFog();
+        return currentlyActiveMap->getCutCopyPasteFog();
+    }
+    return false;
 }
 
 void Maps::cut()

@@ -36,6 +36,11 @@ class Maps : public WinLib::MdiClient
         void ChangeSubLayer(TerrainSubLayer subLayer);
         void ChangeZoom(bool increment);
         void ChangePlayer(u8 newPlayer);
+        bool toggleCutCopyPasteTerrain();
+        bool toggleCutCopyPasteDoodads();
+        bool toggleCutCopyPasteSprites();
+        bool toggleCutCopyPasteUnits();
+        bool toggleCutCopyPasteFog();
         void cut();
         void copy();
         void startPaste(bool isQuickPaste);

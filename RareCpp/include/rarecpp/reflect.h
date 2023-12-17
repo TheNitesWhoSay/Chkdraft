@@ -15,9 +15,21 @@
 #endif
 
 #ifdef _MSC_VER
-#define MSVC_UNUSED_FALSE_POSITIVE _Pragma("warning(suppress: 4100)")
+    #if _MSVC_LANG < 202002L
+        #define RARE_NO_CPP_20
+    #endif
+    #define MSVC_UNUSED_FALSE_POSITIVE _Pragma("warning(suppress: 4100)")
 #else
-#define MSVC_UNUSED_FALSE_POSITIVE 
+    #if __cplusplus < 202002L
+        #define RARE_NO_CPP_20
+    #endif
+    #define MSVC_UNUSED_FALSE_POSITIVE 
+#endif
+
+#ifdef RARE_NO_CPP_20
+#define RARE_STRING_VALUE s
+#else
+#define RARE_STRING_VALUE s.value
 #endif
 
 // RareCpp Type Support - general type support and reflection capabilities
@@ -181,8 +193,43 @@ i0,i1,i2,i3,i4,i5,i6,i7,i8,i9,j0,j1,j2,j3,j4,j5,j6,j7,j8,argAtArgMax,...) argAtA
 // Selects the count of varadic arguments (can count 0 arguments, but cannot count parenthesized arguments)
 #define RARE_COUNT_ARGUMENTS(...) ML_S(ML##__VA_ARGS__##_G(),ML_G())
 
-// Call "f" for each argument
+// Call "f" for each argument (may have zero arguments)
 #define RARE_FOR_EACH(f,...) ML_N(RARE_COUNT_ARGUMENTS(__VA_ARGS__),f,__VA_ARGS__)
+
+/// Selects the count of varadic arguments (cannot count 0 arguments, but can count parenthesized arguments)
+#define RARE_COUNT_POSITIVE_ARGUMENTS(...) ML_S(__VA_ARGS__,ML_G())
+
+// Call "f" for each argument (must have at least one argument)
+#define RARE_FOR_EACH_POSITIVE(f,...) ML_N(RARE_COUNT_POSITIVE_ARGUMENTS(__VA_ARGS__),f,__VA_ARGS__)
+
+// MacroLoop_Extractor_WrapAndAppendComma
+#define ML_W(...) (__VA_ARGS__),
+
+// MacroLoop_Expand_Variadic
+#define ML_X(...) __VA_ARGS__
+
+// MacroLoop_Extractor_First
+#define ML_F(x, ...) ML_X x
+
+// MacroLoop_Extractor_GetFirst
+#define ML_R(x, y) ML_F(x, y)
+
+// MacroLoop_Extractor_Blank (when you append "ML_B" with an expression of the form "(LHS) RHS", the "(LHS)" gets blanked out and you're left with just RHS
+#define ML_B(...)
+
+// If x takes the form "(LHS)(RHS)", then this macro returns LHS
+#define LHS(x) ML_R(ML_W x,)
+
+// If x takes the form "(LHS)(RHS)", then this macro returns RHS
+#define RHS(x) LHS(ML_B x())
+
+#define RARE_STRINGIFY(x) #x
+
+#define RARE_INVOKE(f,x) f(x)
+
+#define RARE_POSTSCORE(x) ML_C(x, _)
+
+#define RARE_STRINGIFY_LHS(x) RARE_INVOKE(RARE_STRINGIFY, LHS(x))
 
     }
 
@@ -245,6 +292,13 @@ i0,i1,i2,i3,i4,i5,i6,i7,i8,i9,j0,j1,j2,j3,j4,j5,j6,j7,j8,argAtArgMax,...) argAtA
         template <typename T> struct remove_pointer<T* volatile> { using type = T; };
         template <typename T> struct remove_pointer<T* const volatile> { using type = T; };
         template <typename T> using remove_pointer_t = typename remove_pointer<T>::type;
+
+        template <typename T> struct remove_member_pointer {
+            template <typename U> struct detail { using type = std::remove_pointer_t<U>; };
+            template <typename C, typename U> struct detail<U C::*> { using type = U; };
+            using type = typename detail<T>::type;
+        };
+        template <typename T> using remove_member_pointer_t = typename remove_member_pointer<T>::type;
 
         template <typename T> struct is_pointable : std::bool_constant<!std::is_same_v<T, remove_pointer_t<T>>> {};
         template <typename T> inline constexpr bool is_pointable_v = is_pointable<T>::value;
@@ -546,24 +600,24 @@ i0,i1,i2,i3,i4,i5,i6,i7,i8,i9,j0,j1,j2,j3,j4,j5,j6,j7,j8,argAtArgMax,...) argAtA
             return AdaptorSubClass::get(adaptor);
         }
 
-	    constexpr size_t fnv1aHash(const std::string_view & str) noexcept { // Returns a fnv1a hash of the given string
-		    constexpr size_t seed = static_cast<size_t>([](){
+        constexpr size_t fnv1aHash(const std::string_view & str) noexcept { // Returns a fnv1a hash of the given string
+            constexpr size_t seed = static_cast<size_t>([](){
                 if constexpr ( sizeof(size_t) >= 8 ) return 14695981039346656037ULL;
                 else return 2166136261U;
             }());
-		    constexpr size_t factor = static_cast<size_t>([](){
+            constexpr size_t factor = static_cast<size_t>([](){
                 if constexpr ( sizeof(size_t) >= 8 ) return 1099511628211ULL;
                 else return 16777619U;
             }());
-		    size_t hash = seed;
-		    for ( auto c : str ) {
-			    hash ^= static_cast<size_t>(c);
-			    hash *= factor;
-		    }
-		    return hash;
-	    }
+            size_t hash = seed;
+            for ( auto c : str ) {
+                hash ^= static_cast<size_t>(c);
+                hash *= factor;
+            }
+            return hash;
+        }
     
-        template <const char* ... s>
+        template <auto ... s>
         struct StringIndexMap { // Constexpr map from a set of unique strings to the indexes at which they're passed in
 
             static constexpr size_t total = sizeof...(s); // The total number of strings in the map
@@ -610,8 +664,8 @@ i0,i1,i2,i3,i4,i5,i6,i7,i8,i9,j0,j1,j2,j3,j4,j5,j6,j7,j8,argAtArgMax,...) argAtA
             };
 
             template <size_t ... I> static constexpr auto buildHashMap(std::index_sequence<I...>) noexcept {
-                HashMap hashMap {{}, {{std::string_view(s), I}...}};
-                size_t dupedHashes[total] { (fnv1aHash(std::string_view(s)) & mask)... };
+                HashMap hashMap {{}, {{std::string_view(RARE_STRING_VALUE), I}...}};
+                size_t dupedHashes[total] { (fnv1aHash(std::string_view(RARE_STRING_VALUE)) & mask)... };
             
                 hashMap.sort(dupedHashes); // Sort stringBucket, mirroring any swaps performed to stringBucket in stringIndexes and strings)
                 size_t last = !dupedHashes[0]; // Set last to anything other than the value of the first hash
@@ -625,7 +679,7 @@ i0,i1,i2,i3,i4,i5,i6,i7,i8,i9,j0,j1,j2,j3,j4,j5,j6,j7,j8,argAtArgMax,...) argAtA
             }
 
             static constexpr HashMap hashMap = buildHashMap(std::make_index_sequence<total>());
-            static constexpr size_t dupedHashes[total] { (fnv1aHash(std::string_view(s)) & mask)... };
+            static constexpr size_t dupedHashes[total] { (fnv1aHash(std::string_view(RARE_STRING_VALUE)) & mask)... };
 
         public:
             static constexpr size_t indexOf(const std::string_view & str) noexcept {
@@ -683,6 +737,20 @@ i0,i1,i2,i3,i4,i5,i6,i7,i8,i9,j0,j1,j2,j3,j4,j5,j6,j7,j8,argAtArgMax,...) argAtA
             template <size_t ... Js> static constexpr std::index_sequence<c.index[Js]...> filterSeq(std::index_sequence<Js...>);
         public:
             using type = decltype(filterSeq(std::make_index_sequence<sizeof...(Is)-1>()));
+        };
+
+        template <auto ... Data> struct NttpTuple {
+            template <size_t I, auto Head, auto ... Tail> static constexpr auto get(RareTs::NttpTuple<Head, Tail...>)
+            {
+                if constexpr ( I == 0 )
+                    return Head;
+                else if constexpr ( I <= sizeof...(Tail) )
+                    return get<I-1>(RareTs::NttpTuple<Tail...>{});
+                else
+                    static_assert(I <= sizeof...(Tail), "Tuple index out of range");
+            }
+            template <size_t I> static constexpr auto get() { return RareTs::NttpTuple<>::template get<I>(RareTs::NttpTuple<Data...>{}); }
+            template <size_t I> using element_type = decltype(get<I>());
         };
     }
 
@@ -760,10 +828,768 @@ i0,i1,i2,i3,i4,i5,i6,i7,i8,i9,j0,j1,j2,j3,j4,j5,j6,j7,j8,argAtArgMax,...) argAtA
         };
         
         template <typename T> struct Proxy;
+        template <typename T> struct GlobalClass;
+
+        #ifndef RARE_NO_CPP_20
+        namespace Aggregates
+        {
+            namespace detail
+            {
+                struct any { template <class T> constexpr operator T(); };
+
+                template <typename T> requires std::is_aggregate_v<T>
+                struct member_counter
+                { // Credit for algorithm: https://github.com/Tsche/repr/blob/master/include/librepr/reflection/detail/arity.h (MIT License)
+                    template <typename ... Ts>
+                    static consteval auto len(auto ... args) {
+                        static_assert(sizeof...(Ts) + sizeof...(args) <= 128, "For auto-reflected types change large C-arrays to std::array");
+                        if constexpr ( requires { T{args..., {Ts{}..., any{}}}; } )
+                            return len<Ts..., any>(args...);
+                        else
+                            return sizeof...(Ts);
+                    }
+
+                    static consteval auto count_simple(auto ... args) {
+                        if constexpr ( requires { T{args..., any{}}; } )
+                            return count_simple(args..., any{});
+                        else
+                            return sizeof...(args);
+                    }
+
+                    template <typename ... Ts>
+                    static consteval auto count_agg(auto ... args) {
+                        if constexpr ( requires { T{args..., {any{}, any{}}, Ts{}..., any{}}; } )
+                            return count_agg<Ts..., any>(args...);
+                        else
+                            return sizeof...(Ts) + sizeof...(args) + 1;
+                    }
+
+                    static consteval auto count(size_t skip, auto ... args) {
+                        #ifdef __INTELLISENSE__
+                        return skip;
+                        #else
+                        if constexpr ( requires { T{args..., {any{}, any{}}}; } ) {
+                            if constexpr ( count_agg(args...) != count_simple(args...) )
+                                skip += len(args...) - 1;
+                
+                            return count(skip, args..., any{});
+                        }
+                        else if constexpr ( requires { T{args..., any{}}; } )
+                            return count(skip, args..., any{});
+                        else
+                            return sizeof...(args) - skip;
+                        #endif
+                    }
+                };
+
+                template <typename ... Ts>
+                struct unref_tuple_elements {
+                    using type = std::tuple<std::remove_reference_t<Ts>...>;
+                };
+                template <template <typename...> class Tup, typename ... Ts>
+                struct unref_tuple_elements<Tup<Ts...>> : unref_tuple_elements<Ts...> {};
+
+                template <typename T> using unref_tuple_elements_t = typename unref_tuple_elements<T>::type;
+                
+                template <class T> struct val_wrapper { T v; };
+
+                #if defined(__clang__)
+                #pragma clang diagnostic ignored "-Wundefined-var-template"
+                template <class T> constexpr auto make_val_wrapper(T v) { return val_wrapper<T>{v}; }
+                #endif
+
+                template <class T>
+                extern const val_wrapper<T> fake_obj;
+
+                template <size_t N>
+                struct stored_name {
+                    char value[N+1] {};
+                    constexpr stored_name(const char* s) noexcept {
+                        for ( size_t i=0; i<N; i++ )
+                            value[i] = s[i];
+
+                        value[N] = '\0';
+                    }
+                    constexpr operator const char*() const noexcept { return value; };
+                };
+
+                template <class T, auto MemberAddr> constexpr auto name() noexcept
+                {
+                    #if defined(_MSC_VER) && !defined(__clang__)
+                    constexpr std::string_view s {__FUNCSIG__};
+                    constexpr auto begin = s.rfind("->")+2;
+                    constexpr auto size = s.find_first_of(">", begin)-begin;
+                    #elif defined(__GNUC__) && !defined(__clang__)
+                    constexpr std::string_view s {__PRETTY_FUNCTION__};
+                    constexpr auto begin = s.find_last_of(":")+1;
+                    constexpr auto size = s.find_first_of(")", begin)-begin;
+                    #else // Assume __clang__/clang-like formatting
+                    constexpr std::string_view s {__PRETTY_FUNCTION__};
+                    constexpr auto begin = s.find_last_of(".")+1;
+                    constexpr auto size = s.find_first_of("}", begin)-begin;
+                    #endif
+                    return stored_name<size>{s.substr(begin, size).data()};
+                }
+            
+                template <class T, auto MemberAddr> inline constexpr auto stored_member_name = detail::name<T, MemberAddr>();
+            }
+
+            template <typename T> requires std::is_aggregate_v<T>
+            inline constexpr size_t member_count = Aggregates::detail::member_counter<T>::count(0);
+
+            template <typename T>
+            constexpr auto members_of(T && obj) {
+                constexpr auto count = member_count<std::remove_cvref_t<T>>;
+                if constexpr ( count == 0 ) {
+                    return std::tie();
+                } else if constexpr ( count == 1 ) {
+                    auto & [a] = obj;
+                    return std::tie(a);
+                } else if constexpr ( count == 2 ) {
+                    auto & [a,b] = obj;
+                    return std::tie(a,b);
+                } else if constexpr ( count == 3 ) {
+                    auto & [a,b,c] = obj;
+                    return std::tie(a,b,c);
+                } else if constexpr ( count == 4 ) {
+                    auto & [a,b,c,d] = obj;
+                    return std::tie(a,b,c,d);
+                } else if constexpr ( count == 5 ) {
+                    auto & [a,b,c,d,e] = obj;
+                    return std::tie(a,b,c,d,e);
+                } else if constexpr ( count == 6 ) {
+                    auto & [a,b,c,d,e,f] = obj;
+                    return std::tie(a,b,c,d,e,f);
+                } else if constexpr ( count == 7 ) {
+                    auto & [a,b,c,d,e,f,g] = obj;
+                    return std::tie(a,b,c,d,e,f,g);
+                } else if constexpr ( count == 8 ) {
+                    auto & [a,b,c,d,e,f,g,h] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h);
+                } else if constexpr ( count == 9 ) {
+                    auto & [a,b,c,d,e,f,g,h,i] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i);
+                } else if constexpr ( count == 10 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j);
+                } else if constexpr ( count == 11 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k);
+                } else if constexpr ( count == 12 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l);
+                } else if constexpr ( count == 13 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m);
+                } else if constexpr ( count == 14 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n);
+                } else if constexpr ( count == 15 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o);
+                } else if constexpr ( count == 16 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p);
+                } else if constexpr ( count == 17 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q);
+                } else if constexpr ( count == 18 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r);
+                } else if constexpr ( count == 19 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s);
+                } else if constexpr ( count == 20 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t);
+                } else if constexpr ( count == 21 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u);
+                } else if constexpr ( count == 22 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v);
+                } else if constexpr ( count == 23 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w);
+                } else if constexpr ( count == 24 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x);
+                } else if constexpr ( count == 25 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y);
+                } else if constexpr ( count == 26 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z);
+                } else if constexpr ( count == 27 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0);
+                } else if constexpr ( count == 28 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1);
+                } else if constexpr ( count == 29 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2);
+                } else if constexpr ( count == 30 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3);
+                } else if constexpr ( count == 31 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4);
+                } else if constexpr ( count == 32 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5);
+                } else if constexpr ( count == 33 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6);
+                } else if constexpr ( count == 34 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7);
+                } else if constexpr ( count == 35 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8);
+                } else if constexpr ( count == 36 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9);
+                } else if constexpr ( count == 37 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0);
+                } else if constexpr ( count == 38 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1);
+                } else if constexpr ( count == 39 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2);
+                } else if constexpr ( count == 40 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3);
+                } else if constexpr ( count == 41 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4);
+                } else if constexpr ( count == 42 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5);
+                } else if constexpr ( count == 43 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6);
+                } else if constexpr ( count == 44 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7);
+                } else if constexpr ( count == 45 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8);
+                } else if constexpr ( count == 46 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9);
+                } else if constexpr ( count == 47 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0);
+                } else if constexpr ( count == 48 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1);
+                } else if constexpr ( count == 49 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2);
+                } else if constexpr ( count == 50 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3);
+                } else if constexpr ( count == 51 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4);
+                } else if constexpr ( count == 52 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5);
+                } else if constexpr ( count == 53 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6);
+                } else if constexpr ( count == 54 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7);
+                } else if constexpr ( count == 55 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8);
+                } else if constexpr ( count == 56 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9);
+                } else if constexpr ( count == 57 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0);
+                } else if constexpr ( count == 58 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1);
+                } else if constexpr ( count == 59 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2);
+                } else if constexpr ( count == 60 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3);
+                } else if constexpr ( count == 61 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4);
+                } else if constexpr ( count == 62 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5);
+                } else if constexpr ( count == 63 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6);
+                } else if constexpr ( count == 64 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7);
+                } else if constexpr ( count == 65 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8);
+                } else if constexpr ( count == 66 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9);
+                } else if constexpr ( count == 67 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0);
+                } else if constexpr ( count == 68 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1);
+                } else if constexpr ( count == 69 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2);
+                } else if constexpr ( count == 70 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3);
+                } else if constexpr ( count == 71 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4);
+                } else if constexpr ( count == 72 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5);
+                } else if constexpr ( count == 73 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6);
+                } else if constexpr ( count == 74 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7);
+                } else if constexpr ( count == 75 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8);
+                } else if constexpr ( count == 76 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9);
+                } else if constexpr ( count == 77 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0);
+                } else if constexpr ( count == 78 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1);
+                } else if constexpr ( count == 79 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2);
+                } else if constexpr ( count == 80 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3);
+                } else if constexpr ( count == 81 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4);
+                } else if constexpr ( count == 82 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5);
+                } else if constexpr ( count == 83 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6);
+                } else if constexpr ( count == 84 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7);
+                } else if constexpr ( count == 85 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8);
+                } else if constexpr ( count == 86 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9);
+                } else if constexpr ( count == 87 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0);
+                } else if constexpr ( count == 88 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1);
+                } else if constexpr ( count == 89 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2);
+                } else if constexpr ( count == 90 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3);
+                } else if constexpr ( count == 91 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4] =
+                        obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4);
+                } else if constexpr ( count == 92 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5] =
+                        obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5);
+                } else if constexpr ( count == 93 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6);
+                } else if constexpr ( count == 94 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7);
+                } else if constexpr ( count == 95 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8);
+                } else if constexpr ( count == 96 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9);
+                } else if constexpr ( count == 97 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9,h0] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9,h0);
+                } else if constexpr ( count == 98 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9,h0,h1] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9,h0,h1);
+                } else if constexpr ( count == 99 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9,h0,h1,h2] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9,h0,h1,h2);
+                } else if constexpr ( count == 100 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9,h0,h1,h2,h3] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9,h0,h1,h2,h3);
+                } else if constexpr ( count == 101 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9,h0,h1,h2,h3,h4] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9,h0,h1,h2,h3,h4);
+                } else if constexpr ( count == 102 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9,h0,h1,h2,h3,h4,h5] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9,h0,h1,h2,h3,h4,h5);
+                } else if constexpr ( count == 103 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9,h0,h1,h2,h3,h4,h5,h6] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9,h0,h1,h2,h3,h4,h5,h6);
+                } else if constexpr ( count == 104 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9,h0,h1,h2,h3,h4,h5,h6,h7] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9,h0,h1,h2,h3,h4,h5,h6,h7);
+                } else if constexpr ( count == 105 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9,h0,h1,h2,h3,h4,h5,h6,h7,h8] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9,h0,h1,h2,h3,h4,h5,h6,h7,h8);
+                } else if constexpr ( count == 106 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9,h0,h1,h2,h3,h4,h5,h6,h7,h8,h9] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9,h0,h1,h2,h3,h4,h5,h6,h7,h8,h9);
+                } else if constexpr ( count == 107 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9,h0,h1,h2,h3,h4,h5,h6,h7,h8,h9,i0] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9,h0,h1,h2,h3,h4,h5,h6,h7,h8,h9,i0);
+                } else if constexpr ( count == 108 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9,h0,h1,h2,h3,h4,h5,h6,h7,h8,h9,i0,i1] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9,h0,h1,h2,h3,h4,h5,h6,h7,h8,h9,i0,i1);
+                } else if constexpr ( count == 109 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9,h0,h1,h2,h3,h4,h5,h6,h7,h8,h9,i0,i1,i2] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9,h0,h1,h2,h3,h4,h5,h6,h7,h8,h9,i0,i1,i2);
+                } else if constexpr ( count == 110 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9,h0,h1,h2,h3,h4,h5,h6,h7,h8,h9,i0,i1,i2,i3] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9,h0,h1,h2,h3,h4,h5,h6,h7,h8,h9,i0,i1,i2,i3);
+                } else if constexpr ( count == 111 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9,h0,h1,h2,h3,h4,h5,h6,h7,h8,h9,i0,i1,i2,i3,i4] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9,h0,h1,h2,h3,h4,h5,h6,h7,h8,h9,i0,i1,i2,i3,i4);
+                } else if constexpr ( count == 112 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9,h0,h1,h2,h3,h4,h5,h6,h7,h8,h9,i0,i1,i2,i3,i4,i5] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9,h0,h1,h2,h3,h4,h5,h6,h7,h8,h9,i0,i1,i2,i3,i4,i5);
+                } else if constexpr ( count == 113 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9,h0,h1,h2,h3,h4,h5,h6,h7,h8,h9,i0,i1,i2,i3,i4,i5,i6] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9,h0,h1,h2,h3,h4,h5,h6,h7,h8,h9,i0,i1,i2,i3,i4,i5,i6);
+                } else if constexpr ( count == 114 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9,h0,h1,h2,h3,h4,h5,h6,h7,h8,h9,i0,i1,i2,i3,i4,i5,i6,i7] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9,h0,h1,h2,h3,h4,h5,h6,h7,h8,h9,i0,i1,i2,i3,i4,i5,i6,i7);
+                } else if constexpr ( count == 115 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9,h0,h1,h2,h3,h4,h5,h6,h7,h8,h9,i0,i1,i2,i3,i4,i5,i6,i7,i8] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9,h0,h1,h2,h3,h4,h5,h6,h7,h8,h9,i0,i1,i2,i3,i4,i5,i6,i7,i8);
+                } else if constexpr ( count == 116 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9,h0,h1,h2,h3,h4,h5,h6,h7,h8,h9,i0,i1,i2,i3,i4,i5,i6,i7,i8,i9] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9,h0,h1,h2,h3,h4,h5,h6,h7,h8,h9,i0,i1,i2,i3,i4,i5,i6,i7,i8,i9);
+                } else if constexpr ( count == 117 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9,h0,h1,h2,h3,h4,h5,h6,h7,h8,h9,i0,i1,i2,i3,i4,i5,i6,i7,i8,i9,j0] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9,h0,h1,h2,h3,h4,h5,h6,h7,h8,h9,i0,i1,i2,i3,i4,i5,i6,i7,i8,i9,j0);
+                } else if constexpr ( count == 118 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9,h0,h1,h2,h3,h4,h5,h6,h7,h8,h9,i0,i1,i2,i3,i4,i5,i6,i7,i8,i9,j0,j1] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9,h0,h1,h2,h3,h4,h5,h6,h7,h8,h9,i0,i1,i2,i3,i4,i5,i6,i7,i8,i9,j0,j1);
+                } else if constexpr ( count == 119 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9,h0,h1,h2,h3,h4,h5,h6,h7,h8,h9,i0,i1,i2,i3,i4,i5,i6,i7,i8,i9,j0,j1,j2] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9,h0,h1,h2,h3,h4,h5,h6,h7,h8,h9,i0,i1,i2,i3,i4,i5,i6,i7,i8,i9,j0,j1,j2);
+                } else if constexpr ( count == 120 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9,h0,h1,h2,h3,h4,h5,h6,h7,h8,h9,i0,i1,i2,i3,i4,i5,i6,i7,i8,i9,j0,j1,j2,j3] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9,h0,h1,h2,h3,h4,h5,h6,h7,h8,h9,i0,i1,i2,i3,i4,i5,i6,i7,i8,i9,j0,j1,j2,j3);
+                } else if constexpr ( count == 121 ) {
+                    auto & [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9,h0,h1,h2,h3,h4,h5,h6,h7,h8,h9,i0,i1,i2,i3,i4,i5,i6,i7,i8,i9,j0,j1,j2,j3,j4] = obj;
+                    return std::tie(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,
+                        c2,c3,c4,c5,c6,c7,c8,c9,d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,g0,g1,g2,g3,g4,g5,
+                        g6,g7,g8,g9,h0,h1,h2,h3,h4,h5,h6,h7,h8,h9,i0,i1,i2,i3,i4,i5,i6,i7,i8,i9,j0,j1,j2,j3,j4);
+                } else {
+                    static_assert(count<126, "Aggregates with more than 121 members cannot be auto-reflected");
+                }
+            }
+
+            template <class T> using member_types = Aggregates::detail::unref_tuple_elements_t<decltype(members_of(std::declval<T>()))>;
+
+            template <size_t I, class T> using member_type = std::tuple_element_t<I, member_types<T>>;
+
+            template <size_t I, class T> constexpr decltype(auto) member_ref(T && t) {
+                return std::get<I>(members_of(std::forward<T>(t)));
+            }
+
+            template <size_t I, class T> inline constexpr const char* const member_name = Aggregates::detail::stored_member_name<T,
+            #if defined(__clang__)
+                Aggregates::detail::make_val_wrapper(std::addressof(std::get<I>(members_of(Aggregates::detail::fake_obj<T>.v)))) >;
+            #else
+                std::addressof(std::get<I>(members_of(Aggregates::detail::fake_obj<T>.v))) >;
+            #endif
+        }
+        
+        template <typename T>
+        struct AggregateClass
+        {
+            using B_ = std::remove_cvref_t<T>;
+            using C_ = B_;
+            struct I_ { enum { N_ = std::tuple_size_v<RareTs::Aggregates::member_types<C_>> }; };
+            static constexpr auto notes = std::tuple {};
+            template <size_t I, class T_ = B_, bool Empty = I_::N_==0> struct F_ {
+                using type = void;
+                static constexpr std::nullptr_t p = nullptr;
+                template <class U_> static constexpr auto & s() { return p; }
+                template <class U_> static constexpr auto & i(U_ &&) { return p; }
+            };
+            template <size_t I, class T_> struct F_<I, T_, false> {
+                using type = typename RareTs::Aggregates::template member_type<I, T_>;
+                static constexpr std::nullptr_t p = nullptr;
+                template <class U_> static constexpr auto & s() { return p; }
+                template <class U_> static constexpr auto & i(U_ && t) { return RareTs::Aggregates::member_ref<I>(t); }
+            };
+            template <size_t, class T_ = B_, class = void> struct Q_ { using type = std::nullptr_t; };
+            template <size_t, class T_ = B_, class = void> struct P_ { static constexpr std::nullptr_t p = nullptr; };
+            template <size_t, class T_ = B_, class = void> struct E_ { static constexpr std::tuple notes{}; };
+            template <size_t, class T_ = B_, class = void> struct O_ { static constexpr size_t o() { return std::numeric_limits<size_t>::max(); }; };
+            template <size_t, template <size_t> class> struct M_;
+            template <size_t, template <size_t> class> struct D_;
+            template <size_t I, class T_ = B_, bool Empty = I_::N_==0> struct N_ { static constexpr char value[] {""}; };
+            template <size_t I, class T_> struct N_<I, T_, false> { static constexpr auto value = RareTs::Aggregates::member_name<I, T_>; };
+            template <size_t, class...> struct L_;
+            template <size_t, class=void> struct A_;
+        };
+        #endif
+
+        template <typename T, auto ... MembPointers> struct PrivateObject {
+            template <size_t I> using pointer_type = typename NttpTuple<MembPointers...>::template element_type<I>;
+            template <size_t I> using type = remove_member_pointer_t<pointer_type<I>>;
+            template <size_t I> static constexpr auto pointer() { return NttpTuple<MembPointers...>::template get<I>(); }
+            template <size_t I> static constexpr bool isStatic = !std::is_member_pointer_v<pointer_type<I>>;
+        };
+
+        template <typename T, typename = void> struct is_in_class_reflected : std::false_type {};
+        template <typename T> struct is_in_class_reflected <T, std::void_t<decltype(T::Class::I_::N_)>> : std::true_type {};
+        template <typename T> inline constexpr bool is_in_class_reflected_v = is_in_class_reflected<T>::value;
     
         template <typename T, typename = void> struct is_proxied : std::false_type {};
         template <typename T> struct is_proxied<T, std::void_t<decltype(Proxy<T>::Class::I_::N_)>> : std::true_type {};
         template <typename T> inline constexpr bool is_proxied_v = is_proxied<T>::value;
+    
+        template <typename T, typename = void> struct is_private_reflected : std::false_type {};
+        template <typename T> struct is_private_reflected<T, std::void_t<decltype(GlobalClass<T>::I_::N_)>> : std::true_type {};
+        template <typename T> inline constexpr bool is_private_reflected_v = is_private_reflected<T>::value;
+
+        #ifndef RARE_NO_CPP_20
+        template <typename T, typename = void> struct is_aggregate_reflected : std::bool_constant<
+            std::is_aggregate_v<T> && !std::is_array_v<T> && !is_in_class_reflected_v<T> && !is_proxied_v<T> && !is_private_reflected_v<T>> {};
+        template <typename T> inline constexpr bool is_aggregate_reflected_v = is_aggregate_reflected<T>::value;
+        #else
+        template <typename T, typename = void> struct is_aggregate_reflected : std::false_type {};
+        #endif
 
         #ifdef __clang__
         template <typename T> constexpr void classType(T);
@@ -881,12 +1707,30 @@ i0,i1,i2,i3,i4,i5,i6,i7,i8,i9,j0,j1,j2,j3,j4,j5,j6,j7,j8,argAtArgMax,...) argAtA
             template <template <typename...> class Filter, typename T, typename ...Ts> static constexpr std::false_type filterResult(unsigned);
 
             #if !defined(__clang__)
-            template <class T, class=void> struct clazz { using type = void; };
+            template <class T, class=void> struct clazz {
+                template <class U, class=void> struct last { using type = void; };
+                #ifndef RARE_NO_CPP_20
+                template <class U> struct last<U, std::enable_if_t<std::is_aggregate_v<U> && !std::is_array_v<U>>> { using type = typename RareTs::AggregateClass<U>; };
+                #endif
+                using type = typename last<T>::type;
+            };
             template <class T> struct clazz<T, std::void_t<typename T::Class>> { using type = typename T::Class; };
             template <class T> struct clazz<T, std::void_t<typename Proxy<T>::Class>> { using type = typename Proxy<T>::Class; };
+            template <class T> struct clazz<T, std::void_t<typename RareTs::template GlobalClass<T>::B_>> { using type = typename RareTs::GlobalClass<T>; };
             template <typename T> using class_t = typename clazz<T>::type;
-            #else
+            #elif defined(RARE_NO_CPP_20)
             template <typename T> using class_t = decltype(classType(RareTs::type_tag<RareTs::Proxy<RareTs::remove_cvref_t<T>>>{}));
+            #else
+            template <typename T, typename = std::enable_if_t<!std::is_void_v<decltype(classType(RareTs::type_tag<RareTs::Proxy<T>>{}))>>>
+            static constexpr decltype(classType(RareTs::type_tag<RareTs::Proxy<T>>{})) clazz(int);
+            template <typename T, typename = std::enable_if_t<std::is_void_v<decltype(classType(RareTs::type_tag<RareTs::Proxy<T>>{}))>>>
+            static constexpr auto clazz(unsigned) {
+                if constexpr ( std::is_aggregate_v<T> && !RareTs::is_static_array_v<T> )
+                    return RareTs::AggregateClass<T>{};
+                else
+                    return;
+            } 
+            template <typename T> using class_t = decltype(clazz<RareTs::remove_cvref_t<T>>(0));
             #endif
 
             template <typename T> struct is_reflected { static constexpr bool value = !std::is_void_v<class_t<T>>; };
@@ -913,7 +1757,8 @@ i0,i1,i2,i3,i4,i5,i6,i7,i8,i9,j0,j1,j2,j3,j4,j5,j6,j7,j8,argAtArgMax,...) argAtA
 
             template <typename T, size_t I> using member_type = typename class_t<T>::template F_<I>::type;
             template <typename T, size_t I> using member_pointer_type = typename class_t<T>::template Q_<I>::type;
-            template <typename T, size_t I> static constexpr auto member_name = class_t<T>::template N_<I>::n;
+            template <typename T, size_t I> static constexpr auto member_name_wrapper = typename class_t<T>::template N_<I>{};
+            template <typename T, size_t I> static constexpr auto member_name = class_t<T>::template N_<I>::value;
             template <typename T, size_t I> static constexpr std::string_view member_type_name { RareTs::toStr<typename class_t<T>::template F_<I>::type>() };
             template <typename T, size_t I> static constexpr auto member_pointer = class_t<T>::template P_<I>::p;
             template <typename T, size_t I> static constexpr size_t member_offset = class_t<T>::template O_<I>::o();
@@ -932,7 +1777,7 @@ i0,i1,i2,i3,i4,i5,i6,i7,i8,i9,j0,j1,j2,j3,j4,j5,j6,j7,j8,argAtArgMax,...) argAtA
 
             template <typename T, size_t ... Is> using member_types = std::tuple<typename class_t<T>::template F_<Is>::type...>;
             template <typename T, size_t ... Is> using member_pointer_types = std::tuple<typename class_t<T>::template Q_<Is>::type...>;
-            template <typename T, size_t ... Is> static constexpr auto member_names { class_t<T>::template N_<Is>::n... };
+            template <typename T, size_t ... Is> static constexpr auto member_names { class_t<T>::template N_<Is>::value... };
             template <typename T, size_t ... Is>
             static constexpr std::string_view member_type_names[] { RareTs::toStr<typename class_t<T>::template F_<Is>::type>()... };
             template <typename T, size_t ... Is> static constexpr auto member_pointers = std::tuple { class_t<T>::template P_<Is>::p... };
@@ -1112,7 +1957,7 @@ i0,i1,i2,i3,i4,i5,i6,i7,i8,i9,j0,j1,j2,j3,j4,j5,j6,j7,j8,argAtArgMax,...) argAtA
             struct IsStaticData : std::bool_constant<Member::isStatic && Member::isData> {};
             template <typename Member, typename = enable_if_member_t<Member>>
             struct IsStaticFunction : std::bool_constant<Member::isStatic && Member::isFunction> {};
-		
+
             template <template <typename...> class Of> struct Is {
                 template <typename Member, typename = enable_if_member_t<Member>> struct Specialization : std::bool_constant<
                     RareTs::is_specialization_v<typename Member::type, Of>> {};
@@ -1482,7 +2327,7 @@ i0,i1,i2,i3,i4,i5,i6,i7,i8,i9,j0,j1,j2,j3,j4,j5,j6,j7,j8,argAtArgMax,...) argAtA
             
             template <typename F, typename ... Args> struct is_instance_method {
                 template <typename R> static constexpr std::false_type id(R(*&&)(Args...));
-                #ifdef __clang__
+                #if !defined(_MSC_VER) || defined(__clang__)
                 template <typename R> static constexpr std::false_type id(R(*&&)(Args...) noexcept);
                 #endif
                 template <typename T> static constexpr std::true_type id(T && t);
@@ -1681,7 +2526,7 @@ i0,i1,i2,i3,i4,i5,i6,i7,i8,i9,j0,j1,j2,j3,j4,j5,j6,j7,j8,argAtArgMax,...) argAtA
             static constexpr bool isFunction = std::is_function_v<type> || std::is_member_function_pointer_v<P>;
             static constexpr bool isOverloaded = RareTs::is_overloaded_v<T, MemberIndex>;
             static constexpr bool isData = !isFunction && !isOverloaded;
-            static constexpr bool hasOffset = std::is_member_object_pointer_v<P>;
+            static constexpr bool hasOffset = std::is_member_object_pointer_v<P> && !RareTs::is_private_reflected_v<T>;
             static constexpr size_t getOffset() { return RareTs::Class::member_offset<T, MemberIndex>; } // If none, returns std::numeric_limits<size_t>::max()
             static constexpr auto pointer = RareTs::Class::member_pointer<T, MemberIndex>;
 
@@ -1736,8 +2581,11 @@ i0,i1,i2,i3,i4,i5,i6,i7,i8,i9,j0,j1,j2,j3,j4,j5,j6,j7,j8,argAtArgMax,...) argAtA
 #ifdef __clang__
 #define RARE_CLASS_FRIEND(x) friend RareTs::Class;\
 friend constexpr inline Class classType(RareTs::type_tag<RareTs::Proxy<RareTs::Class::unproxy_t<x>>>) { return {}; }
+#define RARE_PRIVATE_CLASS_FRIEND(x) \
+namespace RareTs { constexpr inline RareTs::GlobalClass<x> classType(RareTs::type_tag<RareTs::Proxy<x>>) { return {}; } }
 #else
 #define RARE_CLASS_FRIEND(x) friend RareTs::Class;
+#define RARE_PRIVATE_CLASS_FRIEND(x)
 #endif
 
 #ifdef __clang__
@@ -1783,7 +2631,7 @@ template <class T_> struct F_<I_::x, T_, std::void_t<decltype(T_::x)>> : RareTs:
     template <class U_> static constexpr auto & i(U_ && t) { return t.x; } \
 }; \
 template <class T_> struct Q_<I_::x, T_, std::void_t<decltype(&T_::x)>> : RareTs::type_id<decltype(&T_::x)> {}; \
-template <class T_> struct N_<I_::x, T_> { static constexpr char n[]=#x; }; \
+template <class T_> struct N_<I_::x, T_> { static constexpr char value[]=#x; }; \
 template <class T_> struct P_<I_::x, T_, RareTs::enable_if_constexpr<decltype(&T_::x), &T_::x>> { static constexpr auto p = &T_::x; }; \
 template <class T_> struct E_<I_::x, T_, std::void_t<decltype(T_::x##_note)>> { static constexpr auto & notes = T_::x##_note; }; \
 template <class T_> struct O_<I_::x, T_, std::enable_if_t<std::is_member_object_pointer_v<decltype(&T_::x)>>> { \
@@ -1798,6 +2646,49 @@ template <class ... A_> struct L_<I_::x, A_...> { \
 }; \
 RARE_MEMBER_VALIDATOR(x) \
 RARE_ACCESS_MEMBER(x)
+#define RARE_MEMBER_POINTER(x) ,&T_::x
+#define RARE_MEMBER_POINTER_NOTED(x) ,&T_::LHS(x)
+#define RARE_LHS_COMMA(x) LHS(x),
+
+#define RARE_PRIVATE_MEMBER(x) \
+template <class T_> struct P_<I_::x, T_> { \
+    static constexpr auto p = RareTs::PrivateObject<RareTs::remove_cvref_t<T_>>::template pointer<I_::x>(); \
+}; \
+template <class T_> struct Q_<I_::x, T_> : RareTs::type_id< \
+    typename RareTs::PrivateObject<RareTs::remove_cvref_t<T_>>::template pointer_type<I_::x> \
+> {}; \
+template <class T_> struct F_<I_::x, T_, void> : RareTs::type_id<typename RareTs::PrivateObject<T_>::template type<I_::x>> { \
+    template <class U_> static constexpr bool is_mp_ = std::is_member_pointer_v<typename Q_<I_::x, U_>::type>; \
+    template <class U_, std::enable_if_t<is_mp_<U_>>* = nullptr> static constexpr auto & s() { return P_<I_::x, U_>::p; } \
+    template <class U_, std::enable_if_t<!is_mp_<U_>>* = nullptr> static constexpr auto & s() { return *P_<I_::x, U_>::p; } \
+    template <class U_, std::enable_if_t<is_mp_<U_>>* = nullptr> static constexpr auto & i(U_ && t) { return t.*P_<I_::x, U_>::p; } \
+    template <class U_, std::enable_if_t<!is_mp_<U_>>* = nullptr> static constexpr auto & i(U_ &&) { return *P_<I_::x, U_>::p; } \
+}; \
+template <class T_> struct N_<I_::x, T_> { static constexpr char value[]=#x; }; \
+template <class T_> struct E_<I_::x, T_> { static constexpr auto notes = std::tuple {}; }; \
+template <template <size_t> class T_> struct M_<I_::x, T_> { T_<I_::x> x; }; \
+template <template <size_t> class T_> struct D_<I_::x, T_> { using x = T_<I_::x>; }; \
+RARE_ACCESS_MEMBER(x)
+
+#define RARE_PRIVATE_MEMBER_NOTED(x) \
+template <class T_> struct P_<I_::LHS(x), T_> { \
+    static constexpr auto p = RareTs::PrivateObject<RareTs::remove_cvref_t<T_>>::template pointer<I_::LHS(x)>(); \
+}; \
+template <class T_> struct Q_<I_::LHS(x), T_> : RareTs::type_id< \
+    typename RareTs::PrivateObject<RareTs::remove_cvref_t<T_>>::template pointer_type<I_::LHS(x)> \
+> {}; \
+template <class T_> struct F_<I_::LHS(x), T_, void> : RareTs::type_id<typename RareTs::PrivateObject<T_>::template type<I_::LHS(x)>> { \
+    template <class U_> static constexpr bool is_mp_ = std::is_member_pointer_v<typename Q_<I_::LHS(x), U_>::type>; \
+    template <class U_, std::enable_if_t<is_mp_<U_>>* = nullptr> static constexpr auto & s() { return P_<I_::LHS(x), U_>::p; } \
+    template <class U_, std::enable_if_t<!is_mp_<U_>>* = nullptr> static constexpr auto & s() { return *P_<I_::LHS(x), U_>::p; } \
+    template <class U_, std::enable_if_t<is_mp_<U_>>* = nullptr> static constexpr auto & i(U_ && t) { return t.*P_<I_::LHS(x), U_>::p; } \
+    template <class U_, std::enable_if_t<!is_mp_<U_>>* = nullptr> static constexpr auto & i(U_ &&) { return *P_<I_::LHS(x), U_>::p; } \
+}; \
+template <class T_> struct N_<I_::LHS(x), T_> { static constexpr char value[]=RARE_STRINGIFY_LHS(x); }; \
+template <class T_> struct E_<I_::LHS(x), T_> { static constexpr auto notes = std::tuple { RHS(x) }; }; \
+template <template <size_t> class T_> struct M_<I_::LHS(x), T_> { T_<I_::LHS(x)> LHS(x); }; \
+template <template <size_t> class T_> struct D_<I_::LHS(x), T_> { using LHS(x) = T_<I_::LHS(x)>; }; \
+RARE_ACCESS_MEMBER(LHS(x))
 
 /*
     I_: "Index Of" (field index enum) - always required
@@ -1811,7 +2702,7 @@ RARE_ACCESS_MEMBER(x)
         type = decltype(&T::x)
 
     N_: "Name" - usually required, will not have field names otherwise
-        n = name
+        value = name
 
     P_: "Pointer Value" - usually required, cannot support functions otherwise
         p = pointer value
@@ -1876,6 +2767,90 @@ struct Class { \
 }; \
 RARE_CLASS_FRIEND(objectType)
 
+/* REFLECT_PRIVATE_NOTED is placed in the global scope to reflect unowned types including private members, after objectType can be 1 to 125 member names e.g.
+    REFLECT_PRIVATE(MyObj, myInt, myString, myOtherObj) */
+#define REFLECT_PRIVATE(objectType, ...) \
+namespace RareTs::z::objectType##_ { \
+    using T_ = ::objectType; \
+    constexpr auto F_(RareTs::type_tag<T_>); \
+    template <class, auto ... M_> struct E_ { friend constexpr auto F_(RareTs::type_tag<T_>) { return RareTs::PrivateObject<T_, M_...>{}; } }; \
+    template struct E_<void RARE_FOR_EACH_POSITIVE(RARE_MEMBER_POINTER, __VA_ARGS__)>; \
+} \
+template <> struct RareTs::PrivateObject<objectType> : decltype(RareTs::z::objectType##_::F_(RareTs::type_tag<objectType>{})) {}; \
+template <> struct RareTs::GlobalClass<objectType> { \
+    using B_ = objectType; \
+    using C_ = objectType; \
+    struct I_ { enum { RARE_FOR_EACH_POSITIVE(RARE_RESTATE_COMMA, __VA_ARGS__) N_ }; }; \
+    static constexpr auto notes = std::tuple {}; \
+    template <size_t, class T_ = B_, class = void> struct F_ : RareTs::Class::EmptyComponent {}; \
+    template <size_t, class T_ = B_, class = void> struct Q_ : RareTs::Class::NullptrType {}; \
+    template <size_t, class T_ = B_, class = void> struct P_ : RareTs::Class::NonPointable {}; \
+    template <size_t, class T_ = B_, class = void> struct E_ : RareTs::Class::NonNoted {}; \
+    template <size_t, class T_ = B_, class = void> struct O_ : RareTs::Class::NoOffset {}; \
+    template <size_t, template <size_t> class> struct M_; \
+    template <size_t, template <size_t> class> struct D_; \
+    template <size_t, class T_ = B_> struct N_; \
+    template <size_t, class...> struct L_; \
+    RARE_ACCESS_HEADER \
+    RARE_FOR_EACH_POSITIVE(RARE_PRIVATE_MEMBER, __VA_ARGS__) \
+}; \
+RARE_PRIVATE_CLASS_FRIEND(objectType)
+
+/* REFLECT_PRIVATE_NOTED is placed in the global scope to reflect unowned types including private members, after objectType can be 1 to 125 members e.g.
+    REFLECT_PRIVATE_NOTED(
+        (MyObj) (RareTs::Buildable),
+        (myInt) (Json::Ignore),
+        (myString) (Json::Name{"testName"}, Json::Stringify),
+        (myOtherObj) ()
+    ) */
+#define REFLECT_PRIVATE_NOTED(objectType, ...) \
+namespace RareTs::z::RARE_POSTSCORE(LHS(objectType)) { \
+    using T_ = ::LHS(objectType); \
+    constexpr auto F_(RareTs::type_tag<T_>); \
+    template <class, auto ... M_> struct E_ { friend constexpr auto F_(RareTs::type_tag<T_>) { return RareTs::PrivateObject<T_, M_...>{}; } }; \
+    template struct E_<void RARE_FOR_EACH_POSITIVE(RARE_MEMBER_POINTER_NOTED, __VA_ARGS__)>; \
+} \
+template <> struct RareTs::PrivateObject<LHS(objectType)> : decltype(RareTs::z::RARE_POSTSCORE(LHS(objectType))::F_(RareTs::type_tag<LHS(objectType)>{})) {}; \
+template <> struct RareTs::GlobalClass<LHS(objectType)> { \
+    using B_ = LHS(objectType); \
+    using C_ = LHS(objectType); \
+    struct I_ { enum { RARE_FOR_EACH_POSITIVE(RARE_LHS_COMMA, __VA_ARGS__) N_ }; }; \
+    static constexpr auto notes = std::tuple { RHS(objectType) }; \
+    template <size_t, class T_ = B_, class = void> struct F_ : RareTs::Class::EmptyComponent {}; \
+    template <size_t, class T_ = B_, class = void> struct Q_ : RareTs::Class::NullptrType {}; \
+    template <size_t, class T_ = B_, class = void> struct P_ : RareTs::Class::NonPointable {}; \
+    template <size_t, class T_ = B_, class = void> struct E_ : RareTs::Class::NonNoted {}; \
+    template <size_t, class T_ = B_, class = void> struct O_ : RareTs::Class::NoOffset {}; \
+    template <size_t, template <size_t> class> struct M_; \
+    template <size_t, template <size_t> class> struct D_; \
+    template <size_t, class T_ = B_> struct N_; \
+    template <size_t, class...> struct L_; \
+    RARE_ACCESS_HEADER \
+    RARE_FOR_EACH_POSITIVE(RARE_PRIVATE_MEMBER_NOTED, __VA_ARGS__) \
+}; \
+RARE_PRIVATE_CLASS_FRIEND(typename RareTs::GlobalClass<LHS(objectType)>::B_)
+
+/* REFLECT_PRIVATE_EMPTY is placed in the global scope to reflect a type without any reflected members, after objectType can be 1 to 125 notes e.g.
+    REFLECT_PRIVATE_EMPTY(MyObj, RareTs::Super<MyParentObj>) */
+#define REFLECT_PRIVATE_EMPTY(objectType, ...) \
+template <> struct RareTs::GlobalClass<objectType> { \
+    using B_ = objectType; \
+    using C_ = objectType; \
+    struct I_ { enum { N_ }; }; \
+    static constexpr auto notes = std::tuple { __VA_ARGS__ }; \
+    template <size_t, class T_ = B_, class = void> struct F_ : RareTs::Class::EmptyComponent {}; \
+    template <size_t, class T_ = B_, class = void> struct Q_ : RareTs::Class::NullptrType {}; \
+    template <size_t, class T_ = B_, class = void> struct P_ : RareTs::Class::NonPointable {}; \
+    template <size_t, class T_ = B_, class = void> struct E_ : RareTs::Class::NonNoted {}; \
+    template <size_t, class T_ = B_, class = void> struct O_ : RareTs::Class::NoOffset {}; \
+    template <size_t, template <size_t> class> struct M_; \
+    template <size_t, template <size_t> class> struct D_; \
+    template <size_t, class T_ = B_> struct N_; \
+    template <size_t, class...> struct L_; \
+    RARE_ACCESS_HEADER \
+}; \
+RARE_PRIVATE_CLASS_FRIEND(typename RareTs::GlobalClass<objectType>::B_)
+
         }
 
         template <typename T> using IndexOf = typename RareTs::Class::index_of<T>;
@@ -1894,18 +2869,23 @@ RARE_CLASS_FRIEND(objectType)
 
         protected:
             template <size_t ... I> static constexpr auto memberIndexMap(std::index_sequence<I...>) {
-				if constexpr ( sizeof...(I) > 0 )
-					return RareTs::StringIndexMap<(RareTs::Class::member_name<T, I>)...>();
-				else
-					return RareTs::StringIndexMap<>();
+                if constexpr ( sizeof...(I) > 0 ) {
+                    #ifdef RARE_NO_CPP_20
+                    return RareTs::StringIndexMap<(RareTs::Class::member_name<T, I>)...>();
+                    #else
+                    return RareTs::StringIndexMap<(RareTs::Class::member_name_wrapper<T, I>)...>();
+                    #endif
+                }
+                else
+                    return RareTs::StringIndexMap<>();
             }
 
-            using MemberNames = decltype(memberIndexMap(std::make_index_sequence<total>()));
+            template <typename U> using MemberNames = decltype(memberIndexMap(std::make_index_sequence<Members<U>::total>()));
 
-            template <size_t I = 0, typename F, typename = std::void_t<decltype(std::declval<F>()(member<I>))>>
+            template <size_t I, typename F, typename = std::void_t<decltype(std::declval<F>()(member<I>))>>
             static constexpr std::true_type onlyUsesMember(F && f);
 
-            template <size_t I = 0> static constexpr std::false_type onlyUsesMember(...);
+            template <size_t I> static constexpr std::false_type onlyUsesMember(...);
 
             template <typename F, size_t ... Is> static constexpr auto packMembers(F && f, std::index_sequence<Is...>) {
                 return f(member<Is>...);
@@ -1914,7 +2894,7 @@ RARE_CLASS_FRIEND(objectType)
         public:
             // Gets the index of a member using the member name
             template <class U=T> static constexpr size_t indexOf(std::string_view memberName) {
-                return MemberNames::indexOf(memberName);
+                return MemberNames<U>::indexOf(memberName);
             }
 
             // Forwards all members to function as a parameter pack
@@ -1949,7 +2929,7 @@ RARE_CLASS_FRIEND(objectType)
             // function(member, value) [statics only]
             template <typename Function> static constexpr void forEach(Function && function) {
                 RareTs::forIndexes<total>([&](auto I) {
-                    if constexpr ( decltype(onlyUsesMember(std::forward<Function>(function)))::value )
+                    if constexpr ( decltype(onlyUsesMember<decltype(I)::value>(std::forward<Function>(function)))::value )
                         function(member<decltype(I)::value>);
                     else if constexpr ( Member<decltype(I)::value>::isStatic )
                         function(member<decltype(I)::value>, Member<decltype(I)::value>::value());
@@ -1962,7 +2942,7 @@ RARE_CLASS_FRIEND(objectType)
                 RareTs::forIndexes<total>([&](auto I) {
                     if constexpr ( passes_filter_v<Filter, Member<decltype(I)::value>, FilterArgs...> )
                     {
-                        if constexpr ( decltype(onlyUsesMember(std::forward<Function>(function)))::value )
+                        if constexpr ( decltype(onlyUsesMember<decltype(I)::value>(std::forward<Function>(function)))::value )
                             function(member<decltype(I)::value>);
                         else if constexpr ( Member<decltype(I)::value>::isStatic )
                             function(member<decltype(I)::value>, Member<decltype(I)::value>::value());
@@ -1975,7 +2955,7 @@ RARE_CLASS_FRIEND(objectType)
             static constexpr void forEach(U && t, Function && function) {
                 
                 RareTs::forIndexes<total>([&](auto I) {
-                    if constexpr ( decltype(onlyUsesMember(std::forward<Function>(function)))::value )
+                    if constexpr ( decltype(onlyUsesMember<decltype(I)::value>(std::forward<Function>(function)))::value )
                         function(member<decltype(I)::value>);
                     else
                         function(member<decltype(I)::value>, Member<decltype(I)::value>::value(t));
@@ -2000,35 +2980,35 @@ RARE_CLASS_FRIEND(objectType)
             // function(member) or...
             // function(member, value) [statics only]
             template <typename Function> static constexpr void at(size_t memberIndex, Function && function) {
-				RareTs::forIndex<total>(memberIndex, [&](auto I) {
-					if constexpr ( decltype(onlyUsesMember<decltype(I)::value>(std::forward<Function>(function)))::value )
-						function(member<decltype(I)::value>);
+                RareTs::forIndex<total>(memberIndex, [&](auto I) {
+                    if constexpr ( decltype(onlyUsesMember<decltype(I)::value>(std::forward<Function>(function)))::value )
+                        function(member<decltype(I)::value>);
                     else if constexpr ( Member<decltype(I)::value>::isStatic )
                         function(member<decltype(I)::value>, Member<decltype(I)::value>::value());
-				});
+                });
             }
             
             // function(member) [filtered] or...
             // function(member, value) [filtered, statics only]
             template <template <typename ...> class Filter, typename ...FilterArgs, typename Function>
             static constexpr void at(size_t memberIndex, Function && function) {
-				RareTs::forIndex<total>(memberIndex, [&](auto I) {
-					if constexpr ( passes_filter_v<Filter, Member<decltype(I)::value>, FilterArgs...> )
+                RareTs::forIndex<total>(memberIndex, [&](auto I) {
+                    if constexpr ( passes_filter_v<Filter, Member<decltype(I)::value>, FilterArgs...> )
                     {
-					    if constexpr ( decltype(onlyUsesMember<decltype(I)::value>(std::forward<Function>(function)))::value )
-							function(member<decltype(I)::value>);
+                        if constexpr ( decltype(onlyUsesMember<decltype(I)::value>(std::forward<Function>(function)))::value )
+                            function(member<decltype(I)::value>);
                         else if constexpr ( Member<decltype(I)::value>::isStatic )
                             function(member<decltype(I)::value>, Member<decltype(I)::value>::value());
                     }
-				});
+                });
             }
 
             // t, function(member, value)
             template <typename Function, class U, typename = std::enable_if_t<std::is_same_v<T,std::decay_t<U>>>>
             static constexpr void at(size_t memberIndex, U && t, Function && function) {
                 RareTs::forIndex<total>(memberIndex, [&](auto I) {
-					if constexpr ( decltype(onlyUsesMember<decltype(I)::value>(std::forward<Function>(function)))::value )
-						function(member<decltype(I)::value>);
+                    if constexpr ( decltype(onlyUsesMember<decltype(I)::value>(std::forward<Function>(function)))::value )
+                        function(member<decltype(I)::value>);
                     else
                         function(member<decltype(I)::value>, Member<decltype(I)::value>::value(t));
                 });
@@ -2041,8 +3021,8 @@ RARE_CLASS_FRIEND(objectType)
                 RareTs::forIndex<total>(memberIndex, [&](auto I) {
                     if constexpr ( passes_filter_v<Filter, Member<decltype(I)::value>, FilterArgs...> )
                     {
-					    if constexpr ( decltype(onlyUsesMember<decltype(I)::value>(std::forward<Function>(function)))::value )
-							function(member<decltype(I)::value>);
+                        if constexpr ( decltype(onlyUsesMember<decltype(I)::value>(std::forward<Function>(function)))::value )
+                            function(member<decltype(I)::value>);
                         else
                             function(member<decltype(I)::value>, Member<decltype(I)::value>::value(t));
                     }
@@ -2052,29 +3032,29 @@ RARE_CLASS_FRIEND(objectType)
             // memberName, function(member) or...
             // memberName, function(member, value) [statics only]
             template <typename Function> static constexpr void named(std::string_view memberName, Function && function) {
-			    size_t memberIndex = indexOf<>(memberName);
-			    RareTs::forIndex<total>(memberIndex, [&](auto I) {
-				    if constexpr ( decltype(onlyUsesMember<decltype(I)::value>(std::forward<Function>(function)))::value )
-					    function(member<decltype(I)::value>);
-				    else if constexpr ( Member<decltype(I)::value>::isStatic )
+                size_t memberIndex = indexOf<>(memberName);
+                RareTs::forIndex<total>(memberIndex, [&](auto I) {
+                    if constexpr ( decltype(onlyUsesMember<decltype(I)::value>(std::forward<Function>(function)))::value )
+                        function(member<decltype(I)::value>);
+                    else if constexpr ( Member<decltype(I)::value>::isStatic )
                         function(member<decltype(I)::value>, Member<decltype(I)::value>::value());
-			    });
+                });
             }
             
             // memberName, function(member) [filtered] or...
             // memberName, function(member, value) [filtered, statics only]
             template <template <typename ...> class Filter, typename ...FilterArgs, typename Function>
             static constexpr void named(std::string_view memberName, Function && function) {
-			    size_t memberIndex = indexOf<>(memberName);
-			    RareTs::forIndex<total>(memberIndex, [&](auto I) {
-				    if constexpr ( passes_filter_v<Filter, Member<decltype(I)::value>, FilterArgs...> )
-				    {
-					    if constexpr ( decltype(onlyUsesMember<decltype(I)::value>(std::forward<Function>(function)))::value )
-						    function(member<decltype(I)::value>);
-					    else if constexpr ( Member<decltype(I)::value>::isStatic )
+                size_t memberIndex = indexOf<>(memberName);
+                RareTs::forIndex<total>(memberIndex, [&](auto I) {
+                    if constexpr ( passes_filter_v<Filter, Member<decltype(I)::value>, FilterArgs...> )
+                    {
+                        if constexpr ( decltype(onlyUsesMember<decltype(I)::value>(std::forward<Function>(function)))::value )
+                            function(member<decltype(I)::value>);
+                        else if constexpr ( Member<decltype(I)::value>::isStatic )
                             function(member<decltype(I)::value>, Member<decltype(I)::value>::value());
-				    }
-			    });
+                    }
+                });
             }
 
             // t, memberName, function(member, value)
@@ -2082,8 +3062,8 @@ RARE_CLASS_FRIEND(objectType)
             static constexpr void named(std::string_view memberName, U && t, Function && function) {
                 size_t memberIndex = indexOf<>(memberName);
                 RareTs::forIndex<total>(memberIndex, [&](auto I) {
-					if constexpr ( decltype(onlyUsesMember<decltype(I)::value>(std::forward<Function>(function)))::value )
-						function(member<decltype(I)::value>);
+                    if constexpr ( decltype(onlyUsesMember<decltype(I)::value>(std::forward<Function>(function)))::value )
+                        function(member<decltype(I)::value>);
                     else
                         function(member<decltype(I)::value>, Member<decltype(I)::value>::value(t));
                 });
@@ -2097,8 +3077,8 @@ RARE_CLASS_FRIEND(objectType)
                 RareTs::forIndex<total>(memberIndex, [&](auto I) {
                     if constexpr ( passes_filter_v<Filter, Member<decltype(I)::value>, FilterArgs...> )
                     {
-					    if constexpr ( decltype(onlyUsesMember<decltype(I)::value>(std::forward<Function>(function)))::value )
-							function(member<decltype(I)::value>);
+                        if constexpr ( decltype(onlyUsesMember<decltype(I)::value>(std::forward<Function>(function)))::value )
+                            function(member<decltype(I)::value>);
                         else
                             function(member<decltype(I)::value>, Member<decltype(I)::value>::value(t));
                     }
@@ -2369,6 +3349,77 @@ RARE_CLASS_FRIEND(objectType)
                 });
             }
         }
+
+        inline namespace Tuples
+        {
+            template <typename T, template <typename ...> class Filter = Filter::None>
+            class member_type_tuple
+            {
+                template <size_t ... Is> static constexpr auto tupleType(std::index_sequence<Is...>)
+                    -> std::tuple<typename RareTs::Member<T, Is>::type...>;
+
+                template <size_t ... Is> static constexpr auto filterTupleType(std::index_sequence<Is...>)
+                    -> decltype(tupleType(typename RareTs::type_mask<Filter, RareTs::Member<T, Is>...>::indexes{}));
+
+            public:
+                using type = decltype(filterTupleType(std::make_index_sequence<RareTs::Members<T>::total>()));
+            };
+
+            template <typename T, template<typename ...> class Filter = Filter::None>
+            using member_type_tuple_t = typename member_type_tuple<T>::type;
+
+            template <typename QualT>
+            struct Tuplified
+            {
+                using type = RareTs::remove_cvref_t<QualT>;
+                static_assert(RareTs::is_reflected_v<type>, "Only reflected types may be tuplified");
+
+                std::conditional_t<std::is_rvalue_reference_v<QualT>, std::remove_reference_t<QualT>, QualT> object;
+
+                template <size_t I> friend constexpr auto & get(RareTs::Tuplified<QualT> && o) { return RareTs::Member<type, I>::value(o.object); }
+                template <size_t I> friend constexpr auto & get(const RareTs::Tuplified<QualT> && o) { return RareTs::Member<type, I>::value(o.object); }
+                template <size_t I> friend constexpr auto & get(RareTs::Tuplified<QualT> & o) { return RareTs::Member<type, I>::value(o.object); }
+                template <size_t I> friend constexpr auto & get(const RareTs::Tuplified<QualT> & o) { return RareTs::Member<type, I>::value(o.object); }
+            };
+
+            template <typename T>
+            constexpr auto tuplify(T && t)
+            { // Unless t is an lvalue-reference, the type passed in would not live beyond the end of the statement that called tuplify
+                static_assert(RareTs::is_reflected_v<RareTs::remove_cvref_t<T>>, "Only reflected types may be tuplified");
+                using U = decltype(std::forward<T>(t));
+                if constexpr ( std::is_lvalue_reference_v<U> ) // It's a reference, copy reference into storage
+                    return Tuplified<U>{std::forward<T>(t)};
+                else if constexpr ( std::is_move_constructible_v<U> ) // It's a temporary and move-constructible, move into storage
+                    return Tuplified<U>{std::move(t)};
+                else if constexpr ( std::is_copy_constructible_v<U> ) // It's a temporary and copy-constructible, copy into storage
+                    return Tuplified<U>{t};
+                else
+                    static_assert(std::is_lvalue_reference_v<U>,
+                        "Only moveable or copyable temporaries may be passed to tuplify, create your object on a separate line");
+            }
+        }
+    }
+}
+
+namespace std // Exclusively used to add a few tuple specializations
+{
+    template <typename QualT> struct tuple_size<RareTs::Tuplified<QualT>> {
+        static constexpr size_t value = RareTs::Members<RareTs::remove_cvref_t<QualT>>::total;
+    };
+    template <size_t I, typename QualT> struct tuple_element<I, RareTs::Tuplified<QualT>> {
+        using type = typename RareTs::Member<RareTs::remove_cvref_t<QualT>, I>::type;
+    };
+    template <size_t I, typename QualT> constexpr auto & get(RareTs::Tuplified<QualT> && o) {
+        return RareTs::Member<RareTs::remove_cvref_t<QualT>, I>::value(o.object);
+    }
+    template <size_t I, typename QualT> constexpr auto & get(const RareTs::Tuplified<QualT> && o) {
+        return RareTs::Member<RareTs::remove_cvref_t<QualT>, I>::value(o.object);
+    }
+    template <size_t I, typename QualT> constexpr auto & get(RareTs::Tuplified<QualT> & o) {
+        return RareTs::Member<RareTs::remove_cvref_t<QualT>, I>::value(o.object);
+    }
+    template <size_t I, typename QualT> constexpr auto & get(const RareTs::Tuplified<QualT> & o) {
+        return RareTs::Member<RareTs::remove_cvref_t<QualT>, I>::value(o.object);
     }
 }
 

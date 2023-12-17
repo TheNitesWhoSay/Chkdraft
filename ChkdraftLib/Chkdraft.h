@@ -71,7 +71,8 @@ class Chkdraft : public WinLib::ClassWindow
 /*    Procs     */  LRESULT Command(HWND hWnd, WPARAM wParam, LPARAM lParam);
                     LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-                    virtual void HandleDroppedFile(const std::string & dropFilePath);
+                    void HandleDroppedFile(const std::string & dropFilePath) override;
+                    void NotifyButtonClicked(int idFrom, HWND hWndFrom) override;
 
     private:
 

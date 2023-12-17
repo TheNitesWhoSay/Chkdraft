@@ -345,6 +345,56 @@ bool GuiMap::setCurrPlayer(u8 newPlayer)
     return true;
 }
 
+bool GuiMap::getCutCopyPasteTerrain() const
+{
+    return cutCopyPasteTerrain;
+}
+
+void GuiMap::toggleCutCopyPasteTerrain()
+{
+    cutCopyPasteTerrain = !cutCopyPasteTerrain;
+}
+
+bool GuiMap::getCutCopyPasteDoodads() const
+{
+    return cutCopyPasteDoodads;
+}
+
+void GuiMap::toggleCutCopyPasteDoodads()
+{
+    cutCopyPasteDoodads = !cutCopyPasteDoodads;
+}
+
+bool GuiMap::getCutCopyPasteSprites() const
+{
+    return cutCopyPasteSprites;
+}
+
+void GuiMap::toggleCutCopyPasteSprites()
+{
+    cutCopyPasteSprites = !cutCopyPasteSprites;
+}
+
+bool GuiMap::getCutCopyPasteUnits() const
+{
+    return cutCopyPasteUnits;
+}
+
+void GuiMap::toggleCutCopyPasteUnits()
+{
+    cutCopyPasteUnits = !cutCopyPasteUnits;
+}
+
+bool GuiMap::getCutCopyPasteFog() const
+{
+    return cutCopyPasteFog;
+}
+
+void GuiMap::toggleCutCopyPasteFog()
+{
+    cutCopyPasteFog = !cutCopyPasteFog;
+}
+
 bool GuiMap::isDragging()
 {
     return dragging;
@@ -1283,22 +1333,22 @@ void GuiMap::ToggleLocationNameClip()
     Redraw(false);
 }
 
-void GuiMap::SetLocationSnap(LocationSnap locationSnap)
+void GuiMap::SetLocationSnap(Snap locationSnap)
 {
     bool prevSnapLocations = snapLocations;
-    if ( locationSnap == LocationSnap::NoSnap )
+    if ( locationSnap == Snap::NoSnap )
         snapLocations = false;
     else
         snapLocations = true;
 
-    if ( locationSnap == LocationSnap::SnapToTile )
+    if ( locationSnap == Snap::SnapToTile )
     {
         if ( prevSnapLocations && locSnapTileOverGrid )
             snapLocations = false;
         else
             locSnapTileOverGrid = true;
     }
-    else if ( locationSnap == LocationSnap::SnapToGrid )
+    else if ( locationSnap == Snap::SnapToGrid )
     {
         if ( prevSnapLocations && !locSnapTileOverGrid )
             snapLocations = false;
@@ -1392,6 +1442,43 @@ bool GuiMap::SnapLocationDimensions(u32 & x1, u32 & y1, u32 & x2, u32 & y2, LocS
     }
     else
         return false;
+}
+
+void GuiMap::SetCutCopyPasteSnap(Snap cutCopyPasteSnap)
+{
+    bool prevSnapCutCopyPaste = snapCutCopyPasteSel;
+    if ( cutCopyPasteSnap == Snap::NoSnap )
+        snapCutCopyPasteSel = false;
+    else
+        snapCutCopyPasteSel = true;
+
+    if ( cutCopyPasteSnap == Snap::SnapToTile )
+    {
+        if ( prevSnapCutCopyPaste && cutCopyPasteSnapTileOverGrid )
+            snapCutCopyPasteSel = false;
+        else
+            cutCopyPasteSnapTileOverGrid = true;
+    }
+    else if ( cutCopyPasteSnap == Snap::SnapToGrid )
+    {
+        if ( prevSnapCutCopyPaste && !cutCopyPasteSnapTileOverGrid )
+            snapCutCopyPasteSel = false;
+        else
+            cutCopyPasteSnapTileOverGrid = false;
+    }
+
+    UpdateCutCopyPasteMenuItems();
+}
+
+void GuiMap::ToggleIncludeDoodadTiles()
+{
+    cutCopyPasteIncludeDoodadTiles = !cutCopyPasteIncludeDoodadTiles;
+    UpdateCutCopyPasteMenuItems();
+}
+
+bool GuiMap::GetIncludeDoodadTiles()
+{
+    return cutCopyPasteIncludeDoodadTiles;
 }
 
 void GuiMap::UpdateLocationMenuItems()
@@ -1515,6 +1602,15 @@ void GuiMap::UpdateUnitMenuItems()
     chkd.mainMenu.SetCheck(ID_UNITS_ALLOWSTACK, stackUnits);
 }
 
+void GuiMap::UpdateCutCopyPasteMenuItems()
+{
+    chkd.mainMenu.SetCheck(ID_CUTCOPYPASTE_SNAPSELECTIONTOTILES, snapCutCopyPasteSel && cutCopyPasteSnapTileOverGrid);
+    chkd.mainMenu.SetCheck(ID_CUTCOPYPASTE_SNAPSELECTIONTOGRID, snapCutCopyPasteSel && !cutCopyPasteSnapTileOverGrid);
+    chkd.mainMenu.SetCheck(ID_CUTCOPYPASTE_NOSNAP, !snapCutCopyPasteSel);
+    chkd.mainMenu.SetCheck(ID_CUTCOPYPASTE_INCLUDEDOODADTILES, cutCopyPasteIncludeDoodadTiles);
+    chkd.mainMenu.SetCheck(ID_CUTCOPYPASTE_FILLSIMILARTILES, clipboard.getFillSimilarTiles());
+}
+
 void GuiMap::Scroll(bool scrollX, bool scrollY, bool validateBorder)
 {
     SCROLLINFO scrollbars = { };
@@ -1612,6 +1708,12 @@ void GuiMap::updateMenu()
     UpdateGridColorMenu();
     UpdateTerrainViewMenuItems();
     UpdateUnitMenuItems();
+    UpdateCutCopyPasteMenuItems();
+    chkd.mainToolbar.checkTerrain.SetCheck(cutCopyPasteTerrain);
+    chkd.mainToolbar.checkDoodads.SetCheck(cutCopyPasteDoodads);
+    chkd.mainToolbar.checkSprites.SetCheck(cutCopyPasteSprites);
+    chkd.mainToolbar.checkUnits.SetCheck(cutCopyPasteUnits);
+    chkd.mainToolbar.checkFog.SetCheck(cutCopyPasteFog);
 }
 
 bool GuiMap::CreateThis(HWND hClient, const std::string & title)

@@ -40,6 +40,16 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     void setZoom(double newScale);
                     u8 getCurrPlayer() const;
                     bool setCurrPlayer(u8 newPlayer);
+                    bool getCutCopyPasteTerrain() const;
+                    void toggleCutCopyPasteTerrain();
+                    bool getCutCopyPasteDoodads() const;
+                    void toggleCutCopyPasteDoodads();
+                    bool getCutCopyPasteSprites() const;
+                    void toggleCutCopyPasteSprites();
+                    bool getCutCopyPasteUnits() const;
+                    void toggleCutCopyPasteUnits();
+                    bool getCutCopyPasteFog() const;
+                    void toggleCutCopyPasteFog();
                     bool isDragging();
                     void setDragging(bool dragging);
 
@@ -102,8 +112,8 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
 
                     void ToggleLocationNameClip();
 
-                    enum class LocationSnap : u32 { SnapToTile, SnapToGrid, NoSnap };
-                    void SetLocationSnap(LocationSnap locationSnap);
+                    enum class Snap : u32 { SnapToTile, SnapToGrid, NoSnap };
+                    void SetLocationSnap(Snap locationSnap);
 
                     void ToggleLockAnywhere();
                     bool LockAnywhere();
@@ -116,6 +126,10 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     enum_t(LocSnapFlags, u32, { SnapX1 = BIT_0, SnapY1 = BIT_1, SnapX2 = BIT_2, SnapY2 = BIT_3,
                         SnapAll = SnapX1|SnapY1|SnapX2|SnapY2, None = 0 });
                     bool SnapLocationDimensions(u32 & x1, u32 & y1, u32 & x2, u32 & y2, LocSnapFlags locSnapFlags);
+                    
+                    void SetCutCopyPasteSnap(Snap cutCopyPasteSnap);
+                    void ToggleIncludeDoodadTiles();
+                    bool GetIncludeDoodadTiles();
 
                     void UpdateLocationMenuItems();
                     void UpdateDoodadMenuItems();
@@ -124,6 +138,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     void UpdateGridColorMenu();
                     void UpdateTerrainViewMenuItems();
                     void UpdateUnitMenuItems();
+                    void UpdateCutCopyPasteMenuItems();
 
                     void Scroll(bool scrollX, bool scrollY, bool validateBorder);
 
@@ -204,6 +219,16 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     bool locSnapTileOverGrid = true;
                     bool lockAnywhere = true;
                     bool allowIllegalDoodads = false;
+
+                    bool snapCutCopyPasteSel = true;
+                    bool cutCopyPasteSnapTileOverGrid = false;
+                    bool cutCopyPasteIncludeDoodadTiles = true;
+
+                    bool cutCopyPasteTerrain = true;
+                    bool cutCopyPasteDoodads = true;
+                    bool cutCopyPasteSprites = true;
+                    bool cutCopyPasteUnits = true;
+                    bool cutCopyPasteFog = true;
 					
                     UINT_PTR panTimerID = 0;
                     int panStartX = -1;

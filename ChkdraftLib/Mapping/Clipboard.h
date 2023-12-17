@@ -115,7 +115,8 @@ class Clipboard
         void endPasting();
 
         void doPaste(Layer layer, TerrainSubLayer terrainSubLayer, s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos, bool allowStack);
-
+        
+        bool getFillSimilarTiles();
         void toggleFillSimilarTiles();
 
         std::vector<PasteTileNode> & getTiles();

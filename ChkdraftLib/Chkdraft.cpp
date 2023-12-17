@@ -582,9 +582,9 @@ LRESULT Chkdraft::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     case ID_LOGLEVEL_ALL: chkd.SetLogLevel(LogLevel::All); break;
 
         // Locations
-    case ID_LOCATIONS_SNAPTOTILE: CM->SetLocationSnap(GuiMap::LocationSnap::SnapToTile); break;
-    case ID_LOCATIONS_SNAPTOACTIVEGRID: CM->SetLocationSnap(GuiMap::LocationSnap::SnapToGrid); break;
-    case ID_LOCATIONS_NOSNAP: CM->SetLocationSnap(GuiMap::LocationSnap::NoSnap); break;
+    case ID_LOCATIONS_SNAPTOTILE: CM->SetLocationSnap(GuiMap::Snap::SnapToTile); break;
+    case ID_LOCATIONS_SNAPTOACTIVEGRID: CM->SetLocationSnap(GuiMap::Snap::SnapToGrid); break;
+    case ID_LOCATIONS_NOSNAP: CM->SetLocationSnap(GuiMap::Snap::NoSnap); break;
     case ID_LOCATIONS_LOCKANYWHERE: CM->ToggleLockAnywhere(); break;
     case ID_LOCATIONS_CLIPNAMES: CM->ToggleLocationNameClip(); break;
 
@@ -592,6 +592,10 @@ LRESULT Chkdraft::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     case ID_DOODADS_ALLOWILLEGALPLACEMENT: CM->ToggleAllowIllegalDoodadPlacement(); break;
 
         // Cut Copy Paste
+    case ID_CUTCOPYPASTE_SNAPSELECTIONTOTILES: CM->SetCutCopyPasteSnap(GuiMap::Snap::SnapToTile); break;
+    case ID_CUTCOPYPASTE_SNAPSELECTIONTOGRID: CM->SetCutCopyPasteSnap(GuiMap::Snap::SnapToGrid); break;
+    case ID_CUTCOPYPASTE_NOSNAP: CM->SetCutCopyPasteSnap(GuiMap::Snap::NoSnap); break;
+    case ID_CUTCOPYPASTE_INCLUDEDOODADTILES: CM->ToggleIncludeDoodadTiles(); break;
     case ID_CUTCOPYPASTE_FILLSIMILARTILES: maps.clipboard.toggleFillSimilarTiles(); break;
 
         // Scenario
@@ -697,6 +701,20 @@ LRESULT Chkdraft::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 void Chkdraft::HandleDroppedFile(const std::string & dropFilePath)
 {
     maps.OpenMap(dropFilePath);
+}
+
+void Chkdraft::NotifyButtonClicked(int idFrom, HWND hWndFrom)
+{
+    if ( hWndFrom == mainToolbar.checkTerrain.getHandle() )
+        mainToolbar.checkTerrain.SetCheck(maps.toggleCutCopyPasteTerrain());
+    else if ( hWndFrom == mainToolbar.checkDoodads.getHandle() )
+        mainToolbar.checkDoodads.SetCheck(maps.toggleCutCopyPasteDoodads());
+    else if ( hWndFrom == mainToolbar.checkSprites.getHandle() )
+        mainToolbar.checkSprites.SetCheck(maps.toggleCutCopyPasteSprites());
+    else if ( hWndFrom == mainToolbar.checkUnits.getHandle() )
+        mainToolbar.checkUnits.SetCheck(maps.toggleCutCopyPasteUnits());
+    else if ( hWndFrom == mainToolbar.checkFog.getHandle() )
+        mainToolbar.checkFog.SetCheck(maps.toggleCutCopyPasteFog());
 }
 
 bool Chkdraft::CreateSubWindows()
