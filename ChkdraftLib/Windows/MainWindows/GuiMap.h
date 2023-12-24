@@ -184,6 +184,8 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     void FinalizeUnitSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam);
                     void FinalizeDoodadSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam);
                     void FinalizeSpriteSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam);
+                    void FinalizeFogSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam);
+                    void FinalizeCutCopyPasteSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam);
                     LRESULT ConfirmWindowClose(HWND hWnd);
 
                     bool GetBackupPath(time_t currTime, std::string & outFilePath);
@@ -208,6 +210,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     TerrainSubLayer currTerrainSubLayer = TerrainSubLayer::Isom;
                     std::shared_ptr<ReversibleActions> tileChanges = nullptr;
                     std::shared_ptr<ReversibleActions> fogChanges = nullptr;
+                    std::shared_ptr<ReversibleActions> cutCopyPasteChanges = nullptr; // tileChanges & fogChanges roll into this
                     Chk::DoodadCache doodadCache;
                     u8 currPlayer = 0;
                     double zoom = 1.0;
@@ -228,7 +231,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     bool cutCopyPasteDoodads = true;
                     bool cutCopyPasteSprites = true;
                     bool cutCopyPasteUnits = true;
-                    bool cutCopyPasteFog = true;
+                    bool cutCopyPasteFog = false;
 					
                     UINT_PTR panTimerID = 0;
                     int panStartX = -1;

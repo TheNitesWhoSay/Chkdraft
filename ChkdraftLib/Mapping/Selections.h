@@ -15,15 +15,19 @@ enum_t(UnitSortFlags, u16, { Swapped = (u16)BIT_14, Moved = (u16)BIT_15, Unswap 
 enum_t(TileNeighbor, u8, { Left = BIT_0, Top = BIT_1, Right = BIT_2, Bottom = BIT_3,
     All = Left | Top | Right | Bottom, xLeft = x8BIT_0, xTop = x8BIT_1, xRight = x8BIT_2, xBottom = x8BIT_3, None = 0 });
 
-class TileNode
+struct TileNode
 {
-    public:
-        u16 value;
-        u16 xc;
-        u16 yc;
-        TileNeighbor neighbors;
-        TileNode() : value(0), xc(0), yc(0), neighbors(TileNeighbor::All) { }
-        virtual ~TileNode();
+    u16 value = 0;
+    u16 xc = 0;
+    u16 yc = 0;
+    TileNeighbor neighbors = TileNeighbor::All;
+};
+
+struct FogTile
+{
+    u16 xc = 0;
+    u16 yc = 0;
+    TileNeighbor neighbors = TileNeighbor::All;
 };
 
 class Selections
@@ -36,6 +40,7 @@ class Selections
         void setStartDrag(s32 x, s32 y);
         void setEndDrag(s32 x, s32 y);
         void setDrags(s32 x, s32 y);
+        void snapDrags(s32 xInterval, s32 yInterval, bool nonZeroSnap);
         POINT & getStartDrag() { return startDrag; }
         POINT & getEndDrag() { return endDrag; }
         void setMoved() { moved = true; }
@@ -43,6 +48,7 @@ class Selections
         bool hasMoved() { return moved; }
         bool startEqualsEndDrag() { return startDrag.x == endDrag.x && startDrag.y == endDrag.y; }
         void sortDragPoints() { ascendingOrder(startDrag.x, endDrag.x); ascendingOrder(startDrag.y, endDrag.y); }
+        void clear();
 
         void addTile(u16 value, u16 xc, u16 yc);
         void addTile(u16 value, u16 xc, u16 yc, TileNeighbor neighbors);
@@ -72,6 +78,11 @@ class Selections
         void addSprite(size_t index);
         void removeSprite(size_t index);
         void removeSprites();
+        
+        void addFogTile(u16 xc, u16 yc);
+        void addFogTile(u16 xc, u16 yc, TileNeighbor neighbors);
+        void removeFogTile(u16 xc, u16 yc);
+        void removeFog();
 
         bool unitIsSelected(u16 index);
         bool doodadIsSelected(size_t doodadIndex);
@@ -80,6 +91,7 @@ class Selections
         bool hasDoodads() { return selDoodads.size() > 0; }
         bool hasTiles() { return selTiles.size() > 0; }
         bool hasSprites() { return selSprites.size() > 0; }
+        bool hasFogTiles() { return selFogTiles.size() > 0; }
         u16 numUnits();
         u16 numUnitsUnder(u16 index);
 
@@ -88,6 +100,7 @@ class Selections
         std::vector<u16> & getUnits();
         std::vector<size_t> & getDoodads();
         std::vector<size_t> & getSprites();
+        std::vector<FogTile> & getFogTiles();
         u16 getFirstUnit();
         u16 getFirstDoodad();
         size_t getFirstSprite();
@@ -112,6 +125,7 @@ class Selections
         std::vector<size_t> selDoodads;
         std::vector<size_t> selSprites;
         std::vector<TileNode> selTiles;
+        std::vector<FogTile> selFogTiles {};
 
         u16 selectedLocation;
         u8 numRecentLocations;

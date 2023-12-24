@@ -74,6 +74,18 @@ class PasteUnitNode
         PasteUnitNode(); // Disallow ctor
 };
 
+struct PasteFogTileNode
+{
+    u8 value;
+    s32 xc;
+    s32 yc;
+    TileNeighbor neighbors; // Same as in FogTile
+    
+    PasteFogTileNode() = delete; // Disallow ctor
+    PasteFogTileNode(u8 value, s32 xc, s32 yc, TileNeighbor neighbors) :
+        value(value), xc(xc), yc(yc), neighbors(neighbors) {}
+};
+
 struct FogBrush
 {
     u32 width = 1;
@@ -107,6 +119,8 @@ class Clipboard
         void addQuickSprite(const Chk::Sprite & sprite);
         bool hasQuickSprites() { return quickSprites.size() > 0; }
 
+        bool hasFogTiles() { return copyFogTiles.size() > 0; }
+
         const auto & getFogBrush() { return this->fogBrush; }
         void setFogBrushSize(u32 width, u32 height);
         void initFogBrush(s32 mapClickX, s32 mapClickY, const GuiMap & map, bool allPlayers);
@@ -123,6 +137,7 @@ class Clipboard
         std::vector<PasteDoodadNode> & getDoodads();
         std::vector<PasteUnitNode> & getUnits();
         std::vector<PasteSpriteNode> & getSprites();
+        std::vector<PasteFogTileNode> & getFogTiles();
         bool isPasting() { return pasting; }
         bool isQuickPasting() { return pasting && quickPaste; }
         bool isPreviousPasteLoc(u16 x, u16 y) { return x == prevPaste.x && y == prevPaste.y; }
@@ -136,7 +151,14 @@ class Clipboard
         void fillPasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos);
         void pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos, bool allowStack);
         void pasteSprites(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos);
+        void pasteBrushFog(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos);
         void pasteFog(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos);
+        
+        void updateTileMiddle(POINT middle);
+        void updateDoodadMiddle(POINT middle);
+        void updateUnitMiddle(POINT middle);
+        void updateSpriteMiddle(POINT middle);
+        void updateFogMiddle(POINT middle);
 
 
     private:
@@ -156,6 +178,7 @@ class Clipboard
         std::vector<PasteSpriteNode> quickSprites;
         std::vector<PasteUnitNode> copyUnits;
         std::vector<PasteUnitNode> quickUnits;
+        std::vector<PasteFogTileNode> copyFogTiles;
         FogBrush fogBrush {};
         std::chrono::time_point<std::chrono::steady_clock> lastPasteTime = std::chrono::steady_clock::now();
 
@@ -163,10 +186,6 @@ class Clipboard
 
         bool isNearPrevPaste(s32 mapClickX, s32 mapClickY);
 
-        void ClearCopyTiles();
-        void ClearCopyDoodads();
-        void ClearCopyUnits();
-        void ClearCopySprites();
         void ClearQuickItems();
 };
 

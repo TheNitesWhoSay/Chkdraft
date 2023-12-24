@@ -410,6 +410,9 @@
     <ClInclude Include="Mapping\Undos\ChkdUndos\FogChange.h">
       <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
     </ClInclude>
+    <ClInclude Include="Mapping\Undos\ChkdUndos\CutCopyPasteChange.h">
+      <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Chkdraft.cpp">
@@ -680,6 +683,9 @@
       <Filter>Source Files\Windows\Dialog Windows\Briefing Editor</Filter>
     </ClCompile>
     <ClCompile Include="Mapping\Undos\ChkdUndos\FogChange.cpp">
+      <Filter>Source Files\Mapping\Undos\ChkdUndos</Filter>
+    </ClCompile>
+    <ClCompile Include="Mapping\Undos\ChkdUndos\CutCopyPasteChange.cpp">
       <Filter>Source Files\Mapping\Undos\ChkdUndos</Filter>
     </ClCompile>
   </ItemGroup>

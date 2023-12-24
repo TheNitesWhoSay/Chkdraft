@@ -48,6 +48,7 @@
     <ClInclude Include="Mapping\Graphics.h" />
     <ClInclude Include="Mapping\Selections.h" />
     <ClInclude Include="Mapping\Settings.h" />
+    <ClInclude Include="Mapping\Undos\ChkdUndos\CutCopyPasteChange.h" />
     <ClInclude Include="Mapping\Undos\ChkdUndos\DoodadChange.h" />
     <ClInclude Include="Mapping\Undos\ChkdUndos\DoodadCreateDel.h" />
     <ClInclude Include="Mapping\Undos\ChkdUndos\FogChange.h" />
@@ -142,6 +143,7 @@
     <ClCompile Include="Mapping\Graphics.cpp" />
     <ClCompile Include="Mapping\Selections.cpp" />
     <ClCompile Include="Mapping\Settings.cpp" />
+    <ClCompile Include="Mapping\Undos\ChkdUndos\CutCopyPasteChange.cpp" />
     <ClCompile Include="Mapping\Undos\ChkdUndos\DoodadChange.cpp" />
     <ClCompile Include="Mapping\Undos\ChkdUndos\DoodadCreateDel.cpp" />
     <ClCompile Include="Mapping\Undos\ChkdUndos\FogChange.cpp" />

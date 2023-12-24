@@ -1,11 +1,6 @@
 #include "Selections.h"
 #include "../Windows/MainWindows/GuiMap.h"
 
-TileNode::~TileNode()
-{
-
-}
-
 Selections::Selections(GuiMap & map) : map(map), moved(false), numRecentLocations(0), locationFlags(0), locSelFlags(LocSelFlags::None), selectedLocation(0)
 {
     memset((void*)&recentLocations[0], 0, sizeof(recentLocations)/sizeof(u8));
@@ -17,10 +12,7 @@ Selections::Selections(GuiMap & map) : map(map), moved(false), numRecentLocation
 
 Selections::~Selections()
 {
-    removeTiles();
-    removeUnits();
-    removeDoodads();
-    removeSprites();
+
 }
 
 void Selections::setStartDrag(s32 x, s32 y)
@@ -41,6 +33,40 @@ void Selections::setDrags(s32 x, s32 y)
     startDrag.y = y;
     endDrag.x = x;
     endDrag.y = y;
+}
+
+void Selections::snapDrags(s32 xInterval, s32 yInterval, bool nonZeroSnap)
+{
+    if ( xInterval > 0 )
+    {
+        if ( nonZeroSnap && startDrag.x/xInterval == endDrag.x/xInterval )
+        {
+            startDrag.x = startDrag.x/xInterval*xInterval;
+            endDrag.x = startDrag.x + xInterval;
+        }
+        else
+        {
+            if ( (startDrag.x % xInterval) != 0 )
+                startDrag.x = (startDrag.x+xInterval/2)/xInterval*xInterval;
+            if ( (endDrag.x % xInterval) != 0 )
+                endDrag.x = (endDrag.x+xInterval/2)/xInterval*xInterval;
+        }
+    }
+    if ( yInterval > 0 )
+    {
+        if ( nonZeroSnap && startDrag.y/yInterval == endDrag.y/yInterval )
+        {
+            startDrag.y = startDrag.y/yInterval*yInterval;
+            endDrag.y = startDrag.y + yInterval;
+        }
+        else
+        {
+            if ( (startDrag.y % yInterval) != 0 )
+                startDrag.y = (startDrag.y+yInterval/2)/yInterval*yInterval;
+            if ( (endDrag.y % yInterval) != 0 )
+                endDrag.y = (endDrag.y+yInterval/2)/yInterval*yInterval;
+        }
+    }
 }
 
 void Selections::removeTile(TileNode* & tile)
@@ -71,6 +97,16 @@ void Selections::removeTile(u16 xc, u16 yc)
     
     if ( toRemove != selTiles.end() )
         selTiles.erase(toRemove);
+}
+
+void Selections::clear()
+{
+    removeTiles();
+    removeDoodads();
+    removeSprites();
+    removeUnits();
+    removeFog();
+    selectedLocation = Chk::LocationId::NoLocation;
 }
 
 void Selections::addTile(u16 value, u16 xc, u16 yc)
@@ -122,13 +158,13 @@ void Selections::addTile(u16 value, u16 xc, u16 yc)
 
 void Selections::addTile(u16 value, u16 xc, u16 yc, TileNeighbor neighbors)
 {
-    TileNode tile;
+    TileNode tile {};
     tile.value = value;
     tile.xc = xc;
     tile.yc = yc;
     tile.neighbors = neighbors;
 
-    selTiles.insert(selTiles.end(), tile);
+    selTiles.push_back(tile);
 }
 
 void Selections::removeTiles()
@@ -329,6 +365,92 @@ void Selections::removeSprites()
     selSprites.clear();
 }
 
+void Selections::addFogTile(u16 xc, u16 yc)
+{
+    FogTile fogTile {};
+    fogTile.xc = xc;
+    fogTile.yc = yc;
+    fogTile.neighbors = TileNeighbor::All;
+
+    for ( auto & selFogTile : selFogTiles )
+    {
+        // If tile edges are touching, remove that border
+        if ( selFogTile.yc == yc ) // Tile is in the same row
+        {
+            if ( selFogTile.xc == xc ) // Tile is in the same column: tile is already selected!
+            {
+                removeFogTile(xc, yc);
+                return; // Iterators are now invalid, ensure loop is exited
+            }
+            else if ( selFogTile.xc == xc - 1 ) // 'track' is just left of 'tile'
+            {
+                (u8 &)fogTile.neighbors &= TileNeighbor::xLeft; // AND 1110, flips off the LEFT edge bit
+                (u8 &)selFogTile.neighbors &= TileNeighbor::xRight; // AND 1011, flips off the RIGHT edge bit
+            }
+            else if ( selFogTile.xc == xc + 1 ) // 'track' is just right of 'tile'
+            {
+                (u8 &)fogTile.neighbors &= TileNeighbor::xRight; // AND 1011, flips off the RIGHT edge bit
+                (u8 &)selFogTile.neighbors &= TileNeighbor::xLeft; // AND 1110, flips off the LEFT edge bit
+            }
+        }
+        else if ( selFogTile.xc == xc ) // Tile is in same column
+        {
+            if ( selFogTile.yc == yc - 1 ) // 'track' is just above 'tile'
+            {
+                (u8 &)fogTile.neighbors &= TileNeighbor::xTop; // AND 1101, flips off the TOP edge bit
+                (u8 &)selFogTile.neighbors &= TileNeighbor::xBottom; // AND 0111, flips off the BOTTOM edge bit
+            }
+            else if ( selFogTile.yc == yc + 1 ) // 'track' is just below 'tile'
+            {
+                (u8 &)fogTile.neighbors &= TileNeighbor::xBottom; // AND 0111, flips off the BOTTOM edge bit
+                (u8 &)selFogTile.neighbors &= TileNeighbor::xTop; // AND 1101, flips off the TOP edge bit
+            }
+        }
+    }
+
+    selFogTiles.push_back(fogTile);
+}
+
+void Selections::addFogTile(u16 xc, u16 yc, TileNeighbor neighbors)
+{
+    FogTile fogTile {};
+    fogTile.xc = xc;
+    fogTile.yc = yc;
+    fogTile.neighbors = neighbors;
+
+    selFogTiles.push_back(fogTile);
+}
+
+void Selections::removeFogTile(u16 xc, u16 yc)
+{
+    auto toRemove = selFogTiles.end();
+    for ( auto it = selFogTiles.begin(); it != selFogTiles.end(); ++it )
+    {
+        // If an edge is matched to the tile being removed, un-match the edge
+        if ( it->yc == yc ) // Tile is in the same row
+        {
+            if ( it->xc == xc - 1 ) (u8 &)it->neighbors |= TileNeighbor::Right; // OR 0100, flips on the RIGHT edge bit
+            else if ( it->xc == xc + 1 ) (u8 &)it->neighbors |= TileNeighbor::Left; // OR 0001, flips on the LEFT edge bit
+        }
+        else if ( it->xc == xc ) // Tile is in the same column
+        {
+            if ( it->yc == yc - 1 ) (u8 &)it->neighbors |= TileNeighbor::Bottom; // OR 1000, flips on the BOTTOM edge bit
+            else if ( it->yc == yc + 1 ) (u8 &)it->neighbors |= TileNeighbor::Top; // OR 0010, flips on the TOP edge bit
+        }
+
+        if ( it->xc == xc && it->yc == yc )
+            toRemove = it;
+    }
+    
+    if ( toRemove != selFogTiles.end() )
+        selFogTiles.erase(toRemove);
+}
+
+void Selections::removeFog()
+{
+    selFogTiles.clear();
+}
+
 bool Selections::unitIsSelected(u16 index)
 {
     for ( u16 & unitIndex : selUnits )
@@ -415,6 +537,11 @@ std::vector<size_t> & Selections::getDoodads()
 std::vector<size_t> & Selections::getSprites()
 {
     return selSprites;
+}
+
+std::vector<FogTile> & Selections::getFogTiles()
+{
+    return selFogTiles;
 }
 
 u16 Selections::getFirstUnit()

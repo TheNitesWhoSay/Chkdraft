@@ -172,6 +172,8 @@ void DrawTools(const WinLib::DeviceContext & dc, ChkdPalette & palette, u16 widt
 
 void DrawTileSel(const WinLib::DeviceContext & dc, ChkdPalette & palette, u16 width, u16 height, u32 screenLeft, u32 screenTop, Selections & selections, GuiMap & map);
 
+void DrawFogTileSel(const WinLib::DeviceContext & dc, ChkdPalette & palette, u16 width, u16 height, u32 screenLeft, u32 screenTop, Selections & selections, GuiMap & map);
+
 void DrawDoodadSel(const WinLib::DeviceContext & dc, u16 width, u16 height, u32 screenLeft, u32 screenTop, Selections & selections, GuiMap & map);
 
 void DrawPasteGraphics(const WinLib::DeviceContext & dc, ChkdPalette & palette, u16 width, u16 height, u32 screenLeft, u32 screenTop, Selections & selections,

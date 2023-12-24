@@ -176,7 +176,7 @@ void Graphics::DrawMap(const WinLib::DeviceContext & dc, u16 bitWidth, u16 bitHe
 
     if ( map.getLayer() == Layer::Locations )
         DrawLocations(bitmap, showAnywhere);
-    else if ( map.getLayer() == Layer::FogEdit )
+    else if ( map.getLayer() == Layer::FogEdit || map.getLayer() == Layer::CutCopyPaste )
         DrawFog(bitmap);
 
     BITMAPINFO bmi = GetBMI(screenWidth, screenHeight);
@@ -1279,12 +1279,16 @@ void DrawTile(const WinLib::DeviceContext & dc, ChkdPalette & palette, const Sc:
 void DrawTools(const WinLib::DeviceContext & dc, ChkdPalette & palette, u16 width, u16 height, u32 screenLeft, u32 screenTop,
     Selections & selections, bool pasting, Clipboard & clipboard, GuiMap & map)
 {
-    if ( map.getLayer() == Layer::Terrain && selections.hasTiles() ) // Draw selected tiles
+    if ( selections.hasTiles() && (map.getLayer() == Layer::Terrain || map.getLayer() == Layer::CutCopyPaste) ) // Draw selected tiles
         DrawTileSel(dc, palette, width, height, screenLeft, screenTop, selections, map);
     else if ( map.getLayer() == Layer::Locations ) // Draw Location Creation/Movement Graphics
         DrawTempLocs(dc, screenLeft, screenTop, selections, map);
-    else if ( map.getLayer() == Layer::Doodads ) // Draw selected doodads
+    
+    if ( map.getLayer() == Layer::Doodads || map.getLayer() == Layer::CutCopyPaste ) // Draw selected doodads
         DrawDoodadSel(dc, width, height, screenLeft, screenTop, selections, map);
+
+    if ( map.getLayer() == Layer::CutCopyPaste )
+        DrawFogTileSel(dc, palette, width, height, screenLeft, screenTop, selections, map);
 
     if ( pasting || map.getLayer() == Layer::FogEdit ) // Draw paste graphics
         DrawPasteGraphics(dc, palette, width, height, screenLeft, screenTop, selections, clipboard, map, map.getLayer(), map.getSubLayer());
@@ -1292,6 +1296,13 @@ void DrawTools(const WinLib::DeviceContext & dc, ChkdPalette & palette, u16 widt
 
 void DrawTileSel(const WinLib::DeviceContext & dc, ChkdPalette & palette, u16 width, u16 height, u32 screenLeft, u32 screenTop, Selections & selections, GuiMap & map)
 {
+    WinLib::DeviceContext tileBlend {dc, 32, 32};
+    tileBlend.fillRect(RECT{0, 0, 32, 32}, RGB(0, 0, 255));
+
+    BLENDFUNCTION blendFunction {};
+    blendFunction.BlendOp = AC_SRC_OVER;
+    blendFunction.SourceConstantAlpha = 32;
+
     dc.setPen(PS_SOLID, 0, RGB(0, 255, 255));
     RECT rect, rcBorder;
     
@@ -1313,18 +1324,82 @@ void DrawTileSel(const WinLib::DeviceContext & dc, ChkdPalette & palette, u16 wi
              tile.yc < rcBorder.bottom )
         // If tile is within current map border
         {
-            // Draw tile with a blue haze, might replace with blending
-                DrawTile( dc,
-                          palette,
-                          tiles,
-                          s16(tile.xc*32-screenLeft),
-                          s16(tile.yc*32-screenTop),
-                          tile.value,
-                          bmi,
-                          0,
-                          0,
-                          32
-                        );
+            int xStart = int(tile.xc)*32-screenLeft;
+            int yStart = int(tile.yc)*32-screenTop;
+            AlphaBlend(dc.getDcHandle(), xStart, yStart, 32, 32,
+                tileBlend.getDcHandle(), 0, 0, 32, 32, blendFunction);
+
+            if ( tile.neighbors != TileNeighbor::None ) // if any edges need to be drawn
+            {
+                rect.left   = tile.xc*32 - screenLeft;
+                rect.right  = tile.xc*32 - screenLeft + 32;
+                rect.top    = tile.yc*32 - screenTop;
+                rect.bottom = tile.yc*32 - screenTop + 32;
+
+                if ( (tile.neighbors & TileNeighbor::Top) == TileNeighbor::Top )
+                {
+                    dc.moveTo(rect.left, rect.top);
+                    dc.lineTo(rect.right, rect.top);
+                }
+                if ( (tile.neighbors & TileNeighbor::Right) == TileNeighbor::Right )
+                {
+                    if ( rect.right >= width )
+                        rect.right --;
+
+                    dc.moveTo(rect.right, rect.top);
+                    dc.lineTo(rect.right, rect.bottom+1);
+                }
+                if ( (tile.neighbors & TileNeighbor::Bottom) == TileNeighbor::Bottom )
+                {
+                    if ( rect.bottom >= height )
+                        rect.bottom --;
+
+                    dc.moveTo(rect.left, rect.bottom);
+                    dc.lineTo(rect.right, rect.bottom);
+                }
+                if ( (tile.neighbors & TileNeighbor::Left) == TileNeighbor::Left )
+                {
+                    dc.moveTo(rect.left, rect.bottom);
+                    dc.lineTo(rect.left, rect.top-1);
+                }
+            }
+        }
+    }
+}
+
+void DrawFogTileSel(const WinLib::DeviceContext & dc, ChkdPalette & palette, u16 width, u16 height, u32 screenLeft, u32 screenTop, Selections & selections, GuiMap & map)
+{
+    auto currPlayer = Sc::Player::Id(map.getCurrPlayer());
+    if ( currPlayer > Sc::Player::Id::Player8 )
+        return;
+
+    WinLib::DeviceContext tileBlend {dc, 32, 32};
+    tileBlend.fillRect(RECT{0, 0, 32, 32}, RGB(255, 128, 0));
+
+    BLENDFUNCTION blendFunction {};
+    blendFunction.BlendOp = AC_SRC_OVER;
+    blendFunction.SourceConstantAlpha = 32;
+
+    dc.setPen(PS_SOLID, 0, RGB(255, 50, 255));
+    RECT rect, rcBorder;
+
+    BITMAPINFO bmi = GetBMI(32, 32);
+    rcBorder.left   = (0      + screenLeft)/32 - 1;
+    rcBorder.right  = (width  + screenLeft)/32 + 1;
+    rcBorder.top    = (0      + screenTop)/32 - 1;
+    rcBorder.bottom = (height + screenTop)/32 + 1;
+
+    auto & selFogTiles = selections.getFogTiles();
+    for ( auto & tile : selFogTiles )
+    {
+        if ( tile.xc > rcBorder.left &&
+             tile.xc < rcBorder.right &&
+             tile.yc > rcBorder.top &&
+             tile.yc < rcBorder.bottom )
+        // If tile is within current map border
+        {
+            AlphaBlend(dc.getDcHandle(), int(tile.xc)*32-screenLeft, int(tile.yc)*32-screenTop, 32, 32,
+                tileBlend.getDcHandle(), 0, 0, 32, 32, blendFunction);
 
             if ( tile.neighbors != TileNeighbor::None ) // if any edges need to be drawn
             {
@@ -1404,12 +1479,11 @@ void DrawDoodadSel(const WinLib::DeviceContext & dc, u16 width, u16 height, u32 
 void DrawPasteGraphics(const WinLib::DeviceContext & dc, ChkdPalette & palette, u16 width, u16 height, u32 screenLeft, u32 screenTop,
                         Selections & selections, Clipboard & clipboard, GuiMap & map, Layer layer, TerrainSubLayer subLayer)
 {
-    if ( layer == Layer::Terrain )
-    {
-        if ( subLayer == TerrainSubLayer::Isom )
+    auto drawPasteTerrain = [&](POINT paste) {
+        if ( subLayer == TerrainSubLayer::Isom && layer != Layer::CutCopyPaste )
         {
             dc.setPen(PS_SOLID, 0, RGB(255, 0, 0));
-            auto diamond = Chk::IsomDiamond::fromMapCoordinates(selections.getEndDrag().x, selections.getEndDrag().y);
+            auto diamond = Chk::IsomDiamond::fromMapCoordinates(paste.x, paste.y);
 
             s32 diamondCenterX = s32(diamond.x)*64-screenLeft;
             s32 diamondCenterY = s32(diamond.y)*32-screenTop;
@@ -1419,7 +1493,7 @@ void DrawPasteGraphics(const WinLib::DeviceContext & dc, ChkdPalette & palette, 
             dc.lineTo(diamondCenterX, diamondCenterY+32); // Draw bottom-right
             dc.lineTo(diamondCenterX-64, diamondCenterY); // Draw bottom-left
         }
-        else if ( subLayer == TerrainSubLayer::Rectangular )
+        else if ( subLayer == TerrainSubLayer::Rectangular || layer == Layer::CutCopyPaste )
         {
             dc.setPen(PS_SOLID, 0, RGB(0, 255, 255));
     
@@ -1434,8 +1508,8 @@ void DrawPasteGraphics(const WinLib::DeviceContext & dc, ChkdPalette & palette, 
             rcShade.bottom = height + 32;
     
             POINT center;
-            center.x = selections.getEndDrag().x + 16;
-            center.y = selections.getEndDrag().y + 16;
+            center.x = paste.x + 16;
+            center.y = paste.y + 16;
     
             std::vector<PasteTileNode> & pasteTiles = clipboard.getTiles();
             for ( auto & tile : pasteTiles )
@@ -1483,9 +1557,85 @@ void DrawPasteGraphics(const WinLib::DeviceContext & dc, ChkdPalette & palette, 
                 }
             }
         }
-    }
-    else if ( layer == Layer::Doodads )
-    {
+    };
+    auto drawPasteFog = [&](POINT paste) {
+        auto currPlayer = Sc::Player::Id(CM->getCurrPlayer());
+        if ( currPlayer > Sc::Player::Id::Player8 )
+            return; // No fog to render
+
+        WinLib::DeviceContext tileBlend {dc, 32, 32};
+        tileBlend.fillRect(RECT{0, 0, 32, 32}, RGB(0, 0, 0));
+
+        BLENDFUNCTION blendFunction {};
+        blendFunction.BlendOp = AC_SRC_OVER;
+        blendFunction.SourceConstantAlpha = 96;
+
+        dc.setPen(PS_SOLID, 0, RGB(0, 255, 255));
+    
+        RECT rect {}, rcShade {};
+        Sc::Terrain::Tileset tileset = map.getTileset();
+        const Sc::Terrain::Tiles & tiles = chkd.scData.terrain.get(tileset);
+    
+        BITMAPINFO bmi = GetBMI(32, 32);
+        rcShade.left   = -32;
+        rcShade.right  = width  + 32;
+        rcShade.top    = -32;
+        rcShade.bottom = height + 32;
+    
+        POINT center;
+        center.x = paste.x + 16;
+        center.y = paste.y + 16;
+
+        auto fogTiles = clipboard.getFogTiles();
+        for ( auto & fogTile : fogTiles )
+        {
+            rect.left   = ( fogTile.xc + center.x      )/32*32 - screenLeft;
+            rect.top    = ( fogTile.yc + center.y      )/32*32 - screenTop;
+            rect.right  = ( fogTile.xc + 32 + center.x )/32*32 - screenLeft;
+            rect.bottom = ( fogTile.yc + 32 + center.y )/32*32 - screenTop;
+
+            if ( rect.left > rcShade.left && rect.left < rcShade.right && rect.top > rcShade.top && rect.top < rcShade.bottom )
+            // If tile is within current map border
+            {
+                if ( (fogTile.value & u8Bits[currPlayer]) != 0 )
+                {
+                    AlphaBlend(dc.getDcHandle(), rect.left, rect.top, 32, 32,
+                        tileBlend.getDcHandle(), 0, 0, 32, 32, blendFunction);
+                }
+
+                if ( fogTile.neighbors != TileNeighbor::None ) // if any edges need to be drawn
+                {
+                    if ( (fogTile.neighbors & TileNeighbor::Top) == TileNeighbor::Top )
+                    {
+                        dc.moveTo(rect.left, rect.top);
+                        dc.lineTo(rect.right, rect.top);
+                    }
+                    if ( (fogTile.neighbors & TileNeighbor::Right) == TileNeighbor::Right )
+                    {
+                        if ( rect.right >= width )
+                            rect.right --;
+    
+                        dc.moveTo(rect.right, rect.top);
+                        dc.lineTo(rect.right, rect.bottom+1);
+                    }
+                    if ( (fogTile.neighbors & TileNeighbor::Bottom) == TileNeighbor::Bottom )
+                    {
+                        if ( rect.bottom >= height )
+                            rect.bottom --;
+
+                        dc.moveTo(rect.left, rect.bottom);
+                        dc.lineTo(rect.right, rect.bottom);
+                    }
+                    if ( (fogTile.neighbors & TileNeighbor::Left) == TileNeighbor::Left )
+                    {
+                        dc.moveTo(rect.left, rect.bottom);
+                        dc.lineTo(rect.left, rect.top-1);
+                    }
+                }
+            }
+        }
+    };
+    auto drawPasteDoodads = [&](POINT paste) {
         const auto & doodads = clipboard.getDoodads();
         if ( !doodads.empty() )
         {
@@ -1496,7 +1646,7 @@ void DrawPasteGraphics(const WinLib::DeviceContext & dc, ChkdPalette & palette, 
             dc.getDiBits(0, height, &graphicBits[0], &bmi);
 
             const Sc::Terrain::Tiles & tiles = chkd.scData.terrain.get(map.getTileset());
-            POINT center { selections.getEndDrag().x, selections.getEndDrag().y };
+            POINT center { paste.x, paste.y };
             for ( auto & doodad : doodads )
             {
                 auto tileWidth = doodad.tileWidth;
@@ -1553,9 +1703,8 @@ void DrawPasteGraphics(const WinLib::DeviceContext & dc, ChkdPalette & palette, 
 
             dc.setBitsToDevice(0, 0, width, height, 0, 0, 0, height, &graphicBits[0], &bmi);
         }
-    }
-    else if ( layer == Layer::Units )
-    {
+    };
+    auto drawPasteUnits = [&](POINT paste) {
         ChkdBitmap graphicBits;
         graphicBits.resize(((size_t)width)*((size_t)height));
 
@@ -1567,26 +1716,24 @@ void DrawPasteGraphics(const WinLib::DeviceContext & dc, ChkdPalette & palette, 
         s32 sScreenLeft = screenLeft;
         s32 sScreenTop = screenTop;
 
-        POINT cursor = selections.getEndDrag();
-        if ( cursor.x != -1 && cursor.y != -1 )
+        if ( paste.x != -1 && paste.y != -1 )
         {
             std::vector<PasteUnitNode> units = clipboard.getUnits();
             for ( auto & pasteUnit : units )
             {
                 Chk::PlayerColor color = (pasteUnit.unit.owner < Sc::Player::TotalSlots ?
                     map.getPlayerColor(pasteUnit.unit.owner) : (Chk::PlayerColor)pasteUnit.unit.owner);
-                if ( cursor.y+ pasteUnit.yc >= 0 )
+                if ( paste.y+ pasteUnit.yc >= 0 )
                 {
                     UnitToBits(graphicBits, palette, color, width, height, sScreenLeft, sScreenTop,
-                        (u16)pasteUnit.unit.type, u16(cursor.x+ pasteUnit.xc), u16(cursor.y+ pasteUnit.yc), 0, false );
+                        (u16)pasteUnit.unit.type, u16(paste.x+ pasteUnit.xc), u16(paste.y+ pasteUnit.yc), 0, false );
                 }
             }
         }
 
         dc.setBitsToDevice(0, 0, width, height, 0, 0, 0, height, &graphicBits[0], &bmi);
-    }
-    else if ( layer == Layer::Sprites )
-    {
+    };
+    auto drawPasteSprites = [&](POINT paste) {
         ChkdBitmap graphicBits;
         graphicBits.resize(((size_t)width)*((size_t)height));
 
@@ -1598,8 +1745,7 @@ void DrawPasteGraphics(const WinLib::DeviceContext & dc, ChkdPalette & palette, 
         s32 sScreenLeft = screenLeft;
         s32 sScreenTop = screenTop;
 
-        POINT cursor = selections.getEndDrag();
-        if ( cursor.x != -1 && cursor.y != -1 )
+        if ( paste.x != -1 && paste.y != -1 )
         {
             std::vector<PasteSpriteNode> sprites = clipboard.getSprites();
             for ( auto & pasteSprite : sprites )
@@ -1607,16 +1753,34 @@ void DrawPasteGraphics(const WinLib::DeviceContext & dc, ChkdPalette & palette, 
                 Chk::PlayerColor color = (pasteSprite.sprite.owner < Sc::Player::TotalSlots ?
                     map.getPlayerColor(pasteSprite.sprite.owner) : (Chk::PlayerColor)pasteSprite.sprite.owner);
 
-                if ( cursor.y + pasteSprite.yc >= 0 )
+                if ( paste.y + pasteSprite.yc >= 0 )
                 {
-                    SpriteToBits(graphicBits, palette, color, width, height, sScreenLeft, sScreenTop,
-                        (u16)pasteSprite.sprite.type, u16(cursor.x + pasteSprite.xc), u16(cursor.y + pasteSprite.yc), false, false);
+                    if ( pasteSprite.sprite.isDrawnAsSprite() )
+                    {
+                        SpriteToBits(graphicBits, palette, color, width, height, sScreenLeft, sScreenTop,
+                            (u16)pasteSprite.sprite.type, u16(paste.x + pasteSprite.xc), u16(paste.y + pasteSprite.yc), false, false);
+                    }
+                    else
+                    {
+                        UnitToBits(graphicBits, palette, color, width, height,
+                            sScreenLeft, sScreenTop, (u16)pasteSprite.sprite.type, u16(paste.x + pasteSprite.xc), u16(paste.y + pasteSprite.yc),
+                            0, false);
+                    }
                 }
             }
         }
 
         dc.setBitsToDevice(0, 0, width, height, 0, 0, 0, height, &graphicBits[0], &bmi);
-    }
+    };
+
+    if ( layer == Layer::Terrain )
+        drawPasteTerrain(selections.getEndDrag());
+    else if ( layer == Layer::Doodads )
+        drawPasteDoodads(selections.getEndDrag());
+    else if ( layer == Layer::Units )
+        drawPasteUnits(selections.getEndDrag());
+    else if ( layer == Layer::Sprites )
+        drawPasteSprites(selections.getEndDrag());
     else if ( layer == Layer::FogEdit )
     {
         const auto brushWidth = clipboard.getFogBrush().width;
@@ -1635,6 +1799,28 @@ void DrawPasteGraphics(const WinLib::DeviceContext & dc, ChkdPalette & palette, 
         dc.lineTo(endX, endY); // Draw right
         dc.lineTo(startX, endY); // Draw bottom
         dc.lineTo(startX, startY); // Draw left
+    }
+    else if ( layer == Layer::CutCopyPaste )
+    {
+        POINT paste = selections.getEndDrag();
+        bool pastingTerrain = map.getCutCopyPasteTerrain() && clipboard.hasTiles();
+        bool pastingDoodads = map.getCutCopyPasteDoodads() && clipboard.hasDoodads();
+        bool pastingFog = map.getCutCopyPasteFog() && clipboard.hasFogTiles();
+        if ( pastingTerrain || pastingDoodads || pastingFog ) // If paste includes tile-based entities, force paste onto tiles
+        {
+            paste.x = (paste.x+16)/32*32;
+            paste.y = (paste.y+16)/32*32;
+        }
+        if ( pastingTerrain )
+            drawPasteTerrain(paste);
+        if ( pastingDoodads )
+            drawPasteDoodads(paste);
+        if ( pastingFog)
+            drawPasteFog(paste);
+        if ( map.getCutCopyPasteUnits() )
+            drawPasteUnits(paste);
+        if ( map.getCutCopyPasteSprites() )
+            drawPasteSprites(paste);
     }
 }
 

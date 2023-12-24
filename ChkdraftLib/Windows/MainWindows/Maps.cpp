@@ -591,6 +591,19 @@ void Maps::startPaste(bool isQuickPaste)
             TrackMouseEvent(&tme);
         }
     }
+    else if ( currentlyActiveMap->getLayer() == Layer::CutCopyPaste && !isQuickPaste )
+    {
+        currentlyActiveMap->clearSelection();
+        clipboard.beginPasting(false);
+        RedrawWindow(currentlyActiveMap->getHandle(), NULL, NULL, RDW_INVALIDATE);
+
+        TRACKMOUSEEVENT tme;
+        tme.cbSize = sizeof(TRACKMOUSEEVENT);
+        tme.dwFlags = TME_HOVER;
+        tme.hwndTrack = currentlyActiveMap->getHandle();
+        tme.dwHoverTime = defaultHoverTime;
+        TrackMouseEvent(&tme);
+    }
 }
 
 void Maps::endPaste()

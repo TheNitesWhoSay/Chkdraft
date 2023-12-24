@@ -189,10 +189,7 @@ Clipboard::Clipboard() : pasting(false), quickPaste(false), fillSimilarTiles(fal
 
 Clipboard::~Clipboard()
 {
-    ClearCopyTiles();
-    ClearCopyDoodads();
-    ClearCopySprites();
-    ClearQuickItems();
+
 }
 
 bool Clipboard::hasTiles()
@@ -208,18 +205,25 @@ bool Clipboard::hasDoodads()
 void Clipboard::copy(GuiMap & map, Layer layer)
 {
     Selections & selections = map.GetSelections();
-    if ( layer == Layer::Terrain )
-    {
-        chkd.maps.ChangeSubLayer(TerrainSubLayer::Rectangular);
+    edges.left = -1;
+    edges.top = -1;
+    edges.right = -1;
+    edges.bottom = -1;
+    bool initializedEdges = false;
 
-        ClearCopyTiles(); // Clear whatever was previously copied
+    auto copyTerrain = [&]() {
+        copyTiles.clear(); // Clear whatever was previously copied
         if ( selections.hasTiles() )
         {
-            TileNode firstTile = selections.getFirstTile();
-            edges.left = firstTile.xc * 32;
-            edges.right = firstTile.xc * 32 + 32;
-            edges.top = firstTile.yc * 32;
-            edges.bottom = firstTile.yc * 32 + 32;
+            if ( !initializedEdges )
+            {
+                TileNode firstTile = selections.getFirstTile();
+                edges.left = firstTile.xc * 32;
+                edges.right = firstTile.xc * 32 + 32;
+                edges.top = firstTile.yc * 32;
+                edges.bottom = firstTile.yc * 32 + 32;
+                initializedEdges = true;
+            }
 
             auto & selTiles = selections.getTiles();
             for ( auto & selTile : selTiles ) // Traverse through all tiles
@@ -234,29 +238,22 @@ void Clipboard::copy(GuiMap & map, Layer layer)
 
                 copyTiles.insert(copyTiles.end(), tile);
             }
-
-            POINT middle; // Determine where the new middle of the paste is
-            middle.x = edges.left+(edges.right-edges.left)/2;
-            middle.y = edges.top+(edges.bottom-edges.top)/2; 
-
-            for ( auto & tile : copyTiles ) // Update the tile's relative position to the cursor
-            {
-                tile.xc -= middle.x;
-                tile.yc -= middle.y;
-            }
         }
-    }
-    else if ( layer == Layer::Doodads )
-    {
-        ClearCopyDoodads();
+    };
+    auto copyDoodads = [&]() {
+        this->copyDoodads.clear();
         if ( selections.hasDoodads() )
         {
-            u16 firstDoodadIndex = selections.getFirstDoodad();
-            const Chk::Doodad & currDoodad = map.getDoodad(firstDoodadIndex);
-            edges.left = currDoodad.xc/32;
-            edges.right = currDoodad.xc/32;
-            edges.top = currDoodad.yc/32;
-            edges.bottom = currDoodad.yc/32;
+            if ( !initializedEdges )
+            {
+                u16 firstDoodadIndex = selections.getFirstDoodad();
+                const Chk::Doodad & currDoodad = map.getDoodad(firstDoodadIndex);
+                edges.left = currDoodad.xc;
+                edges.right = currDoodad.xc;
+                edges.top = currDoodad.yc;
+                edges.bottom = currDoodad.yc;
+                initializedEdges = true;
+            }
 
             const auto & selectedDoodads = selections.getDoodads();
             for ( size_t doodadIndex : selectedDoodads )
@@ -264,37 +261,29 @@ void Clipboard::copy(GuiMap & map, Layer layer)
                 const Chk::Doodad & currDoodad = map.getDoodad(doodadIndex);
                 PasteDoodadNode add(currDoodad);
 
-                if      ( add.tileX < edges.left   ) edges.left   = add.tileX;
-                else if ( add.tileX > edges.right  ) edges.right  = add.tileX+add.tileWidth;
-                if      ( add.tileY < edges.top    ) edges.top    = add.tileY;
-                else if ( add.tileY > edges.bottom ) edges.bottom = add.tileY+add.tileHeight;
+                if      ( add.tileX*32 < edges.left   ) edges.left   = add.tileX*32;
+                else if ( add.tileX*32 > edges.right  ) edges.right  = add.tileX*32+add.tileWidth*32;
+                if      ( add.tileY*32 < edges.top    ) edges.top    = add.tileY*32;
+                else if ( add.tileY*32 > edges.bottom ) edges.bottom = add.tileY*32+add.tileHeight*32;
 
-                copyDoodads.push_back(add);
-            }
-
-            POINT middle; // Determine where the new middle of the paste is
-            middle.x = (edges.right-edges.left)/2;
-            middle.y = (edges.bottom-edges.top)/2;
-            
-            // Update doodad position relative to the cursor
-            for ( auto & doodad : copyDoodads )
-            {
-                doodad.tileX = doodad.tileX-edges.left-middle.x;
-                doodad.tileY = doodad.tileY-edges.top-middle.y;
+                this->copyDoodads.push_back(add);
             }
         }
-    }
-    else if ( layer == Layer::Units )
-    {
-        ClearCopyUnits();
+    };
+    auto copyUnits = [&]() {
+        this->copyUnits.clear();
         if ( selections.hasUnits() )
         {
-            u16 firstUnitIndex = selections.getFirstUnit();
-            const Chk::Unit & currUnit = map.getUnit(firstUnitIndex);
-            edges.left   = currUnit.xc;
-            edges.right  = currUnit.xc;
-            edges.top    = currUnit.yc;
-            edges.bottom = currUnit.yc;
+            if ( !initializedEdges )
+            {
+                u16 firstUnitIndex = selections.getFirstUnit();
+                const Chk::Unit & currUnit = map.getUnit(firstUnitIndex);
+                edges.left   = currUnit.xc;
+                edges.right  = currUnit.xc;
+                edges.top    = currUnit.yc;
+                edges.bottom = currUnit.yc;
+                initializedEdges = true;
+            }
 
             auto & selectedUnits = selections.getUnits();
             for ( u16 & unitIndex : selectedUnits )
@@ -307,32 +296,24 @@ void Clipboard::copy(GuiMap & map, Layer layer)
                 if      ( add.yc < edges.top    ) edges.top    = add.yc;
                 else if ( add.yc > edges.bottom ) edges.bottom = add.yc;
 
-                copyUnits.push_back(add);
-            }
-
-            POINT middle; // Determine where the new middle of the paste is
-            middle.x = edges.left+(edges.right-edges.left)/2;
-            middle.y = edges.top+(edges.bottom-edges.top)/2;
-            
-            // Update units position relative to the cursor
-            for ( auto & unit : copyUnits )
-            {
-                unit.xc -= middle.x;
-                unit.yc -= middle.y;
+                this->copyUnits.push_back(add);
             }
         }
-    }
-    else if ( layer == Layer::Sprites )
-    {
-        ClearCopySprites();
+    };
+    auto copySprites = [&]() {
+        this->copySprites.clear();
         if ( selections.hasSprites() )
         {
-            size_t firstSpriteIndex = selections.getFirstSprite();
-            const Chk::Sprite & currSprite = map.getSprite(firstSpriteIndex);
-            edges.left = currSprite.xc;
-            edges.right = currSprite.xc;
-            edges.top = currSprite.yc;
-            edges.bottom = currSprite.yc;
+            if ( !initializedEdges )
+            {
+                size_t firstSpriteIndex = selections.getFirstSprite();
+                const Chk::Sprite & currSprite = map.getSprite(firstSpriteIndex);
+                edges.left = currSprite.xc;
+                edges.right = currSprite.xc;
+                edges.top = currSprite.yc;
+                edges.bottom = currSprite.yc;
+                initializedEdges = true;
+            }
 
             auto & selectedSprites = selections.getSprites();
             for ( size_t spriteIndex : selectedSprites )
@@ -345,20 +326,101 @@ void Clipboard::copy(GuiMap & map, Layer layer)
                 if      ( add.yc < edges.top    ) edges.top    = add.yc;
                 else if ( add.yc > edges.bottom ) edges.bottom = add.yc;
 
-                copySprites.push_back(add);
-            }
-
-            POINT middle; // Determine where the new middle of the paste is
-            middle.x = edges.left+(edges.right-edges.left)/2;
-            middle.y = edges.top+(edges.bottom-edges.top)/2;
-
-            // Update sprites position relative to the cursor
-            for ( auto & sprite : copySprites )
-            {
-                sprite.xc -= middle.x;
-                sprite.yc -= middle.y;
+                this->copySprites.push_back(add);
             }
         }
+    };
+    auto copyFog = [&]() {
+        this->copyFogTiles.clear(); // Clear whatever was previously copied
+        if ( selections.hasFogTiles() )
+        {
+            auto & selFogTiles = selections.getFogTiles();
+            if ( !initializedEdges )
+            {
+                FogTile firstTile = selFogTiles.front();
+                edges.left = firstTile.xc * 32;
+                edges.right = firstTile.xc * 32 + 32;
+                edges.top = firstTile.yc * 32;
+                edges.bottom = firstTile.yc * 32 + 32;
+            }
+
+            for ( auto selFogTile : selFogTiles ) // Traverse through all selected fog tiles
+            {
+                u8 value = map.getFog(selFogTile.xc, selFogTile.yc);
+                PasteFogTileNode fogTile(value, selFogTile.xc * 32, selFogTile.yc * 32, selFogTile.neighbors);
+
+                // Record the outermost fog tile positions for determining their relation to the cursor
+                if      ( fogTile.xc      < edges.left   ) edges.left   = fogTile.xc;
+                else if ( fogTile.xc + 32 > edges.right  ) edges.right  = fogTile.xc + 32;
+                if      ( fogTile.yc      < edges.top    ) edges.top    = fogTile.yc;
+                else if ( fogTile.yc + 32 > edges.bottom ) edges.bottom = fogTile.yc + 32;
+
+                copyFogTiles.push_back(fogTile);
+            }
+        }
+    };
+    auto calculateMiddle = [&]() {
+        POINT middle {};
+        middle.x = edges.left+(edges.right-edges.left)/2;
+        middle.y = edges.top+(edges.bottom-edges.top)/2;
+        if ( hasTiles() || hasDoodads() || hasFogTiles() )
+        {
+            middle.x = (middle.x+16)/32*32;
+            middle.y = (middle.y+16)/32*32;
+        }
+        return middle;
+    };
+
+    if ( layer == Layer::Terrain )
+    {
+        chkd.maps.ChangeSubLayer(TerrainSubLayer::Rectangular);
+        copyTerrain();
+        updateTileMiddle(calculateMiddle());
+    }
+    else if ( layer == Layer::Doodads )
+    {
+        copyDoodads();
+        updateDoodadMiddle(calculateMiddle());
+    }
+    else if ( layer == Layer::Units )
+    {
+        copyUnits();
+        updateUnitMiddle(calculateMiddle());
+    }
+    else if ( layer == Layer::Sprites )
+    {
+        copySprites();
+        updateSpriteMiddle(calculateMiddle());
+    }
+    else if ( layer == Layer::CutCopyPaste )
+    {
+        this->copyTiles.clear();
+        this->copyDoodads.clear();
+        this->copyUnits.clear();
+        this->copySprites.clear();
+        this->copyFogTiles.clear();
+        if ( map.getCutCopyPasteTerrain() )
+            copyTerrain();
+        if ( map.getCutCopyPasteDoodads() )
+            copyDoodads();
+        if ( map.getCutCopyPasteUnits() )
+            copyUnits();
+        if ( map.getCutCopyPasteSprites() )
+            copySprites();
+        if ( map.getCutCopyPasteFog() )
+            copyFog();
+
+        auto middle = calculateMiddle();
+        if ( map.getCutCopyPasteTerrain() )
+            updateTileMiddle(middle);
+        if ( map.getCutCopyPasteDoodads() )
+            updateDoodadMiddle(middle);
+        if ( map.getCutCopyPasteUnits() )
+            updateUnitMiddle(middle);
+        if ( map.getCutCopyPasteSprites() )
+            updateSpriteMiddle(middle);
+        if ( map.getCutCopyPasteFog() )
+            updateFogMiddle(middle);
     }
 }
 
@@ -471,7 +533,25 @@ void Clipboard::doPaste(Layer layer, TerrainSubLayer terrainSubLayer, s32 mapCli
             pasteSprites(mapClickX, mapClickY, map, undos);
             break;
         case Layer::FogEdit:
-            pasteFog(mapClickX, mapClickY, map, undos);
+            pasteBrushFog(mapClickX, mapClickY, map, undos);
+            break;
+        case Layer::CutCopyPaste:
+            {
+                bool pastingTerrain = map.getCutCopyPasteTerrain() && hasTiles();
+                bool pastingDoodads = map.getCutCopyPasteDoodads() && hasDoodads();
+                bool pastingFog = map.getCutCopyPasteFog() && hasFogTiles();
+                if ( pastingTerrain || pastingDoodads || pastingFog ) // If paste includes tile-based entities, force paste onto tiles
+                {
+                    mapClickX = (mapClickX+16)/32*32;
+                    mapClickY = (mapClickY+16)/32*32;
+                }
+                pasteTerrain(terrainSubLayer, mapClickX, mapClickY, map, undos);
+                
+                pasteDoodads(mapClickX, mapClickY, map, undos);
+                pasteUnits(mapClickX, mapClickY, map, undos, allowStack);
+                pasteSprites(mapClickX, mapClickY, map, undos);
+                pasteFog(mapClickX, mapClickY, map, undos);
+            }
             break;
     }
 }
@@ -508,47 +588,16 @@ std::vector<PasteSpriteNode> & Clipboard::getSprites()
         return copySprites;
 }
 
+std::vector<PasteFogTileNode> & Clipboard::getFogTiles()
+{
+    return copyFogTiles;
+}
+
 bool Clipboard::isNearPrevPaste(s32 mapClickX, s32 mapClickY)
 {
     auto xDiff = LONG(mapClickX) < prevPaste.x ? prevPaste.x-LONG(mapClickX) : LONG(mapClickX)-prevPaste.x;
     auto yDiff = LONG(mapClickY) < prevPaste.y ? prevPaste.y-LONG(mapClickY) : LONG(mapClickY)-prevPaste.y;
     return xDiff < 32 && yDiff < 32;
-}
-
-void Clipboard::ClearCopyTiles()
-{
-    copyTiles.clear();
-    edges.left = -1;
-    edges.top = -1;
-    edges.right = -1;
-    edges.bottom = -1;
-}
-
-void Clipboard::ClearCopyDoodads()
-{
-    copyDoodads.clear();
-    edges.left = -1;
-    edges.top = -1;
-    edges.right = -1;
-    edges.bottom = -1;
-}
-
-void Clipboard::ClearCopyUnits()
-{
-    copyUnits.clear();
-    edges.left = -1;
-    edges.top = -1;
-    edges.right = -1;
-    edges.bottom = -1;
-}
-
-void Clipboard::ClearCopySprites()
-{
-    copySprites.clear();
-    edges.left = -1;
-    edges.top = -1;
-    edges.right = -1;
-    edges.bottom = -1;
 }
 
 void Clipboard::ClearQuickItems()
@@ -574,7 +623,7 @@ void Clipboard::toggleFillSimilarTiles()
 
 void Clipboard::pasteTerrain(TerrainSubLayer terrainSubLayer, s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos)
 {
-    if ( terrainSubLayer == TerrainSubLayer::Isom )
+    if ( terrainSubLayer == TerrainSubLayer::Isom && map.getLayer() != Layer::CutCopyPaste )
     {
         auto diamond = Chk::IsomDiamond::fromMapCoordinates(mapClickX, mapClickY);
         if ( prevIsomPaste != diamond )
@@ -583,7 +632,7 @@ void Clipboard::pasteTerrain(TerrainSubLayer terrainSubLayer, s32 mapClickX, s32
             prevIsomPaste = diamond;
         }
     }
-    else if ( fillSimilarTiles && getTiles().size() == 1 )
+    else if ( fillSimilarTiles && getTiles().size() == 1 && map.getLayer() != Layer::CutCopyPaste )
     {
         fillPasteTerrain(mapClickX, mapClickY, map, undos);
     }
@@ -648,7 +697,7 @@ void Clipboard::pasteDoodads(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos &
                 auto centerX = 32*xStart + 16*tileWidth;
                 auto centerY = 32*yStart + 16*tileHeight;
 
-                if ( map.AllowIllegalDoodadPlacement() || doodad.isPlaceable(map, xStart, yStart) )
+                if ( map.AllowIllegalDoodadPlacement() || map.getLayer() == Layer::CutCopyPaste || doodad.isPlaceable(map, xStart, yStart) )
                 {
                     if ( xStart >= 0 && yStart >= 0 && xStart+int(tileWidth) <= int(map.getTileWidth()) && yStart+int(tileHeight) <= int(map.getTileHeight()) )
                     {
@@ -818,7 +867,7 @@ void Clipboard::pasteSprites(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos &
     CM->AddUndo(spriteCreates);
 }
 
-void Clipboard::pasteFog(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos)
+void Clipboard::pasteBrushFog(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos)
 {
     const auto width = this->fogBrush.width;
     const auto height = this->fogBrush.height;
@@ -876,5 +925,86 @@ void Clipboard::pasteFog(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & und
             }
         }
         CM->Redraw(true);
+    }
+}
+
+void Clipboard::pasteFog(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos)
+{
+    mapClickX += 16;
+    mapClickY += 16;
+
+    if ( mapClickX/16 != prevPaste.x || mapClickY/16 != prevPaste.y )
+    {
+        prevPaste.x = mapClickX/16;
+        prevPaste.y = mapClickY/16;
+        u16 xSize = (u16)map.getTileWidth();
+        u16 ySize = (u16)map.getTileHeight();
+
+        auto & fogTiles = getFogTiles();
+        for ( auto & fogTile : fogTiles )
+        {
+            s32 xc = (fogTile.xc + mapClickX) / 32;
+            s32 yc = (fogTile.yc + mapClickY) / 32;
+
+            // If within map boundaries
+            if ( xc >= 0 && xc < xSize )
+            {
+                if ( yc >= 0 && yc < ySize )
+                {
+                    if ( map.getFog(xc, yc) != fogTile.value )
+                        map.setFogValue(xc, yc, fogTile.value);
+                }
+            }
+        }
+    }
+}
+
+void Clipboard::updateTileMiddle(POINT middle)
+{
+    // Update the tiles' relative position to the cursor
+    for ( auto & tile : copyTiles )
+    {
+        tile.xc -= middle.x;
+        tile.yc -= middle.y;
+    }
+}
+
+void Clipboard::updateDoodadMiddle(POINT middle)
+{
+    // Update doodad position relative to the cursor
+    for ( auto & doodad : this->copyDoodads )
+    {
+        doodad.tileX = doodad.tileX-(middle.x/32);
+        doodad.tileY = doodad.tileY-(middle.y/32);
+    }
+}
+
+void Clipboard::updateUnitMiddle(POINT middle)
+{
+    // Update units position relative to the cursor
+    for ( auto & unit : this->copyUnits )
+    {
+        unit.xc -= middle.x;
+        unit.yc -= middle.y;
+    }
+}
+
+void Clipboard::updateSpriteMiddle(POINT middle)
+{
+    // Update sprites position relative to the cursor
+    for ( auto & sprite : this->copySprites )
+    {
+        sprite.xc -= middle.x;
+        sprite.yc -= middle.y;
+    }
+}
+
+void Clipboard::updateFogMiddle(POINT middle)
+{
+    // Update the fog tiles' relative position to the cursor
+    for ( auto & fogTile : copyFogTiles )
+    {
+        fogTile.xc -= middle.x;
+        fogTile.yc -= middle.y;
     }
 }

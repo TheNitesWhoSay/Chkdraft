@@ -25,7 +25,18 @@ enum_t(Id, u32, {
 
 void Chkdraft::OnLoadTest()
 {
-
+    maps.OpenMap("C:\\Users\\Justin\\Desktop\\StarCraft 1.16.1\\Maps\\Helms Deep East\\Beta 8.5.3.scx");
+    //mainToolbar.checkTerrain.SetCheck(!mainToolbar.checkTerrain.isChecked());
+    //mainToolbar.checkDoodads.SetCheck(!mainToolbar.checkDoodads.isChecked());
+    //mainToolbar.checkSprites.SetCheck(!mainToolbar.checkSprites.isChecked());
+    //mainToolbar.checkUnits.SetCheck(!mainToolbar.checkUnits.isChecked());
+    mainToolbar.checkFog.SetCheck(!mainToolbar.checkFog.isChecked());
+    //maps.toggleCutCopyPasteTerrain();
+    //maps.toggleCutCopyPasteDoodads();
+    //maps.toggleCutCopyPasteSprites();
+    //maps.toggleCutCopyPasteUnits();
+    maps.toggleCutCopyPasteFog();
+    maps.ChangeLayer(Layer::CutCopyPaste);
 }
 
 Chkdraft::Chkdraft() : currDialog(NULL), editFocused(false), mainCommander(std::shared_ptr<Logger>(&logger, [](Logger*){})), logFile(nullptr, nullptr, logger.getLogLevel())
