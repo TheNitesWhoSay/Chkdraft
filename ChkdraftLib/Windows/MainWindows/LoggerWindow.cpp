@@ -178,44 +178,28 @@ void LoggerWindow::SizeSubWindows()
     
 void LoggerWindow::ContextMenu(int x, int y)
 {
-    HMENU hMenu = ::CreatePopupMenu();
-    AppendMenu(hMenu, MF_STRING, ContextMenuItem::HideLogger, icux::toUistring("Hide Logger").c_str());
-    auto displayLineNumbers = icux::toUistring(showLineNumbers ? "Hide Line Numbers" : "Show Line Numbers");
-    AppendMenu(hMenu, MF_STRING, ContextMenuItem::ToggleLineNumbers, displayLineNumbers.c_str());
-    AppendMenu(hMenu, MF_SEPARATOR, NULL, NULL);
-    AppendMenu(hMenu, MF_STRING, ContextMenuItem::OpenLogFile, icux::toUistring("Open Log File").c_str());
-    AppendMenu(hMenu, MF_STRING, ContextMenuItem::OpenLogFileDirectory, icux::toUistring("Open Log File Directory").c_str());
-    AppendMenu(hMenu, MF_SEPARATOR, NULL, NULL);
-    HMENU hLogLevel = CreatePopupMenu();
-    AppendMenu(hMenu, MF_STRING|MF_POPUP, (UINT_PTR)hLogLevel, icux::toUistring("Log Level").c_str());
+    WinLib::ContextMenu menu {};
+    menu.append("Hide Logger", [&](){ ToggleVisible(); })
+        .append(showLineNumbers ? "Hide Line Numbers" : "Show Line Numbers", [&](){ ToggleLineNumbers(); })
+        .appendSeparator()
+        .append("Open Log File", [](){ chkd.OpenLogFile(); })
+        .append("Open Log File Directory", [](){ chkd.OpenLogFileDirectory(); })
+        .appendSeparator();
 
-    LogLevel logLevel = logger.getLogLevel();
-    AppendMenu(hLogLevel, logLevel == LogLevel::Off ? MF_STRING|MF_CHECKED : MF_STRING, ContextMenuItem::LogLevelOff, icux::toUistring("[0] Off").c_str());
-    AppendMenu(hLogLevel, logLevel == LogLevel::Fatal ? MF_STRING|MF_CHECKED : MF_STRING, ContextMenuItem::LogLevelFatal, icux::toUistring("[100] Fatal").c_str());
-    AppendMenu(hLogLevel, logLevel == LogLevel::Error ? MF_STRING|MF_CHECKED : MF_STRING, ContextMenuItem::LogLevelError, icux::toUistring("[200] Error").c_str());
-    AppendMenu(hLogLevel, logLevel == LogLevel::Warn ? MF_STRING|MF_CHECKED : MF_STRING, ContextMenuItem::LogLevelWarn, icux::toUistring("[300] Warn").c_str());
-    AppendMenu(hLogLevel, logLevel == LogLevel::Info ? MF_STRING|MF_CHECKED : MF_STRING, ContextMenuItem::LogLevelInfo, icux::toUistring("[400] Info").c_str());
-    AppendMenu(hLogLevel, logLevel == LogLevel::Debug ? MF_STRING|MF_CHECKED : MF_STRING, ContextMenuItem::LogLevelDebug, icux::toUistring("[500] Debug").c_str());
-    AppendMenu(hLogLevel, logLevel == LogLevel::Trace ? MF_STRING|MF_CHECKED : MF_STRING, ContextMenuItem::LogLevelTrace, icux::toUistring("[600] Trace").c_str());
-    AppendMenu(hLogLevel, logLevel == LogLevel::All ? MF_STRING|MF_CHECKED : MF_STRING, ContextMenuItem::LogLevelAll, icux::toUistring("[-1] All").c_str());
-
-    BOOL result = TrackPopupMenu(hMenu, TPM_RETURNCMD, x, y, 0, getHandle(), NULL);
-    switch ( result )
+    if ( auto & logLevelMenu = menu.appendSubmenu("Log Level") )
     {
-        case ContextMenuItem::HideLogger: ToggleVisible(); break;
-        case ContextMenuItem::ToggleLineNumbers: ToggleLineNumbers(); break;
-        case ContextMenuItem::OpenLogFile: chkd.OpenLogFile(); break;
-        case ContextMenuItem::OpenLogFileDirectory: chkd.OpenLogFileDirectory(); break;
-
-        case ContextMenuItem::LogLevelOff: chkd.SetLogLevel(LogLevel::Off); break;
-        case ContextMenuItem::LogLevelFatal: chkd.SetLogLevel(LogLevel::Fatal); break;
-        case ContextMenuItem::LogLevelError: chkd.SetLogLevel(LogLevel::Error); break;
-        case ContextMenuItem::LogLevelWarn: chkd.SetLogLevel(LogLevel::Warn); break;
-        case ContextMenuItem::LogLevelInfo: chkd.SetLogLevel(LogLevel::Info); break;
-        case ContextMenuItem::LogLevelDebug: chkd.SetLogLevel(LogLevel::Debug); break;
-        case ContextMenuItem::LogLevelTrace: chkd.SetLogLevel(LogLevel::Trace); break;
-        case ContextMenuItem::LogLevelAll: chkd.SetLogLevel(LogLevel::All); break;
+        LogLevel logLevel = logger.getLogLevel();
+        logLevelMenu.append("[0] Off"    , [](){ chkd.SetLogLevel(LogLevel::Off);   }, logLevel == LogLevel::Off  )
+                    .append("[100] Fatal", [](){ chkd.SetLogLevel(LogLevel::Fatal); }, logLevel == LogLevel::Fatal)
+                    .append("[200] Error", [](){ chkd.SetLogLevel(LogLevel::Error); }, logLevel == LogLevel::Error)
+                    .append("[300] Warn" , [](){ chkd.SetLogLevel(LogLevel::Warn);  }, logLevel == LogLevel::Warn )
+                    .append("[400] Info" , [](){ chkd.SetLogLevel(LogLevel::Info);  }, logLevel == LogLevel::Info )
+                    .append("[500] Debug", [](){ chkd.SetLogLevel(LogLevel::Debug); }, logLevel == LogLevel::Debug)
+                    .append("[600] Trace", [](){ chkd.SetLogLevel(LogLevel::Trace); }, logLevel == LogLevel::Trace)
+                    .append("[-1] All"   , [](){ chkd.SetLogLevel(LogLevel::All);   }, logLevel == LogLevel::All  );
     }
+
+    menu.select(getHandle(), x, y);
 }
 
 LRESULT LoggerWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)

@@ -288,6 +288,7 @@
     <ClInclude Include="CheckBoxControl.h" />
     <ClInclude Include="ClassDialog.h" />
     <ClInclude Include="ClassWindow.h" />
+    <ClInclude Include="ContextMenu.h" />
     <ClInclude Include="DataTypes.h" />
     <ClInclude Include="DeviceContext.h" />
     <ClInclude Include="DragListControl.h" />
@@ -320,6 +321,7 @@
     <ClCompile Include="CheckBoxControl.cpp" />
     <ClCompile Include="ClassDialog.cpp" />
     <ClCompile Include="ClassWindow.cpp" />
+    <ClCompile Include="ContextMenu.cpp" />
     <ClCompile Include="DragListControl.cpp" />
     <ClCompile Include="DropdownControl.cpp" />
     <ClCompile Include="EditControl.cpp" />

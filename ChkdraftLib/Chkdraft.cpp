@@ -25,18 +25,7 @@ enum_t(Id, u32, {
 
 void Chkdraft::OnLoadTest()
 {
-    maps.OpenMap("C:\\Users\\Justin\\Desktop\\StarCraft 1.16.1\\Maps\\Helms Deep East\\Beta 8.5.3.scx");
-    //mainToolbar.checkTerrain.SetCheck(!mainToolbar.checkTerrain.isChecked());
-    //mainToolbar.checkDoodads.SetCheck(!mainToolbar.checkDoodads.isChecked());
-    //mainToolbar.checkSprites.SetCheck(!mainToolbar.checkSprites.isChecked());
-    //mainToolbar.checkUnits.SetCheck(!mainToolbar.checkUnits.isChecked());
-    mainToolbar.checkFog.SetCheck(!mainToolbar.checkFog.isChecked());
-    //maps.toggleCutCopyPasteTerrain();
-    //maps.toggleCutCopyPasteDoodads();
-    //maps.toggleCutCopyPasteSprites();
-    //maps.toggleCutCopyPasteUnits();
-    maps.toggleCutCopyPasteFog();
-    maps.ChangeLayer(Layer::CutCopyPaste);
+
 }
 
 Chkdraft::Chkdraft() : currDialog(NULL), editFocused(false), mainCommander(std::shared_ptr<Logger>(&logger, [](Logger*){})), logFile(nullptr, nullptr, logger.getLogLevel())
@@ -279,6 +268,7 @@ void Chkdraft::SetLogLevel(LogLevel newLogLevel)
     logger.setLogLevel(newLogLevel);
     Settings::logLevel = newLogLevel;
     Settings::updateSettingsFile();
+    UpdateLogLevelCheckmarks(newLogLevel);
 }
 
 bool Chkdraft::DlgKeyListener(HWND hWnd, UINT & msg, WPARAM wParam, LPARAM lParam)
@@ -389,7 +379,7 @@ void Chkdraft::KeyListener(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 {
                     case VK_SPACE: if ( CM != nullptr ) CM->LockCursor(); return; break;
                     case VK_DELETE: CM->deleteSelection(); return; break;
-                    case VK_ESCAPE: maps.endPaste(); return; break;
+                    case VK_ESCAPE: maps.endPaste(); CM->clearSelection(); return; break;
                     case VK_RETURN: CM->ReturnKeyPress(); return; break;
                 }
 

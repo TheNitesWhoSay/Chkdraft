@@ -1845,7 +1845,9 @@ bool GuiMap::CreateThis(HWND hClient, const std::string & title)
 
 void GuiMap::ReturnKeyPress()
 {
-    if ( currLayer == Layer::Units )
+    if ( currLayer == Layer::Terrain && selections.hasTiles() )
+        openTileProperties(selections.getFirstTile().xc*32, selections.getFirstTile().yc*32);
+    else if ( currLayer == Layer::Units )
     {
         if ( selections.hasUnits() )
         {
@@ -1883,6 +1885,7 @@ LRESULT GuiMap::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     switch ( msg )
     {
+        case WM_CONTEXTMENU: ContextMenu(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)); break;
         case WM_PAINT: PaintMap(CM, chkd.maps.clipboard.isPasting()); break;
         case WM_MDIACTIVATE: ActivateMap((HWND)lParam); return ClassWindow::WndProc(hWnd, msg, wParam, lParam); break;
         case WM_ERASEBKGND: return 1; break; // Prevent background from showing
@@ -1892,7 +1895,7 @@ LRESULT GuiMap::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
         case WM_SIZE: return DoSize(hWnd, wParam, lParam); break;
         case WM_CLOSE: return ConfirmWindowClose(hWnd); break;
         case WM_DESTROY: return DestroyWindow(hWnd); break;
-        case WM_RBUTTONUP: RButtonUp(); break;
+        case WM_RBUTTONUP: RButtonUp(hWnd, wParam, lParam); break;
         case WM_LBUTTONDBLCLK: LButtonDoubleClick(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), wParam); break;
         case WM_LBUTTONDOWN: LButtonDown(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), wParam); break;
         case WM_MBUTTONDOWN: MButtonDown(hWnd, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), wParam); break;
@@ -1998,11 +2001,55 @@ LRESULT GuiMap::DestroyWindow(HWND hWnd)
     return destroyResult;
 }
 
-void GuiMap::RButtonUp()
+void GuiMap::ContextMenu(int x, int y)
 {
-    chkd.maps.endPaste();
+    WinLib::ContextMenu menu {};
+    menu.append("Undo\tCtrl+Z", [&](){ undo(); })
+        .append("Redo\tCtrl+Y", [&](){ redo(); })
+        .appendSeparator()
+        .append("Cut\tCtrl+X", [&](){ chkd.maps.cut(); })
+        .append("Copy\tCtrl+C", [&](){ chkd.maps.copy(); })
+        .append("Paste\tCtrl+V", [&](){ chkd.maps.startPaste(false); })
+        .appendSeparator()
+        .append("Select All\tCtrl+A", [&](){ selectAll(); })
+        .append("Delete\tDel", [&](){ deleteSelection(); })
+        .append("Clear Selections\tEsc", [&](){ clearSelection(); })
+        .append("Convert to terrain", [&](){ logger.info("TODO: Convert to terrain"); }, false, true)
+        .append("Stack Selected", [&](){ logger.info("TODO: Stack Selected"); }, false, true)
+        .appendSeparator()
+        .append("Create Location", [&](){ logger.info("TODO: Create Location"); }, false, true)
+        .append("Create Inverted Location", [&](){ logger.info("TODO: Create Inverted Location"); }, false, true)
+        .appendSeparator();
+
+    if ( auto & layerMenu = menu.appendSubmenu("Layer") )
+    {
+        layerMenu.append("Terrain\tCtrl+T", [&](){ chkd.maps.ChangeLayer(Layer::Terrain); }, currLayer == Layer::Terrain)
+            .append("Doodads\tCtrl+D", [&](){ chkd.maps.ChangeLayer(Layer::Doodads); }, currLayer == Layer::Doodads)
+            .append("Fog Of War\tCtrl+F", [&](){ chkd.maps.ChangeLayer(Layer::FogEdit); }, currLayer == Layer::FogEdit)
+            .append("Locations\tCtrl+L", [&](){ chkd.maps.ChangeLayer(Layer::Locations); }, currLayer == Layer::Locations)
+            .append("Units\tCtrl+U", [&](){ chkd.maps.ChangeLayer(Layer::Units); }, currLayer == Layer::Units)
+            .append("Sprites\tCtrl+R", [&](){ chkd.maps.ChangeLayer(Layer::Sprites); }, currLayer == Layer::Sprites)
+            .append("Preview Fog of War", [&](){ chkd.maps.ChangeLayer(Layer::FogView); }, currLayer == Layer::FogView)
+            .append("Cut Copy Paste\\Brushes", [&](){ chkd.maps.ChangeLayer(Layer::CutCopyPaste); }, currLayer == Layer::CutCopyPaste);
+    }
+
+    menu.appendSeparator()
+        .append("Properties\tEnter", [&](){ ReturnKeyPress(); });
+
+    menu.select(getHandle(), x, y);
+}
+
+void GuiMap::RButtonUp(HWND hWnd, WPARAM wParam, LPARAM lParam)
+{
+    bool wasPasting = clipboard.isPasting();
+    if ( wasPasting )
+        chkd.maps.endPaste();
+
     ClipCursor(NULL);
     Redraw(true);
+    
+    if ( !wasPasting )
+        ClassWindow::WndProc(hWnd, WM_RBUTTONUP, wParam, lParam); // May continue on to context menu
 }
 
 void GuiMap::LButtonDoubleClick(int x, int y, WPARAM wParam)

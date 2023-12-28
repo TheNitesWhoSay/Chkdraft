@@ -169,7 +169,8 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     void ActivateMap(HWND hWnd);
                     LRESULT DestroyWindow(HWND hWnd);
 
-                    void RButtonUp();
+                    void ContextMenu(int x, int y);
+                    void RButtonUp(HWND hWnd, WPARAM wParam, LPARAM lParam);
                     void LButtonDoubleClick(int x, int y, WPARAM wParam);
                     void LButtonDown(int x, int y, WPARAM wParam);
                     void MouseMove(HWND hWnd, int x, int y, WPARAM wParam);
