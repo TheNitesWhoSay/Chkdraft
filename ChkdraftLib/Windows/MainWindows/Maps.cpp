@@ -632,6 +632,8 @@ void Maps::properties()
             ShowWindow(chkd.tilePropWindow.getHandle(), SW_SHOW);
         }
     }
+    else
+        CM->ReturnKeyPress();
 }
 
 void Maps::stickCursor()

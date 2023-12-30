@@ -98,6 +98,8 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     bool SetGridSize(s16 xSize, s16 ySize);
                     bool SetGridColor(u8 red, u8 green, u8 blue);
 
+                    void ToggleDisplayBuildability();
+                    bool DisplayingBuildability();
                     void ToggleDisplayElevations();
                     bool DisplayingElevations();
 

@@ -131,7 +131,8 @@ inline void BoundedAdjustPx(Sc::SystemColor & pixel, s16 redOffset, s16 greenOff
 Sc::SystemColor black = Sc::SystemColor();
 
 Graphics::Graphics(GuiMap & map, Selections & selections) : map(map), selections(selections),
-    displayingIsomTypes(false), displayingTileNums(false), tileNumsFromMTXM(false), displayingElevations(false), clipLocationNames(true), mapWidth(0), mapHeight(0), screenWidth(0), screenHeight(0), screenLeft(0), screenTop(0)
+    displayingIsomTypes(false), displayingTileNums(false), tileNumsFromMTXM(false), displayingBuildability(false), displayingElevations(false),
+    clipLocationNames(true), mapWidth(0), mapHeight(0), screenWidth(0), screenHeight(0), screenLeft(0), screenTop(0)
 {
     if ( !map.empty() )
         updatePalette();
@@ -757,9 +758,23 @@ bool Graphics::ClippingLocationNames()
     return clipLocationNames;
 }
 
+void Graphics::ToggleDisplayBuildability()
+{
+    displayingBuildability = !displayingBuildability;
+    if ( displayingBuildability && displayingElevations )
+        displayingElevations = false;
+}
+
+bool Graphics::DisplayingBuildability()
+{
+    return displayingBuildability;
+}
+
 void Graphics::ToggleDisplayElevations()
 {
     displayingElevations = !displayingElevations;
+    if ( displayingBuildability && displayingElevations )
+        displayingBuildability = false;
 }
 
 bool Graphics::DisplayingElevations()
@@ -839,7 +854,7 @@ bool Graphics::SetGridColor(u32 gridNum, u8 red, u8 green, u8 blue)
 void Graphics::DrawTools(const WinLib::DeviceContext & dc, u16 width, u16 height, u32 screenLeft, u32 screenTop,
     Selections & selections, bool pasting, Clipboard & clipboard, GuiMap & map)
 {
-    ::DrawTools(dc, palette, width, height, screenLeft, screenTop, selections, pasting, clipboard, map);
+    ::DrawTools(*this, dc, palette, width, height, screenLeft, screenTop, selections, pasting, clipboard, map);
 }
 
 BITMAPINFO GetBMI(s32 width, s32 height)
@@ -1276,9 +1291,11 @@ void DrawTile(const WinLib::DeviceContext & dc, ChkdPalette & palette, const Sc:
     }
 }
 
-void DrawTools(const WinLib::DeviceContext & dc, ChkdPalette & palette, u16 width, u16 height, u32 screenLeft, u32 screenTop,
+void DrawTools(Graphics & graphics, const WinLib::DeviceContext & dc, ChkdPalette & palette, u16 width, u16 height, u32 screenLeft, u32 screenTop,
     Selections & selections, bool pasting, Clipboard & clipboard, GuiMap & map)
 {
+    if ( map.getLayer() == Layer::Terrain && graphics.DisplayingBuildability() )
+        DrawTileBuildability(dc, palette, width, height, screenLeft, screenTop, map);
     if ( selections.hasTiles() && (map.getLayer() == Layer::Terrain || map.getLayer() == Layer::CutCopyPaste) ) // Draw selected tiles
         DrawTileSel(dc, palette, width, height, screenLeft, screenTop, selections, map);
     else if ( map.getLayer() == Layer::Locations ) // Draw Location Creation/Movement Graphics
@@ -1292,6 +1309,42 @@ void DrawTools(const WinLib::DeviceContext & dc, ChkdPalette & palette, u16 widt
 
     if ( pasting || map.getLayer() == Layer::FogEdit ) // Draw paste graphics
         DrawPasteGraphics(dc, palette, width, height, screenLeft, screenTop, selections, clipboard, map, map.getLayer(), map.getSubLayer());
+}
+
+void DrawTileBuildability(const WinLib::DeviceContext & dc, ChkdPalette & palette, u16 width, u16 height, u32 screenLeft, u32 screenTop, GuiMap & map)
+{
+    WinLib::DeviceContext unbuildableTile {dc, 32, 32};
+    unbuildableTile.fillRect(RECT{0, 0, 32, 32}, RGB(255, 0, 0));
+    WinLib::DeviceContext buildableTile {dc, 32, 32};
+    buildableTile.fillRect(RECT{0, 0, 32, 32}, RGB(0, 255, 0));
+
+    BLENDFUNCTION blendFunction {};
+    blendFunction.BlendOp = AC_SRC_OVER;
+    blendFunction.SourceConstantAlpha = 32;
+
+    u16 leftTile = screenLeft/32;
+    u16 topTile = screenTop/32;
+    u16 rightTile = (screenLeft+width+31)/32;
+    u16 bottomTile = (screenTop+height+31)/32;
+    
+    Sc::Terrain::Tileset tileset = map.getTileset();
+    const Sc::Terrain::Tiles & tiles = chkd.scData.terrain.get(tileset);
+
+    for ( u16 y=topTile; y<bottomTile; ++y )
+    {
+        for ( u16 x=leftTile; x<rightTile; ++x )
+        {
+            auto tile = map.getTile(x, y);
+            auto & tileGroup = tiles.tileGroups[Sc::Terrain::Tiles::getGroupIndex(tile)];
+            auto tileFlags = tileGroup.flags;
+            bool unbuildable = (tileFlags & Sc::Terrain::TileGroup::Flags::Unbuildable) == Sc::Terrain::TileGroup::Flags::Unbuildable;
+            
+            int xStart = int(x)*32-screenLeft;
+            int yStart = int(y)*32-screenTop;
+            AlphaBlend(dc.getDcHandle(), xStart, yStart, 32, 32,
+                unbuildable ? unbuildableTile.getDcHandle() : buildableTile.getDcHandle(), 0, 0, 32, 32, blendFunction);
+        }
+    }
 }
 
 void DrawTileSel(const WinLib::DeviceContext & dc, ChkdPalette & palette, u16 width, u16 height, u32 screenLeft, u32 screenTop, Selections & selections, GuiMap & map)

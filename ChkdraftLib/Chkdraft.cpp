@@ -569,6 +569,7 @@ LRESULT Chkdraft::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     case ID_ZOOM_25:  CM->setZoom(defaultZooms[8]); break;
     case ID_ZOOM_10:  CM->setZoom(defaultZooms[9]); break;
         // Terrain
+    case ID_TERRAIN_DISPLAYTILEBUILDABILITY: CM->ToggleDisplayBuildability(); break;
     case ID_TERRAIN_DISPLAYTILEELEVATIONS: CM->ToggleDisplayElevations(); break;
     case ID_TERRAIN_DISPLAYTILEVALUES: CM->ToggleTileNumSource(false); break;
     case ID_TERRAIN_DISPLAYTILEVALUESMTXM: CM->ToggleTileNumSource(true); break;

@@ -1393,6 +1393,20 @@ bool GuiMap::SetGridColor(u8 red, u8 green, u8 blue)
     return success;
 }
 
+void GuiMap::ToggleDisplayBuildability()
+{
+    graphics.ToggleDisplayBuildability();
+    UpdateTerrainViewMenuItems();
+    Redraw(false);
+    if ( chkd.terrainPalWindow.getHandle() != NULL )
+        RedrawWindow(chkd.terrainPalWindow.getHandle(), NULL, NULL, RDW_INVALIDATE);
+}
+
+bool GuiMap::DisplayingBuildability()
+{
+    return graphics.DisplayingBuildability();
+}
+
 void GuiMap::ToggleDisplayElevations()
 {
     graphics.ToggleDisplayElevations();
@@ -1711,6 +1725,7 @@ void GuiMap::UpdateGridColorMenu()
 
 void GuiMap::UpdateTerrainViewMenuItems()
 {
+    chkd.mainMenu.SetCheck(ID_TERRAIN_DISPLAYTILEBUILDABILITY, graphics.DisplayingBuildability());
     chkd.mainMenu.SetCheck(ID_TERRAIN_DISPLAYTILEELEVATIONS, graphics.DisplayingElevations());
     
     if ( graphics.DisplayingIsomNums() )
