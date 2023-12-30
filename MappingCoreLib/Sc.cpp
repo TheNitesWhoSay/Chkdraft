@@ -3794,6 +3794,18 @@ void Sc::Isom::TerrainTypeShapes::populateLinkIdsToSolidBrushes(Span<TileGroup> 
     }
 }
 
+bool Sc::Data::loadSpriteNames(const Sc::Sprite::SpriteGroup & spriteGroup)
+{
+    auto & spriteGroups = sprites.spriteGroups;
+    for ( const auto & subGroup : spriteGroup.subGroups )
+        loadSpriteNames(subGroup);
+    
+    for ( auto memberSprite : spriteGroup.memberSprites )
+        sprites.spriteNames[memberSprite.spriteIndex] = memberSprite.spriteName;
+
+    return true;
+}
+
 bool Sc::Data::loadSpriteGroups(Sc::TblFilePtr imagesTbl)
 {
     constexpr auto totalSprites = Sc::Sprite::TotalSprites;
@@ -4025,6 +4037,10 @@ bool Sc::Data::loadSpriteGroups(Sc::TblFilePtr imagesTbl)
     misc.memberSprites.push_back(Sc::Sprite::TreeSprite{313, "Vespene Puff 3"});
     misc.memberSprites.push_back(Sc::Sprite::TreeSprite{314, "Vespene Puff 4"});
     misc.memberSprites.push_back(Sc::Sprite::TreeSprite{315, "Vespene Puff 5"});
+
+    sprites.spriteNames.assign(517, "");
+    for ( auto & spriteGroup : sprites.spriteGroups )
+        loadSpriteNames(spriteGroup);
 
     return true;
 }

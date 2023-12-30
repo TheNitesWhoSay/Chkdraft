@@ -326,6 +326,11 @@ bool Chkdraft::DlgKeyListener(HWND hWnd, UINT & msg, WPARAM wParam, LPARAM lPara
                             unitWindow.DestroyThis();
                             return true;
                         }
+                        else if ( GetParent(hWnd) == spriteWindow.getHandle() )
+                        {
+                            spriteWindow.DestroyThis();
+                            return true;
+                        }
                         else if ( GetParent(hWnd) == locationWindow.getHandle() )
                         {
                             locationWindow.DestroyThis();
@@ -343,10 +348,16 @@ bool Chkdraft::DlgKeyListener(HWND hWnd, UINT & msg, WPARAM wParam, LPARAM lPara
                             SendMessage(unitWindow.getHandle(), WM_COMMAND, MAKEWPARAM(IDC_BUTTON_DELETE, 0), 0);
                             return true;
                         }
+                        else if ( GetParent(hWnd) == spriteWindow.getHandle() )
+                        {
+                            SendMessage(spriteWindow.getHandle(), WM_COMMAND, MAKEWPARAM(IDC_BUTTON_DELETE, 0), 0);
+                            return true;
+                        }
                         break;
                     case 'Z': case 'Y': case 'X': case 'C': case 'V':
                         if ( GetKeyState(VK_CONTROL) & 0x8000 && (
                             GetParent(hWnd) == unitWindow.getHandle() ||
+                            GetParent(hWnd) == spriteWindow.getHandle() ||
                             GetParent(hWnd) == locationWindow.getHandle() ||
                             GetParent(hWnd) == terrainPalWindow.getHandle() ||
                             GetParent(hWnd) == tilePropWindow.getHandle() ) )
@@ -742,6 +753,7 @@ bool Chkdraft::CreateSubWindows()
 void Chkdraft::MinimizeDialogs()
 {
     ShowWindow(unitWindow.getHandle(), SW_HIDE);
+    ShowWindow(spriteWindow.getHandle(), SW_HIDE);
     ShowWindow(locationWindow.getHandle(), SW_HIDE);
     ShowWindow(terrainPalWindow.getHandle(), SW_HIDE);
     ShowWindow(mapSettingsWindow.getHandle(), SW_HIDE);
@@ -752,6 +764,7 @@ void Chkdraft::MinimizeDialogs()
 void Chkdraft::RestoreDialogs()
 {
     ShowWindow(unitWindow.getHandle(), SW_SHOW);
+    ShowWindow(spriteWindow.getHandle(), SW_SHOW);
     ShowWindow(locationWindow.getHandle(), SW_SHOW);
     ShowWindow(terrainPalWindow.getHandle(), SW_SHOW);
     ShowWindow(mapSettingsWindow.getHandle(), SW_SHOW);

@@ -745,6 +745,7 @@ namespace Sc {
         };
 
         std::vector<SpriteGroup> spriteGroups;
+        std::vector<std::string> spriteNames;
         Sc::TblFilePtr imagesTbl;
     };
 
@@ -3139,6 +3140,7 @@ namespace Sc {
         e.g. StarCraft asset files like "arr\\units.dat" or "tileset\badlands.cv5"
     */
     class Data {
+        bool loadSpriteNames(const Sc::Sprite::SpriteGroup & spriteGroup);
         bool loadSpriteGroups(Sc::TblFilePtr imagesTbl);
 
     public:

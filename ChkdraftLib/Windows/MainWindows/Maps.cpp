@@ -766,8 +766,9 @@ void Maps::DisableMapping()
     if ( mappingEnabled )
     {
         mappingEnabled = false;
-
+        
         chkd.unitWindow.DestroyThis();
+        chkd.spriteWindow.DestroyThis();
         chkd.locationWindow.DestroyThis();
         chkd.terrainPalWindow.DestroyThis();
         chkd.tilePropWindow.DestroyThis();

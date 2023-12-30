@@ -9,7 +9,7 @@ enum_t(LocSelFlags, u8, { North = BIT_0, South = BIT_1, East = BIT_2, West = BIT
     Middle = North | South | East | West, None = 0 });
 
 
-enum_t(UnitSortFlags, u16, { Swapped = (u16)BIT_14, Moved = (u16)BIT_15, Unswap = x16BIT_14, Unmove = x16BIT_15 });
+enum_t(SelSortFlags, u16, { Swapped = (u16)BIT_14, Moved = (u16)BIT_15, Unswap = x16BIT_14, Unmove = x16BIT_15 });
 
 
 enum_t(TileNeighbor, u8, { Left = BIT_0, Top = BIT_1, Right = BIT_2, Bottom = BIT_3,
@@ -65,11 +65,11 @@ class Selections
         void addUnit(u16 index);
         void removeUnit(u16 index);
         void removeUnits();
-        void ensureFirst(u16 index); // Moves the unit @ index
-        void sendSwap(u16 oldIndex, u16 newIndex);
-        void sendMove(u16 oldIndex, u16 newIndex);
-        void finishSwap();
-        void finishMove();
+        void ensureUnitFirst(u16 index); // Moves the unit @ index
+        void sendUnitSwap(u16 oldIndex, u16 newIndex);
+        void sendUnitMove(u16 oldIndex, u16 newIndex);
+        void finishUnitSwap();
+        void finishUnitMove();
 
         void addDoodad(size_t index);
         void removeDoodad(size_t index);
@@ -78,6 +78,9 @@ class Selections
         void addSprite(size_t index);
         void removeSprite(size_t index);
         void removeSprites();
+        void ensureSpriteFirst(u16 index); // Moves the sprite @ index
+        void sendSpriteMove(u16 oldIndex, u16 newIndex);
+        void finishSpriteMove();
         
         void addFogTile(u16 xc, u16 yc);
         void addFogTile(u16 xc, u16 yc, TileNeighbor neighbors);
@@ -93,6 +96,7 @@ class Selections
         bool hasSprites() { return selSprites.size() > 0; }
         bool hasFogTiles() { return selFogTiles.size() > 0; }
         u16 numUnits();
+        u16 numSprites();
         u16 numUnitsUnder(u16 index);
 
         std::vector<TileNode> & getTiles();
@@ -109,8 +113,9 @@ class Selections
         u16 getLowestUnitIndex();
         size_t getHighestSpriteIndex();
         size_t getLowestSpriteIndex();
-
+        
         void sortUnits(bool ascending);
+        void sortSprites(bool ascending);
 
         bool selectionAreaIsNull() { return startDrag.x == -1 && startDrag.y == -1; }
 

@@ -652,9 +652,11 @@ void GuiMap::refreshScenario()
     chkd.mainPlot.leftBar.mainTree.isomTree.UpdateIsomTree();
     chkd.mainPlot.leftBar.mainTree.doodadTree.UpdateDoodadTree();
     chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
-
+    
     if ( chkd.unitWindow.getHandle() != nullptr )
         chkd.unitWindow.RepopulateList();
+    if ( chkd.spriteWindow.getHandle() != nullptr )
+        chkd.spriteWindow.RepopulateList();
     if ( chkd.locationWindow.getHandle() != NULL )
     {
         if ( CM->numLocations() == 0 )
@@ -767,11 +769,17 @@ void GuiMap::selectAll()
         }
     };
     auto selectAllSprites = [&]() {
+        chkd.spriteWindow.SetChangeHighlightOnly(true);
         for ( size_t i=0; i<Scenario::numSprites(); ++i )
         {
             if ( !selections.spriteIsSelected(i) )
+            {
                 selections.addSprite(i);
+                if ( chkd.spriteWindow.getHandle() != nullptr )
+                    chkd.spriteWindow.FocusAndSelectIndex(u16(i));
+            }
         }
+        chkd.spriteWindow.SetChangeHighlightOnly(false);
     };
     auto selectAllFog = [&]() {
         selections.removeFog();
@@ -948,18 +956,23 @@ void GuiMap::deleteSelection()
         }
     };
     auto deleteSpriteSelection = [&]() {
-        auto deletes = ReversibleActions::Make();
-        while ( selections.hasSprites() )
+        if ( chkd.spriteWindow.getHandle() != nullptr )
+            SendMessage(chkd.spriteWindow.getHandle(), WM_COMMAND, MAKEWPARAM(IDC_BUTTON_DELETE, NULL), 0);
+        else
         {
-            // Get the highest index in the selection
-            auto index = selections.getHighestSpriteIndex();
-            selections.removeSprite(index);
+            auto deletes = ReversibleActions::Make();
+            while ( selections.hasSprites() )
+            {
+                // Get the highest index in the selection
+                auto index = selections.getHighestSpriteIndex();
+                selections.removeSprite(index);
 
-            const Chk::Sprite & delSprite = Scenario::getSprite(index);
-            deletes->Insert(SpriteCreateDel::Make(index, delSprite));
-            Scenario::deleteSprite(index);
+                const Chk::Sprite & delSprite = Scenario::getSprite(index);
+                deletes->Insert(SpriteCreateDel::Make(index, delSprite));
+                Scenario::deleteSprite(index);
+            }
+            AddUndo(deletes);
         }
-        AddUndo(deletes);
     };
     auto deleteFogTileSelection = [&]() {
         auto deletes = ReversibleActions::Make();
@@ -1060,7 +1073,11 @@ void GuiMap::PlayerChanged(u8 newPlayer)
             Chk::Sprite & sprite = Scenario::getSprite(spriteIndex);
             spriteChanges->Insert(SpriteChange::Make(spriteIndex, sprite));
             sprite.owner = newPlayer;
+
+            if ( chkd.spriteWindow.getHandle() != nullptr )
+                chkd.spriteWindow.ChangeSpritesDisplayedOwner(int(spriteIndex), newPlayer);
         }
+        chkd.spriteWindow.ChangeDropdownPlayer(newPlayer);
         undos.AddUndo(spriteChanges);
         Redraw(true);
     }
@@ -1118,6 +1135,8 @@ void GuiMap::undo()
         case Layer::Sprites:
             selections.removeSprites();
             undos.doUndo(UndoTypes::SpriteChange, this);
+            if ( chkd.spriteWindow.getHandle() != nullptr )
+                chkd.spriteWindow.RepopulateList();
             break;
         case Layer::FogEdit:
             selections.removeFog();
@@ -1161,6 +1180,8 @@ void GuiMap::redo()
         case Layer::Sprites:
             selections.removeSprites();
             undos.doRedo(UndoTypes::SpriteChange, this);
+            if ( chkd.spriteWindow.getHandle() != nullptr )
+                chkd.spriteWindow.RepopulateList();
             break;
         case Layer::FogEdit:
             selections.removeFog();
@@ -1856,6 +1877,15 @@ void GuiMap::ReturnKeyPress()
             ShowWindow(chkd.unitWindow.getHandle(), SW_SHOW);
         }
     }
+    else if ( currLayer == Layer::Sprites )
+    {
+        if ( selections.hasSprites() )
+        {
+            if ( chkd.spriteWindow.getHandle() == nullptr )
+                chkd.spriteWindow.CreateThis(chkd.getHandle());
+            ShowWindow(chkd.spriteWindow.getHandle(), SW_SHOW);
+        }
+    }
     else if ( currLayer == Layer::Locations )
     {
         if ( selections.getSelectedLocation() != NO_LOCATION )
@@ -1968,6 +1998,7 @@ void GuiMap::ActivateMap(HWND hWnd)
 {
     chkd.tilePropWindow.DestroyThis();
     chkd.unitWindow.DestroyThis();
+    chkd.spriteWindow.DestroyThis();
     chkd.locationWindow.DestroyThis();
     chkd.mapSettingsWindow.DestroyThis();
     chkd.terrainPalWindow.DestroyThis();
@@ -2812,7 +2843,19 @@ void GuiMap::FinalizeSpriteSelection(HWND hWnd, int mapX, int mapY, WPARAM wPara
     selections.setEndDrag(mapX, mapY);
     selections.sortDragPoints();
     if ( wParam != MK_CONTROL )
+    {
+        if ( chkd.spriteWindow.getHandle() != nullptr )
+        {
+            chkd.spriteWindow.SetChangeHighlightOnly(true);
+            auto & selSprites = selections.getSprites();
+            for ( auto spriteIndex : selSprites )
+                chkd.spriteWindow.DeselectIndex(u16(spriteIndex));
+            
+            chkd.spriteWindow.SetChangeHighlightOnly(false);
+        }
         selections.removeSprites();
+        chkd.spriteWindow.UpdateEnabledState();
+    }
 
     size_t numSprites = Scenario::numSprites();
     for ( size_t i=0; i<numSprites; ++i )
@@ -2829,6 +2872,18 @@ void GuiMap::FinalizeSpriteSelection(HWND hWnd, int mapX, int mapY, WPARAM wPara
                 selections.removeSprite(i);
             else
                 selections.addSprite(i);
+
+            if ( chkd.spriteWindow.getHandle() != nullptr )
+            {
+                chkd.spriteWindow.SetChangeHighlightOnly(true);
+                if ( wasSelected )
+                    chkd.spriteWindow.DeselectIndex((u16)i);
+                else
+                    chkd.spriteWindow.FocusAndSelectIndex((u16)i);
+                
+                chkd.spriteWindow.SetChangeHighlightOnly(false);
+            }
+            chkd.spriteWindow.UpdateEnabledState();
         }
     }
 }

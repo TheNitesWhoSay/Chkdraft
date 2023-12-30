@@ -862,6 +862,8 @@ void Clipboard::pasteSprites(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos &
             size_t numSprites = map.numSprites();
             map.addSprite(pasteSprite.sprite);
             spriteCreates->Insert(SpriteCreateDel::Make((u16)numSprites));
+            if ( chkd.spriteWindow.getHandle() != nullptr )
+                chkd.spriteWindow.AddSpriteItem((u16)numSprites, pasteSprite.sprite);
         }
     }
     CM->AddUndo(spriteCreates);

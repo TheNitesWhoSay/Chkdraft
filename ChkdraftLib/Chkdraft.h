@@ -27,6 +27,7 @@ class Chkdraft : public WinLib::ClassWindow
                     MainToolbar mainToolbar; // Main window's toolbar
 
 /*   Modeless   */  UnitPropertiesWindow unitWindow; // Modeless unit properties
+                    SpritePropertiesWindow spriteWindow; // Modeless sprite properties
                     LocationWindow locationWindow; // Modeless location properties
                     TerrainPaletteWindow terrainPalWindow; // Modeless terrain palette
                     TilePropWindow tilePropWindow; // Modeless tile properties

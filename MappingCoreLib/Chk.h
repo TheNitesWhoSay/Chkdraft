@@ -328,19 +328,25 @@ namespace Chk {
         enum_t(SpriteFlags, u16, {
             
             BitZero = BIT_0, // Set in staredit, not read by SC
-            // Bits 1-3 Unused in staredit/SC
+            BitOne = BIT_1, // Bit 1 Unused in staredit/SC
+            BitTwo = BIT_2, // Bit 2 Unused in staredit/SC
+            BitThree = BIT_3, // Bit 3 Unused in staredit/SC
             BitFour = BIT_4, // Scmdraft notes "(Provides Cover?)", the flag is set in some doodads and is not read by SC
-            // Bits 5 & 6 Unused in staredit/SC
+            BitFive = BIT_5, // Bit 5 Unused in staredit/SC
+            BitSix = BIT_6, // Bit 6 Unused in staredit/SC
             BitSeven = BIT_7, // Scmdraft notes "(Always set!)"; set for doodads which include an overlay (& some which do not) and is not read by SC
             BitEight = BIT_8, // Set in staredit, not read by SC
             BitNine = BIT_9, // Scmdraft notes "(Medium Ground Lvl?), it's set for some doodads, and is not read by SC
             BitTen = BIT_10, // Scmdraft notes "(High Ground Lvl?), it's set for some doodads, and is not read by SC
-            // Bit_11 Unused in staredit/SC
+            BitEleven = BIT_11, // Bit 11 Unused in staredit/SC
             DrawAsSprite = BIT_12, // Indicates whether this sprite should be treated as a unit; in SC: receeding creep
             IsUnit = BIT_13, // Set in staredit, but is not read by SC - rather SpriteOverlay or !SpriteOverlay is checked
             OverlayFlipped_Deprecated = BIT_14, // In SC: temporary creep
             SpriteUnitDiabled = BIT_15 // If the SpriteOverlay flag is NOT set (this is a sprite-unit), then the unit is disabled
         });
+        enum class Field {
+            Type, Xc, Yc, Owner, Unused, Flags
+        };
 
         inline static u16 toPureSpriteFlags(u16 flags)
         {

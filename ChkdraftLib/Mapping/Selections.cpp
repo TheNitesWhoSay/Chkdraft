@@ -274,7 +274,7 @@ void Selections::removeUnits()
     selUnits.clear();
 }
 
-void Selections::ensureFirst(u16 index)
+void Selections::ensureUnitFirst(u16 index)
 {
     if ( selUnits.size() > 0 && selUnits[0] != index )
     {
@@ -287,23 +287,23 @@ void Selections::ensureFirst(u16 index)
     }
 }
 
-void Selections::sendSwap(u16 oldIndex, u16 newIndex)
+void Selections::sendUnitSwap(u16 oldIndex, u16 newIndex)
 {
     for ( u16 & unitIndex : selUnits )
     {
         if ( unitIndex == newIndex )
-            unitIndex = oldIndex | UnitSortFlags::Swapped;
+            unitIndex = oldIndex | SelSortFlags::Swapped;
         else if ( unitIndex == oldIndex )
             unitIndex = newIndex;
     }
 }
 
-void Selections::sendMove(u16 oldIndex, u16 newIndex) // The item is being moved back to its oldIndex from its newIndex
+void Selections::sendUnitMove(u16 oldIndex, u16 newIndex) // The item is being moved back to its oldIndex from its newIndex
 {
     for ( u16 & unitIndex : selUnits )
     {
         if ( unitIndex == newIndex )
-            unitIndex = oldIndex | UnitSortFlags::Moved;
+            unitIndex = oldIndex | SelSortFlags::Moved;
         else if ( newIndex > unitIndex && oldIndex <= unitIndex ) // The moved unit was somewhere ahead of track and is now behind track
             unitIndex++; // Selected unit index needs to be moved forward
         else if ( newIndex < unitIndex && oldIndex >= unitIndex ) // The moved unit was somewhere behind track and is now ahead of track
@@ -311,21 +311,21 @@ void Selections::sendMove(u16 oldIndex, u16 newIndex) // The item is being moved
     }
 }
 
-void Selections::finishSwap()
+void Selections::finishUnitSwap()
 {
     for ( u16 & unitIndex : selUnits )
     {
-        if ( unitIndex & UnitSortFlags::Swapped )
-            unitIndex &= UnitSortFlags::Unswap;
+        if ( unitIndex & SelSortFlags::Swapped )
+            unitIndex &= SelSortFlags::Unswap;
     }
 }
 
-void Selections::finishMove()
+void Selections::finishUnitMove()
 {
     for ( u16 & unitIndex : selUnits )
     {
-        if ( unitIndex & UnitSortFlags::Moved )
-            unitIndex &= UnitSortFlags::Unmove;
+        if ( unitIndex & SelSortFlags::Moved )
+            unitIndex &= SelSortFlags::Unmove;
     }
 }
 
@@ -363,6 +363,41 @@ void Selections::removeSprite(size_t index)
 void Selections::removeSprites()
 {
     selSprites.clear();
+}
+
+void Selections::ensureSpriteFirst(u16 index)
+{
+    if ( selSprites.size() > 0 && selSprites[0] != size_t(index) )
+    {
+        auto toErase = std::find(selSprites.begin(), selSprites.end(), size_t(index));
+        if ( toErase != selSprites.end() )
+        {
+            selSprites.erase(toErase);
+            selSprites.insert(selSprites.begin(), size_t(index));
+        }
+    }
+}
+
+void Selections::sendSpriteMove(u16 oldIndex, u16 newIndex)
+{
+    for ( size_t & spriteIndex : selSprites )
+    {
+        if ( spriteIndex == size_t(newIndex) )
+            spriteIndex = oldIndex | SelSortFlags::Moved;
+        else if ( size_t(newIndex) > spriteIndex && size_t(oldIndex) <= spriteIndex ) // The moved sprite was somewhere ahead of track and is now behind track
+            spriteIndex++; // Selected sprite index needs to be moved forward
+        else if ( size_t(newIndex) < spriteIndex && size_t(oldIndex) >= spriteIndex ) // The moved sprite was somewhere behind track and is now ahead of track
+            spriteIndex--; // Selected sprite index needs to be moved backward
+    }
+}
+
+void Selections::finishSpriteMove()
+{
+    for ( size_t & spriteIndex : selSprites )
+    {
+        if ( spriteIndex & SelSortFlags::Moved )
+            spriteIndex &= SelSortFlags::Unmove;
+    }
 }
 
 void Selections::addFogTile(u16 xc, u16 yc)
@@ -485,6 +520,14 @@ u16 Selections::numUnits()
 {
     if ( selUnits.size() < u16_max )
         return (u16)selUnits.size();
+    else
+        return u16_max;
+}
+
+u16 Selections::numSprites()
+{
+    if ( selSprites.size() < u16_max )
+        return (u16)selSprites.size();
     else
         return u16_max;
 }
@@ -622,4 +665,12 @@ void Selections::sortUnits(bool ascending)
         std::sort(selUnits.begin(), selUnits.end());
     else // Sort descending
         std::sort(selUnits.begin(), selUnits.end(), std::greater<u16>());
+}
+
+void Selections::sortSprites(bool ascending)
+{
+    if ( ascending )
+        std::sort(selSprites.begin(), selSprites.end());
+    else // Sort descending
+        std::sort(selSprites.begin(), selSprites.end(), std::greater<size_t>());
 }

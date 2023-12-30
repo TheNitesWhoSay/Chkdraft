@@ -126,6 +126,12 @@
     <Filter Include="Source Files\Windows\Dialog Windows\Briefing Editor">
       <UniqueIdentifier>{8b9bc5a7-6055-470d-83bd-0b219a543773}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Windows\Dialog Windows\Layers\Sprite Properties">
+      <UniqueIdentifier>{c76dcb04-71e1-4317-8314-eee39bbcf173}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Windows\Dialog Windows\Layers\Sprite Properties">
+      <UniqueIdentifier>{d14620de-7c33-49c4-a842-1dba73321384}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Chkdraft.h">
@@ -413,6 +419,15 @@
     <ClInclude Include="Mapping\Undos\ChkdUndos\CutCopyPasteChange.h">
       <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
     </ClInclude>
+    <ClInclude Include="Windows\DialogWindows\Layers\SpriteProperties\PreservedSpriteStats.h">
+      <Filter>Header Files\Windows\Dialog Windows\Layers\Sprite Properties</Filter>
+    </ClInclude>
+    <ClInclude Include="Windows\DialogWindows\Layers\SpriteProperties\SpriteProperties.h">
+      <Filter>Header Files\Windows\Dialog Windows\Layers\Sprite Properties</Filter>
+    </ClInclude>
+    <ClInclude Include="Mapping\Undos\ChkdUndos\SpriteIndexMove.h">
+      <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Chkdraft.cpp">
@@ -686,6 +701,15 @@
       <Filter>Source Files\Mapping\Undos\ChkdUndos</Filter>
     </ClCompile>
     <ClCompile Include="Mapping\Undos\ChkdUndos\CutCopyPasteChange.cpp">
+      <Filter>Source Files\Mapping\Undos\ChkdUndos</Filter>
+    </ClCompile>
+    <ClCompile Include="Windows\DialogWindows\Layers\SpriteProperties\PreservedSpriteStats.cpp">
+      <Filter>Source Files\Windows\Dialog Windows\Layers\Sprite Properties</Filter>
+    </ClCompile>
+    <ClCompile Include="Windows\DialogWindows\Layers\SpriteProperties\SpriteProperties.cpp">
+      <Filter>Source Files\Windows\Dialog Windows\Layers\Sprite Properties</Filter>
+    </ClCompile>
+    <ClCompile Include="Mapping\Undos\ChkdUndos\SpriteIndexMove.cpp">
       <Filter>Source Files\Mapping\Undos\ChkdUndos</Filter>
     </ClCompile>
   </ItemGroup>

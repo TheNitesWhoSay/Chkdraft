@@ -551,7 +551,7 @@ void UnitPropertiesWindow::NotifyMoveTopPressed()
     if ( unitChanges->Count() > 2 )
         CM->AddUndo(unitChanges);
 
-    selections.ensureFirst(unitStackTopIndex);
+    selections.ensureUnitFirst(unitStackTopIndex);
     RepopulateList();
 }
 
@@ -591,7 +591,7 @@ void UnitPropertiesWindow::NotifyMoveEndPressed()
     if ( unitChanges->Count() > 2 )
         CM->AddUndo(unitChanges);
 
-    selections.ensureFirst(unitStackTopIndex);
+    selections.ensureUnitFirst(unitStackTopIndex);
     RepopulateList();
 }
 
@@ -710,8 +710,8 @@ void UnitPropertiesWindow::NotifyMoveToPressed()
                 unitCreateDels->Insert(UnitCreateDel::Make(unitMoveTo + i));
             }
 
-            selections.finishMove();
-            selections.ensureFirst(unitStackTopIndex);
+            selections.finishUnitMove();
+            selections.ensureUnitFirst(unitStackTopIndex);
             CM->AddUndo(unitCreateDels);
             RepopulateList();
         }
