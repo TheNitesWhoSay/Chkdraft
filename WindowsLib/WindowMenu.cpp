@@ -12,6 +12,11 @@ namespace WinLib {
     {
 
     }
+    
+    HMENU WindowMenu::getHandle()
+    {
+        return hMenu;
+    }
 
     bool WindowMenu::FindThis(HWND hParent)
     {

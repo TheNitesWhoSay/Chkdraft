@@ -65,6 +65,9 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     void setDragging(bool dragging);
 
                     void convertSelectionToTerrain();
+                    void stackSelected();
+                    void createLocation();
+                    void createInvertedLocation();
 
                     void viewLocation(u16 locationId);
                     LocSelFlags getLocSelFlags(s32 xc, s32 yc);

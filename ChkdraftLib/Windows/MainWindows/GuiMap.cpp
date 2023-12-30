@@ -1,5 +1,6 @@
 #include "GuiMap.h"
 #include "../../Chkdraft.h"
+#include "../../Windows/ChkdControls/MoveTo.h"
 #include "../../Mapping/Undos/ChkdUndos/CutCopyPasteChange.h"
 #include "../../Mapping/Undos/ChkdUndos/IsomChange.h"
 #include "../../Mapping/Undos/ChkdUndos/TileChange.h"
@@ -505,7 +506,7 @@ void GuiMap::convertSelectionToTerrain()
     std::sort(selectedDoodads.begin(), selectedDoodads.end(), [&](size_t lhs, size_t rhs) { return lhs > rhs; }); // Highest index to lowest
     for ( size_t doodadIndex : selectedDoodads ) {
         Chk::Doodad doodad = this->getDoodad(doodadIndex);
-        undoDoodadConversion->Insert(DoodadCreateDel::Make(doodadIndex, doodad, true));
+        undoDoodadConversion->Insert(DoodadCreateDel::Make(u16(doodadIndex), doodad, true));
         Scenario::deleteDoodad(doodadIndex);
 
         const auto & tileset = chkd.scData.terrain.get(Scenario::getTileset());
@@ -547,6 +548,51 @@ void GuiMap::convertSelectionToTerrain()
     }
     AddUndo(undoDoodadConversion);
     refreshDoodadCache();
+}
+
+void GuiMap::stackSelected()
+{
+    int stackSize = 0;
+    MoveToDialog<int>::GetIndex(stackSize, getHandle(), "Stack Selected...", "Stack Size:");
+    if ( stackSize <= 0 )
+        return;
+
+    auto stackUndos = ReversibleActions::Make();
+    if ( currLayer == Layer::Units && selections.hasUnits() && Scenario::numUnits() + (size_t(stackSize)*selections.numUnits()) < 4000 )
+    {
+        auto & selectedUnits = selections.getUnits();
+        for ( auto & selectedUnit : selectedUnits )
+        {
+            auto unit = CM->getUnit(selectedUnit);
+            for ( int i=0; i<stackSize-1; ++i )
+                stackUndos->Insert(UnitCreateDel::Make(u16(Scenario::addUnit(unit))));
+        }
+        if ( chkd.unitWindow.getHandle() != nullptr )
+            chkd.unitWindow.RepopulateList();
+    }
+    else if ( currLayer == Layer::Sprites && selections.hasSprites() && Scenario::numSprites() + (size_t(stackSize)*selections.numSprites()) < 4000 )
+    {
+        auto & selectedSprites = selections.getSprites();
+        for ( auto & selectedSprite : selectedSprites )
+        {
+            auto sprite = CM->getSprite(selectedSprite);
+            for ( int i=0; i<stackSize-1; ++i )
+                stackUndos->Insert(SpriteCreateDel::Make(Scenario::addSprite(sprite)));
+        }
+        if ( chkd.spriteWindow.getHandle() != nullptr )
+            chkd.spriteWindow.RepopulateList();
+    }
+    CM->AddUndo(stackUndos);
+}
+
+void GuiMap::createLocation()
+{
+    logger.info("Create Location"); // TODO: create location
+}
+
+void GuiMap::createInvertedLocation()
+{
+    logger.info("Create Inverted Location"); // TODO: create inverted location
 }
 
 void GuiMap::viewLocation(u16 locationId)
@@ -2193,11 +2239,11 @@ void GuiMap::ContextMenu(int x, int y)
         .append("Select All\tCtrl+A", [&](){ selectAll(); })
         .append("Delete\tDel", [&](){ deleteSelection(); })
         .append("Clear Selections\tEsc", [&](){ clearSelection(); })
-        .append("Convert to terrain", [&](){ convertSelectionToTerrain(); })
-        .append("Stack Selected", [&](){ logger.info("TODO: Stack Selected"); }, false, true)
+        .append("Convert to terrain", [&](){ convertSelectionToTerrain(); }, false, currLayer != Layer::Doodads)
+        .append("Stack Selected", [&](){ stackSelected(); }, false, currLayer != Layer::Units && currLayer != Layer::Sprites)
         .appendSeparator()
-        .append("Create Location", [&](){ logger.info("TODO: Create Location"); }, false, true)
-        .append("Create Inverted Location", [&](){ logger.info("TODO: Create Inverted Location"); }, false, true)
+        .append("Create Location", [&](){ createLocation(); }, false, currLayer != Layer::Units && currLayer != Layer::Sprites)
+        .append("Create Inverted Location", [&](){ createInvertedLocation(); }, false, currLayer != Layer::Units && currLayer != Layer::Sprites)
         .appendSeparator();
 
     if ( auto & layerMenu = menu.appendSubmenu("Layer") )

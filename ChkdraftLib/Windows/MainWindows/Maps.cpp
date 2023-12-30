@@ -260,6 +260,24 @@ void Maps::ChangeLayer(Layer newLayer)
         else
             ShowWindow(chkd.mainToolbar.terrainBox.getHandle(), SW_HIDE);
 
+        if ( newLayer == Layer::Doodads )
+            EnableMenuItem(chkd.mainMenu.getHandle(), ID_EDIT_COVERTTOTERRAIN, MF_ENABLED);
+        else
+            EnableMenuItem(chkd.mainMenu.getHandle(), ID_EDIT_COVERTTOTERRAIN, MF_DISABLED);
+
+        if ( newLayer == Layer::Units || newLayer == Layer::Sprites )
+        {
+            EnableMenuItem(chkd.mainMenu.getHandle(), ID_EDIT_STACKSELECTED, MF_ENABLED);
+            EnableMenuItem(chkd.mainMenu.getHandle(), ID_EDIT_CREATELOCATION, MF_ENABLED);
+            EnableMenuItem(chkd.mainMenu.getHandle(), ID_EDIT_CREATEINVERTEDLOCATION, MF_ENABLED);
+        }
+        else
+        {
+            EnableMenuItem(chkd.mainMenu.getHandle(), ID_EDIT_STACKSELECTED, MF_DISABLED);
+            EnableMenuItem(chkd.mainMenu.getHandle(), ID_EDIT_CREATELOCATION, MF_DISABLED);
+            EnableMenuItem(chkd.mainMenu.getHandle(), ID_EDIT_CREATEINVERTEDLOCATION, MF_DISABLED);
+        }
+
         if ( newLayer == Layer::FogEdit )
         {
             chkd.mainToolbar.brushWidth.Show();
@@ -753,8 +771,11 @@ void Maps::EnableMapping()
 
         HMENU hMenu = GetMenu(chkd.getHandle());
 
-        for (auto item : onOffMenuItems)
-            EnableMenuItem(hMenu, item, MF_ENABLED);
+        for ( auto item : onOffMenuItems )
+        {
+            if ( item != ID_EDIT_COVERTTOTERRAIN && item != ID_EDIT_STACKSELECTED && item != ID_EDIT_CREATELOCATION && item != ID_EDIT_CREATEINVERTEDLOCATION )
+                EnableMenuItem(hMenu, item, MF_ENABLED);
+        }
 
         HWND hLeftBar = chkd.mainPlot.leftBar.getHandle();
         ShowWindow(hLeftBar, SW_SHOW);
