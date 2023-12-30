@@ -1505,10 +1505,10 @@ void DrawDoodadSel(const WinLib::DeviceContext & dc, u16 width, u16 height, u32 
             const auto & doodad = (Sc::Terrain::DoodadCv5 &)tileset.tileGroups[size_t(*doodadGroupIndex)];
             s32 doodadWidth = 32*s32(doodad.tileWidth);
             s32 doodadHeight = 32*s32(doodad.tileHeight);
-            s32 left = s32(selDoodad.xc) - doodadWidth/2;
-            s32 top = s32(selDoodad.yc) - doodadHeight/2;
-            s32 right = s32(selDoodad.xc) + doodadWidth/2;
-            s32 bottom = s32(selDoodad.yc) + doodadHeight/2;
+            s32 left = (s32(selDoodad.xc) - doodadWidth/2 + 16)/32*32;
+            s32 top = (s32(selDoodad.yc) - doodadHeight/2 + 16)/32*32;
+            s32 right = left+doodadWidth;
+            s32 bottom = top+doodadHeight;
 
             s32 screenRight = s32(screenLeft)+width;
             s32 screenBottom = s32(screenTop)+height;
