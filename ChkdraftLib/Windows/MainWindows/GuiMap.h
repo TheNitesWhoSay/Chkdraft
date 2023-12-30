@@ -64,6 +64,8 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     bool isDragging();
                     void setDragging(bool dragging);
 
+                    void convertSelectionToTerrain();
+
                     void viewLocation(u16 locationId);
                     LocSelFlags getLocSelFlags(s32 xc, s32 yc);
                     bool moveLocation(u32 downX, u32 downY, u32 upX, u32 upY);

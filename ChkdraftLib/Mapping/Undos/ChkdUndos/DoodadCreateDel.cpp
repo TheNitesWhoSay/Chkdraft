@@ -6,14 +6,14 @@ DoodadCreateDel::~DoodadCreateDel()
 
 }
 
-std::shared_ptr<DoodadCreateDel> DoodadCreateDel::Make(u16 index, Sc::Terrain::Doodad::Type doodadType, int xStart, int yStart, void *guiMap)
+std::shared_ptr<DoodadCreateDel> DoodadCreateDel::Make(u16 index, Sc::Terrain::Doodad::Type doodadType, int xStart, int yStart, void *guiMap, bool dd2Only)
 {
-    return std::shared_ptr<DoodadCreateDel>(new DoodadCreateDel(index, doodadType, xStart, yStart, guiMap));
+    return std::shared_ptr<DoodadCreateDel>(new DoodadCreateDel(index, doodadType, xStart, yStart, guiMap, dd2Only));
 }
 
-std::shared_ptr<DoodadCreateDel> DoodadCreateDel::Make(u16 index, const Chk::Doodad & doodad)
+std::shared_ptr<DoodadCreateDel> DoodadCreateDel::Make(u16 index, const Chk::Doodad & doodad, bool dd2Only)
 {
-    return std::shared_ptr<DoodadCreateDel>(new DoodadCreateDel(index, doodad));
+    return std::shared_ptr<DoodadCreateDel>(new DoodadCreateDel(index, doodad, dd2Only));
 }
 
 void DoodadCreateDel::Reverse(void *guiMap)
@@ -29,62 +29,68 @@ void DoodadCreateDel::Reverse(void *guiMap)
             doodad = std::unique_ptr<Chk::Doodad>(new Chk::Doodad);
             *doodad = map.getDoodad(doodadIndex);
 
-            // Restore any MTXM-tiles stored in this structure
-            bool evenWidth = doodadDat.tileWidth%2 == 0;
-            bool evenHeight = doodadDat.tileHeight%2 == 0;
-            auto xStart = evenWidth ? (doodad->xc+16)/32 - doodadDat.tileWidth/2 : doodad->xc/32 - (doodadDat.tileWidth-1)/2;
-            auto yStart = evenHeight ? (doodad->yc+16)/32 - doodadDat.tileHeight/2 : doodad->yc/32 - (doodadDat.tileHeight-1)/2;
-            auto mapWidth = map.getTileWidth();
+            if ( !dd2Only )
+            {
+                // Restore any MTXM-tiles stored in this structure
+                bool evenWidth = doodadDat.tileWidth%2 == 0;
+                bool evenHeight = doodadDat.tileHeight%2 == 0;
+                auto xStart = evenWidth ? (doodad->xc+16)/32 - doodadDat.tileWidth/2 : doodad->xc/32 - (doodadDat.tileWidth-1)/2;
+                auto yStart = evenHeight ? (doodad->yc+16)/32 - doodadDat.tileHeight/2 : doodad->yc/32 - (doodadDat.tileHeight-1)/2;
+                auto mapWidth = map.getTileWidth();
 
-            for ( u16 y=0; y<doodadDat.tileHeight; ++y )
-            {
-                auto yc = yStart+y;
-                u16 tileGroupIndex = *doodadGroupIndex + y;
-                const auto & tileGroup = tileset.tileGroups[tileGroupIndex];
-                for ( u16 x=0; x<doodadDat.tileWidth; ++x )
+                for ( u16 y=0; y<doodadDat.tileHeight; ++y )
                 {
-                    auto xc = xStart+x;
-                    if ( tileGroup.megaTileIndex[x] != 0 )
-                        std::swap(this->tileIndex[x][y], map.tiles[yc*mapWidth+xc]);
+                    auto yc = yStart+y;
+                    u16 tileGroupIndex = *doodadGroupIndex + y;
+                    const auto & tileGroup = tileset.tileGroups[tileGroupIndex];
+                    for ( u16 x=0; x<doodadDat.tileWidth; ++x )
+                    {
+                        auto xc = xStart+x;
+                        if ( tileGroup.megaTileIndex[x] != 0 )
+                            std::swap(this->tileIndex[x][y], map.tiles[yc*mapWidth+xc]);
+                    }
                 }
-            }
             
-            // Delete any matching sprites
-            if ( !map.sprites.empty() )
-            {
-                for ( int i=int(map.sprites.size())-1; i>=0; --i )
+                // Delete any matching sprites
+                if ( !map.sprites.empty() )
                 {
-                    const auto & sprite = map.sprites[i];
-                    if ( sprite.type == doodadDat.overlayIndex && sprite.xc == doodad->xc && sprite.yc == doodad->yc )
-                        map.deleteSprite(i);
+                    for ( int i=int(map.sprites.size())-1; i>=0; --i )
+                    {
+                        const auto & sprite = map.sprites[i];
+                        if ( sprite.type == doodadDat.overlayIndex && sprite.xc == doodad->xc && sprite.yc == doodad->yc )
+                            map.deleteSprite(i);
+                    }
                 }
             }
             map.deleteDoodad(doodadIndex);
         }
         else // Do create
         {
-            // Create the sprite if any
-            if ( doodadDat.overlayIndex != 0 )
-                map.addSprite(Chk::Sprite{Sc::Sprite::Type(doodadDat.overlayIndex), u16(doodad->xc), u16(doodad->yc), 0, 0, doodadDat.flags});
-
-            // Store current MTXM tile in this structure, replace MTXM tiles with the doodads tiles
-            bool evenWidth = doodadDat.tileWidth%2 == 0;
-            bool evenHeight = doodadDat.tileHeight%2 == 0;
-            auto xStart = evenWidth ? (doodad->xc+16)/32 - doodadDat.tileWidth/2 : doodad->xc/32 - (doodadDat.tileWidth-1)/2;
-            auto yStart = evenHeight ? (doodad->yc+16)/32 - doodadDat.tileHeight/2 : doodad->yc/32 - (doodadDat.tileHeight-1)/2;
-
-            for ( u16 y=0; y<doodadDat.tileHeight; ++y )
+            if ( !dd2Only )
             {
-                auto yc = yStart+y; 
-                u16 tileGroupIndex = *doodadGroupIndex + y;
-                const auto & tileGroup = tileset.tileGroups[tileGroupIndex];
-                for ( u16 x=0; x<doodadDat.tileWidth; ++x )
+                // Create the sprite if any
+                if ( doodadDat.overlayIndex != 0 )
+                    map.addSprite(Chk::Sprite{Sc::Sprite::Type(doodadDat.overlayIndex), u16(doodad->xc), u16(doodad->yc), 0, 0, doodadDat.flags});
+
+                // Store current MTXM tile in this structure, replace MTXM tiles with the doodads tiles
+                bool evenWidth = doodadDat.tileWidth%2 == 0;
+                bool evenHeight = doodadDat.tileHeight%2 == 0;
+                auto xStart = evenWidth ? (doodad->xc+16)/32 - doodadDat.tileWidth/2 : doodad->xc/32 - (doodadDat.tileWidth-1)/2;
+                auto yStart = evenHeight ? (doodad->yc+16)/32 - doodadDat.tileHeight/2 : doodad->yc/32 - (doodadDat.tileHeight-1)/2;
+
+                for ( u16 y=0; y<doodadDat.tileHeight; ++y )
                 {
-                    auto xc = xStart+x;
-                    if ( tileGroup.megaTileIndex[x] != 0 )
+                    auto yc = yStart+y; 
+                    u16 tileGroupIndex = *doodadGroupIndex + y;
+                    const auto & tileGroup = tileset.tileGroups[tileGroupIndex];
+                    for ( u16 x=0; x<doodadDat.tileWidth; ++x )
                     {
-                        this->tileIndex[x][y] = map.getTile(xc, yc, Chk::StrScope::Game);
-                        map.setDoodadTile(xc, yc, 16*tileGroupIndex + x);
+                        auto xc = xStart+x;
+                        if ( tileGroup.megaTileIndex[x] != 0 )
+                        {
+                            this->tileIndex[x][y] = map.getTile(xc, yc, Chk::StrScope::Game);
+                            map.setDoodadTile(xc, yc, 16*tileGroupIndex + x);
+                        }
                     }
                 }
             }
@@ -100,15 +106,15 @@ int32_t DoodadCreateDel::GetType()
     return UndoTypes::TerrainChange;
 }
 
-DoodadCreateDel::DoodadCreateDel(u16 doodadIndex, const Chk::Doodad & doodad) // Undo deletion
-    : doodadIndex(doodadIndex), doodad(nullptr)
+DoodadCreateDel::DoodadCreateDel(u16 doodadIndex, const Chk::Doodad & doodad, bool dd2Only) // Undo deletion
+    : doodadIndex(doodadIndex), doodad(nullptr), dd2Only(dd2Only)
 {
     this->doodad = std::unique_ptr<Chk::Doodad>(new Chk::Doodad);
     (*(this->doodad)) = doodad;
 }
 
-DoodadCreateDel::DoodadCreateDel(u16 doodadIndex, Sc::Terrain::Doodad::Type doodadType, int xStart, int yStart, void *guiMap) // Undo creation
-    : doodadIndex(doodadIndex), doodad(nullptr)
+DoodadCreateDel::DoodadCreateDel(u16 doodadIndex, Sc::Terrain::Doodad::Type doodadType, int xStart, int yStart, void *guiMap, bool dd2Only) // Undo creation
+    : doodadIndex(doodadIndex), doodad(nullptr), dd2Only(dd2Only)
 {
     GuiMap & map = *((GuiMap*)guiMap);
     

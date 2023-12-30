@@ -496,6 +496,59 @@ void GuiMap::setDragging(bool bDragging)
     dragging = bDragging;
 }
 
+void GuiMap::convertSelectionToTerrain()
+{
+    std::vector<size_t> selectedDoodads = selections.getDoodads();
+    selections.removeDoodads();
+    
+    auto undoDoodadConversion = ReversibleActions::Make();
+    std::sort(selectedDoodads.begin(), selectedDoodads.end(), [&](size_t lhs, size_t rhs) { return lhs > rhs; }); // Highest index to lowest
+    for ( size_t doodadIndex : selectedDoodads ) {
+        Chk::Doodad doodad = this->getDoodad(doodadIndex);
+        undoDoodadConversion->Insert(DoodadCreateDel::Make(doodadIndex, doodad, true));
+        Scenario::deleteDoodad(doodadIndex);
+
+        const auto & tileset = chkd.scData.terrain.get(Scenario::getTileset());
+        if ( auto doodadGroupIndex = tileset.getDoodadGroupIndex(doodad.type) )
+        {
+            const auto & doodadDat = (Sc::Terrain::DoodadCv5 &)tileset.tileGroups[*doodadGroupIndex];
+            bool evenWidth = doodadDat.tileWidth%2 == 0;
+            bool evenHeight = doodadDat.tileHeight%2 == 0;
+            auto xStart = evenWidth ? (doodad.xc+16)/32 - doodadDat.tileWidth/2 : doodad.xc/32 - (doodadDat.tileWidth-1)/2;
+            auto yStart = evenHeight ? (doodad.yc+16)/32 - doodadDat.tileHeight/2 : doodad.yc/32 - (doodadDat.tileHeight-1)/2;
+
+            for ( u16 y=0; y<doodadDat.tileHeight; ++y )
+            {
+                auto yc = yStart+y;
+                u16 tileGroupIndex = *doodadGroupIndex + y;
+                const auto & tileGroup = tileset.tileGroups[tileGroupIndex];
+                for ( u16 x=0; x<doodadDat.tileWidth; ++x )
+                {
+                    auto xc = xStart+x;
+                    if ( tileGroup.megaTileIndex[x] != 0 )
+                    {
+                        auto currDoodadTile = 16*tileGroupIndex + x;
+                        auto currFinalTile = Scenario::getTile(xc, yc, Chk::StrScope::Game);
+                        auto underlyingTile = Scenario::getTile(xc, yc, Chk::StrScope::Editor);
+                        if ( currDoodadTile != underlyingTile ) // TILE
+                        {
+                            undoDoodadConversion->Insert(TileChange::Make(xc, yc, underlyingTile));
+                            Scenario::setTile(xc, yc, currDoodadTile, Chk::StrScope::Editor);
+                        }
+                        if ( currDoodadTile != currFinalTile ) // MTXM
+                        {
+                            undoDoodadConversion->Insert(TileChange::Make(xc, yc, currFinalTile));
+                            Scenario::setTile(xc, yc, currDoodadTile, Chk::StrScope::Game);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    AddUndo(undoDoodadConversion);
+    refreshDoodadCache();
+}
+
 void GuiMap::viewLocation(u16 locationId)
 {
     RECT rect {};
@@ -2140,7 +2193,7 @@ void GuiMap::ContextMenu(int x, int y)
         .append("Select All\tCtrl+A", [&](){ selectAll(); })
         .append("Delete\tDel", [&](){ deleteSelection(); })
         .append("Clear Selections\tEsc", [&](){ clearSelection(); })
-        .append("Convert to terrain", [&](){ logger.info("TODO: Convert to terrain"); }, false, true)
+        .append("Convert to terrain", [&](){ convertSelectionToTerrain(); })
         .append("Stack Selected", [&](){ logger.info("TODO: Stack Selected"); }, false, true)
         .appendSeparator()
         .append("Create Location", [&](){ logger.info("TODO: Create Location"); }, false, true)
@@ -2927,7 +2980,7 @@ void GuiMap::FinalizeDoodadSelection(HWND hWnd, int mapX, int mapY, WPARAM wPara
             bool inBounds = left <= selRight && top <= selBottom && right >= selLeft && bottom >= selTop;
             if ( inBounds )
                 selections.addDoodad(i);
-            else if ( selections.doodadIsSelected(i) )
+            else if ( selections.doodadIsSelected(i) && wParam != MK_CONTROL )
                 selections.removeDoodad(i);
         }
     }
