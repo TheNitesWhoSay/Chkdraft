@@ -8,13 +8,24 @@
 
 class GuiMap;
 typedef std::shared_ptr<GuiMap> GuiMapPtr;
+enum class DefaultTriggers
+{
+    NoTriggers = 0,
+    DefaultMelee = 1,
+    TwoPlayerMeleeWithObs = 2,
+    ThreePlayerMeleeWithObs = 3,
+    FourPlayerMeleeWithObs = 4,
+    FivePlayerMeleeWithObs = 5,
+    SixPlayerMeleeWithObs = 6,
+    SevenPlayerMeleeWithObs = 7
+};
 
 class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos, private Chk::IsomCache
 {
     public:
 /* Constructor  */  GuiMap(Clipboard & clipboard, const std::string & filePath);
                     GuiMap(Clipboard & clipboard, FileBrowserPtr<SaveType> fileBrowser = getDefaultOpenMapBrowser());
-                    GuiMap(Clipboard & clipboard, Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex);
+                    GuiMap(Clipboard & clipboard, Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex, DefaultTriggers defaultTriggers);
 
 /*  Destructor  */  virtual ~GuiMap();
 

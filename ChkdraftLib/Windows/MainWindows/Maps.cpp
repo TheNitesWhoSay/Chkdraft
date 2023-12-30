@@ -96,7 +96,7 @@ u16 Maps::GetMapID(std::shared_ptr<GuiMap> guiMap)
         return 0;
 }
 
-bool Maps::NewMap(Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex)
+bool Maps::NewMap(Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex, DefaultTriggers defaultTriggers)
 {
     if ( width == 0 || height == 0 )
     {
@@ -105,7 +105,7 @@ bool Maps::NewMap(Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t te
     }
 
     auto start = std::chrono::high_resolution_clock::now();
-    GuiMapPtr newMap = GuiMapPtr(new GuiMap(clipboard, tileset, width, height, terrainTypeIndex));
+    GuiMapPtr newMap = GuiMapPtr(new GuiMap(clipboard, tileset, width, height, terrainTypeIndex, defaultTriggers));
     if ( newMap != nullptr )
     {
         try {

@@ -22,7 +22,7 @@ class Maps : public WinLib::MdiClient
         GuiMapPtr GetMap(u16 mapId);
         u16 GetMapID(GuiMapPtr guiMap);
 
-        bool NewMap(Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex);
+        bool NewMap(Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex, DefaultTriggers defaultTriggers);
         bool OpenMap(const std::string & fileName);
         bool OpenMap(FileBrowserPtr<SaveType> fileBrowser = MapFile::getDefaultOpenMapBrowser());
         bool SaveCurr(bool saveAs);

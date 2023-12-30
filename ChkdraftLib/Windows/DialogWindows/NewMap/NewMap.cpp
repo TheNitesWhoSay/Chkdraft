@@ -28,7 +28,6 @@ BOOL NewMap::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
         editHeight.GetEditNum<int>(height);
         listInitialTileset.GetCurSel(tileset);
         listInitialTerrain.GetCurSelItem(terrainTypeIndex);
-
         triggers = dropDefaultTriggers.GetSel();
 
         if ( width>0 && height>0 )
@@ -37,26 +36,9 @@ BOOL NewMap::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
             if ( height > 65535 ) height %= 65536;
             if ( (u32)width*height < 429496729 )
             {
-                if ( chkd.maps.NewMap((Sc::Terrain::Tileset)tileset, width, height, terrainTypeIndex) )
+                if ( chkd.maps.NewMap((Sc::Terrain::Tileset)tileset, width, height, terrainTypeIndex, (DefaultTriggers)triggers) )
                 {
                     CM->Scroll(true, true, false);
-
-                    // Tiling Code
-                    /*u16 tilenum = 0;
-                    size_t xSize = CM->getTileWidth();
-                    size_t ySize = CM->getTileHeight();
-                    for ( size_t xStart = 0; xStart<xSize; xStart += 16 )
-                    {
-                        for ( size_t yc = 0; yc<ySize; yc++ )
-                        {
-                            for ( size_t xc = xStart; xc<xStart + 16; xc++ )
-                            {
-                                CM->setTile(s32(xc), s32(yc), tilenum, Chk::StrScope::Both);
-                                tilenum++;
-                            }
-                        }
-                    }*/
-
                     CM->Redraw(true);
                 }
                 EndDialog(hWnd, ID_CREATEMAP);
