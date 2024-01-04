@@ -587,12 +587,67 @@ void GuiMap::stackSelected()
 
 void GuiMap::createLocation()
 {
-    logger.info("Create Location"); // TODO: create location
+    if ( selections.hasUnits() )
+    {
+        u16 firstUnitId = selections.getFirstUnit();
+        const Chk::Unit & unit = Scenario::getUnit(firstUnitId);
+        const auto & unitDat = chkd.scData.units.getUnit(unit.type);
+        Chk::Location newLocation {};
+        newLocation.left = unit.xc - unitDat.unitSizeLeft;
+        newLocation.top = unit.yc - unitDat.unitSizeUp;
+        newLocation.right = unit.xc + unitDat.unitSizeRight;
+        newLocation.bottom = unit.yc + unitDat.unitSizeDown;
+        newLocation.elevationFlags = 0;
+        selections.setDrags(-1, -1);
+
+        size_t newLocationId = Scenario::addLocation(newLocation);
+        if ( newLocationId != Chk::LocationId::NoLocation )
+        {
+            Scenario::setLocationName<RawString>(newLocationId, "Location " + std::to_string(newLocationId), Chk::StrScope::Game);
+            Scenario::deleteUnusedStrings(Chk::StrScope::Both);
+            undos.AddUndo(LocationCreateDel::Make((u16)newLocationId));
+            selections.selectLocation(u16(newLocationId));
+            chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree(true);
+            refreshScenario();
+        }
+        else
+            Error("Max Locations Reached!");
+    }
+    else
+        logger.warn("No units selected to create location");
 }
 
 void GuiMap::createInvertedLocation()
 {
-    logger.info("Create Inverted Location"); // TODO: create inverted location
+    if ( selections.hasUnits() )
+    {
+        u16 firstUnitId = selections.getFirstUnit();
+        const Chk::Unit & unit = Scenario::getUnit(firstUnitId);
+        const auto & unitDat = chkd.scData.units.getUnit(unit.type);
+        Chk::Location newLocation {};
+        // TODO: What should this algorithm actually be?
+        newLocation.left = unit.xc - unitDat.unitSizeLeft;
+        newLocation.top = unit.yc - unitDat.unitSizeUp;
+        newLocation.right = unit.xc + unitDat.unitSizeRight;
+        newLocation.bottom = unit.yc + unitDat.unitSizeDown;
+        newLocation.elevationFlags = 0;
+        selections.setDrags(-1, -1);
+
+        size_t newLocationId = Scenario::addLocation(newLocation);
+        if ( newLocationId != Chk::LocationId::NoLocation )
+        {
+            Scenario::setLocationName<RawString>(newLocationId, "Location " + std::to_string(newLocationId), Chk::StrScope::Game);
+            Scenario::deleteUnusedStrings(Chk::StrScope::Both);
+            undos.AddUndo(LocationCreateDel::Make((u16)newLocationId));
+            selections.selectLocation(u16(newLocationId));
+            chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree(true);
+            refreshScenario();
+        }
+        else
+            Error("Max Locations Reached!");
+    }
+    else
+        logger.warn("No units selected to create location");
 }
 
 void GuiMap::viewLocation(u16 locationId)
