@@ -270,12 +270,14 @@ void Maps::ChangeLayer(Layer newLayer)
             EnableMenuItem(chkd.mainMenu.getHandle(), ID_EDIT_STACKSELECTED, MF_ENABLED);
             EnableMenuItem(chkd.mainMenu.getHandle(), ID_EDIT_CREATELOCATION, MF_ENABLED);
             EnableMenuItem(chkd.mainMenu.getHandle(), ID_EDIT_CREATEINVERTEDLOCATION, MF_ENABLED);
+            EnableMenuItem(chkd.mainMenu.getHandle(), ID_EDIT_CREATEMOBILEINVERTEDLOCATION, MF_ENABLED);
         }
         else
         {
             EnableMenuItem(chkd.mainMenu.getHandle(), ID_EDIT_STACKSELECTED, MF_DISABLED);
             EnableMenuItem(chkd.mainMenu.getHandle(), ID_EDIT_CREATELOCATION, MF_DISABLED);
             EnableMenuItem(chkd.mainMenu.getHandle(), ID_EDIT_CREATEINVERTEDLOCATION, MF_DISABLED);
+            EnableMenuItem(chkd.mainMenu.getHandle(), ID_EDIT_CREATEMOBILEINVERTEDLOCATION, MF_DISABLED);
         }
 
         if ( newLayer == Layer::FogEdit )
@@ -773,7 +775,8 @@ void Maps::EnableMapping()
 
         for ( auto item : onOffMenuItems )
         {
-            if ( item != ID_EDIT_COVERTTOTERRAIN && item != ID_EDIT_STACKSELECTED && item != ID_EDIT_CREATELOCATION && item != ID_EDIT_CREATEINVERTEDLOCATION )
+            if ( item != ID_EDIT_COVERTTOTERRAIN && item != ID_EDIT_STACKSELECTED && item != ID_EDIT_CREATELOCATION &&
+                 item != ID_EDIT_CREATEINVERTEDLOCATION && item != ID_EDIT_CREATEMOBILEINVERTEDLOCATION )
                 EnableMenuItem(hMenu, item, MF_ENABLED);
         }
 
@@ -821,6 +824,12 @@ void Maps::DisableMapping()
 
         for (auto item : onOffMenuItems)
             EnableMenuItem(hMenu, item, MF_DISABLED);
+
+        EnableMenuItem(hMenu, ID_EDIT_COVERTTOTERRAIN, MF_DISABLED);
+        EnableMenuItem(hMenu, ID_EDIT_STACKSELECTED, MF_DISABLED);
+        EnableMenuItem(hMenu, ID_EDIT_CREATELOCATION, MF_DISABLED);
+        EnableMenuItem(hMenu, ID_EDIT_CREATEINVERTEDLOCATION, MF_DISABLED);
+        EnableMenuItem(hMenu, ID_EDIT_CREATEMOBILEINVERTEDLOCATION, MF_DISABLED);
 
         chkd.mainPlot.leftBar.Hide();
 

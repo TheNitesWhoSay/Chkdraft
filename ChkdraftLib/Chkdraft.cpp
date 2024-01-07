@@ -543,6 +543,7 @@ LRESULT Chkdraft::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     case ID_EDIT_STACKSELECTED: CM->stackSelected(); break;
     case ID_EDIT_CREATELOCATION: CM->createLocation(); break;
     case ID_EDIT_CREATEINVERTEDLOCATION: CM->createInvertedLocation(); break;
+    case ID_EDIT_CREATEMOBILEINVERTEDLOCATION: CM->createMobileInvertedLocation(); break;
     case ID_EDIT_PROPERTIES: maps.properties(); break;
 
         // View
