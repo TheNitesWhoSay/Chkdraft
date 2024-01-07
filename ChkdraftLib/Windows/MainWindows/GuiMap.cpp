@@ -625,11 +625,46 @@ void GuiMap::createInvertedLocation()
         const Chk::Unit & unit = Scenario::getUnit(firstUnitId);
         const auto & unitDat = chkd.scData.units.getUnit(unit.type);
         Chk::Location newLocation {};
-        // TODO: What should this algorithm actually be?
-        newLocation.left = unit.xc - unitDat.unitSizeLeft;
-        newLocation.top = unit.yc - unitDat.unitSizeUp;
-        newLocation.right = unit.xc + unitDat.unitSizeRight;
-        newLocation.bottom = unit.yc + unitDat.unitSizeDown;
+        newLocation.left = unit.xc + unitDat.unitSizeRight;
+        newLocation.top = unit.yc + unitDat.unitSizeDown;
+        newLocation.right = unit.xc - unitDat.unitSizeLeft;
+        newLocation.bottom = unit.yc - unitDat.unitSizeUp;
+        newLocation.elevationFlags = 0;
+        selections.setDrags(-1, -1);
+
+        size_t newLocationId = Scenario::addLocation(newLocation);
+        if ( newLocationId != Chk::LocationId::NoLocation )
+        {
+            Scenario::setLocationName<RawString>(newLocationId, "Location " + std::to_string(newLocationId), Chk::StrScope::Game);
+            Scenario::deleteUnusedStrings(Chk::StrScope::Both);
+            undos.AddUndo(LocationCreateDel::Make((u16)newLocationId));
+            selections.selectLocation(u16(newLocationId));
+            chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree(true);
+            refreshScenario();
+        }
+        else
+            Error("Max Locations Reached!");
+    }
+    else
+        logger.warn("No units selected to create location");
+}
+
+void GuiMap::createMobileInvertedLocation()
+{
+    if ( selections.hasUnits() )
+    {
+        u16 firstUnitId = selections.getFirstUnit();
+        const Chk::Unit & unit = Scenario::getUnit(firstUnitId);
+        const auto & unitDat = chkd.scData.units.getUnit(unit.type);
+
+        s32 width = (unitDat.unitSizeRight > unitDat.unitSizeLeft ? -1 : 0) - 2*std::min(unitDat.unitSizeLeft, unitDat.unitSizeRight);
+        s32 height = (unitDat.unitSizeDown > unitDat.unitSizeUp ? -1 : 0) - 2*std::min(unitDat.unitSizeUp, unitDat.unitSizeDown);
+
+        Chk::Location newLocation {};
+        newLocation.right = u16(s32(unit.xc) + width/2);
+        newLocation.bottom = u16(s32(unit.yc) + height/2);
+        newLocation.left = newLocation.right - width;
+        newLocation.top = newLocation.bottom - height;
         newLocation.elevationFlags = 0;
         selections.setDrags(-1, -1);
 
@@ -2299,6 +2334,7 @@ void GuiMap::ContextMenu(int x, int y)
         .appendSeparator()
         .append("Create Location", [&](){ createLocation(); }, false, currLayer != Layer::Units && currLayer != Layer::Sprites)
         .append("Create Inverted Location", [&](){ createInvertedLocation(); }, false, currLayer != Layer::Units && currLayer != Layer::Sprites)
+        .append("Create Mobile Inverted Location", [&]() { createMobileInvertedLocation(); }, false, currLayer != Layer::Units && currLayer != Layer::Sprites)
         .appendSeparator();
 
     if ( auto & layerMenu = menu.appendSubmenu("Layer") )
