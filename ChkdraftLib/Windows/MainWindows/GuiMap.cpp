@@ -603,6 +603,7 @@ void GuiMap::createLocation()
         size_t newLocationId = Scenario::addLocation(newLocation);
         if ( newLocationId != Chk::LocationId::NoLocation )
         {
+            CM->setLayer(Layer::Locations);
             Scenario::setLocationName<RawString>(newLocationId, "Location " + std::to_string(newLocationId), Chk::StrScope::Game);
             Scenario::deleteUnusedStrings(Chk::StrScope::Both);
             undos.AddUndo(LocationCreateDel::Make((u16)newLocationId));
@@ -635,6 +636,7 @@ void GuiMap::createInvertedLocation()
         size_t newLocationId = Scenario::addLocation(newLocation);
         if ( newLocationId != Chk::LocationId::NoLocation )
         {
+            CM->setLayer(Layer::Locations);
             Scenario::setLocationName<RawString>(newLocationId, "Location " + std::to_string(newLocationId), Chk::StrScope::Game);
             Scenario::deleteUnusedStrings(Chk::StrScope::Both);
             undos.AddUndo(LocationCreateDel::Make((u16)newLocationId));
@@ -671,6 +673,7 @@ void GuiMap::createMobileInvertedLocation()
         size_t newLocationId = Scenario::addLocation(newLocation);
         if ( newLocationId != Chk::LocationId::NoLocation )
         {
+            CM->setLayer(Layer::Locations);
             Scenario::setLocationName<RawString>(newLocationId, "Location " + std::to_string(newLocationId), Chk::StrScope::Game);
             Scenario::deleteUnusedStrings(Chk::StrScope::Both);
             undos.AddUndo(LocationCreateDel::Make((u16)newLocationId));
@@ -920,7 +923,7 @@ void GuiMap::refreshScenario()
     selections.removeFog();
     chkd.mainPlot.leftBar.mainTree.isomTree.UpdateIsomTree();
     chkd.mainPlot.leftBar.mainTree.doodadTree.UpdateDoodadTree();
-    chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
+    chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree(currLayer == Layer::Locations);
     
     if ( chkd.unitWindow.getHandle() != nullptr )
         chkd.unitWindow.RepopulateList();
