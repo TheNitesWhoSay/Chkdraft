@@ -12,6 +12,20 @@
 #include "Windows/ChkdControls/ChkdStringInput.h"
 #include <CommCtrl.h>
 
+void Chkdraft::OnLoadTest()
+{
+    auto & map = []() -> GuiMap & {
+        auto map = chkd.maps.NewMap();
+        map->addUnit(Chk::Unit {0, 64, 64, Sc::Unit::Type::StartLocation, 0, 0, 0, Sc::Player::Id::Player1});
+        map->addUnit(Chk::Unit {0, 192, 64, Sc::Unit::Type::StartLocation, 0, 0, 0, Sc::Player::Id::Player2});
+        map->setForceFlags(Chk::Force::Force1, Chk::ForceFlags::All & Chk::ForceFlags::xRandomizeStartLocation);
+        map->setForceFlags(Chk::Force::Force2, Chk::ForceFlags::All & Chk::ForceFlags::xRandomizeStartLocation);
+        map->setPlayerForce(Sc::Player::Id::Player2, Chk::Force::Force2);
+        map->setSlotType(1, Sc::Player::SlotType::Computer);
+        _Pragma("warning(suppress: 26716)") return *map;
+    }();
+}
+
 enum_t(Id, u32, {
     IDR_MAIN_TOOLBAR = ID_FIRST,
     IDR_MAIN_STATUS,
@@ -22,11 +36,6 @@ enum_t(Id, u32, {
 });
 
 #define ifmapopen(dothis) if ( CM != nullptr ) dothis;
-
-void Chkdraft::OnLoadTest()
-{
-
-}
 
 Chkdraft::Chkdraft() : currDialog(NULL), editFocused(false), mainCommander(std::shared_ptr<Logger>(&logger, [](Logger*){})), logFile(nullptr, nullptr, logger.getLogLevel())
 {

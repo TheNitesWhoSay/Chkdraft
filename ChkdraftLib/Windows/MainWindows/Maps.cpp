@@ -96,12 +96,12 @@ u16 Maps::GetMapID(std::shared_ptr<GuiMap> guiMap)
         return 0;
 }
 
-bool Maps::NewMap(Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex, DefaultTriggers defaultTriggers)
+GuiMapPtr Maps::NewMap(Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex, DefaultTriggers defaultTriggers)
 {
     if ( width == 0 || height == 0 )
     {
         Error("Invalid dimensions");
-        return false;
+        return nullptr;
     }
 
     auto start = std::chrono::high_resolution_clock::now();
@@ -123,7 +123,7 @@ bool Maps::NewMap(Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t te
             
                 auto finish = std::chrono::high_resolution_clock::now();
                 logger.info() << "New map [ID:" << newMap->getMapId() << "] created in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
-                return true;
+                return newMap;
             }
             else
                 Error("Failed to create MDI Child Window!");
@@ -135,7 +135,7 @@ bool Maps::NewMap(Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t te
         Error("Failed to create new map!");
 
     RemoveMap(newMap);
-    return false;
+    return nullptr;
 }
 
 bool Maps::OpenMap(const std::string & fileName)

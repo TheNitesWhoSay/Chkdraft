@@ -36,7 +36,7 @@ BOOL NewMap::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
             if ( height > 65535 ) height %= 65536;
             if ( (u32)width*height < 429496729 )
             {
-                if ( chkd.maps.NewMap((Sc::Terrain::Tileset)tileset, width, height, terrainTypeIndex, (DefaultTriggers)triggers) )
+                if ( chkd.maps.NewMap((Sc::Terrain::Tileset)tileset, width, height, terrainTypeIndex, (DefaultTriggers)triggers) != nullptr )
                 {
                     CM->Scroll(true, true, false);
                     CM->Redraw(true);
