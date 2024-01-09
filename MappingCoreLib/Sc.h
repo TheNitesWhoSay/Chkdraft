@@ -387,6 +387,41 @@ namespace Sc {
         static const std::vector<std::string> defaultDisplayNames;
         static const std::vector<std::string> legacyTextTrigDisplayNames;
 
+        enum_t(Flags, u32, {
+            Building = BIT_0,
+            Addon = BIT_1,
+            Flyer = BIT_2,
+            Worker = BIT_3,
+            Subunit = BIT_4,
+            FlyingBuilding = BIT_5,
+            Hero = BIT_6,
+            RegeneratesHP = BIT_7,
+            AnimatedIdle = BIT_8,
+            Cloakable = BIT_9,
+            TwoUnitsIn1Egg = BIT_10,
+            NeutralAccessories = BIT_11,
+            ResourceDepot = BIT_12,
+            ResourceContainer = BIT_13,
+            RoboticUnit = BIT_14,
+            Detector = BIT_15,
+            Organicunit = BIT_16,
+            CreepBuilding = BIT_17,
+            Unused = BIT_18,
+            RequiredPsi = BIT_19,
+            Burrowable = BIT_20,
+            Spellcaster = BIT_21,
+            PermanentCloak = BIT_22,
+            NPCOrAccessories = BIT_23,
+            MorphFromOtherUnit = BIT_24,
+            LargeUnit = BIT_25,
+            HugeUnit = BIT_26,
+            AutoAttackAndMove = BIT_27,
+            CanAttack = BIT_28,
+            Invincible = BIT_29,
+            Mechanical = BIT_30,
+            ProducesUnits = BIT_31
+        });
+
         struct DatEntry
         {
             u8 graphics;
@@ -411,7 +446,7 @@ namespace Sc {
             u8 airWeapon;
             u8 maxAirHits;
             u8 aiInternal;
-            u32 specialAbilityFlags;
+            u32 flags;
             u8 targetAcquisitionRange;
             u8 sightRange;
             u8 armorUpgrade;
@@ -500,7 +535,7 @@ namespace Sc {
             u8 airWeapon[TotalTypes];
             u8 maxAirHits[TotalTypes];
             u8 aiInternal[TotalTypes];
-            u32 specialAbilityFlags[TotalTypes];
+            u32 flags[TotalTypes];
             u8 targetAcquisitionRange[TotalTypes];
             u8 sightRange[TotalTypes];
             u8 armorUpgrade[TotalTypes];
@@ -515,8 +550,7 @@ namespace Sc {
             u16 yesSoundStart[IdRange::From0To105]; // Id 0-105 only
             u16 yesSoundEnd[IdRange::From0To105]; // Id 0-105 only
             Dimensions starEditPlacementBox[TotalTypes];
-            u16 addonHorizontal[IdRange::From106To201]; // Id 106-201 only
-            u16 addonVertical[IdRange::From106To201]; // Id 106-201 only
+            Dimensions addonOffset[IdRange::From106To201]; // Id 106-201 only
             Extent unitExtent[TotalTypes];
             u16 portrait[TotalTypes];
             u16 mineralCost[TotalTypes];
@@ -2013,6 +2047,8 @@ namespace Sc {
             DirectionalLinks links;
             Rect stackConnections;
             uint16_t megaTileIndex[16]; // megaTileIndex - to VF4/VX4
+
+            constexpr bool isBuildable() const { return (flags & Flags::Unbuildable) != Flags::Unbuildable; }
         };
         #pragma pack(pop)
 

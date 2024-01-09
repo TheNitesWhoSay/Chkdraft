@@ -3923,6 +3923,49 @@ bool Scenario::resizeIsom(int32_t xTileOffset, int32_t yTileOffset, size_t oldMa
     return true;
 }
 
+Chk::TileOccupationCache Scenario::getTileOccupationCache(const Sc::Terrain::Tiles & tileset, const Sc::Unit & unitData) const
+{
+    std::vector<bool> tileOccupied(size_t(dimensions.tileWidth)*size_t(dimensions.tileHeight), false);
+    for ( const auto & doodad : doodads )
+    {
+        if ( auto doodadGroupIndex = tileset.getDoodadGroupIndex(doodad.type) )
+        {
+            const auto & doodadDat = (Sc::Terrain::DoodadCv5 &)tileset.tileGroups[*doodadGroupIndex];
+            const auto & placability = tileset.doodadPlacibility[doodad.type];
+            
+            bool evenWidth = doodadDat.tileWidth % 2 == 0;
+            bool evenHeight = doodadDat.tileHeight % 2 == 0;
+            size_t left = (size_t(doodad.xc) - 16*size_t(doodadDat.tileWidth))/32;
+            size_t top = (size_t(doodad.yc) - 16*size_t(doodadDat.tileHeight))/32;
+            for ( size_t y=0; y<size_t(doodadDat.tileHeight); ++y )
+            {
+                for ( size_t x=0; x<size_t(doodadDat.tileWidth); ++x )
+                {
+                    if ( placability.tileGroup[y*doodadDat.tileWidth+x] != 0 )
+                        tileOccupied[(top+y)*dimensions.tileWidth+(left+x)] = true;
+                }
+            }
+        }
+    }
+    for ( const auto & unit : units )
+    {
+        if ( unit.type < Sc::Unit::TotalTypes )
+        {
+            const auto & unitDat = unitData.getUnit(unit.type);
+            s32 xTileMin = (unit.xc - unitDat.unitSizeLeft)/32;
+            s32 xTileMax = (unit.xc + unitDat.unitSizeRight)/32+1;
+            s32 yTileMin = (unit.yc - unitDat.unitSizeUp)/32;
+            s32 yTileMax = (unit.yc + unitDat.unitSizeDown)/32+1;
+            for ( s32 y = std::max(0, yTileMin); y<std::min(s32(dimensions.tileHeight), yTileMax); ++y )
+            {
+                for ( s32 x = std::max(0, xTileMin); x<std::min(s32(dimensions.tileWidth), xTileMax); ++x )
+                    tileOccupied[y*dimensions.tileWidth+x] = true;
+            }
+        }
+    }
+    return Chk::TileOccupationCache{tileOccupied};
+}
+
 void Scenario::validateSizes(u16 sizeValidationFlags, u16 prevWidth, u16 prevHeight)
 {
     bool updateAnywhereIfAlreadyStandard = (sizeValidationFlags & SizeValidationFlag::UpdateAnywhereIfAlreadyStandard) == SizeValidationFlag::UpdateAnywhereIfAlreadyStandard;
@@ -4094,33 +4137,6 @@ Chk::Doodad & Scenario::getDoodad(size_t doodadIndex)
 const Chk::Doodad & Scenario::getDoodad(size_t doodadIndex) const
 {
     return doodads[doodadIndex];
-}
-
-Chk::DoodadCache Scenario::getDoodadCache(const Sc::Terrain::Tiles & tileset) const
-{
-    std::vector<bool> doodadPresence(size_t(dimensions.tileWidth)*size_t(dimensions.tileHeight), false);
-    for ( const auto & doodad : doodads )
-    {
-        if ( auto doodadGroupIndex = tileset.getDoodadGroupIndex(doodad.type) )
-        {
-            const auto & doodadDat = (Sc::Terrain::DoodadCv5 &)tileset.tileGroups[*doodadGroupIndex];
-            const auto & placability = tileset.doodadPlacibility[doodad.type];
-            
-            bool evenWidth = doodadDat.tileWidth % 2 == 0;
-            bool evenHeight = doodadDat.tileHeight % 2 == 0;
-            size_t left = (size_t(doodad.xc) - 16*size_t(doodadDat.tileWidth))/32;
-            size_t top = (size_t(doodad.yc) - 16*size_t(doodadDat.tileHeight))/32;
-            for ( size_t y=0; y<size_t(doodadDat.tileHeight); ++y )
-            {
-                for ( size_t x=0; x<size_t(doodadDat.tileWidth); ++x )
-                {
-                    if ( placability.tileGroup[y*doodadDat.tileWidth+x] != 0 )
-                        doodadPresence[(top+y)*dimensions.tileWidth+(left+x)] = true;
-                }
-            }
-        }
-    }
-    return Chk::DoodadCache{doodadPresence};
 }
 
 size_t Scenario::addDoodad(const Chk::Doodad & doodad)

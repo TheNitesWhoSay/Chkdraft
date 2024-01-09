@@ -48,7 +48,7 @@ GuiMap::GuiMap(Clipboard & clipboard, Sc::Terrain::Tileset tileset, u16 width, u
     uint16_t val = ((Chk::IsomCache::getTerrainTypeIsomValue(terrainTypeIndex) << 4) | Chk::IsomRect::EditorFlag::Modified);
     Scenario::isomRects.assign(Scenario::getIsomWidth()*Scenario::getIsomHeight(), Chk::IsomRect{val, val, val, val});
     Chk::IsomCache::setAllChanged();
-    refreshDoodadCache();
+    refreshTileOccupationCache();
     Scenario::updateTilesFromIsom(*this);
 
     graphics.updatePalette();
@@ -213,10 +213,10 @@ void GuiMap::setTileValue(size_t tileX, size_t tileY, uint16_t tileValue)
         }
 
         Scenario::editorTiles[tileY*Scenario::dimensions.tileWidth + tileX] = tileValue;
-        if ( !doodadCache.tileOccupied(tileX, tileY, Scenario::dimensions.tileWidth) )
+        if ( !tileOccupationCache.tileOccupied(tileX, tileY, Scenario::dimensions.tileWidth) )
             Scenario::tiles[tileY*Scenario::dimensions.tileWidth + tileX] = tileValue;
-        else if ( !allowIllegalDoodads )
-            validateTileDoodads(tileX, tileY, tileValue);
+        else
+            validateTileOccupiers(tileX, tileY, tileValue);
     }
 }
 
@@ -233,7 +233,7 @@ void GuiMap::setFogValue(size_t tileX, size_t tileY, u8 fogValue)
 
 void GuiMap::beginTerrainOperation()
 {
-    refreshDoodadCache();
+    refreshTileOccupationCache();
     if ( this->tileChanges == nullptr )
         tileChanges = ReversibleActions::Make();
 }
@@ -268,56 +268,129 @@ void GuiMap::finalizeFogOperation()
     }
 }
 
-void GuiMap::validateTileDoodads(size_t tileX, size_t tileY, uint16_t tileValue)
+void GuiMap::validateTileOccupiers(size_t tileX, size_t tileY, uint16_t tileValue)
 {
+    bool cacheRefreshNeeded = false;
+    bool tileUpdatedByDoodad = false;
     const auto & tileset = chkd.scData.terrain.get(Scenario::getTileset());
-    for ( int doodadIndex=int(doodads.size())-1; doodadIndex>=0; --doodadIndex )
+    if ( !allowIllegalDoodads )
     {
-        const auto & doodad = doodads[doodadIndex];
-        if ( auto doodadGroupIndex = tileset.getDoodadGroupIndex(doodad.type) )
+        for ( int doodadIndex=int(doodads.size())-1; doodadIndex>=0; --doodadIndex )
         {
-            const auto & doodadDat = (Sc::Terrain::DoodadCv5 &)tileset.tileGroups[*doodadGroupIndex];
-            const auto & placability = tileset.doodadPlacibility[doodad.type];
-
-            bool evenWidth = doodadDat.tileWidth % 2 == 0;
-            bool evenHeight = doodadDat.tileHeight % 2 == 0;
-            size_t left = (size_t(doodad.xc) - 16*size_t(doodadDat.tileWidth))/32;
-            size_t top = (size_t(doodad.yc) - 16*size_t(doodadDat.tileHeight))/32;
-            size_t right = left + size_t(doodadDat.tileWidth);
-            size_t bottom = top + size_t(doodadDat.tileHeight);
-
-            if ( tileX >= left && tileX < right && tileY >= top && tileY < bottom ) // Tile within dimensions, though not necessarily part of the doodad
+            const auto & doodad = doodads[doodadIndex];
+            if ( auto doodadGroupIndex = tileset.getDoodadGroupIndex(doodad.type) )
             {
-                size_t y = tileY-top;
-                const auto & tileGroup = tileset.tileGroups[(*doodadGroupIndex)+y];
-                size_t x = tileX-left;
-                if ( tileset.tileGroups[(*doodadGroupIndex)+y].megaTileIndex[x] != 0 ) // Tile is part of the doodad
+                const auto & doodadDat = (Sc::Terrain::DoodadCv5 &)tileset.tileGroups[*doodadGroupIndex];
+                const auto & placability = tileset.doodadPlacibility[doodad.type];
+
+                bool evenWidth = doodadDat.tileWidth % 2 == 0;
+                bool evenHeight = doodadDat.tileHeight % 2 == 0;
+                size_t left = (size_t(doodad.xc) - 16*size_t(doodadDat.tileWidth))/32;
+                size_t top = (size_t(doodad.yc) - 16*size_t(doodadDat.tileHeight))/32;
+                size_t right = left + size_t(doodadDat.tileWidth);
+                size_t bottom = top + size_t(doodadDat.tileHeight);
+
+                if ( tileX >= left && tileX < right && tileY >= top && tileY < bottom ) // Tile within dimensions, though not necessarily part of the doodad
                 {
-                    auto doodadTilePlacability = placability.tileGroup[y*doodadDat.tileWidth+x];
-                    if ( doodadTilePlacability != 0 && tileValue/16 != doodadTilePlacability ) // This tile of this doodad is illegal given the new tileValue
+                    size_t y = tileY-top;
+                    const auto & tileGroup = tileset.tileGroups[(*doodadGroupIndex)+y];
+                    size_t x = tileX-left;
+                    if ( tileset.tileGroups[(*doodadGroupIndex)+y].megaTileIndex[x] != 0 ) // Tile is part of the doodad
                     {
-                        tileChanges->Insert(DoodadCreateDel::Make(u16(doodadIndex), doodad));
-                        if ( !sprites.empty() )
+                        auto doodadTilePlacability = placability.tileGroup[y*doodadDat.tileWidth+x];
+                        if ( doodadTilePlacability != 0 && tileValue/16 != doodadTilePlacability ) // This doodad tile is illegal given the new tileValue
                         {
-                            for ( int i=int(sprites.size())-1; i>=0; --i )
+                            tileChanges->Insert(DoodadCreateDel::Make(u16(doodadIndex), doodad));
+                            if ( !sprites.empty() )
                             {
-                                const auto & sprite = sprites[i];
-                                if ( sprite.type == doodadDat.overlayIndex && sprite.xc == doodad.xc && sprite.yc == doodad.yc )
-                                    Scenario::deleteSprite(i);
+                                for ( int i=int(sprites.size())-1; i>=0; --i )
+                                {
+                                    const auto & sprite = sprites[i];
+                                    if ( sprite.type == doodadDat.overlayIndex && sprite.xc == doodad.xc && sprite.yc == doodad.yc )
+                                        Scenario::deleteSprite(i);
+                                }
                             }
+                            for ( y=top; y<bottom; ++y )
+                            {
+                                for ( x=left; x<right; ++x )
+                                    Scenario::tiles[y*size_t(dimensions.tileWidth)+x] = Scenario::editorTiles[y*size_t(dimensions.tileWidth)+x];
+                            }
+                            tileUpdatedByDoodad = true;
+                            Scenario::deleteDoodad(doodadIndex);
+                            cacheRefreshNeeded = true;
                         }
-                        for ( y=top; y<bottom; ++y )
-                        {
-                            for ( x=left; x<right; ++x )
-                                Scenario::tiles[y*size_t(dimensions.tileWidth)+x] = Scenario::editorTiles[y*size_t(dimensions.tileWidth)+x];
-                        }
-                        Scenario::deleteDoodad(doodadIndex);
-                        refreshDoodadCache();
                     }
                 }
             }
         }
     }
+
+    if ( !tileUpdatedByDoodad )
+        Scenario::tiles[tileY*size_t(dimensions.tileWidth)+tileX] = tileValue;
+    
+    if ( !placeUnitsAnywhere || !placeBuildingsAnywhere )
+    {
+        for ( int unitIndex=int(units.size())-1; unitIndex>=0; --unitIndex )
+        {
+            const auto & unit = units[unitIndex];
+            if ( unit.type < Sc::Unit::TotalTypes )
+            {
+                const auto & unitDat = chkd.scData.units.getUnit(unit.type);
+                bool isBuilding = (unitDat.flags & Sc::Unit::Flags::Building) == Sc::Unit::Flags::Building;
+                bool isFlyer = (unitDat.flags & Sc::Unit::Flags::Flyer) == Sc::Unit::Flags::Flyer;
+                bool isFlyingBuilding = isBuilding &&
+                    (unitDat.flags & Sc::Unit::Flags::FlyingBuilding) == Sc::Unit::Flags::FlyingBuilding &&
+                    (unit.stateFlags & Chk::Unit::State::InTransit) == Chk::Unit::State::InTransit;
+
+                if ( (isBuilding && !isFlyingBuilding && !placeBuildingsAnywhere) ||
+                     (!isBuilding && !isFlyer && !placeUnitsAnywhere) )
+                {
+                    s32 left = s32(unit.xc) - s32(unitDat.unitSizeLeft);
+                    s32 right = s32(unit.xc) + s32(unitDat.unitSizeRight);
+                    s32 top = s32(unit.yc) - s32(unitDat.unitSizeUp);
+                    s32 bottom = s32(unit.yc) + s32(unitDat.unitSizeDown);
+            
+                    s32 xTileMin = left/32;
+                    s32 xTileMax = right/32;
+                    s32 yTileMin = top/32;
+                    s32 yTileMax = bottom/32;
+                    if ( s32(tileX) >= xTileMin && s32(tileX) <= xTileMax && // Mini-tiles the unit overlaps must be examined
+                         s32(tileY) >= yTileMin && s32(tileY) <= yTileMax )
+                    {
+                        size_t groupIndex = Sc::Terrain::Tiles::getGroupIndex(tileValue);
+                        if ( groupIndex < tileset.tileGroups.size() )
+                        {
+                            const Sc::Terrain::TileGroup & tileGroup = tileset.tileGroups[groupIndex];
+                            u16 megaTileIndex = tileGroup.megaTileIndex[tileset.getGroupMemberIndex(tileValue)];
+                            s32 xTileStart = 32*s32(tileX);
+                            s32 yTileStart = 32*s32(tileY);
+                            s32 xMiniTileMin = left < xTileStart ? 0 : (left-xTileStart)/8;
+                            s32 xMiniTileMax = right >= xTileStart+24 ? 4 : (right-xTileStart)/8+1;
+                            s32 yMiniTileMin = top < yTileStart ? 0 : (top-yTileStart)/8;
+                            s32 yMiniTileMax = bottom >= yTileStart+24 ? 4 : (bottom-yTileStart)/8+1;
+                            [&]() {
+                                for ( s32 yMiniTile = yMiniTileMin; yMiniTile < yMiniTileMax; ++yMiniTile )
+                                {
+                                    for ( s32 xMiniTile = xMiniTileMin; xMiniTile < xMiniTileMax; ++xMiniTile )
+                                    {
+                                        if ( !tileset.tileFlags[megaTileIndex].miniTileFlags[yMiniTile][xMiniTile].isWalkable() ) // Unit is invalidated
+                                        {
+                                            unlinkAndDeleteUnit(unitIndex, tileChanges);
+                                            cacheRefreshNeeded = true;
+                                            return;
+                                        }
+                                    }
+                                }
+                            }();
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if ( cacheRefreshNeeded )
+        refreshTileOccupationCache();
 }
 
 void GuiMap::setTileset(Sc::Terrain::Tileset tileset)
@@ -377,6 +450,55 @@ bool GuiMap::placeIsomTerrain(Chk::IsomDiamond isomDiamond, size_t terrainType, 
         return true;
     }
     return false;
+}
+
+void GuiMap::unlinkAndDeleteUnit(size_t unitIndex, std::shared_ptr<ReversibleActions> opUndos)
+{
+    const auto & toDelete = Scenario::getUnit(unitIndex);
+    for ( size_t unitIndex = 0; unitIndex < units.size(); ++unitIndex )
+    {
+        auto & unit = units[unitIndex];
+        if ( unit.relationClassId == toDelete.classId )
+        {
+            opUndos->Insert(UnitChange::Make(u16(unitIndex), Chk::Unit::Field::RelationClassId, unit.relationClassId));
+            opUndos->Insert(UnitChange::Make(u16(unitIndex), Chk::Unit::Field::RelationFlags, unit.relationFlags));
+            unit.relationClassId = 0;
+            unit.relationFlags = 0;
+            logger.info() << "Unit at index " << unitIndex << " unlinked from deleted unit" << std::endl;
+        }
+    }
+    opUndos->Insert(UnitCreateDel::Make(u16(unitIndex), toDelete));
+    Scenario::deleteUnit(unitIndex);
+}
+
+void GuiMap::changeUnitOwner(size_t unitIndex, u8 newPlayer, std::shared_ptr<ReversibleActions> opUndos)
+{
+    auto & toChange = Scenario::getUnit(unitIndex);
+    if ( toChange.owner != newPlayer )
+    {
+        opUndos->Insert(UnitChange::Make(u16(unitIndex), Chk::Unit::Field::Owner, toChange.owner));
+        toChange.owner = newPlayer;
+
+        if ( toChange.relationClassId != 0 && addonAutoPlayerSwap )
+        {
+            bool mayHaveAddon =
+                toChange.type == Sc::Unit::Type::TerranCommandCenter || toChange.type == Sc::Unit::Type::TerranScienceFacility ||
+                toChange.type == Sc::Unit::Type::TerranFactory || toChange.type == Sc::Unit::Type::TerranStarport;
+
+            if ( mayHaveAddon )
+            {
+                for ( size_t unitIndex = 0; unitIndex < units.size(); ++unitIndex )
+                {
+                    auto & unit = units[unitIndex];
+                    if ( toChange.relationClassId == unit.classId )
+                    {
+                        opUndos->Insert(UnitChange::Make(u16(unitIndex), Chk::Unit::Field::Owner, unit.owner));
+                        unit.owner = newPlayer;
+                    }
+                }
+            }
+        }
+    }
 }
 
 Layer GuiMap::getLayer()
@@ -547,7 +669,7 @@ void GuiMap::convertSelectionToTerrain()
         }
     }
     AddUndo(undoDoodadConversion);
-    refreshDoodadCache();
+    refreshTileOccupationCache();
 }
 
 void GuiMap::stackSelected()
@@ -1191,10 +1313,8 @@ void GuiMap::deleteSelection()
                 // Get the highest index in the selection
                 u16 index = selections.getHighestUnitIndex();
                 selections.removeUnit(index);
-                            
-                const Chk::Unit & delUnit = Scenario::getUnit(index);
-                deletes->Insert(UnitCreateDel::Make(index, delUnit));
-                Scenario::deleteUnit(index);
+
+                unlinkAndDeleteUnit(index, deletes);
             }
             AddUndo(deletes);
         }
@@ -1280,7 +1400,7 @@ void GuiMap::deleteSelection()
             deleteSpriteSelection();
             break;
         case Layer::CutCopyPaste:
-            refreshDoodadCache();
+            refreshTileOccupationCache();
             tileChanges = ReversibleActions::Make();
             fogChanges = ReversibleActions::Make();
             cutCopyPasteChanges = ReversibleActions::Make();
@@ -1309,9 +1429,10 @@ void GuiMap::paste(s32 mapClickX, s32 mapClickY)
 {
     selections.removeTiles();
     s32 xc = mapClickX, yc = mapClickY;
-    if ( currLayer == Layer::Units )
-        this->snapUnitCoordinate(xc, yc);
-
+    selections.setEndDrag(xc, yc);
+    SnapSelEndDrag();
+    xc = selections.getEndDrag().x;
+    yc = selections.getEndDrag().y;
     clipboard.doPaste(currLayer, currTerrainSubLayer, xc, yc, *this, undos, stackUnits);
 
     Redraw(true);
@@ -1326,8 +1447,7 @@ void GuiMap::PlayerChanged(u8 newPlayer)
         for ( u16 unitIndex : selUnits )
         {
             Chk::Unit & unit = Scenario::getUnit(unitIndex);
-            unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::Owner, unit.owner));
-            unit.owner = newPlayer;
+            CM->changeUnitOwner(unitIndex, newPlayer, unitChanges);
 
             if ( chkd.unitWindow.getHandle() != nullptr )
                 chkd.unitWindow.ChangeUnitsDisplayedOwner(unitIndex, newPlayer);
@@ -1363,6 +1483,11 @@ Selections & GuiMap::GetSelections()
 u16 GuiMap::GetSelectedLocation()
 {
     return selections.getSelectedLocation();
+}
+
+bool GuiMap::autoSwappingAddonPlayers()
+{
+    return addonAutoPlayerSwap;
 }
 
 void GuiMap::AddUndo(ReversiblePtr action)
@@ -1527,6 +1652,46 @@ bool GuiMap::EnsureBitmapSize(u32 desiredWidth, u32 desiredHeight)
     return false;
 }
 
+void GuiMap::SnapSelEndDrag()
+{
+    auto snapToGrid = [&]() {
+        u16 gridWidth = 32, gridHeight = 32;
+        if ( graphics.GetGridSize(0, gridWidth, gridHeight) )
+            selections.snapEndDrag(gridWidth, gridHeight);
+    };
+    switch ( currLayer )
+    {
+        case Layer::Units:
+            if ( clipboard.hasUnits() || clipboard.hasQuickUnits() )
+            {
+                const auto & firstUnit = clipboard.getUnits().begin()->unit;
+                if ( firstUnit.type < Sc::Unit::TotalTypes )
+                {
+                    const auto & dat = chkd.scData.units.getUnit(firstUnit.type);
+                    if ( (dat.flags & Sc::Unit::Flags::Building) == Sc::Unit::Flags::Building && buildingsSnapToTile )
+                    {
+                        bool oddTileWidth = (dat.starEditPlacementBoxWidth/32)%2 > 0;
+                        bool oddTileHeight = (dat.starEditPlacementBoxHeight/32)%2 > 0;
+                        POINT & endDrag = selections.getEndDrag();
+                        if ( (endDrag.x % 32) != (oddTileWidth ? 16 : 0) )
+                            endDrag.x = (endDrag.x + (oddTileWidth ? 16 : 16))/32*32 + (oddTileWidth ? (((endDrag.x+16) % 32) < 16 ? -16 : 16) : 0);
+                        if ( (endDrag.y % 32) != (oddTileHeight ? 16 : 0) )
+                            endDrag.y = (endDrag.y + (oddTileHeight ? 16 : 16))/32*32 + (oddTileHeight ? (((endDrag.y+16) % 32) < 16 ? -16 : 16) : 0);
+                    }
+                    else if ( snapUnits )
+                        snapToGrid();
+                }
+                else if ( snapUnits )
+                    snapToGrid();
+            }
+            break;
+        case Layer::Sprites:
+            if ( snapSprites )
+                snapToGrid();
+            break;
+    }
+}
+
 void GuiMap::PaintMap(GuiMapPtr currMap, bool pasting)
 {
     WinLib::DeviceContext dc(WindowsItem::getHandle());
@@ -1560,6 +1725,7 @@ void GuiMap::PaintMap(GuiMapPtr currMap, bool pasting)
             mapBuffer.flushBuffer(toolsBuffer);
             if ( currMap == nullptr || currMap.get() == this )
             { // Drag and paste graphics
+                SnapSelEndDrag();
                 graphics.DrawTools(toolsBuffer, scaledWidth, scaledHeight,
                     screenLeft, screenTop, selections, pasting, clipboard, *this);
 
@@ -1714,23 +1880,212 @@ bool GuiMap::DisplayingTileNums()
     return graphics.DisplayingTileNums();
 }
 
-bool GuiMap::snapUnitCoordinate(s32 & x, s32 & y)
+u32 GuiMap::getNextClassId()
 {
-    if ( snapUnits )
+    u32 maxClassId = 0;
+    for ( const auto & unit : units ) {
+        if ( unit.classId > maxClassId )
+            maxClassId = unit.classId;
+    }
+    return maxClassId+1;
+}
+
+bool GuiMap::isValidUnitPlacement(Sc::Unit::Type unitType, s32 x, s32 y)
+{
+    if ( unitType >= Sc::Unit::TotalTypes )
+        return true; // Extended units placement isn't checked for validity
+
+    bool placementIsBuilding = (chkd.scData.units.getUnit(unitType).flags & Sc::Unit::Flags::Building) == Sc::Unit::Flags::Building;
+    bool placementIsFlyer = (chkd.scData.units.getUnit(unitType).flags & Sc::Unit::Flags::Flyer) == Sc::Unit::Flags::Flyer;
+    bool placementIsResourceDepot = (chkd.scData.units.getUnit(unitType).flags & Sc::Unit::Flags::ResourceDepot) == Sc::Unit::Flags::ResourceDepot;
+
+    bool validateOnWalkableTerrain = !placementIsFlyer && !placementIsBuilding && !placeUnitsAnywhere;
+    bool validateOnBuildableTerrain = placementIsBuilding && !placeBuildingsAnywhere;
+    bool validatePlacableOnTerrain = validateOnWalkableTerrain || validateOnBuildableTerrain;
+    bool validateNotGroundStacked = !placementIsFlyer && !stackUnits;
+    bool validateNotAirStacked = placementIsFlyer && !stackAirUnits;
+    bool validateNotStacked = validateNotGroundStacked || validateNotAirStacked;
+    bool validateMineralDistance = requireMineralDistance && placementIsResourceDepot;
+    bool performValidation = validatePlacableOnTerrain || validateNotStacked || validateMineralDistance;
+
+    if ( performValidation )
     {
-        u16 gridWidth = 0, gridHeight = 0, offsetX = 0, offsetY = 0;
-        if ( graphics.GetGridSize(0, gridWidth, gridHeight) && graphics.GetGridOffset(0, offsetX, offsetY) &&
-             gridWidth > 0 && gridHeight > 0 )
+        const auto & placementDat = chkd.scData.units.getUnit(unitType);
+        s32 placementLeft   = x - s32(placementDat.unitSizeLeft),
+            placementRight  = x + s32(placementDat.unitSizeRight),
+            placementTop    = y - s32(placementDat.unitSizeUp),
+            placementBottom = y + s32(placementDat.unitSizeDown);
+
+        if ( validatePlacableOnTerrain )
         {
-            double intervalNum = (double(x - offsetX)) / gridWidth;
-            s32 xIntervalNum = (s32)round(intervalNum);
-            x = xIntervalNum*gridWidth;
-            intervalNum = (double(y - offsetY)) / gridHeight;
-            s32 yIntervalNum = (s32)round(intervalNum);
-            y = yIntervalNum*gridHeight;
+            if ( placementLeft >= 32*s32(dimensions.tileWidth) || placementTop >= 32*s32(dimensions.tileHeight) )
+                return false;
+
+            const auto & tileset = chkd.scData.terrain.get(this->getTileset());
+            s32 xTileMin = std::max(0, placementLeft/32);
+            s32 xTileMax = std::min(s32(dimensions.tileWidth-1), placementRight/32);
+            s32 yTileMin = std::max(0, placementTop/32);
+            s32 yTileMax = std::min(s32(dimensions.tileHeight-1), placementBottom/32);
+            for ( s32 yTile = yTileMin; yTile <= yTileMax; ++yTile )
+            {
+                for ( s32 xTile = xTileMin; xTile <= xTileMax; ++xTile )
+                {
+                    auto tileValue = tiles[size_t(yTile)*size_t(dimensions.tileWidth)+xTile];
+                    size_t groupIndex = Sc::Terrain::Tiles::getGroupIndex(tileValue);
+                    if ( groupIndex < tileset.tileGroups.size() )
+                    {
+                        const Sc::Terrain::TileGroup & tileGroup = tileset.tileGroups[groupIndex];
+                        if ( validateOnBuildableTerrain && !tileGroup.isBuildable() )
+                            return false; // Overlaps unbuildable tile
+
+                        if ( validatePlacableOnTerrain )
+                        {
+                            u16 megaTileIndex = tileGroup.megaTileIndex[tileset.getGroupMemberIndex(tileValue)];
+                            s32 xTileStart = 32*s32(xTile);
+                            s32 yTileStart = 32*s32(yTile);
+                            s32 xMiniTileMin = placementLeft < xTileStart ? 0 : (placementLeft-xTileStart)/8;
+                            s32 xMiniTileMax = placementRight >= xTileStart+24 ? 4 : (placementRight-xTileStart)/8+1;
+                            s32 yMiniTileMin = placementTop < yTileStart ? 0 : (placementTop-yTileStart)/8;
+                            s32 yMiniTileMax = placementBottom >= yTileStart+24 ? 4 : (placementBottom-yTileStart)/8+1;
+                            for ( s32 yMiniTile = yMiniTileMin; yMiniTile < yMiniTileMax; ++yMiniTile )
+                            {
+                                for ( s32 xMiniTile = xMiniTileMin; xMiniTile < xMiniTileMax; ++xMiniTile )
+                                {
+                                    if ( !tileset.tileFlags[megaTileIndex].miniTileFlags[yMiniTile][xMiniTile].isWalkable() )
+                                        return false; // Overlaps unwalkable mini-tile
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if ( validateNotStacked )
+        {
+            for ( const auto & unit : units )
+            {
+                if ( unit.type < Sc::Unit::TotalTypes )
+                {
+                    const auto & unitDat = chkd.scData.units.getUnit(unit.type);
+                    auto datFlags = unitDat.flags;
+                    bool isBuilding = (datFlags & Sc::Unit::Flags::Building) == Sc::Unit::Flags::Building;
+                    bool isFlyer = (datFlags & Sc::Unit::Flags::Flyer) == Sc::Unit::Flags::Flyer;
+                    bool isFlyingBuilding = isBuilding &&
+                        (datFlags & Sc::Unit::Flags::FlyingBuilding) == Sc::Unit::Flags::FlyingBuilding &&
+                        (unit.stateFlags & Chk::Unit::State::InTransit) == Chk::Unit::State::InTransit;
+                    bool isFlying = isFlyer || isFlyingBuilding;
+
+                    if ( (isFlying && validateNotAirStacked) || (!isFlying && validateNotGroundStacked) )
+                    {
+                        s32 left   = unit.xc - unitDat.unitSizeLeft,
+                            right  = unit.xc + unitDat.unitSizeRight,
+                            top    = unit.yc - unitDat.unitSizeUp,
+                            bottom = unit.yc + unitDat.unitSizeDown;
+
+                        if ( placementRight >= left && placementLeft <= right && placementBottom >= top && placementTop <= bottom )
+                            return false; // placement would be stacked on this unit
+                    }
+                }
+            }
+        }
+        if ( validateMineralDistance )
+        {
+            const auto & placementDat = chkd.scData.units.getUnit(unitType);
+            s32 xPlacementTileMin = std::max(0, (x - s32(placementDat.unitSizeLeft))/32),
+                xPlacementTileMax = std::min(s32(dimensions.tileWidth-1), (x + s32(placementDat.unitSizeRight))/32),
+                yPlacementTileMin = std::max(0, (y - s32(placementDat.unitSizeUp))/32),
+                yPlacementTileMax = std::min(s32(dimensions.tileHeight-1), (y + s32(placementDat.unitSizeDown))/32);
+
+            for ( const auto & unit : units )
+            {
+                if ( unit.type < Sc::Unit::TotalTypes )
+                {
+                    const auto & unitDat = chkd.scData.units.getUnit(unit.type);
+                    bool isResource = (unitDat.flags & Sc::Unit::Flags::ResourceContainer) == Sc::Unit::Flags::ResourceContainer;
+
+                    if ( isResource )
+                    {
+                        s32 xTileMin = std::max(0, (s32(unit.xc) - s32(unitDat.unitSizeLeft))/32-3);
+                        s32 xTileMax = std::min(s32(dimensions.tileWidth-1), (s32(unit.xc) + s32(unitDat.unitSizeRight))/32+3);
+                        s32 yTileMin = std::max(0, (s32(unit.yc) - s32(unitDat.unitSizeUp))/32-3);
+                        s32 yTileMax = std::min(s32(dimensions.tileHeight-1), (s32(unit.yc) + s32(unitDat.unitSizeDown))/32+3);
+
+                        if ( xPlacementTileMax >= xTileMin && xPlacementTileMin <= xTileMax && yPlacementTileMax >= yTileMin && yPlacementTileMin <= yTileMax )
+                            return false; // Placement violates mineral distance
+                    }
+                }
+            }
         }
     }
-    return false;
+    return true;
+}
+
+std::optional<u16> GuiMap::getLinkableUnitIndex(Sc::Unit::Type unitType, s32 x, s32 y)
+{
+    bool isAddon = false;
+    Sc::Unit::Type unitTypeToLocate = Sc::Unit::Type::AnyUnit;
+    Sc::Unit::Type otherUnitTypeToLocate = Sc::Unit::Type::AnyUnit;
+    switch ( unitType ) {
+        case Sc::Unit::Type::TerranControlTower:
+            unitTypeToLocate = Sc::Unit::Type::TerranStarport;
+            isAddon = true;
+            break;
+        case Sc::Unit::Type::TerranMachineShop:
+            unitTypeToLocate = Sc::Unit::Type::TerranFactory;
+            isAddon = true;
+            break;
+        case Sc::Unit::Type::TerranComsatStation:
+        case Sc::Unit::Type::TerranNuclearSilo:
+            unitTypeToLocate = Sc::Unit::Type::TerranCommandCenter;
+            isAddon = true;
+            break;
+        case Sc::Unit::Type::TerranCovertOps:
+        case Sc::Unit::Type::TerranPhysicsLab:
+            unitTypeToLocate = Sc::Unit::Type::TerranScienceFacility;
+            isAddon = true;
+            break;
+        case Sc::Unit::Type::TerranStarport:
+            unitTypeToLocate = Sc::Unit::Type::TerranControlTower;
+            break;
+        case Sc::Unit::Type::TerranFactory:
+            unitTypeToLocate = Sc::Unit::Type::TerranMachineShop;
+            break;
+        case Sc::Unit::Type::TerranCommandCenter:
+            unitTypeToLocate = Sc::Unit::Type::TerranComsatStation;
+            otherUnitTypeToLocate = Sc::Unit::Type::TerranNuclearSilo;
+            break;
+        case Sc::Unit::Type::TerranScienceFacility:
+            unitTypeToLocate = Sc::Unit::Type::TerranCovertOps;
+            otherUnitTypeToLocate = Sc::Unit::Type::TerranPhysicsLab;
+            break;
+        default:
+            return std::nullopt;
+    }
+
+    const auto & checkDat = chkd.scData.units.getUnit(unitType);
+    for ( size_t unitIndex = 0; unitIndex < numUnits(); ++unitIndex )
+    {
+        const auto & unit = units[unitIndex];
+        if ( unit.relationClassId == 0 && (unit.type == unitTypeToLocate || unit.type == otherUnitTypeToLocate ) )
+        { // Correct unit type which doesn't already have a relation
+            const auto & dat = chkd.scData.units.getUnit(unit.type);
+            auto unitOriginX = unit.xc - dat.starEditPlacementBoxWidth/2;
+            auto unitOriginY = unit.yc - dat.starEditPlacementBoxHeight/2;
+            auto checkOriginX = x - checkDat.starEditPlacementBoxWidth/2;
+            auto checkOriginY = y - checkDat.starEditPlacementBoxHeight/2;
+            if ( isAddon && (unitOriginX + checkDat.addonHorizontal == checkOriginX && unitOriginY + checkDat.addonVertical == checkOriginY) )
+                return u16(unitIndex);
+            else if ( !isAddon && (checkOriginX + dat.addonHorizontal == unitOriginX && checkOriginY + dat.addonVertical == unitOriginY) )
+                return u16(unitIndex);
+        }
+    }
+    return std::nullopt;
+}
+
+void GuiMap::ToggleBuildingsSnapToTile()
+{
+    buildingsSnapToTile = !buildingsSnapToTile;
+    UpdateUnitMenuItems();
 }
 
 void GuiMap::ToggleUnitSnap()
@@ -1743,6 +2098,42 @@ void GuiMap::ToggleUnitStack()
 {
     stackUnits = !stackUnits;
     UpdateUnitMenuItems();
+}
+
+void GuiMap::ToggleEnableAirStack()
+{
+    stackAirUnits = !stackAirUnits;
+    UpdateUnitMenuItems();
+}
+
+void GuiMap::TogglePlaceUnitsAnywhere()
+{
+    placeUnitsAnywhere = !placeUnitsAnywhere;
+    UpdateUnitMenuItems();
+}
+
+void GuiMap::TogglePlaceBuildingsAnywhere()
+{
+    placeBuildingsAnywhere = !placeBuildingsAnywhere;
+    UpdateUnitMenuItems();
+}
+
+void GuiMap::ToggleAddonAutoPlayerSwap()
+{
+    addonAutoPlayerSwap = !addonAutoPlayerSwap;
+    UpdateUnitMenuItems();
+}
+
+void GuiMap::ToggleRequireMineralDistance()
+{
+    requireMineralDistance = !requireMineralDistance;
+    UpdateUnitMenuItems();
+}
+
+void GuiMap::ToggleSpriteSnap()
+{
+    snapSprites = !snapSprites;
+    UpdateSpriteMenuItems();
 }
 
 void GuiMap::ToggleLocationNameClip()
@@ -2018,8 +2409,19 @@ void GuiMap::UpdateTerrainViewMenuItems()
 
 void GuiMap::UpdateUnitMenuItems()
 {
+    chkd.mainMenu.SetCheck(ID_UNITS_BUILDINGSSNAPTOTILE, buildingsSnapToTile);
     chkd.mainMenu.SetCheck(ID_UNITS_UNITSSNAPTOGRID, snapUnits);
     chkd.mainMenu.SetCheck(ID_UNITS_ALLOWSTACK, stackUnits);
+    chkd.mainMenu.SetCheck(ID_UNITS_ENABLEAIRSTACK, stackAirUnits);
+    chkd.mainMenu.SetCheck(ID_UNITS_PLACEUNITSANYWHERE, placeUnitsAnywhere);
+    chkd.mainMenu.SetCheck(ID_UNITS_PLACEBUILDINGSANYWHERE, placeBuildingsAnywhere);
+    chkd.mainMenu.SetCheck(ID_UNITS_ADDONAUTOPLAYERSWAP, addonAutoPlayerSwap);
+    chkd.mainMenu.SetCheck(ID_UNITS_REQUIREMINERALDISTANCE, requireMineralDistance);
+}
+
+void GuiMap::UpdateSpriteMenuItems()
+{
+    chkd.mainMenu.SetCheck(ID_SPRITES_SNAPTOGRID, snapSprites);
 }
 
 void GuiMap::UpdateCutCopyPasteMenuItems()
@@ -2128,6 +2530,7 @@ void GuiMap::updateMenu()
     UpdateGridColorMenu();
     UpdateTerrainViewMenuItems();
     UpdateUnitMenuItems();
+    UpdateSpriteMenuItems();
     UpdateCutCopyPasteMenuItems();
     chkd.mainToolbar.checkTerrain.SetCheck(cutCopyPasteTerrain);
     chkd.mainToolbar.checkDoodads.SetCheck(cutCopyPasteDoodads);
@@ -2451,12 +2854,12 @@ void GuiMap::LButtonDown(int x, int y, WPARAM wParam)
                     {
                         if ( currLayer == Layer::Terrain )
                         {
-                            refreshDoodadCache();
+                            refreshTileOccupationCache();
                             tileChanges = ReversibleActions::Make();
                         }
                         else if ( currLayer == Layer::CutCopyPaste )
                         {
-                            refreshDoodadCache();
+                            refreshTileOccupationCache();
                             tileChanges = ReversibleActions::Make();
                             this->fogChanges = ReversibleActions::Make();
                             this->cutCopyPasteChanges = ReversibleActions::Make();
@@ -2558,8 +2961,8 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
                     else if ( currLayer == Layer::Units )
                     {
                         s32 xc = mapHoverX, yc = mapHoverY;
-                        if ( snapUnitCoordinate(xc, yc) )
-                            selections.setEndDrag(xc, yc);
+                        selections.setEndDrag(xc, yc);
+                        SnapSelEndDrag();
                     }
 
                     PaintMap(nullptr, chkd.maps.clipboard.isPasting());
@@ -2587,10 +2990,8 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
                             else if ( yc > rcMap.bottom-2 + screenTop )
                                 yc = rcMap.bottom-2 + screenTop;
 
-                            if ( currLayer == Layer::Units )
-                                snapUnitCoordinate(xc, yc);
-
                             selections.setEndDrag(xc, yc);
+                            SnapSelEndDrag();
                             if ( !chkd.maps.clipboard.isPreviousPasteLoc(u16(xc), u16(yc)) )
                                 paste((s16)xc, (s16)yc);
                         }
@@ -2616,8 +3017,8 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
                         else if ( currLayer == Layer::Units )
                         {
                             s32 xc = mapHoverX, yc = mapHoverY;
-                            if ( snapUnitCoordinate(xc, yc) )
-                                selections.setEndDrag(xc, yc);
+                            selections.setEndDrag(xc, yc);
+                            SnapSelEndDrag();
                         }
                     }
                     PaintMap(nullptr, chkd.maps.clipboard.isPasting());
@@ -2647,13 +3048,8 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
                                 Scroll(true, true, true);
                             }
                         }
-
-                        if ( currLayer == Layer::Units )
-                        {
-                            snapUnitCoordinate(mapHoverX, mapHoverY);
-                            selections.setEndDrag(mapHoverX, mapHoverY);
-                        }
-                        else if ( currLayer == Layer::CutCopyPaste )
+                        
+                        if ( currLayer == Layer::CutCopyPaste )
                         {
                             selections.setEndDrag(mapHoverX, mapHoverY);
                             u16 gridWidth = 32, gridHeight = 32;
@@ -3331,8 +3727,8 @@ void GuiMap::addIsomUndo(const Chk::IsomRectUndo & isomUndo)
         tileChanges->Insert(IsomChange::Make(isomUndo));
 }
 
-void GuiMap::refreshDoodadCache()
+void GuiMap::refreshTileOccupationCache()
 {
-    auto newDoodadCache = Scenario::getDoodadCache(chkd.scData.terrain.get(Scenario::getTileset()));
-    this->doodadCache.swap(newDoodadCache);
+    auto newTileOccupationCache = Scenario::getTileOccupationCache(chkd.scData.terrain.get(Scenario::getTileset()), chkd.scData.units);
+    this->tileOccupationCache.swap(newTileOccupationCache);
 }

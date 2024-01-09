@@ -285,6 +285,7 @@ struct Scenario
     void copyIsomFrom(const Scenario & sourceMap, int32_t xTileOffset, int32_t yTileOffset, bool undoable, Chk::IsomCache & destCache);
     void updateTilesFromIsom(Chk::IsomCache & cache);
     bool resizeIsom(int32_t xTileOffset, int32_t yTileOffset, size_t oldMapWidth, size_t oldMapHeight, bool fixBorders, Chk::IsomCache & cache);
+    Chk::TileOccupationCache getTileOccupationCache(const Sc::Terrain::Tiles & tileset, const Sc::Unit & unitData) const;
 
     // Layers API
     void validateSizes(u16 sizeValidationFlags, u16 prevWidth, u16 prevHeight);
@@ -308,7 +309,6 @@ struct Scenario
     size_t numDoodads() const;
     Chk::Doodad & getDoodad(size_t doodadIndex);
     const Chk::Doodad & getDoodad(size_t doodadIndex) const;
-    Chk::DoodadCache getDoodadCache(const Sc::Terrain::Tiles & tileset) const;
     size_t addDoodad(const Chk::Doodad & doodad);
     void insertDoodad(size_t doodadIndex, const Chk::Doodad & doodad);
     void deleteDoodad(size_t doodadIndex);

@@ -2140,26 +2140,26 @@ namespace Chk {
         }
     };
 
-    // When tiles change doodads may be invalidated and need to be removed (depending on editor configuration settings)
-    // It can be very expensive to check for doodads when performing a lot of tile operations at once (e.g. dragging around an ISOM brush or tile-paste)
-    // DoodadCache provides a constant-runtime means of checking whether a tile includes a doodad and potentially requires further operations
-    class DoodadCache
+    // When tiles change... doodads, units, and possibly other things may be invalidated and need to be removed (depending on editor configuration settings)
+    // It can be very expensive to check for what occupies tiles when performing a lot of tile operations at once (e.g. dragging around an ISOM brush)
+    // TileOccupationCache provides a constant-runtime means of checking whether a tile is occupied and potentially requires further operations
+    class TileOccupationCache
     {
-        std::vector<bool> doodadPresence {};
+        std::vector<bool> tileIsOccupied {};
 
     public:
-        DoodadCache() = default;
+        TileOccupationCache() = default;
 
-        DoodadCache(std::vector<bool> & doodadPresence) {
-            this->doodadPresence.swap(doodadPresence);
+        TileOccupationCache(std::vector<bool> & tileOccupied) {
+            this->tileIsOccupied.swap(tileOccupied);
         }
 
         bool tileOccupied(size_t x, size_t y, size_t tileWidth) const {
-            return doodadPresence[tileWidth*y+x];
+            return tileIsOccupied[tileWidth*y+x];
         }
 
-        void swap(DoodadCache & other) {
-            this->doodadPresence.swap(other.doodadPresence);
+        void swap(TileOccupationCache & other) {
+            this->tileIsOccupied.swap(other.tileIsOccupied);
         }
     };
 }

@@ -16,8 +16,8 @@ void Chkdraft::OnLoadTest()
 {
     auto & map = []() -> GuiMap & {
         auto map = chkd.maps.NewMap();
-        map->addUnit(Chk::Unit {0, 64, 64, Sc::Unit::Type::StartLocation, 0, 0, 0, Sc::Player::Id::Player1});
-        map->addUnit(Chk::Unit {0, 192, 64, Sc::Unit::Type::StartLocation, 0, 0, 0, Sc::Player::Id::Player2});
+        map->addUnit(Chk::Unit {map->getNextClassId(), 64, 64, Sc::Unit::Type::StartLocation, 0, 0, 0, Sc::Player::Id::Player1});
+        map->addUnit(Chk::Unit {map->getNextClassId(), 192, 64, Sc::Unit::Type::StartLocation, 0, 0, 0, Sc::Player::Id::Player2});
         map->setForceFlags(Chk::Force::Force1, Chk::ForceFlags::All & Chk::ForceFlags::xRandomizeStartLocation);
         map->setForceFlags(Chk::Force::Force2, Chk::ForceFlags::All & Chk::ForceFlags::xRandomizeStartLocation);
         map->setPlayerForce(Sc::Player::Id::Player2, Chk::Force::Force2);
@@ -591,8 +591,14 @@ LRESULT Chkdraft::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 
         // Editor
         // Units
+    case ID_UNITS_BUILDINGSSNAPTOTILE: CM->ToggleBuildingsSnapToTile(); break;
     case ID_UNITS_UNITSSNAPTOGRID: CM->ToggleUnitSnap(); break;
     case ID_UNITS_ALLOWSTACK: CM->ToggleUnitStack(); break;
+    case ID_UNITS_ENABLEAIRSTACK: CM->ToggleEnableAirStack(); break;
+    case ID_UNITS_PLACEUNITSANYWHERE: CM->TogglePlaceUnitsAnywhere(); break;
+    case ID_UNITS_PLACEBUILDINGSANYWHERE: CM->TogglePlaceBuildingsAnywhere(); break;
+    case ID_UNITS_ADDONAUTOPLAYERSWAP: CM->ToggleAddonAutoPlayerSwap(); break;
+    case ID_UNITS_REQUIREMINERALDISTANCE: CM->ToggleRequireMineralDistance(); break;
 
         // Logger
     case ID_LOGGER_TOGGLELOGGER: mainPlot.loggerWindow.ToggleVisible(); break;
@@ -617,6 +623,9 @@ LRESULT Chkdraft::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 
         // Doodads
     case ID_DOODADS_ALLOWILLEGALPLACEMENT: CM->ToggleAllowIllegalDoodadPlacement(); break;
+
+        // Sprites
+    case ID_SPRITES_SNAPTOGRID: CM->ToggleSpriteSnap(); break;
 
         // Cut Copy Paste
     case ID_CUTCOPYPASTE_SNAPSELECTIONTOTILES: CM->SetCutCopyPasteSnap(GuiMap::Snap::SnapToTile); break;

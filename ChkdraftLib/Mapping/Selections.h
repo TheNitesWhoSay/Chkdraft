@@ -41,6 +41,7 @@ class Selections
         void setEndDrag(s32 x, s32 y);
         void setDrags(s32 x, s32 y);
         void snapDrags(s32 xInterval, s32 yInterval, bool nonZeroSnap);
+        void snapEndDrag(s32 xInterval, s32 yInterval);
         POINT & getStartDrag() { return startDrag; }
         POINT & getEndDrag() { return endDrag; }
         void setMoved() { moved = true; }

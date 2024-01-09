@@ -69,6 +69,15 @@ void Selections::snapDrags(s32 xInterval, s32 yInterval, bool nonZeroSnap)
     }
 }
 
+void Selections::snapEndDrag(s32 xInterval, s32 yInterval)
+{
+    if ( xInterval > 0 && (endDrag.x % xInterval) != 0 )
+        endDrag.x = (endDrag.x+xInterval/2)/xInterval*xInterval;
+
+    if ( yInterval > 0 && (endDrag.y % yInterval) != 0  )
+        endDrag.y = (endDrag.y+yInterval/2)/yInterval*yInterval;
+}
+
 void Selections::removeTile(TileNode* & tile)
 {
     removeTile(tile->xc, tile->yc);

@@ -181,6 +181,7 @@ class Clipboard
         std::vector<PasteFogTileNode> copyFogTiles;
         FogBrush fogBrush {};
         std::chrono::time_point<std::chrono::steady_clock> lastPasteTime = std::chrono::steady_clock::now();
+        std::optional<u16> lastPasteNydus;
 
         POINT prevPaste;
 

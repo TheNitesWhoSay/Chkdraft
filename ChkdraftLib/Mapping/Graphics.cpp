@@ -155,6 +155,8 @@ void Graphics::updatePalette()
 
 void Graphics::DrawMap(const WinLib::DeviceContext & dc, u16 bitWidth, u16 bitHeight, s32 screenLeft, s32 screenTop, ChkdBitmap & bitmap, bool showAnywhere)
 {
+    std::fill(bitmap.begin(), bitmap.end(), Sc::SystemColor(0, 0, 0));
+
     this->screenLeft = screenLeft;
     this->screenTop = screenTop;
 
@@ -1776,15 +1778,46 @@ void DrawPasteGraphics(const WinLib::DeviceContext & dc, ChkdPalette & palette, 
             {
                 Chk::PlayerColor color = (pasteUnit.unit.owner < Sc::Player::TotalSlots ?
                     map.getPlayerColor(pasteUnit.unit.owner) : (Chk::PlayerColor)pasteUnit.unit.owner);
-                if ( paste.y+ pasteUnit.yc >= 0 )
+
+                if ( paste.y + pasteUnit.yc >= 0 )
                 {
                     UnitToBits(graphicBits, palette, color, width, height, sScreenLeft, sScreenTop,
-                        (u16)pasteUnit.unit.type, u16(paste.x+ pasteUnit.xc), u16(paste.y+ pasteUnit.yc), 0, false );
+                        (u16)pasteUnit.unit.type, u16(paste.x + pasteUnit.xc), u16(paste.y + pasteUnit.yc), 0, false );
                 }
             }
         }
 
         dc.setBitsToDevice(0, 0, width, height, 0, 0, 0, height, &graphicBits[0], &bmi);
+        
+        if ( paste.x != -1 && paste.y != -1 )
+        {
+            std::vector<PasteUnitNode> units = clipboard.getUnits();
+            for ( auto & pasteUnit : units )
+            {
+                if ( pasteUnit.unit.type < Sc::Unit::TotalTypes )
+                {
+                    const auto & unitDat = chkd.scData.units.getUnit(pasteUnit.unit.type);
+                    bool isValidPlacement = map.isValidUnitPlacement(pasteUnit.unit.type, paste.x + pasteUnit.xc, paste.y + pasteUnit.yc);
+                    bool isBuilding = (unitDat.flags & Sc::Unit::Flags::Building) == Sc::Unit::Flags::Building;
+                    if ( isBuilding )
+                    {
+                        s32 left = paste.x + pasteUnit.xc - unitDat.starEditPlacementBoxWidth/2 - screenLeft;
+                        s32 top = paste.y + pasteUnit.yc - unitDat.starEditPlacementBoxHeight/2 - screenTop;
+                        s32 right = paste.x + pasteUnit.xc + unitDat.starEditPlacementBoxWidth/2 - screenLeft;
+                        s32 bottom = paste.y + pasteUnit.yc + unitDat.starEditPlacementBoxHeight/2 - screenTop;
+                        dc.frameRect(RECT{left, top, right, bottom}, isValidPlacement ? RGB(0, 255, 0) : RGB(255, 0, 0));
+                    }
+                    else
+                    {
+                        s32 left = paste.x + pasteUnit.xc - unitDat.unitSizeLeft - screenLeft;
+                        s32 top = paste.y + pasteUnit.yc - unitDat.unitSizeUp - screenTop;
+                        s32 right = paste.x + pasteUnit.xc + unitDat.unitSizeRight - screenLeft;
+                        s32 bottom = paste.y + pasteUnit.yc + unitDat.unitSizeDown - screenTop;
+                        dc.frameRect(RECT{left, top, right, bottom}, isValidPlacement ? RGB(0, 255, 0) : RGB(255, 0, 0));
+                    }
+                }
+            }
+        }
     };
     auto drawPasteSprites = [&](POINT paste) {
         ChkdBitmap graphicBits;

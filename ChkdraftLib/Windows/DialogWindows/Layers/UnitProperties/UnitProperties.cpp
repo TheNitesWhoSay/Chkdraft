@@ -130,10 +130,8 @@ void UnitPropertiesWindow::ChangeCurrOwner(u8 newOwner)
         Chk::Unit & unit = CM->getUnit(unitIndex);
         if ( unit.owner != newOwner ) // If the current and new owners are different
         {
-            u8 prevOwner = unit.owner;
-            unit.owner = newOwner;
+            CM->changeUnitOwner(unitIndex, newOwner, undoableChanges);
             ChangeUnitsDisplayedOwner(unitIndex, newOwner);
-            undoableChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::Owner, prevOwner));
         }
     }
     CM->AddUndo(undoableChanges);
@@ -730,12 +728,7 @@ void UnitPropertiesWindow::NotifyDeletePressed()
         selections.removeUnit(index);
         listUnits.RemoveRow(index);
 
-        int row = listUnits.GetItemRow(index);
-
-        const Chk::Unit & unit = CM->getUnit(index);
-        unitDeletes->Insert(UnitCreateDel::Make(index, unit));
-
-        CM->deleteUnit(index);
+        CM->unlinkAndDeleteUnit(index, unitDeletes);
 
         for ( size_t i = index + 1; i <= CM->numUnits(); i++ )
             ChangeIndex(hUnitList, i, i - 1);
