@@ -655,6 +655,7 @@ LRESULT Chkdraft::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     case ID_WINDOW_CLOSE: maps.destroyActive(); break;
 
         // Help
+    case ID_HELP_ABOUT: aboutWindow.CreateThis(getHandle()); break;
     case ID_HELP_STARCRAFT_WIKI: OpenWebPage("http://www.staredit.net/wiki/index.php?title=Main_Page"); break;
     case ID_HELP_SUPPORT_FORUM: OpenWebPage("http://www.staredit.net/forums/"); break;
     case ID_HELP_CHKDRAFTGITHUB: OpenWebPage("https://github.com/TheNitesWhoSay/Chkdraft/"); break;

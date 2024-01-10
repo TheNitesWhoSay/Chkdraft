@@ -82,6 +82,7 @@
     <ClInclude Include="Windows\ChkdControls\TechTree.h" />
     <ClInclude Include="Windows\ChkdControls\UnitTree.h" />
     <ClInclude Include="Windows\ChkdControls\UpgradeTree.h" />
+    <ClInclude Include="Windows\DialogWindows\About.h" />
     <ClInclude Include="Windows\DialogWindows\BriefingEditor\BriefingEditor.h" />
     <ClInclude Include="Windows\DialogWindows\BriefingEditor\BriefingTemplates.h" />
     <ClInclude Include="Windows\DialogWindows\BriefingEditor\BriefingTrigActions.h" />
@@ -179,6 +180,7 @@
     <ClCompile Include="Windows\ChkdControls\TechTree.cpp" />
     <ClCompile Include="Windows\ChkdControls\UnitTree.cpp" />
     <ClCompile Include="Windows\ChkdControls\UpgradeTree.cpp" />
+    <ClCompile Include="Windows\DialogWindows\About.cpp" />
     <ClCompile Include="Windows\DialogWindows\BriefingEditor\BriefingEditor.cpp" />
     <ClCompile Include="Windows\DialogWindows\BriefingEditor\BriefingTemplates.cpp" />
     <ClCompile Include="Windows\DialogWindows\BriefingEditor\BriefingTrigActions.cpp" />

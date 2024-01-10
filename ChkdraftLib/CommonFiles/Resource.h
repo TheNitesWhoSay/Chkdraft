@@ -34,6 +34,7 @@
 #define IDD_INPUTCRGBCOLOR              157
 #define IDD_BRIEFTRIGEDIT               158
 #define IDD_SPRITEPROPERTIES            159
+#define IDD_DIALOG_ABOUT                161
 #define IDC_LIST_TILESET                1007
 #define IDC_LIST_DEFAULTTERRAIN         1008
 #define IDC_EDIT_TRIGTEXT               1009
@@ -173,6 +174,8 @@
 #define IDC_CHECK_UNUSED2               1134
 #define IDC_CHECK_UNUSED3               1135
 #define IDC_STATIC_TEXT                 1136
+#define IDC_STATIC_LICENSE              1137
+#define IDC_CREDITS                     1138
 #define ID_FILE_NEW1                    40025
 #define ID_FILE_OPEN1                   40026
 #define ID_ADVANCED_OPENBACKUPDATABASE  40027
@@ -356,9 +359,9 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        161
+#define _APS_NEXT_RESOURCE_VALUE        163
 #define _APS_NEXT_COMMAND_VALUE         40663
-#define _APS_NEXT_CONTROL_VALUE         1137
+#define _APS_NEXT_CONTROL_VALUE         1139
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

@@ -39,6 +39,7 @@ class Chkdraft : public WinLib::ClassWindow
                     BriefingTrigEditorWindow briefingTrigEditorWindow; // Modeless briefing trig editor
                     ChangePasswordDialog changePasswordWindow; // Modeless password editor
                     EnterPasswordDialog enterPasswordWindow; // Modeless login window
+                    AboutWindow aboutWindow; // Modeless about window
 
 /* Constructors */  Chkdraft();
                     
