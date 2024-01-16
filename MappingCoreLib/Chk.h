@@ -357,6 +357,7 @@ namespace Chk {
         }
 
         bool isDrawnAsSprite() const;
+        bool isUnit() const;
 
         Sc::Sprite::Type type;
         u16 xc;

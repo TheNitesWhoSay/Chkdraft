@@ -28,7 +28,7 @@ class SpritePropertiesWindow : public WinLib::ClassDialog
         void RepopulateList();
 
     protected:
-        std::string GetSpriteName(Sc::Sprite::Type type);
+        std::string GetSpriteName(Sc::Sprite::Type type, bool isUnit);
         void EnableSpriteEditing();
         void DisableSpriteEditing();
         void SetSpriteFieldText(const Chk::Sprite & sprite);

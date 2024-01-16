@@ -119,6 +119,7 @@ GuiMapPtr Maps::NewMap(Sc::Terrain::Tileset tileset, u16 width, u16 height, size
                 UntitledNumber++;
                 EnableMapping();
                 Focus(newMap);
+                currentlyActiveMap->refreshScenario();
                 currentlyActiveMap->Redraw(true);
             
                 auto finish = std::chrono::high_resolution_clock::now();
@@ -246,7 +247,7 @@ void Maps::ChangeLayer(Layer newLayer)
              newLayer == Layer::FogView || newLayer == Layer::Doodads || newLayer == Layer::CutCopyPaste )
             // Layers where player#'s are relevant
         {
-            ChangePlayer(currentlyActiveMap->getCurrPlayer());
+            ChangePlayer(currentlyActiveMap->getCurrPlayer(), false);
             ShowWindow(chkd.mainToolbar.playerBox.getHandle(), SW_SHOW);
         }
         else // Layers where player#'s are irrelevant
@@ -365,59 +366,73 @@ void Maps::ChangeZoom(bool increment)
     }
 }
 
-void Maps::ChangePlayer(u8 newPlayer)
+void Maps::ChangePlayer(u8 newPlayer, bool updateMapPlayers)
 {
     currentlyActiveMap->setCurrPlayer(newPlayer);
 
-    if ( currentlyActiveMap->getLayer() == Layer::Units )
+    if ( updateMapPlayers )
     {
-        if ( clipboard.isPasting() )
+        if ( currentlyActiveMap->getLayer() == Layer::Units )
         {
-            auto & units = clipboard.getUnits();
-            for ( auto & pasteUnit : units )
-                pasteUnit.unit.owner = newPlayer;
-        }
-
-        currentlyActiveMap->PlayerChanged(newPlayer);
-    }
-    else if ( currentlyActiveMap->getLayer() == Layer::Doodads )
-    {
-        if ( clipboard.isPasting() )
-        {
-            auto & doodads = clipboard.getDoodads();
-            for ( auto & pasteDoodad : doodads )
-                pasteDoodad.owner = newPlayer;
-        }
-        else if ( currentlyActiveMap->GetSelections().hasDoodads() )
-        {
-            auto doodadPlayerChangeUndo = ReversibleActions::Make();
-            const auto & tileset = chkd.scData.terrain.get(currentlyActiveMap->getTileset());
-            auto & selDoodads = currentlyActiveMap->GetSelections().getDoodads();
-            for ( auto doodadIndex : selDoodads )
+            if ( clipboard.isPasting() )
             {
-                auto & selDoodad = currentlyActiveMap->getDoodad(doodadIndex);
-                if ( auto doodadGroupIndex = tileset.getDoodadGroupIndex(selDoodad.type) )
+                auto & units = clipboard.getUnits();
+                for ( auto & pasteUnit : units )
+                    pasteUnit.unit.owner = newPlayer;
+            }
+
+            currentlyActiveMap->PlayerChanged(newPlayer);
+        }
+        else if ( currentlyActiveMap->getLayer() == Layer::Doodads )
+        {
+            if ( clipboard.isPasting() )
+            {
+                auto & doodads = clipboard.getDoodads();
+                for ( auto & pasteDoodad : doodads )
+                    pasteDoodad.owner = newPlayer;
+            }
+            else if ( currentlyActiveMap->GetSelections().hasDoodads() )
+            {
+                auto doodadPlayerChangeUndo = ReversibleActions::Make();
+                const auto & tileset = chkd.scData.terrain.get(currentlyActiveMap->getTileset());
+                auto & selDoodads = currentlyActiveMap->GetSelections().getDoodads();
+                for ( auto doodadIndex : selDoodads )
                 {
-                    const auto & doodadDat = (Sc::Terrain::DoodadCv5 &)tileset.tileGroups[*doodadGroupIndex];
-                    if ( selDoodad.owner != newPlayer )
+                    auto & selDoodad = currentlyActiveMap->getDoodad(doodadIndex);
+                    if ( auto doodadGroupIndex = tileset.getDoodadGroupIndex(selDoodad.type) )
                     {
-                        doodadPlayerChangeUndo->Insert(DoodadChange::Make(u16(doodadIndex), selDoodad.owner, selDoodad.enabled));
-                        selDoodad.owner = newPlayer;
-                        if ( !currentlyActiveMap->sprites.empty() )
+                        const auto & doodadDat = (Sc::Terrain::DoodadCv5 &)tileset.tileGroups[*doodadGroupIndex];
+                        if ( selDoodad.owner != newPlayer )
                         {
-                            for ( int i=int(currentlyActiveMap->sprites.size())-1; i>=0; --i )
+                            doodadPlayerChangeUndo->Insert(DoodadChange::Make(u16(doodadIndex), selDoodad.owner, selDoodad.enabled));
+                            selDoodad.owner = newPlayer;
+                            if ( !currentlyActiveMap->sprites.empty() )
                             {
-                                auto & sprite = currentlyActiveMap->sprites[i];
-                                if ( sprite.type == doodadDat.overlayIndex && sprite.xc == selDoodad.xc && sprite.yc == selDoodad.yc )
-                                    sprite.owner = newPlayer;
+                                for ( int i=int(currentlyActiveMap->sprites.size())-1; i>=0; --i )
+                                {
+                                    auto & sprite = currentlyActiveMap->sprites[i];
+                                    if ( sprite.type == doodadDat.overlayIndex && sprite.xc == selDoodad.xc && sprite.yc == selDoodad.yc )
+                                        sprite.owner = newPlayer;
+                                }
                             }
                         }
                     }
                 }
+                currentlyActiveMap->AddUndo(doodadPlayerChangeUndo);
             }
-            currentlyActiveMap->AddUndo(doodadPlayerChangeUndo);
+            else if ( currentlyActiveMap->GetSelections().hasSprites() )
+            {
+                if ( clipboard.isPasting() )
+                {
+                    auto & sprites = clipboard.getSprites();
+                    for ( auto & pasteSprite : sprites )
+                        pasteSprite.sprite.owner = newPlayer;
+                }
+            }
+
+            currentlyActiveMap->PlayerChanged(newPlayer);
         }
-        else if ( currentlyActiveMap->GetSelections().hasSprites() )
+        else if ( currentlyActiveMap->getLayer() == Layer::Sprites )
         {
             if ( clipboard.isPasting() )
             {
@@ -425,20 +440,9 @@ void Maps::ChangePlayer(u8 newPlayer)
                 for ( auto & pasteSprite : sprites )
                     pasteSprite.sprite.owner = newPlayer;
             }
-        }
 
-        currentlyActiveMap->PlayerChanged(newPlayer);
-    }
-    else if ( currentlyActiveMap->getLayer() == Layer::Sprites )
-    {
-        if ( clipboard.isPasting() )
-        {
-            auto & sprites = clipboard.getSprites();
-            for ( auto & pasteSprite : sprites )
-                pasteSprite.sprite.owner = newPlayer;
+            currentlyActiveMap->PlayerChanged(newPlayer);
         }
-
-        currentlyActiveMap->PlayerChanged(newPlayer);
     }
 
     char color[32], race[32], playerText[64];
@@ -805,6 +809,7 @@ void Maps::DisableMapping()
         chkd.briefingTrigEditorWindow.DestroyThis();
         chkd.changePasswordWindow.DestroyThis();
         chkd.enterPasswordWindow.DestroyThis();
+        chkd.dimensionsWindow.DestroyThis();
 
         int toolbarItems[] =
         {

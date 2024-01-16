@@ -41,13 +41,16 @@ void DoodadCreateDel::Reverse(void *guiMap)
                 for ( u16 y=0; y<doodadDat.tileHeight; ++y )
                 {
                     auto yc = yStart+y;
-                    u16 tileGroupIndex = *doodadGroupIndex + y;
-                    const auto & tileGroup = tileset.tileGroups[tileGroupIndex];
-                    for ( u16 x=0; x<doodadDat.tileWidth; ++x )
+                    if ( yc < map.getTileHeight() )
                     {
-                        auto xc = xStart+x;
-                        if ( tileGroup.megaTileIndex[x] != 0 )
-                            std::swap(this->tileIndex[x][y], map.tiles[yc*mapWidth+xc]);
+                        u16 tileGroupIndex = *doodadGroupIndex + y;
+                        const auto & tileGroup = tileset.tileGroups[tileGroupIndex];
+                        for ( u16 x=0; x<doodadDat.tileWidth; ++x )
+                        {
+                            auto xc = xStart+x;
+                            if ( tileGroup.megaTileIndex[x] != 0 && xc < map.getTileWidth() )
+                                std::swap(this->tileIndex[x][y], map.tiles[yc*mapWidth+xc]);
+                        }
                     }
                 }
             
@@ -80,16 +83,19 @@ void DoodadCreateDel::Reverse(void *guiMap)
 
                 for ( u16 y=0; y<doodadDat.tileHeight; ++y )
                 {
-                    auto yc = yStart+y; 
-                    u16 tileGroupIndex = *doodadGroupIndex + y;
-                    const auto & tileGroup = tileset.tileGroups[tileGroupIndex];
-                    for ( u16 x=0; x<doodadDat.tileWidth; ++x )
+                    auto yc = yStart+y;
+                    if ( yc < map.getTileHeight() )
                     {
-                        auto xc = xStart+x;
-                        if ( tileGroup.megaTileIndex[x] != 0 )
+                        u16 tileGroupIndex = *doodadGroupIndex + y;
+                        const auto & tileGroup = tileset.tileGroups[tileGroupIndex];
+                        for ( u16 x=0; x<doodadDat.tileWidth; ++x )
                         {
-                            this->tileIndex[x][y] = map.getTile(xc, yc, Chk::StrScope::Game);
-                            map.setDoodadTile(xc, yc, 16*tileGroupIndex + x);
+                            auto xc = xStart+x;
+                            if ( tileGroup.megaTileIndex[x] != 0 && xc < map.getTileWidth() )
+                            {
+                                this->tileIndex[x][y] = map.getTile(xc, yc, Chk::StrScope::Game);
+                                map.setDoodadTile(xc, yc, 16*tileGroupIndex + x);
+                            }
                         }
                     }
                 }

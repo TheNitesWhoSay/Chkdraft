@@ -49,6 +49,7 @@
     <ClInclude Include="Mapping\Selections.h" />
     <ClInclude Include="Mapping\Settings.h" />
     <ClInclude Include="Mapping\Undos\ChkdUndos\CutCopyPasteChange.h" />
+    <ClInclude Include="Mapping\Undos\ChkdUndos\DimensionChange.h" />
     <ClInclude Include="Mapping\Undos\ChkdUndos\DoodadChange.h" />
     <ClInclude Include="Mapping\Undos\ChkdUndos\DoodadCreateDel.h" />
     <ClInclude Include="Mapping\Undos\ChkdUndos\FogChange.h" />
@@ -91,6 +92,7 @@
     <ClInclude Include="Windows\DialogWindows\BriefingEditor\BriefingTrigModifyText.h" />
     <ClInclude Include="Windows\DialogWindows\BriefingEditor\BriefingTrigPlayers.h" />
     <ClInclude Include="Windows\DialogWindows\DialogWindows.h" />
+    <ClInclude Include="Windows\DialogWindows\Dimensions.h" />
     <ClInclude Include="Windows\DialogWindows\Layers\LocationProperties.h" />
     <ClInclude Include="Windows\DialogWindows\Layers\SpriteProperties\PreservedSpriteStats.h" />
     <ClInclude Include="Windows\DialogWindows\Layers\SpriteProperties\SpriteProperties.h" />
@@ -148,6 +150,7 @@
     <ClCompile Include="Mapping\Selections.cpp" />
     <ClCompile Include="Mapping\Settings.cpp" />
     <ClCompile Include="Mapping\Undos\ChkdUndos\CutCopyPasteChange.cpp" />
+    <ClCompile Include="Mapping\Undos\ChkdUndos\DimensionChange.cpp" />
     <ClCompile Include="Mapping\Undos\ChkdUndos\DoodadChange.cpp" />
     <ClCompile Include="Mapping\Undos\ChkdUndos\DoodadCreateDel.cpp" />
     <ClCompile Include="Mapping\Undos\ChkdUndos\FogChange.cpp" />
@@ -188,6 +191,7 @@
     <ClCompile Include="Windows\DialogWindows\BriefingEditor\BriefingTrigModify.cpp" />
     <ClCompile Include="Windows\DialogWindows\BriefingEditor\BriefingTrigModifyText.cpp" />
     <ClCompile Include="Windows\DialogWindows\BriefingEditor\BriefingTrigPlayers.cpp" />
+    <ClCompile Include="Windows\DialogWindows\Dimensions.cpp" />
     <ClCompile Include="Windows\DialogWindows\Layers\LocationProperties.cpp" />
     <ClCompile Include="Windows\DialogWindows\Layers\SpriteProperties\PreservedSpriteStats.cpp" />
     <ClCompile Include="Windows\DialogWindows\Layers\SpriteProperties\SpriteProperties.cpp" />

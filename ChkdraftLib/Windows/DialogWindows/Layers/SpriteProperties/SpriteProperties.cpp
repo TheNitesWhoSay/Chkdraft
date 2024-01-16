@@ -199,7 +199,7 @@ bool SpritePropertiesWindow::AddSpriteItem(u16 index, const Chk::Sprite & sprite
     std::strcpy(yc, std::to_string(sprite.yc).c_str());
     std::strcpy(cIndex, std::to_string(index).c_str());
 
-    std::string spriteName = GetSpriteName(sprite.type);
+    std::string spriteName = GetSpriteName(sprite.type, sprite.isUnit());
 
     listSprites.AddRow(4, index);
     listSprites.SetItemText(index, (int)SpriteListColumn::Name, spriteName);
@@ -272,7 +272,7 @@ void SpritePropertiesWindow::RepopulateList()
             const Chk::Sprite & sprite = CM->getSprite(selectedIndex);
             SetSpriteFieldText(sprite);
 
-            auto spriteName = GetSpriteName(sprite.type);
+            auto spriteName = GetSpriteName(sprite.type, sprite.isUnit());
             WindowsItem::SetWinText(spriteName);
 
             int row = listSprites.GetItemRow(int(selections.getHighestSpriteIndex()));
@@ -286,9 +286,11 @@ void SpritePropertiesWindow::RepopulateList()
     initilizing = false;
 }
 
-std::string SpritePropertiesWindow::GetSpriteName(Sc::Sprite::Type type)
+std::string SpritePropertiesWindow::GetSpriteName(Sc::Sprite::Type type, bool isUnit)
 {
-    if ( size_t(type) > chkd.scData.sprites.spriteNames.size() )
+    if ( isUnit && size_t(type) < Sc::Unit::TotalTypes )
+        return std::string("[") + std::to_string(type) + "]" + *CM->getUnitName<ChkdString>(Sc::Unit::Type(type));
+    else if ( (isUnit && size_t(type) >= Sc::Unit::TotalTypes) || size_t(type) > chkd.scData.sprites.spriteNames.size() )
         return std::string("[") + std::to_string(type) + "]";
     else
         return std::string("[") + std::to_string(type) + "] " + chkd.scData.sprites.spriteNames[type];
@@ -511,7 +513,7 @@ void SpritePropertiesWindow::LvItemChanged(NMHDR* nmhdr)
                 EnableSpriteEditing();
 
             const Chk::Sprite & sprite = CM->getSprite(index);
-            auto spriteName = GetSpriteName(sprite.type);
+            auto spriteName = GetSpriteName(sprite.type, sprite.isUnit());
             WindowsItem::SetWinText(spriteName);
             SetSpriteFieldText(sprite);
 
@@ -820,7 +822,7 @@ void SpritePropertiesWindow::NotifyIdEditUpdated()
             CM->getSprite(spriteIndex).type = (Sc::Sprite::Type)spriteID;
             int row = listSprites.GetItemRow(int(spriteIndex));
 
-            auto spriteName = GetSpriteName(Sc::Sprite::Type(spriteID));
+            auto spriteName = GetSpriteName(Sc::Sprite::Type(spriteID), CM->getSprite(spriteIndex).isUnit());
             listSprites.SetItemText(row, (int)SpriteListColumn::Name, spriteName);
 
             if ( spriteIndex == CM->GetSelections().getFirstSprite() )

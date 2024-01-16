@@ -39,7 +39,7 @@ class Maps : public WinLib::MdiClient
         void ChangeLayer(Layer newLayer);
         void ChangeSubLayer(TerrainSubLayer subLayer);
         void ChangeZoom(bool increment);
-        void ChangePlayer(u8 newPlayer);
+        void ChangePlayer(u8 newPlayer, bool updateMapPlayers = true);
         bool toggleCutCopyPasteTerrain();
         bool toggleCutCopyPasteDoodads();
         bool toggleCutCopyPasteSprites();

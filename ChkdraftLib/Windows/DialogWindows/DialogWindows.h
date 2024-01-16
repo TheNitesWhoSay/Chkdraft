@@ -1,7 +1,6 @@
 #ifndef DIALOGWINDOWS_H
 #define DIALOGWINDOWS_H
 
-#include "About.h"
 #include "MapSettings/MapSettings.h"
 #include "Layers/UnitProperties/UnitProperties.h"
 #include "Layers/SpriteProperties/SpriteProperties.h"
@@ -16,5 +15,7 @@
 #include "BriefingEditor/BriefingEditor.h"
 #include "MapProtection/ChangePassword.h"
 #include "MapProtection/EnterPassword.h"
+#include "Dimensions.h"
+#include "About.h"
 
 #endif

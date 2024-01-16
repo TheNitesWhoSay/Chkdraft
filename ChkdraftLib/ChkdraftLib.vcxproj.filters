@@ -132,6 +132,12 @@
     <Filter Include="Source Files\Windows\Dialog Windows\Layers\Sprite Properties">
       <UniqueIdentifier>{d14620de-7c33-49c4-a842-1dba73321384}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Windows\Dialog Windows\%2a">
+      <UniqueIdentifier>{b714d1a8-1d07-4770-8f23-ccf99612007d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Windows\Dialog Windows\%2a">
+      <UniqueIdentifier>{340402f0-66ff-4f6f-9df7-9151948b116f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Chkdraft.h">
@@ -429,7 +435,13 @@
       <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
     </ClInclude>
     <ClInclude Include="Windows\DialogWindows\About.h">
-      <Filter>Header Files\Windows\Dialog Windows</Filter>
+      <Filter>Header Files\Windows\Dialog Windows\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="Windows\DialogWindows\Dimensions.h">
+      <Filter>Header Files\Windows\Dialog Windows\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="Mapping\Undos\ChkdUndos\DimensionChange.h">
+      <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -716,7 +728,13 @@
       <Filter>Source Files\Mapping\Undos\ChkdUndos</Filter>
     </ClCompile>
     <ClCompile Include="Windows\DialogWindows\About.cpp">
-      <Filter>Source Files\Windows\Dialog Windows</Filter>
+      <Filter>Source Files\Windows\Dialog Windows\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="Windows\DialogWindows\Dimensions.cpp">
+      <Filter>Source Files\Windows\Dialog Windows\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="Mapping\Undos\ChkdUndos\DimensionChange.cpp">
+      <Filter>Source Files\Mapping\Undos\ChkdUndos</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

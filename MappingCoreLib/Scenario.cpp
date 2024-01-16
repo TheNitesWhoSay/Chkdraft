@@ -438,6 +438,7 @@ bool Scenario::read(std::istream & is)
     }
 
     chk.seekg(std::ios_base::beg); // Move to start of chk
+    auto streamStart = chk.tellg();
     do
     {
         Chk::SectionHeader sectionHeader = {};
@@ -465,6 +466,12 @@ bool Scenario::read(std::istream & is)
             }
             else // if ( sectionHeader.sizeInBytes < 0 ) // Jump section
             {
+                if ( sectionHeader.sizeInBytes < s32(streamStart)-s32(chk.tellg()) )
+                {
+                    mapIsProtected = true;
+                    break;
+                }
+
                 chk.seekg(sectionHeader.sizeInBytes, std::ios_base::cur);
                 if ( !chk.good() )
                     return parsingFailed("Unexpected error processing chk jump section!");
@@ -3384,7 +3391,8 @@ void setIsomDimensions(std::vector<Chk::IsomRect> & tiles, u16 newTileWidth, u16
     }
 }
 
-void setMtxmOrTileDimensions(std::vector<u16> & tiles, u16 newTileWidth, u16 newTileHeight, u16 oldTileWidth, u16 oldTileHeight, s32 leftEdge, s32 topEdge)
+template <typename T>
+void setTiledSectionDimensions(std::vector<T> & tiles, u16 newTileWidth, u16 newTileHeight, u16 oldTileWidth, u16 oldTileHeight, s32 leftEdge, s32 topEdge)
 {
     s64 oldLeft = 0, oldTop = 0, oldRight = oldTileWidth, oldBottom = oldTileHeight,
         newLeft = leftEdge, newTop = topEdge, newRight = (s64)leftEdge+(s64)newTileWidth, newBottom = (s64)topEdge+(s64)newTileHeight,
@@ -3521,13 +3529,23 @@ void setMtxmOrTileDimensions(std::vector<u16> & tiles, u16 newTileWidth, u16 new
     }
 }
 
+void setTiledDimensions(std::vector<u8> & tiles, u16 newTileWidth, u16 newTileHeight, u16 oldTileWidth, u16 oldTileHeight, s32 leftEdge, s32 topEdge)
+{
+    setTiledSectionDimensions(tiles, newTileWidth, newTileHeight, oldTileWidth, oldTileHeight, leftEdge, topEdge);
+}
+
+void setTiledDimensions(std::vector<u16> & tiles, u16 newTileWidth, u16 newTileHeight, u16 oldTileWidth, u16 oldTileHeight, s32 leftEdge, s32 topEdge)
+{
+    setTiledSectionDimensions(tiles, newTileWidth, newTileHeight, oldTileWidth, oldTileHeight, leftEdge, topEdge);
+}
+
 void Scenario::setTileWidth(u16 newTileWidth, u16 sizeValidationFlags, s32 leftEdge)
 {
     u16 tileWidth = this->dimensions.tileWidth;
     u16 tileHeight = this->dimensions.tileHeight;
     ::setIsomDimensions(this->isomRects, newTileWidth, tileHeight, tileWidth, tileHeight, leftEdge, 0);
-    ::setMtxmOrTileDimensions(this->tiles, newTileWidth, tileHeight, tileWidth, tileHeight, leftEdge, 0);
-    ::setMtxmOrTileDimensions(this->editorTiles, newTileWidth, tileHeight, tileWidth, tileHeight, leftEdge, 0);
+    ::setTiledDimensions(this->tiles, newTileWidth, tileHeight, tileWidth, tileHeight, leftEdge, 0);
+    ::setTiledDimensions(this->editorTiles, newTileWidth, tileHeight, tileWidth, tileHeight, leftEdge, 0);
     this->dimensions.tileWidth = newTileWidth;
     validateSizes(sizeValidationFlags, tileWidth, tileHeight);
 }
@@ -3537,8 +3555,8 @@ void Scenario::setTileHeight(u16 newTileHeight, u16 sizeValidationFlags, s32 top
     u16 tileWidth = this->dimensions.tileWidth;
     u16 tileHeight = this->dimensions.tileHeight;
     ::setIsomDimensions(this->isomRects, tileWidth, newTileHeight, tileWidth, tileHeight, 0, topEdge);
-    ::setMtxmOrTileDimensions(this->tiles, tileWidth, newTileHeight, tileWidth, tileHeight, 0, topEdge);
-    ::setMtxmOrTileDimensions(this->editorTiles, tileWidth, newTileHeight, tileWidth, tileHeight, 0, topEdge);
+    ::setTiledDimensions(this->tiles, tileWidth, newTileHeight, tileWidth, tileHeight, 0, topEdge);
+    ::setTiledDimensions(this->editorTiles, tileWidth, newTileHeight, tileWidth, tileHeight, 0, topEdge);
     this->dimensions.tileHeight = newTileHeight;
     validateSizes(sizeValidationFlags, tileWidth, tileHeight);
 }
@@ -3548,8 +3566,8 @@ void Scenario::setDimensions(u16 newTileWidth, u16 newTileHeight, u16 sizeValida
     u16 tileWidth = this->dimensions.tileWidth;
     u16 tileHeight = this->dimensions.tileHeight;
     ::setIsomDimensions(this->isomRects, newTileWidth, newTileHeight, tileWidth, tileHeight, leftEdge, topEdge);
-    ::setMtxmOrTileDimensions(this->tiles, newTileWidth, newTileHeight, tileWidth, tileHeight, leftEdge, topEdge);
-    ::setMtxmOrTileDimensions(this->editorTiles, newTileWidth, newTileHeight, tileWidth, tileHeight, leftEdge, topEdge);
+    ::setTiledDimensions(this->tiles, newTileWidth, newTileHeight, tileWidth, tileHeight, leftEdge, topEdge);
+    ::setTiledDimensions(this->editorTiles, newTileWidth, newTileHeight, tileWidth, tileHeight, leftEdge, topEdge);
     this->dimensions.tileWidth = newTileWidth;
     this->dimensions.tileHeight = newTileHeight;
     validateSizes(sizeValidationFlags, tileWidth, tileHeight);
@@ -3688,12 +3706,19 @@ void Scenario::copyIsomFrom(const Scenario & sourceMap, int32_t xTileOffset, int
     int32_t diamondY = yTileOffset;
 
     Sc::BoundingBox sourceRc { sourceIsomWidth, sourceIsomHeight, destCache.isomWidth, destCache.isomHeight, diamondX, diamondY };
+    
+    size_t copyWidth = sourceRc.right-sourceRc.left;
+    size_t rowLimit = sourceRc.bottom;
+    if ( diamondX > 0 )
+        copyWidth -= diamondX;
+    if ( diamondY > 0 )
+        rowLimit -= diamondY;
 
-    for ( size_t y=sourceRc.top; y<sourceRc.bottom; ++y )
+    for ( size_t y=sourceRc.top; y<rowLimit; ++y )
     {
         const Chk::IsomRect* sourceRow = &sourceMap.isomRects[y*sourceIsomWidth + sourceRc.left];
         Chk::IsomRect* destRow = &isomRects[(y+diamondY)*destCache.isomWidth + sourceRc.left + diamondX];
-        std::memcpy(destRow, sourceRow, sizeof(Chk::IsomRect)*(sourceRc.right-sourceRc.left));
+        std::memcpy(destRow, sourceRow, sizeof(Chk::IsomRect)*copyWidth);
     }
 
     if ( undoable )
@@ -3746,9 +3771,12 @@ bool Scenario::resizeIsom(int32_t xTileOffset, int32_t yTileOffset, size_t oldMa
     size_t oldIsomHeight = oldMapHeight + 1;
     Sc::BoundingBox sourceRc { oldIsomWidth, oldIsomHeight, cache.isomWidth, cache.isomHeight, xDiamondOffset, yDiamondOffset };
     Sc::BoundingBox innerArea {
-        sourceRc.left+xDiamondOffset, sourceRc.top+yDiamondOffset, sourceRc.right+xDiamondOffset-1, sourceRc.bottom+yDiamondOffset-1
+        sourceRc.left+xDiamondOffset,
+        sourceRc.top+yDiamondOffset,
+        std::min(cache.isomWidth, sourceRc.right+xDiamondOffset-1),
+        std::min(cache.isomHeight, sourceRc.bottom+yDiamondOffset-1)
     };
-
+     
     std::vector<Chk::IsomDiamond> edges {};
     for ( size_t y=innerArea.top; y<=innerArea.bottom; ++y )
     {
@@ -3998,9 +4026,9 @@ void Scenario::fixTerrainToDimensions()
     if ( this->isomRects.size() < expectedIsomSize )
         isomRects.insert(this->isomRects.end(), expectedIsomSize-this->isomRects.size(), Chk::IsomRect{});
     if ( this->editorTiles.size() != size_t(tileWidth)*size_t(tileHeight) )
-        setMtxmOrTileDimensions(this->editorTiles, tileWidth, tileHeight, tileWidth, tileHeight, 0, 0);
+        setTiledDimensions(this->editorTiles, tileWidth, tileHeight, tileWidth, tileHeight, 0, 0);
     if ( this->tiles.size() != size_t(tileWidth)*size_t(tileHeight) )
-        setMtxmOrTileDimensions(this->tiles, tileWidth, tileHeight, tileWidth, tileHeight, 0, 0);
+        setTiledDimensions(this->tiles, tileWidth, tileHeight, tileWidth, tileHeight, 0, 0);
 }
 
 u8 Scenario::getFog(size_t tileXc, size_t tileYc) const

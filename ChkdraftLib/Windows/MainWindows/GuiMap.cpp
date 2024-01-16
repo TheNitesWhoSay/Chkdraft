@@ -401,31 +401,53 @@ void GuiMap::setTileset(Sc::Terrain::Tileset tileset)
 }
 
 // From Scenario.cpp
-void setMtxmOrTileDimensions(std::vector<u16> & tiles, u16 newTileWidth, u16 newTileHeight, u16 oldTileWidth, u16 oldTileHeight, s32 leftEdge, s32 topEdge);
+void setTiledDimensions(std::vector<u8> & tiles, u16 newTileWidth, u16 newTileHeight, u16 oldTileWidth, u16 oldTileHeight, s32 leftEdge, s32 topEdge);
+void setTiledDimensions(std::vector<u16> & tiles, u16 newTileWidth, u16 newTileHeight, u16 oldTileWidth, u16 oldTileHeight, s32 leftEdge, s32 topEdge);
+
+struct SimpleCache : Chk::IsomCache
+{
+    Scenario & scenario;
+
+    SimpleCache(Scenario & scenario, Sc::Terrain::Tileset tileset, u16 tileWidth, u16 tileHeight, const Sc::Terrain::Tiles & tiles)
+        : Chk::IsomCache{tileset, tileWidth, tileHeight, tiles}, scenario(scenario) {}
+
+    inline void setTileValue(size_t tileX, size_t tileY, uint16_t tileValue) final {
+        scenario.editorTiles[tileY*scenario.dimensions.tileWidth + tileX] = tileValue;
+        scenario.tiles[tileY*scenario.dimensions.tileWidth + tileX] = tileValue;
+    }
+};
 
 void GuiMap::setDimensions(u16 newTileWidth, u16 newTileHeight, u16 sizeValidationFlags, s32 leftEdge, s32 topEdge, size_t newTerrainType)
 {
+    bool anywhereWasStandardDimensions = Scenario::anywhereIsStandardDimensions();
+
     Scenario destMap(this->getTileset(), u16(this->getTileWidth()), u16(this->getTileHeight()));
-    (Chk::IsomCache &)(*this) = {Scenario::tileset, newTileWidth, newTileHeight, chkd.scData.terrain.get(Scenario::tileset)};
+    SimpleCache destMapCache(destMap, Scenario::tileset, newTileWidth, newTileHeight, chkd.scData.terrain.get(Scenario::tileset));
 
     destMap.editorTiles = this->editorTiles;
     destMap.tiles = this->tiles;
-    setMtxmOrTileDimensions(destMap.tiles, newTileWidth, newTileHeight, (uint16_t)this->getTileWidth(), (uint16_t)this->getTileHeight(), 0, 0);
-    setMtxmOrTileDimensions(destMap.editorTiles, newTileWidth, newTileHeight, (uint16_t)this->getTileWidth(), (uint16_t)this->getTileHeight(), 0, 0);
+    setTiledDimensions(destMap.tiles, newTileWidth, newTileHeight, (uint16_t)this->getTileWidth(), (uint16_t)this->getTileHeight(), 0, 0);
+    setTiledDimensions(destMap.editorTiles, newTileWidth, newTileHeight, (uint16_t)this->getTileWidth(), (uint16_t)this->getTileHeight(), 0, 0);
+    setTiledDimensions(destMap.tileFog, newTileWidth, newTileHeight, (uint16_t)this->getTileWidth(), (uint16_t)this->getTileHeight(), 0, 0);
     uint16_t isomValue = ((Chk::IsomCache::getTerrainTypeIsomValue(newTerrainType) << 4) | Chk::IsomRect::EditorFlag::Modified);
 
     destMap.dimensions = {newTileWidth, newTileHeight};
     destMap.isomRects.assign((newTileWidth/2+1)*(newTileHeight+1), Chk::IsomRect{ isomValue, isomValue, isomValue, isomValue });
     
-    destMap.copyIsomFrom(*this, leftEdge, topEdge, false, *this);
-    destMap.resizeIsom(leftEdge, topEdge, this->getTileWidth(), this->getTileHeight(), false, *this);
-    destMap.updateTilesFromIsom(*this);
+    destMap.copyIsomFrom(*this, leftEdge, topEdge, false, destMapCache);
+    destMap.resizeIsom(leftEdge, topEdge, this->getTileWidth(), this->getTileHeight(), false, destMapCache);
+    destMap.updateTilesFromIsom(destMapCache);
 
     Sc::BoundingBox tileRect { this->getTileWidth(), this->getTileHeight(), newTileWidth, newTileHeight, leftEdge, topEdge };
     size_t destStartX = leftEdge < 0 ? 0 : leftEdge;
     size_t destStartY = topEdge < 0 ? 0 : topEdge;
     size_t copyHeight = tileRect.bottom-tileRect.top;
     size_t copyWidth = tileRect.right-tileRect.left;
+    if ( copyWidth+destStartX > newTileWidth )
+        copyWidth = newTileWidth-destStartX;
+    if ( copyHeight+destStartY > newTileHeight )
+        copyHeight = newTileHeight-destStartY;
+
     for ( size_t y=0; y<copyHeight; ++y )
     {
         for ( size_t x=0; x<copyWidth; ++x )
@@ -439,6 +461,100 @@ void GuiMap::setDimensions(u16 newTileWidth, u16 newTileHeight, u16 sizeValidati
     std::swap(this->isomRects, destMap.isomRects);
     std::swap(this->editorTiles, destMap.editorTiles);
     std::swap(this->tiles, destMap.tiles);
+    u16 pixelWidth = u16(Scenario::getPixelWidth());
+    u16 pixelHeight = u16(Scenario::getPixelHeight());
+    for ( int i=int(this->doodads.size()-1); i>=0; --i )
+    {
+        auto & doodad = this->doodads[i];
+        if ( doodad.xc + u16(32*leftEdge) > pixelWidth || doodad.yc + u16(32*topEdge) > pixelHeight )
+            ((Scenario*)(this))->deleteDoodad(i);
+        else
+        {
+            doodad.xc += 32*leftEdge;
+            doodad.yc += 32*topEdge;
+        }
+    }
+    for ( int i=int(this->sprites.size()-1); i>=0; --i )
+    {
+        auto & sprite = this->sprites[i];
+        if ( sprite.xc + u16(32*leftEdge) > pixelWidth || sprite.yc + u16(32*topEdge) > pixelHeight )
+            ((Scenario*)(this))->deleteSprite(i);
+        else
+        {
+            sprite.xc += 32*leftEdge;
+            sprite.yc += 32*topEdge;
+        }
+    }
+    for ( int i=int(this->units.size()-1); i>=0; --i )
+    {
+        auto & unit = this->units[i];
+        if ( unit.xc + u16(32*leftEdge) > pixelWidth || unit.yc + u16(32*topEdge) > pixelHeight )
+            ((Scenario*)(this))->deleteUnit(i);
+        else
+        {
+            unit.xc += 32*leftEdge;
+            unit.yc += 32*topEdge;
+        }
+    }
+    for ( auto & location : this->locations )
+    {
+        if ( location.isBlank() )
+            continue;
+
+        if ( leftEdge < 0 ) // Moving leftwards
+        {
+            if ( location.left + 32*leftEdge > location.left )
+                location.left = 0;
+            else
+                location.left += 32*leftEdge;
+
+            if ( location.right + 32*leftEdge > location.right )
+                location.right = 0;
+            else
+                location.right += 32*leftEdge;
+        }
+        else // Moving rightwards
+        {
+            if ( location.left + 32*leftEdge > pixelWidth )
+                location.left = pixelWidth;
+            else
+                location.left += 32*leftEdge;
+
+            if ( location.right + 32*leftEdge > pixelWidth )
+                location.right = pixelWidth;
+            else
+                location.right += 32*leftEdge;
+        }
+
+        if ( topEdge < 0 ) // Moving upwards
+        {
+            if ( location.top + 32*topEdge > location.top )
+                location.top = 0;
+            else
+                location.top += 32*topEdge;
+
+            if ( location.bottom + 32*topEdge > location.bottom )
+                location.bottom = 0;
+            else
+                location.bottom += 32*topEdge;
+        }
+        else // Moving downwards
+        {
+            if ( location.top + 32*topEdge > pixelHeight )
+                location.top = pixelHeight;
+            else
+                location.top += 32*topEdge;
+
+            if ( location.bottom + 32*topEdge > pixelHeight )
+                location.bottom = pixelHeight;
+            else
+                location.bottom += 32*topEdge;
+        }
+    }
+
+    if ( anywhereWasStandardDimensions )
+        Scenario::matchAnywhereToDimensions();
+
     (Chk::IsomCache &)(*this) = {Scenario::tileset, Scenario::getTileWidth(), Scenario::getTileHeight(), chkd.scData.terrain.get(Scenario::tileset)};
 }
 
@@ -1060,6 +1176,8 @@ void GuiMap::refreshScenario()
     }
     if ( chkd.mapSettingsWindow.getHandle() != NULL )
         chkd.mapSettingsWindow.RefreshWindow();
+    if ( chkd.dimensionsWindow.getHandle() != NULL )
+        chkd.dimensionsWindow.RefreshWindow();
     chkd.trigEditorWindow.RefreshWindow();
     chkd.briefingTrigEditorWindow.RefreshWindow();
 
@@ -1278,10 +1396,13 @@ void GuiMap::deleteSelection()
                         if ( tileGroup.megaTileIndex[x] != 0 )
                         {
                             auto currDoodadTile = 16*tileGroupIndex + x;
-                            auto currFinalTile = Scenario::getTile(xc, yc, Chk::StrScope::Game);
-                            auto underlyingTile = Scenario::getTile(xc, yc, Chk::StrScope::Editor);
-                            if ( currDoodadTile == currFinalTile && currDoodadTile != underlyingTile )
-                                Scenario::setTile(xc, yc, underlyingTile, Chk::StrScope::Game);
+                            if ( xc < Scenario::getTileWidth() && yc < Scenario::getTileHeight() )
+                            {
+                                auto currFinalTile = Scenario::getTile(xc, yc, Chk::StrScope::Game);
+                                auto underlyingTile = Scenario::getTile(xc, yc, Chk::StrScope::Editor);
+                                if ( currDoodadTile == currFinalTile && currDoodadTile != underlyingTile )
+                                    Scenario::setTile(xc, yc, underlyingTile, Chk::StrScope::Game);
+                            }
                         }
                     }
                 }
