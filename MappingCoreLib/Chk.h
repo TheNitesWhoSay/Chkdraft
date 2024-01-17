@@ -145,6 +145,9 @@ namespace Chk {
         u16 stateFlags;
         u32 unused;
         u32 relationClassId; // classId of related unit (may be an addon or the building that has an addon)
+        
+        constexpr bool isLifted() const { return (stateFlags & State::InTransit) == State::InTransit; }
+        constexpr bool isAttached() const { return (relationFlags & RelationFlag::AddonLink) == RelationFlag::AddonLink; }
 
         REFLECT(Unit, classId, xc, yc, type, relationFlags, validStateFlags, validFieldFlags, owner,
             hitpointPercent, shieldPercent, energyPercent, resourceAmount, hangerAmount, stateFlags, unused, relationClassId)

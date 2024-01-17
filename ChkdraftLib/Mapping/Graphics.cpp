@@ -491,7 +491,7 @@ void Graphics::DrawUnits(ChkdBitmap & bitmap)
 
                 UnitToBits(bitmap, palette, color, u16(screenWidth), u16(screenHeight),
                     screenLeft, screenTop, (u16)unit.type, unit.xc, unit.yc,
-                    u16(frame), isSelected);
+                    u16(frame), isSelected, unit.isLifted(), unit.isAttached());
             }
         }
     }
@@ -1105,14 +1105,82 @@ void GrpToBits(ChkdBitmap & bitmap, ChkdPalette & palette, s64 bitWidth, s64 bit
 }
 
 void UnitToBits(ChkdBitmap & bitmap, ChkdPalette & palette, u8 color, u16 bitWidth, u16 bitHeight,
-                 s32 & xStart, s32 & yStart, u16 unitID, u16 unitXC, u16 unitYC, u16 frame, bool selected )
+                 s32 & xStart, s32 & yStart, u16 unitID, u16 unitXC, u16 unitYC, u16 frame, bool selected, bool lifted, bool attached)
 {
-    Sc::Unit::Type drawnUnitId = unitID < 228 ? (Sc::Unit::Type)unitID : Sc::Unit::Type::TerranMarine; // Extended units use ID:0's graphics (for now)
-    u16 imageId = chkd.scData.sprites.getSprite(chkd.scData.units.getFlingy(chkd.scData.units.getUnit(drawnUnitId).graphics).sprite).imageFile;
-    u32 grpId = chkd.scData.sprites.getImage(imageId).grpFile;
+    auto getPreferredFrame = [&](u16 unitId) {
+        switch ( Sc::Unit::Type(unitId) )
+        {
+            case Sc::Unit::Type::TerranSiegeTank_SiegeMode:
+            case Sc::Unit::Type::EdmundDuke_SiegeMode: return 5;
+            case Sc::Unit::Type::SiegeTankTurret_SiegeMode:
+            case Sc::Unit::Type::DukeTurretType2: return 0x55;
+            case Sc::Unit::Type::TerranGoliath:
+            case Sc::Unit::Type::GoliathTurret:
+            case Sc::Unit::Type::AlanSchezar_Goliath:
+            case Sc::Unit::Type::AlanTurret: return 0x77;
+            default: return 0;
+        }
+    };
+    auto getLiftedFrame = [&](u16 unitId) {
+        switch ( Sc::Unit::Type(unitId) )
+        {
+            case Sc::Unit::Type::InfestedCommandCenter:
+            case Sc::Unit::Type::TerranBarracks:
+            case Sc::Unit::Type::TerranCommandCenter:
+            case Sc::Unit::Type::TerranEngineeringBay: return 4;
+            case Sc::Unit::Type::TerranFactory:
+            case Sc::Unit::Type::TerranScienceFacility: return 5;
+            case Sc::Unit::Type::TerranStarport: return 3;
+            default: return 0;
+        }
+    };
+    auto getSubUnitOffset = [&](u16 unitId) {
+        switch ( Sc::Unit::Type(unitId) )
+        {
+            case Sc::Unit::Type::SiegeTankTurret_SiegeMode:
+            case Sc::Unit::Type::DukeTurretType2: return point{8, 16};
+            default: return point{0, 0};
+        }
+    };
+    auto getOverlay = [&](u16 unitId) -> std::optional<u16> {
+        switch ( Sc::Unit::Type(unitId) )
+        {
+            case Sc::Unit::Type::InfestedCommandCenter: return 101;
+            default: return std::nullopt;
+        }
+    };
+    auto getAttachedOverlay = [&](u16 unitId) -> std::optional<u16> {
+        switch ( Sc::Unit::Type(unitId) )
+        {
+            case Sc::Unit::Type::TerranComsatStation: return 272;
+            case Sc::Unit::Type::TerranControlTower: return 282;
+            case Sc::Unit::Type::TerranCovertOps: return 289;
+            case Sc::Unit::Type::TerranMachineShop: return 294;
+            case Sc::Unit::Type::TerranNuclearSilo: return 313;
+            case Sc::Unit::Type::TerranPhysicsLab: return 302;
+            default: return std::nullopt;
+        }
+    };
+    auto getAttachedOverlayPreferredFrame = [&](u16 unitId) {
+        switch ( Sc::Unit::Type(unitId) )
+        {
+            case Sc::Unit::Type::TerranComsatStation: return 3;
+            case Sc::Unit::Type::TerranControlTower: return 4;
+            case Sc::Unit::Type::TerranCovertOps: return 4;
+            case Sc::Unit::Type::TerranMachineShop: return 3;
+            case Sc::Unit::Type::TerranNuclearSilo: return 4;
+            case Sc::Unit::Type::TerranPhysicsLab: return 4;
+            default: return 0;
+        }
+    };
 
-    if ( unitID == 207 )
-        int a = 0;
+    Sc::Unit::Type drawnUnitId = unitID < 228 ? (Sc::Unit::Type)unitID : Sc::Unit::Type::TerranMarine; // Extended units use ID:0's graphics (for now)
+    auto & unitDat = chkd.scData.units.getUnit(Sc::Unit::Type(unitID));
+    u16 imageId = chkd.scData.sprites.getSprite(chkd.scData.units.getFlingy(unitDat.graphics).sprite).imageFile;
+    u32 grpId = chkd.scData.sprites.getImage(imageId).grpFile;
+    u16 subUnitImageId = unitDat.subunit1 == 228 ? std::numeric_limits<u16>::max() :
+        chkd.scData.sprites.getSprite(chkd.scData.units.getFlingy(chkd.scData.units.getUnit(unitDat.subunit1).graphics).sprite).imageFile;
+    u32 subUnitGrpId = unitDat.subunit1 == 228 ? std::numeric_limits<u32>::max() : chkd.scData.sprites.getImage(subUnitImageId).grpFile;
 
     if ( (size_t)grpId < chkd.scData.sprites.numGrps() )
     {
@@ -1134,7 +1202,26 @@ void UnitToBits(ChkdBitmap & bitmap, ChkdPalette & palette, u8 color, u16 bitWid
         const Sc::Sprite::GrpFile & curr = chkd.scData.sprites.getGrp(grpId).get();
         std::memcpy(remapped, &palette[8], sizeof(remapped));
         std::memcpy(&palette[8], &chkd.scData.tunit.palette[color < 16 ? 8*color : 8*(color%16)], sizeof(remapped));
-        GrpToBits(bitmap, palette, bitWidth, bitHeight, xStart, yStart, curr, unitXC, unitYC, frame, color, chkd.scData.sprites.imageFlipped(imageId));
+        GrpToBits(bitmap, palette, bitWidth, bitHeight, xStart, yStart, curr, unitXC, unitYC, lifted ? getLiftedFrame(unitID) : getPreferredFrame(unitID), color, chkd.scData.sprites.imageFlipped(imageId));
+        if ( (size_t)subUnitGrpId < chkd.scData.sprites.numGrps() )
+        {
+            const Sc::Sprite::GrpFile & subUnit = chkd.scData.sprites.getGrp(subUnitGrpId).get();
+            auto offset = getSubUnitOffset(unitDat.subunit1);
+            GrpToBits(bitmap, palette, bitWidth, bitHeight, s64(xStart)+offset.x, s64(yStart)+offset.y, subUnit, unitXC, unitYC, getPreferredFrame(unitDat.subunit1), color, false);
+        }
+        if ( auto overlay = getOverlay(unitID) )
+        {
+            const Sc::Sprite::GrpFile & overlayGrp = chkd.scData.sprites.getGrp(chkd.scData.sprites.getImage(*overlay).grpFile).get();
+            GrpToBits(bitmap, palette, bitWidth, bitHeight, xStart, yStart, overlayGrp, unitXC, unitYC, 0, color, false);
+        }
+        if ( attached )
+        {
+            if ( auto attachment = getAttachedOverlay(unitID) )
+            {
+                const Sc::Sprite::GrpFile & overlayGrp = chkd.scData.sprites.getGrp(chkd.scData.sprites.getImage(*attachment).grpFile).get();
+                GrpToBits(bitmap, palette, bitWidth, bitHeight, xStart, yStart, overlayGrp, unitXC, unitYC, getAttachedOverlayPreferredFrame(unitID), color, false);
+            }
+        }
         std::memcpy(&palette[8], remapped, sizeof(remapped));
     }
 }
@@ -1855,7 +1942,7 @@ void DrawPasteGraphics(const WinLib::DeviceContext & dc, ChkdPalette & palette, 
                 if ( paste.y + pasteUnit.yc >= 0 )
                 {
                     UnitToBits(graphicBits, palette, color, width, height, sScreenLeft, sScreenTop,
-                        (u16)pasteUnit.unit.type, u16(paste.x + pasteUnit.xc), u16(paste.y + pasteUnit.yc), 0, false );
+                        (u16)pasteUnit.unit.type, u16(paste.x + pasteUnit.xc), u16(paste.y + pasteUnit.yc), 0, false, pasteUnit.unit.isLifted());
                 }
             }
         }
