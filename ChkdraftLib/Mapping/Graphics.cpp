@@ -970,65 +970,134 @@ void GrpToBits(ChkdBitmap & bitmap, ChkdPalette & palette, s64 bitWidth, s64 bit
         
         size_t frameOffset = size_t(grpFrameHeader.frameOffset);
         const Sc::Sprite::GrpFrame & grpFrame = (const Sc::Sprite::GrpFrame &)((u8*)&grpFile)[frameOffset];
-        for ( ; row < frameHeight; row++ )
+        if ( flipped )
         {
-            size_t rowOffset = size_t(grpFrame.rowOffsets[row]);
-            const Sc::Sprite::PixelRow & grpPixelRow = (const Sc::Sprite::PixelRow &)((u8*)&grpFile)[frameOffset+rowOffset];
-            const s64 rowStart = (row+yOffset)*bitWidth;
-            const s64 rowLimit = (row+yOffset+1)*bitWidth;
-            s64 currPixelIndex = rowStart + xOffset;
-            size_t pixelLineOffset = 0;
-            if ( currPixelIndex < (s64)bitmap.size() && currPixelIndex+frameWidth >= rowStart )
+            for ( ; row < frameHeight; row++ )
             {
-                auto currPixel = currPixelIndex < rowStart ? bitmap.begin()+size_t(rowStart) : bitmap.begin()+size_t(currPixelIndex); // Start from the left-most pixel of this row of the frame
-                auto frameEnd = currPixelIndex+frameWidth > rowLimit ? bitmap.begin()+size_t(rowLimit) : bitmap.begin()+size_t(currPixelIndex+frameWidth);
-                while ( currPixelIndex < rowStart ) // Skip any pixels before the left-edge, draw visible parts of lines overlapping left edge
+                size_t rowOffset = size_t(grpFrame.rowOffsets[row]);
+                const Sc::Sprite::PixelRow & grpPixelRow = (const Sc::Sprite::PixelRow &)((u8*)&grpFile)[frameOffset+rowOffset];
+                const s64 rowStart = (row+yOffset)*bitWidth;
+                const s64 rowLimit = (row+yOffset+1)*bitWidth;
+                s64 currPixelIndex = rowStart+xOffset+frameWidth-1;
+                size_t pixelLineOffset = 0;
+                if ( currPixelIndex >= 0 && currPixelIndex-frameWidth < rowLimit )
                 {
-                    const Sc::Sprite::PixelLine & pixelLine = (const Sc::Sprite::PixelLine &)((u8*)&grpPixelRow)[pixelLineOffset];
-                    s64 lineLength = s64(pixelLine.lineLength());
-                    s64 inBoundLength = currPixelIndex+lineLength-rowStart;
-                    if ( rowStart+inBoundLength > rowLimit )
-                        inBoundLength = bitWidth;
-                    
-                    if ( inBoundLength > 0 )
+                    auto currPixel = currPixelIndex >= rowLimit ? bitmap.begin()+size_t(rowLimit)-1 : bitmap.begin()+currPixelIndex; // Start from the right-most pixel of this row of the frame
+                    auto frameEnd = currPixelIndex-frameWidth < rowStart ? bitmap.begin()+size_t(rowStart) : bitmap.begin()+size_t(currPixelIndex-frameWidth);
+                    while ( currPixelIndex >= rowLimit ) // Skip any pixels before the right-edge, draw visible parts of lines overlapping right edge
                     {
+                        const Sc::Sprite::PixelLine & pixelLine = (const Sc::Sprite::PixelLine &)((u8*)&grpPixelRow)[pixelLineOffset];
+                        s64 lineLength = s64(pixelLine.lineLength());
+                        //s64 inBoundLength = currPixelIndex+lineLength-rowStart;
+                        s64 inBoundLength = lineLength-(currPixelIndex-rowLimit);
+                        if ( rowLimit-1-inBoundLength < rowStart )
+                            inBoundLength = bitWidth;
+
+                        if ( inBoundLength > 0 )
+                        {
+                            if ( pixelLine.isSpeckled() )
+                            {
+                                for ( s64 linePixel = lineLength-inBoundLength; linePixel<lineLength; linePixel++, --currPixel )
+                                    *currPixel = palette[pixelLine.paletteIndex[linePixel]]; // Place color from palette index specified in the array at current pixel
+                            }
+                            else // Solid or transparent
+                            {
+                                if ( pixelLine.isSolidLine() )
+                                    std::fill_n(currPixel-inBoundLength, inBoundLength, palette[pixelLine.paletteIndex[0]]); // Place single color across the entire line
+                            
+                                currPixel -= size_t(inBoundLength);
+                            }
+                        }
+                        currPixelIndex -= lineLength;
+                        pixelLineOffset += pixelLine.sizeInBytes();
+                    }
+
+                    while ( currPixel >= frameEnd && pixelLineOffset < frameWidth ) // Draw all remaining adjacent horizontal lines
+                    {
+                        const Sc::Sprite::PixelLine & pixelLine = (const Sc::Sprite::PixelLine &)((u8*)&grpPixelRow)[pixelLineOffset];
+                        s64 lineLength = s64(pixelLine.lineLength());
+                        if ( std::distance(frameEnd, currPixel) < lineLength )
+                            lineLength = currPixel - frameEnd;
+                    
                         if ( pixelLine.isSpeckled() )
                         {
-                            for ( s64 linePixel = lineLength-inBoundLength; linePixel<lineLength; linePixel++, ++currPixel )
+                            for ( s64 linePixel=0; linePixel<lineLength; linePixel++, --currPixel ) // For every pixel in the line
                                 *currPixel = palette[pixelLine.paletteIndex[linePixel]]; // Place color from palette index specified in the array at current pixel
                         }
                         else // Solid or transparent
                         {
                             if ( pixelLine.isSolidLine() )
-                                std::fill_n(currPixel, inBoundLength, palette[pixelLine.paletteIndex[0]]); // Place single color across the entire line
-                            
-                            currPixel += size_t(inBoundLength);
+                                std::fill_n(currPixel-lineLength, lineLength, palette[pixelLine.paletteIndex[0]]); // Place single color across the entire line
+
+                            currPixel -= size_t(lineLength);
                         }
+                        pixelLineOffset += pixelLine.sizeInBytes();
                     }
-                    currPixelIndex += lineLength;
-                    pixelLineOffset += pixelLine.sizeInBytes();
                 }
-
-                while ( currPixel < frameEnd ) // Draw all remaining adjacent horizontal lines
+            }
+        }
+        else
+        {
+            for ( ; row < frameHeight; row++ )
+            {
+                size_t rowOffset = size_t(grpFrame.rowOffsets[row]);
+                const Sc::Sprite::PixelRow & grpPixelRow = (const Sc::Sprite::PixelRow &)((u8*)&grpFile)[frameOffset+rowOffset];
+                const s64 rowStart = (row+yOffset)*bitWidth;
+                const s64 rowLimit = (row+yOffset+1)*bitWidth;
+                s64 currPixelIndex = rowStart + xOffset;
+                size_t pixelLineOffset = 0;
+                if ( currPixelIndex < (s64)bitmap.size() && currPixelIndex+frameWidth >= rowStart )
                 {
-                    const Sc::Sprite::PixelLine & pixelLine = (const Sc::Sprite::PixelLine &)((u8*)&grpPixelRow)[pixelLineOffset];
-                    s64 lineLength = s64(pixelLine.lineLength());
-                    if ( std::distance(currPixel, frameEnd) < lineLength )
-                        lineLength = frameEnd - currPixel;
+                    auto currPixel = currPixelIndex < rowStart ? bitmap.begin()+size_t(rowStart) : bitmap.begin()+size_t(currPixelIndex); // Start from the left-most pixel of this row of the frame
+                    auto frameEnd = currPixelIndex+frameWidth > rowLimit ? bitmap.begin()+size_t(rowLimit) : bitmap.begin()+size_t(currPixelIndex+frameWidth);
+                    while ( currPixelIndex < rowStart ) // Skip any pixels before the left-edge, draw visible parts of lines overlapping left edge
+                    {
+                        const Sc::Sprite::PixelLine & pixelLine = (const Sc::Sprite::PixelLine &)((u8*)&grpPixelRow)[pixelLineOffset];
+                        s64 lineLength = s64(pixelLine.lineLength());
+                        s64 inBoundLength = currPixelIndex+lineLength-rowStart;
+                        if ( rowStart+inBoundLength > rowLimit )
+                            inBoundLength = bitWidth;
                     
-                    if ( pixelLine.isSpeckled() )
-                    {
-                        for ( s64 linePixel=0; linePixel<lineLength; linePixel++, ++currPixel ) // For every pixel in the line
-                            *currPixel = palette[pixelLine.paletteIndex[linePixel]]; // Place color from palette index specified in the array at current pixel
+                        if ( inBoundLength > 0 )
+                        {
+                            if ( pixelLine.isSpeckled() )
+                            {
+                                for ( s64 linePixel = lineLength-inBoundLength; linePixel<lineLength; linePixel++, ++currPixel )
+                                    *currPixel = palette[pixelLine.paletteIndex[linePixel]]; // Place color from palette index specified in the array at current pixel
+                            }
+                            else // Solid or transparent
+                            {
+                                if ( pixelLine.isSolidLine() )
+                                    std::fill_n(currPixel, inBoundLength, palette[pixelLine.paletteIndex[0]]); // Place single color across the entire line
+                            
+                                currPixel += size_t(inBoundLength);
+                            }
+                        }
+                        currPixelIndex += lineLength;
+                        pixelLineOffset += pixelLine.sizeInBytes();
                     }
-                    else // Solid or transparent
-                    {
-                        if ( pixelLine.isSolidLine() )
-                            std::fill_n(currPixel, lineLength, palette[pixelLine.paletteIndex[0]]); // Place single color across the entire line'
 
-                        currPixel += size_t(lineLength);
+                    while ( currPixel < frameEnd ) // Draw all remaining adjacent horizontal lines
+                    {
+                        const Sc::Sprite::PixelLine & pixelLine = (const Sc::Sprite::PixelLine &)((u8*)&grpPixelRow)[pixelLineOffset];
+                        s64 lineLength = s64(pixelLine.lineLength());
+                        if ( std::distance(currPixel, frameEnd) < lineLength )
+                            lineLength = frameEnd - currPixel;
+                    
+                        if ( pixelLine.isSpeckled() )
+                        {
+                            for ( s64 linePixel=0; linePixel<lineLength; linePixel++, ++currPixel ) // For every pixel in the line
+                                *currPixel = palette[pixelLine.paletteIndex[linePixel]]; // Place color from palette index specified in the array at current pixel
+                        }
+                        else // Solid or transparent
+                        {
+                            if ( pixelLine.isSolidLine() )
+                                std::fill_n(currPixel, lineLength, palette[pixelLine.paletteIndex[0]]); // Place single color across the entire line
+
+                            currPixel += size_t(lineLength);
+                        }
+                        pixelLineOffset += pixelLine.sizeInBytes();
                     }
-                    pixelLineOffset += pixelLine.sizeInBytes();
                 }
             }
         }
@@ -1039,7 +1108,11 @@ void UnitToBits(ChkdBitmap & bitmap, ChkdPalette & palette, u8 color, u16 bitWid
                  s32 & xStart, s32 & yStart, u16 unitID, u16 unitXC, u16 unitYC, u16 frame, bool selected )
 {
     Sc::Unit::Type drawnUnitId = unitID < 228 ? (Sc::Unit::Type)unitID : Sc::Unit::Type::TerranMarine; // Extended units use ID:0's graphics (for now)
-    u32 grpId = chkd.scData.sprites.getImage(chkd.scData.sprites.getSprite(chkd.scData.units.getFlingy(chkd.scData.units.getUnit(drawnUnitId).graphics).sprite).imageFile).grpFile;
+    u16 imageId = chkd.scData.sprites.getSprite(chkd.scData.units.getFlingy(chkd.scData.units.getUnit(drawnUnitId).graphics).sprite).imageFile;
+    u32 grpId = chkd.scData.sprites.getImage(imageId).grpFile;
+
+    if ( unitID == 207 )
+        int a = 0;
 
     if ( (size_t)grpId < chkd.scData.sprites.numGrps() )
     {
@@ -1061,7 +1134,7 @@ void UnitToBits(ChkdBitmap & bitmap, ChkdPalette & palette, u8 color, u16 bitWid
         const Sc::Sprite::GrpFile & curr = chkd.scData.sprites.getGrp(grpId).get();
         std::memcpy(remapped, &palette[8], sizeof(remapped));
         std::memcpy(&palette[8], &chkd.scData.tunit.palette[color < 16 ? 8*color : 8*(color%16)], sizeof(remapped));
-        GrpToBits(bitmap, palette, bitWidth, bitHeight, xStart, yStart, curr, unitXC, unitYC, frame, color, false);
+        GrpToBits(bitmap, palette, bitWidth, bitHeight, xStart, yStart, curr, unitXC, unitYC, frame, color, chkd.scData.sprites.imageFlipped(imageId));
         std::memcpy(&palette[8], remapped, sizeof(remapped));
     }
 }

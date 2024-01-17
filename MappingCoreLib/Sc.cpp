@@ -2193,6 +2193,172 @@ bool Sc::Sprite::Grp::framesAreValid(const std::string & assetArchivePath) const
     return true;
 }
 
+std::vector<std::string_view> Sc::Sprite::OpName {
+    "playfram",
+    "playframtile",
+    "sethorpos",
+    "setvertpos",
+    "setpos",
+    "wait",
+    "waitrand",
+    "goto_",
+    "imgol",
+    "imgul",
+    "imgolorig",
+    "switchul",
+    "unknown_0c",
+    "imgoluselo",
+    "imguluselo",
+    "sprol",
+    "highsprol",
+    "lowsprul",
+    "uflunstable",
+    "spruluselo",
+    "sprul",
+    "sproluselo",
+    "end",
+    "setflipstate",
+    "playsnd",
+    "playsndrand",
+    "playsndbtwn",
+    "domissiledmg",
+    "attackmelee",
+    "followmaingraphic",
+    "randcondjmp",
+    "turnccwise",
+    "turncwise",
+    "turn1cwise",
+    "turnrand",
+    "setspawnframe",
+    "sigorder",
+    "attackwith",
+    "attack",
+    "castspell",
+    "useweapon",
+    "move",
+    "gotorepeatattk",
+    "engframe",
+    "engset",
+    "unknown_2d",
+    "nobrkcodestart",
+    "nobrkcodeend",
+    "ignorerest",
+    "attkshiftproj",
+    "tmprmgraphicstart",
+    "tmprmgraphicend",
+    "setfldirect",
+    "call",
+    "return_",
+    "setflspeed",
+    "creategasoverlays",
+    "pwrupcondjmp",
+    "trgtrangecondjmp",
+    "trgtarccondjmp",
+    "curdirectcondjmp",
+    "imgulnextid",
+    "unknown_3e",
+    "liftoffcondjmp",
+    "warpoverlay",
+    "orderdone",
+    "grdsprol",
+    "unknown_43",
+    "dogrddamage"
+};
+
+std::vector<std::vector<Sc::Sprite::ParamType>> Sc::Sprite::OpParams {
+    /*          playfram */ {ParamType::frame},
+    /*      playframtile */ {ParamType::frame},
+    /*         sethorpos */ {ParamType::sbyte},
+    /*        setvertpos */ {ParamType::sbyte},
+    /*            setpos */ {ParamType::sbyte, ParamType::sbyte},
+    /*              wait */ {ParamType::byte},
+    /*          waitrand */ {ParamType::byte, ParamType::byte},
+    /*             goto_ */ {ParamType::label},
+    /*             imgol */ {ParamType::imageid, ParamType::sbyte, ParamType::sbyte},
+    /*             imgul */ {ParamType::imageid, ParamType::sbyte, ParamType::sbyte},
+    /*         imgolorig */ {ParamType::imageid},
+    /*          switchul */ {ParamType::imageid},
+    /*        unknown_0c */ {},
+    /*        imgoluselo */ {ParamType::imageid, ParamType::sbyte, ParamType::sbyte},
+    /*        imguluselo */ {ParamType::imageid, ParamType::sbyte, ParamType::sbyte},
+    /*             sprol */ {ParamType::spriteid, ParamType::sbyte, ParamType::sbyte},
+    /*         highsprol */ {ParamType::spriteid, ParamType::sbyte, ParamType::sbyte},
+    /*          lowsprul */ {ParamType::spriteid, ParamType::sbyte, ParamType::sbyte},
+    /*       uflunstable */ {ParamType::flingyid},
+    /*        spruluselo */ {ParamType::spriteid, ParamType::sbyte, ParamType::sbyte},
+    /*             sprul */ {ParamType::spriteid, ParamType::sbyte, ParamType::sbyte},
+    /*        sproluselo */ {ParamType::spriteid, ParamType::overlayid},
+    /*               end */ {},
+    /*      setflipstate */ {ParamType::flipstate},
+    /*           playsnd */ {ParamType::soundid},
+    /*       playsndrand */ {ParamType::sounds, ParamType::soundid},
+    /*       playsndbtwn */ {ParamType::soundid, ParamType::soundid},
+    /*      domissiledmg */ {},
+    /*       attackmelee */ {ParamType::sounds, ParamType::soundid},
+    /* followmaingraphic */ {},
+    /*       randcondjmp */ {ParamType::byte, ParamType::label},
+    /*        turnccwise */ {ParamType::byte},
+    /*         turncwise */ {ParamType::byte},
+    /*        turn1cwise */ {},
+    /*          turnrand */ {ParamType::byte},
+    /*     setspawnframe */ {ParamType::byte},
+    /*          sigorder */ {ParamType::signalid},
+    /*        attackwith */ {ParamType::weapon},
+    /*            attack */ {},
+    /*         castspell */ {},
+    /*         useweapon */ {ParamType::weaponid},
+    /*              move */ {ParamType::byte},
+    /*    gotorepeatattk */ {},
+    /*          engframe */ {ParamType::bframe},
+    /*            engset */ {ParamType::frameset},
+    /*        unknown_2d */ {},
+    /*    nobrkcodestart */ {},
+    /*      nobrkcodeend */ {},
+    /*        ignorerest */ {},
+    /*     attkshiftproj */ {ParamType::byte},
+    /* tmprmgraphicstart */ {},
+    /*   tmprmgraphicend */ {},
+    /*       setfldirect */ {ParamType::byte},
+    /*              call */ {ParamType::label},
+    /*           return_ */ {},
+    /*        setflspeed */ {ParamType::speed},
+    /* creategasoverlays */ {ParamType::gasoverlay},
+    /*      pwrupcondjmp */ {ParamType::label},
+    /*  trgtrangecondjmp */ {ParamType::short_, ParamType::label},
+    /*    trgtarccondjmp */ {ParamType::short_, ParamType::short_, ParamType::label},
+    /*  curdirectcondjmp */ {ParamType::short_, ParamType::short_, ParamType::label},
+    /*       imgulnextid */ {ParamType::sbyte, ParamType::sbyte},
+    /*        unknown_3e */ {},
+    /*    liftoffcondjmp */ {ParamType::label},
+    /*       warpoverlay */ {ParamType::frame},
+    /*         orderdone */ {ParamType::signalid},
+    /*          grdsprol */ {ParamType::spriteid, ParamType::sbyte, ParamType::sbyte},
+    /*        unknown_43 */ {},
+    /*       dogrddamage */ {}
+};
+
+std::vector<size_t> Sc::Sprite::ParamSize {
+    /* bframe */ 1,
+    /* frame */ 2,
+    /* frameset */ 1,
+    /* byte */ 1,
+    /* sbyte */ 1,
+    /* label */ 2,
+    /* imageid */ 2,
+    /* spriteid */ 2,
+    /* flingyid */ 2,
+    /* overlayid */ 1,
+    /* flipstate */ 1,
+    /* soundid */ 2,
+    /* sounds */ 1,
+    /* signalid */ 1,
+    /* weapon */ 1,
+    /* weaponid */ 1,
+    /* speed */ 2,
+    /* gasoverlay */ 1,
+    /* short_ */ 2
+};
+
 bool Sc::Sprite::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, Sc::TblFilePtr imagesTbl)
 {
     logger.debug("Loading Sprites...");
@@ -2271,8 +2437,118 @@ bool Sc::Sprite::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, Sc
     }
     
     auto finish = std::chrono::high_resolution_clock::now();
+
+    auto iscriptFile = Sc::Data::GetAsset(orderedSourceFiles, "scripts\\ISCRIPT.BIN");
+    if ( !iscriptFile )
+    {
+        logger.error() << "Failed to load scripts\\ISCRIPT.BIN" << std::endl;
+        return false;
+    }
+    this->iscript.swap(*iscriptFile);
+
+    IScriptDatFileHeader* scriptHeader = (IScriptDatFileHeader*)&iscript[0];
+    size_t isIdTableOffset = size_t(scriptHeader->isIdTableOffset);
+    IScriptIdTableEntry* iScriptIdTable = (IScriptIdTableEntry*)&iscript[isIdTableOffset];
+    for ( ; iScriptIdTable->id != 0xFFFF; ++iScriptIdTable )
+    {
+        u16 id = iScriptIdTable->id;
+        bool idIncludesFlip = false;
+        bool idIncludesUnflip = false;
+        size_t animationsOffset = size_t(iScriptIdTable->offset);
+        if ( animationsOffset >= iscript.size() )
+        {
+            logger.error() << "Failed to parse scripts\\ISCRIPT.BIN" << std::endl;
+            return false;
+        }
+        IScriptAnimationHeader* iScriptAnimationHeader = (IScriptAnimationHeader*)&iscript[animationsOffset];
+        size_t totalAnimations = size_t(iScriptAnimationHeader->animationCount & 0xFFFE) + 2;
+        //logger << id << " has " << totalAnimations << " animations" << std::endl;
+        for ( size_t animationIndex=0; animationIndex < totalAnimations; ++animationIndex )
+        {
+            size_t animationOffset = iScriptAnimationHeader->animationsOffset[animationIndex];
+            if ( animationOffset > 0 )
+            {
+                size_t currOffset = animationOffset;
+                if ( currOffset >= iscript.size() )
+                {
+                    logger.error() << "Failed to parse scripts\\ISCRIPT.BIN" << std::endl;
+                    return false;
+                }
+                //logger << currOffset << ": " << std::endl;
+
+                if ( currOffset < iscript.size() )
+                {
+                    IScriptAnimation* animation = (IScriptAnimation*)&iscript[currOffset];
+                    std::set<size_t> visitedOffsets {};
+                    visitedOffsets.insert(currOffset);
+                    if ( !loadAnimation(animation, currOffset, idIncludesFlip, idIncludesUnflip, visitedOffsets) )
+                        return false;
+                }
+                else
+                {
+                    logger.error() << "Failed to parse scripts\\ISCRIPT.BIN" << std::endl;
+                    return false;
+                }
+            }
+        }
+        if ( idIncludesFlip && !idIncludesUnflip )
+            iscriptIdFlipsGrp.insert(id);
+    }
+
     logger.debug() << "Sprite loading completed in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
     return true;
+}
+
+bool Sc::Sprite::loadAnimation(IScriptAnimation* animation, size_t currOffset, bool & idIncludesFlip, bool & idIncludesUnflip, std::set<size_t> & visitedOffsets)
+{
+    for ( ; ; )
+    {
+        if ( currOffset >= iscript.size() )
+            return true;
+        Op code = Op(animation->code);
+        ++currOffset; // 1-byte code
+        //std::string opName = code < OpName.size() ? std::string(OpName[code]) : std::to_string(int(code));
+        //logger << "  " << opName << ", ";
+        if ( code < OpParams.size() )
+        {
+            auto & opCodeParams = OpParams[code];
+            if ( code == Op::setflipstate && iscript[currOffset] == 1 )
+                idIncludesFlip = true;
+            else if ( code == Op::setflipstate && iscript[currOffset] == 0 )
+                idIncludesUnflip = true;
+            else if ( code == Op::end || code == Op::return_ )
+                return true;
+            else if ( code == Op::goto_ ) // TODO: There are more such jump codes
+            {
+                u16 dest = (u16 &)iscript[currOffset];
+                if ( dest > iscript.size() )
+                {
+                    logger.error() << "Failed to parse scripts\\ISCRIPT.BIN" << std::endl;
+                    return true;
+                }
+                else if ( visitedOffsets.find(dest) == visitedOffsets.end() )
+                {
+                    visitedOffsets.insert(dest);
+                    IScriptAnimation* subAnimation = (IScriptAnimation*)&iscript[dest];
+                    if ( !loadAnimation(subAnimation, dest, idIncludesFlip, idIncludesUnflip, visitedOffsets) )
+                        return false;
+                }
+            }
+            
+            // Move currOffset past all the parameters
+            for ( int param=0; param<opCodeParams.size(); ++param )
+            {
+                auto currParam = opCodeParams[param];
+                auto paramSize = ParamSize[size_t(currParam)];
+                u16 paramValue = paramSize == 1 ? iscript[currOffset] : (u16 &)iscript[currOffset];
+                //logger << paramValue << ", ";
+                currOffset += paramSize;
+            }
+            if ( currOffset < iscript.size() )
+                animation = (IScriptAnimation*)&iscript[currOffset];
+        }
+        //logger << std::endl;
+    }
 }
 
 const Sc::Sprite::Grp & Sc::Sprite::getGrp(size_t grpIndex)
@@ -2312,6 +2588,11 @@ size_t Sc::Sprite::numImages() const
 size_t Sc::Sprite::numSprites() const
 {
     return sprites.size();
+}
+
+bool Sc::Sprite::imageFlipped(u16 imageId) const
+{
+    return this->iscriptIdFlipsGrp.find(this->images[imageId].iScriptId) != this->iscriptIdFlipsGrp.end();
 }
 
 bool Sc::Upgrade::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles)

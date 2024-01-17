@@ -14,7 +14,7 @@
 
 void Chkdraft::OnLoadTest()
 {
-    auto & map = []() -> GuiMap & {
+    /*auto & map = []() -> GuiMap & {
         auto map = chkd.maps.NewMap();
         map->addUnit(Chk::Unit {map->getNextClassId(), 64, 64, Sc::Unit::Type::StartLocation, 0, 0, 0, Sc::Player::Id::Player1});
         map->addUnit(Chk::Unit {map->getNextClassId(), 192, 64, Sc::Unit::Type::StartLocation, 0, 0, 0, Sc::Player::Id::Player2});
@@ -23,7 +23,7 @@ void Chkdraft::OnLoadTest()
         map->setPlayerForce(Sc::Player::Id::Player2, Chk::Force::Force2);
         map->setSlotType(1, Sc::Player::SlotType::Computer);
         _Pragma("warning(suppress: 26716)") return *map;
-    }();
+    }();*/
 }
 
 enum_t(Id, u32, {

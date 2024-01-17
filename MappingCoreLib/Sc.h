@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <deque>
 #include <unordered_map>
+#include <set>
 
 /**
     The Sc files defines static structures, constants, and enumerations general to StarCraft, there may be some limited overlap with Chk
@@ -656,6 +657,123 @@ namespace Sc {
             u32 landingDustOverlay[TotalImages];
             u32 liftOffOverlay[TotalImages];
         };
+        __declspec(align(1)) struct IScriptDatFileHeader
+        {
+            u16 isIdTableOffset = 0;
+            // lots more...
+        };
+        __declspec(align(1)) struct IScriptIdTableEntry // Last entry has ID = 0xFFFF, offset = 0x0000
+        {
+            u16 id = 0; // Same as in images.dat
+            u16 offset = 0;
+        };
+        __declspec(align(1)) struct IScriptAnimationHeader
+        {
+            u32 scpe = 1162888019; // Hardcoded "SCPE"
+            u16 animationCount = 0; // AnimationsOffset's size is animationCount & 0xFFFE
+            u16 unknown = 0x0000;
+            u16 animationsOffset[1] {0}; // Offset to each animation
+        };
+        __declspec(align(1)) struct IScriptAnimation
+        {
+            u8 code;
+            u8 params[1]; // Size depends on the Op/code
+        };
+        enum Op {
+            playfram,
+            playframtile,
+            sethorpos,
+            setvertpos,
+            setpos,
+            wait,
+            waitrand,
+            goto_,
+            imgol,
+            imgul,
+            imgolorig,
+            switchul,
+            unknown_0c,
+            imgoluselo,
+            imguluselo,
+            sprol,
+            highsprol,
+            lowsprul,
+            uflunstable,
+            spruluselo,
+            sprul,
+            sproluselo,
+            end,
+            setflipstate,
+            playsnd,
+            playsndrand,
+            playsndbtwn,
+            domissiledmg,
+            attackmelee,
+            followmaingraphic,
+            randcondjmp,
+            turnccwise,
+            turncwise,
+            turn1cwise,
+            turnrand,
+            setspawnframe,
+            sigorder,
+            attackwith,
+            attack,
+            castspell,
+            useweapon,
+            move,
+            gotorepeatattk,
+            engframe,
+            engset,
+            unknown_2d,
+            nobrkcodestart,
+            nobrkcodeend,
+            ignorerest,
+            attkshiftproj,
+            tmprmgraphicstart,
+            tmprmgraphicend,
+            setfldirect,
+            call,
+            return_,
+            setflspeed,
+            creategasoverlays,
+            pwrupcondjmp,
+            trgtrangecondjmp,
+            trgtarccondjmp,
+            curdirectcondjmp,
+            imgulnextid,
+            unknown_3e,
+            liftoffcondjmp,
+            warpoverlay,
+            orderdone,
+            grdsprol,
+            unknown_43,
+            dogrddamage
+        };
+        enum class ParamType : size_t {
+            bframe,
+            frame,
+            frameset,
+            byte,
+            sbyte,
+            label,
+            imageid,
+            spriteid,
+            flingyid,
+            overlayid,
+            flipstate,
+            soundid,
+            sounds,
+            signalid,
+            weapon,
+            weaponid,
+            speed,
+            gasoverlay,
+            short_
+        };
+        static std::vector<std::string_view> OpName;
+        static std::vector<std::vector<ParamType>> OpParams;
+        static std::vector<size_t> ParamSize;
         
         __declspec(align(1)) struct PixelLine {
             enum_t(Header, u8, {
@@ -752,17 +870,21 @@ namespace Sc {
         };
 
         bool load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, Sc::TblFilePtr imagesTbl);
+        bool loadAnimation(IScriptAnimation* animation, size_t currOffset, bool & idIncludesFlip, bool & idIncludesUnflip, std::set<size_t> & visitedOffsets);
         const Grp & getGrp(size_t grpIndex);
         const ImageDatEntry & getImage(size_t imageIndex) const;
         const DatEntry & getSprite(size_t spriteIndex) const;
         size_t numGrps() const;
         size_t numImages() const;
         size_t numSprites() const;
+        bool imageFlipped(u16 imageId) const; // TODO: Temp solution
 
     private:
         std::vector<Grp> grps;
         std::vector<ImageDatEntry> images;
         std::vector<DatEntry> sprites;
+        std::vector<u8> iscript;
+        std::set<u16> iscriptIdFlipsGrp; // TODO: Temp solution
 
     public:
         struct TreeSprite
