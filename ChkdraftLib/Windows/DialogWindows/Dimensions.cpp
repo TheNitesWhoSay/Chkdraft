@@ -118,7 +118,8 @@ void DimensionsWindow::CreateSubWindows(HWND hWnd)
     RefreshWindow();
     editLeft.SetEditNum<int>(0);
     editTop.SetEditNum<int>(0);
-    checkSmoothBorder.SetCheck(true);
+    checkSmoothBorder.DisableThis();
+    //checkSmoothBorder.SetCheck(true);
 }
 
 BOOL DimensionsWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)

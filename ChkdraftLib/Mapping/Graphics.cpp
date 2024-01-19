@@ -946,7 +946,7 @@ void TileElevationsToBits(ChkdBitmap & bitmap, s64 bitWidth, s64 bitHeight, cons
 }
 
 void GrpToBits(ChkdBitmap & bitmap, ChkdPalette & palette, s64 bitWidth, s64 bitHeight, s64 xStart, s64 yStart,
-               const Sc::Sprite::GrpFile & grpFile, s64 grpXc, s64 grpYc, u16 frame, u8 color, bool flipped) // TODO: Flipped GRP rendering
+               const Sc::Sprite::GrpFile & grpFile, s64 grpXc, s64 grpYc, u16 frame, u8 color, bool flipped)
 {
     if ( frame < grpFile.numFrames )
     {
@@ -988,7 +988,6 @@ void GrpToBits(ChkdBitmap & bitmap, ChkdPalette & palette, s64 bitWidth, s64 bit
                     {
                         const Sc::Sprite::PixelLine & pixelLine = (const Sc::Sprite::PixelLine &)((u8*)&grpPixelRow)[pixelLineOffset];
                         s64 lineLength = s64(pixelLine.lineLength());
-                        //s64 inBoundLength = currPixelIndex+lineLength-rowStart;
                         s64 inBoundLength = lineLength-(currPixelIndex-rowLimit);
                         if ( rowLimit-1-inBoundLength < rowStart )
                             inBoundLength = bitWidth;
