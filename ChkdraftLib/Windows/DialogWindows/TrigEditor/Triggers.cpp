@@ -78,6 +78,9 @@ bool TriggersWindow::DestroyThis()
 
 void TriggersWindow::RefreshWindow(bool focus)
 {
+    if ( getHandle() != NULL )
+        return;
+
     this->SetRedraw(false);
     RefreshGroupList();
     RefreshTrigList();

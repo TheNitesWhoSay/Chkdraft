@@ -78,6 +78,9 @@ bool BriefingTriggersWindow::DestroyThis()
 
 void BriefingTriggersWindow::RefreshWindow(bool focus)
 {
+    if ( getHandle() != NULL )
+        return;
+
     this->SetRedraw(false);
     RefreshGroupList();
     RefreshTrigList();

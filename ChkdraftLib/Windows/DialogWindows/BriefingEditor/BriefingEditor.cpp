@@ -65,6 +65,9 @@ void BriefingTrigEditorWindow::ChangeTab(Tab tab)
 
 void BriefingTrigEditorWindow::RefreshWindow()
 {
+    if ( getHandle() != NULL )
+        return;
+
     briefingTriggersWindow.RefreshWindow(false);
     briefingTemplatesWindow.RefreshWindow();
     ChangeTab(currTab);

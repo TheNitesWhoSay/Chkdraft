@@ -76,6 +76,9 @@ void TrigEditorWindow::ChangeTab(Tab tab)
 
 void TrigEditorWindow::RefreshWindow()
 {
+    if ( getHandle() != NULL )
+        return;
+
     triggersWindow.RefreshWindow(false);
     templatesWindow.RefreshWindow();
     countersWindow.RefreshWindow();

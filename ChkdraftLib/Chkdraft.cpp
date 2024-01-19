@@ -398,9 +398,9 @@ void Chkdraft::KeyListener(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 switch ( wParam )
                 {
                     case VK_SPACE: if ( CM != nullptr ) CM->LockCursor(); return; break;
-                    case VK_DELETE: CM->deleteSelection(); return; break;
-                    case VK_ESCAPE: maps.endPaste(); CM->clearSelection(); return; break;
-                    case VK_RETURN: CM->ReturnKeyPress(); return; break;
+                    case VK_DELETE: if ( CM != nullptr ) CM->deleteSelection(); return; break;
+                    case VK_ESCAPE: if ( CM != nullptr ) { maps.endPaste(); CM->clearSelection(); } return; break;
+                    case VK_RETURN: if ( CM != nullptr ) CM->ReturnKeyPress(); return; break;
                 }
 
                 if ( GetKeyState(VK_CONTROL) & 0x8000 ) // Control is down
@@ -409,7 +409,7 @@ void Chkdraft::KeyListener(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                     {
                         switch ( wParam )
                         {
-                            case 'S': maps.SaveCurr(true); return; break;
+                            case 'S': if ( CM != nullptr ) maps.SaveCurr(true); return; break;
                         }
                     }
                     else // Only control
@@ -420,29 +420,29 @@ void Chkdraft::KeyListener(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                                 {
                                     switch ( wParam )
                                     {
-                                        case 'A': CM->selectAll(); return; break;
-                                        case 'C': maps.copy(); return; break;
-                                        case 'X': maps.cut(); return; break;
-                                        case 'V': maps.startPaste(false); return; break;
+                                        case 'A': if ( CM != nullptr ) CM->selectAll(); return; break;
+                                        case 'C': if ( CM != nullptr ) maps.copy(); return; break;
+                                        case 'X': if ( CM != nullptr ) maps.cut(); return; break;
+                                        case 'V': if ( CM != nullptr ) maps.startPaste(false); return; break;
                                     }
                                 }
                                 break;
-                            case 'D': maps.ChangeLayer(Layer::Doodads); return; break;
+                            case 'D': if ( CM != nullptr ) maps.ChangeLayer(Layer::Doodads); return; break;
                             case 'E': FindLeaks(); return; break;
-                            case 'F': maps.ChangeLayer(Layer::FogEdit); return; break;
-                            case 'L': maps.ChangeLayer(Layer::Locations);return; break;
+                            case 'F': if ( CM != nullptr ) maps.ChangeLayer(Layer::FogEdit); return; break;
+                            case 'L': if ( CM != nullptr ) maps.ChangeLayer(Layer::Locations);return; break;
                             case 'N': newMap.CreateThis(getHandle()); return; break;
                             case 'O': maps.OpenMap(); return; break;
-                            case 'R': maps.ChangeLayer(Layer::Sprites); return; break;
-                            case 'S': maps.SaveCurr(false); return; break;
-                            case 'T': maps.ChangeLayer(Layer::Terrain); return; break;
-                            case 'U': maps.ChangeLayer(Layer::Units); return; break;
-                            case 'Y': CM->redo(); return; break;
-                            case 'Z': CM->undo(); return; break;
-                            case VK_OEM_PLUS: maps.ChangeZoom(true); return; break;
-                            case VK_OEM_MINUS: maps.ChangeZoom(false); return; break;
-                            case VK_F4: maps.CloseActive(); return; break;
-                            case VK_F6: maps.nextMdi(); return; break;
+                            case 'R': if ( CM != nullptr ) maps.ChangeLayer(Layer::Sprites); return; break;
+                            case 'S': if ( CM != nullptr ) maps.SaveCurr(false); return; break;
+                            case 'T': if ( CM != nullptr ) maps.ChangeLayer(Layer::Terrain); return; break;
+                            case 'U': if ( CM != nullptr ) maps.ChangeLayer(Layer::Units); return; break;
+                            case 'Y': if ( CM != nullptr ) CM->redo(); return; break;
+                            case 'Z': if ( CM != nullptr ) CM->undo(); return; break;
+                            case VK_OEM_PLUS: if ( CM != nullptr ) maps.ChangeZoom(true); return; break;
+                            case VK_OEM_MINUS: if ( CM != nullptr ) maps.ChangeZoom(false); return; break;
+                            case VK_F4: if ( CM != nullptr ) maps.CloseActive(); return; break;
+                            case VK_F6: if ( CM != nullptr ) maps.nextMdi(); return; break;
                         }
                     }
                 }
@@ -453,11 +453,11 @@ void Chkdraft::KeyListener(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
             {
                 switch ( wParam )
                 {
-                    case 'U': maps.SetGrid(8, 8); return; break;
-                    case 'F': maps.SetGrid(16, 16); return; break;
-                    case 'G': maps.SetGrid(32, 32); return; break;
-                    case 'L': maps.SetGrid(64, 64); return; break;
-                    case 'E': maps.SetGrid(128, 128); return; break;
+                    case 'U': if ( CM != nullptr ) maps.SetGrid(8, 8); return; break;
+                    case 'F': if ( CM != nullptr ) maps.SetGrid(16, 16); return; break;
+                    case 'G': if ( CM != nullptr ) maps.SetGrid(32, 32); return; break;
+                    case 'L': if ( CM != nullptr ) maps.SetGrid(64, 64); return; break;
+                    case 'E': if ( CM != nullptr ) maps.SetGrid(128, 128); return; break;
                 }
             }
             break;
@@ -467,7 +467,7 @@ void Chkdraft::KeyListener(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 switch ( wParam )
                 {
                     case VK_SPACE:
-                        if ( !maps.clipboard.isPasting() )
+                        if ( CM != nullptr && !maps.clipboard.isPasting() )
                             UnlockCursor();
                         return; break;
                 }
@@ -475,7 +475,7 @@ void Chkdraft::KeyListener(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
             break;
     }
 
-    if ( CM && editFocused == false && GetActiveWindow() == getHandle() )
+    if ( CM != nullptr && editFocused == false && GetActiveWindow() == getHandle() )
     {
         Layer layer = CM->getLayer();
         if ( layer == Layer::Units || layer == Layer::FogEdit || layer == Layer::Sprites || layer == Layer::Doodads )

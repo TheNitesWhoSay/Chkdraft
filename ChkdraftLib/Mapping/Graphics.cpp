@@ -1012,7 +1012,7 @@ void GrpToBits(ChkdBitmap & bitmap, ChkdPalette & palette, s64 bitWidth, s64 bit
                         pixelLineOffset += pixelLine.sizeInBytes();
                     }
 
-                    while ( currPixel >= frameEnd && pixelLineOffset < frameWidth ) // Draw all remaining adjacent horizontal lines
+                    while ( currPixel >= frameEnd && s64(pixelLineOffset) < frameWidth ) // Draw all remaining adjacent horizontal lines
                     {
                         const Sc::Sprite::PixelLine & pixelLine = (const Sc::Sprite::PixelLine &)((u8*)&grpPixelRow)[pixelLineOffset];
                         s64 lineLength = s64(pixelLine.lineLength());
@@ -2219,19 +2219,22 @@ void DrawMiniMapTiles(ChkdBitmap & bitmap, const ChkdPalette & palette, s64 bitW
                     xMiniTile %= 4; // Correct for invalid x-minitiles
             }
 
-            u16 tileIndex = map.getTile(size_t(xTile), size_t(yTile));
-            size_t groupIndex = Sc::Terrain::Tiles::getGroupIndex(tileIndex);
-            if ( groupIndex < tiles.tileGroups.size() )
+            if ( size_t(xTile) < map.getTileWidth() && size_t(yTile) < map.getTileHeight() )
             {
-                const Sc::Terrain::TileGroup & tileGroup = tiles.tileGroups[groupIndex];
-                const u16 & megaTileIndex = tileGroup.megaTileIndex[tiles.getGroupMemberIndex(tileIndex)];
-                const Sc::Terrain::TileGraphicsEx & tileGraphics = tiles.tileGraphics[megaTileIndex];
+                u16 tileIndex = map.getTile(size_t(xTile), size_t(yTile));
+                size_t groupIndex = Sc::Terrain::Tiles::getGroupIndex(tileIndex);
+                if ( groupIndex < tiles.tileGroups.size() )
+                {
+                    const Sc::Terrain::TileGroup & tileGroup = tiles.tileGroups[groupIndex];
+                    const u16 & megaTileIndex = tileGroup.megaTileIndex[tiles.getGroupMemberIndex(tileIndex)];
+                    const Sc::Terrain::TileGraphicsEx & tileGraphics = tiles.tileGraphics[megaTileIndex];
 
-                const size_t vr4Index = size_t(tileGraphics.miniTileGraphics[yMiniTile][xMiniTile].vr4Index());
-                const Sc::Terrain::MiniTilePixels & miniTilePixels = tiles.miniTilePixels[vr4Index];
-                const u8 & wpeIndex = miniTilePixels.wpeIndex[6][7];
+                    const size_t vr4Index = size_t(tileGraphics.miniTileGraphics[yMiniTile][xMiniTile].vr4Index());
+                    const Sc::Terrain::MiniTilePixels & miniTilePixels = tiles.miniTilePixels[vr4Index];
+                    const u8 & wpeIndex = miniTilePixels.wpeIndex[6][7];
                 
-                bitmap[size_t((yc + yOffset) * 128 + xc + xOffset)] = palette[wpeIndex];
+                    bitmap[size_t((yc + yOffset) * 128 + xc + xOffset)] = palette[wpeIndex];
+                }
             }
         }
     }

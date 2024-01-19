@@ -352,6 +352,7 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             if ( player >= 0 && player < 12 && newRace != CB_ERR && newRace >= 0 && newRace < 8 )
             {
                 CM->setPlayerRace(player, (Chk::Race)newRace);
+                chkd.maps.UpdatePlayerStatus();
                 CM->Redraw(true);
                 CM->notifyChange(false);
             }
@@ -375,6 +376,7 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 case 1: CM->setPlayerColorSetting(player, Chk::PlayerColorSetting::PlayerChoice); break;
                 default: CM->setPlayerColor(player, Chk::PlayerColor(newColor-LRESULT(::specialColors.size()))); break;
                 }
+                chkd.maps.UpdatePlayerStatus();
                 CM->Redraw(true);
                 CM->notifyChange(false);
             }
@@ -387,6 +389,7 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             if ( dropPlayerColor[player].GetEditNum<u8>(newColor) )
             {
                 CM->setPlayerColor(player, (Chk::PlayerColor)newColor);
+                chkd.maps.UpdatePlayerStatus();
                 CM->Redraw(true);
                 CM->notifyChange(false);
             }
@@ -432,6 +435,7 @@ void MapPropertiesWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
         {
             CM->setPlayerColorSetting(playerIndex, Chk::PlayerColorSetting::Custom);
             CM->setPlayerCustomColor(playerIndex, *playerColor);
+            chkd.maps.UpdatePlayerStatus();
             CM->Redraw(true);
             CM->notifyChange(false);
             this->RefreshWindow();

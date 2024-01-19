@@ -117,8 +117,8 @@ GuiMapPtr Maps::NewMap(Sc::Terrain::Tileset tileset, u16 width, u16 height, size
             if ( newMap->CreateThis(getHandle(), title) )
             {
                 UntitledNumber++;
-                EnableMapping();
                 Focus(newMap);
+                EnableMapping();
                 currentlyActiveMap->refreshScenario();
                 currentlyActiveMap->Redraw(true);
             
@@ -149,8 +149,8 @@ bool Maps::OpenMap(const std::string & fileName)
             if ( newMap->CreateThis(getHandle(), fileName) )
             {
                 newMap->SetWinText(fileName);
-                EnableMapping();
                 Focus(newMap);
+                EnableMapping();
 
                 if ( newMap->isProtected() && newMap->hasPassword() )
                     chkd.enterPasswordWindow.CreateThis(chkd.getHandle());
@@ -316,6 +316,8 @@ void Maps::ChangeLayer(Layer newLayer)
         std::string layerString;
         if ( chkd.mainToolbar.layerBox.GetItemText((int)newLayer, layerString) )
             chkd.statusBar.SetText(1, layerString);
+        
+        UpdatePlayerStatus();
     }
 }
 
@@ -444,12 +446,61 @@ void Maps::ChangePlayer(u8 newPlayer, bool updateMapPlayers)
             currentlyActiveMap->PlayerChanged(newPlayer);
         }
     }
+    UpdatePlayerStatus();
+}
 
-    char color[32], race[32], playerText[64];
-    std::snprintf(color, sizeof(color), "Red");
-    std::snprintf(race, sizeof(race), "Terran");
+void Maps::UpdatePlayerStatus()
+{
+    if ( CM->getLayer() == Layer::Terrain || CM->getLayer() == Layer::Locations )
+    {
+        chkd.statusBar.SetText(2, "");
+        chkd.statusBar.SetText(3, "");
+        return;
+    }
+
+    char color[32] {}, race[32] {}, playerText[64] {}, forceText[32] {};
+    auto slotIndex = CM->getCurrPlayer();
+    if ( slotIndex < Sc::Player::TotalSlots )
+    {
+        switch ( CM->getPlayerColor(CM->getCurrPlayer()) )
+        {
+            case Chk::PlayerColor::Red: std::snprintf(color, sizeof(color), "Red"); break;
+            case Chk::PlayerColor::Blue: std::snprintf(color, sizeof(color), "Blue"); break;
+            case Chk::PlayerColor::Teal: std::snprintf(color, sizeof(color), "Teal"); break;
+            case Chk::PlayerColor::Purple: std::snprintf(color, sizeof(color), "Purple"); break;
+            case Chk::PlayerColor::Orange: std::snprintf(color, sizeof(color), "Orange"); break;
+            case Chk::PlayerColor::Brown: std::snprintf(color, sizeof(color), "Brown"); break;
+            case Chk::PlayerColor::White: std::snprintf(color, sizeof(color), "White"); break;
+            case Chk::PlayerColor::Yellow: std::snprintf(color, sizeof(color), "Yellow"); break;
+            case Chk::PlayerColor::Green: std::snprintf(color, sizeof(color), "Green"); break;
+            case Chk::PlayerColor::PaleYellow: std::snprintf(color, sizeof(color), "PaleYellow"); break;
+            case Chk::PlayerColor::Tan: std::snprintf(color, sizeof(color), "Tan"); break;
+            case Chk::PlayerColor::Azure_NeutralColor: std::snprintf(color, sizeof(color), "Azure"); break;
+            default: std::snprintf(color, sizeof(color), "CustomColor"); break;
+        }
+        switch ( CM->getPlayerForce(CM->getCurrPlayer()) )
+        {
+            case Chk::Force::Force1: std::snprintf(forceText, sizeof(forceText), "Force 1"); break;
+            case Chk::Force::Force2: std::snprintf(forceText, sizeof(forceText), "Force 2"); break;
+            case Chk::Force::Force3: std::snprintf(forceText, sizeof(forceText), "Force 3"); break;
+            case Chk::Force::Force4: std::snprintf(forceText, sizeof(forceText), "Force 4"); break;
+        }
+    }
+    switch ( CM->getPlayerRace(CM->getCurrPlayer()) )
+    {
+        case Chk::Race::Zerg: std::snprintf(race, sizeof(race), "Zerg"); break;
+        case Chk::Race::Terran: std::snprintf(race, sizeof(race), "Terran"); break;
+        case Chk::Race::Protoss: std::snprintf(race, sizeof(race), "Protoss"); break;
+        case Chk::Race::Independent: std::snprintf(race, sizeof(race), "Independent"); break;
+        case Chk::Race::Neutral: std::snprintf(race, sizeof(race), "Neutral"); break;
+        case Chk::Race::UserSelectable: std::snprintf(race, sizeof(race), "UserSelect"); break;
+        case Chk::Race::Random: std::snprintf(race, sizeof(race), "Random"); break;
+        case Chk::Race::Inactive: std::snprintf(race, sizeof(race), "Inactive"); break;
+        default: std::snprintf(race, sizeof(race), "UnknownRace"); break;
+    }
     std::snprintf(playerText, sizeof(playerText), "Player %i: %s %s", currentlyActiveMap->getCurrPlayer() + 1, color, race);
     chkd.statusBar.SetText(2, playerText);
+    chkd.statusBar.SetText(3, forceText);
 }
 
 bool Maps::toggleCutCopyPasteTerrain()
@@ -786,8 +837,12 @@ void Maps::EnableMapping()
 
         HWND hLeftBar = chkd.mainPlot.leftBar.getHandle();
         ShowWindow(hLeftBar, SW_SHOW);
+        
+        std::string layerString;
+        if ( chkd.mainToolbar.layerBox.GetItemText((int)CM->getLayer(), layerString) )
+            chkd.statusBar.SetText(1, layerString);
 
-        chkd.statusBar.SetText(1, "Terrain");
+        UpdatePlayerStatus();
     }
 }
 
@@ -840,6 +895,8 @@ void Maps::DisableMapping()
 
         chkd.statusBar.SetText(0, "");
         chkd.statusBar.SetText(1, "");
+        chkd.statusBar.SetText(2, "");
+        chkd.statusBar.SetText(3, "");
 
         chkd.changePasswordWindow.Hide();
     }

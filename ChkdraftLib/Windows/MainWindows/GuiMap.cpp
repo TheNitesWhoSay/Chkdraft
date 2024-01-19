@@ -271,7 +271,7 @@ void GuiMap::finalizeFogOperation()
 void GuiMap::validateTileOccupiers(size_t tileX, size_t tileY, uint16_t tileValue)
 {
     bool cacheRefreshNeeded = false;
-    bool tileUpdatedByDoodad = false;
+    bool tileOccupiedByValidDoodad = false;
     const auto & tileset = chkd.scData.terrain.get(Scenario::getTileset());
     if ( !allowIllegalDoodads )
     {
@@ -315,17 +315,18 @@ void GuiMap::validateTileOccupiers(size_t tileX, size_t tileY, uint16_t tileValu
                                 for ( x=left; x<right; ++x )
                                     Scenario::tiles[y*size_t(dimensions.tileWidth)+x] = Scenario::editorTiles[y*size_t(dimensions.tileWidth)+x];
                             }
-                            tileUpdatedByDoodad = true;
                             Scenario::deleteDoodad(doodadIndex);
                             cacheRefreshNeeded = true;
                         }
+                        else
+                            tileOccupiedByValidDoodad = true;
                     }
                 }
             }
         }
     }
 
-    if ( !tileUpdatedByDoodad )
+    if ( !tileOccupiedByValidDoodad )
         Scenario::tiles[tileY*size_t(dimensions.tileWidth)+tileX] = tileValue;
     
     if ( !placeUnitsAnywhere || !placeBuildingsAnywhere )
@@ -1501,7 +1502,7 @@ void GuiMap::deleteSelection()
         selections.removeTiles();
         AddUndo(deletes);
     };
-    switch ( currLayer )
+   switch ( currLayer )
     {
         case Layer::Terrain:
             beginTerrainOperation();
