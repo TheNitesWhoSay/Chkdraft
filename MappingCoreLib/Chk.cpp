@@ -1681,6 +1681,11 @@ bool Chk::Sprite::isDrawnAsSprite() const
     return (flags & SpriteFlags::DrawAsSprite) == SpriteFlags::DrawAsSprite;
 }
 
+bool Chk::Sprite::isUnit() const
+{
+    return (flags & SpriteFlags::DrawAsSprite) != SpriteFlags::DrawAsSprite;
+}
+
 bool Chk::Cuwp::isCloaked() const
 {
     return (unitStateFlags & State::Cloak) == State::Cloak;

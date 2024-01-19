@@ -96,16 +96,16 @@ u16 Maps::GetMapID(std::shared_ptr<GuiMap> guiMap)
         return 0;
 }
 
-bool Maps::NewMap(Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex)
+GuiMapPtr Maps::NewMap(Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex, DefaultTriggers defaultTriggers)
 {
     if ( width == 0 || height == 0 )
     {
         Error("Invalid dimensions");
-        return false;
+        return nullptr;
     }
 
     auto start = std::chrono::high_resolution_clock::now();
-    GuiMapPtr newMap = GuiMapPtr(new GuiMap(clipboard, tileset, width, height, terrainTypeIndex));
+    GuiMapPtr newMap = GuiMapPtr(new GuiMap(clipboard, tileset, width, height, terrainTypeIndex, defaultTriggers));
     if ( newMap != nullptr )
     {
         try {
@@ -117,13 +117,14 @@ bool Maps::NewMap(Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t te
             if ( newMap->CreateThis(getHandle(), title) )
             {
                 UntitledNumber++;
-                EnableMapping();
                 Focus(newMap);
+                EnableMapping();
+                currentlyActiveMap->refreshScenario();
                 currentlyActiveMap->Redraw(true);
             
                 auto finish = std::chrono::high_resolution_clock::now();
                 logger.info() << "New map [ID:" << newMap->getMapId() << "] created in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
-                return true;
+                return newMap;
             }
             else
                 Error("Failed to create MDI Child Window!");
@@ -135,7 +136,7 @@ bool Maps::NewMap(Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t te
         Error("Failed to create new map!");
 
     RemoveMap(newMap);
-    return false;
+    return nullptr;
 }
 
 bool Maps::OpenMap(const std::string & fileName)
@@ -148,8 +149,8 @@ bool Maps::OpenMap(const std::string & fileName)
             if ( newMap->CreateThis(getHandle(), fileName) )
             {
                 newMap->SetWinText(fileName);
-                EnableMapping();
                 Focus(newMap);
+                EnableMapping();
 
                 if ( newMap->isProtected() && newMap->hasPassword() )
                     chkd.enterPasswordWindow.CreateThis(chkd.getHandle());
@@ -242,11 +243,11 @@ void Maps::ChangeLayer(Layer newLayer)
         if ( chkd.mainToolbar.layerBox.GetSel() != (int)newLayer )
             chkd.mainToolbar.layerBox.SetSel((int)newLayer);
 
-        if ( newLayer == Layer::FogEdit || newLayer == Layer::Units ||
-             newLayer == Layer::Sprites || newLayer == Layer::FogView || newLayer == Layer::Doodads )
+        if ( newLayer == Layer::FogEdit || newLayer == Layer::Units || newLayer == Layer::Sprites ||
+             newLayer == Layer::FogView || newLayer == Layer::Doodads || newLayer == Layer::CutCopyPaste )
             // Layers where player#'s are relevant
         {
-            ChangePlayer(currentlyActiveMap->getCurrPlayer());
+            ChangePlayer(currentlyActiveMap->getCurrPlayer(), false);
             ShowWindow(chkd.mainToolbar.playerBox.getHandle(), SW_SHOW);
         }
         else // Layers where player#'s are irrelevant
@@ -260,6 +261,26 @@ void Maps::ChangeLayer(Layer newLayer)
         else
             ShowWindow(chkd.mainToolbar.terrainBox.getHandle(), SW_HIDE);
 
+        if ( newLayer == Layer::Doodads )
+            EnableMenuItem(chkd.mainMenu.getHandle(), ID_EDIT_COVERTTOTERRAIN, MF_ENABLED);
+        else
+            EnableMenuItem(chkd.mainMenu.getHandle(), ID_EDIT_COVERTTOTERRAIN, MF_DISABLED);
+
+        if ( newLayer == Layer::Units || newLayer == Layer::Sprites )
+        {
+            EnableMenuItem(chkd.mainMenu.getHandle(), ID_EDIT_STACKSELECTED, MF_ENABLED);
+            EnableMenuItem(chkd.mainMenu.getHandle(), ID_EDIT_CREATELOCATION, MF_ENABLED);
+            EnableMenuItem(chkd.mainMenu.getHandle(), ID_EDIT_CREATEINVERTEDLOCATION, MF_ENABLED);
+            EnableMenuItem(chkd.mainMenu.getHandle(), ID_EDIT_CREATEMOBILEINVERTEDLOCATION, MF_ENABLED);
+        }
+        else
+        {
+            EnableMenuItem(chkd.mainMenu.getHandle(), ID_EDIT_STACKSELECTED, MF_DISABLED);
+            EnableMenuItem(chkd.mainMenu.getHandle(), ID_EDIT_CREATELOCATION, MF_DISABLED);
+            EnableMenuItem(chkd.mainMenu.getHandle(), ID_EDIT_CREATEINVERTEDLOCATION, MF_DISABLED);
+            EnableMenuItem(chkd.mainMenu.getHandle(), ID_EDIT_CREATEMOBILEINVERTEDLOCATION, MF_DISABLED);
+        }
+
         if ( newLayer == Layer::FogEdit )
         {
             chkd.mainToolbar.brushWidth.Show();
@@ -271,6 +292,23 @@ void Maps::ChangeLayer(Layer newLayer)
             chkd.mainToolbar.brushHeight.Hide();
         }
 
+        if ( newLayer == Layer::CutCopyPaste )
+        {
+            chkd.mainToolbar.checkTerrain.Show();
+            chkd.mainToolbar.checkDoodads.Show();
+            chkd.mainToolbar.checkSprites.Show();
+            chkd.mainToolbar.checkUnits.Show();
+            chkd.mainToolbar.checkFog.Show();
+        }
+        else
+        {
+            chkd.mainToolbar.checkTerrain.Hide();
+            chkd.mainToolbar.checkDoodads.Hide();
+            chkd.mainToolbar.checkSprites.Hide();
+            chkd.mainToolbar.checkUnits.Hide();
+            chkd.mainToolbar.checkFog.Hide();
+        }
+
         currentlyActiveMap->setLayer(newLayer);
 
         chkd.tilePropWindow.DestroyThis();
@@ -278,6 +316,8 @@ void Maps::ChangeLayer(Layer newLayer)
         std::string layerString;
         if ( chkd.mainToolbar.layerBox.GetItemText((int)newLayer, layerString) )
             chkd.statusBar.SetText(1, layerString);
+        
+        UpdatePlayerStatus();
     }
 }
 
@@ -328,59 +368,73 @@ void Maps::ChangeZoom(bool increment)
     }
 }
 
-void Maps::ChangePlayer(u8 newPlayer)
+void Maps::ChangePlayer(u8 newPlayer, bool updateMapPlayers)
 {
     currentlyActiveMap->setCurrPlayer(newPlayer);
 
-    if ( currentlyActiveMap->getLayer() == Layer::Units )
+    if ( updateMapPlayers )
     {
-        if ( clipboard.isPasting() )
+        if ( currentlyActiveMap->getLayer() == Layer::Units )
         {
-            auto & units = clipboard.getUnits();
-            for ( auto & pasteUnit : units )
-                pasteUnit.unit.owner = newPlayer;
-        }
-
-        currentlyActiveMap->PlayerChanged(newPlayer);
-    }
-    else if ( currentlyActiveMap->getLayer() == Layer::Doodads )
-    {
-        if ( clipboard.isPasting() )
-        {
-            auto & doodads = clipboard.getDoodads();
-            for ( auto & pasteDoodad : doodads )
-                pasteDoodad.owner = newPlayer;
-        }
-        else if ( currentlyActiveMap->GetSelections().hasDoodads() )
-        {
-            auto doodadPlayerChangeUndo = ReversibleActions::Make();
-            const auto & tileset = chkd.scData.terrain.get(currentlyActiveMap->getTileset());
-            auto & selDoodads = currentlyActiveMap->GetSelections().getDoodads();
-            for ( auto doodadIndex : selDoodads )
+            if ( clipboard.isPasting() )
             {
-                auto & selDoodad = currentlyActiveMap->getDoodad(doodadIndex);
-                if ( auto doodadGroupIndex = tileset.getDoodadGroupIndex(selDoodad.type) )
+                auto & units = clipboard.getUnits();
+                for ( auto & pasteUnit : units )
+                    pasteUnit.unit.owner = newPlayer;
+            }
+
+            currentlyActiveMap->PlayerChanged(newPlayer);
+        }
+        else if ( currentlyActiveMap->getLayer() == Layer::Doodads )
+        {
+            if ( clipboard.isPasting() )
+            {
+                auto & doodads = clipboard.getDoodads();
+                for ( auto & pasteDoodad : doodads )
+                    pasteDoodad.owner = newPlayer;
+            }
+            else if ( currentlyActiveMap->GetSelections().hasDoodads() )
+            {
+                auto doodadPlayerChangeUndo = ReversibleActions::Make();
+                const auto & tileset = chkd.scData.terrain.get(currentlyActiveMap->getTileset());
+                auto & selDoodads = currentlyActiveMap->GetSelections().getDoodads();
+                for ( auto doodadIndex : selDoodads )
                 {
-                    const auto & doodadDat = (Sc::Terrain::DoodadCv5 &)tileset.tileGroups[*doodadGroupIndex];
-                    if ( selDoodad.owner != newPlayer )
+                    auto & selDoodad = currentlyActiveMap->getDoodad(doodadIndex);
+                    if ( auto doodadGroupIndex = tileset.getDoodadGroupIndex(selDoodad.type) )
                     {
-                        doodadPlayerChangeUndo->Insert(DoodadChange::Make(u16(doodadIndex), selDoodad.owner, selDoodad.enabled));
-                        selDoodad.owner = newPlayer;
-                        if ( !currentlyActiveMap->sprites.empty() )
+                        const auto & doodadDat = (Sc::Terrain::DoodadCv5 &)tileset.tileGroups[*doodadGroupIndex];
+                        if ( selDoodad.owner != newPlayer )
                         {
-                            for ( int i=int(currentlyActiveMap->sprites.size())-1; i>=0; --i )
+                            doodadPlayerChangeUndo->Insert(DoodadChange::Make(u16(doodadIndex), selDoodad.owner, selDoodad.enabled));
+                            selDoodad.owner = newPlayer;
+                            if ( !currentlyActiveMap->sprites.empty() )
                             {
-                                auto & sprite = currentlyActiveMap->sprites[i];
-                                if ( sprite.type == doodadDat.overlayIndex && sprite.xc == selDoodad.xc && sprite.yc == selDoodad.yc )
-                                    sprite.owner = newPlayer;
+                                for ( int i=int(currentlyActiveMap->sprites.size())-1; i>=0; --i )
+                                {
+                                    auto & sprite = currentlyActiveMap->sprites[i];
+                                    if ( sprite.type == doodadDat.overlayIndex && sprite.xc == selDoodad.xc && sprite.yc == selDoodad.yc )
+                                        sprite.owner = newPlayer;
+                                }
                             }
                         }
                     }
                 }
+                currentlyActiveMap->AddUndo(doodadPlayerChangeUndo);
             }
-            currentlyActiveMap->AddUndo(doodadPlayerChangeUndo);
+            else if ( currentlyActiveMap->GetSelections().hasSprites() )
+            {
+                if ( clipboard.isPasting() )
+                {
+                    auto & sprites = clipboard.getSprites();
+                    for ( auto & pasteSprite : sprites )
+                        pasteSprite.sprite.owner = newPlayer;
+                }
+            }
+
+            currentlyActiveMap->PlayerChanged(newPlayer);
         }
-        else if ( currentlyActiveMap->GetSelections().hasSprites() )
+        else if ( currentlyActiveMap->getLayer() == Layer::Sprites )
         {
             if ( clipboard.isPasting() )
             {
@@ -388,27 +442,115 @@ void Maps::ChangePlayer(u8 newPlayer)
                 for ( auto & pasteSprite : sprites )
                     pasteSprite.sprite.owner = newPlayer;
             }
-        }
 
-        currentlyActiveMap->PlayerChanged(newPlayer);
+            currentlyActiveMap->PlayerChanged(newPlayer);
+        }
     }
-    else if ( currentlyActiveMap->getLayer() == Layer::Sprites )
+    UpdatePlayerStatus();
+}
+
+void Maps::UpdatePlayerStatus()
+{
+    if ( CM->getLayer() == Layer::Terrain || CM->getLayer() == Layer::Locations )
     {
-        if ( clipboard.isPasting() )
-        {
-            auto & sprites = clipboard.getSprites();
-            for ( auto & pasteSprite : sprites )
-                pasteSprite.sprite.owner = newPlayer;
-        }
-
-        currentlyActiveMap->PlayerChanged(newPlayer);
+        chkd.statusBar.SetText(2, "");
+        chkd.statusBar.SetText(3, "");
+        return;
     }
 
-    char color[32], race[32], playerText[64];
-    std::snprintf(color, sizeof(color), "Red");
-    std::snprintf(race, sizeof(race), "Terran");
+    char color[32] {}, race[32] {}, playerText[64] {}, forceText[32] {};
+    auto slotIndex = CM->getCurrPlayer();
+    if ( slotIndex < Sc::Player::TotalSlots )
+    {
+        switch ( CM->getPlayerColor(CM->getCurrPlayer()) )
+        {
+            case Chk::PlayerColor::Red: std::snprintf(color, sizeof(color), "Red"); break;
+            case Chk::PlayerColor::Blue: std::snprintf(color, sizeof(color), "Blue"); break;
+            case Chk::PlayerColor::Teal: std::snprintf(color, sizeof(color), "Teal"); break;
+            case Chk::PlayerColor::Purple: std::snprintf(color, sizeof(color), "Purple"); break;
+            case Chk::PlayerColor::Orange: std::snprintf(color, sizeof(color), "Orange"); break;
+            case Chk::PlayerColor::Brown: std::snprintf(color, sizeof(color), "Brown"); break;
+            case Chk::PlayerColor::White: std::snprintf(color, sizeof(color), "White"); break;
+            case Chk::PlayerColor::Yellow: std::snprintf(color, sizeof(color), "Yellow"); break;
+            case Chk::PlayerColor::Green: std::snprintf(color, sizeof(color), "Green"); break;
+            case Chk::PlayerColor::PaleYellow: std::snprintf(color, sizeof(color), "PaleYellow"); break;
+            case Chk::PlayerColor::Tan: std::snprintf(color, sizeof(color), "Tan"); break;
+            case Chk::PlayerColor::Azure_NeutralColor: std::snprintf(color, sizeof(color), "Azure"); break;
+            default: std::snprintf(color, sizeof(color), "CustomColor"); break;
+        }
+        switch ( CM->getPlayerForce(CM->getCurrPlayer()) )
+        {
+            case Chk::Force::Force1: std::snprintf(forceText, sizeof(forceText), "Force 1"); break;
+            case Chk::Force::Force2: std::snprintf(forceText, sizeof(forceText), "Force 2"); break;
+            case Chk::Force::Force3: std::snprintf(forceText, sizeof(forceText), "Force 3"); break;
+            case Chk::Force::Force4: std::snprintf(forceText, sizeof(forceText), "Force 4"); break;
+        }
+    }
+    switch ( CM->getPlayerRace(CM->getCurrPlayer()) )
+    {
+        case Chk::Race::Zerg: std::snprintf(race, sizeof(race), "Zerg"); break;
+        case Chk::Race::Terran: std::snprintf(race, sizeof(race), "Terran"); break;
+        case Chk::Race::Protoss: std::snprintf(race, sizeof(race), "Protoss"); break;
+        case Chk::Race::Independent: std::snprintf(race, sizeof(race), "Independent"); break;
+        case Chk::Race::Neutral: std::snprintf(race, sizeof(race), "Neutral"); break;
+        case Chk::Race::UserSelectable: std::snprintf(race, sizeof(race), "UserSelect"); break;
+        case Chk::Race::Random: std::snprintf(race, sizeof(race), "Random"); break;
+        case Chk::Race::Inactive: std::snprintf(race, sizeof(race), "Inactive"); break;
+        default: std::snprintf(race, sizeof(race), "UnknownRace"); break;
+    }
     std::snprintf(playerText, sizeof(playerText), "Player %i: %s %s", currentlyActiveMap->getCurrPlayer() + 1, color, race);
     chkd.statusBar.SetText(2, playerText);
+    chkd.statusBar.SetText(3, forceText);
+}
+
+bool Maps::toggleCutCopyPasteTerrain()
+{
+    if ( currentlyActiveMap != nullptr )
+    {
+        currentlyActiveMap->toggleCutCopyPasteTerrain();
+        return currentlyActiveMap->getCutCopyPasteTerrain();
+    }
+    return false;
+}
+
+bool Maps::toggleCutCopyPasteDoodads()
+{
+    if ( currentlyActiveMap != nullptr )
+    {
+        currentlyActiveMap->toggleCutCopyPasteDoodads();
+        return currentlyActiveMap->getCutCopyPasteDoodads();
+    }
+    return false;
+}
+
+bool Maps::toggleCutCopyPasteSprites()
+{
+    if ( currentlyActiveMap != nullptr )
+    {
+        currentlyActiveMap->toggleCutCopyPasteSprites();
+        return currentlyActiveMap->getCutCopyPasteSprites();
+    }
+    return false;
+}
+
+bool Maps::toggleCutCopyPasteUnits()
+{
+    if ( currentlyActiveMap != nullptr )
+    {
+        currentlyActiveMap->toggleCutCopyPasteUnits();
+        return currentlyActiveMap->getCutCopyPasteUnits();
+    }
+    return false;
+}
+
+bool Maps::toggleCutCopyPasteFog()
+{
+    if ( currentlyActiveMap != nullptr )
+    {
+        currentlyActiveMap->toggleCutCopyPasteFog();
+        return currentlyActiveMap->getCutCopyPasteFog();
+    }
+    return false;
 }
 
 void Maps::cut()
@@ -524,6 +666,19 @@ void Maps::startPaste(bool isQuickPaste)
             TrackMouseEvent(&tme);
         }
     }
+    else if ( currentlyActiveMap->getLayer() == Layer::CutCopyPaste && !isQuickPaste )
+    {
+        currentlyActiveMap->clearSelection();
+        clipboard.beginPasting(false);
+        RedrawWindow(currentlyActiveMap->getHandle(), NULL, NULL, RDW_INVALIDATE);
+
+        TRACKMOUSEEVENT tme;
+        tme.cbSize = sizeof(TRACKMOUSEEVENT);
+        tme.dwFlags = TME_HOVER;
+        tme.hwndTrack = currentlyActiveMap->getHandle();
+        tme.dwHoverTime = defaultHoverTime;
+        TrackMouseEvent(&tme);
+    }
 }
 
 void Maps::endPaste()
@@ -552,6 +707,8 @@ void Maps::properties()
             ShowWindow(chkd.tilePropWindow.getHandle(), SW_SHOW);
         }
     }
+    else
+        CM->ReturnKeyPress();
 }
 
 void Maps::stickCursor()
@@ -671,13 +828,21 @@ void Maps::EnableMapping()
 
         HMENU hMenu = GetMenu(chkd.getHandle());
 
-        for (auto item : onOffMenuItems)
-            EnableMenuItem(hMenu, item, MF_ENABLED);
+        for ( auto item : onOffMenuItems )
+        {
+            if ( item != ID_EDIT_COVERTTOTERRAIN && item != ID_EDIT_STACKSELECTED && item != ID_EDIT_CREATELOCATION &&
+                 item != ID_EDIT_CREATEINVERTEDLOCATION && item != ID_EDIT_CREATEMOBILEINVERTEDLOCATION )
+                EnableMenuItem(hMenu, item, MF_ENABLED);
+        }
 
         HWND hLeftBar = chkd.mainPlot.leftBar.getHandle();
         ShowWindow(hLeftBar, SW_SHOW);
+        
+        std::string layerString;
+        if ( chkd.mainToolbar.layerBox.GetItemText((int)CM->getLayer(), layerString) )
+            chkd.statusBar.SetText(1, layerString);
 
-        chkd.statusBar.SetText(1, "Terrain");
+        UpdatePlayerStatus();
     }
 }
 
@@ -686,8 +851,9 @@ void Maps::DisableMapping()
     if ( mappingEnabled )
     {
         mappingEnabled = false;
-
+        
         chkd.unitWindow.DestroyThis();
+        chkd.spriteWindow.DestroyThis();
         chkd.locationWindow.DestroyThis();
         chkd.terrainPalWindow.DestroyThis();
         chkd.tilePropWindow.DestroyThis();
@@ -698,6 +864,7 @@ void Maps::DisableMapping()
         chkd.briefingTrigEditorWindow.DestroyThis();
         chkd.changePasswordWindow.DestroyThis();
         chkd.enterPasswordWindow.DestroyThis();
+        chkd.dimensionsWindow.DestroyThis();
 
         int toolbarItems[] =
         {
@@ -718,10 +885,18 @@ void Maps::DisableMapping()
         for (auto item : onOffMenuItems)
             EnableMenuItem(hMenu, item, MF_DISABLED);
 
+        EnableMenuItem(hMenu, ID_EDIT_COVERTTOTERRAIN, MF_DISABLED);
+        EnableMenuItem(hMenu, ID_EDIT_STACKSELECTED, MF_DISABLED);
+        EnableMenuItem(hMenu, ID_EDIT_CREATELOCATION, MF_DISABLED);
+        EnableMenuItem(hMenu, ID_EDIT_CREATEINVERTEDLOCATION, MF_DISABLED);
+        EnableMenuItem(hMenu, ID_EDIT_CREATEMOBILEINVERTEDLOCATION, MF_DISABLED);
+
         chkd.mainPlot.leftBar.Hide();
 
         chkd.statusBar.SetText(0, "");
         chkd.statusBar.SetText(1, "");
+        chkd.statusBar.SetText(2, "");
+        chkd.statusBar.SetText(3, "");
 
         chkd.changePasswordWindow.Hide();
     }

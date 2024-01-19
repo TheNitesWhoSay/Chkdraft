@@ -242,8 +242,8 @@ bool TextTrigCompiler::loadCompiler(const Scenario & chk, Sc::Data & scData, siz
         (!prepSwitches || prepSwitchTable(chk)) &&
         (!prepGroups || prepGroupTable(chk)) &&
         (!prepScripts || prepScriptTable(scData)) &&
-        (!prepRegularStrings || prepStringTable(chk, newStringTable, trigIndexBegin, trigIndexEnd, Chk::StrScope::Game)) &&
-        (!prepExtendedStrings || prepStringTable(chk, newExtendedStringTable, trigIndexBegin, trigIndexEnd, Chk::StrScope::Editor));
+        (!prepRegularStrings || prepStringTable(chk, newStringTable, trigIndexBegin, trigIndexEnd, Chk::Scope::Game)) &&
+        (!prepExtendedStrings || prepStringTable(chk, newExtendedStringTable, trigIndexBegin, trigIndexEnd, Chk::Scope::Editor));
 }
 
 void TextTrigCompiler::clearCompiler()
@@ -3556,13 +3556,13 @@ bool TextTrigCompiler::prepLocationTable(const Scenario & map)
             locNode.locationName = "Anywhere";
             locationTable.insert( std::pair<size_t, LocationTableNode>(strHash(locNode.locationName), locNode) );
         }
-        else if ( auto gameString = map.getLocationName<RawString>(i, Chk::StrScope::Game) )
+        else if ( auto gameString = map.getLocationName<RawString>(i, Chk::Scope::Game) )
         {
             locNode.locationId = u8(i);
             locNode.locationName = *gameString;
             locationTable.insert( std::pair<size_t, LocationTableNode>(strHash(locNode.locationName), locNode) );
         }
-        else if ( auto editorString = map.getLocationName<RawString>(i, Chk::StrScope::Editor) )
+        else if ( auto editorString = map.getLocationName<RawString>(i, Chk::Scope::Editor) )
         {
             locNode.locationId = u8(i);
             locNode.locationName = *editorString;
@@ -3580,15 +3580,15 @@ bool TextTrigCompiler::prepUnitTable(const Scenario & map)
     for ( u16 unitId=0; unitId<Sc::Unit::TotalTypes; unitId++ )
     {
         unitNode.unitType = (Sc::Unit::Type)unitId;
-        auto gameString = map.getUnitName<RawString>((Sc::Unit::Type)unitId, true, Chk::UseExpSection::Auto, Chk::StrScope::Game);
-        auto editorString = map.getUnitName<RawString>((Sc::Unit::Type)unitId, true, Chk::UseExpSection::Auto, Chk::StrScope::Editor);
+        auto gameString = map.getUnitName<RawString>((Sc::Unit::Type)unitId, true, Chk::UseExpSection::Auto, Chk::Scope::Game);
+        auto editorString = map.getUnitName<RawString>((Sc::Unit::Type)unitId, true, Chk::UseExpSection::Auto, Chk::Scope::Editor);
         
-        if ( auto gameString = map.getUnitName<RawString>((Sc::Unit::Type)unitId, true, Chk::UseExpSection::Auto, Chk::StrScope::Game) )
+        if ( auto gameString = map.getUnitName<RawString>((Sc::Unit::Type)unitId, true, Chk::UseExpSection::Auto, Chk::Scope::Game) )
         {
             unitNode.unitName = *gameString;
             unitTable.insert( std::pair<size_t, UnitTableNode>(strHash(unitNode.unitName), unitNode) );
         }
-        else if ( auto editorString = map.getUnitName<RawString>((Sc::Unit::Type)unitId, true, Chk::UseExpSection::Auto, Chk::StrScope::Editor) )
+        else if ( auto editorString = map.getUnitName<RawString>((Sc::Unit::Type)unitId, true, Chk::UseExpSection::Auto, Chk::Scope::Editor) )
         {
             unitNode.unitName = *editorString;
             unitTable.insert( std::pair<size_t, UnitTableNode>(strHash(unitNode.unitName), unitNode) );
@@ -3608,13 +3608,13 @@ bool TextTrigCompiler::prepSwitchTable(const Scenario & map)
     size_t stringId = 0;
     for ( size_t switchIndex=0; switchIndex<Chk::TotalSwitches; switchIndex++ )
     {
-        if ( auto gameString = map.getSwitchName<RawString>(switchIndex, Chk::StrScope::Game) )
+        if ( auto gameString = map.getSwitchName<RawString>(switchIndex, Chk::Scope::Game) )
         {
             switchNode.switchId = u8(switchIndex);
             switchNode.switchName = *gameString;
             switchTable.insert( std::pair<size_t, SwitchTableNode>(strHash(switchNode.switchName), switchNode) );
         }
-        else if ( auto editorString = map.getSwitchName<RawString>(switchIndex, Chk::StrScope::Editor) )
+        else if ( auto editorString = map.getSwitchName<RawString>(switchIndex, Chk::Scope::Editor) )
         {
             switchNode.switchId = u8(switchIndex);
             switchNode.switchName = *editorString;
@@ -3629,13 +3629,13 @@ bool TextTrigCompiler::prepGroupTable(const Scenario & map)
     GroupTableNode groupNode = {};
     for ( u32 i=0; i<Chk::TotalForces; i++ )
     {
-        if ( auto gameString = map.getForceName<RawString>((Chk::Force)i, Chk::StrScope::Game) )
+        if ( auto gameString = map.getForceName<RawString>((Chk::Force)i, Chk::Scope::Game) )
         {
             groupNode.groupId = i + 18;
             groupNode.groupName = *gameString;
             groupTable.insert(std::pair<size_t, GroupTableNode>(strHash(groupNode.groupName), groupNode));
         }
-        else if ( auto editorString = map.getForceName<RawString>((Chk::Force)i, Chk::StrScope::Editor) )
+        else if ( auto editorString = map.getForceName<RawString>((Chk::Force)i, Chk::Scope::Editor) )
         {
             groupNode.groupId = i + 18;
             groupNode.groupName = *editorString;
@@ -3645,11 +3645,11 @@ bool TextTrigCompiler::prepGroupTable(const Scenario & map)
     return true;
 }
 
-bool TextTrigCompiler::prepStringTable(const Scenario & map, std::unordered_multimap<size_t, std::unique_ptr<StringTableNode>> & stringHashTable, size_t trigIndexBegin, size_t trigIndexEnd, const Chk::StrScope & scope)
+bool TextTrigCompiler::prepStringTable(const Scenario & map, std::unordered_multimap<size_t, std::unique_ptr<StringTableNode>> & stringHashTable, size_t trigIndexBegin, size_t trigIndexEnd, const Chk::Scope & scope)
 {
     std::bitset<Chk::MaxStrings> stringUsed; // Table of strings currently used in the map
-    u32 userMask = scope == Chk::StrScope::Game ? Chk::StringUserFlag::xTrigger : Chk::StringUserFlag::All;
-    map.markValidUsedStrings(stringUsed, Chk::StrScope::Either, scope, userMask);
+    u32 userMask = scope == Chk::Scope::Game ? Chk::StringUserFlag::xTrigger : Chk::StringUserFlag::All;
+    map.markValidUsedStrings(stringUsed, Chk::Scope::Either, scope, userMask);
     size_t stringCapacity = map.getCapacity(scope);
     for ( size_t stringId=1; stringId<=stringCapacity; stringId++ )
     {
@@ -3666,7 +3666,7 @@ bool TextTrigCompiler::prepStringTable(const Scenario & map, std::unordered_mult
         }
     }
 
-    if ( scope == Chk::StrScope::Game )
+    if ( scope == Chk::Scope::Game )
     {
         size_t numTriggers = map.numTriggers();
         for ( size_t trigIndex = 0; trigIndex < numTriggers; trigIndex++ )
@@ -3680,10 +3680,10 @@ bool TextTrigCompiler::prepStringTable(const Scenario & map, std::unordered_mult
                 if ( actionType < Chk::Action::NumActionTypes )
                 {
                     if ( Chk::Action::actionUsesStringArg[actionType] && action.stringId > 0 )
-                        prepTriggerString(map, stringHashTable, action.stringId, inReplacedRange, Chk::StrScope::Game);
+                        prepTriggerString(map, stringHashTable, action.stringId, inReplacedRange, Chk::Scope::Game);
 
                     if ( Chk::Action::actionUsesSoundArg[actionType] && action.soundStringId > 0 )
-                        prepTriggerString(map, stringHashTable, action.soundStringId, inReplacedRange, Chk::StrScope::Game);
+                        prepTriggerString(map, stringHashTable, action.soundStringId, inReplacedRange, Chk::Scope::Game);
                 }
             }
         }
@@ -3692,7 +3692,7 @@ bool TextTrigCompiler::prepStringTable(const Scenario & map, std::unordered_mult
     return true;
 }
 
-void TextTrigCompiler::prepTriggerString(const Scenario & scenario, std::unordered_multimap<size_t, std::unique_ptr<StringTableNode>> & stringHashTable, const u32 & stringId, const bool & inReplacedRange, const Chk::StrScope & scope)
+void TextTrigCompiler::prepTriggerString(const Scenario & scenario, std::unordered_multimap<size_t, std::unique_ptr<StringTableNode>> & stringHashTable, const u32 & stringId, const bool & inReplacedRange, const Chk::Scope & scope)
 {
     if ( auto rawString = scenario.getString<RawString>(stringId, scope) )
     {
@@ -3745,10 +3745,10 @@ bool TextTrigCompiler::buildNewMap(Scenario & scenario, size_t trigIndexBegin, s
     std::vector<Chk::Trigger> replacedTriggers = scenario.replaceTriggerRange(trigIndexBegin, trigIndexEnd, triggers);
     bool success = true;
     try {
-        scenario.deleteUnusedStrings(Chk::StrScope::Both);
+        scenario.deleteUnusedStrings(Chk::Scope::Both);
         for ( auto str : unassignedStrings )
         {
-            str->stringId = (u32)scenario.addString<RawString>(str->scStr.str, Chk::StrScope::Game);
+            str->stringId = (u32)scenario.addString<RawString>(str->scStr.str, Chk::Scope::Game);
             if ( str->stringId != Chk::StringId::NoString )
             {
                 for ( auto assignee : str->assignees )
@@ -4386,10 +4386,10 @@ bool BriefingTextTrigCompiler::buildNewMap(Scenario & scenario, size_t trigIndex
     std::vector<Chk::Trigger> replacedBriefingTriggers = scenario.replaceBriefingTriggerRange(trigIndexBegin, trigIndexEnd, briefingTriggers);
     bool success = true;
     try {
-        scenario.deleteUnusedStrings(Chk::StrScope::Both);
+        scenario.deleteUnusedStrings(Chk::Scope::Both);
         for ( auto str : unassignedStrings )
         {
-            str->stringId = (u32)scenario.addString<RawString>(str->scStr.str, Chk::StrScope::Game);
+            str->stringId = (u32)scenario.addString<RawString>(str->scStr.str, Chk::Scope::Game);
             if ( str->stringId != Chk::StringId::NoString )
             {
                 for ( auto assignee : str->assignees )

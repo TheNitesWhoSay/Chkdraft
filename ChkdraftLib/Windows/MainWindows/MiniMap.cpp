@@ -37,21 +37,25 @@ void MiniMap::MiniMapClick(LPARAM ClickPoints)
         float scale = 1.0f;
 
         if ( xSize >= ySize )
+        {
             if ( 128.0/xSize >= 1 )
                 scale = (float)(128/xSize);
             else
                 scale = 128.0f/xSize;
+        }
         else
+        {
             if ( 128.0/ySize >= 1 )
                 scale = (float)(128/ySize);
             else
                 scale = 128.0f/ySize;
+        }
 
         u16 xOffset = (u16)((128-xSize*scale)/2),
             yOffset = (u16)((128-ySize*scale)/2);
 
-        CM->SetScreenLeft((s32)((MiniClick.x-xOffset)*(32/scale)-screenWidth/2));
-        CM->SetScreenTop((s32)((MiniClick.y-yOffset)*(32/scale)-screenHeight/2));
+        CM->SetScreenLeft((s32)((MiniClick.x-xOffset)*(32/scale)-screenWidth/CM->getZoom()/2));
+        CM->SetScreenTop((s32)((MiniClick.y-yOffset)*(32/scale)-screenHeight/CM->getZoom()/2));
         CM->Scroll(true, true, true);
         RedrawWindow(CM->getHandle(), NULL, NULL, RDW_INVALIDATE);
     }

@@ -64,7 +64,6 @@ namespace WinLib {
         windowType = WindowType::None;
         allowEditNotify = true;
         defaultProc = NULL;
-        WindowClassName().clear();
     }
 
     bool ClassWindow::CreateMdiChild( const std::string & windowName, DWORD dwStyle,

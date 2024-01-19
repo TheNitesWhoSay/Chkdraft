@@ -48,6 +48,8 @@
     <ClInclude Include="Mapping\Graphics.h" />
     <ClInclude Include="Mapping\Selections.h" />
     <ClInclude Include="Mapping\Settings.h" />
+    <ClInclude Include="Mapping\Undos\ChkdUndos\CutCopyPasteChange.h" />
+    <ClInclude Include="Mapping\Undos\ChkdUndos\DimensionChange.h" />
     <ClInclude Include="Mapping\Undos\ChkdUndos\DoodadChange.h" />
     <ClInclude Include="Mapping\Undos\ChkdUndos\DoodadCreateDel.h" />
     <ClInclude Include="Mapping\Undos\ChkdUndos\FogChange.h" />
@@ -58,6 +60,7 @@
     <ClInclude Include="Mapping\Undos\ChkdUndos\MtxmChange.h" />
     <ClInclude Include="Mapping\Undos\ChkdUndos\SpriteChange.h" />
     <ClInclude Include="Mapping\Undos\ChkdUndos\SpriteCreateDel.h" />
+    <ClInclude Include="Mapping\Undos\ChkdUndos\SpriteIndexMove.h" />
     <ClInclude Include="Mapping\Undos\ChkdUndos\TileChange.h" />
     <ClInclude Include="Mapping\Undos\ChkdUndos\UndoTypes.h" />
     <ClInclude Include="Mapping\Undos\ChkdUndos\UnitChange.h" />
@@ -80,6 +83,7 @@
     <ClInclude Include="Windows\ChkdControls\TechTree.h" />
     <ClInclude Include="Windows\ChkdControls\UnitTree.h" />
     <ClInclude Include="Windows\ChkdControls\UpgradeTree.h" />
+    <ClInclude Include="Windows\DialogWindows\About.h" />
     <ClInclude Include="Windows\DialogWindows\BriefingEditor\BriefingEditor.h" />
     <ClInclude Include="Windows\DialogWindows\BriefingEditor\BriefingTemplates.h" />
     <ClInclude Include="Windows\DialogWindows\BriefingEditor\BriefingTrigActions.h" />
@@ -88,7 +92,10 @@
     <ClInclude Include="Windows\DialogWindows\BriefingEditor\BriefingTrigModifyText.h" />
     <ClInclude Include="Windows\DialogWindows\BriefingEditor\BriefingTrigPlayers.h" />
     <ClInclude Include="Windows\DialogWindows\DialogWindows.h" />
+    <ClInclude Include="Windows\DialogWindows\Dimensions.h" />
     <ClInclude Include="Windows\DialogWindows\Layers\LocationProperties.h" />
+    <ClInclude Include="Windows\DialogWindows\Layers\SpriteProperties\PreservedSpriteStats.h" />
+    <ClInclude Include="Windows\DialogWindows\Layers\SpriteProperties\SpriteProperties.h" />
     <ClInclude Include="Windows\DialogWindows\Layers\TerrainPalette.h" />
     <ClInclude Include="Windows\DialogWindows\Layers\TileProperties.h" />
     <ClInclude Include="Windows\DialogWindows\Layers\UnitProperties\PreservedUnitStats.h" />
@@ -142,6 +149,8 @@
     <ClCompile Include="Mapping\Graphics.cpp" />
     <ClCompile Include="Mapping\Selections.cpp" />
     <ClCompile Include="Mapping\Settings.cpp" />
+    <ClCompile Include="Mapping\Undos\ChkdUndos\CutCopyPasteChange.cpp" />
+    <ClCompile Include="Mapping\Undos\ChkdUndos\DimensionChange.cpp" />
     <ClCompile Include="Mapping\Undos\ChkdUndos\DoodadChange.cpp" />
     <ClCompile Include="Mapping\Undos\ChkdUndos\DoodadCreateDel.cpp" />
     <ClCompile Include="Mapping\Undos\ChkdUndos\FogChange.cpp" />
@@ -152,6 +161,7 @@
     <ClCompile Include="Mapping\Undos\ChkdUndos\MtxmChange.cpp" />
     <ClCompile Include="Mapping\Undos\ChkdUndos\SpriteChange.cpp" />
     <ClCompile Include="Mapping\Undos\ChkdUndos\SpriteCreateDel.cpp" />
+    <ClCompile Include="Mapping\Undos\ChkdUndos\SpriteIndexMove.cpp" />
     <ClCompile Include="Mapping\Undos\ChkdUndos\TileChange.cpp" />
     <ClCompile Include="Mapping\Undos\ChkdUndos\UnitChange.cpp" />
     <ClCompile Include="Mapping\Undos\ChkdUndos\UnitCreateDel.cpp" />
@@ -173,6 +183,7 @@
     <ClCompile Include="Windows\ChkdControls\TechTree.cpp" />
     <ClCompile Include="Windows\ChkdControls\UnitTree.cpp" />
     <ClCompile Include="Windows\ChkdControls\UpgradeTree.cpp" />
+    <ClCompile Include="Windows\DialogWindows\About.cpp" />
     <ClCompile Include="Windows\DialogWindows\BriefingEditor\BriefingEditor.cpp" />
     <ClCompile Include="Windows\DialogWindows\BriefingEditor\BriefingTemplates.cpp" />
     <ClCompile Include="Windows\DialogWindows\BriefingEditor\BriefingTrigActions.cpp" />
@@ -180,7 +191,10 @@
     <ClCompile Include="Windows\DialogWindows\BriefingEditor\BriefingTrigModify.cpp" />
     <ClCompile Include="Windows\DialogWindows\BriefingEditor\BriefingTrigModifyText.cpp" />
     <ClCompile Include="Windows\DialogWindows\BriefingEditor\BriefingTrigPlayers.cpp" />
+    <ClCompile Include="Windows\DialogWindows\Dimensions.cpp" />
     <ClCompile Include="Windows\DialogWindows\Layers\LocationProperties.cpp" />
+    <ClCompile Include="Windows\DialogWindows\Layers\SpriteProperties\PreservedSpriteStats.cpp" />
+    <ClCompile Include="Windows\DialogWindows\Layers\SpriteProperties\SpriteProperties.cpp" />
     <ClCompile Include="Windows\DialogWindows\Layers\TerrainPalette.cpp" />
     <ClCompile Include="Windows\DialogWindows\Layers\TileProperties.cpp" />
     <ClCompile Include="Windows\DialogWindows\Layers\UnitProperties\PreservedUnitStats.cpp" />

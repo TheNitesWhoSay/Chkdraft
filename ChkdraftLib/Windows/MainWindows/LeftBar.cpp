@@ -56,6 +56,24 @@ void LeftBar::NotifyTreeItemSelected(LPARAM newValue)
                 chkd.maps.ChangeLayer(Layer::Units);
 
             Chk::Unit unit {};
+            unit.validStateFlags = Chk::Unit::State::Invincible;
+            const auto & unitDat = chkd.scData.units.getUnit(Sc::Unit::Type(itemData));
+
+            if ( (unitDat.flags & Sc::Unit::Flags::FlyingBuilding) == Sc::Unit::Flags::FlyingBuilding )
+                unit.validStateFlags |= Chk::Unit::State::InTransit;
+
+            if ( (unitDat.flags & Sc::Unit::Flags::Burrowable) == Sc::Unit::Flags::Burrowable )
+                unit.validStateFlags |= Chk::Unit::State::Burrow;
+
+            if ( (unitDat.flags & Sc::Unit::Flags::Cloakable) == Sc::Unit::Flags::Cloakable )
+                unit.validStateFlags |= Chk::Unit::State::Cloak;
+
+            if ( (unitDat.flags & Sc::Unit::Flags::Invincible) == Sc::Unit::Flags::Invincible )
+                unit.validStateFlags &= Chk::Unit::State::xInvincible;
+
+            if ( (unitDat.flags & Sc::Unit::Flags::Invincible) == 0 && (unitDat.flags & Sc::Unit::Flags::Building) == 0 )
+                unit.validStateFlags |= Chk::Unit::State::Hallucinated;
+
             unit.energyPercent = 100;
             unit.hangerAmount = 0;
             unit.hitpointPercent = 100;
@@ -66,7 +84,6 @@ void LeftBar::NotifyTreeItemSelected(LPARAM newValue)
             unit.resourceAmount = 0;
             unit.classId = 0;
             unit.shieldPercent = 100;
-            unit.validStateFlags = 0;
             unit.stateFlags = 0;
             unit.unused = 0;
             unit.validFieldFlags = 0;
@@ -79,10 +96,13 @@ void LeftBar::NotifyTreeItemSelected(LPARAM newValue)
         break;
 
         case TreeTypeLocation: // itemData = location index
-            CM->GetSelections().selectLocation(u16(itemData));
-            if ( chkd.locationWindow.getHandle() != nullptr )
-                chkd.locationWindow.RefreshLocationInfo();
-            CM->viewLocation(u16(itemData));
+            if ( CM->GetSelectedLocation() != u16(itemData) )
+            {
+                CM->GetSelections().selectLocation(u16(itemData));
+                if ( chkd.locationWindow.getHandle() != nullptr )
+                    chkd.locationWindow.RefreshLocationInfo();
+                CM->viewLocation(u16(itemData));
+            }
             break;
 
         case TreeTypeSprite: // itemData = sprite index

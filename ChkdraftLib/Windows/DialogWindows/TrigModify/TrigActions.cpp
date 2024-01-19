@@ -415,7 +415,7 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
                 else if ( argType == Chk::Action::ArgType::Sound )
                     action.soundStringId = (u32)newStringId;
                     
-                CM->deleteUnusedStrings(Chk::StrScope::Both);
+                CM->deleteUnusedStrings(Chk::Scope::Both);
                 madeChange = true;
             }
         }
@@ -692,10 +692,10 @@ void TrigActionsWindow::SuggestString()
     if ( CM != nullptr )
     {
         suggestions.AddString(std::string("No String"));
-        size_t stringCapacity = CM->getCapacity(Chk::StrScope::Game);
+        size_t stringCapacity = CM->getCapacity(Chk::Scope::Game);
         for ( size_t i = 1; i <= stringCapacity; i++ )
         {
-            if ( auto str = CM->getString<SingleLineChkdString>(i, Chk::StrScope::Game) )
+            if ( auto str = CM->getString<SingleLineChkdString>(i, Chk::Scope::Game) )
                 suggestions.AddString(*str);
         }
     }
@@ -940,7 +940,7 @@ void TrigActionsWindow::ButtonEditString()
                 else
                     action.stringId = Chk::StringId::NoString;
 
-                CM->deleteUnusedStrings(Chk::StrScope::Game);
+                CM->deleteUnusedStrings(Chk::Scope::Game);
             }
 
             if ( result > 0 )
@@ -989,7 +989,7 @@ void TrigActionsWindow::ButtonEditSound()
                 else
                     action.soundStringId = Chk::StringId::NoString;
 
-                CM->deleteUnusedStrings(Chk::StrScope::Game);
+                CM->deleteUnusedStrings(Chk::Scope::Game);
             }
 
             if ( result > 0 )
@@ -1161,8 +1161,8 @@ void TrigActionsWindow::GetCurrentActionString(std::optional<ChkdString> & gameS
             Chk::Action::ArgType argType = Chk::Action::getClassicArgType(actionType, i);
             if ( argType == Chk::Action::ArgType::String )
             {
-                gameString = CM->getString<ChkdString>(action.stringId, Chk::StrScope::Game);
-                editorString = CM->getString<ChkdString>(action.stringId, Chk::StrScope::Editor);
+                gameString = CM->getString<ChkdString>(action.stringId, Chk::Scope::Game);
+                editorString = CM->getString<ChkdString>(action.stringId, Chk::Scope::Editor);
             }
         }
     }
@@ -1181,8 +1181,8 @@ void TrigActionsWindow::GetCurrentActionSound(std::optional<ChkdString> & gameSt
             Chk::Action::ArgType argType = Chk::Action::getClassicArgType(actionType, i);
             if ( argType == Chk::Action::ArgType::Sound )
             {
-                gameString = CM->getString<ChkdString>(action.stringId, Chk::StrScope::Game);
-                editorString = CM->getString<ChkdString>(action.stringId, Chk::StrScope::Editor);
+                gameString = CM->getString<ChkdString>(action.stringId, Chk::Scope::Game);
+                editorString = CM->getString<ChkdString>(action.stringId, Chk::Scope::Editor);
             }
         }
     }

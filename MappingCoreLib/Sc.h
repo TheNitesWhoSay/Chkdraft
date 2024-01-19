@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <deque>
 #include <unordered_map>
+#include <set>
 
 /**
     The Sc files defines static structures, constants, and enumerations general to StarCraft, there may be some limited overlap with Chk
@@ -387,6 +388,41 @@ namespace Sc {
         static const std::vector<std::string> defaultDisplayNames;
         static const std::vector<std::string> legacyTextTrigDisplayNames;
 
+        enum_t(Flags, u32, {
+            Building = BIT_0,
+            Addon = BIT_1,
+            Flyer = BIT_2,
+            Worker = BIT_3,
+            Subunit = BIT_4,
+            FlyingBuilding = BIT_5,
+            Hero = BIT_6,
+            RegeneratesHP = BIT_7,
+            AnimatedIdle = BIT_8,
+            Cloakable = BIT_9,
+            TwoUnitsIn1Egg = BIT_10,
+            NeutralAccessories = BIT_11,
+            ResourceDepot = BIT_12,
+            ResourceContainer = BIT_13,
+            RoboticUnit = BIT_14,
+            Detector = BIT_15,
+            Organicunit = BIT_16,
+            CreepBuilding = BIT_17,
+            Unused = BIT_18,
+            RequiredPsi = BIT_19,
+            Burrowable = BIT_20,
+            Spellcaster = BIT_21,
+            PermanentCloak = BIT_22,
+            NPCOrAccessories = BIT_23,
+            MorphFromOtherUnit = BIT_24,
+            LargeUnit = BIT_25,
+            HugeUnit = BIT_26,
+            AutoAttackAndMove = BIT_27,
+            CanAttack = BIT_28,
+            Invincible = BIT_29,
+            Mechanical = BIT_30,
+            ProducesUnits = BIT_31
+        });
+
         struct DatEntry
         {
             u8 graphics;
@@ -411,7 +447,7 @@ namespace Sc {
             u8 airWeapon;
             u8 maxAirHits;
             u8 aiInternal;
-            u32 specialAbilityFlags;
+            u32 flags;
             u8 targetAcquisitionRange;
             u8 sightRange;
             u8 armorUpgrade;
@@ -500,7 +536,7 @@ namespace Sc {
             u8 airWeapon[TotalTypes];
             u8 maxAirHits[TotalTypes];
             u8 aiInternal[TotalTypes];
-            u32 specialAbilityFlags[TotalTypes];
+            u32 flags[TotalTypes];
             u8 targetAcquisitionRange[TotalTypes];
             u8 sightRange[TotalTypes];
             u8 armorUpgrade[TotalTypes];
@@ -515,8 +551,7 @@ namespace Sc {
             u16 yesSoundStart[IdRange::From0To105]; // Id 0-105 only
             u16 yesSoundEnd[IdRange::From0To105]; // Id 0-105 only
             Dimensions starEditPlacementBox[TotalTypes];
-            u16 addonHorizontal[IdRange::From106To201]; // Id 106-201 only
-            u16 addonVertical[IdRange::From106To201]; // Id 106-201 only
+            Dimensions addonOffset[IdRange::From106To201]; // Id 106-201 only
             Extent unitExtent[TotalTypes];
             u16 portrait[TotalTypes];
             u16 mineralCost[TotalTypes];
@@ -622,6 +657,124 @@ namespace Sc {
             u32 landingDustOverlay[TotalImages];
             u32 liftOffOverlay[TotalImages];
         };
+        __declspec(align(1)) struct IScriptDatFileHeader
+        {
+            u16 isIdTableOffset = 0;
+            // lots more...
+        };
+        __declspec(align(1)) struct IScriptIdTableEntry // Last entry has ID = 0xFFFF, offset = 0x0000
+        {
+            u16 id = 0; // Same as in images.dat
+            u16 offset = 0;
+        };
+        __declspec(align(1)) struct IScriptAnimationHeader
+        {
+            u32 scpe = 1162888019; // Hardcoded "SCPE"
+            u16 animationCount = 0; // AnimationsOffset's size is animationCount & 0xFFFE
+            u16 unknown = 0x0000;
+            u16 animationsOffset[1] {0}; // Offset to each animation
+        };
+        __declspec(align(1)) struct IScriptAnimation
+        {
+            u8 code;
+            u8 params[1]; // Size depends on the Op/code
+        };
+        enum Op {
+            playfram, // Display Frame{1}, adjusted for direction
+            playframtile, // Display Frame{1} dependant on tileset
+            sethorpos, // Set the horizontal offset of the current image overlay to Byte{1}
+            setvertpos, // Set the vertical position of an image overlay to Byte{1}
+            setpos, // Set the horizontal and vertical position of the current image overlay to Byte{1} and Byte{2} respectively
+            wait, // Pauses script execution for a Byte{1} number of ticks
+            waitrand, // Pauses script execution for a random number of ticks between Byte{1} and Byte{2}
+            goto_, // Unconditionally jumps to code block Label{1}
+            imgol, // Display ImageID{1} as an active image overlay at an animation level higher than the current image overlay at offset position (Byte{1},Byte{2})
+            imgul, // Display ImageID{1} as an active image overlay at an animation level lower than the current image overlay at offset position (Byte{1},Byte{2})
+            imgolorig, // Display ImageID{1} as an active image overlay at an animation level higher than the current image overlay at the relative origin offset position
+            switchul, // Only for powerups, this is hypothesised to replace the image overlay that was first created by the current image overlay.', #WTF?
+            unknown_0c, // Unknown
+            imgoluselo, // Displays an active image overlay at an animation level higher than the current image overlay, using a LO* file to determine the offset position.', #WTF?
+            imguluselo, // Displays an active image overlay at an animation level lower than the current image overlay, using a LO* file to determine the offset position.', #WTF?
+            sprol, // Spawns SpriteID{1} one animation level above the current image overlay at offset position (Byte{1},Byte{2})
+            highsprol, // Spawns SpriteID{1} at the highest animation level at offset position (Byte{1},Byte{2})
+            lowsprul, // spawns SpriteID{1} at the lowest animation level at offset position (Byte{1},Byte{2})
+            uflunstable, // Create FlingyID{1} with restrictions; supposedly crashes in most cases
+            spruluselo, // Spawns SpriteID{1} one animation level below the current image overlay at offset position (Byte{1},Byte{2}). The new sprite inherits the direction of the current sprite. Requires LO* file for unknown reason
+            sprul, // Spawns SpriteID{1} one animation level below the current image overlay at offset position (Byte{1},Byte{2}). The new sprite inherits the direction of the current sprite
+            sproluselo, // Spawns SpriteID{1} one animation level above the current image overlay, using a specified LO* file for the offset position information. The new sprite inherits the direction of the current sprite.', #WTF?
+            end, // Destroys the current active image overlay, also removing the current sprite if the image overlay is the last in one in the current sprite
+            setflipstate, // Sets the flip state of the current image overlay to FlipState{1}
+            playsnd, // Plays SoundID{1}
+            playsndrand, // Plays a random sound from a list containing Sounds{1} number of SoundID{1}'s.,
+            playsndbtwn, // Plays a random sound between SoundID{1} and SoundID{2} inclusively
+            domissiledmg, // Causes the damage of a weapon flingy to be applied according to its weapons.dat entry
+            attackmelee, // Applies damage to target without creating a flingy and plays a random sound from a list containing Sounds{1} number of SoundID{1}'s..,
+            followmaingraphic, // Causes the current image overlay to display the same frame as the parent image overlay
+            randcondjmp, // Randomly jump to Label{1} with a chance of Byte{1} out of 255
+            turnccwise, // Turns the flingy counterclockwise by Byte{1} direction units
+            turncwise, // Turns the flingy clockwise by Byte{1} direction units
+            turn1cwise, // Turns the flingy clockwise by one direction unit
+            turnrand, // Turns the flingy by Byte{1} direction units in a random direction, with a heavy bias towards turning clockwise
+            setspawnframe, // in specific situations, performs a natural rotation to the direction Byte{1}
+            sigorder, // Allows the current unit's order to proceed if it has paused for an animation to be completed., #WTF?
+            attackwith, // Attack with either the ground or air weapon depending on Weapon{1}
+            attack, // Attack with either the ground or air weapon depending on target
+            castspell, // Identifies when a spell should be cast in a spellcasting animation. The spell is determined by the unit's current order.,
+            useweapon, // Makes the unit use WeaponID{1} on its target
+            move, // Sets the unit to move forward Byte{1} pixels at the end of the current tick
+            gotorepeatattk, // Signals to StarCraft that after this point, when the unit's cooldown time is over, the repeat attack animation can be called.,
+            engframe, // Plays Frame{1}, often used in engine glow animations
+            engset, // Plays the frame set Frameset{1}, often used in engine glow animations
+            unknown_2d, // Hypothesised to hide the current image overlay until the next animation
+            nobrkcodestart, // Holds the processing of player orders until a nobrkcodeend is encountered
+            nobrkcodeend, // Allows the processing of player orders after a nobrkcodestart instruction
+            ignorerest, // Conceptually, this causes the script to stop until the next animation is called
+            attkshiftproj, // Creates the weapon flingy at a distance of Byte{1} in front of the unit
+            tmprmgraphicstart, // Sets the current image overlay state to hidden
+            tmprmgraphicend, // Sets the current image overlay state to visible
+            setfldirect, // Sets the current direction of the flingy to Byte{1}
+            call, // Calls the code block Label{1}
+            return_, // Returns from call
+            setflspeed, // Sets the flingy.dat speed of the current flingy to Short{1}
+            creategasoverlays, // Creates gas image overlay GasOverlay{1} at offsets specified by LO* files
+            pwrupcondjmp, // Jumps to code block Label{1} if the current unit is a powerup and it is currently picked up
+            trgtrangecondjmp, // Jumps to code block Label{1} depending on the distance to the target.', #WTF?
+            trgtarccondjmp, // Jumps to code block Label{1} depending on the current angle of the target.', #WTF?
+            curdirectcondjmp, // Only for units. Jump to code block Label{1} if the current sprite is facing a particular direction.', #WTF?
+            imgulnextid, // Displays an active image overlay at the shadow animation level at a offset position (Byte{1},Byte{2}). The image overlay that will be displayed is the one that is after the current image overlay in images.dat
+            unknown_3e, // Unknown
+            liftoffcondjmp, // Jumps to code block Label{1} when the current unit is a building that is lifted off
+            warpoverlay, // Hypothesised to display Frame{1} from the current image overlay clipped to the outline of the parent image overlay.,
+            orderdone, // Most likely used with orders that continually repeat, like the Medic's healing and the Valkyrie's afterburners (which no longer exist), to clear the sigorder flag to stop the order., #WTF?
+            grdsprol, // Spawns SpriteID{1} one animation level above the current image overlay at offset position (Byte{1},Byte{2}), but only if the current sprite is over ground-passable terrain
+            unknown_43, // Unknown
+            dogrddamage // Applies damage like domissiledmg when on ground-unit-passable terrain
+
+        };
+        enum class ParamType : size_t {
+            bframe,
+            frame,
+            frameset,
+            byte,
+            sbyte,
+            label,
+            imageid,
+            spriteid,
+            flingyid,
+            overlayid,
+            flipstate,
+            soundid,
+            sounds,
+            signalid,
+            weapon,
+            weaponid,
+            speed,
+            gasoverlay,
+            short_
+        };
+        static std::vector<std::string_view> OpName;
+        static std::vector<std::vector<ParamType>> OpParams;
+        static std::vector<size_t> ParamSize;
         
         __declspec(align(1)) struct PixelLine {
             enum_t(Header, u8, {
@@ -718,17 +871,21 @@ namespace Sc {
         };
 
         bool load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, Sc::TblFilePtr imagesTbl);
+        bool loadAnimation(IScriptAnimation* animation, size_t currOffset, bool & idIncludesFlip, bool & idIncludesUnflip, std::set<size_t> & visitedOffsets);
         const Grp & getGrp(size_t grpIndex);
         const ImageDatEntry & getImage(size_t imageIndex) const;
         const DatEntry & getSprite(size_t spriteIndex) const;
         size_t numGrps() const;
         size_t numImages() const;
         size_t numSprites() const;
+        bool imageFlipped(u16 imageId) const; // TODO: Temp solution
 
     private:
         std::vector<Grp> grps;
         std::vector<ImageDatEntry> images;
         std::vector<DatEntry> sprites;
+        std::vector<u8> iscript;
+        std::set<u16> iscriptIdFlipsGrp; // TODO: Temp solution
 
     public:
         struct TreeSprite
@@ -745,6 +902,7 @@ namespace Sc {
         };
 
         std::vector<SpriteGroup> spriteGroups;
+        std::vector<std::string> spriteNames;
         Sc::TblFilePtr imagesTbl;
     };
 
@@ -1990,12 +2148,30 @@ namespace Sc {
             uint16_t bottom;
         };
         __declspec(align(1)) struct TileGroup {
+
+            enum_t(Flags, uint16_t, {
+                Walkable = BIT_0, // Overwritten for individual tiles based on VF4
+                Unwalkable = BIT_2, // Overwritten for individual tiles based on VF4
+                HasDoodadCover = BIT_4,
+                Creep = BIT_6, // Zerg buildings placable when combined with temporary creep
+                Unbuildable = BIT_7,
+                BlocksView = BIT_8, // Overwritten for individual tiles based on VF4
+                MidGround = BIT_9, // Overwritten for individual tiles based on VF4
+                HighGround = BIT_10, // Overwritten for individual tiles based on VF4
+                Occupied = BIT_11, // Unbuildable until a building on this tile gets removed
+                RecedingCreep = BIT_12,
+                CliffEdge = BIT_13, // Overwritten for individual tiles based on VF4
+                TemporaryCreep = BIT_14, // Zerg buildings placable when combined with creep flag
+                Startable = BIT_15 // Start locations & beacons may be placed here
+            });
+
             uint16_t terrainType;
-            uint8_t buildability;
-            uint8_t groundHeight;
+            uint16_t flags;
             DirectionalLinks links;
             Rect stackConnections;
             uint16_t megaTileIndex[16]; // megaTileIndex - to VF4/VX4
+
+            constexpr bool isBuildable() const { return (flags & Flags::Unbuildable) != Flags::Unbuildable; }
         };
         #pragma pack(pop)
 
@@ -3123,6 +3299,7 @@ namespace Sc {
         e.g. StarCraft asset files like "arr\\units.dat" or "tileset\badlands.cv5"
     */
     class Data {
+        bool loadSpriteNames(const Sc::Sprite::SpriteGroup & spriteGroup);
         bool loadSpriteGroups(Sc::TblFilePtr imagesTbl);
 
     public:

@@ -3,6 +3,7 @@
 
 #include "MapSettings/MapSettings.h"
 #include "Layers/UnitProperties/UnitProperties.h"
+#include "Layers/SpriteProperties/SpriteProperties.h"
 #include "Layers/LocationProperties.h"
 #include "Layers/TileProperties.h"
 #include "NewMap/NewMap.h"
@@ -14,5 +15,7 @@
 #include "BriefingEditor/BriefingEditor.h"
 #include "MapProtection/ChangePassword.h"
 #include "MapProtection/EnterPassword.h"
+#include "Dimensions.h"
+#include "About.h"
 
 #endif

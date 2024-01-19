@@ -539,7 +539,7 @@ std::optional<std::vector<u8>> MapFile::getSound(size_t stringId)
 
 bool MapFile::addSound(size_t stringId)
 {
-    auto soundString = Scenario::getString<RawString>(stringId, Chk::StrScope::Game);
+    auto soundString = Scenario::getString<RawString>(stringId, Chk::Scope::Game);
     if ( soundString && MpqFile::findFile(mapFilePath, *soundString) )
     {
         Scenario::addSound(stringId);
@@ -559,7 +559,7 @@ bool MapFile::addSound(const std::string & srcFilePath, const std::string & dest
 {
     if ( virtualFile )
     {
-        size_t soundStringId = Scenario::addString(RawString(srcFilePath), Chk::StrScope::Game);
+        size_t soundStringId = Scenario::addString(RawString(srcFilePath), Chk::Scope::Game);
         if ( soundStringId != Chk::StringId::NoString )
         {
             Scenario::addSound(soundStringId);
@@ -568,7 +568,7 @@ bool MapFile::addSound(const std::string & srcFilePath, const std::string & dest
     }
     else if ( addMpqAsset(srcFilePath, destMpqPath, wavQuality) ) // Add, Register
     {
-        size_t soundStringId = Scenario::addString(RawString(destMpqPath), Chk::StrScope::Game);
+        size_t soundStringId = Scenario::addString(RawString(destMpqPath), Chk::Scope::Game);
         if ( soundStringId != Chk::StringId::NoString )
         {
             Scenario::addSound(soundStringId);
@@ -585,7 +585,7 @@ bool MapFile::addSound(const std::string & destMpqPath, const std::vector<u8> & 
     bool success = false;
     if ( addMpqAsset(destMpqPath, soundContents, wavQuality) )
     {
-        size_t soundStringId = Scenario::addString(RawString(destMpqPath), Chk::StrScope::Game);
+        size_t soundStringId = Scenario::addString(RawString(destMpqPath), Chk::Scope::Game);
         if ( soundStringId != Chk::StringId::NoString )
         {
             Scenario::addSound(soundStringId);
@@ -602,7 +602,7 @@ bool MapFile::removeSoundBySoundIndex(u16 soundIndex, bool removeIfUsed)
     size_t soundStringId = Scenario::getSoundStringId(soundIndex);
     if ( soundStringId != Chk::StringId::UnusedSound )
     {
-        auto soundString = Scenario::getString<RawString>(soundStringId, Chk::StrScope::Game);
+        auto soundString = Scenario::getString<RawString>(soundStringId, Chk::Scope::Game);
         Scenario::setSoundStringId(soundIndex, 0);
         if ( soundString )
         {
@@ -618,7 +618,7 @@ bool MapFile::removeSoundByStringId(size_t soundStringId, bool removeIfUsed)
 {
     if ( soundStringId != Chk::StringId::UnusedSound )
     {
-        auto soundString = Scenario::getString<RawString>(soundStringId, Chk::StrScope::Game);
+        auto soundString = Scenario::getString<RawString>(soundStringId, Chk::Scope::Game);
         Scenario::deleteString(soundStringId);
         if ( soundString )
             removeMpqAsset(*soundString);
@@ -630,12 +630,12 @@ bool MapFile::removeSoundByStringId(size_t soundStringId, bool removeIfUsed)
 
 SoundStatus MapFile::getSoundStatus(size_t soundStringId)
 {
-    if ( Scenario::stringUsed(soundStringId, Chk::StrScope::Either, Chk::StrScope::Editor) &&
-        !Scenario::stringUsed(soundStringId, Chk::StrScope::Either, Chk::StrScope::Game) )
+    if ( Scenario::stringUsed(soundStringId, Chk::Scope::Either, Chk::Scope::Editor) &&
+        !Scenario::stringUsed(soundStringId, Chk::Scope::Either, Chk::Scope::Game) )
         return SoundStatus::NoMatch; // Extended strings are not used in SC and therefore never match
     else
     {
-        auto soundString = Scenario::getString<RawString>(soundStringId, Chk::StrScope::Game);
+        auto soundString = Scenario::getString<RawString>(soundStringId, Chk::Scope::Game);
         if ( soundString )
         {
             for ( ModifiedAsset & modifiedAsset : modifiedAssets )
@@ -700,8 +700,8 @@ bool MapFile::getSoundStatuses(std::map<size_t/*stringId*/, SoundStatus> & outSo
     {
         size_t soundStringId = entry.first;
         
-        if ( Scenario::stringUsed(soundStringId, Chk::StrScope::Either, Chk::StrScope::Editor) &&
-            !Scenario::stringUsed(soundStringId, Chk::StrScope::Either, Chk::StrScope::Game) )
+        if ( Scenario::stringUsed(soundStringId, Chk::Scope::Either, Chk::Scope::Editor) &&
+            !Scenario::stringUsed(soundStringId, Chk::Scope::Either, Chk::Scope::Game) )
         { // Extended strings are not used in SC and therefore never match
             outSoundStatus.insert(std::pair<size_t, SoundStatus>(soundStringId, SoundStatus::NoMatchExtended));
         }

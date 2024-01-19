@@ -28,6 +28,8 @@ namespace WinLib {
         if ( tooltipHandle != NULL )
             ::DestroyWindow(tooltipHandle);
         tooltipHandle = NULL;
+        
+        windowClassName.clear();
     }
 
     HWND WindowsItem::getHandle()

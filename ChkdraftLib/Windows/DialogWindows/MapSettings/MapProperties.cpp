@@ -2,6 +2,7 @@
 #include "ColorProperties.h"
 #include "../../../CommonFiles/CommonFiles.h"
 #include "../../../Chkdraft.h"
+#include "../../../Mapping/Undos/ChkdUndos/DimensionChange.h"
 #include <string>
 
 extern Logger logger;
@@ -280,14 +281,16 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     {
         if ( HIWORD(wParam) == BN_CLICKED )
         {
+            auto dimensionsUndo = DimensionChange::Make((void*)CM.get());
             Sc::Terrain::Tileset newTileset = (Sc::Terrain::Tileset)SendMessage(GetDlgItem(hWnd, Id::CB_MAPTILESET), CB_GETCURSEL, 0, 0);
             size_t newMapTerrain = dropNewMapTerrain.GetSelData();
             CM->setTileset(newTileset);
             u16 newWidth, newHeight;
             if ( editMapWidth.GetEditNum<u16>(newWidth) && editMapHeight.GetEditNum<u16>(newHeight) )
                 CM->setDimensions(newWidth, newHeight, Scenario::SizeValidationFlag::Default, 0, 0, newMapTerrain);
-
-            CM->notifyChange(false);
+            
+            CM->AddUndo(dimensionsUndo);
+            CM->refreshScenario();
             CM->Redraw(true);
         }
     }
@@ -349,6 +352,7 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             if ( player >= 0 && player < 12 && newRace != CB_ERR && newRace >= 0 && newRace < 8 )
             {
                 CM->setPlayerRace(player, (Chk::Race)newRace);
+                chkd.maps.UpdatePlayerStatus();
                 CM->Redraw(true);
                 CM->notifyChange(false);
             }
@@ -372,6 +376,7 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 case 1: CM->setPlayerColorSetting(player, Chk::PlayerColorSetting::PlayerChoice); break;
                 default: CM->setPlayerColor(player, Chk::PlayerColor(newColor-LRESULT(::specialColors.size()))); break;
                 }
+                chkd.maps.UpdatePlayerStatus();
                 CM->Redraw(true);
                 CM->notifyChange(false);
             }
@@ -384,6 +389,7 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             if ( dropPlayerColor[player].GetEditNum<u8>(newColor) )
             {
                 CM->setPlayerColor(player, (Chk::PlayerColor)newColor);
+                chkd.maps.UpdatePlayerStatus();
                 CM->Redraw(true);
                 CM->notifyChange(false);
             }
@@ -429,6 +435,7 @@ void MapPropertiesWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
         {
             CM->setPlayerColorSetting(playerIndex, Chk::PlayerColorSetting::Custom);
             CM->setPlayerCustomColor(playerIndex, *playerColor);
+            chkd.maps.UpdatePlayerStatus();
             CM->Redraw(true);
             CM->notifyChange(false);
             this->RefreshWindow();
@@ -443,7 +450,7 @@ void MapPropertiesWindow::CheckReplaceMapTitle()
         if ( auto newMapTitle = editMapTitle.GetWinText() )
         {
             CM->setScenarioName<ChkdString>(*newMapTitle);
-            CM->deleteUnusedStrings(Chk::StrScope::Both);
+            CM->deleteUnusedStrings(Chk::Scope::Both);
             CM->notifyChange(false);
             possibleTitleUpdate = false;
         }
@@ -457,7 +464,7 @@ void MapPropertiesWindow::CheckReplaceMapDescription()
         if ( auto newMapDescription = editMapDescription.GetWinText() )
         {
             CM->setScenarioDescription<ChkdString>(*newMapDescription);
-            CM->deleteUnusedStrings(Chk::StrScope::Both);
+            CM->deleteUnusedStrings(Chk::Scope::Both);
             CM->notifyChange(false);
             possibleDescriptionUpdate = false;
         }

@@ -127,7 +127,14 @@ namespace WinLib {
             else
                 setBuffer(area);
         }
-        DeviceContext(const WinLib::DeviceContext &) = delete; // Copying most likely to result in use after release
+
+        DeviceContext(const WinLib::DeviceContext & source, int width, int height) // Copy exclusively to make a buffer
+        {
+            setBuffer(width, height, source.getDcHandle());
+        }
+
+        DeviceContext(const WinLib::DeviceContext &) = delete; // Full copy would most likely result in use after release
+        
         ~DeviceContext() {
             release();
         }

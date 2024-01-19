@@ -277,11 +277,11 @@ void TrigGeneralWindow::EditCommentFocusLost()
     if ( addIfNotFound || CM->hasTriggerExtension(trigIndex) )
     {
         Chk::ExtendedTrigData & extension = CM->getTriggerExtension(trigIndex, addIfNotFound);
-        size_t newCommentStringId = CM->addString<ChkdString>(ChkdString(*newCommentText), Chk::StrScope::Editor);
+        size_t newCommentStringId = CM->addString<ChkdString>(ChkdString(*newCommentText), Chk::Scope::Editor);
         if ( newCommentStringId != Chk::StringId::NoString )
         {
             extension.commentStringId = (u32)newCommentStringId;
-            CM->deleteUnusedStrings(Chk::StrScope::Editor);
+            CM->deleteUnusedStrings(Chk::Scope::Editor);
             CM->refreshScenario();
         }
     }
@@ -294,11 +294,11 @@ void TrigGeneralWindow::EditNotesFocusLost()
     if ( addIfNotFound ||  CM->hasTriggerExtension(trigIndex) )
     {
         Chk::ExtendedTrigData & extension = CM->getTriggerExtension(trigIndex, addIfNotFound);
-        size_t newNotesStringId = CM->addString<ChkdString>(ChkdString(*newNotesText), Chk::StrScope::Editor);
+        size_t newNotesStringId = CM->addString<ChkdString>(ChkdString(*newNotesText), Chk::Scope::Editor);
         if ( newNotesStringId != Chk::StringId::NoString )
         {
             extension.notesStringId = (u32)newNotesStringId;
-            CM->deleteUnusedStrings(Chk::StrScope::Editor);
+            CM->deleteUnusedStrings(Chk::Scope::Editor);
             CM->refreshScenario();
         }
     }
@@ -318,7 +318,7 @@ void TrigGeneralWindow::ButtonCommentProperties()
         else
             CM->setExtendedCommentStringId(this->trigIndex, 0);
 
-        CM->deleteUnusedStrings(Chk::StrScope::Editor);
+        CM->deleteUnusedStrings(Chk::Scope::Editor);
     }
 
     if ( result > 0 )
@@ -339,7 +339,7 @@ void TrigGeneralWindow::ButtonNotesProperties()
         else
             CM->setExtendedNotesStringId(this->trigIndex, 0);
 
-        CM->deleteUnusedStrings(Chk::StrScope::Editor);
+        CM->deleteUnusedStrings(Chk::Scope::Editor);
     }
 
     if ( result > 0 )

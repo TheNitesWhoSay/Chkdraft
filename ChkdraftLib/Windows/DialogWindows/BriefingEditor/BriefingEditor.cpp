@@ -25,7 +25,6 @@ bool BriefingTrigEditorWindow::CreateThis(HWND hParent)
     {
         ShowNormal();
         ChangeTab(currTab);
-        RefreshWindow();
         return true;
     }
     else
@@ -49,22 +48,28 @@ bool BriefingTrigEditorWindow::DestroyThis()
 
 void BriefingTrigEditorWindow::ChangeTab(Tab tab)
 {
-    tabs.SetCurSel((u32)tab);
-
-    tabs.HideTab(Id::WIN_BRIEFTRIGGERS);
-    tabs.HideTab(Id::WIN_BRIEFTEMPLATES);
-
-    switch ( tab )
+    if ( tabs.GetCurSel() != u32(tab) )
     {
-        case Tab::BriefingTriggers  : tabs.ShowTab(Id::WIN_BRIEFTRIGGERS ); break;
-        case Tab::BriefingTemplates : tabs.ShowTab(Id::WIN_BRIEFTEMPLATES); break;
-    }
+        tabs.SetCurSel((u32)tab);
 
-    currTab = tab;
+        tabs.HideTab(Id::WIN_BRIEFTRIGGERS);
+        tabs.HideTab(Id::WIN_BRIEFTEMPLATES);
+
+        switch ( tab )
+        {
+            case Tab::BriefingTriggers  : tabs.ShowTab(Id::WIN_BRIEFTRIGGERS ); break;
+            case Tab::BriefingTemplates : tabs.ShowTab(Id::WIN_BRIEFTEMPLATES); break;
+        }
+
+        currTab = tab;
+    }
 }
 
 void BriefingTrigEditorWindow::RefreshWindow()
 {
+    if ( getHandle() == NULL )
+        return;
+
     briefingTriggersWindow.RefreshWindow(false);
     briefingTemplatesWindow.RefreshWindow();
     ChangeTab(currTab);

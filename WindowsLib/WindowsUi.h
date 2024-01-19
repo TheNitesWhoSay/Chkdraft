@@ -10,6 +10,7 @@
 // Controls
 #include "ButtonControl.h"
 #include "CheckBoxControl.h"
+#include "ContextMenu.h"
 #include "DropdownControl.h"
 #include "DragListControl.h"
 #include "EditControl.h"

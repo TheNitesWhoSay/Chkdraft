@@ -7,7 +7,12 @@ enum_t(Id, u32, {
     COMBOBOX_ZOOM,
     COMBOBOX_TERRAIN,
     COMBOBOX_BRUSHWIDTH,
-    COMBOBOX_BRUSHHEIGHT
+    COMBOBOX_BRUSHHEIGHT,
+    CHECK_TERRAIN,
+    CHECK_DOODADS,
+    CHECK_SPRITES,
+    CHECK_UNITS,
+    CHECK_FOGOFWAR
 });
 
 MainToolbar::~MainToolbar()
@@ -101,6 +106,31 @@ bool MainToolbar::CreateThis(HWND hParent, u64 windowId)
         brushHeight.CreateThis(hTool, 634, 2, 60, 215, false, false, Id::COMBOBOX_BRUSHHEIGHT, brushSizes);
         brushHeight.SetSel(0);
         brushHeight.Hide();
+        
+        // Add terrain checkbox to toolbar
+        checkTerrain.CreateThis(hTool, 568, 5, 53, 16, true, "Terrain", Id::CHECK_TERRAIN);
+        checkTerrain.setDefaultFont();
+        checkTerrain.Hide();
+        
+        // Add doodads checkbox to toolbar
+        checkDoodads.CreateThis(hTool, 629, 5, 62, 16, true, "Doodads", Id::CHECK_DOODADS);
+        checkDoodads.setDefaultFont();
+        checkDoodads.Hide();
+
+        // Add sprites checkbox to toolbar
+        checkSprites.CreateThis(hTool, 699, 5, 52, 16, true, "Sprites", Id::CHECK_SPRITES);
+        checkSprites.setDefaultFont();
+        checkSprites.Hide();
+
+        // Add units checkbox to toolbar
+        checkUnits.CreateThis(hTool, 759, 5, 44, 16, true, "Units", Id::CHECK_UNITS);
+        checkUnits.setDefaultFont();
+        checkUnits.Hide();
+
+        // Add fog of war checkbox to toolbar
+        checkFog.CreateThis(hTool, 811, 5, 100, 16, true, "Fog of War", Id::CHECK_FOGOFWAR);
+        checkFog.setDefaultFont();
+        checkFog.Hide();
 
         return true;
     }

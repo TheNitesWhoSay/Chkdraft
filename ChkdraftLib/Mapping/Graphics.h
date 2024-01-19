@@ -103,6 +103,9 @@ class Graphics
         void ToggleLocationNameClip();
         bool ClippingLocationNames();
 
+        void ToggleDisplayBuildability();
+        bool DisplayingBuildability();
+
         void ToggleDisplayElevations();
         bool DisplayingElevations();
 
@@ -138,6 +141,7 @@ class Graphics
         bool tileNumsFromMTXM; // When false, tile nums are from TILE
         bool displayingIsomTypes; // Determine whether ISOM terrain types are showing
         bool displayingTileNums; // Determines whether tile numbers are showing
+        bool displayingBuildability; // Determines whether tile buildability is being shown
         bool displayingElevations; // Determines whether tile elevations are colored in
         bool clipLocationNames; // Determines whether the locationName can be drawn partly outside locations
 
@@ -147,7 +151,7 @@ class Graphics
 BITMAPINFO GetBMI(s32 width, s32 height);
 
 void UnitToBits(ChkdBitmap & bitmap, ChkdPalette & palette, u8 color, u16 bitWidth, u16 bitHeight,
-                 s32 & xStart, s32 & yStart, u16 unitID, u16 unitXC, u16 unitYC, u16 frame, bool selected );
+                 s32 & xStart, s32 & yStart, u16 unitID, u16 unitXC, u16 unitYC, u16 frame, bool selected, bool lifted = false, bool attached = false);
 
 void SpriteToBits(ChkdBitmap & bitmap, ChkdPalette & palette, u8 color, u16 bitWidth, u16 bitHeight,
                    s32 xStart, s32 yStart, u16 spriteID, u16 spriteXC, u16 spriteYC, bool flipped, bool selected);
@@ -167,10 +171,14 @@ void TileElevationsToBits(ChkdBitmap & bitmap, s64 bitWidth, s64 bitHeight, cons
 void DrawTile(const WinLib::DeviceContext & dc, ChkdPalette & palette, const Sc::Terrain::Tiles & tiles, s16 xOffset, s16 yOffset, u16 TileValue, BITMAPINFO & bmi,
     u8 redOffset, u8 greenOffset, u8 blueOffset);
 
-void DrawTools(const WinLib::DeviceContext & dc, ChkdPalette & palette, u16 width, u16 height, u32 screenLeft, u32 screenTop,
+void DrawTools(Graphics & graphics, const WinLib::DeviceContext & dc, ChkdPalette & palette, u16 width, u16 height, u32 screenLeft, u32 screenTop,
                 Selections & selections, bool pasting, Clipboard & clipboard, GuiMap & map);
 
+void DrawTileBuildability(const WinLib::DeviceContext & dc, ChkdPalette & palette, u16 width, u16 height, u32 screenLeft, u32 screenTop, GuiMap & map);
+
 void DrawTileSel(const WinLib::DeviceContext & dc, ChkdPalette & palette, u16 width, u16 height, u32 screenLeft, u32 screenTop, Selections & selections, GuiMap & map);
+
+void DrawFogTileSel(const WinLib::DeviceContext & dc, ChkdPalette & palette, u16 width, u16 height, u32 screenLeft, u32 screenTop, Selections & selections, GuiMap & map);
 
 void DrawDoodadSel(const WinLib::DeviceContext & dc, u16 width, u16 height, u32 screenLeft, u32 screenTop, Selections & selections, GuiMap & map);
 

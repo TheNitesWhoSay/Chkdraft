@@ -8,13 +8,24 @@
 
 class GuiMap;
 typedef std::shared_ptr<GuiMap> GuiMapPtr;
+enum class DefaultTriggers
+{
+    NoTriggers = 0,
+    DefaultMelee = 1,
+    TwoPlayerMeleeWithObs = 2,
+    ThreePlayerMeleeWithObs = 3,
+    FourPlayerMeleeWithObs = 4,
+    FivePlayerMeleeWithObs = 5,
+    SixPlayerMeleeWithObs = 6,
+    SevenPlayerMeleeWithObs = 7
+};
 
 class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos, private Chk::IsomCache
 {
     public:
 /* Constructor  */  GuiMap(Clipboard & clipboard, const std::string & filePath);
                     GuiMap(Clipboard & clipboard, FileBrowserPtr<SaveType> fileBrowser = getDefaultOpenMapBrowser());
-                    GuiMap(Clipboard & clipboard, Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex);
+                    GuiMap(Clipboard & clipboard, Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex, DefaultTriggers defaultTriggers);
 
 /*  Destructor  */  virtual ~GuiMap();
 
@@ -27,10 +38,12 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     void beginTerrainOperation();
                     void finalizeTerrainOperation();
                     void finalizeFogOperation();
-                    void validateTileDoodads(size_t tileX, size_t tileY, uint16_t tileValue);
+                    void validateTileOccupiers(size_t tileX, size_t tileY, uint16_t tileValue);
                     virtual void setTileset(Sc::Terrain::Tileset tileset);
                     void setDimensions(u16 newTileWidth, u16 newTileHeight, u16 sizeValidationFlags = SizeValidationFlag::Default, s32 leftEdge = 0, s32 topEdge = 0, size_t newTerrainType = 0);
                     bool placeIsomTerrain(Chk::IsomDiamond isomDiamond, size_t terrainType, size_t brushExtent);
+                    void unlinkAndDeleteUnit(size_t unitIndex, std::shared_ptr<ReversibleActions> opUndos);
+                    void changeUnitOwner(size_t unitIndex, u8 newPlayer, std::shared_ptr<ReversibleActions> opUndos);
 
 /*   UI Accel   */  Layer getLayer();
                     bool setLayer(Layer newLayer);
@@ -40,8 +53,24 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     void setZoom(double newScale);
                     u8 getCurrPlayer() const;
                     bool setCurrPlayer(u8 newPlayer);
+                    bool getCutCopyPasteTerrain() const;
+                    void toggleCutCopyPasteTerrain();
+                    bool getCutCopyPasteDoodads() const;
+                    void toggleCutCopyPasteDoodads();
+                    bool getCutCopyPasteSprites() const;
+                    void toggleCutCopyPasteSprites();
+                    bool getCutCopyPasteUnits() const;
+                    void toggleCutCopyPasteUnits();
+                    bool getCutCopyPasteFog() const;
+                    void toggleCutCopyPasteFog();
                     bool isDragging();
                     void setDragging(bool dragging);
+
+                    void convertSelectionToTerrain();
+                    void stackSelected();
+                    void createLocation();
+                    void createInvertedLocation();
+                    void createMobileInvertedLocation();
 
                     void viewLocation(u16 locationId);
                     LocSelFlags getLocSelFlags(s32 xc, s32 yc);
@@ -67,6 +96,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     void PlayerChanged(u8 newPlayer);
                     Selections & GetSelections();
                     u16 GetSelectedLocation();
+                    bool autoSwappingAddonPlayers();
 
 /*   Undo Redo  */  void AddUndo(ReversiblePtr action);
                     void undo();
@@ -80,6 +110,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     float MiniMapScale(u16 xSize, u16 ySize);
 
                     bool EnsureBitmapSize(u32 desiredWidth, u32 desiredHeight);
+                    void SnapSelEndDrag();
                     void PaintMap(GuiMapPtr currMap, bool pasting);
                     void PaintMiniMap(const WinLib::DeviceContext & dc);
                     void Redraw(bool includeMiniMap);
@@ -88,22 +119,34 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     bool SetGridSize(s16 xSize, s16 ySize);
                     bool SetGridColor(u8 red, u8 green, u8 blue);
 
+                    void ToggleDisplayBuildability();
+                    bool DisplayingBuildability();
                     void ToggleDisplayElevations();
                     bool DisplayingElevations();
 
-                    bool snapUnitCoordinate(s32 & x, s32 & y);
-
+                    u32 getNextClassId();
+                    bool isValidUnitPlacement(Sc::Unit::Type unitType, s32 x, s32 y);
+                    std::optional<u16> getLinkableUnitIndex(Sc::Unit::Type unitType, s32 x, s32 y);
+                    
+                    void ToggleBuildingsSnapToTile();
                     void ToggleUnitSnap();
                     void ToggleUnitStack();
+                    void ToggleEnableAirStack();
+                    void TogglePlaceUnitsAnywhere();
+                    void TogglePlaceBuildingsAnywhere();
+                    void ToggleAddonAutoPlayerSwap();
+                    void ToggleRequireMineralDistance();
 
                     void ToggleDisplayIsomValues();
                     void ToggleTileNumSource(bool MTXMoverTILE);
                     bool DisplayingTileNums();
 
+                    void ToggleSpriteSnap();
+
                     void ToggleLocationNameClip();
 
-                    enum class LocationSnap : u32 { SnapToTile, SnapToGrid, NoSnap };
-                    void SetLocationSnap(LocationSnap locationSnap);
+                    enum class Snap : u32 { SnapToTile, SnapToGrid, NoSnap };
+                    void SetLocationSnap(Snap locationSnap);
 
                     void ToggleLockAnywhere();
                     bool LockAnywhere();
@@ -116,6 +159,10 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     enum_t(LocSnapFlags, u32, { SnapX1 = BIT_0, SnapY1 = BIT_1, SnapX2 = BIT_2, SnapY2 = BIT_3,
                         SnapAll = SnapX1|SnapY1|SnapX2|SnapY2, None = 0 });
                     bool SnapLocationDimensions(u32 & x1, u32 & y1, u32 & x2, u32 & y2, LocSnapFlags locSnapFlags);
+                    
+                    void SetCutCopyPasteSnap(Snap cutCopyPasteSnap);
+                    void ToggleIncludeDoodadTiles();
+                    bool GetIncludeDoodadTiles();
 
                     void UpdateLocationMenuItems();
                     void UpdateDoodadMenuItems();
@@ -124,6 +171,8 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     void UpdateGridColorMenu();
                     void UpdateTerrainViewMenuItems();
                     void UpdateUnitMenuItems();
+                    void UpdateSpriteMenuItems();
+                    void UpdateCutCopyPasteMenuItems();
 
                     void Scroll(bool scrollX, bool scrollY, bool validateBorder);
 
@@ -154,7 +203,8 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     void ActivateMap(HWND hWnd);
                     LRESULT DestroyWindow(HWND hWnd);
 
-                    void RButtonUp();
+                    void ContextMenu(int x, int y);
+                    void RButtonUp(HWND hWnd, WPARAM wParam, LPARAM lParam);
                     void LButtonDoubleClick(int x, int y, WPARAM wParam);
                     void LButtonDown(int x, int y, WPARAM wParam);
                     void MouseMove(HWND hWnd, int x, int y, WPARAM wParam);
@@ -169,6 +219,8 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     void FinalizeUnitSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam);
                     void FinalizeDoodadSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam);
                     void FinalizeSpriteSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam);
+                    void FinalizeFogSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam);
+                    void FinalizeCutCopyPasteSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam);
                     LRESULT ConfirmWindowClose(HWND hWnd);
 
                     bool GetBackupPath(time_t currTime, std::string & outFilePath);
@@ -178,7 +230,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
     private:
 
                     void addIsomUndo(const Chk::IsomRectUndo & isomUndo) final;
-                    void refreshDoodadCache();
+                    void refreshTileOccupationCache();
 
 /*     Data     */  Clipboard & clipboard;
                     Selections selections {*this};
@@ -193,17 +245,38 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     TerrainSubLayer currTerrainSubLayer = TerrainSubLayer::Isom;
                     std::shared_ptr<ReversibleActions> tileChanges = nullptr;
                     std::shared_ptr<ReversibleActions> fogChanges = nullptr;
-                    Chk::DoodadCache doodadCache;
+                    std::shared_ptr<ReversibleActions> cutCopyPasteChanges = nullptr; // tileChanges & fogChanges roll into this
+                    Chk::TileOccupationCache tileOccupationCache;
                     u8 currPlayer = 0;
                     double zoom = 1.0;
 					
                     bool dragging = false;
+
+                    bool buildingsSnapToTile = true;
                     bool snapUnits = true;
                     bool stackUnits = false;
+                    bool stackAirUnits = false;
+                    bool placeUnitsAnywhere = false;
+                    bool placeBuildingsAnywhere = false;
+                    bool addonAutoPlayerSwap = true;
+                    bool requireMineralDistance = true;
+
                     bool snapLocations = true;
                     bool locSnapTileOverGrid = true;
                     bool lockAnywhere = true;
                     bool allowIllegalDoodads = false;
+
+                    bool snapSprites = true;
+
+                    bool snapCutCopyPasteSel = true;
+                    bool cutCopyPasteSnapTileOverGrid = false;
+                    bool cutCopyPasteIncludeDoodadTiles = true;
+
+                    bool cutCopyPasteTerrain = true;
+                    bool cutCopyPasteDoodads = true;
+                    bool cutCopyPasteSprites = true;
+                    bool cutCopyPasteUnits = true;
+                    bool cutCopyPasteFog = false;
 					
                     UINT_PTR panTimerID = 0;
                     int panStartX = -1;

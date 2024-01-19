@@ -33,6 +33,10 @@
 #define IDD_DIALOG6                     157
 #define IDD_INPUTCRGBCOLOR              157
 #define IDD_BRIEFTRIGEDIT               158
+#define IDD_SPRITEPROPERTIES            159
+#define IDD_DIALOG_ABOUT                161
+#define IDD_DIALOG7                     163
+#define IDD_DIALOG_DIMENSIONS           163
 #define IDC_LIST_TILESET                1007
 #define IDC_LIST_DEFAULTTERRAIN         1008
 #define IDC_EDIT_TRIGTEXT               1009
@@ -102,12 +106,16 @@
 #define IDC_CHECK5                      1095
 #define IDC_MEDAIR                      1095
 #define IDC_CHECKCUWPCLOAKED            1095
+#define IDC_CHECK_UNUSED4               1095
 #define IDC_CHECK6                      1096
 #define IDC_HIGHAIR                     1096
+#define IDC_CHECK_UNUSED5               1096
 #define IDC_CHECK7                      1097
 #define IDC_EXTLOCNAMESTR               1097
+#define IDC_CHECK_UNUSED6               1097
 #define IDC_CHECK8                      1098
 #define IDC_HIGHGROUND                  1098
+#define IDC_CHECK_UNUSED7               1098
 #define IDC_EDIT2                       1099
 #define IDC_RAWFLAGS                    1099
 #define IDC_EDITNEWPASS                 1099
@@ -117,9 +125,11 @@
 #define IDC_EDIT3                       1100
 #define IDC_LOCLEFT                     1100
 #define IDC_EDITCUWPSHIELD              1100
+#define IDC_EDIT_LEFT                   1100
 #define IDC_EDIT4                       1101
 #define IDC_LOCTOP                      1101
 #define IDC_EDITCUWPRESOURCES           1101
+#define IDC_EDIT_TOP                    1101
 #define IDC_EDIT5                       1102
 #define IDC_LOCRIGHT                    1102
 #define IDC_EDITCUWPHANGER              1102
@@ -152,6 +162,29 @@
 #define IDC_BUTTON4                     1119
 #define IDC_LOCNAME_PROPERTIES          1119
 #define IDC_BRIEFTRIGEDITTABS           1120
+#define IDC_STATIC_UNUSED               1121
+#define IDC_STATIC_SPRITEID             1122
+#define IDC_EDIT_UNUSED                 1123
+#define IDC_CHECK_UNUSED8               1124
+#define IDC_CHECK_UNUSED9               1125
+#define IDC_CHECK_UNUSED10              1126
+#define IDC_CHECK_UNUSED11              1127
+#define IDC_CHECK_PURESPRITE            1128
+#define IDC_CHECK_UNITSPRITE            1129
+#define IDC_CHECK_UNUSED14              1130
+#define IDC_CHECK_DISABLED              1131
+#define IDC_CHECK_UNUSED0               1132
+#define IDC_CHECK_UNUSED1               1133
+#define IDC_CHECK_UNUSED2               1134
+#define IDC_CHECK_UNUSED3               1135
+#define IDC_STATIC_TEXT                 1136
+#define IDC_STATIC_LICENSE              1137
+#define IDC_CREDITS                     1138
+#define ID_RESIZE_CHANGETILESET         1139
+#define IDC_LIST1                       1140
+#define IDC_LIST2                       1141
+#define IDC_LIST_TERRAIN                1141
+#define IDC_CHECK_SMOOTHBORDER          1142
 #define ID_FILE_NEW1                    40025
 #define ID_FILE_OPEN1                   40026
 #define ID_ADVANCED_OPENBACKUPDATABASE  40027
@@ -325,14 +358,19 @@
 #define ID_LOGGER_TOGGLELINENUMBERS     40654
 #define ID_TOOLS_MPQRECOMPILER          40655
 #define ID_TOOLS_MPQRECOMPILER40656     40656
+#define ID_CUTCOPYPASTE_SNAPSELECTIONTOTILES 40657
+#define ID_CUTCOPYPASTE_SNAPSELECTIONTOGRID 40658
+#define ID_CUTCOPYPASTE_NOSNAP          40659
+#define ID_TERRAIN_DISPLAYTILEBUILDABILITY 40661
+#define ID_EDIT_CREATEMOBILEINVERTEDLOCATION 40662
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        160
-#define _APS_NEXT_COMMAND_VALUE         40657
-#define _APS_NEXT_CONTROL_VALUE         1121
+#define _APS_NEXT_RESOURCE_VALUE        165
+#define _APS_NEXT_COMMAND_VALUE         40663
+#define _APS_NEXT_CONTROL_VALUE         1143
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

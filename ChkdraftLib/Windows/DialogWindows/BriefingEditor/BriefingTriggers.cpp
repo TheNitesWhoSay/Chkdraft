@@ -78,6 +78,9 @@ bool BriefingTriggersWindow::DestroyThis()
 
 void BriefingTriggersWindow::RefreshWindow(bool focus)
 {
+    if ( getHandle() == NULL )
+        return;
+
     this->SetRedraw(false);
     RefreshGroupList();
     RefreshTrigList();
@@ -163,7 +166,7 @@ void BriefingTriggersWindow::DeleteSelection()
     if ( currBriefingTrigger != NO_TRIGGER )
     {
         CM->deleteBriefingTrigger(currBriefingTrigger);
-        CM->deleteUnusedStrings(Chk::StrScope::Both);
+        CM->deleteUnusedStrings(Chk::Scope::Both);
         briefingTrigModifyWindow.DestroyThis();
         CM->notifyChange(false);
         int sel;

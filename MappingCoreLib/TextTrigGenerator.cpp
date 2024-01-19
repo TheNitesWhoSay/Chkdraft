@@ -829,7 +829,7 @@ bool TextTrigGenerator::prepLocationTable(const Scenario & map, bool quoteArgs)
         }
         else if ( loc.stringId > 0 )
         {
-            if ( auto locationName = map.getLocationName<EscString>(i, Chk::StrScope::Game) )
+            if ( auto locationName = map.getLocationName<EscString>(i, Chk::Scope::Game) )
             {
                 if ( quoteArgs )
                     locationTable.push_back( "\"" + *locationName + "\"" );
@@ -1012,15 +1012,15 @@ bool TextTrigGenerator::prepStringTable(const Scenario & map, bool quoteArgs)
     extendedStringTable.clear();
 
     std::bitset<Chk::MaxStrings> stringUsed, extendedStringUsed;
-    map.markValidUsedStrings(stringUsed, Chk::StrScope::Either, Chk::StrScope::Game);
-    map.markValidUsedStrings(extendedStringUsed, Chk::StrScope::Either, Chk::StrScope::Editor);
+    map.markValidUsedStrings(stringUsed, Chk::Scope::Either, Chk::Scope::Game);
+    map.markValidUsedStrings(extendedStringUsed, Chk::Scope::Either, Chk::Scope::Editor);
 
-    size_t numStrings = map.getCapacity(Chk::StrScope::Game);
+    size_t numStrings = map.getCapacity(Chk::Scope::Game);
     for ( size_t i=0; i<numStrings; i++ )
     {
         if ( stringUsed[i] )
         {
-            if ( auto str = map.getString<EscString>(i, Chk::StrScope::Game) )
+            if ( auto str = map.getString<EscString>(i, Chk::Scope::Game) )
             {
                 EscString newString;
                 for ( auto & character : *str )
@@ -1038,12 +1038,12 @@ bool TextTrigGenerator::prepStringTable(const Scenario & map, bool quoteArgs)
             stringTable.push_back("");
     }
 
-    numStrings = map.getCapacity(Chk::StrScope::Editor);
+    numStrings = map.getCapacity(Chk::Scope::Editor);
     for ( size_t i=0; i<numStrings; i++ )
     {
         if ( extendedStringUsed[i] )
         {
-            if ( auto str = map.getString<EscString>(i, Chk::StrScope::Editor) )
+            if ( auto str = map.getString<EscString>(i, Chk::Scope::Editor) )
             {
                 EscString newString;
                 for ( auto & character : *str )

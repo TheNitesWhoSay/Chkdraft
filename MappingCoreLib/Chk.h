@@ -145,6 +145,9 @@ namespace Chk {
         u16 stateFlags;
         u32 unused;
         u32 relationClassId; // classId of related unit (may be an addon or the building that has an addon)
+        
+        constexpr bool isLifted() const { return (stateFlags & State::InTransit) == State::InTransit; }
+        constexpr bool isAttached() const { return (relationFlags & RelationFlag::AddonLink) == RelationFlag::AddonLink; }
 
         REFLECT(Unit, classId, xc, yc, type, relationFlags, validStateFlags, validFieldFlags, owner,
             hitpointPercent, shieldPercent, energyPercent, resourceAmount, hangerAmount, stateFlags, unused, relationClassId)
@@ -328,19 +331,25 @@ namespace Chk {
         enum_t(SpriteFlags, u16, {
             
             BitZero = BIT_0, // Set in staredit, not read by SC
-            // Bits 1-3 Unused in staredit/SC
+            BitOne = BIT_1, // Bit 1 Unused in staredit/SC
+            BitTwo = BIT_2, // Bit 2 Unused in staredit/SC
+            BitThree = BIT_3, // Bit 3 Unused in staredit/SC
             BitFour = BIT_4, // Scmdraft notes "(Provides Cover?)", the flag is set in some doodads and is not read by SC
-            // Bits 5 & 6 Unused in staredit/SC
+            BitFive = BIT_5, // Bit 5 Unused in staredit/SC
+            BitSix = BIT_6, // Bit 6 Unused in staredit/SC
             BitSeven = BIT_7, // Scmdraft notes "(Always set!)"; set for doodads which include an overlay (& some which do not) and is not read by SC
             BitEight = BIT_8, // Set in staredit, not read by SC
             BitNine = BIT_9, // Scmdraft notes "(Medium Ground Lvl?), it's set for some doodads, and is not read by SC
             BitTen = BIT_10, // Scmdraft notes "(High Ground Lvl?), it's set for some doodads, and is not read by SC
-            // Bit_11 Unused in staredit/SC
+            BitEleven = BIT_11, // Bit 11 Unused in staredit/SC
             DrawAsSprite = BIT_12, // Indicates whether this sprite should be treated as a unit; in SC: receeding creep
             IsUnit = BIT_13, // Set in staredit, but is not read by SC - rather SpriteOverlay or !SpriteOverlay is checked
             OverlayFlipped_Deprecated = BIT_14, // In SC: temporary creep
             SpriteUnitDiabled = BIT_15 // If the SpriteOverlay flag is NOT set (this is a sprite-unit), then the unit is disabled
         });
+        enum class Field {
+            Type, Xc, Yc, Owner, Unused, Flags
+        };
 
         inline static u16 toPureSpriteFlags(u16 flags)
         {
@@ -351,6 +360,7 @@ namespace Chk {
         }
 
         bool isDrawnAsSprite() const;
+        bool isUnit() const;
 
         Sc::Sprite::Type type;
         u16 xc;
@@ -1177,7 +1187,7 @@ namespace Chk {
         sizePlusOneStep = BIT_7
     });
     
-    enum_t(StrScope, u32, { // u32 // TODO: Rename this to just "Scope"
+    enum_t(Scope, u32, { // u32
         None = 0,
         Game = BIT_1,
         Editor = BIT_2,
@@ -2134,26 +2144,26 @@ namespace Chk {
         }
     };
 
-    // When tiles change doodads may be invalidated and need to be removed (depending on editor configuration settings)
-    // It can be very expensive to check for doodads when performing a lot of tile operations at once (e.g. dragging around an ISOM brush or tile-paste)
-    // DoodadCache provides a constant-runtime means of checking whether a tile includes a doodad and potentially requires further operations
-    class DoodadCache
+    // When tiles change... doodads, units, and possibly other things may be invalidated and need to be removed (depending on editor configuration settings)
+    // It can be very expensive to check for what occupies tiles when performing a lot of tile operations at once (e.g. dragging around an ISOM brush)
+    // TileOccupationCache provides a constant-runtime means of checking whether a tile is occupied and potentially requires further operations
+    class TileOccupationCache
     {
-        std::vector<bool> doodadPresence {};
+        std::vector<bool> tileIsOccupied {};
 
     public:
-        DoodadCache() = default;
+        TileOccupationCache() = default;
 
-        DoodadCache(std::vector<bool> & doodadPresence) {
-            this->doodadPresence.swap(doodadPresence);
+        TileOccupationCache(std::vector<bool> & tileOccupied) {
+            this->tileIsOccupied.swap(tileOccupied);
         }
 
         bool tileOccupied(size_t x, size_t y, size_t tileWidth) const {
-            return doodadPresence[tileWidth*y+x];
+            return tileIsOccupied[tileWidth*y+x];
         }
 
-        void swap(DoodadCache & other) {
-            this->doodadPresence.swap(other.doodadPresence);
+        void swap(TileOccupationCache & other) {
+            this->tileIsOccupied.swap(other.tileIsOccupied);
         }
     };
 }
