@@ -78,7 +78,7 @@ bool TriggersWindow::DestroyThis()
 
 void TriggersWindow::RefreshWindow(bool focus)
 {
-    if ( getHandle() != NULL )
+    if ( getHandle() == NULL )
         return;
 
     this->SetRedraw(false);
@@ -781,7 +781,6 @@ void TriggersWindow::CreateSubWindows(HWND hWnd)
         listGroups.SetPeer(listTriggers.getHandle());
 
     DoSize();
-    RefreshWindow(true);
 }
 
 void TriggersWindow::RefreshGroupList()

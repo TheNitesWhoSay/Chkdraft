@@ -78,7 +78,7 @@ bool BriefingTriggersWindow::DestroyThis()
 
 void BriefingTriggersWindow::RefreshWindow(bool focus)
 {
-    if ( getHandle() != NULL )
+    if ( getHandle() == NULL )
         return;
 
     this->SetRedraw(false);

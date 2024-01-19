@@ -28,7 +28,6 @@ bool TrigEditorWindow::CreateThis(HWND hParent)
     {
         ShowNormal();
         ChangeTab(currTab);
-        RefreshWindow();
         return true;
     }
     else
@@ -54,29 +53,32 @@ bool TrigEditorWindow::DestroyThis()
 
 void TrigEditorWindow::ChangeTab(Tab tab)
 {
-    tabs.SetCurSel((u32)tab);
-
-    tabs.HideTab(Id::WIN_TRIGGERS);
-    tabs.HideTab(Id::WIN_TEMPLATES);
-    tabs.HideTab(Id::WIN_COUNTERS);
-    tabs.HideTab(Id::WIN_CUWPS);
-    tabs.HideTab(Id::WIN_SWITCHES);
-
-    switch ( tab )
+    if ( tabs.GetCurSel() != u32(tab) )
     {
-        case Tab::Triggers  : tabs.ShowTab(Id::WIN_TRIGGERS ); break;
-        case Tab::Templates : tabs.ShowTab(Id::WIN_TEMPLATES); break;
-        case Tab::Counters  : tabs.ShowTab(Id::WIN_COUNTERS ); break;
-        case Tab::Cuwps     : tabs.ShowTab(Id::WIN_CUWPS    ); break;
-        case Tab::Switches  : tabs.ShowTab(Id::WIN_SWITCHES ); break;
-    }
+        tabs.SetCurSel((u32)tab);
 
-    currTab = tab;
+        tabs.HideTab(Id::WIN_TRIGGERS);
+        tabs.HideTab(Id::WIN_TEMPLATES);
+        tabs.HideTab(Id::WIN_COUNTERS);
+        tabs.HideTab(Id::WIN_CUWPS);
+        tabs.HideTab(Id::WIN_SWITCHES);
+
+        switch ( tab )
+        {
+            case Tab::Triggers  : tabs.ShowTab(Id::WIN_TRIGGERS ); break;
+            case Tab::Templates : tabs.ShowTab(Id::WIN_TEMPLATES); break;
+            case Tab::Counters  : tabs.ShowTab(Id::WIN_COUNTERS ); break;
+            case Tab::Cuwps     : tabs.ShowTab(Id::WIN_CUWPS    ); break;
+            case Tab::Switches  : tabs.ShowTab(Id::WIN_SWITCHES ); break;
+        }
+
+        currTab = tab;
+    }
 }
 
 void TrigEditorWindow::RefreshWindow()
 {
-    if ( getHandle() != NULL )
+    if ( getHandle() == NULL )
         return;
 
     triggersWindow.RefreshWindow(false);
