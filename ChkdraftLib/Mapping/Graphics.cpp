@@ -1174,7 +1174,7 @@ void UnitToBits(ChkdBitmap & bitmap, ChkdPalette & palette, u8 color, u16 bitWid
     };
 
     Sc::Unit::Type drawnUnitId = unitID < 228 ? (Sc::Unit::Type)unitID : Sc::Unit::Type::TerranMarine; // Extended units use ID:0's graphics (for now)
-    auto & unitDat = chkd.scData.units.getUnit(Sc::Unit::Type(unitID));
+    auto & unitDat = chkd.scData.units.getUnit(Sc::Unit::Type(drawnUnitId));
     u16 imageId = chkd.scData.sprites.getSprite(chkd.scData.units.getFlingy(unitDat.graphics).sprite).imageFile;
     u32 grpId = chkd.scData.sprites.getImage(imageId).grpFile;
     u16 subUnitImageId = unitDat.subunit1 == 228 ? std::numeric_limits<u16>::max() :
@@ -1201,24 +1201,24 @@ void UnitToBits(ChkdBitmap & bitmap, ChkdPalette & palette, u8 color, u16 bitWid
         const Sc::Sprite::GrpFile & curr = chkd.scData.sprites.getGrp(grpId).get();
         std::memcpy(remapped, &palette[8], sizeof(remapped));
         std::memcpy(&palette[8], &chkd.scData.tunit.palette[color < 16 ? 8*color : 8*(color%16)], sizeof(remapped));
-        GrpToBits(bitmap, palette, bitWidth, bitHeight, xStart, yStart, curr, unitXC, unitYC, lifted ? getLiftedFrame(unitID) : getPreferredFrame(unitID), color, chkd.scData.sprites.imageFlipped(imageId));
+        GrpToBits(bitmap, palette, bitWidth, bitHeight, xStart, yStart, curr, unitXC, unitYC, lifted ? getLiftedFrame(drawnUnitId) : getPreferredFrame(drawnUnitId), color, chkd.scData.sprites.imageFlipped(imageId));
         if ( (size_t)subUnitGrpId < chkd.scData.sprites.numGrps() )
         {
             const Sc::Sprite::GrpFile & subUnit = chkd.scData.sprites.getGrp(subUnitGrpId).get();
             auto offset = getSubUnitOffset(unitDat.subunit1);
             GrpToBits(bitmap, palette, bitWidth, bitHeight, s64(xStart)+offset.x, s64(yStart)+offset.y, subUnit, unitXC, unitYC, getPreferredFrame(unitDat.subunit1), color, false);
         }
-        if ( auto overlay = getOverlay(unitID) )
+        if ( auto overlay = getOverlay(drawnUnitId) )
         {
             const Sc::Sprite::GrpFile & overlayGrp = chkd.scData.sprites.getGrp(chkd.scData.sprites.getImage(*overlay).grpFile).get();
             GrpToBits(bitmap, palette, bitWidth, bitHeight, xStart, yStart, overlayGrp, unitXC, unitYC, 0, color, false);
         }
         if ( attached )
         {
-            if ( auto attachment = getAttachedOverlay(unitID) )
+            if ( auto attachment = getAttachedOverlay(drawnUnitId) )
             {
                 const Sc::Sprite::GrpFile & overlayGrp = chkd.scData.sprites.getGrp(chkd.scData.sprites.getImage(*attachment).grpFile).get();
-                GrpToBits(bitmap, palette, bitWidth, bitHeight, xStart, yStart, overlayGrp, unitXC, unitYC, getAttachedOverlayPreferredFrame(unitID), color, false);
+                GrpToBits(bitmap, palette, bitWidth, bitHeight, xStart, yStart, overlayGrp, unitXC, unitYC, getAttachedOverlayPreferredFrame(drawnUnitId), color, false);
             }
         }
         std::memcpy(&palette[8], remapped, sizeof(remapped));
