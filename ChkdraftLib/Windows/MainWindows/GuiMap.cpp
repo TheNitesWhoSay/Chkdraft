@@ -188,7 +188,7 @@ bool GuiMap::setDoodadTile(size_t x, size_t y, u16 tileNum)
     if ( x > Scenario::getTileWidth() || y > Scenario::getTileHeight() )
         return false;
 
-    Scenario::setTile(x, y, tileNum, Chk::StrScope::Game);
+    Scenario::setTile(x, y, tileNum, Chk::Scope::Game);
 
     RECT rcTile;
     rcTile.left   = s32(x)*32-screenLeft;
@@ -208,8 +208,8 @@ void GuiMap::setTileValue(size_t tileX, size_t tileY, uint16_t tileValue)
     {
         if ( tileChanges != nullptr )
         {
-            tileChanges->Insert(TileChange::Make(uint16_t(tileX), uint16_t(tileY), Scenario::getTile(tileX, tileY, Chk::StrScope::Editor)));
-            tileChanges->Insert(MtxmChange::Make(uint16_t(tileX), uint16_t(tileY), Scenario::getTile(tileX, tileY, Chk::StrScope::Game)));
+            tileChanges->Insert(TileChange::Make(uint16_t(tileX), uint16_t(tileY), Scenario::getTile(tileX, tileY, Chk::Scope::Editor)));
+            tileChanges->Insert(MtxmChange::Make(uint16_t(tileX), uint16_t(tileY), Scenario::getTile(tileX, tileY, Chk::Scope::Game)));
         }
 
         Scenario::editorTiles[tileY*Scenario::dimensions.tileWidth + tileX] = tileValue;
@@ -768,17 +768,17 @@ void GuiMap::convertSelectionToTerrain()
                     if ( tileGroup.megaTileIndex[x] != 0 )
                     {
                         auto currDoodadTile = 16*tileGroupIndex + x;
-                        auto currFinalTile = Scenario::getTile(xc, yc, Chk::StrScope::Game);
-                        auto underlyingTile = Scenario::getTile(xc, yc, Chk::StrScope::Editor);
+                        auto currFinalTile = Scenario::getTile(xc, yc, Chk::Scope::Game);
+                        auto underlyingTile = Scenario::getTile(xc, yc, Chk::Scope::Editor);
                         if ( currDoodadTile != underlyingTile ) // TILE
                         {
                             undoDoodadConversion->Insert(TileChange::Make(xc, yc, underlyingTile));
-                            Scenario::setTile(xc, yc, currDoodadTile, Chk::StrScope::Editor);
+                            Scenario::setTile(xc, yc, currDoodadTile, Chk::Scope::Editor);
                         }
                         if ( currDoodadTile != currFinalTile ) // MTXM
                         {
                             undoDoodadConversion->Insert(TileChange::Make(xc, yc, currFinalTile));
-                            Scenario::setTile(xc, yc, currDoodadTile, Chk::StrScope::Game);
+                            Scenario::setTile(xc, yc, currDoodadTile, Chk::Scope::Game);
                         }
                     }
                 }
@@ -843,8 +843,8 @@ void GuiMap::createLocation()
         if ( newLocationId != Chk::LocationId::NoLocation )
         {
             CM->setLayer(Layer::Locations);
-            Scenario::setLocationName<RawString>(newLocationId, "Location " + std::to_string(newLocationId), Chk::StrScope::Game);
-            Scenario::deleteUnusedStrings(Chk::StrScope::Both);
+            Scenario::setLocationName<RawString>(newLocationId, "Location " + std::to_string(newLocationId), Chk::Scope::Game);
+            Scenario::deleteUnusedStrings(Chk::Scope::Both);
             undos.AddUndo(LocationCreateDel::Make((u16)newLocationId));
             selections.selectLocation(u16(newLocationId));
             chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree(true);
@@ -876,8 +876,8 @@ void GuiMap::createInvertedLocation()
         if ( newLocationId != Chk::LocationId::NoLocation )
         {
             CM->setLayer(Layer::Locations);
-            Scenario::setLocationName<RawString>(newLocationId, "Location " + std::to_string(newLocationId), Chk::StrScope::Game);
-            Scenario::deleteUnusedStrings(Chk::StrScope::Both);
+            Scenario::setLocationName<RawString>(newLocationId, "Location " + std::to_string(newLocationId), Chk::Scope::Game);
+            Scenario::deleteUnusedStrings(Chk::Scope::Both);
             undos.AddUndo(LocationCreateDel::Make((u16)newLocationId));
             selections.selectLocation(u16(newLocationId));
             chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree(true);
@@ -913,8 +913,8 @@ void GuiMap::createMobileInvertedLocation()
         if ( newLocationId != Chk::LocationId::NoLocation )
         {
             CM->setLayer(Layer::Locations);
-            Scenario::setLocationName<RawString>(newLocationId, "Location " + std::to_string(newLocationId), Chk::StrScope::Game);
-            Scenario::deleteUnusedStrings(Chk::StrScope::Both);
+            Scenario::setLocationName<RawString>(newLocationId, "Location " + std::to_string(newLocationId), Chk::Scope::Game);
+            Scenario::deleteUnusedStrings(Chk::Scope::Both);
             undos.AddUndo(LocationCreateDel::Make((u16)newLocationId));
             selections.selectLocation(u16(newLocationId));
             chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree(true);
@@ -1365,7 +1365,7 @@ void GuiMap::deleteSelection()
 
         auto & selTiles = selections.getTiles();
         for ( auto & tile : selTiles )
-            setTileValue(tile.xc, tile.yc, Scenario::getTile(tile.xc, tile.yc, Chk::StrScope::Both));
+            setTileValue(tile.xc, tile.yc, Scenario::getTile(tile.xc, tile.yc, Chk::Scope::Both));
 
         selections.removeTiles();
     };
@@ -1399,10 +1399,10 @@ void GuiMap::deleteSelection()
                             auto currDoodadTile = 16*tileGroupIndex + x;
                             if ( xc < Scenario::getTileWidth() && yc < Scenario::getTileHeight() )
                             {
-                                auto currFinalTile = Scenario::getTile(xc, yc, Chk::StrScope::Game);
-                                auto underlyingTile = Scenario::getTile(xc, yc, Chk::StrScope::Editor);
+                                auto currFinalTile = Scenario::getTile(xc, yc, Chk::Scope::Game);
+                                auto underlyingTile = Scenario::getTile(xc, yc, Chk::Scope::Editor);
                                 if ( currDoodadTile == currFinalTile && currDoodadTile != underlyingTile )
-                                    Scenario::setTile(xc, yc, underlyingTile, Chk::StrScope::Game);
+                                    Scenario::setTile(xc, yc, underlyingTile, Chk::Scope::Game);
                             }
                         }
                     }
@@ -3394,8 +3394,8 @@ void GuiMap::FinalizeLocationDrag(HWND hWnd, int mapX, int mapY, WPARAM wParam)
             size_t newLocationId = Scenario::addLocation(newLocation);
             if ( newLocationId != Chk::LocationId::NoLocation )
             {
-                Scenario::setLocationName<RawString>(newLocationId, "Location " + std::to_string(newLocationId), Chk::StrScope::Game);
-                Scenario::deleteUnusedStrings(Chk::StrScope::Both);
+                Scenario::setLocationName<RawString>(newLocationId, "Location " + std::to_string(newLocationId), Chk::Scope::Game);
+                Scenario::deleteUnusedStrings(Chk::Scope::Both);
                 undos.AddUndo(LocationCreateDel::Make((u16)newLocationId));
                 selections.selectLocation(u16(newLocationId));
                 chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree(true);

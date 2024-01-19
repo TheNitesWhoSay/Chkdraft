@@ -146,7 +146,7 @@ bool PasteDoodadNode::isPlaceable(const Scenario & scenario, s32 xTileStart, s32
         for ( s32 x=0; x<this->tileWidth; ++x )
         {
             s32 tileXc = xTileStart + x;
-            auto existingTileGroup = scenario.getTile(tileXc, tileYc, Chk::StrScope::Game) / 16;
+            auto existingTileGroup = scenario.getTile(tileXc, tileYc, Chk::Scope::Game) / 16;
             if ( doodadPlacibility->tileGroup[y*tileWidth+x] != 0 && existingTileGroup != doodadPlacibility->tileGroup[y*tileWidth+x] )
                 return false;
         }

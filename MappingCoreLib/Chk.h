@@ -1187,7 +1187,7 @@ namespace Chk {
         sizePlusOneStep = BIT_7
     });
     
-    enum_t(StrScope, u32, { // u32 // TODO: Rename this to just "Scope"
+    enum_t(Scope, u32, { // u32
         None = 0,
         Game = BIT_1,
         Editor = BIT_2,

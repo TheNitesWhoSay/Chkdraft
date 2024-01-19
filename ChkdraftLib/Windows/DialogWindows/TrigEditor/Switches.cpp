@@ -177,28 +177,28 @@ void SwitchesWindow::ButtonSwitchNameProperties()
 {
     if ( selectedSwitch >= 0 && selectedSwitch < Chk::TotalSwitches )
     {
-        auto gameString = CM->getSwitchName<ChkdString>(selectedSwitch, Chk::StrScope::Game);
-        auto editorString = CM->getSwitchName<ChkdString>(selectedSwitch, Chk::StrScope::Editor);
+        auto gameString = CM->getSwitchName<ChkdString>(selectedSwitch, Chk::Scope::Game);
+        auto editorString = CM->getSwitchName<ChkdString>(selectedSwitch, Chk::Scope::Editor);
         ChkdStringInputDialog::Result result = ChkdStringInputDialog::GetChkdString(getHandle(), gameString, editorString, Chk::StringUserFlag::Switch, selectedSwitch);
 
         if ( (result & ChkdStringInputDialog::Result::GameStringChanged) == ChkdStringInputDialog::Result::GameStringChanged )
         {
             if ( gameString )
-                CM->setSwitchName<ChkdString>(selectedSwitch, *gameString, Chk::StrScope::Game);
+                CM->setSwitchName<ChkdString>(selectedSwitch, *gameString, Chk::Scope::Game);
             else
-                CM->setSwitchNameStringId(selectedSwitch, Chk::StringId::NoString, Chk::StrScope::Game);
+                CM->setSwitchNameStringId(selectedSwitch, Chk::StringId::NoString, Chk::Scope::Game);
 
-            CM->deleteUnusedStrings(Chk::StrScope::Game);
+            CM->deleteUnusedStrings(Chk::Scope::Game);
         }
 
         if ( (result & ChkdStringInputDialog::Result::EditorStringChanged) == ChkdStringInputDialog::Result::EditorStringChanged )
         {
             if ( editorString )
-                CM->setSwitchName<ChkdString>(selectedSwitch, *editorString, Chk::StrScope::Editor);
+                CM->setSwitchName<ChkdString>(selectedSwitch, *editorString, Chk::Scope::Editor);
             else
-                CM->setSwitchNameStringId(selectedSwitch, Chk::StringId::NoString, Chk::StrScope::Editor);
+                CM->setSwitchNameStringId(selectedSwitch, Chk::StringId::NoString, Chk::Scope::Editor);
 
-            CM->deleteUnusedStrings(Chk::StrScope::Editor);
+            CM->deleteUnusedStrings(Chk::Scope::Editor);
         }
 
         if ( result > 0 )
@@ -215,7 +215,7 @@ void SwitchesWindow::EditSwitchNameFocusLost()
         {
             ChkdString temp(*editText);
             CM->setSwitchName(selectedSwitch, temp);
-            CM->deleteUnusedStrings(Chk::StrScope::Both);
+            CM->deleteUnusedStrings(Chk::Scope::Both);
             chkd.mapSettingsWindow.RefreshWindow();
             CM->notifyChange(false);
         }

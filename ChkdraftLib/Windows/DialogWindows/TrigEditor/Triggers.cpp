@@ -166,7 +166,7 @@ void TriggersWindow::DeleteSelection()
     if ( currTrigger != NO_TRIGGER )
     {
         CM->deleteTrigger(currTrigger);
-        CM->deleteUnusedStrings(Chk::StrScope::Both);
+        CM->deleteUnusedStrings(Chk::Scope::Both);
         trigModifyWindow.DestroyThis();
         CM->notifyChange(false);
         int sel;

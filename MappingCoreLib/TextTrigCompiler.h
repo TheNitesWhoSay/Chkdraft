@@ -186,8 +186,8 @@ class TextTrigCompiler
         bool prepSwitchTable(const Scenario & map); // Fills switchTable
         bool prepGroupTable(const Scenario & map); // Fills groupTable
         bool prepScriptTable(Sc::Data & scData); // Fills scriptTable
-        bool prepStringTable(const Scenario & map, std::unordered_multimap<size_t, std::unique_ptr<StringTableNode>> & stringHashTable, size_t trigIndexBegin, size_t trigIndexEnd, const Chk::StrScope & scope); // Fills stringUsed and stringTable
-        void prepTriggerString(const Scenario & scenario, std::unordered_multimap<size_t, std::unique_ptr<StringTableNode>> & stringHashTable, const u32 & stringId, const bool & inReplacedRange, const Chk::StrScope & scope);
+        bool prepStringTable(const Scenario & map, std::unordered_multimap<size_t, std::unique_ptr<StringTableNode>> & stringHashTable, size_t trigIndexBegin, size_t trigIndexEnd, const Chk::Scope & scope); // Fills stringUsed and stringTable
+        void prepTriggerString(const Scenario & scenario, std::unordered_multimap<size_t, std::unique_ptr<StringTableNode>> & stringHashTable, const u32 & stringId, const bool & inReplacedRange, const Chk::Scope & scope);
 
         bool buildNewMap(Scenario & scenario, size_t trigIndexBegin, size_t trigIndexEnd, std::vector<Chk::Trigger> & triggers, std::stringstream & error) const; // Builds the new TRIG and STR sections
 };

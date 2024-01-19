@@ -100,36 +100,36 @@ struct Scenario
     // Strings API
     bool hasExtendedStrings() const;
 
-    size_t getCapacity(Chk::StrScope storageScope = Chk::StrScope::Game) const;
-    size_t getBytesUsed(Chk::StrScope storageScope = Chk::StrScope::Game);
+    size_t getCapacity(Chk::Scope storageScope = Chk::Scope::Game) const;
+    size_t getBytesUsed(Chk::Scope storageScope = Chk::Scope::Game);
 
-    bool stringStored(size_t stringId, Chk::StrScope storageScope = Chk::StrScope::Either) const;
-    void appendUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers, Chk::StrScope storageScope = Chk::StrScope::Game, u32 userMask = Chk::StringUserFlag::All) const;
-    bool stringUsed(size_t stringId, Chk::StrScope usageScope = Chk::StrScope::Either, Chk::StrScope storageScope = Chk::StrScope::Game, u32 userMask = Chk::StringUserFlag::All, bool ensureStored = false) const;
-    void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::StrScope usageScope = Chk::StrScope::Either, Chk::StrScope storageScope = Chk::StrScope::Either, u32 userMask = Chk::StringUserFlag::All) const;
-    void markValidUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::StrScope usageScope = Chk::StrScope::Either, Chk::StrScope storageScope = Chk::StrScope::Either, u32 userMask = Chk::StringUserFlag::All) const;
+    bool stringStored(size_t stringId, Chk::Scope storageScope = Chk::Scope::Either) const;
+    void appendUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers, Chk::Scope storageScope = Chk::Scope::Game, u32 userMask = Chk::StringUserFlag::All) const;
+    bool stringUsed(size_t stringId, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Game, u32 userMask = Chk::StringUserFlag::All, bool ensureStored = false) const;
+    void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Either, u32 userMask = Chk::StringUserFlag::All) const;
+    void markValidUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope usageScope = Chk::Scope::Either, Chk::Scope storageScope = Chk::Scope::Either, u32 userMask = Chk::StringUserFlag::All) const;
 
     StrProp getProperties(size_t editorStringId) const;
     void setProperties(size_t editorStringId, const StrProp & strProp);
         
     template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkdString (Editor <01>Style)
-    std::optional<StringType> getString(size_t stringId, Chk::StrScope storageScope = Chk::StrScope::EditorOverGame) const; // Gets the string at stringId with formatting based on StringType
+    std::optional<StringType> getString(size_t stringId, Chk::Scope storageScope = Chk::Scope::EditorOverGame) const; // Gets the string at stringId with formatting based on StringType
 
     template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-    size_t findString(const StringType & str, Chk::StrScope storageScope = Chk::StrScope::Game) const;
+    size_t findString(const StringType & str, Chk::Scope storageScope = Chk::Scope::Game) const;
 
-    bool setCapacity(size_t stringCapacity, Chk::StrScope storageScope = Chk::StrScope::Game, bool autoDefragment = true);
+    bool setCapacity(size_t stringCapacity, Chk::Scope storageScope = Chk::Scope::Game, bool autoDefragment = true);
         
     template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-    size_t addString(const StringType & str, Chk::StrScope storageScope = Chk::StrScope::Game, bool autoDefragment = true);
+    size_t addString(const StringType & str, Chk::Scope storageScope = Chk::Scope::Game, bool autoDefragment = true);
 
     template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-    void replaceString(size_t stringId, const StringType & str, Chk::StrScope storageScope = Chk::StrScope::Game);
+    void replaceString(size_t stringId, const StringType & str, Chk::Scope storageScope = Chk::Scope::Game);
 
-    void deleteUnusedStrings(Chk::StrScope storageScope = Chk::StrScope::Both);
-    void deleteString(size_t stringId, Chk::StrScope storageScope = Chk::StrScope::Both, bool deleteOnlyIfUnused = true);
-    void moveString(size_t stringIdFrom, size_t stringIdTo, Chk::StrScope storageScope = Chk::StrScope::Game);
-    size_t rescopeString(size_t stringId, Chk::StrScope changeStorageScopeTo = Chk::StrScope::Editor, bool autoDefragment = true);
+    void deleteUnusedStrings(Chk::Scope storageScope = Chk::Scope::Both);
+    void deleteString(size_t stringId, Chk::Scope storageScope = Chk::Scope::Both, bool deleteOnlyIfUnused = true);
+    void moveString(size_t stringIdFrom, size_t stringIdTo, Chk::Scope storageScope = Chk::Scope::Game);
+    size_t rescopeString(size_t stringId, Chk::Scope changeStorageScopeTo = Chk::Scope::Editor, bool autoDefragment = true);
 
     std::vector<u8> & getStrTailData(); // Gets the data appended after the STR section
     size_t getStrTailDataOffset(); // Gets the offset tail data would be at within the STR section were it written right now
@@ -137,38 +137,38 @@ struct Scenario
     size_t getStrBytePaddedTo() const; // Gets the current byte alignment setting for tailData (usually 4 for new StrSections, 0/none if existing tailData was read in)
     void setStrBytePaddedTo(size_t bytePaddedTo); // Sets the current byte alignment setting for tailData (only 2 and 4 are aligned, other values are ignored/treat tailData as unpadded)
 
-    size_t getScenarioNameStringId(Chk::StrScope storageScope = Chk::StrScope::Game) const;
-    size_t getScenarioDescriptionStringId(Chk::StrScope storageScope = Chk::StrScope::Game) const;
-    size_t getForceNameStringId(Chk::Force force, Chk::StrScope storageScope = Chk::StrScope::Game) const;
-    size_t getUnitNameStringId(Sc::Unit::Type unitType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto, Chk::StrScope storageScope = Chk::StrScope::Game) const;
-    size_t getSoundPathStringId(size_t soundIndex, Chk::StrScope storageScope = Chk::StrScope::Game) const;
-    size_t getSwitchNameStringId(size_t switchIndex, Chk::StrScope storageScope = Chk::StrScope::Game) const;
-    size_t getLocationNameStringId(size_t locationId, Chk::StrScope storageScope = Chk::StrScope::Game) const;
+    size_t getScenarioNameStringId(Chk::Scope storageScope = Chk::Scope::Game) const;
+    size_t getScenarioDescriptionStringId(Chk::Scope storageScope = Chk::Scope::Game) const;
+    size_t getForceNameStringId(Chk::Force force, Chk::Scope storageScope = Chk::Scope::Game) const;
+    size_t getUnitNameStringId(Sc::Unit::Type unitType, Chk::UseExpSection useExp = Chk::UseExpSection::Auto, Chk::Scope storageScope = Chk::Scope::Game) const;
+    size_t getSoundPathStringId(size_t soundIndex, Chk::Scope storageScope = Chk::Scope::Game) const;
+    size_t getSwitchNameStringId(size_t switchIndex, Chk::Scope storageScope = Chk::Scope::Game) const;
+    size_t getLocationNameStringId(size_t locationId, Chk::Scope storageScope = Chk::Scope::Game) const;
 
-    void setScenarioNameStringId(size_t scenarioNameStringId, Chk::StrScope storageScope = Chk::StrScope::Game);
-    void setScenarioDescriptionStringId(size_t scenarioDescriptionStringId, Chk::StrScope storageScope = Chk::StrScope::Game);
-    void setForceNameStringId(Chk::Force force, size_t forceNameStringId, Chk::StrScope storageScope = Chk::StrScope::Game);
-    void setUnitNameStringId(Sc::Unit::Type unitType, size_t unitNameStringId, Chk::UseExpSection useExp = Chk::UseExpSection::Auto, Chk::StrScope storageScope = Chk::StrScope::Game);
-    void setSoundPathStringId(size_t soundIndex, size_t soundPathStringId, Chk::StrScope storageScope = Chk::StrScope::Game);
-    void setSwitchNameStringId(size_t switchIndex, size_t switchNameStringId, Chk::StrScope storageScope = Chk::StrScope::Game);
-    void setLocationNameStringId(size_t locationId, size_t locationNameStringId, Chk::StrScope storageScope = Chk::StrScope::Game);
+    void setScenarioNameStringId(size_t scenarioNameStringId, Chk::Scope storageScope = Chk::Scope::Game);
+    void setScenarioDescriptionStringId(size_t scenarioDescriptionStringId, Chk::Scope storageScope = Chk::Scope::Game);
+    void setForceNameStringId(Chk::Force force, size_t forceNameStringId, Chk::Scope storageScope = Chk::Scope::Game);
+    void setUnitNameStringId(Sc::Unit::Type unitType, size_t unitNameStringId, Chk::UseExpSection useExp = Chk::UseExpSection::Auto, Chk::Scope storageScope = Chk::Scope::Game);
+    void setSoundPathStringId(size_t soundIndex, size_t soundPathStringId, Chk::Scope storageScope = Chk::Scope::Game);
+    void setSwitchNameStringId(size_t switchIndex, size_t switchNameStringId, Chk::Scope storageScope = Chk::Scope::Game);
+    void setLocationNameStringId(size_t locationId, size_t locationNameStringId, Chk::Scope storageScope = Chk::Scope::Game);
         
     template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-    std::optional<StringType> getString(size_t gameStringId, size_t editorStringId, Chk::StrScope storageScope) const;
+    std::optional<StringType> getString(size_t gameStringId, size_t editorStringId, Chk::Scope storageScope) const;
     template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-    std::optional<StringType> getScenarioName(Chk::StrScope storageScope = Chk::StrScope::EditorOverGame) const;
+    std::optional<StringType> getScenarioName(Chk::Scope storageScope = Chk::Scope::EditorOverGame) const;
     template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-    std::optional<StringType> getScenarioDescription(Chk::StrScope storageScope = Chk::StrScope::EditorOverGame) const;
+    std::optional<StringType> getScenarioDescription(Chk::Scope storageScope = Chk::Scope::EditorOverGame) const;
     template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-    std::optional<StringType> getForceName(Chk::Force force, Chk::StrScope storageScope = Chk::StrScope::EditorOverGame) const;
+    std::optional<StringType> getForceName(Chk::Force force, Chk::Scope storageScope = Chk::Scope::EditorOverGame) const;
     template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-    std::optional<StringType> getUnitName(Sc::Unit::Type unitType, bool defaultIfNull = false, Chk::UseExpSection useExp = Chk::UseExpSection::Auto, Chk::StrScope storageScope = Chk::StrScope::EditorOverGame) const;
+    std::optional<StringType> getUnitName(Sc::Unit::Type unitType, bool defaultIfNull = false, Chk::UseExpSection useExp = Chk::UseExpSection::Auto, Chk::Scope storageScope = Chk::Scope::EditorOverGame) const;
     template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-    std::optional<StringType> getSoundPath(size_t soundIndex, Chk::StrScope storageScope = Chk::StrScope::EditorOverGame) const;
+    std::optional<StringType> getSoundPath(size_t soundIndex, Chk::Scope storageScope = Chk::Scope::EditorOverGame) const;
     template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-    std::optional<StringType> getSwitchName(size_t switchIndex, Chk::StrScope storageScope = Chk::StrScope::EditorOverGame) const;
+    std::optional<StringType> getSwitchName(size_t switchIndex, Chk::Scope storageScope = Chk::Scope::EditorOverGame) const;
     template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-    std::optional<StringType> getLocationName(size_t locationId, Chk::StrScope storageScope = Chk::StrScope::EditorOverGame) const;
+    std::optional<StringType> getLocationName(size_t locationId, Chk::Scope storageScope = Chk::Scope::EditorOverGame) const;
     template <typename StringType>
     std::optional<StringType> getComment(size_t triggerIndex) const;
     template <typename StringType>
@@ -177,19 +177,19 @@ struct Scenario
     std::optional<StringType> getExtendedNotes(size_t triggerIndex) const;
 
     template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-    void setScenarioName(const StringType & scenarioNameString, Chk::StrScope storageScope = Chk::StrScope::Game, bool autoDefragment = true);
+    void setScenarioName(const StringType & scenarioNameString, Chk::Scope storageScope = Chk::Scope::Game, bool autoDefragment = true);
     template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-    void setScenarioDescription(const StringType & scenarioDescription, Chk::StrScope storageScope = Chk::StrScope::Game, bool autoDefragment = true);
+    void setScenarioDescription(const StringType & scenarioDescription, Chk::Scope storageScope = Chk::Scope::Game, bool autoDefragment = true);
     template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-    void setForceName(Chk::Force force, const StringType & forceName, Chk::StrScope storageScope = Chk::StrScope::Game, bool autoDefragment = true);
+    void setForceName(Chk::Force force, const StringType & forceName, Chk::Scope storageScope = Chk::Scope::Game, bool autoDefragment = true);
     template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-    void setUnitName(Sc::Unit::Type unitType, const StringType &unitName, Chk::UseExpSection useExp = Chk::UseExpSection::Auto, Chk::StrScope storageScope = Chk::StrScope::Game, bool autoDefragment = true);
+    void setUnitName(Sc::Unit::Type unitType, const StringType &unitName, Chk::UseExpSection useExp = Chk::UseExpSection::Auto, Chk::Scope storageScope = Chk::Scope::Game, bool autoDefragment = true);
     template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-    void setSoundPath(size_t soundIndex, const StringType & soundPath, Chk::StrScope storageScope = Chk::StrScope::Game, bool autoDefragment = true);
+    void setSoundPath(size_t soundIndex, const StringType & soundPath, Chk::Scope storageScope = Chk::Scope::Game, bool autoDefragment = true);
     template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-    void setSwitchName(size_t switchIndex, const StringType & switchName, Chk::StrScope storageScope = Chk::StrScope::Game, bool autoDefragment = true);
+    void setSwitchName(size_t switchIndex, const StringType & switchName, Chk::Scope storageScope = Chk::Scope::Game, bool autoDefragment = true);
     template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-    void setLocationName(size_t locationId, const StringType & locationName, Chk::StrScope storageScope = Chk::StrScope::Game, bool autoDefragment = true);
+    void setLocationName(size_t locationId, const StringType & locationName, Chk::Scope storageScope = Chk::Scope::Game, bool autoDefragment = true);
     template <typename StringType>
     void setExtendedComment(size_t triggerIndex, const StringType & comment, bool autoDefragment = true);
     template <typename StringType>
@@ -213,12 +213,12 @@ struct Scenario
     std::vector<std::optional<ScStr>> copyStrings() const;
     void swapStrings(std::vector<std::optional<ScStr>> & strings);
 
-    bool defragment(Chk::StrScope storageScope = Chk::StrScope::Both, bool matchCapacityToUsage = true);
-    void remapStringIds(const std::map<u32, u32> & stringIdRemappings, Chk::StrScope storageScope);
+    bool defragment(Chk::Scope storageScope = Chk::Scope::Both, bool matchCapacityToUsage = true);
+    void remapStringIds(const std::map<u32, u32> & stringIdRemappings, Chk::Scope storageScope);
 
     // Players API
-    Sc::Player::SlotType getSlotType(size_t slotIndex, Chk::StrScope scope = Chk::StrScope::Game) const;
-    void setSlotType(size_t slotIndex, Sc::Player::SlotType slotType, Chk::StrScope scope = Chk::StrScope::Both);
+    Sc::Player::SlotType getSlotType(size_t slotIndex, Chk::Scope scope = Chk::Scope::Game) const;
+    void setSlotType(size_t slotIndex, Sc::Player::SlotType slotType, Chk::Scope scope = Chk::Scope::Both);
 
     Chk::Race getPlayerRace(size_t playerIndex) const;
     void setPlayerRace(size_t playerIndex, Chk::Race race);
@@ -271,10 +271,10 @@ struct Scenario
     void setTileHeight(u16 newTileHeight, u16 sizeValidationFlags = SizeValidationFlag::Default, s32 topEdge = 0);
     void setDimensions(u16 newTileWidth, u16 newTileHeight, u16 sizeValidationFlags = SizeValidationFlag::Default, s32 leftEdge = 0, s32 topEdge = 0);
 
-    u16 getTile(size_t tileXc, size_t tileYc, Chk::StrScope scope = Chk::StrScope::Game) const;
-    inline u16 getTilePx(size_t pixelXc, size_t pixelYc, Chk::StrScope scope = Chk::StrScope::Game) const;
-    void setTile(size_t tileXc, size_t tileYc, u16 tileValue, Chk::StrScope scope = Chk::StrScope::Game);
-    inline void setTilePx(size_t pixelXc, size_t pixelYc, u16 tileValue, Chk::StrScope scope = Chk::StrScope::Game);
+    u16 getTile(size_t tileXc, size_t tileYc, Chk::Scope scope = Chk::Scope::Game) const;
+    inline u16 getTilePx(size_t pixelXc, size_t pixelYc, Chk::Scope scope = Chk::Scope::Game) const;
+    void setTile(size_t tileXc, size_t tileYc, u16 tileValue, Chk::Scope scope = Chk::Scope::Game);
+    inline void setTilePx(size_t pixelXc, size_t pixelYc, u16 tileValue, Chk::Scope scope = Chk::Scope::Game);
         
     Chk::IsomRect & getIsomRect(size_t isomRectIndex);
     const Chk::IsomRect & getIsomRect(size_t isomRectIndex) const;
@@ -344,7 +344,7 @@ struct Scenario
     void matchAnywhereToDimensions();
         
     void appendLocationStrUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers, u32 userMask = Chk::StringUserFlag::All) const;
-    bool locationStringUsed(size_t stringId, Chk::StrScope storageScope = Chk::StrScope::Game, u32 userMask = Chk::StringUserFlag::All) const;
+    bool locationStringUsed(size_t stringId, Chk::Scope storageScope = Chk::Scope::Game, u32 userMask = Chk::StringUserFlag::All) const;
     void markUsedLocationStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::All) const;
     void remapLocationStringIds(const std::map<u32, u32> & stringIdRemappings);
     void deleteLocationString(size_t stringId);
@@ -488,18 +488,18 @@ struct Scenario
     void setSoundStringId(size_t soundIndex, size_t soundStringId);
 
     bool triggerLocationUsed(size_t locationId) const;
-    void appendTriggerStrUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers, Chk::StrScope storageScope = Chk::StrScope::Game, u32 userMask = Chk::StringUserFlag::All) const;
-    bool triggerStringUsed(size_t stringId, Chk::StrScope storageScope, u32 userMask = Chk::StringUserFlag::All) const;
+    void appendTriggerStrUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers, Chk::Scope storageScope = Chk::Scope::Game, u32 userMask = Chk::StringUserFlag::All) const;
+    bool triggerStringUsed(size_t stringId, Chk::Scope storageScope, u32 userMask = Chk::StringUserFlag::All) const;
     bool triggerGameStringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::All) const;
-    bool triggerEditorStringUsed(size_t stringId, Chk::StrScope storageScope, u32 userMask = Chk::StringUserFlag::All) const;
+    bool triggerEditorStringUsed(size_t stringId, Chk::Scope storageScope, u32 userMask = Chk::StringUserFlag::All) const;
     void markUsedTriggerLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed) const;
-    void markUsedTriggerStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::StrScope storageScope, u32 userMask = Chk::StringUserFlag::All) const;
+    void markUsedTriggerStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope storageScope, u32 userMask = Chk::StringUserFlag::All) const;
     void markUsedTriggerGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::All) const;
-    void markUsedTriggerEditorStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::StrScope storageScope, u32 userMask = Chk::StringUserFlag::All) const;
+    void markUsedTriggerEditorStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope storageScope, u32 userMask = Chk::StringUserFlag::All) const;
     void remapTriggerLocationIds(const std::map<u32, u32> & locationIdRemappings);
-    void remapTriggerStringIds(const std::map<u32, u32> & stringIdRemappings, Chk::StrScope storageScope);
+    void remapTriggerStringIds(const std::map<u32, u32> & stringIdRemappings, Chk::Scope storageScope);
     void deleteTriggerLocation(size_t locationId);
-    void deleteTriggerString(size_t stringId, Chk::StrScope storageScope);
+    void deleteTriggerString(size_t stringId, Chk::Scope storageScope);
 
     // Misc API
     bool empty() const;

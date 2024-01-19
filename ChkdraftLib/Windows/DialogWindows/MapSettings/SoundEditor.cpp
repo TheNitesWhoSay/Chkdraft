@@ -171,11 +171,11 @@ void SoundEditorWindow::UpdateCustomStringList()
     {
         dropCustomMpqString.ClearItems();
         std::bitset<Chk::MaxStrings> stringIdUsed;
-        CM->markValidUsedStrings(stringIdUsed, Chk::StrScope::Either, Chk::StrScope::Game);
-        size_t stringCapacity = CM->getCapacity(Chk::StrScope::Game);
+        CM->markValidUsedStrings(stringIdUsed, Chk::Scope::Either, Chk::Scope::Game);
+        size_t stringCapacity = CM->getCapacity(Chk::Scope::Game);
         for ( size_t stringId=1; stringId<stringCapacity; stringId++ )
         {
-            if ( auto str = CM->getString<SingleLineChkdString>(stringId, Chk::StrScope::Game) )
+            if ( auto str = CM->getString<SingleLineChkdString>(stringId, Chk::Scope::Game) )
                 dropCustomMpqString.AddItem(*str);
         }
         dropCustomMpqString.EnableThis();
@@ -549,7 +549,7 @@ void SoundEditorWindow::DeleteSoundButtonPressed()
             CM->notifyChange(false);
             CM->refreshScenario();
         }
-        CM->deleteUnusedStrings(Chk::StrScope::Both);
+        CM->deleteUnusedStrings(Chk::Scope::Both);
     }
 }
 

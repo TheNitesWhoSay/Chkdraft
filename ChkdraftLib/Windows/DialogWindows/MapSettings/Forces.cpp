@@ -343,7 +343,7 @@ void ForcesWindow::CheckReplaceForceName(Chk::Force force)
         if ( newMapForce && newMapForce->length() > 0 )
         {
             CM->setForceName<ChkdString>(force, *newMapForce);
-            CM->deleteUnusedStrings(Chk::StrScope::Both);
+            CM->deleteUnusedStrings(Chk::Scope::Both);
             CM->notifyChange(false);
             CM->refreshScenario();
             possibleForceNameUpdate[(size_t)force] = false;

@@ -93,7 +93,7 @@ void DoodadCreateDel::Reverse(void *guiMap)
                             auto xc = xStart+x;
                             if ( tileGroup.megaTileIndex[x] != 0 && xc < map.getTileWidth() )
                             {
-                                this->tileIndex[x][y] = map.getTile(xc, yc, Chk::StrScope::Game);
+                                this->tileIndex[x][y] = map.getTile(xc, yc, Chk::Scope::Game);
                                 map.setDoodadTile(xc, yc, 16*tileGroupIndex + x);
                             }
                         }
@@ -138,7 +138,7 @@ DoodadCreateDel::DoodadCreateDel(u16 doodadIndex, Sc::Terrain::Doodad::Type dood
             {
                 auto xc = xStart+x;
                 if ( tileGroup.megaTileIndex[x] != 0 )
-                    this->tileIndex[x][y] = map.getTile(xc, yc, Chk::StrScope::Game);
+                    this->tileIndex[x][y] = map.getTile(xc, yc, Chk::Scope::Game);
             }
         }
     }

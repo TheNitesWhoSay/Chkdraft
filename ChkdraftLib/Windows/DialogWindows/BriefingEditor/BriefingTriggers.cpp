@@ -166,7 +166,7 @@ void BriefingTriggersWindow::DeleteSelection()
     if ( currBriefingTrigger != NO_TRIGGER )
     {
         CM->deleteBriefingTrigger(currBriefingTrigger);
-        CM->deleteUnusedStrings(Chk::StrScope::Both);
+        CM->deleteUnusedStrings(Chk::Scope::Both);
         briefingTrigModifyWindow.DestroyThis();
         CM->notifyChange(false);
         int sel;

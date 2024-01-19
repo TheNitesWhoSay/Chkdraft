@@ -450,7 +450,7 @@ void MapPropertiesWindow::CheckReplaceMapTitle()
         if ( auto newMapTitle = editMapTitle.GetWinText() )
         {
             CM->setScenarioName<ChkdString>(*newMapTitle);
-            CM->deleteUnusedStrings(Chk::StrScope::Both);
+            CM->deleteUnusedStrings(Chk::Scope::Both);
             CM->notifyChange(false);
             possibleTitleUpdate = false;
         }
@@ -464,7 +464,7 @@ void MapPropertiesWindow::CheckReplaceMapDescription()
         if ( auto newMapDescription = editMapDescription.GetWinText() )
         {
             CM->setScenarioDescription<ChkdString>(*newMapDescription);
-            CM->deleteUnusedStrings(Chk::StrScope::Both);
+            CM->deleteUnusedStrings(Chk::Scope::Both);
             CM->notifyChange(false);
             possibleDescriptionUpdate = false;
         }

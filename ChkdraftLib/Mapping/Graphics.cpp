@@ -560,7 +560,7 @@ void Graphics::DrawLocationNames(const WinLib::DeviceContext & dc)
                         s32 bottomMost = std::max(location.top, location.bottom);
                         if ( bottomMost > screenTop )
                         {
-                            if ( auto str = map.getLocationName<ChkdString>(locationId, Chk::StrScope::EditorOverGame) )
+                            if ( auto str = map.getLocationName<ChkdString>(locationId, Chk::Scope::EditorOverGame) )
                             {
                                 leftMost = leftMost - screenLeft + 2;
                                 topMost = topMost - screenTop + 2;
@@ -714,7 +714,7 @@ void Graphics::DrawTileNumbers(const WinLib::DeviceContext & dc)
     {
         for ( xc=screenLeft/32; xc<maxRowX; xc++ )
         {
-            wTileHex = map.getTile(xc, yc, tileNumsFromMTXM ? Chk::StrScope::Game : Chk::StrScope::Editor);
+            wTileHex = map.getTile(xc, yc, tileNumsFromMTXM ? Chk::Scope::Game : Chk::Scope::Editor);
             TileHex = std::to_string(wTileHex);
 
             dc.drawText(TileHex, xc * 32 - screenLeft + 3, yc * 32 - screenTop + 2, nullRect, false, true);

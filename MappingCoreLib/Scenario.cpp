@@ -783,7 +783,7 @@ bool Scenario::changeVersionTo(Chk::Version version, bool lockAnywhere, bool aut
     }
     
     this->version = version;
-    this->deleteUnusedStrings(Chk::StrScope::Both);
+    this->deleteUnusedStrings(Chk::Scope::Both);
     return true;
 }
 
@@ -852,19 +852,19 @@ bool Scenario::hasExtendedStrings() const
     return !this->editorStrings.empty();
 }
 
-size_t Scenario::getCapacity(Chk::StrScope storageScope) const
+size_t Scenario::getCapacity(Chk::Scope storageScope) const
 {
-    if ( storageScope == Chk::StrScope::Game )
+    if ( storageScope == Chk::Scope::Game )
         return this->strings.size();
-    else if ( storageScope == Chk::StrScope::Editor )
+    else if ( storageScope == Chk::Scope::Editor )
         return this->editorStrings.size();
     else
         return 0;
 }
 
-size_t Scenario::getBytesUsed(Chk::StrScope storageScope)
+size_t Scenario::getBytesUsed(Chk::Scope storageScope)
 {
-    if ( storageScope == Chk::StrScope::Game )
+    if ( storageScope == Chk::Scope::Game )
     {
         std::vector<u8> bytes {};
         if ( hasSection(SectionName::STRx) )
@@ -874,7 +874,7 @@ size_t Scenario::getBytesUsed(Chk::StrScope storageScope)
 
         return bytes.size();
     }
-    else if ( storageScope == Chk::StrScope::Editor )
+    else if ( storageScope == Chk::Scope::Editor )
     {
         std::vector<u8> bytes {};
         syncKstringsToBytes(bytes);
@@ -884,22 +884,22 @@ size_t Scenario::getBytesUsed(Chk::StrScope storageScope)
         return 0;
 }
 
-bool Scenario::stringStored(size_t stringId, Chk::StrScope storageScope) const
+bool Scenario::stringStored(size_t stringId, Chk::Scope storageScope) const
 {
-    if ( (storageScope & Chk::StrScope::Game) == Chk::StrScope::Game )
+    if ( (storageScope & Chk::Scope::Game) == Chk::Scope::Game )
         return stringId < this->strings.size() && this->strings[stringId];
-    else if ( (storageScope & Chk::StrScope::Editor) == Chk::StrScope::Editor )
+    else if ( (storageScope & Chk::Scope::Editor) == Chk::Scope::Editor )
         return stringId < this->editorStrings.size() && this->editorStrings[stringId];
 
     return false;
 }
 
-void Scenario::appendUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers, Chk::StrScope storageScope, u32 userMask) const
+void Scenario::appendUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers, Chk::Scope storageScope, u32 userMask) const
 {
     if ( stringId == Chk::StringId::NoString )
         return;
 
-    if ( storageScope == Chk::StrScope::Game )
+    if ( storageScope == Chk::Scope::Game )
     {
         if ( stringId < Chk::MaxStrings ) // 16 or 32-bit stringId
         {
@@ -933,7 +933,7 @@ void Scenario::appendUsage(size_t stringId, std::vector<Chk::StringUser> & strin
             appendTriggerStrUsage(stringId, stringUsers, storageScope, userMask);
         }
     }
-    else if ( storageScope == Chk::StrScope::Editor )
+    else if ( storageScope == Chk::Scope::Editor )
     {
         if ( this->editorStringOverrides.scenarioName == stringId )
             stringUsers.push_back(Chk::StringUser(Chk::StringUserFlag::ScenarioName));
@@ -979,21 +979,21 @@ void Scenario::appendUsage(size_t stringId, std::vector<Chk::StringUser> & strin
     }
 }
 
-bool Scenario::stringUsed(size_t stringId, Chk::StrScope usageScope, Chk::StrScope storageScope, u32 userMask, bool ensureStored) const
+bool Scenario::stringUsed(size_t stringId, Chk::Scope usageScope, Chk::Scope storageScope, u32 userMask, bool ensureStored) const
 {
-    if ( storageScope == Chk::StrScope::Game && ((stringId < this->strings.size() && this->strings[stringId]) || !ensureStored) )
+    if ( storageScope == Chk::Scope::Game && ((stringId < this->strings.size() && this->strings[stringId]) || !ensureStored) )
     {
         if ( stringId < Chk::MaxStrings ) // 16 or 32-bit stringId
         {
-            if ( usageScope == Chk::StrScope::Editor )
+            if ( usageScope == Chk::Scope::Editor )
                 return locationStringUsed(stringId, storageScope, userMask) || triggerEditorStringUsed(stringId, storageScope, userMask);
-            else if ( usageScope == Chk::StrScope::Game )
+            else if ( usageScope == Chk::Scope::Game )
             {
                 return ((userMask & Chk::StringUserFlag::ScenarioName) == Chk::StringUserFlag::ScenarioName && this->scenarioProperties.scenarioNameStringId == (u16)stringId ) ||
                     ((userMask & Chk::StringUserFlag::ScenarioDescription) == Chk::StringUserFlag::ScenarioDescription && this->scenarioProperties.scenarioDescriptionStringId == (u16)stringId ) ||
                     forceStringUsed(stringId, userMask) || unitStringUsed(stringId, userMask) || triggerGameStringUsed(stringId, userMask);
             }
-            else // if ( usageScope == Chk::StrScope::Either )
+            else // if ( usageScope == Chk::Scope::Either )
             {
                 return ((userMask & Chk::StringUserFlag::ScenarioName) == Chk::StringUserFlag::ScenarioName && this->scenarioProperties.scenarioNameStringId == (u16)stringId ) ||
                     ((userMask & Chk::StringUserFlag::ScenarioDescription) == Chk::StringUserFlag::ScenarioDescription && this->scenarioProperties.scenarioDescriptionStringId == (u16)stringId ) ||
@@ -1003,12 +1003,12 @@ bool Scenario::stringUsed(size_t stringId, Chk::StrScope usageScope, Chk::StrSco
         }
         else // stringId >= Chk::MaxStrings // 32-bit stringId
         {
-            return usageScope == Chk::StrScope::Either && triggerStringUsed(stringId, storageScope, userMask) ||
-                usageScope == Chk::StrScope::Game && triggerGameStringUsed(stringId, userMask) ||
-                usageScope == Chk::StrScope::Editor && triggerEditorStringUsed(stringId, storageScope, userMask);
+            return usageScope == Chk::Scope::Either && triggerStringUsed(stringId, storageScope, userMask) ||
+                usageScope == Chk::Scope::Game && triggerGameStringUsed(stringId, userMask) ||
+                usageScope == Chk::Scope::Editor && triggerEditorStringUsed(stringId, storageScope, userMask);
         }
     }
-    else if ( storageScope == Chk::StrScope::Editor && ((stringId < this->editorStrings.size() && this->editorStrings[stringId]) || !ensureStored) )
+    else if ( storageScope == Chk::Scope::Editor && ((stringId < this->editorStrings.size() && this->editorStrings[stringId]) || !ensureStored) )
     {
         if ( this->editorStringOverrides.scenarioName == stringId || this->editorStringOverrides.scenarioDescription == stringId )
             return true;
@@ -1052,12 +1052,12 @@ bool Scenario::stringUsed(size_t stringId, Chk::StrScope usageScope, Chk::StrSco
     return false;
 }
 
-void Scenario::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::StrScope usageScope, Chk::StrScope storageScope, u32 userMask) const
+void Scenario::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope usageScope, Chk::Scope storageScope, u32 userMask) const
 {
-    if ( storageScope == Chk::StrScope::Game )
+    if ( storageScope == Chk::Scope::Game )
     {
-        bool markGameStrings = (usageScope & Chk::StrScope::Game) == Chk::StrScope::Game;
-        bool markEditorStrings = (usageScope & Chk::StrScope::Editor) == Chk::StrScope::Editor;
+        bool markGameStrings = (usageScope & Chk::Scope::Game) == Chk::Scope::Game;
+        bool markEditorStrings = (usageScope & Chk::Scope::Editor) == Chk::Scope::Editor;
 
         if ( markGameStrings )
         {
@@ -1083,7 +1083,7 @@ void Scenario::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk:
                 markUsedTriggerEditorStrings(stringIdUsed, storageScope, userMask); // {WAV, Editor, u32}: Sound Names; {SWNM, Editor, u32}: Switch Names; {TRIG, Game&Editor, u32}: comment
         }
     }
-    else if ( storageScope == Chk::StrScope::Editor )
+    else if ( storageScope == Chk::Scope::Editor )
     {
         if ( (userMask & Chk::StringUserFlag::ScenarioName) == Chk::StringUserFlag::ScenarioName && this->editorStringOverrides.scenarioName != 0 )
             stringIdUsed[this->editorStringOverrides.scenarioName] = true;
@@ -1148,12 +1148,12 @@ void Scenario::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk:
     }
 }
 
-void Scenario::markValidUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::StrScope usageScope, Chk::StrScope storageScope, u32 userMask) const
+void Scenario::markValidUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope usageScope, Chk::Scope storageScope, u32 userMask) const
 {
     markUsedStrings(stringIdUsed, usageScope, storageScope, userMask);
     switch ( storageScope )
     {
-        case Chk::StrScope::Game:
+        case Chk::Scope::Game:
         {
             size_t limit = std::min((size_t)Chk::MaxStrings, this->strings.size());
             size_t stringId = 1;
@@ -1169,7 +1169,7 @@ void Scenario::markValidUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed,
             }
         }
         break;
-        case Chk::StrScope::Editor:
+        case Chk::Scope::Editor:
         {
             size_t limit = std::min((size_t)Chk::MaxKStrings, this->editorStrings.size());
             size_t stringId = 1;
@@ -1185,9 +1185,9 @@ void Scenario::markValidUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed,
             }
         }
         break;
-        case Chk::StrScope::Either:
+        case Chk::Scope::Either:
         {
-            size_t limit = std::min(std::min((size_t)Chk::MaxStrings, getCapacity(Chk::StrScope::Game)), getCapacity(Chk::StrScope::Editor));
+            size_t limit = std::min(std::min((size_t)Chk::MaxStrings, getCapacity(Chk::Scope::Game)), getCapacity(Chk::Scope::Editor));
             size_t stringId = 1;
             for ( ; stringId < limit; stringId++ )
             {
@@ -1195,17 +1195,17 @@ void Scenario::markValidUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed,
                     stringIdUsed[stringId] = false;
             }
 
-            if ( getCapacity(Chk::StrScope::Game) > getCapacity(Chk::StrScope::Editor) )
+            if ( getCapacity(Chk::Scope::Game) > getCapacity(Chk::Scope::Editor) )
             {
-                for ( ; stringId < getCapacity(Chk::StrScope::Game); stringId++ )
+                for ( ; stringId < getCapacity(Chk::Scope::Game); stringId++ )
                 {
                     if ( stringIdUsed[stringId] && !(stringId < this->strings.size() && this->strings[stringId]) )
                         stringIdUsed[stringId] = false;
                 }
             }
-            else if ( getCapacity(Chk::StrScope::Editor) > getCapacity(Chk::StrScope::Game) )
+            else if ( getCapacity(Chk::Scope::Editor) > getCapacity(Chk::Scope::Game) )
             {
-                for ( ; stringId < getCapacity(Chk::StrScope::Editor); stringId++ )
+                for ( ; stringId < getCapacity(Chk::Scope::Editor); stringId++ )
                 {
                     if ( stringIdUsed[stringId] && !(stringId < this->editorStrings.size() && this->editorStrings[stringId]) )
                         stringIdUsed[stringId] = false;
@@ -1238,7 +1238,7 @@ void Scenario::setProperties(size_t editorStringId, const StrProp & strProp)
 }
 
 template <typename StringType>
-std::optional<StringType> Scenario::getString(size_t stringId, Chk::StrScope storageScope) const
+std::optional<StringType> Scenario::getString(size_t stringId, Chk::Scope storageScope) const
 {
     auto getGameString = [&](){
         return stringId < this->strings.size() && this->strings[stringId] ?
@@ -1250,15 +1250,15 @@ std::optional<StringType> Scenario::getString(size_t stringId, Chk::StrScope sto
     };
     switch ( storageScope )
     {
-        case Chk::StrScope::Either:
-        case Chk::StrScope::EditorOverGame:
+        case Chk::Scope::Either:
+        case Chk::Scope::EditorOverGame:
         {
             auto editorResult = getEditorString();
             return editorResult ? editorResult : getGameString();
         }
-        case Chk::StrScope::Game: return getGameString();
-        case Chk::StrScope::Editor: return getEditorString();
-        case Chk::StrScope::GameOverEditor:
+        case Chk::Scope::Game: return getGameString();
+        case Chk::Scope::Editor: return getEditorString();
+        case Chk::Scope::GameOverEditor:
         {
             auto gameResult = getGameString();
             return gameResult ? gameResult : getEditorString();
@@ -1266,13 +1266,13 @@ std::optional<StringType> Scenario::getString(size_t stringId, Chk::StrScope sto
         default: return std::nullopt;
     }
 }
-template std::optional<RawString> Scenario::getString<RawString>(size_t stringId, Chk::StrScope storageScope) const;
-template std::optional<EscString> Scenario::getString<EscString>(size_t stringId, Chk::StrScope storageScope) const;
-template std::optional<ChkdString> Scenario::getString<ChkdString>(size_t stringId, Chk::StrScope storageScope) const;
-template std::optional<SingleLineChkdString> Scenario::getString<SingleLineChkdString>(size_t stringId, Chk::StrScope storageScope) const;
+template std::optional<RawString> Scenario::getString<RawString>(size_t stringId, Chk::Scope storageScope) const;
+template std::optional<EscString> Scenario::getString<EscString>(size_t stringId, Chk::Scope storageScope) const;
+template std::optional<ChkdString> Scenario::getString<ChkdString>(size_t stringId, Chk::Scope storageScope) const;
+template std::optional<SingleLineChkdString> Scenario::getString<SingleLineChkdString>(size_t stringId, Chk::Scope storageScope) const;
 
 template <typename StringType>
-size_t Scenario::findString(const StringType & str, Chk::StrScope storageScope) const
+size_t Scenario::findString(const StringType & str, Chk::Scope storageScope) const
 {
     auto findGameString = [&](){
         for ( size_t stringId=1; stringId<strings.size(); stringId++ )
@@ -1292,15 +1292,15 @@ size_t Scenario::findString(const StringType & str, Chk::StrScope storageScope) 
     };
     switch ( storageScope )
     {
-        case Chk::StrScope::Game: return findGameString();
-        case Chk::StrScope::Editor: return findEditorString();
-        case Chk::StrScope::GameOverEditor:
-        case Chk::StrScope::Either:
+        case Chk::Scope::Game: return findGameString();
+        case Chk::Scope::Editor: return findEditorString();
+        case Chk::Scope::GameOverEditor:
+        case Chk::Scope::Either:
             {
                 size_t gameResult = findGameString();
                 return gameResult != Chk::StringId::NoString ? gameResult : findEditorString();
             }
-        case Chk::StrScope::EditorOverGame:
+        case Chk::Scope::EditorOverGame:
             {
                 size_t editorResult = findEditorString();
                 return editorResult != Chk::StringId::NoString ? editorResult : findGameString();
@@ -1308,20 +1308,20 @@ size_t Scenario::findString(const StringType & str, Chk::StrScope storageScope) 
     }
     return size_t(Chk::StringId::NoString);
 }
-template size_t Scenario::findString<RawString>(const RawString & str, Chk::StrScope storageScope) const;
-template size_t Scenario::findString<EscString>(const EscString & str, Chk::StrScope storageScope) const;
-template size_t Scenario::findString<ChkdString>(const ChkdString & str, Chk::StrScope storageScope) const;
-template size_t Scenario::findString<SingleLineChkdString>(const SingleLineChkdString & str, Chk::StrScope storageScope) const;
+template size_t Scenario::findString<RawString>(const RawString & str, Chk::Scope storageScope) const;
+template size_t Scenario::findString<EscString>(const EscString & str, Chk::Scope storageScope) const;
+template size_t Scenario::findString<ChkdString>(const ChkdString & str, Chk::Scope storageScope) const;
+template size_t Scenario::findString<SingleLineChkdString>(const SingleLineChkdString & str, Chk::Scope storageScope) const;
 
-bool Scenario::setCapacity(size_t stringCapacity, Chk::StrScope storageScope, bool autoDefragment)
+bool Scenario::setCapacity(size_t stringCapacity, Chk::Scope storageScope, bool autoDefragment)
 {
-    if ( storageScope == Chk::StrScope::Game )
+    if ( storageScope == Chk::Scope::Game )
     {
         if ( stringCapacity > Chk::MaxStrings )
             throw Chk::MaximumStringsExceeded();
 
         std::bitset<Chk::MaxStrings> stringIdUsed;
-        markValidUsedStrings(stringIdUsed, Chk::StrScope::Either, Chk::StrScope::Game);
+        markValidUsedStrings(stringIdUsed, Chk::Scope::Either, Chk::Scope::Game);
         size_t numValidUsedStrings = 0;
         size_t highestValidUsedStringId = 0;
         for ( size_t stringId = 1; stringId<Chk::MaxStrings; stringId++ )
@@ -1338,7 +1338,7 @@ bool Scenario::setCapacity(size_t stringCapacity, Chk::StrScope storageScope, bo
         else if ( highestValidUsedStringId > stringCapacity )
         {
             if ( autoDefragment && numValidUsedStrings <= stringCapacity )
-                defragment(Chk::StrScope::Game, false);
+                defragment(Chk::Scope::Game, false);
             else
                 throw Chk::InsufficientStringCapacity(Chk::getNameString(SectionName::STR), numValidUsedStrings, stringCapacity, autoDefragment);
         }
@@ -1351,13 +1351,13 @@ bool Scenario::setCapacity(size_t stringCapacity, Chk::StrScope storageScope, bo
 
         return true;
     }
-    else if ( storageScope == Chk::StrScope::Editor )
+    else if ( storageScope == Chk::Scope::Editor )
     {
         if ( stringCapacity > Chk::MaxKStrings )
             throw Chk::MaximumStringsExceeded();
 
         std::bitset<Chk::MaxStrings> stringIdUsed;
-        markValidUsedStrings(stringIdUsed, Chk::StrScope::Either, Chk::StrScope::Editor);
+        markValidUsedStrings(stringIdUsed, Chk::Scope::Either, Chk::Scope::Editor);
         size_t numValidUsedStrings = 0;
         size_t highestValidUsedStringId = 0;
         for ( size_t stringId = 1; stringId<Chk::MaxStrings; stringId++ )
@@ -1374,7 +1374,7 @@ bool Scenario::setCapacity(size_t stringCapacity, Chk::StrScope storageScope, bo
         else if ( highestValidUsedStringId > stringCapacity )
         {
             if ( autoDefragment && numValidUsedStrings <= stringCapacity )
-                defragment(Chk::StrScope::Editor, false);
+                defragment(Chk::Scope::Editor, false);
             else
                 throw Chk::InsufficientStringCapacity(Chk::getNameString(SectionName::STR), numValidUsedStrings, stringCapacity, autoDefragment);
         }
@@ -1391,9 +1391,9 @@ bool Scenario::setCapacity(size_t stringCapacity, Chk::StrScope storageScope, bo
 }
 
 template <typename StringType>
-size_t Scenario::addString(const StringType & str, Chk::StrScope storageScope, bool autoDefragment)
+size_t Scenario::addString(const StringType & str, Chk::Scope storageScope, bool autoDefragment)
 {
-    if ( storageScope == Chk::StrScope::Game )
+    if ( storageScope == Chk::Scope::Game )
     {
         RawString rawString;
         convertStr<StringType, RawString>(str, rawString);
@@ -1403,7 +1403,7 @@ size_t Scenario::addString(const StringType & str, Chk::StrScope storageScope, b
             return stringId; // String already exists, return the id
 
         std::bitset<Chk::MaxStrings> stringIdUsed;
-        markUsedStrings(stringIdUsed, Chk::StrScope::Either, Chk::StrScope::Game);
+        markUsedStrings(stringIdUsed, Chk::Scope::Either, Chk::Scope::Game);
         size_t nextUnusedStringId = Chk::MaxStrings;
         size_t limit = Chk::MaxStrings;
         for ( size_t i=1; i<limit; i++ )
@@ -1418,12 +1418,12 @@ size_t Scenario::addString(const StringType & str, Chk::StrScope storageScope, b
         if ( nextUnusedStringId == Chk::MaxStrings )
             throw Chk::MaximumStringsExceeded();
         else if ( nextUnusedStringId >= strings.size() )
-            setCapacity(nextUnusedStringId+1, Chk::StrScope::Game, autoDefragment);
+            setCapacity(nextUnusedStringId+1, Chk::Scope::Game, autoDefragment);
 
         strings[nextUnusedStringId] = rawString;
         return nextUnusedStringId;
     }
-    else if ( storageScope == Chk::StrScope::Editor )
+    else if ( storageScope == Chk::Scope::Editor )
     {
         RawString rawString;
         convertStr<StringType, RawString>(str, rawString);
@@ -1433,7 +1433,7 @@ size_t Scenario::addString(const StringType & str, Chk::StrScope storageScope, b
             return stringId; // String already exists, return the id
 
         std::bitset<Chk::MaxStrings> stringIdUsed;
-        markUsedStrings(stringIdUsed, Chk::StrScope::Either, Chk::StrScope::Editor);
+        markUsedStrings(stringIdUsed, Chk::Scope::Either, Chk::Scope::Editor);
         size_t nextUnusedStringId = Chk::MaxKStrings;
         size_t limit = Chk::MaxStrings;
         for ( size_t i=1; i<limit; i++ )
@@ -1448,22 +1448,22 @@ size_t Scenario::addString(const StringType & str, Chk::StrScope storageScope, b
         if ( nextUnusedStringId == Chk::MaxKStrings )
             throw Chk::MaximumStringsExceeded();
         else if ( nextUnusedStringId >= editorStrings.size() )
-            setCapacity(nextUnusedStringId+1, Chk::StrScope::Editor, autoDefragment);
+            setCapacity(nextUnusedStringId+1, Chk::Scope::Editor, autoDefragment);
 
         editorStrings[nextUnusedStringId] = rawString;
         return nextUnusedStringId;
     }
     return (size_t)Chk::StringId::NoString;
 }
-template size_t Scenario::addString<RawString>(const RawString & str, Chk::StrScope storageScope, bool autoDefragment);
-template size_t Scenario::addString<EscString>(const EscString & str, Chk::StrScope storageScope, bool autoDefragment);
-template size_t Scenario::addString<ChkdString>(const ChkdString & str, Chk::StrScope storageScope, bool autoDefragment);
-template size_t Scenario::addString<SingleLineChkdString>(const SingleLineChkdString & str, Chk::StrScope storageScope, bool autoDefragment);
+template size_t Scenario::addString<RawString>(const RawString & str, Chk::Scope storageScope, bool autoDefragment);
+template size_t Scenario::addString<EscString>(const EscString & str, Chk::Scope storageScope, bool autoDefragment);
+template size_t Scenario::addString<ChkdString>(const ChkdString & str, Chk::Scope storageScope, bool autoDefragment);
+template size_t Scenario::addString<SingleLineChkdString>(const SingleLineChkdString & str, Chk::Scope storageScope, bool autoDefragment);
 
 template <typename StringType>
-void Scenario::replaceString(size_t stringId, const StringType & str, Chk::StrScope storageScope)
+void Scenario::replaceString(size_t stringId, const StringType & str, Chk::Scope storageScope)
 {
-    if ( storageScope == Chk::StrScope::Game )
+    if ( storageScope == Chk::Scope::Game )
     {
         RawString rawString;
         convertStr<StringType, RawString>(str, rawString);
@@ -1471,7 +1471,7 @@ void Scenario::replaceString(size_t stringId, const StringType & str, Chk::StrSc
         if ( stringId < strings.size() )
             strings[stringId] = rawString;
     }
-    else if ( storageScope == Chk::StrScope::Editor )
+    else if ( storageScope == Chk::Scope::Editor )
     {
         RawString rawString;
         convertStr<StringType, RawString>(str, rawString);
@@ -1480,16 +1480,16 @@ void Scenario::replaceString(size_t stringId, const StringType & str, Chk::StrSc
             editorStrings[stringId] = rawString;
     }
 }
-template void Scenario::replaceString<RawString>(size_t stringId, const RawString & str, Chk::StrScope storageScope);
-template void Scenario::replaceString<EscString>(size_t stringId, const EscString & str, Chk::StrScope storageScope);
-template void Scenario::replaceString<ChkdString>(size_t stringId, const ChkdString & str, Chk::StrScope storageScope);
-template void Scenario::replaceString<SingleLineChkdString>(size_t stringId, const SingleLineChkdString & str, Chk::StrScope storageScope);
+template void Scenario::replaceString<RawString>(size_t stringId, const RawString & str, Chk::Scope storageScope);
+template void Scenario::replaceString<EscString>(size_t stringId, const EscString & str, Chk::Scope storageScope);
+template void Scenario::replaceString<ChkdString>(size_t stringId, const ChkdString & str, Chk::Scope storageScope);
+template void Scenario::replaceString<SingleLineChkdString>(size_t stringId, const SingleLineChkdString & str, Chk::Scope storageScope);
 
-void Scenario::deleteUnusedStrings(Chk::StrScope storageScope)
+void Scenario::deleteUnusedStrings(Chk::Scope storageScope)
 {
     auto deleteUnusedGameStrings = [&]() {
         std::bitset<65536> stringIdUsed;
-        markUsedStrings(stringIdUsed, Chk::StrScope::Either, Chk::StrScope::Game);
+        markUsedStrings(stringIdUsed, Chk::Scope::Either, Chk::Scope::Game);
         for ( size_t i=0; i<strings.size(); i++ )
         {
             if ( !stringIdUsed[i] && strings[i] )
@@ -1498,7 +1498,7 @@ void Scenario::deleteUnusedStrings(Chk::StrScope storageScope)
     };
     auto deleteUnusedEditorStrings = [&]() {
         std::bitset<65536> stringIdUsed;
-        markUsedStrings(stringIdUsed, Chk::StrScope::Either, Chk::StrScope::Editor);
+        markUsedStrings(stringIdUsed, Chk::Scope::Either, Chk::Scope::Editor);
         for ( size_t i=0; i<editorStrings.size(); i++ )
         {
             if ( !stringIdUsed[i] && editorStrings[i] )
@@ -1507,20 +1507,20 @@ void Scenario::deleteUnusedStrings(Chk::StrScope storageScope)
     };
     switch ( storageScope )
     {
-        case Chk::StrScope::Game: deleteUnusedGameStrings(); break;
-        case Chk::StrScope::Editor: deleteUnusedEditorStrings(); break;
-        case Chk::StrScope::Both: deleteUnusedGameStrings(); deleteUnusedEditorStrings(); break;
+        case Chk::Scope::Game: deleteUnusedGameStrings(); break;
+        case Chk::Scope::Editor: deleteUnusedEditorStrings(); break;
+        case Chk::Scope::Both: deleteUnusedGameStrings(); deleteUnusedEditorStrings(); break;
     }
 }
 
-void Scenario::deleteString(size_t stringId, Chk::StrScope storageScope, bool deleteOnlyIfUnused)
+void Scenario::deleteString(size_t stringId, Chk::Scope storageScope, bool deleteOnlyIfUnused)
 {
     auto deleteGameString = [&](){
         return false;
     };
-    if ( (storageScope & Chk::StrScope::Game) == Chk::StrScope::Game )
+    if ( (storageScope & Chk::Scope::Game) == Chk::Scope::Game )
     {
-        if ( !deleteOnlyIfUnused || !stringUsed(stringId, Chk::StrScope::Game) )
+        if ( !deleteOnlyIfUnused || !stringUsed(stringId, Chk::Scope::Game) )
         {
             if ( stringId < strings.size() )
                 strings[stringId] = std::nullopt;
@@ -1534,13 +1534,13 @@ void Scenario::deleteString(size_t stringId, Chk::StrScope storageScope, bool de
             deleteForceString(stringId);
             deleteUnitString(stringId);
             deleteLocationString(stringId);
-            deleteTriggerString(stringId, Chk::StrScope::Game);
+            deleteTriggerString(stringId, Chk::Scope::Game);
         }
     }
     
-    if ( (storageScope & Chk::StrScope::Editor) == Chk::StrScope::Editor )
+    if ( (storageScope & Chk::Scope::Editor) == Chk::Scope::Editor )
     {
-        if ( !deleteOnlyIfUnused || !stringUsed(stringId, Chk::StrScope::Either, Chk::StrScope::Editor, Chk::StringUserFlag::All, true) )
+        if ( !deleteOnlyIfUnused || !stringUsed(stringId, Chk::Scope::Either, Chk::Scope::Editor, Chk::StringUserFlag::All, true) )
         {
             if ( stringId < editorStrings.size() )
                 editorStrings[stringId] = std::nullopt;
@@ -1586,21 +1586,21 @@ void Scenario::deleteString(size_t stringId, Chk::StrScope storageScope, bool de
                 if ( this->editorStringOverrides.locationName[i] == stringId )
                     this->editorStringOverrides.locationName[i] = 0;
             }
-            deleteTriggerString(stringId, Chk::StrScope::Editor);
+            deleteTriggerString(stringId, Chk::Scope::Editor);
         }
     }
 }
 
-void Scenario::moveString(size_t stringIdFrom, size_t stringIdTo, Chk::StrScope storageScope)
+void Scenario::moveString(size_t stringIdFrom, size_t stringIdTo, Chk::Scope storageScope)
 {
-    if ( storageScope == Chk::StrScope::Game )
+    if ( storageScope == Chk::Scope::Game )
     {
         size_t stringIdMin = std::min(stringIdFrom, stringIdTo);
         size_t stringIdMax = std::max(stringIdFrom, stringIdTo);
         if ( stringIdMin > 0 && stringIdMax <= strings.size() && stringIdFrom != stringIdTo )
         {
             std::bitset<Chk::MaxStrings> stringIdUsed;
-            markUsedStrings(stringIdUsed, Chk::StrScope::Game);
+            markUsedStrings(stringIdUsed, Chk::Scope::Game);
             auto selected = strings[stringIdFrom];
             stringIdUsed[stringIdFrom] = false;
             std::map<u32, u32> stringIdRemappings;
@@ -1645,17 +1645,17 @@ void Scenario::moveString(size_t stringIdFrom, size_t stringIdTo, Chk::StrScope 
             }
             strings[stringIdTo] = selected;
             stringIdRemappings.insert(std::pair<u32, u32>((u32)stringIdFrom, (u32)stringIdTo));
-            remapStringIds(stringIdRemappings, Chk::StrScope::Game);
+            remapStringIds(stringIdRemappings, Chk::Scope::Game);
         }
     }
-    else if ( storageScope == Chk::StrScope::Editor )
+    else if ( storageScope == Chk::Scope::Editor )
     {
         size_t stringIdMin = std::min(stringIdFrom, stringIdTo);
         size_t stringIdMax = std::max(stringIdFrom, stringIdTo);
         if ( stringIdMin > 0 && stringIdMax <= editorStrings.size() && stringIdFrom != stringIdTo )
         {
             std::bitset<Chk::MaxStrings> stringIdUsed;
-            markUsedStrings(stringIdUsed, Chk::StrScope::Editor);
+            markUsedStrings(stringIdUsed, Chk::Scope::Editor);
             auto selected = editorStrings[stringIdFrom];
             stringIdUsed[stringIdFrom] = false;
             std::map<u32, u32> stringIdRemappings;
@@ -1700,17 +1700,17 @@ void Scenario::moveString(size_t stringIdFrom, size_t stringIdTo, Chk::StrScope 
             }
             editorStrings[stringIdTo] = selected;
             stringIdRemappings.insert(std::pair<u32, u32>((u32)stringIdFrom, (u32)stringIdTo));
-            remapStringIds(stringIdRemappings, Chk::StrScope::Editor);
+            remapStringIds(stringIdRemappings, Chk::Scope::Editor);
         }
     }
 }
 
-size_t Scenario::rescopeString(size_t stringId, Chk::StrScope changeStorageScopeTo, bool autoDefragment)
+size_t Scenario::rescopeString(size_t stringId, Chk::Scope changeStorageScopeTo, bool autoDefragment)
 {
-    if ( changeStorageScopeTo == Chk::StrScope::Editor && stringUsed(stringId, Chk::StrScope::Either, Chk::StrScope::Game, Chk::StringUserFlag::All, true) )
+    if ( changeStorageScopeTo == Chk::Scope::Editor && stringUsed(stringId, Chk::Scope::Either, Chk::Scope::Game, Chk::StringUserFlag::All, true) )
     {
-        RawString toRescope = getString<RawString>(stringId, Chk::StrScope::Game).value();
-        size_t newStringId = addString<RawString>(toRescope, Chk::StrScope::Editor, autoDefragment);
+        RawString toRescope = getString<RawString>(stringId, Chk::Scope::Game).value();
+        size_t newStringId = addString<RawString>(toRescope, Chk::Scope::Editor, autoDefragment);
         if ( newStringId != 0 )
         {
             std::set<u32> stringIdsReplaced;
@@ -1774,15 +1774,15 @@ size_t Scenario::rescopeString(size_t stringId, Chk::StrScope changeStorageScope
                 }
             }
 
-            deleteString(stringId, Chk::StrScope::Game, false);
+            deleteString(stringId, Chk::Scope::Game, false);
             for ( auto stringIdReplaced : stringIdsReplaced )
-                deleteString(stringIdReplaced, Chk::StrScope::Editor, true);
+                deleteString(stringIdReplaced, Chk::Scope::Editor, true);
         }
     }
-    else if ( changeStorageScopeTo == Chk::StrScope::Game && stringUsed(stringId, Chk::StrScope::Either, Chk::StrScope::Editor, Chk::StringUserFlag::All, true) )
+    else if ( changeStorageScopeTo == Chk::Scope::Game && stringUsed(stringId, Chk::Scope::Either, Chk::Scope::Editor, Chk::StringUserFlag::All, true) )
     {
-        RawString toRescope = getString<RawString>(stringId, Chk::StrScope::Editor).value();
-        size_t newStringId = addString<RawString>(toRescope, Chk::StrScope::Game, autoDefragment);
+        RawString toRescope = getString<RawString>(stringId, Chk::Scope::Editor).value();
+        size_t newStringId = addString<RawString>(toRescope, Chk::Scope::Game, autoDefragment);
         if ( newStringId != 0 )
         {
             std::set<u32> stringIdsReplaced;
@@ -1847,9 +1847,9 @@ size_t Scenario::rescopeString(size_t stringId, Chk::StrScope changeStorageScope
                 }
             }
 
-            deleteString(stringId, Chk::StrScope::Editor, false);
+            deleteString(stringId, Chk::Scope::Editor, false);
             for ( auto stringIdReplaced : stringIdsReplaced )
-                deleteString(stringIdReplaced, Chk::StrScope::Game, true);
+                deleteString(stringIdReplaced, Chk::Scope::Game, true);
         }
     }
     return 0;
@@ -1886,29 +1886,29 @@ void Scenario::setStrBytePaddedTo(size_t bytePaddedTo)
     this->strBytePaddedTo = bytePaddedTo;
 }
 
-size_t Scenario::getScenarioNameStringId(Chk::StrScope storageScope) const
+size_t Scenario::getScenarioNameStringId(Chk::Scope storageScope) const
 {
-    return storageScope == Chk::StrScope::Editor ? this->editorStringOverrides.scenarioName : this->scenarioProperties.scenarioNameStringId;
+    return storageScope == Chk::Scope::Editor ? this->editorStringOverrides.scenarioName : this->scenarioProperties.scenarioNameStringId;
 }
 
-size_t Scenario::getScenarioDescriptionStringId(Chk::StrScope storageScope) const
+size_t Scenario::getScenarioDescriptionStringId(Chk::Scope storageScope) const
 {
-    return storageScope == Chk::StrScope::Editor ? this->editorStringOverrides.scenarioDescription : this->scenarioProperties.scenarioDescriptionStringId;
+    return storageScope == Chk::Scope::Editor ? this->editorStringOverrides.scenarioDescription : this->scenarioProperties.scenarioDescriptionStringId;
 }
 
-size_t Scenario::getForceNameStringId(Chk::Force force, Chk::StrScope storageScope) const
+size_t Scenario::getForceNameStringId(Chk::Force force, Chk::Scope storageScope) const
 {
-    return storageScope == Chk::StrScope::Editor ? this->editorStringOverrides.forceName[force] : this->forces.forceString[force];;
+    return storageScope == Chk::Scope::Editor ? this->editorStringOverrides.forceName[force] : this->forces.forceString[force];;
 }
 
-size_t Scenario::getUnitNameStringId(Sc::Unit::Type unitType, Chk::UseExpSection useExp, Chk::StrScope storageScope) const
+size_t Scenario::getUnitNameStringId(Sc::Unit::Type unitType, Chk::UseExpSection useExp, Chk::Scope storageScope) const
 {
     if ( unitType >= Sc::Unit::TotalTypes )
         throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS/UNIx section!");
 
-    if ( storageScope == Chk::StrScope::Game )
+    if ( storageScope == Chk::Scope::Game )
         return useExpansionUnitSettings(useExp) ? unitSettings.nameStringId[unitType] : origUnitSettings.nameStringId[unitType];
-    else if ( storageScope == Chk::StrScope::Editor )
+    else if ( storageScope == Chk::Scope::Editor )
     {
         switch ( useExp )
         {
@@ -1922,16 +1922,16 @@ size_t Scenario::getUnitNameStringId(Sc::Unit::Type unitType, Chk::UseExpSection
     return 0;
 }
 
-size_t Scenario::getSoundPathStringId(size_t soundIndex, Chk::StrScope storageScope) const
+size_t Scenario::getSoundPathStringId(size_t soundIndex, Chk::Scope storageScope) const
 {
-    return storageScope == Chk::StrScope::Editor ? this->editorStringOverrides.soundPath[soundIndex] : this->soundPaths[soundIndex];
+    return storageScope == Chk::Scope::Editor ? this->editorStringOverrides.soundPath[soundIndex] : this->soundPaths[soundIndex];
 }
 
-size_t Scenario::getSwitchNameStringId(size_t switchIndex, Chk::StrScope storageScope) const
+size_t Scenario::getSwitchNameStringId(size_t switchIndex, Chk::Scope storageScope) const
 {
     if ( switchIndex < Chk::TotalSwitches )
     {
-        if ( storageScope == Chk::StrScope::Game )
+        if ( storageScope == Chk::Scope::Game )
             return this->switchNames[switchIndex];
         else
             return this->editorStringOverrides.switchName[switchIndex];
@@ -1940,9 +1940,9 @@ size_t Scenario::getSwitchNameStringId(size_t switchIndex, Chk::StrScope storage
         throw std::out_of_range(std::string("switchIndex: ") + std::to_string((u32)switchIndex) + " is out of range for the SWNM section!");
 }
 
-size_t Scenario::getLocationNameStringId(size_t locationId, Chk::StrScope storageScope) const
+size_t Scenario::getLocationNameStringId(size_t locationId, Chk::Scope storageScope) const
 {
-    if ( storageScope == Chk::StrScope::Editor )
+    if ( storageScope == Chk::Scope::Editor )
         return this->editorStringOverrides.locationName[locationId];
     else if ( locationId < numLocations() )
         return locations[locationId].stringId;
@@ -1950,36 +1950,36 @@ size_t Scenario::getLocationNameStringId(size_t locationId, Chk::StrScope storag
         return 0;
 }
 
-void Scenario::setScenarioNameStringId(size_t scenarioNameStringId, Chk::StrScope storageScope)
+void Scenario::setScenarioNameStringId(size_t scenarioNameStringId, Chk::Scope storageScope)
 {
-    if ( storageScope == Chk::StrScope::Editor )
+    if ( storageScope == Chk::Scope::Editor )
         this->editorStringOverrides.scenarioName = u32(scenarioNameStringId);
     else
         this->scenarioProperties.scenarioNameStringId = u16(scenarioNameStringId);
 }
 
-void Scenario::setScenarioDescriptionStringId(size_t scenarioDescriptionStringId, Chk::StrScope storageScope)
+void Scenario::setScenarioDescriptionStringId(size_t scenarioDescriptionStringId, Chk::Scope storageScope)
 {
-    if ( storageScope == Chk::StrScope::Editor )
+    if ( storageScope == Chk::Scope::Editor )
         this->editorStringOverrides.scenarioDescription = u32(scenarioDescriptionStringId);
     else
         this->scenarioProperties.scenarioDescriptionStringId = u16(scenarioDescriptionStringId);
 }
 
-void Scenario::setForceNameStringId(Chk::Force force, size_t forceNameStringId, Chk::StrScope storageScope)
+void Scenario::setForceNameStringId(Chk::Force force, size_t forceNameStringId, Chk::Scope storageScope)
 {
-    if ( storageScope == Chk::StrScope::Editor )
+    if ( storageScope == Chk::Scope::Editor )
         this->editorStringOverrides.forceName[force] = u32(forceNameStringId);
     else
         this->forces.forceString[force] = u16(forceNameStringId);
 }
 
-void Scenario::setUnitNameStringId(Sc::Unit::Type unitType, size_t unitNameStringId, Chk::UseExpSection useExp, Chk::StrScope storageScope)
+void Scenario::setUnitNameStringId(Sc::Unit::Type unitType, size_t unitNameStringId, Chk::UseExpSection useExp, Chk::Scope storageScope)
 {
     if ( unitType >= Sc::Unit::TotalTypes )
         throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS/UNIx section!");
 
-    if ( storageScope == Chk::StrScope::Game )
+    if ( storageScope == Chk::Scope::Game )
     {
         switch ( useExp )
         {
@@ -2015,19 +2015,19 @@ void Scenario::setUnitNameStringId(Sc::Unit::Type unitType, size_t unitNameStrin
     }
 }
 
-void Scenario::setSoundPathStringId(size_t soundIndex, size_t soundPathStringId, Chk::StrScope storageScope)
+void Scenario::setSoundPathStringId(size_t soundIndex, size_t soundPathStringId, Chk::Scope storageScope)
 {
-    if ( storageScope == Chk::StrScope::Editor )
+    if ( storageScope == Chk::Scope::Editor )
         this->editorStringOverrides.soundPath[soundIndex] = u32(soundPathStringId);
     else
         this->soundPaths[soundIndex] = u32(soundPathStringId);
 }
 
-void Scenario::setSwitchNameStringId(size_t switchIndex, size_t switchNameStringId, Chk::StrScope storageScope)
+void Scenario::setSwitchNameStringId(size_t switchIndex, size_t switchNameStringId, Chk::Scope storageScope)
 {
     if ( switchIndex < Chk::TotalSwitches )
     {
-        if ( storageScope == Chk::StrScope::Game )
+        if ( storageScope == Chk::Scope::Game )
             this->switchNames[switchIndex] = u32(switchNameStringId);
         else
             this->editorStringOverrides.switchName[switchIndex] = u32(switchNameStringId);
@@ -2036,64 +2036,64 @@ void Scenario::setSwitchNameStringId(size_t switchIndex, size_t switchNameString
         throw std::out_of_range(std::string("switchIndex: ") + std::to_string((u32)switchIndex) + " is out of range for the SWNM section!");
 }
 
-void Scenario::setLocationNameStringId(size_t locationId, size_t locationNameStringId, Chk::StrScope storageScope)
+void Scenario::setLocationNameStringId(size_t locationId, size_t locationNameStringId, Chk::Scope storageScope)
 {
-    if ( storageScope == Chk::StrScope::Editor )
+    if ( storageScope == Chk::Scope::Editor )
         this->editorStringOverrides.locationName[locationId] = u32(locationNameStringId);
     else if ( locationId < numLocations() )
         locations[locationId].stringId = u16(locationNameStringId);
 }
 
 template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-std::optional<StringType> Scenario::getString(size_t gameStringId, size_t editorStringId, Chk::StrScope storageScope) const
+std::optional<StringType> Scenario::getString(size_t gameStringId, size_t editorStringId, Chk::Scope storageScope) const
 {
     switch ( storageScope )
     {
-        case Chk::StrScope::Game: return getString<StringType>(gameStringId, Chk::StrScope::Game);
-        case Chk::StrScope::Editor: return getString<StringType>(editorStringId, Chk::StrScope::Editor);
-        case Chk::StrScope::GameOverEditor: return gameStringId != 0 ? getString<StringType>(gameStringId, Chk::StrScope::Game) : getString<StringType>(editorStringId, Chk::StrScope::Editor);
-        case Chk::StrScope::Either:
-        case Chk::StrScope::EditorOverGame: return editorStringId != 0 ? getString<StringType>(editorStringId, Chk::StrScope::Editor) : getString<StringType>(gameStringId, Chk::StrScope::Game);
+        case Chk::Scope::Game: return getString<StringType>(gameStringId, Chk::Scope::Game);
+        case Chk::Scope::Editor: return getString<StringType>(editorStringId, Chk::Scope::Editor);
+        case Chk::Scope::GameOverEditor: return gameStringId != 0 ? getString<StringType>(gameStringId, Chk::Scope::Game) : getString<StringType>(editorStringId, Chk::Scope::Editor);
+        case Chk::Scope::Either:
+        case Chk::Scope::EditorOverGame: return editorStringId != 0 ? getString<StringType>(editorStringId, Chk::Scope::Editor) : getString<StringType>(gameStringId, Chk::Scope::Game);
     }
     return std::nullopt;
 }
-template std::optional<RawString> Scenario::getString<RawString>(size_t gameStringId, size_t editorStringId, Chk::StrScope storageScope) const;
-template std::optional<EscString> Scenario::getString<EscString>(size_t gameStringId, size_t editorStringId, Chk::StrScope storageScope) const;
-template std::optional<ChkdString> Scenario::getString<ChkdString>(size_t gameStringId, size_t editorStringId, Chk::StrScope storageScope) const;
-template std::optional<SingleLineChkdString> Scenario::getString<SingleLineChkdString>(size_t gameStringId, size_t editorStringId, Chk::StrScope storageScope) const;
+template std::optional<RawString> Scenario::getString<RawString>(size_t gameStringId, size_t editorStringId, Chk::Scope storageScope) const;
+template std::optional<EscString> Scenario::getString<EscString>(size_t gameStringId, size_t editorStringId, Chk::Scope storageScope) const;
+template std::optional<ChkdString> Scenario::getString<ChkdString>(size_t gameStringId, size_t editorStringId, Chk::Scope storageScope) const;
+template std::optional<SingleLineChkdString> Scenario::getString<SingleLineChkdString>(size_t gameStringId, size_t editorStringId, Chk::Scope storageScope) const;
 
 template <typename StringType>
-std::optional<StringType> Scenario::getScenarioName(Chk::StrScope storageScope) const
+std::optional<StringType> Scenario::getScenarioName(Chk::Scope storageScope) const
 {
     return getString<StringType>(this->scenarioProperties.scenarioNameStringId, this->editorStringOverrides.scenarioName, storageScope);
 }
-template std::optional<RawString> Scenario::getScenarioName<RawString>(Chk::StrScope storageScope) const;
-template std::optional<EscString> Scenario::getScenarioName<EscString>(Chk::StrScope storageScope) const;
-template std::optional<ChkdString> Scenario::getScenarioName<ChkdString>(Chk::StrScope storageScope) const;
-template std::optional<SingleLineChkdString> Scenario::getScenarioName<SingleLineChkdString>(Chk::StrScope storageScope) const;
+template std::optional<RawString> Scenario::getScenarioName<RawString>(Chk::Scope storageScope) const;
+template std::optional<EscString> Scenario::getScenarioName<EscString>(Chk::Scope storageScope) const;
+template std::optional<ChkdString> Scenario::getScenarioName<ChkdString>(Chk::Scope storageScope) const;
+template std::optional<SingleLineChkdString> Scenario::getScenarioName<SingleLineChkdString>(Chk::Scope storageScope) const;
 
 template <typename StringType>
-std::optional<StringType> Scenario::getScenarioDescription(Chk::StrScope storageScope) const
+std::optional<StringType> Scenario::getScenarioDescription(Chk::Scope storageScope) const
 {
     return getString<StringType>(this->scenarioProperties.scenarioDescriptionStringId, this->editorStringOverrides.scenarioDescription, storageScope);
 }
-template std::optional<RawString> Scenario::getScenarioDescription<RawString>(Chk::StrScope storageScope) const;
-template std::optional<EscString> Scenario::getScenarioDescription<EscString>(Chk::StrScope storageScope) const;
-template std::optional<ChkdString> Scenario::getScenarioDescription<ChkdString>(Chk::StrScope storageScope) const;
-template std::optional<SingleLineChkdString> Scenario::getScenarioDescription<SingleLineChkdString>(Chk::StrScope storageScope) const;
+template std::optional<RawString> Scenario::getScenarioDescription<RawString>(Chk::Scope storageScope) const;
+template std::optional<EscString> Scenario::getScenarioDescription<EscString>(Chk::Scope storageScope) const;
+template std::optional<ChkdString> Scenario::getScenarioDescription<ChkdString>(Chk::Scope storageScope) const;
+template std::optional<SingleLineChkdString> Scenario::getScenarioDescription<SingleLineChkdString>(Chk::Scope storageScope) const;
 
 template <typename StringType>
-std::optional<StringType> Scenario::getForceName(Chk::Force force, Chk::StrScope storageScope) const
+std::optional<StringType> Scenario::getForceName(Chk::Force force, Chk::Scope storageScope) const
 {
     return getString<StringType>(this->forces.forceString[force], this->editorStringOverrides.forceName[force], storageScope);
 }
-template std::optional<RawString> Scenario::getForceName<RawString>(Chk::Force force, Chk::StrScope storageScope) const;
-template std::optional<EscString> Scenario::getForceName<EscString>(Chk::Force force, Chk::StrScope storageScope) const;
-template std::optional<ChkdString> Scenario::getForceName<ChkdString>(Chk::Force force, Chk::StrScope storageScope) const;
-template std::optional<SingleLineChkdString> Scenario::getForceName<SingleLineChkdString>(Chk::Force force, Chk::StrScope storageScope) const;
+template std::optional<RawString> Scenario::getForceName<RawString>(Chk::Force force, Chk::Scope storageScope) const;
+template std::optional<EscString> Scenario::getForceName<EscString>(Chk::Force force, Chk::Scope storageScope) const;
+template std::optional<ChkdString> Scenario::getForceName<ChkdString>(Chk::Force force, Chk::Scope storageScope) const;
+template std::optional<SingleLineChkdString> Scenario::getForceName<SingleLineChkdString>(Chk::Force force, Chk::Scope storageScope) const;
 
 template <typename StringType>
-std::optional<StringType> Scenario::getUnitName(Sc::Unit::Type unitType, bool defaultIfNull, Chk::UseExpSection useExp, Chk::StrScope storageScope) const
+std::optional<StringType> Scenario::getUnitName(Sc::Unit::Type unitType, bool defaultIfNull, Chk::UseExpSection useExp, Chk::Scope storageScope) const
 {
     auto mapUnitName = unitType < Sc::Unit::TotalTypes ? getString<StringType>(
         this->useExpansionUnitSettings(useExp) ? this->unitSettings.nameStringId[unitType] : this->origUnitSettings.nameStringId[unitType],
@@ -2107,45 +2107,45 @@ std::optional<StringType> Scenario::getUnitName(Sc::Unit::Type unitType, bool de
     else
         return std::optional<StringType>("ID:" + std::to_string(unitType));
 }
-template std::optional<RawString> Scenario::getUnitName<RawString>(Sc::Unit::Type unitType, bool defaultIfNull, Chk::UseExpSection useExp, Chk::StrScope storageScope) const;
-template std::optional<EscString> Scenario::getUnitName<EscString>(Sc::Unit::Type unitType, bool defaultIfNull, Chk::UseExpSection useExp, Chk::StrScope storageScope) const;
-template std::optional<ChkdString> Scenario::getUnitName<ChkdString>(Sc::Unit::Type unitType, bool defaultIfNull, Chk::UseExpSection useExp, Chk::StrScope storageScope) const;
-template std::optional<SingleLineChkdString> Scenario::getUnitName<SingleLineChkdString>(Sc::Unit::Type unitType, bool defaultIfNull, Chk::UseExpSection useExp, Chk::StrScope storageScope) const;
+template std::optional<RawString> Scenario::getUnitName<RawString>(Sc::Unit::Type unitType, bool defaultIfNull, Chk::UseExpSection useExp, Chk::Scope storageScope) const;
+template std::optional<EscString> Scenario::getUnitName<EscString>(Sc::Unit::Type unitType, bool defaultIfNull, Chk::UseExpSection useExp, Chk::Scope storageScope) const;
+template std::optional<ChkdString> Scenario::getUnitName<ChkdString>(Sc::Unit::Type unitType, bool defaultIfNull, Chk::UseExpSection useExp, Chk::Scope storageScope) const;
+template std::optional<SingleLineChkdString> Scenario::getUnitName<SingleLineChkdString>(Sc::Unit::Type unitType, bool defaultIfNull, Chk::UseExpSection useExp, Chk::Scope storageScope) const;
 
 template <typename StringType>
-std::optional<StringType> Scenario::getSoundPath(size_t soundIndex, Chk::StrScope storageScope) const
+std::optional<StringType> Scenario::getSoundPath(size_t soundIndex, Chk::Scope storageScope) const
 {
     return getString<StringType>(this->soundPaths[soundIndex], this->editorStringOverrides.soundPath[soundIndex], storageScope);
 }
-template std::optional<RawString> Scenario::getSoundPath<RawString>(size_t soundIndex, Chk::StrScope storageScope) const;
-template std::optional<EscString> Scenario::getSoundPath<EscString>(size_t soundIndex, Chk::StrScope storageScope) const;
-template std::optional<ChkdString> Scenario::getSoundPath<ChkdString>(size_t soundIndex, Chk::StrScope storageScope) const;
-template std::optional<SingleLineChkdString> Scenario::getSoundPath<SingleLineChkdString>(size_t soundIndex, Chk::StrScope storageScope) const;
+template std::optional<RawString> Scenario::getSoundPath<RawString>(size_t soundIndex, Chk::Scope storageScope) const;
+template std::optional<EscString> Scenario::getSoundPath<EscString>(size_t soundIndex, Chk::Scope storageScope) const;
+template std::optional<ChkdString> Scenario::getSoundPath<ChkdString>(size_t soundIndex, Chk::Scope storageScope) const;
+template std::optional<SingleLineChkdString> Scenario::getSoundPath<SingleLineChkdString>(size_t soundIndex, Chk::Scope storageScope) const;
 
 template <typename StringType>
-std::optional<StringType> Scenario::getSwitchName(size_t switchIndex, Chk::StrScope storageScope) const
+std::optional<StringType> Scenario::getSwitchName(size_t switchIndex, Chk::Scope storageScope) const
 {
     return getString<StringType>(this->switchNames[switchIndex], this->editorStringOverrides.switchName[switchIndex], storageScope);
 }
-template std::optional<RawString> Scenario::getSwitchName<RawString>(size_t switchIndex, Chk::StrScope storageScope) const;
-template std::optional<EscString> Scenario::getSwitchName<EscString>(size_t switchIndex, Chk::StrScope storageScope) const;
-template std::optional<ChkdString> Scenario::getSwitchName<ChkdString>(size_t switchIndex, Chk::StrScope storageScope) const;
-template std::optional<SingleLineChkdString> Scenario::getSwitchName<SingleLineChkdString>(size_t switchIndex, Chk::StrScope storageScope) const;
+template std::optional<RawString> Scenario::getSwitchName<RawString>(size_t switchIndex, Chk::Scope storageScope) const;
+template std::optional<EscString> Scenario::getSwitchName<EscString>(size_t switchIndex, Chk::Scope storageScope) const;
+template std::optional<ChkdString> Scenario::getSwitchName<ChkdString>(size_t switchIndex, Chk::Scope storageScope) const;
+template std::optional<SingleLineChkdString> Scenario::getSwitchName<SingleLineChkdString>(size_t switchIndex, Chk::Scope storageScope) const;
 
 template <typename StringType>
-std::optional<StringType> Scenario::getLocationName(size_t locationId, Chk::StrScope storageScope) const
+std::optional<StringType> Scenario::getLocationName(size_t locationId, Chk::Scope storageScope) const
 {
     return getString<StringType>((locationId > 0 && locationId <= numLocations() ? getLocation(locationId).stringId : 0), this->editorStringOverrides.locationName[locationId], storageScope);
 }
-template std::optional<RawString> Scenario::getLocationName<RawString>(size_t locationId, Chk::StrScope storageScope) const;
-template std::optional<EscString> Scenario::getLocationName<EscString>(size_t locationId, Chk::StrScope storageScope) const;
-template std::optional<ChkdString> Scenario::getLocationName<ChkdString>(size_t locationId, Chk::StrScope storageScope) const;
-template std::optional<SingleLineChkdString> Scenario::getLocationName<SingleLineChkdString>(size_t locationId, Chk::StrScope storageScope) const;
+template std::optional<RawString> Scenario::getLocationName<RawString>(size_t locationId, Chk::Scope storageScope) const;
+template std::optional<EscString> Scenario::getLocationName<EscString>(size_t locationId, Chk::Scope storageScope) const;
+template std::optional<ChkdString> Scenario::getLocationName<ChkdString>(size_t locationId, Chk::Scope storageScope) const;
+template std::optional<SingleLineChkdString> Scenario::getLocationName<SingleLineChkdString>(size_t locationId, Chk::Scope storageScope) const;
 
 template <typename StringType>
 std::optional<StringType> Scenario::getComment(size_t triggerIndex) const
 {
-    return getString<StringType>(getCommentStringId(triggerIndex), Chk::StrScope::Game);
+    return getString<StringType>(getCommentStringId(triggerIndex), Chk::Scope::Game);
 }
 template std::optional<RawString> Scenario::getComment<RawString>(size_t triggerIndex) const;
 template std::optional<EscString> Scenario::getComment<EscString>(size_t triggerIndex) const;
@@ -2155,7 +2155,7 @@ template std::optional<SingleLineChkdString> Scenario::getComment<SingleLineChkd
 template <typename StringType>
 std::optional<StringType> Scenario::getExtendedComment(size_t triggerIndex) const
 {
-    return getString<StringType>(getExtendedCommentStringId(triggerIndex), Chk::StrScope::Editor);
+    return getString<StringType>(getExtendedCommentStringId(triggerIndex), Chk::Scope::Editor);
 }
 template std::optional<RawString> Scenario::getExtendedComment<RawString>(size_t triggerIndex) const;
 template std::optional<EscString> Scenario::getExtendedComment<EscString>(size_t triggerIndex) const;
@@ -2165,7 +2165,7 @@ template std::optional<SingleLineChkdString> Scenario::getExtendedComment<Single
 template <typename StringType>
 std::optional<StringType> Scenario::getExtendedNotes(size_t triggerIndex) const
 {
-    return getString<StringType>(getExtendedNotesStringId(triggerIndex), Chk::StrScope::Editor);
+    return getString<StringType>(getExtendedNotesStringId(triggerIndex), Chk::Scope::Editor);
 }
 template std::optional<RawString> Scenario::getExtendedNotes<RawString>(size_t triggerIndex) const;
 template std::optional<EscString> Scenario::getExtendedNotes<EscString>(size_t triggerIndex) const;
@@ -2173,81 +2173,81 @@ template std::optional<ChkdString> Scenario::getExtendedNotes<ChkdString>(size_t
 template std::optional<SingleLineChkdString> Scenario::getExtendedNotes<SingleLineChkdString>(size_t triggerIndex) const;
 
 template <typename StringType>
-void Scenario::setScenarioName(const StringType & scenarioNameString, Chk::StrScope storageScope, bool autoDefragment)
+void Scenario::setScenarioName(const StringType & scenarioNameString, Chk::Scope storageScope, bool autoDefragment)
 {
-    if ( storageScope == Chk::StrScope::Game || storageScope == Chk::StrScope::Editor )
+    if ( storageScope == Chk::Scope::Game || storageScope == Chk::Scope::Editor )
     {
         size_t newStringId = addString<StringType>(scenarioNameString, storageScope, autoDefragment);
         if ( newStringId != (size_t)Chk::StringId::NoString )
         {
-            if ( storageScope == Chk::StrScope::Game )
+            if ( storageScope == Chk::Scope::Game )
                 this->scenarioProperties.scenarioNameStringId = u16(newStringId);
-            else if ( storageScope == Chk::StrScope::Editor )
+            else if ( storageScope == Chk::Scope::Editor )
                 this->editorStringOverrides.scenarioName = u32(newStringId);
         }
     }
 }
-template void Scenario::setScenarioName<RawString>(const RawString & scenarioNameString, Chk::StrScope storageScope, bool autoDefragment);
-template void Scenario::setScenarioName<EscString>(const EscString & scenarioNameString, Chk::StrScope storageScope, bool autoDefragment);
-template void Scenario::setScenarioName<ChkdString>(const ChkdString & scenarioNameString, Chk::StrScope storageScope, bool autoDefragment);
-template void Scenario::setScenarioName<SingleLineChkdString>(const SingleLineChkdString & scenarioNameString, Chk::StrScope storageScope, bool autoDefragment);
+template void Scenario::setScenarioName<RawString>(const RawString & scenarioNameString, Chk::Scope storageScope, bool autoDefragment);
+template void Scenario::setScenarioName<EscString>(const EscString & scenarioNameString, Chk::Scope storageScope, bool autoDefragment);
+template void Scenario::setScenarioName<ChkdString>(const ChkdString & scenarioNameString, Chk::Scope storageScope, bool autoDefragment);
+template void Scenario::setScenarioName<SingleLineChkdString>(const SingleLineChkdString & scenarioNameString, Chk::Scope storageScope, bool autoDefragment);
 
 template <typename StringType>
-void Scenario::setScenarioDescription(const StringType & scenarioDescription, Chk::StrScope storageScope, bool autoDefragment)
+void Scenario::setScenarioDescription(const StringType & scenarioDescription, Chk::Scope storageScope, bool autoDefragment)
 {
-    if ( storageScope == Chk::StrScope::Game || storageScope == Chk::StrScope::Editor )
+    if ( storageScope == Chk::Scope::Game || storageScope == Chk::Scope::Editor )
     {
         size_t newStringId = addString<StringType>(scenarioDescription, storageScope, autoDefragment);
         if ( newStringId != (size_t)Chk::StringId::NoString )
         {
-            if ( storageScope == Chk::StrScope::Game )
+            if ( storageScope == Chk::Scope::Game )
                 this->scenarioProperties.scenarioDescriptionStringId = u16(newStringId);
-            else if ( storageScope == Chk::StrScope::Editor )
+            else if ( storageScope == Chk::Scope::Editor )
                 this->editorStringOverrides.scenarioDescription = u32(newStringId);
         }
     }
 }
-template void Scenario::setScenarioDescription<RawString>(const RawString & scenarioNameString, Chk::StrScope storageScope, bool autoDefragment);
-template void Scenario::setScenarioDescription<EscString>(const EscString & scenarioNameString, Chk::StrScope storageScope, bool autoDefragment);
-template void Scenario::setScenarioDescription<ChkdString>(const ChkdString & scenarioNameString, Chk::StrScope storageScope, bool autoDefragment);
-template void Scenario::setScenarioDescription<SingleLineChkdString>(const SingleLineChkdString & scenarioNameString, Chk::StrScope storageScope, bool autoDefragment);
+template void Scenario::setScenarioDescription<RawString>(const RawString & scenarioNameString, Chk::Scope storageScope, bool autoDefragment);
+template void Scenario::setScenarioDescription<EscString>(const EscString & scenarioNameString, Chk::Scope storageScope, bool autoDefragment);
+template void Scenario::setScenarioDescription<ChkdString>(const ChkdString & scenarioNameString, Chk::Scope storageScope, bool autoDefragment);
+template void Scenario::setScenarioDescription<SingleLineChkdString>(const SingleLineChkdString & scenarioNameString, Chk::Scope storageScope, bool autoDefragment);
 
 template <typename StringType>
-void Scenario::setForceName(Chk::Force force, const StringType & forceName, Chk::StrScope storageScope, bool autoDefragment)
+void Scenario::setForceName(Chk::Force force, const StringType & forceName, Chk::Scope storageScope, bool autoDefragment)
 {
-    if ( (storageScope == Chk::StrScope::Game || storageScope == Chk::StrScope::Editor) && (u32)force < Chk::TotalForces )
+    if ( (storageScope == Chk::Scope::Game || storageScope == Chk::Scope::Editor) && (u32)force < Chk::TotalForces )
     {
         size_t newStringId = addString<StringType>(forceName, storageScope, autoDefragment);
         if ( newStringId != (size_t)Chk::StringId::NoString )
         {
-            if ( storageScope == Chk::StrScope::Game )
+            if ( storageScope == Chk::Scope::Game )
                 this->forces.forceString[force] = u16(newStringId);
-            else if ( storageScope == Chk::StrScope::Editor )
+            else if ( storageScope == Chk::Scope::Editor )
                 this->editorStringOverrides.forceName[force] = u32(newStringId);
         }
     }
 }
-template void Scenario::setForceName<RawString>(Chk::Force force, const RawString & forceName, Chk::StrScope storageScope, bool autoDefragment);
-template void Scenario::setForceName<EscString>(Chk::Force force, const EscString & forceName, Chk::StrScope storageScope, bool autoDefragment);
-template void Scenario::setForceName<ChkdString>(Chk::Force force, const ChkdString & forceName, Chk::StrScope storageScope, bool autoDefragment);
-template void Scenario::setForceName<SingleLineChkdString>(Chk::Force force, const SingleLineChkdString & forceName, Chk::StrScope storageScope, bool autoDefragment);
+template void Scenario::setForceName<RawString>(Chk::Force force, const RawString & forceName, Chk::Scope storageScope, bool autoDefragment);
+template void Scenario::setForceName<EscString>(Chk::Force force, const EscString & forceName, Chk::Scope storageScope, bool autoDefragment);
+template void Scenario::setForceName<ChkdString>(Chk::Force force, const ChkdString & forceName, Chk::Scope storageScope, bool autoDefragment);
+template void Scenario::setForceName<SingleLineChkdString>(Chk::Force force, const SingleLineChkdString & forceName, Chk::Scope storageScope, bool autoDefragment);
 
 template <typename StringType>
-void Scenario::setUnitName(Sc::Unit::Type unitType, const StringType & unitName, Chk::UseExpSection useExp, Chk::StrScope storageScope, bool autoDefragment)
+void Scenario::setUnitName(Sc::Unit::Type unitType, const StringType & unitName, Chk::UseExpSection useExp, Chk::Scope storageScope, bool autoDefragment)
 {
-    if ( (storageScope == Chk::StrScope::Game || storageScope == Chk::StrScope::Editor) && unitType < Sc::Unit::TotalTypes )
+    if ( (storageScope == Chk::Scope::Game || storageScope == Chk::Scope::Editor) && unitType < Sc::Unit::TotalTypes )
     {
         size_t newStringId = addString<StringType>(unitName, storageScope, autoDefragment);
         if ( newStringId != (size_t)Chk::StringId::NoString )
         {
-            if ( storageScope == Chk::StrScope::Game )
+            if ( storageScope == Chk::Scope::Game )
             {
                 if ( this->useExpansionUnitSettings(useExp) )
                     this->unitSettings.nameStringId[unitType] = u16(newStringId);
                 else
                     this->origUnitSettings.nameStringId[unitType] = u16(newStringId);
             }
-            else if ( storageScope == Chk::StrScope::Editor )
+            else if ( storageScope == Chk::Scope::Editor )
             {
                 switch ( useExp )
                 {
@@ -2268,76 +2268,76 @@ void Scenario::setUnitName(Sc::Unit::Type unitType, const StringType & unitName,
         }
     }
 }
-template void Scenario::setUnitName<RawString>(Sc::Unit::Type unitType, const RawString & unitName, Chk::UseExpSection useExp, Chk::StrScope storageScope, bool autoDefragment);
-template void Scenario::setUnitName<EscString>(Sc::Unit::Type unitType, const EscString & unitName, Chk::UseExpSection useExp, Chk::StrScope storageScope, bool autoDefragment);
-template void Scenario::setUnitName<ChkdString>(Sc::Unit::Type unitType, const ChkdString & unitName, Chk::UseExpSection useExp, Chk::StrScope storageScope, bool autoDefragment);
-template void Scenario::setUnitName<SingleLineChkdString>(Sc::Unit::Type unitType, const SingleLineChkdString & unitName, Chk::UseExpSection useExp, Chk::StrScope storageScope, bool autoDefragment);
+template void Scenario::setUnitName<RawString>(Sc::Unit::Type unitType, const RawString & unitName, Chk::UseExpSection useExp, Chk::Scope storageScope, bool autoDefragment);
+template void Scenario::setUnitName<EscString>(Sc::Unit::Type unitType, const EscString & unitName, Chk::UseExpSection useExp, Chk::Scope storageScope, bool autoDefragment);
+template void Scenario::setUnitName<ChkdString>(Sc::Unit::Type unitType, const ChkdString & unitName, Chk::UseExpSection useExp, Chk::Scope storageScope, bool autoDefragment);
+template void Scenario::setUnitName<SingleLineChkdString>(Sc::Unit::Type unitType, const SingleLineChkdString & unitName, Chk::UseExpSection useExp, Chk::Scope storageScope, bool autoDefragment);
 
 template <typename StringType>
-void Scenario::setSoundPath(size_t soundIndex, const StringType & soundPath, Chk::StrScope storageScope, bool autoDefragment)
+void Scenario::setSoundPath(size_t soundIndex, const StringType & soundPath, Chk::Scope storageScope, bool autoDefragment)
 {
-    if ( storageScope == Chk::StrScope::Game || storageScope == Chk::StrScope::Editor && soundIndex < Chk::TotalSounds )
+    if ( storageScope == Chk::Scope::Game || storageScope == Chk::Scope::Editor && soundIndex < Chk::TotalSounds )
     {
         size_t newStringId = addString<StringType>(soundPath, storageScope, autoDefragment);
         if ( newStringId != (size_t)Chk::StringId::NoString )
         {
-            if ( storageScope == Chk::StrScope::Game )
+            if ( storageScope == Chk::Scope::Game )
                 setSoundStringId(soundIndex, newStringId);
-            else if ( storageScope == Chk::StrScope::Editor )
+            else if ( storageScope == Chk::Scope::Editor )
                 this->editorStringOverrides.soundPath[soundIndex] = u32(newStringId);
         }
     }
 }
-template void Scenario::setSoundPath<RawString>(size_t soundIndex, const RawString & soundPath, Chk::StrScope storageScope, bool autoDefragment);
-template void Scenario::setSoundPath<EscString>(size_t soundIndex, const EscString & soundPath, Chk::StrScope storageScope, bool autoDefragment);
-template void Scenario::setSoundPath<ChkdString>(size_t soundIndex, const ChkdString & soundPath, Chk::StrScope storageScope, bool autoDefragment);
-template void Scenario::setSoundPath<SingleLineChkdString>(size_t soundIndex, const SingleLineChkdString & soundPath, Chk::StrScope storageScope, bool autoDefragment);
+template void Scenario::setSoundPath<RawString>(size_t soundIndex, const RawString & soundPath, Chk::Scope storageScope, bool autoDefragment);
+template void Scenario::setSoundPath<EscString>(size_t soundIndex, const EscString & soundPath, Chk::Scope storageScope, bool autoDefragment);
+template void Scenario::setSoundPath<ChkdString>(size_t soundIndex, const ChkdString & soundPath, Chk::Scope storageScope, bool autoDefragment);
+template void Scenario::setSoundPath<SingleLineChkdString>(size_t soundIndex, const SingleLineChkdString & soundPath, Chk::Scope storageScope, bool autoDefragment);
 
 template <typename StringType>
-void Scenario::setSwitchName(size_t switchIndex, const StringType & switchName, Chk::StrScope storageScope, bool autoDefragment)
+void Scenario::setSwitchName(size_t switchIndex, const StringType & switchName, Chk::Scope storageScope, bool autoDefragment)
 {
-    if ( storageScope == Chk::StrScope::Game || storageScope == Chk::StrScope::Editor && switchIndex < Chk::TotalSwitches )
+    if ( storageScope == Chk::Scope::Game || storageScope == Chk::Scope::Editor && switchIndex < Chk::TotalSwitches )
     {
         size_t newStringId = addString<StringType>(switchName, storageScope, autoDefragment);
         if ( newStringId != (size_t)Chk::StringId::NoString )
         {
-            if ( storageScope == Chk::StrScope::Game )
+            if ( storageScope == Chk::Scope::Game )
                 this->switchNames[switchIndex] = u32(newStringId);
-            else if ( storageScope == Chk::StrScope::Editor )
+            else if ( storageScope == Chk::Scope::Editor )
                 this->editorStringOverrides.switchName[switchIndex] = u32(newStringId);
         }
     }
 }
-template void Scenario::setSwitchName<RawString>(size_t switchIndex, const RawString & switchName, Chk::StrScope storageScope, bool autoDefragment);
-template void Scenario::setSwitchName<EscString>(size_t switchIndex, const EscString & switchName, Chk::StrScope storageScope, bool autoDefragment);
-template void Scenario::setSwitchName<ChkdString>(size_t switchIndex, const ChkdString & switchName, Chk::StrScope storageScope, bool autoDefragment);
-template void Scenario::setSwitchName<SingleLineChkdString>(size_t switchIndex, const SingleLineChkdString & switchName, Chk::StrScope storageScope, bool autoDefragment);
+template void Scenario::setSwitchName<RawString>(size_t switchIndex, const RawString & switchName, Chk::Scope storageScope, bool autoDefragment);
+template void Scenario::setSwitchName<EscString>(size_t switchIndex, const EscString & switchName, Chk::Scope storageScope, bool autoDefragment);
+template void Scenario::setSwitchName<ChkdString>(size_t switchIndex, const ChkdString & switchName, Chk::Scope storageScope, bool autoDefragment);
+template void Scenario::setSwitchName<SingleLineChkdString>(size_t switchIndex, const SingleLineChkdString & switchName, Chk::Scope storageScope, bool autoDefragment);
 
 template <typename StringType>
-void Scenario::setLocationName(size_t locationId, const StringType & locationName, Chk::StrScope storageScope, bool autoDefragment)
+void Scenario::setLocationName(size_t locationId, const StringType & locationName, Chk::Scope storageScope, bool autoDefragment)
 {
-    if ( storageScope == Chk::StrScope::Game || storageScope == Chk::StrScope::Editor && locationId > 0 && locationId <= numLocations() )
+    if ( storageScope == Chk::Scope::Game || storageScope == Chk::Scope::Editor && locationId > 0 && locationId <= numLocations() )
     {
         size_t newStringId = addString<StringType>(locationName, storageScope, autoDefragment);
         if ( newStringId != (size_t)Chk::StringId::NoString )
         {
-            if ( storageScope == Chk::StrScope::Game )
+            if ( storageScope == Chk::Scope::Game )
                 getLocation(locationId).stringId = (u16)newStringId;
-            else if ( storageScope == Chk::StrScope::Editor )
+            else if ( storageScope == Chk::Scope::Editor )
                 this->editorStringOverrides.locationName[locationId] = u32(newStringId);
         }
     }
 }
-template void Scenario::setLocationName<RawString>(size_t locationId, const RawString & locationName, Chk::StrScope storageScope, bool autoDefragment);
-template void Scenario::setLocationName<EscString>(size_t locationId, const EscString & locationName, Chk::StrScope storageScope, bool autoDefragment);
-template void Scenario::setLocationName<ChkdString>(size_t locationId, const ChkdString & locationName, Chk::StrScope storageScope, bool autoDefragment);
-template void Scenario::setLocationName<SingleLineChkdString>(size_t locationId, const SingleLineChkdString & locationName, Chk::StrScope storageScope, bool autoDefragment);
+template void Scenario::setLocationName<RawString>(size_t locationId, const RawString & locationName, Chk::Scope storageScope, bool autoDefragment);
+template void Scenario::setLocationName<EscString>(size_t locationId, const EscString & locationName, Chk::Scope storageScope, bool autoDefragment);
+template void Scenario::setLocationName<ChkdString>(size_t locationId, const ChkdString & locationName, Chk::Scope storageScope, bool autoDefragment);
+template void Scenario::setLocationName<SingleLineChkdString>(size_t locationId, const SingleLineChkdString & locationName, Chk::Scope storageScope, bool autoDefragment);
 
 template <typename StringType>
 void Scenario::setExtendedComment(size_t triggerIndex, const StringType & comment, bool autoDefragment)
 {
     Chk::ExtendedTrigData & extension = getTriggerExtension(triggerIndex, true);
-    size_t newStringId = addString<StringType>(comment, Chk::StrScope::Editor, autoDefragment);
+    size_t newStringId = addString<StringType>(comment, Chk::Scope::Editor, autoDefragment);
     if ( newStringId != (size_t)Chk::StringId::NoString )
         extension.commentStringId = (u32)newStringId;
 }
@@ -2350,7 +2350,7 @@ template <typename StringType>
 void Scenario::setExtendedNotes(size_t triggerIndex, const StringType & notes, bool autoDefragment)
 {
     Chk::ExtendedTrigData & extension = getTriggerExtension(triggerIndex, true);
-    size_t newStringId = addString<StringType>(notes, Chk::StrScope::Editor, autoDefragment);
+    size_t newStringId = addString<StringType>(notes, Chk::Scope::Editor, autoDefragment);
     if ( newStringId != (size_t)Chk::StringId::NoString )
         extension.notesStringId = (u32)newStringId;
 }
@@ -2725,7 +2725,7 @@ void Scenario::upgradeKstrToCurrent()
     auto ver = this->editorStringsVersion;
     if ( 0 == ver || 2 == ver )
     {
-        size_t strCapacity = getCapacity(Chk::StrScope::Game);
+        size_t strCapacity = getCapacity(Chk::Scope::Game);
         for ( size_t triggerIndex=0; triggerIndex<triggers.size(); triggerIndex++ )
         {
             auto & trigger = triggers[triggerIndex];
@@ -2759,7 +2759,7 @@ void Scenario::upgradeKstrToCurrent()
                         }
                         else // Extended string is lost
                         {
-                            auto actionString = getString<ChkdString>(65536-action.stringId, Chk::StrScope::Editor);
+                            auto actionString = getString<ChkdString>(65536-action.stringId, Chk::Scope::Editor);
                             logger.warn() << "Trigger #" << triggerIndex << " action #" << actionIndex << " lost extended string: \""
                                 << (actionString ? *actionString : "") << "\"" << std::endl;
                             action.stringId = Chk::StringId::NoString;
@@ -2835,7 +2835,7 @@ void Scenario::upgradeKstrToCurrent()
             scenarioProperties.scenarioNameStringId < 65536 &&
             size_t(65536-scenarioProperties.scenarioNameStringId) < editorStrings.size() )
         {
-            setScenarioNameStringId(65536-scenarioProperties.scenarioNameStringId, Chk::StrScope::Editor);
+            setScenarioNameStringId(65536-scenarioProperties.scenarioNameStringId, Chk::Scope::Editor);
             scenarioProperties.scenarioNameStringId = Chk::StringId::NoString;
         }
 
@@ -2844,7 +2844,7 @@ void Scenario::upgradeKstrToCurrent()
             scenarioProperties.scenarioDescriptionStringId < 65536 &&
             size_t(65536-scenarioProperties.scenarioDescriptionStringId) < editorStrings.size() )
         {
-            setScenarioDescriptionStringId(65536-scenarioProperties.scenarioDescriptionStringId, Chk::StrScope::Editor);
+            setScenarioDescriptionStringId(65536-scenarioProperties.scenarioDescriptionStringId, Chk::Scope::Editor);
             scenarioProperties.scenarioDescriptionStringId = Chk::StringId::NoString;
         }
 
@@ -2855,7 +2855,7 @@ void Scenario::upgradeKstrToCurrent()
                 forces.forceString[i] < 65536 &&
                 size_t(65536-forces.forceString[i]) < editorStrings.size() )
             {
-                setForceNameStringId(i, 65536-forces.forceString[i], Chk::StrScope::Editor);
+                setForceNameStringId(i, 65536-forces.forceString[i], Chk::Scope::Editor);
                 forces.forceString[i] = Chk::StringId::NoString;
             }
         }
@@ -2866,7 +2866,7 @@ void Scenario::upgradeKstrToCurrent()
                 soundPaths[i] < 65536 &&
                 65536-soundPaths[i] < editorStrings.size() )
             {
-                setSoundPathStringId(i, 65536-soundPaths[i], Chk::StrScope::Editor);
+                setSoundPathStringId(i, 65536-soundPaths[i], Chk::Scope::Editor);
                 soundPaths[i] = Chk::StringId::NoString;
             }
         }
@@ -2877,7 +2877,7 @@ void Scenario::upgradeKstrToCurrent()
                 switchNames[i] < 65536 &&
                 65536-switchNames[i] < editorStrings.size() )
             {
-                setSwitchNameStringId(i, 65536-switchNames[i], Chk::StrScope::Editor);
+                setSwitchNameStringId(i, 65536-switchNames[i], Chk::Scope::Editor);
                 switchNames[i] = Chk::StringId::NoString;
             }
         }
@@ -2888,7 +2888,7 @@ void Scenario::upgradeKstrToCurrent()
                 origUnitSettings.nameStringId[i] < 65536 &&
                 size_t(65536-origUnitSettings.nameStringId[i]) < editorStrings.size() )
             {
-                setUnitNameStringId(i, 65536-origUnitSettings.nameStringId[i], Chk::UseExpSection::No, Chk::StrScope::Editor);
+                setUnitNameStringId(i, 65536-origUnitSettings.nameStringId[i], Chk::UseExpSection::No, Chk::Scope::Editor);
                 origUnitSettings.nameStringId[i] = Chk::StringId::NoString;
             }
         }
@@ -2899,7 +2899,7 @@ void Scenario::upgradeKstrToCurrent()
                 unitSettings.nameStringId[i] < 65536 &&
                 size_t(65536-unitSettings.nameStringId[i]) < editorStrings.size() )
             {
-                setUnitNameStringId(i, 65536-unitSettings.nameStringId[i], Chk::UseExpSection::Yes, Chk::StrScope::Editor);
+                setUnitNameStringId(i, 65536-unitSettings.nameStringId[i], Chk::UseExpSection::Yes, Chk::Scope::Editor);
                 unitSettings.nameStringId[i] = Chk::StringId::NoString;
             }
         }
@@ -2973,9 +2973,9 @@ void Scenario::swapStrings(std::vector<std::optional<ScStr>> & strings)
     this->strings.swap(strings);
 }
 
-bool Scenario::defragment(Chk::StrScope storageScope, bool matchCapacityToUsage)
+bool Scenario::defragment(Chk::Scope storageScope, bool matchCapacityToUsage)
 {
-    if ( storageScope & Chk::StrScope::Game )
+    if ( storageScope & Chk::Scope::Game )
     {
         size_t nextCandidateStringId = 0;
         size_t numStrings = strings.size();
@@ -2998,11 +2998,11 @@ bool Scenario::defragment(Chk::StrScope storageScope, bool matchCapacityToUsage)
 
         if ( !stringIdRemappings.empty() )
         {
-            remapStringIds(stringIdRemappings, Chk::StrScope::Game);
+            remapStringIds(stringIdRemappings, Chk::Scope::Game);
             return true;
         }
     }
-    else if ( storageScope & Chk::StrScope::Editor )
+    else if ( storageScope & Chk::Scope::Editor )
     {
         size_t nextCandidateStringId = 0;
         size_t numStrings = this->editorStrings.size();
@@ -3025,16 +3025,16 @@ bool Scenario::defragment(Chk::StrScope storageScope, bool matchCapacityToUsage)
 
         if ( !stringIdRemappings.empty() )
         {
-            remapStringIds(stringIdRemappings, Chk::StrScope::Editor);
+            remapStringIds(stringIdRemappings, Chk::Scope::Editor);
             return true;
         }
     }
     return false;
 }
 
-void Scenario::remapStringIds(const std::map<u32, u32> & stringIdRemappings, Chk::StrScope storageScope)
+void Scenario::remapStringIds(const std::map<u32, u32> & stringIdRemappings, Chk::Scope storageScope)
 {
-    if ( storageScope == Chk::StrScope::Game )
+    if ( storageScope == Chk::Scope::Game )
     {
         auto scenarioNameRemapping = stringIdRemappings.find(this->scenarioProperties.scenarioNameStringId);
         auto scenarioDescriptionRemapping = stringIdRemappings.find(this->scenarioProperties.scenarioDescriptionStringId);
@@ -3050,7 +3050,7 @@ void Scenario::remapStringIds(const std::map<u32, u32> & stringIdRemappings, Chk
         remapLocationStringIds(stringIdRemappings);
         remapTriggerStringIds(stringIdRemappings, storageScope);
     }
-    else if ( storageScope == Chk::StrScope::Editor )
+    else if ( storageScope == Chk::Scope::Editor )
     {
         auto scenarioNameRemapping = stringIdRemappings.find(this->editorStringOverrides.scenarioName);
         auto scenarioDescriptionRemapping= stringIdRemappings.find(this->editorStringOverrides.scenarioDescription);
@@ -3115,30 +3115,30 @@ void Scenario::remapStringIds(const std::map<u32, u32> & stringIdRemappings, Chk
     }
 }
 
-Sc::Player::SlotType Scenario::getSlotType(size_t slotIndex, Chk::StrScope scope) const
+Sc::Player::SlotType Scenario::getSlotType(size_t slotIndex, Chk::Scope scope) const
 {
     if ( slotIndex >= Sc::Player::Total )
         throw std::out_of_range(std::string("SlotIndex: ") + std::to_string(slotIndex) + " is out of range for the OWNR/IOWN sections!");
 
     switch ( scope )
     {
-        case Chk::StrScope::Game: return this->slotTypes[slotIndex];
-        case Chk::StrScope::Editor: return this->iownSlotTypes[slotIndex];
-        case Chk::StrScope::EditorOverGame: return this->hasSection(Chk::SectionName::IOWN) ? this->iownSlotTypes[slotIndex] : this->slotTypes[slotIndex];
+        case Chk::Scope::Game: return this->slotTypes[slotIndex];
+        case Chk::Scope::Editor: return this->iownSlotTypes[slotIndex];
+        case Chk::Scope::EditorOverGame: return this->hasSection(Chk::SectionName::IOWN) ? this->iownSlotTypes[slotIndex] : this->slotTypes[slotIndex];
         default: return this->slotTypes[slotIndex];
     }
     return Sc::Player::SlotType::Inactive;
 }
 
-void Scenario::setSlotType(size_t slotIndex, Sc::Player::SlotType slotType, Chk::StrScope scope)
+void Scenario::setSlotType(size_t slotIndex, Sc::Player::SlotType slotType, Chk::Scope scope)
 {
     if ( slotIndex >= Sc::Player::Total )
         throw std::out_of_range(std::string("SlotIndex: ") + std::to_string(slotIndex) + " is out of range for the OWNR/IOWN sections!");
 
     switch ( scope )
     {
-        case Chk::StrScope::Game: this->slotTypes[slotIndex] = slotType; break;
-        case Chk::StrScope::Editor: this->iownSlotTypes[slotIndex] = slotType; break;
+        case Chk::Scope::Game: this->slotTypes[slotIndex] = slotType; break;
+        case Chk::Scope::Editor: this->iownSlotTypes[slotIndex] = slotType; break;
         default: this->slotTypes[slotIndex] = slotType; this->iownSlotTypes[slotIndex] = slotType; break;
     }
 }
@@ -3573,25 +3573,25 @@ void Scenario::setDimensions(u16 newTileWidth, u16 newTileHeight, u16 sizeValida
     validateSizes(sizeValidationFlags, tileWidth, tileHeight);
 }
 
-u16 Scenario::getTile(size_t tileXc, size_t tileYc, Chk::StrScope scope) const
+u16 Scenario::getTile(size_t tileXc, size_t tileYc, Chk::Scope scope) const
 {
     size_t tileWidth = this->dimensions.tileWidth;
     size_t tileIndex = tileYc*tileWidth + tileXc;
-    if ( scope == Chk::StrScope::EditorOverGame )
+    if ( scope == Chk::Scope::EditorOverGame )
     {
         if ( tileIndex < this->editorTiles.size() )
             return this->editorTiles[tileIndex];
         else if ( tileIndex < this->tiles.size() )
             return this->tiles[tileIndex];
     }
-    else if ( scope == Chk::StrScope::Editor )
+    else if ( scope == Chk::Scope::Editor )
     {
         if ( tileIndex < this->editorTiles.size() )
             return this->editorTiles[tileIndex];
         else
             throw std::out_of_range(std::string("TileIndex: ") + std::to_string(tileIndex) + " is past the end of the TILE section!");
     }
-    else if ( scope == Chk::StrScope::Game )
+    else if ( scope == Chk::Scope::Game )
     {
         if ( tileIndex < this->tiles.size() )
             return this->tiles[tileIndex];
@@ -3601,23 +3601,23 @@ u16 Scenario::getTile(size_t tileXc, size_t tileYc, Chk::StrScope scope) const
     return 0;
 }
 
-inline u16 Scenario::getTilePx(size_t pixelXc, size_t pixelYc, Chk::StrScope scope) const
+inline u16 Scenario::getTilePx(size_t pixelXc, size_t pixelYc, Chk::Scope scope) const
 {
     return getTile(pixelXc / Sc::Terrain::PixelsPerTile, pixelYc / Sc::Terrain::PixelsPerTile, scope);
 }
 
-void Scenario::setTile(size_t tileXc, size_t tileYc, u16 tileValue, Chk::StrScope scope)
+void Scenario::setTile(size_t tileXc, size_t tileYc, u16 tileValue, Chk::Scope scope)
 {
     size_t tileWidth = this->dimensions.tileWidth;
     size_t tileIndex = tileYc*tileWidth + tileXc;
-    if ( scope & Chk::StrScope::Game )
+    if ( scope & Chk::Scope::Game )
     {
         if ( tileIndex < this->tiles.size() )
             this->tiles[tileIndex] = tileValue;
         else
             throw std::out_of_range(std::string("TileIndex: ") + std::to_string(tileIndex) + " is past the end of the MTXM section!");
     }
-    if ( scope & Chk::StrScope::Editor )
+    if ( scope & Chk::Scope::Editor )
     {
         if ( tileIndex < this->editorTiles.size() )
             this->editorTiles[tileIndex] = tileValue;
@@ -3626,7 +3626,7 @@ void Scenario::setTile(size_t tileXc, size_t tileYc, u16 tileValue, Chk::StrScop
     }
 }
 
-inline void Scenario::setTilePx(size_t pixelXc, size_t pixelYc, u16 tileValue, Chk::StrScope scope)
+inline void Scenario::setTilePx(size_t pixelXc, size_t pixelYc, u16 tileValue, Chk::Scope scope)
 {
     setTile(pixelXc / Sc::Terrain::PixelsPerTile, pixelYc / Sc::Terrain::PixelsPerTile, tileValue, scope);
 }
@@ -4537,7 +4537,7 @@ void Scenario::appendLocationStrUsage(size_t stringId, std::vector<Chk::StringUs
     }
 }
 
-bool Scenario::locationStringUsed(size_t stringId, Chk::StrScope storageScope, u32 userMask) const
+bool Scenario::locationStringUsed(size_t stringId, Chk::Scope storageScope, u32 userMask) const
 {
     if ( (userMask & Chk::StringUserFlag::Location) == Chk::StringUserFlag::Location )
     {
@@ -4559,11 +4559,11 @@ bool Scenario::locationStringUsed(size_t stringId, Chk::StrScope storageScope, u
         };
         switch ( storageScope )
         {
-            case Chk::StrScope::Either:
-            case Chk::StrScope::EditorOverGame:
-            case Chk::StrScope::GameOverEditor: return usedByGame() || usedByEditor();
-            case Chk::StrScope::Game: return usedByGame();
-            case Chk::StrScope::Editor: return usedByEditor();
+            case Chk::Scope::Either:
+            case Chk::Scope::EditorOverGame:
+            case Chk::Scope::GameOverEditor: return usedByGame() || usedByEditor();
+            case Chk::Scope::Game: return usedByGame();
+            case Chk::Scope::Editor: return usedByEditor();
             default: return false;
         }
     }
@@ -6940,9 +6940,9 @@ bool Scenario::triggerLocationUsed(size_t locationId) const
     return false;
 }
 
-void Scenario::appendTriggerStrUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers, Chk::StrScope storageScope, u32 userMask) const
+void Scenario::appendTriggerStrUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers, Chk::Scope storageScope, u32 userMask) const
 {
-    if ( (storageScope & Chk::StrScope::Game) == Chk::StrScope::Game )
+    if ( (storageScope & Chk::Scope::Game) == Chk::Scope::Game )
     {
         if ( (userMask & Chk::StringUserFlag::Sound) != Chk::StringUserFlag::None )
         {
@@ -7003,7 +7003,7 @@ void Scenario::appendTriggerStrUsage(size_t stringId, std::vector<Chk::StringUse
             }
         }
     }
-    if ( (storageScope & Chk::StrScope::Editor) == Chk::StrScope::Editor && (userMask & Chk::StringUserFlag::AnyTriggerExtension) != Chk::StringUserFlag::None )
+    if ( (storageScope & Chk::Scope::Editor) == Chk::Scope::Editor && (userMask & Chk::StringUserFlag::AnyTriggerExtension) != Chk::StringUserFlag::None )
     {
         for ( const auto & extendedTrig : this->triggerExtensions )
         {
@@ -7021,9 +7021,9 @@ void Scenario::appendTriggerStrUsage(size_t stringId, std::vector<Chk::StringUse
     }
 }
 
-bool Scenario::triggerStringUsed(size_t stringId, Chk::StrScope storageScope, u32 userMask) const
+bool Scenario::triggerStringUsed(size_t stringId, Chk::Scope storageScope, u32 userMask) const
 {
-    if ( storageScope == Chk::StrScope::Game )
+    if ( storageScope == Chk::Scope::Game )
     {
         if ( (userMask & Chk::StringUserFlag::Sound) == Chk::StringUserFlag::Sound && this->stringIsSound(stringId) )
             return true;
@@ -7053,7 +7053,7 @@ bool Scenario::triggerStringUsed(size_t stringId, Chk::StrScope storageScope, u3
             }
         }
     }
-    else if ( storageScope == Chk::StrScope::Editor && (userMask & Chk::StringUserFlag::AnyTriggerExtension) > 0 )
+    else if ( storageScope == Chk::Scope::Editor && (userMask & Chk::StringUserFlag::AnyTriggerExtension) > 0 )
     {
         for ( const auto & extendedTrig : this->triggerExtensions )
         {
@@ -7090,9 +7090,9 @@ bool Scenario::triggerGameStringUsed(size_t stringId, u32 userMask) const
     return false;
 }
 
-bool Scenario::triggerEditorStringUsed(size_t stringId, Chk::StrScope storageScope, u32 userMask) const
+bool Scenario::triggerEditorStringUsed(size_t stringId, Chk::Scope storageScope, u32 userMask) const
 {
-    if ( storageScope == Chk::StrScope::Game )
+    if ( storageScope == Chk::Scope::Game )
     {
         if ( (userMask & Chk::StringUserFlag::Sound) == Chk::StringUserFlag::Sound )
         {
@@ -7129,7 +7129,7 @@ bool Scenario::triggerEditorStringUsed(size_t stringId, Chk::StrScope storageSco
             }
         }
     }
-    else if ( storageScope == Chk::StrScope::Editor && (userMask & Chk::StringUserFlag::AnyTriggerExtension) > 0 )
+    else if ( storageScope == Chk::Scope::Editor && (userMask & Chk::StringUserFlag::AnyTriggerExtension) > 0 )
     {
         for ( const auto & extendedTrig : this->triggerExtensions )
         {
@@ -7151,9 +7151,9 @@ void Scenario::markUsedTriggerLocations(std::bitset<Chk::TotalLocations+1> & loc
         trigger.markUsedLocations(locationIdUsed);
 }
 
-void Scenario::markUsedTriggerStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::StrScope storageScope, u32 userMask) const
+void Scenario::markUsedTriggerStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope storageScope, u32 userMask) const
 {
-    if ( storageScope == Chk::StrScope::Game )
+    if ( storageScope == Chk::Scope::Game )
     {
         if ( (userMask & Chk::StringUserFlag::Sound) == Chk::StringUserFlag::Sound )
         {
@@ -7185,7 +7185,7 @@ void Scenario::markUsedTriggerStrings(std::bitset<Chk::MaxStrings> & stringIdUse
                 briefingTrigger.markUsedBriefingStrings(stringIdUsed, userMask);
         }
     }
-    else if ( storageScope == Chk::StrScope::Editor && (userMask & Chk::StringUserFlag::AnyTriggerExtension) > 0 )
+    else if ( storageScope == Chk::Scope::Editor && (userMask & Chk::StringUserFlag::AnyTriggerExtension) > 0 )
     {        
         for ( const auto & extendedTrig : this->triggerExtensions )
         {
@@ -7212,9 +7212,9 @@ void Scenario::markUsedTriggerGameStrings(std::bitset<Chk::MaxStrings> & stringI
     }
 }
 
-void Scenario::markUsedTriggerEditorStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::StrScope storageScope, u32 userMask) const
+void Scenario::markUsedTriggerEditorStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope storageScope, u32 userMask) const
 {
-    if ( storageScope == Chk::StrScope::Game )
+    if ( storageScope == Chk::Scope::Game )
     {
         if ( (userMask & Chk::StringUserFlag::Sound) == Chk::StringUserFlag::Sound )
         {
@@ -7240,7 +7240,7 @@ void Scenario::markUsedTriggerEditorStrings(std::bitset<Chk::MaxStrings> & strin
                 trigger.markUsedCommentStrings(stringIdUsed);
         }
     }
-    else if ( storageScope == Chk::StrScope::Editor && (userMask & Chk::StringUserFlag::AnyTriggerExtension) > 0 )
+    else if ( storageScope == Chk::Scope::Editor && (userMask & Chk::StringUserFlag::AnyTriggerExtension) > 0 )
     {
         for ( const auto & extendedTrig : this->triggerExtensions )
         {
@@ -7259,9 +7259,9 @@ void Scenario::remapTriggerLocationIds(const std::map<u32, u32> & locationIdRema
         trigger.remapLocationIds(locationIdRemappings);
 }
 
-void Scenario::remapTriggerStringIds(const std::map<u32, u32> & stringIdRemappings, Chk::StrScope storageScope)
+void Scenario::remapTriggerStringIds(const std::map<u32, u32> & stringIdRemappings, Chk::Scope storageScope)
 {
-    if ( storageScope == Chk::StrScope::Game )
+    if ( storageScope == Chk::Scope::Game )
     {
         for ( size_t i=0; i<Chk::TotalSounds; i++ )
         {
@@ -7280,7 +7280,7 @@ void Scenario::remapTriggerStringIds(const std::map<u32, u32> & stringIdRemappin
         for ( auto & briefingTrigger : this->briefingTriggers )
             briefingTrigger.remapBriefingStringIds(stringIdRemappings);
     }
-    else if ( storageScope == Chk::StrScope::Editor )
+    else if ( storageScope == Chk::Scope::Editor )
     {
         for ( auto & extendedTrig : this->triggerExtensions )
         {
@@ -7301,9 +7301,9 @@ void Scenario::deleteTriggerLocation(size_t locationId)
         trigger.deleteLocation(locationId);
 }
 
-void Scenario::deleteTriggerString(size_t stringId, Chk::StrScope storageScope)
+void Scenario::deleteTriggerString(size_t stringId, Chk::Scope storageScope)
 {
-    if ( storageScope == Chk::StrScope::Game )
+    if ( storageScope == Chk::Scope::Game )
     {
         for ( size_t i=0; i<Chk::TotalSounds; i++ )
         {
@@ -7320,7 +7320,7 @@ void Scenario::deleteTriggerString(size_t stringId, Chk::StrScope storageScope)
         for ( auto & briefingTrigger : briefingTriggers )
             briefingTrigger.deleteString(stringId);
     }
-    else if ( storageScope == Chk::StrScope::Editor )
+    else if ( storageScope == Chk::Scope::Editor )
     {
         for ( auto & extendedTrig : this->triggerExtensions )
         {
