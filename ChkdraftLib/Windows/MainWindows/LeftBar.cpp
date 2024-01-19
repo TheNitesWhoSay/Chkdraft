@@ -79,10 +79,13 @@ void LeftBar::NotifyTreeItemSelected(LPARAM newValue)
         break;
 
         case TreeTypeLocation: // itemData = location index
-            CM->GetSelections().selectLocation(u16(itemData));
-            if ( chkd.locationWindow.getHandle() != nullptr )
-                chkd.locationWindow.RefreshLocationInfo();
-            CM->viewLocation(u16(itemData));
+            if ( CM->GetSelectedLocation() != u16(itemData) )
+            {
+                CM->GetSelections().selectLocation(u16(itemData));
+                if ( chkd.locationWindow.getHandle() != nullptr )
+                    chkd.locationWindow.RefreshLocationInfo();
+                CM->viewLocation(u16(itemData));
+            }
             break;
 
         case TreeTypeSprite: // itemData = sprite index

@@ -2839,8 +2839,7 @@ LRESULT GuiMap::DestroyWindow(HWND hWnd)
         panTimerID = 0;
     }
     LRESULT destroyResult = ClassWindow::WndProc(hWnd, WM_DESTROY, 0, 0);
-    chkd.maps.CloseMap(hWnd); // TODO: it's bad to close this map from here, should post a message to do it
-    RedrawWindow(chkd.mainPlot.leftBar.miniMap.getHandle(), NULL, NULL, RDW_INVALIDATE);
+    PostMessage(chkd.getHandle(), CLOSE_MAP, u16(mapId), NULL);
     return destroyResult;
 }
 

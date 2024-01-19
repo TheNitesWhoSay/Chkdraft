@@ -70,6 +70,19 @@ LRESULT CALLBACK PluginProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
             }
             break;
 
+        case CLOSE_MAP:
+            {
+                if ( u16(wParam) == 0 && CM != nullptr )
+                    chkd.maps.CloseActive();
+                else
+                {
+                    GuiMapPtr map = chkd.maps.GetMap((u16)wParam);
+                    if ( map != nullptr )
+                        chkd.maps.CloseMap(map->getHandle());
+                }
+            }
+            break;
+
         case COPY_CHK_FILE:
             {
                 GuiMapPtr map = chkd.maps.GetMap((u16)lParam);

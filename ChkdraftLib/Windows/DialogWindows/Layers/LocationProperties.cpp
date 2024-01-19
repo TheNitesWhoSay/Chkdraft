@@ -502,7 +502,6 @@ void LocationWindow::NotifyEditFocused(int idFrom, HWND hWndFrom)
         const Chk::Location & locRef = CM->getLocation(currentLocationId);
         switch ( idFrom )
         {
-            case Id::EditLocationName: preservedStat = locRef.stringId; break; // TODO: This is sketchy, replace this
             case Id::EditRawFlags: preservedStat = locRef.elevationFlags; break;
             case Id::EditLocationLeft: preservedStat = locRef.left; break;
             case Id::EditLocationTop: preservedStat = locRef.top; break;
