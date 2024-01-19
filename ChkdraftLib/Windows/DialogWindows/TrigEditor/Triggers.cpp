@@ -781,6 +781,7 @@ void TriggersWindow::CreateSubWindows(HWND hWnd)
         listGroups.SetPeer(listTriggers.getHandle());
 
     DoSize();
+    RefreshWindow(true);
 }
 
 void TriggersWindow::RefreshGroupList()

@@ -1824,8 +1824,8 @@ void GuiMap::PaintMap(GuiMapPtr currMap, bool pasting)
 
         if ( zoom < 1 || zoom > 1 )
         {
-            scaledWidth = (u16(((double)dc.getWidth()) / zoom)) / 32 * 32,
-            scaledHeight = (u16(((double)dc.getHeight()) / zoom)) / 32 * 32;
+            scaledWidth = u16(((double)dc.getWidth()) / zoom),
+            scaledHeight = u16(((double)dc.getHeight()) / zoom);
         }
         u32 bitmapSize = (u32)scaledWidth*(u32)scaledHeight * 4;
 
