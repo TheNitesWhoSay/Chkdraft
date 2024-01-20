@@ -328,6 +328,7 @@ namespace WinLib {
             return std::nullopt;
         }
 
+#ifdef UNICODE
         std::optional<SIZE> getTextExtentPoint32(const std::string & str) const
         {
             if ( hDC != NULL )
@@ -339,6 +340,7 @@ namespace WinLib {
             }
             return std::nullopt;
         }
+#endif
 
         bool getTabTextExtent(const std::string & text, std::int32_t & width, std::int32_t & height) const
         {
