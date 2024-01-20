@@ -712,13 +712,9 @@ LRESULT Chkdraft::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
             break;
 
         case WM_CLOSE:
-            while ( CM != nullptr )
-            {
-                if ( CM->CanExit() )
-                    maps.destroyActive();
-                else
-                    return 0; // Abort close
-            }
+            if ( !maps.CloseAll() )
+                return 0; // Abort close
+
             return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
             break;
 

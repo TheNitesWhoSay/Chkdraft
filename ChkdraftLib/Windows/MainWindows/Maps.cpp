@@ -64,7 +64,7 @@ bool Maps::Focus(std::shared_ptr<GuiMap> guiMap)
 
 std::shared_ptr<GuiMap> Maps::GetMap(HWND hGuiMap)
 {
-    if ( hGuiMap == currentlyActiveMap->getHandle() )
+    if ( currentlyActiveMap != nullptr && hGuiMap == currentlyActiveMap->getHandle() )
         return currentlyActiveMap;
 
     for ( auto & pair : openMaps)
@@ -209,6 +209,23 @@ void Maps::CloseMap(HWND hMap)
 
     if ( openMaps.size() == 0 )
         DisableMapping();
+}
+
+bool Maps::CloseAll()
+{
+    while ( CM != nullptr )
+    {
+        auto mapId = CM->getMapId();
+        if ( CM->CanExit() )
+        {
+            SendMessage(MdiClient::getHandle(), WM_MDIDESTROY, (WPARAM)CM->getHandle(), 0);
+            openMaps.erase(mapId);
+            CM = openMaps.empty() ? nullptr : openMaps.begin()->second;
+        }
+        else
+            return false; // Abort close
+    }
+    return true;
 }
 
 void Maps::CloseActive()
