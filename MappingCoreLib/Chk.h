@@ -262,12 +262,15 @@ namespace Chk {
             for ( auto side : Sc::Isom::sides )
             {
                 auto isomValue = this->getIsomValue(side);
-                const auto & shapeLinks = isomLinks[isomValue >> 4];
-                auto edgeLink = shapeLinks.getEdgeLink(isomValue);
-                hash = (hash | uint32_t(edgeLink)) << 6;
+                if ( (isomValue >> 4) < isomLinks.size() )
+                {
+                    const auto & shapeLinks = isomLinks[isomValue >> 4];
+                    auto edgeLink = shapeLinks.getEdgeLink(isomValue);
+                    hash = (hash | uint32_t(edgeLink)) << 6;
 
-                if ( shapeLinks.terrainType != 0 && edgeLink > Sc::Isom::Link::SoftLinks )
-                    lastTerrainType = shapeLinks.terrainType;
+                    if ( shapeLinks.terrainType != 0 && edgeLink > Sc::Isom::Link::SoftLinks )
+                        lastTerrainType = shapeLinks.terrainType;
+                }
             }
             return hash | lastTerrainType; // 6 bits per component (left, top, right, bottom, terrainType)
         }
