@@ -467,7 +467,7 @@ void GuiMap::setDimensions(u16 newTileWidth, u16 newTileHeight, u16 sizeValidati
     for ( int i=int(this->doodads.size()-1); i>=0; --i )
     {
         auto & doodad = this->doodads[i];
-        if ( doodad.xc + u16(32*leftEdge) > pixelWidth || doodad.yc + u16(32*topEdge) > pixelHeight )
+        if ( u16(s32(doodad.xc) + 32*leftEdge) > pixelWidth || u16(s32(doodad.yc) + 32*topEdge) > pixelHeight )
             ((Scenario*)(this))->deleteDoodad(i);
         else
         {
@@ -478,7 +478,7 @@ void GuiMap::setDimensions(u16 newTileWidth, u16 newTileHeight, u16 sizeValidati
     for ( int i=int(this->sprites.size()-1); i>=0; --i )
     {
         auto & sprite = this->sprites[i];
-        if ( sprite.xc + u16(32*leftEdge) > pixelWidth || sprite.yc + u16(32*topEdge) > pixelHeight )
+        if ( u16(s32(sprite.xc) + 32*leftEdge) > pixelWidth || u16(s32(sprite.yc) + 32*topEdge) > pixelHeight )
             ((Scenario*)(this))->deleteSprite(i);
         else
         {
@@ -489,7 +489,7 @@ void GuiMap::setDimensions(u16 newTileWidth, u16 newTileHeight, u16 sizeValidati
     for ( int i=int(this->units.size()-1); i>=0; --i )
     {
         auto & unit = this->units[i];
-        if ( unit.xc + u16(32*leftEdge) > pixelWidth || unit.yc + u16(32*topEdge) > pixelHeight )
+        if ( u16(s32(unit.xc) + 32*leftEdge) > pixelWidth || u16(s32(unit.yc) + 32*topEdge) > pixelHeight )
             ((Scenario*)(this))->deleteUnit(i);
         else
         {
