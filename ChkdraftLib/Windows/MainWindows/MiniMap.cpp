@@ -54,9 +54,10 @@ void MiniMap::MiniMapClick(LPARAM ClickPoints)
         u16 xOffset = (u16)((128-xSize*scale)/2),
             yOffset = (u16)((128-ySize*scale)/2);
 
-        CM->SetScreenLeft((s32)((MiniClick.x-xOffset)*(32/scale)-screenWidth/CM->getZoom()/2));
-        CM->SetScreenTop((s32)((MiniClick.y-yOffset)*(32/scale)-screenHeight/CM->getZoom()/2));
-        CM->Scroll(true, true, true);
+        CM->Scroll(true, true, true,
+            s32((MiniClick.x-xOffset)*(32/scale)-screenWidth/CM->getZoom()/2),
+            s32((MiniClick.y-yOffset)*(32/scale)-screenHeight/CM->getZoom()/2));
+
         RedrawWindow(CM->getHandle(), NULL, NULL, RDW_INVALIDATE);
     }
 }
@@ -67,6 +68,7 @@ LRESULT MiniMap::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     {
         case WM_LBUTTONDOWN:
             MiniMapClick(lParam);
+            UnlockCursor();
             LockCursor();
             break;
 

@@ -1893,6 +1893,7 @@ bool Sc::Terrain::Tiles::load(size_t tilesetIndex, const std::vector<ArchiveFile
             {
                 throw std::logic_error("Unrecognized color swap required to load system colors, please update the code!");
             }
+            staticSystemColorPalette = systemColorPalette;
 
             if ( totalDoodadDats > 0 )
             {
@@ -1992,6 +1993,14 @@ const std::array<Sc::SystemColor, Sc::NumColors> & Sc::Terrain::getColorPalette(
         return tilesets[tileset].systemColorPalette;
     else
         return tilesets[tileset % Terrain::NumTilesets].systemColorPalette;
+}
+
+const std::array<Sc::SystemColor, Sc::NumColors> & Sc::Terrain::getStaticColorPalette(Tileset tileset) const
+{
+    if ( tileset < Terrain::NumTilesets )
+        return tilesets[tileset].staticSystemColorPalette;
+    else
+        return tilesets[tileset % Terrain::NumTilesets].staticSystemColorPalette;
 }
 
 void Sc::Terrain::mergeSpriteFlags(const Sc::Unit & unitData)

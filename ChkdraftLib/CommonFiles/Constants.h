@@ -48,7 +48,7 @@ using s8 = std::int8_t;
 // "CHKD" = 67|72|75|68 = 0x43484B44 = 1128811332
 constexpr int ascii_chkd = 1128811332;
 
-constexpr DWORD defaultHoverTime = 10;
+constexpr DWORD defaultHoverTime = 50;
 
 constexpr u16 NO_LOCATION = 0xFFFF;
 

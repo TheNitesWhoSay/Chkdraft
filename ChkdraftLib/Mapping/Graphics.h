@@ -61,7 +61,7 @@ class ColorCycler
         static constexpr size_t TotalRotatorSets = 4;
         static constexpr size_t MaxRotatersPerSet = 8;
 
-        static DWORD prevTickCount; // Value from GetTickCount() -- updated every time GetTickCount increases (~16 ms)
+        static DWORD nextTickCount; // Value from prev updates GetTickCount()+42
 
         static const size_t TilesetRotationSet[Sc::Terrain::NumTilesets]; // Index of the rotater to use for a given tileset, all values must be less than TotalRotaterSets
         static Rotator NoRotators[MaxRotatersPerSet]; // An empty rotator set
@@ -76,6 +76,7 @@ class Graphics
         virtual ~Graphics();
         
         ChkdPalette & getPalette();
+        ChkdPalette & getStaticPalette();
         void updatePalette();
 
         void DrawMap(const WinLib::DeviceContext & dc, u16 bitWidth, u16 bitHeight, s32 screenLeft, s32 screenTop, ChkdBitmap & bitmap, bool showAnywhere);
@@ -129,6 +130,7 @@ class Graphics
         GuiMap & map; // Reference to the map this instance of graphics renders
         Selections & selections; // Reference to the selections belonging to the corresponding map
         ChkdPalette palette;
+        ChkdPalette staticPalette;
 
         s32 screenLeft; // X-Position of the screens left edge in the map
         s32 screenTop; // Y-Position of the screens top edge in the map
@@ -171,7 +173,7 @@ void TileElevationsToBits(ChkdBitmap & bitmap, s64 bitWidth, s64 bitHeight, cons
 void DrawTile(const WinLib::DeviceContext & dc, ChkdPalette & palette, const Sc::Terrain::Tiles & tiles, s16 xOffset, s16 yOffset, u16 TileValue, BITMAPINFO & bmi,
     u8 redOffset, u8 greenOffset, u8 blueOffset);
 
-void DrawTools(Graphics & graphics, const WinLib::DeviceContext & dc, ChkdPalette & palette, u16 width, u16 height, u32 screenLeft, u32 screenTop,
+void DrawTools(Graphics & graphics, const WinLib::DeviceContext & dc, ChkdPalette & palette, ChkdPalette & staticPalette, u16 width, u16 height, u32 screenLeft, u32 screenTop,
                 Selections & selections, bool pasting, Clipboard & clipboard, GuiMap & map);
 
 void DrawTileBuildability(const WinLib::DeviceContext & dc, ChkdPalette & palette, u16 width, u16 height, u32 screenLeft, u32 screenTop, GuiMap & map);
@@ -182,7 +184,7 @@ void DrawFogTileSel(const WinLib::DeviceContext & dc, ChkdPalette & palette, u16
 
 void DrawDoodadSel(const WinLib::DeviceContext & dc, u16 width, u16 height, u32 screenLeft, u32 screenTop, Selections & selections, GuiMap & map);
 
-void DrawPasteGraphics(const WinLib::DeviceContext & dc, ChkdPalette & palette, u16 width, u16 height, u32 screenLeft, u32 screenTop, Selections & selections,
+void DrawPasteGraphics(const WinLib::DeviceContext & dc, ChkdPalette & palette, ChkdPalette & staticPalette, u16 width, u16 height, u32 screenLeft, u32 screenTop, Selections & selections,
                         Clipboard & clipboard, GuiMap & map, Layer layer, TerrainSubLayer terrainSubLayer);
 
 void DrawTempLocs(const WinLib::DeviceContext & dc, u32 screenLeft, u32 screenTop, Selections & selections, GuiMap & map);

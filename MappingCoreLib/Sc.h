@@ -3253,6 +3253,7 @@ namespace Sc {
             std::vector<TileFlags> tileFlags;
             std::vector<TileGraphicsEx> tileGraphics;
             std::vector<MiniTilePixels> miniTilePixels;
+            std::array<SystemColor, NumColors> staticSystemColorPalette;
             std::array<SystemColor, NumColors> systemColorPalette;
 
             std::vector<DoodadGroup> doodadGroups {};
@@ -3285,6 +3286,7 @@ namespace Sc {
         const Tiles & get(const Tileset & tileset) const;
         bool load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, Sc::TblFilePtr statTxt);
         const std::array<SystemColor, NumColors> & getColorPalette(Tileset tileset) const;
+        const std::array<SystemColor, NumColors> & getStaticColorPalette(Tileset tileset) const;
         void mergeSpriteFlags(const Sc::Unit & unitData);
 
         std::array<u16, Sprite::TotalSprites> doodadSpriteFlags {};

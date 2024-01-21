@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <string>
 
-DWORD ColorCycler::prevTickCount = 0;
+DWORD ColorCycler::nextTickCount = 0;
 
 enum_t(MaxUnitBounds, s32, {
     Left = 128, Right = 127, Up = 80, Down = 79
@@ -49,7 +49,8 @@ ColorCycler::~ColorCycler()
 bool ColorCycler::CycleColors(const u16 tileset, ChkdPalette & palette)
 {
     bool redraw = false;
-    if ( GetTickCount() > prevTickCount )
+    auto tickCount = GetTickCount();
+    if ( tickCount >= nextTickCount )
     {
         size_t currentRotationSet = TilesetRotationSet[tileset];
         Rotator* rotatorSet = currentRotationSet < TotalRotatorSets ? RotatorSets[currentRotationSet] : NoRotators;
@@ -71,7 +72,7 @@ bool ColorCycler::CycleColors(const u16 tileset, ChkdPalette & palette)
             }
         }
 
-        prevTickCount = GetTickCount();
+        nextTickCount = tickCount + 10;
     }
 
     return redraw;
@@ -148,9 +149,15 @@ ChkdPalette & Graphics::getPalette()
     return palette;
 }
 
+ChkdPalette & Graphics::getStaticPalette()
+{
+    return staticPalette;
+}
+
 void Graphics::updatePalette()
 {
     palette = chkd.scData.terrain.getColorPalette(map.getTileset());
+    staticPalette = chkd.scData.terrain.getStaticColorPalette(map.getTileset());
 }
 
 void Graphics::DrawMap(const WinLib::DeviceContext & dc, u16 bitWidth, u16 bitHeight, s32 screenLeft, s32 screenTop, ChkdBitmap & bitmap, bool showAnywhere)
@@ -523,7 +530,7 @@ void Graphics::DrawSprites(ChkdBitmap & bitmap)
                 bool isSelected = selections.spriteIsSelected(spriteId);
 
                 if ( isSprite )
-                    SpriteToBits(bitmap, palette, color, u16(screenWidth), u16(screenHeight),
+                    SpriteToBits(bitmap, staticPalette, color, u16(screenWidth), u16(screenHeight),
                         screenLeft, screenTop, (u16)sprite.type, sprite.xc, sprite.yc, false, isSelected);
                 else
                     UnitToBits(bitmap, palette, color, u16(screenWidth), u16(screenHeight),
@@ -856,7 +863,7 @@ bool Graphics::SetGridColor(u32 gridNum, u8 red, u8 green, u8 blue)
 void Graphics::DrawTools(const WinLib::DeviceContext & dc, u16 width, u16 height, u32 screenLeft, u32 screenTop,
     Selections & selections, bool pasting, Clipboard & clipboard, GuiMap & map)
 {
-    ::DrawTools(*this, dc, palette, width, height, screenLeft, screenTop, selections, pasting, clipboard, map);
+    ::DrawTools(*this, dc, palette, staticPalette, width, height, screenLeft, screenTop, selections, pasting, clipboard, map);
 }
 
 BITMAPINFO GetBMI(s32 width, s32 height)
@@ -1452,7 +1459,7 @@ void DrawTile(const WinLib::DeviceContext & dc, ChkdPalette & palette, const Sc:
     }
 }
 
-void DrawTools(Graphics & graphics, const WinLib::DeviceContext & dc, ChkdPalette & palette, u16 width, u16 height, u32 screenLeft, u32 screenTop,
+void DrawTools(Graphics & graphics, const WinLib::DeviceContext & dc, ChkdPalette & palette, ChkdPalette & staticPalette, u16 width, u16 height, u32 screenLeft, u32 screenTop,
     Selections & selections, bool pasting, Clipboard & clipboard, GuiMap & map)
 {
     if ( map.getLayer() == Layer::Terrain && graphics.DisplayingBuildability() )
@@ -1469,7 +1476,7 @@ void DrawTools(Graphics & graphics, const WinLib::DeviceContext & dc, ChkdPalett
         DrawFogTileSel(dc, palette, width, height, screenLeft, screenTop, selections, map);
 
     if ( pasting || map.getLayer() == Layer::FogEdit ) // Draw paste graphics
-        DrawPasteGraphics(dc, palette, width, height, screenLeft, screenTop, selections, clipboard, map, map.getLayer(), map.getSubLayer());
+        DrawPasteGraphics(dc, palette, staticPalette, width, height, screenLeft, screenTop, selections, clipboard, map, map.getLayer(), map.getSubLayer());
 }
 
 void DrawTileBuildability(const WinLib::DeviceContext & dc, ChkdPalette & palette, u16 width, u16 height, u32 screenLeft, u32 screenTop, GuiMap & map)
@@ -1690,7 +1697,7 @@ void DrawDoodadSel(const WinLib::DeviceContext & dc, u16 width, u16 height, u32 
     }
 }
 
-void DrawPasteGraphics(const WinLib::DeviceContext & dc, ChkdPalette & palette, u16 width, u16 height, u32 screenLeft, u32 screenTop,
+void DrawPasteGraphics(const WinLib::DeviceContext & dc, ChkdPalette & palette, ChkdPalette & staticPalette, u16 width, u16 height, u32 screenLeft, u32 screenTop,
                         Selections & selections, Clipboard & clipboard, GuiMap & map, Layer layer, TerrainSubLayer subLayer)
 {
     auto drawPasteTerrain = [&](POINT paste) {
@@ -1902,7 +1909,7 @@ void DrawPasteGraphics(const WinLib::DeviceContext & dc, ChkdPalette & palette, 
                     {
                         if ( doodad.isSprite() )
                         {
-                            SpriteToBits(graphicBits, palette, Chk::PlayerColor::Azure_NeutralColor, width, height,
+                            SpriteToBits(graphicBits, staticPalette, Chk::PlayerColor::Azure_NeutralColor, width, height,
                                 0, 0, doodad.overlayIndex, u16(xStart+tileWidth*16), u16(yStart+tileHeight*16), doodad.overlayFlipped(), false);
                         }
                         else // Overlay is unit index
@@ -2002,7 +2009,7 @@ void DrawPasteGraphics(const WinLib::DeviceContext & dc, ChkdPalette & palette, 
                 {
                     if ( pasteSprite.sprite.isDrawnAsSprite() )
                     {
-                        SpriteToBits(graphicBits, palette, color, width, height, sScreenLeft, sScreenTop,
+                        SpriteToBits(graphicBits, staticPalette, color, width, height, sScreenLeft, sScreenTop,
                             (u16)pasteSprite.sprite.type, u16(paste.x + pasteSprite.xc), u16(paste.y + pasteSprite.yc), false, false);
                     }
                     else

@@ -3963,8 +3963,10 @@ Chk::TileOccupationCache Scenario::getTileOccupationCache(const Sc::Terrain::Til
             
             bool evenWidth = doodadDat.tileWidth % 2 == 0;
             bool evenHeight = doodadDat.tileHeight % 2 == 0;
-            size_t left = (size_t(doodad.xc) - 16*size_t(doodadDat.tileWidth))/32;
-            size_t top = (size_t(doodad.yc) - 16*size_t(doodadDat.tileHeight))/32;
+            size_t halfWidth = 16*size_t(doodadDat.tileWidth);
+            size_t halfHeight = 16*size_t(doodadDat.tileHeight);
+            size_t left = size_t(doodad.xc) < halfWidth ? 0 : (size_t(doodad.xc) - halfWidth)/32;
+            size_t top = size_t(doodad.yc) < halfHeight ? 0 : (size_t(doodad.yc) - halfHeight)/32;
             for ( size_t y=0; y<size_t(doodadDat.tileHeight); ++y )
             {
                 for ( size_t x=0; x<size_t(doodadDat.tileWidth); ++x )

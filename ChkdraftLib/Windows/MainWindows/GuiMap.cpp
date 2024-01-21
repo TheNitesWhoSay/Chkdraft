@@ -1082,21 +1082,16 @@ void GuiMap::EdgeDrag(HWND hWnd, int x, int y)
 {
     if ( isDragging() )
     {
-        auto mapX = x + screenLeft;
-        auto mapY = y + screenTop;
-
-        if ( x < 0 )
-            x = 0;
-        if ( y < 0 )
-            y = 0;
+        s32 mapX = s32(x/zoom) + screenLeft;
+        s32 mapY = s32(y/zoom) + screenTop;
 
         RECT rcMap;
         GetClientRect(hWnd, &rcMap);
         TrackMouse(defaultHoverTime);
         bool onEdge = false;
-        if ( x == 0 ) // Cursor on the left
+        if ( x <= 0 ) // Cursor on the left
         {
-            mapX = rcMap.left + screenLeft;
+            mapX = s32(rcMap.left/zoom) + screenLeft;
             onEdge = true;
             if ( (screenLeft+16)/32 > 0 )
                 selections.setEndDrag( ((screenLeft +16)/32-1)*32, selections.getEndDrag().y );
@@ -1105,15 +1100,15 @@ void GuiMap::EdgeDrag(HWND hWnd, int x, int y)
         }
         else if ( x >= rcMap.right-2 ) // Cursor on the right
         {
-            mapX = rcMap.right-2 + screenLeft;
+            mapX = s32((double(rcMap.right)-2)/zoom) + screenLeft;
             onEdge = true;
-            if ( size_t((screenLeft+rcMap.right)/32) < Scenario::getTileWidth() )
-                selections.setEndDrag( ((screenLeft+rcMap.right)/32+1)*32, selections.getEndDrag().y );
-            screenLeft = selections.getEndDrag().x - rcMap.right;
+            selections.setEndDrag( ((screenLeft+s32(rcMap.right/zoom))/32+1)*32, selections.getEndDrag().y );
+            screenLeft = selections.getEndDrag().x - s32((double(rcMap.right)-2)/zoom);
         }
-        if ( y == 0 ) // Cursor on the top
+
+        if ( y <= 0 ) // Cursor on the top
         {
-            mapY = rcMap.top + screenTop;
+            mapY = s32(rcMap.top/zoom) + screenTop;
             onEdge = true;
             if ( (screenTop+16)/32 > 0 )
                 selections.setEndDrag( selections.getEndDrag().x, ((screenTop+16)/32-1)*32 );
@@ -1122,11 +1117,10 @@ void GuiMap::EdgeDrag(HWND hWnd, int x, int y)
         }
         else if ( y >= rcMap.bottom-2 ) // Cursor on the bottom
         {
-            mapY = rcMap.bottom-2 + screenTop;
+            mapY = s32((double(rcMap.bottom)-2)/zoom) + screenTop;
             onEdge = true;
-            if ( size_t((screenTop+rcMap.bottom)/32) < Scenario::getTileHeight() )
-                selections.setEndDrag( selections.getEndDrag().x, ((screenTop+rcMap.bottom)/32+1)*32 );
-            screenTop = selections.getEndDrag().y - rcMap.bottom;
+            selections.setEndDrag( selections.getEndDrag().x, ((screenTop+s32(rcMap.bottom/zoom))/32+1)*32 );
+            screenTop = selections.getEndDrag().y - s32((double(rcMap.bottom)-2)/zoom);
         }
 
         if ( onEdge )
@@ -1871,7 +1865,7 @@ void GuiMap::PaintMiniMap(const WinLib::DeviceContext & dc)
         if ( RedrawMiniMap && miniMapBuffer.setBuffer(dc.getWidth(), dc.getHeight(), dc.getDcHandle()) )
         {
             RedrawMiniMap = false;
-            DrawMiniMap(miniMapBuffer, getPalette(), (u16)Scenario::getTileWidth(), (u16)Scenario::getTileHeight(),
+            DrawMiniMap(miniMapBuffer, getStaticPalette(), (u16)Scenario::getTileWidth(), (u16)Scenario::getTileHeight(),
                 MiniMapScale((u16)Scenario::getTileWidth(), (u16)Scenario::getTileHeight()), *this);
         }
 
@@ -1895,27 +1889,36 @@ void GuiMap::Redraw(bool includeMiniMap)
     RedrawWindow(getHandle(), NULL, NULL, RDW_INVALIDATE);
 }
 
-void GuiMap::ValidateBorder(s32 screenWidth, s32 screenHeight)
+void GuiMap::ValidateBorder(s32 screenWidth, s32 screenHeight, s32 newLeft, s32 newTop)
 {
-    if ( screenLeft < 0 )
+    if ( newLeft == -1 )
+        newLeft = screenLeft;
+    if ( newTop == -1 )
+        newTop = screenTop;
+    
+    if ( newLeft < 0 )
         screenLeft = 0;
-    else if ( screenLeft > ((s32)Scenario::getTileWidth())*32-screenWidth )
+    else if ( newLeft > ((s32)Scenario::getTileWidth())*32-screenWidth )
     {
         if ( screenWidth > s32(Scenario::getTileWidth())*32 )
             screenLeft = 0;
         else
             screenLeft = s32(Scenario::getTileWidth())*32-screenWidth;
     }
+    else
+        screenLeft = newLeft;
 
-    if ( screenTop < 0 )
+    if ( newTop < 0 )
         screenTop = 0;
-    else if ( screenTop > s32(Scenario::getTileHeight())*32-screenHeight )
+    else if ( newTop > s32(Scenario::getTileHeight())*32-screenHeight )
     {
         if ( screenHeight > s32(Scenario::getTileHeight())*32 )
             screenTop = 0;
         else
             screenTop = s32(Scenario::getTileHeight())*32-screenHeight;
     }
+    else
+        screenTop = newTop;
 }
 
 bool GuiMap::SetGridSize(s16 xSize, s16 ySize)
@@ -2555,7 +2558,7 @@ void GuiMap::UpdateCutCopyPasteMenuItems()
     chkd.mainMenu.SetCheck(ID_CUTCOPYPASTE_FILLSIMILARTILES, clipboard.getFillSimilarTiles());
 }
 
-void GuiMap::Scroll(bool scrollX, bool scrollY, bool validateBorder)
+void GuiMap::Scroll(bool scrollX, bool scrollY, bool validateBorder, s32 newLeft, s32 newTop)
 {
     SCROLLINFO scrollbars = { };
     scrollbars.cbSize = sizeof(SCROLLINFO);
@@ -2564,11 +2567,11 @@ void GuiMap::Scroll(bool scrollX, bool scrollY, bool validateBorder)
 
     RECT rcMap;
     GetClientRect(getHandle(), &rcMap);
-    s32 screenWidth  = (s32)((double(rcMap.right-rcMap.left))/zoom),
-        screenHeight = (s32)((double(rcMap.bottom-rcMap.top))/zoom);
+    s32 screenWidth  = s32((double(rcMap.right-rcMap.left))/zoom),
+        screenHeight = s32((double(rcMap.bottom-rcMap.top))/zoom);
 
     if ( validateBorder )
-        ValidateBorder(screenWidth, screenHeight);
+        ValidateBorder(screenWidth, screenHeight, newLeft, newTop);
 
     if ( scrollX )
     {
@@ -2721,6 +2724,11 @@ void GuiMap::SetAutoBackup(bool doAutoBackups)
 ChkdPalette & GuiMap::getPalette()
 {
     return graphics.getPalette();
+}
+
+ChkdPalette & GuiMap::getStaticPalette()
+{
+    return graphics.getStaticPalette();
 }
 
 LRESULT GuiMap::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -3061,8 +3069,14 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
                     RECT rcMap;
                     GetClientRect(hWnd, &rcMap);
 
-                    if ( x == 0 || y == 0 || x == rcMap.right-2 || y == rcMap.bottom-2 )
-                        EdgeDrag(hWnd, x, y);
+                    if ( x <= 0 || y <= 0 || x >= rcMap.right-2 || y >= rcMap.bottom-2 )
+                    {
+                        if ( std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now()-lastMoveEdgeDrag).count() > 20 )
+                        {
+                            lastMoveEdgeDrag = std::chrono::system_clock::now();
+                            EdgeDrag(hWnd, x, y);
+                        }
+                    }
 
                     selections.setEndDrag(mapHoverX, mapHoverY);
                     if ( currLayer == Layer::Terrain )
@@ -3085,7 +3099,7 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
                         selections.setEndDrag(xc, yc);
                         SnapSelEndDrag();
                     }
-
+                    
                     PaintMap(nullptr, chkd.maps.clipboard.isPasting());
                 }
                 break;
@@ -3102,14 +3116,14 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
                         if ( chkd.maps.clipboard.isPasting() )
                         {
                             s32 xc = mapHoverX, yc = mapHoverY;
-                            if ( xc < rcMap.left + screenLeft )
-                                xc = rcMap.left + screenLeft;
-                            else if ( xc > rcMap.right-2 + screenLeft )
-                                xc = rcMap.right-2 + screenLeft;
-                            if ( yc < rcMap.top + screenTop )
-                                yc = rcMap.top + screenTop;
-                            else if ( yc > rcMap.bottom-2 + screenTop )
-                                yc = rcMap.bottom-2 + screenTop;
+                            if ( panCurrentX <= rcMap.left )
+                                xc = s32(rcMap.left/zoom) + screenLeft;
+                            else if ( panCurrentX > rcMap.right-2 )
+                                xc = s32((double(rcMap.right)-2)/zoom) + screenLeft;
+                            if ( panCurrentY <= rcMap.top )
+                                yc = s32(rcMap.top/zoom) + screenTop;
+                            else if ( panCurrentY > rcMap.bottom-2 )
+                                yc = s32((double(rcMap.bottom)-2)/zoom) + screenTop;
 
                             selections.setEndDrag(xc, yc);
                             SnapSelEndDrag();
@@ -3117,8 +3131,14 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
                                 paste((s16)xc, (s16)yc);
                         }
 
-                        if ( x == 0 || y == 0 || x >= rcMap.right-2 || y >= rcMap.bottom-2 )
-                            EdgeDrag(hWnd, x, y);
+                        if ( x <= 0 || y <= 0 || x >= rcMap.right-2 || y >= rcMap.bottom-2 )
+                        {
+                            if ( std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now()-lastMoveEdgeDrag).count() > 20 )
+                            {
+                                lastMoveEdgeDrag = std::chrono::system_clock::now();
+                                EdgeDrag(hWnd, x, y);
+                            }
+                        }
 
                         selections.setEndDrag( mapHoverX, mapHoverY );
                         if ( currLayer == Layer::Terrain )
@@ -3155,18 +3175,11 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
                             RECT rcMap;
                             GetClientRect(hWnd, &rcMap);
     
-                            if ( x == 0 || x == rcMap.right-2 || y == 0 || y == rcMap.bottom-2 )
+                            if ( x <= 0 || x <= rcMap.right-2 || y >= 0 || y >= rcMap.bottom-2 )
                             {
-                                if      ( x == 0 )
-                                    screenLeft -= 32;
-                                else if ( x == rcMap.right-2 )
-                                    screenLeft += 32;
-                                if      ( y == 0 )
-                                    screenTop -= 32;
-                                else if ( y == rcMap.bottom-2 )
-                                    screenTop += 32;
-    
-                                Scroll(true, true, true);
+                                Scroll(true, true, true,
+                                    (x <= 0 ? screenLeft-32 : (x >= rcMap.right-2 ? screenLeft+32 : -1)),
+                                    (y <= 0 ? screenTop-32 : (y >= rcMap.bottom-2 ? screenTop+32 : -1)));
                             }
                         }
                         
@@ -3182,7 +3195,7 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
                         }
                         else
                             selections.setEndDrag(mapHoverX, mapHoverY);
-
+                        
                         PaintMap(nullptr, chkd.maps.clipboard.isPasting());
                     }
                 }
@@ -3206,17 +3219,10 @@ void GuiMap::MouseHover(HWND hWnd, int x, int y, WPARAM wParam)
                 {
                     RECT rcMap;
                     GetClientRect(hWnd, &rcMap);
-    
-                    if      ( x == 0              )
-                        screenLeft -= 8;
-                    else if ( x >= rcMap.right-2  )
-                        screenLeft += 8;
-                    if      ( y == 0              )
-                        screenTop -= 8;
-                    else if ( y >= rcMap.bottom-2 )
-                        screenTop += 8;
-    
-                    Scroll(true, true, true);
+
+                    Scroll(true, true, true,
+                        (x <= 0 ? screenLeft-8 : (x >= rcMap.right-2 ? screenLeft+8 : -1)),
+                        (y <= 0 ? screenTop-8 : (y >= rcMap.bottom-2 ? screenTop+8 : -1)));
                     RedrawWindow(getHandle(), NULL, NULL, RDW_INVALIDATE);
 
                     x = (s32(((double)x)/getZoom())) + screenLeft,
@@ -3323,9 +3329,7 @@ void GuiMap::PanTimerTimeout()
     if ( panStartX == -1 || panStartY == -1 ) return;    
     int xDelta = std::min((panStartX - panCurrentX) / 4, 64);
     int yDelta = std::min((panStartY - panCurrentY) / 4, 64);
-    SetScreenLeft(s32(screenLeft - xDelta));
-    SetScreenTop(s32(screenTop - yDelta));
-    Scroll(true, true, true);
+    Scroll(true, true, true, screenLeft-xDelta, screenTop-yDelta);
 }
 
 void GuiMap::FinalizeTerrainSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam)
