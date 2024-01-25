@@ -34,7 +34,8 @@ enum_t(Id, u32, {
 });
 
 TriggersWindow::TriggersWindow() : currTrigger(NO_TRIGGER), displayAll(true), numVisibleTrigs(0),
-    changeGroupHighlightOnly(false), trigListDc(std::nullopt), drawingAll(false), textTrigGenerator(Settings::useAddressesForMemory, Settings::deathTableStart)
+    changeGroupHighlightOnly(false), trigListDc(std::nullopt), drawingAll(false), textTrigGenerator(Settings::useAddressesForMemory, Settings::deathTableStart),
+    countTillCachePurge(0)
 {
     for ( u8 i=0; i<Chk::Trigger::MaxOwners; i++ )
         groupSelected[i] = false;
@@ -1335,8 +1336,14 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
             textTrigGenerator.loadScenario(*CM);
             trigListDc.emplace(listTriggers.getHandle());
             trigListDc->setDefaultFont();
-            commentSizeTable.clear();
-            trigLineSizeTable.clear();
+            if ( countTillCachePurge == 0 )
+            {
+                commentSizeTable.clear();
+                trigLineSizeTable.clear();
+                countTillCachePurge = 500;
+            }
+            else
+                --countTillCachePurge;
             break;
 
         case WM_MEASUREITEM:

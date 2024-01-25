@@ -26,6 +26,7 @@ void DimensionChange::Reverse(void *guiMap)
     std::swap(this->units, scenario->units);
     std::swap(this->locations, scenario->locations);
     ((GuiMap*)guiMap)->refreshScenario();
+    ((GuiMap*)guiMap)->Redraw(true);
 }
 
 int32_t DimensionChange::GetType()

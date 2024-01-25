@@ -1175,7 +1175,8 @@ void GuiMap::refreshScenario()
         chkd.dimensionsWindow.RefreshWindow();
     chkd.trigEditorWindow.RefreshWindow();
     chkd.briefingTrigEditorWindow.RefreshWindow();
-
+    
+    graphics.updatePalette();
     Redraw(true);
 }
 
@@ -2043,8 +2044,15 @@ bool GuiMap::isValidUnitPlacement(Sc::Unit::Type unitType, s32 x, s32 y)
 
         if ( validatePlacableOnTerrain )
         {
-            if ( placementLeft >= 32*s32(dimensions.tileWidth) || placementTop >= 32*s32(dimensions.tileHeight) )
+            if ( placementLeft < 0 ||
+                 placementTop < 0 ||
+                 placementRight > s32(Scenario::getPixelWidth()) ||
+                 placementBottom > s32(Scenario::getPixelHeight()) ||
+                 placementLeft >= 32*s32(dimensions.tileWidth) ||
+                 placementTop >= 32*s32(dimensions.tileHeight) )
+            {
                 return false;
+            }
 
             const auto & tileset = chkd.scData.terrain.get(this->getTileset());
             s32 xTileMin = std::max(0, placementLeft/32);
@@ -3141,7 +3149,7 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
                         }
 
                         selections.setEndDrag( mapHoverX, mapHoverY );
-                        if ( currLayer == Layer::Terrain )
+                        if ( currLayer == Layer::Terrain && !chkd.maps.clipboard.isPasting() )
                             selections.setEndDrag( (mapHoverX+16)/32*32, (mapHoverY+16)/32*32 );
                         else if ( currLayer == Layer::Locations )
                         {
@@ -3419,10 +3427,38 @@ void GuiMap::FinalizeLocationDrag(HWND hWnd, int mapX, int mapY, WPARAM wParam)
                     bool xInverted = loc.right < loc.left,
                          yInverted = loc.bottom < loc.top;
 
-                    loc.left += dragX;
-                    loc.right += dragX;
-                    loc.top += dragY;
-                    loc.bottom += dragY;
+                    if ( s32(loc.left + dragX) < 0 && !xInverted )
+                    {
+                        loc.right = loc.right-loc.left;
+                        loc.left = 0;
+                    }
+                    else if ( s32(loc.right + dragX) < 0 && xInverted )
+                    {
+                        loc.left = loc.left-loc.right;
+                        loc.right = 0;
+                    }
+                    else
+                    {
+                        loc.left += dragX;
+                        loc.right += dragX;
+                    }
+
+                    if ( s32(loc.top + dragY) < 0 && !yInverted )
+                    {
+                        loc.bottom = loc.bottom-loc.top;
+                        loc.top = 0;
+                    }
+                    else if ( s32(loc.bottom + dragY) < 0 && yInverted )
+                    {
+                        loc.top = loc.top-loc.bottom;
+                        loc.bottom = 0;
+                    }
+                    else
+                    {
+                        loc.top += dragY;
+                        loc.bottom += dragY;
+                    }
+                    
                     s32 xc1Preserve = loc.left,
                         yc1Preserve = loc.top,
                         xc2Preserve = loc.right,

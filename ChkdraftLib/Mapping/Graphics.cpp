@@ -1857,6 +1857,7 @@ void DrawPasteGraphics(const WinLib::DeviceContext & dc, ChkdPalette & palette, 
         }
     };
     auto drawPasteDoodads = [&](POINT paste) {
+        bool allowIllegalDoodads = map.AllowIllegalDoodadPlacement();
         const auto & doodads = clipboard.getDoodads();
         if ( !doodads.empty() )
         {
@@ -1896,7 +1897,7 @@ void DrawPasteGraphics(const WinLib::DeviceContext & dc, ChkdPalette & palette, 
                                     if ( tileXc < map.dimensions.tileWidth && tileYc < map.dimensions.tileHeight )
                                     {
                                         u16 existingTileGroup = map.getTile(tileXc, tileYc) / 16;
-                                        if ( existingTileGroup == placability.tileGroup[y*tileWidth+x] )
+                                        if ( existingTileGroup == placability.tileGroup[y*tileWidth+x] || allowIllegalDoodads )
                                             TileToBits(graphicBits, palette, tiles, xStart+32*x, yStart+32*y, width, height, doodad.tileIndex[x][y], 0, 0, 25);
                                         else
                                             TileToBits(graphicBits, palette, tiles, xStart+32*x, yStart+32*y, width, height, doodad.tileIndex[x][y], 100, 0, 0);

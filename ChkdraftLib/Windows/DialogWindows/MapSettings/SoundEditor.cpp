@@ -430,6 +430,9 @@ void SoundEditorWindow::MapSoundSelectionChanged()
         u32 soundStringId = 0;
         if ( selectedSoundListIndex >= 0 && listMapSounds.GetItemData(selectedSoundListIndex, soundStringId) )
         {
+            if ( !CM->stringIsSound(soundStringId) )
+                buttonDeleteSound.DisableThis();
+
             SoundStatus soundStatus = CM->getSoundStatus(soundStringId);
             if ( soundStatus == SoundStatus::PendingMatch || soundStatus == SoundStatus::CurrentMatch || soundStatus == SoundStatus::VirtualFile )
                 buttonExtractSound.EnableThis();

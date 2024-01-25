@@ -384,9 +384,9 @@ void BriefingTrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const s
         {
             Chk::Action::Argument argument = Chk::Action::getBriefingClassicArg(briefingTrig.action(actionNum).actionType, argNum);
             madeChange = (parseChkdStr(chkdNewText, rawUpdateText) &&
-                ttc.parseBriefingActionArg(rawUpdateText, argument, action, *CM, chkd.scData, briefingTrigIndex, hasSuggestion)) ||
+                ttc.parseBriefingActionArg(rawUpdateText, argument, action, *CM, chkd.scData, briefingTrigIndex, actionNum, hasSuggestion)) ||
                 (hasSuggestion && parseChkdStr(chkdSuggestText, rawSuggestText) &&
-                    ttc.parseBriefingActionArg(rawSuggestText, argument, action, *CM, chkd.scData, briefingTrigIndex, false));
+                    ttc.parseBriefingActionArg(rawSuggestText, argument, action, *CM, chkd.scData, briefingTrigIndex, actionNum, false));
         }
 
         if ( madeChange )

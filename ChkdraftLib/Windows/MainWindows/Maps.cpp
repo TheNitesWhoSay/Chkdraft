@@ -130,6 +130,8 @@ GuiMapPtr Maps::NewMap(Sc::Terrain::Tileset tileset, u16 width, u16 height, size
                 Error("Failed to create MDI Child Window!");
         } catch ( AllMapIdsExausted & e ) {
             Error(e.what());
+        } catch ( std::exception & e ) {
+            Error(e.what());
         }
     }
     else
@@ -279,9 +281,9 @@ void Maps::ChangeLayer(Layer newLayer)
             ShowWindow(chkd.mainToolbar.terrainBox.getHandle(), SW_HIDE);
 
         if ( newLayer == Layer::Doodads )
-            EnableMenuItem(chkd.mainMenu.getHandle(), ID_EDIT_COVERTTOTERRAIN, MF_ENABLED);
+            EnableMenuItem(chkd.mainMenu.getHandle(), ID_EDIT_CONVERTTOTERRAIN, MF_ENABLED);
         else
-            EnableMenuItem(chkd.mainMenu.getHandle(), ID_EDIT_COVERTTOTERRAIN, MF_DISABLED);
+            EnableMenuItem(chkd.mainMenu.getHandle(), ID_EDIT_CONVERTTOTERRAIN, MF_DISABLED);
 
         if ( newLayer == Layer::Units || newLayer == Layer::Sprites )
         {
@@ -847,7 +849,7 @@ void Maps::EnableMapping()
 
         for ( auto item : onOffMenuItems )
         {
-            if ( item != ID_EDIT_COVERTTOTERRAIN && item != ID_EDIT_STACKSELECTED && item != ID_EDIT_CREATELOCATION &&
+            if ( item != ID_EDIT_CONVERTTOTERRAIN && item != ID_EDIT_STACKSELECTED && item != ID_EDIT_CREATELOCATION &&
                  item != ID_EDIT_CREATEINVERTEDLOCATION && item != ID_EDIT_CREATEMOBILEINVERTEDLOCATION )
                 EnableMenuItem(hMenu, item, MF_ENABLED);
         }
@@ -902,7 +904,7 @@ void Maps::DisableMapping()
         for (auto item : onOffMenuItems)
             EnableMenuItem(hMenu, item, MF_DISABLED);
 
-        EnableMenuItem(hMenu, ID_EDIT_COVERTTOTERRAIN, MF_DISABLED);
+        EnableMenuItem(hMenu, ID_EDIT_CONVERTTOTERRAIN, MF_DISABLED);
         EnableMenuItem(hMenu, ID_EDIT_STACKSELECTED, MF_DISABLED);
         EnableMenuItem(hMenu, ID_EDIT_CREATELOCATION, MF_DISABLED);
         EnableMenuItem(hMenu, ID_EDIT_CREATEINVERTEDLOCATION, MF_DISABLED);
