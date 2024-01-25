@@ -81,11 +81,14 @@ void TrigEditorWindow::RefreshWindow()
     if ( getHandle() == NULL )
         return;
 
-    triggersWindow.RefreshWindow(false);
-    templatesWindow.RefreshWindow();
-    countersWindow.RefreshWindow();
-    cuwpsWindow.RefreshWindow(true);
-    switchesWindow.RefreshWindow();
+    switch ( currTab )
+    {
+        case Tab::Triggers: triggersWindow.RefreshWindow(false); break;
+        case Tab::Templates: templatesWindow.RefreshWindow(); break;
+        case Tab::Counters: countersWindow.RefreshWindow(); break;
+        case Tab::Cuwps: cuwpsWindow.RefreshWindow(true); break;
+        case Tab::Switches: switchesWindow.RefreshWindow(); break;
+    }
     ChangeTab(currTab);
 }
 

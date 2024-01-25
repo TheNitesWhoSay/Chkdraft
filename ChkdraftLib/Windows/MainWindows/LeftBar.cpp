@@ -198,7 +198,7 @@ LRESULT LeftBar::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                     rcMain.right-rcMain.left-rcLeftBar.right+rcLeftBar.left+xBorder-1, chkd.mainPlot.loggerWindow.IsVisible() ? chkd.mainPlot.loggerWindow.Top() : rcStatus.top - rcTool.bottom, SWP_NOZORDER);
 
                 // Fit the minimap to the center of the top part of the left bar
-                SetWindowPos(miniMap.getHandle(), NULL, (rcLeftBar.right-rcLeftBar.left-(132+2*(xBorder+1)))/2, 3, 132, 132, SWP_NOZORDER);
+                SetWindowPos(miniMap.getHandle(), NULL, (rcLeftBar.right-rcLeftBar.left-(132+2*(xBorder+1)))/2-3, 5, 132, 132, SWP_NOZORDER);
 
                 // Fit the tree to the bottom part of the left bar
                 GetClientRect(hWnd, &rcLeftBar);

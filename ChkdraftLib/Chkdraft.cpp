@@ -548,7 +548,7 @@ LRESULT Chkdraft::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     case ID_EDIT_SELECTALL: CM->selectAll(); break;
     case ID_EDIT_DELETE: CM->deleteSelection(); break;
     case ID_EDIT_CLEARSELECTIONS: CM->clearSelection(); break;
-    case ID_EDIT_COVERTTOTERRAIN: CM->convertSelectionToTerrain(); break;
+    case ID_EDIT_CONVERTTOTERRAIN: CM->convertSelectionToTerrain(); break;
     case ID_EDIT_STACKSELECTED: CM->stackSelected(); break;
     case ID_EDIT_CREATELOCATION: CM->createLocation(); break;
     case ID_EDIT_CREATEINVERTEDLOCATION: CM->createInvertedLocation(); break;
@@ -712,13 +712,9 @@ LRESULT Chkdraft::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
             break;
 
         case WM_CLOSE:
-            while ( CM != nullptr )
-            {
-                if ( CM->CanExit() )
-                    maps.destroyActive();
-                else
-                    return 0; // Abort close
-            }
+            if ( !maps.CloseAll() )
+                return 0; // Abort close
+
             return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
             break;
 

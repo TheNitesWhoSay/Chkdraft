@@ -236,11 +236,14 @@ void TrigGeneralWindow::SetPausedTrigger(bool paused)
 
 void TrigGeneralWindow::ParseRawFlagsText()
 {
-    Chk::Trigger & trigger = CM->getTrigger(trigIndex);
-    if ( editRawFlags.GetEditBinaryNum(trigger.flags) )
-        CM->notifyChange(false);
+    if ( trigIndex < CM->numTriggers() )
+    {
+        Chk::Trigger & trigger = CM->getTrigger(trigIndex);
+        if ( editRawFlags.GetEditBinaryNum(trigger.flags) )
+            CM->notifyChange(false);
         
-    RefreshWindow(trigIndex);
+        RefreshWindow(trigIndex);
+    }
 }
 
 void TrigGeneralWindow::ToggleAdvancedMode()

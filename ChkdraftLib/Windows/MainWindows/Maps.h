@@ -31,6 +31,7 @@ class Maps : public WinLib::MdiClient
         bool OpenMap(FileBrowserPtr<SaveType> fileBrowser = MapFile::getDefaultOpenMapBrowser());
         bool SaveCurr(bool saveAs);
         void CloseMap(HWND hMap);
+        bool CloseAll();
         void CloseActive();
 
         void UpdateTreeView();

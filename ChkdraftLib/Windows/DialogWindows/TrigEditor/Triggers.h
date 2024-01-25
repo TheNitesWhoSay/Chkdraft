@@ -90,6 +90,7 @@ class TriggersWindow : public WinLib::ClassWindow
         };
         std::unordered_multimap<size_t, CommentSize> commentSizeTable;
         std::unordered_multimap<size_t, WinLib::LineSize> trigLineSizeTable;
+        int countTillCachePurge;
 
         bool ShowTrigger(const Chk::Trigger & trigger); // Checks if trigger should currently be shown
         void ClearGroups();

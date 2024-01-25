@@ -114,7 +114,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     void PaintMap(GuiMapPtr currMap, bool pasting);
                     void PaintMiniMap(const WinLib::DeviceContext & dc);
                     void Redraw(bool includeMiniMap);
-                    void ValidateBorder(s32 screenWidth, s32 screenHeight);
+                    void ValidateBorder(s32 screenWidth, s32 screenHeight, s32 newLeft = -1, s32 newTop = -1);
 
                     bool SetGridSize(s16 xSize, s16 ySize);
                     bool SetGridColor(u8 red, u8 green, u8 blue);
@@ -174,7 +174,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     void UpdateSpriteMenuItems();
                     void UpdateCutCopyPasteMenuItems();
 
-                    void Scroll(bool scrollX, bool scrollY, bool validateBorder);
+                    void Scroll(bool scrollX, bool scrollY, bool validateBorder, s32 newLeft = -1, s32 newTop = -1);
 
 
 /*     Misc     */  void setMapId(u16 mapId);
@@ -189,8 +189,9 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     bool CreateThis(HWND hClient, const std::string & title);
                     void ReturnKeyPress();
                     static void SetAutoBackup(bool doAutoBackups);
-
+                    
                     ChkdPalette & getPalette();
+                    ChkdPalette & getStaticPalette();
 
 
     protected:
@@ -298,6 +299,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     static bool doAutoBackups;
                     double minSecondsBetweenBackups = 1800; // The smallest interval between consecutive backups
                     time_t lastBackupTime = -1; // -1 if there are no previous backups
+                    std::chrono::system_clock::time_point lastMoveEdgeDrag = std::chrono::system_clock::now();
 
                     GuiMap();
 };
