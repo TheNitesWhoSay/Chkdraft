@@ -721,7 +721,7 @@ void SpritePropertiesWindow::NotifyMoveToPressed()
             auto spriteCreateDels = ReversibleActions::Make();
             u16 i = 0;
             auto & selSprites = selections.getSprites();
-            for ( size_t spriteIndex : selSprites )
+            for ( size_t & spriteIndex : selSprites )
             { // Remove each selected sprite from the map, store in selectedSprites
                 u32 loc = ((u32)spriteIndex)*sizeof(Chk::Sprite);
                 selectedSprites[shift - i] = CM->getSprite(spriteIndex);

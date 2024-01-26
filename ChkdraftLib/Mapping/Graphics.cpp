@@ -1235,7 +1235,13 @@ void UnitToBits(ChkdBitmap & bitmap, ChkdPalette & palette, u8 color, u16 bitWid
 void SpriteToBits(ChkdBitmap & bitmap, ChkdPalette & palette, u8 color, u16 bitWidth, u16 bitHeight,
                    s32 xStart, s32 yStart, u16 spriteID, u16 spriteXC, u16 spriteYC, bool flipped, bool selected)
 {
-    const Sc::Sprite::GrpFile & curr = chkd.scData.sprites.getGrp(chkd.scData.sprites.getImage(chkd.scData.sprites.getSprite(spriteID).imageFile).grpFile).get();
+    if ( spriteID >= chkd.scData.sprites.numSprites() )
+        spriteID = 0;
+
+    const Sc::Sprite::GrpFile & curr = chkd.scData.sprites.getGrp(chkd.scData.sprites.getImage(
+        chkd.scData.sprites.getSprite(spriteID).imageFile
+    ).grpFile).get();
+
     Sc::SystemColor remapped[8];
     if ( selected )
     {
