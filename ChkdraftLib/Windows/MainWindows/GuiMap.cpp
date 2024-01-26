@@ -1841,7 +1841,7 @@ void GuiMap::PaintMap(GuiMapPtr currMap, bool pasting)
             toolsBuffer.setBuffer(scaledWidth, scaledHeight, dc.getDcHandle());
             mapBuffer.flushBuffer(toolsBuffer);
             if ( currMap == nullptr || currMap.get() == this )
-            { // Drag and paste graphics
+            { // Drag, paste & hover graphics
                 SnapSelEndDrag();
                 graphics.DrawTools(toolsBuffer, scaledWidth, scaledHeight,
                     screenLeft, screenTop, selections, pasting, clipboard, *this);
@@ -2916,7 +2916,7 @@ void GuiMap::LButtonDoubleClick(int x, int y, WPARAM wParam)
     if ( currLayer == Layer::Locations )
         doubleClickLocation(x, y);
     else
-        LButtonDown(x, y, wParam);
+        ReturnKeyPress();
 }
 
 void GuiMap::LButtonDown(int x, int y, WPARAM wParam)
@@ -3008,7 +3008,7 @@ void GuiMap::LButtonDown(int x, int y, WPARAM wParam)
                     {
                         if ( selections.hasTiles() )
                             selections.removeTiles();
-                                
+
                         selections.setDrags(mapClickX, mapClickY);
                         if ( currLayer == Layer::Terrain )
                             selections.setDrags( (mapClickX+16)/32*32, (mapClickY+16)/32*32 );
@@ -3023,7 +3023,10 @@ void GuiMap::LButtonDown(int x, int y, WPARAM wParam)
                             u32 x1 = mapClickX, y1 = mapClickY;
                             if ( SnapLocationDimensions(x1, y1, x1, y1, LocSnapFlags(LocSnapFlags::SnapX1|LocSnapFlags::SnapY1)) )
                                 selections.setDrags(x1, y1);
+
                             selections.setLocationFlags(getLocSelFlags(mapClickX, mapClickY));
+                            if ( selections.getSelectedLocation() != Chk::LocationId::NoLocation && !selections.selFlagsIndicateInside() )
+                                selections.clear();
                         }
                     }
 
@@ -3393,27 +3396,31 @@ void GuiMap::FinalizeLocationDrag(HWND hWnd, int mapX, int mapY, WPARAM wParam)
             ascendingOrder(startX, endX);
             ascendingOrder(startY, endY);
             SnapLocationDimensions(startX, startY, endX, endY, LocSnapFlags::SnapAll);
-                                    
-            Chk::Location newLocation {};
-            newLocation.left = startX;
-            newLocation.top = startY;
-            newLocation.right = endX;
-            newLocation.bottom = endY;
-            newLocation.elevationFlags = 0;
-            selections.setDrags(-1, -1);
 
-            size_t newLocationId = Scenario::addLocation(newLocation);
-            if ( newLocationId != Chk::LocationId::NoLocation )
+            if ( startX != endX && startY != endY )
             {
-                Scenario::setLocationName<RawString>(newLocationId, "Location " + std::to_string(newLocationId), Chk::Scope::Game);
-                Scenario::deleteUnusedStrings(Chk::Scope::Both);
-                undos.AddUndo(LocationCreateDel::Make((u16)newLocationId));
-                selections.selectLocation(u16(newLocationId));
-                chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree(true);
-                refreshScenario();
+                Chk::Location newLocation {};
+                newLocation.left = startX;
+                newLocation.top = startY;
+                newLocation.top = startY;
+                newLocation.right = endX;
+                newLocation.bottom = endY;
+                newLocation.elevationFlags = 0;
+
+                size_t newLocationId = Scenario::addLocation(newLocation);
+                if ( newLocationId != Chk::LocationId::NoLocation )
+                {
+                    Scenario::setLocationName<RawString>(newLocationId, "Location " + std::to_string(newLocationId), Chk::Scope::Game);
+                    Scenario::deleteUnusedStrings(Chk::Scope::Both);
+                    undos.AddUndo(LocationCreateDel::Make((u16)newLocationId));
+                    selections.selectLocation(u16(newLocationId));
+                    chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree(true);
+                    refreshScenario();
+                }
+                else
+                    Error("Max Locations Reached!");
             }
-            else
-                Error("Max Locations Reached!");
+            selections.setDrags(-1, -1);
         }
         else // Move or resize location
         {

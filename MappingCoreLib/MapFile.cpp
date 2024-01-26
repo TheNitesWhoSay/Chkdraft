@@ -311,6 +311,8 @@ bool MapFile::openMapFile(const std::string & filePath)
             }
             else if ( ::lastErrorIndicatedFileNotFound() )
                 CHKD_ERR("File Not Found");
+            else if ( ::lastErrorIndicatedBadFormat() )
+                CHKD_ERR("Selected file was not a valid MPQ");
             else
                 CHKD_ERR("%d", ::getLastError());
         }

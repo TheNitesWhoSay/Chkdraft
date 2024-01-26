@@ -265,6 +265,23 @@ void Selections::selectLocation(s32 clickX, s32 clickY, bool canSelectAnywhere)
     }
 }
 
+bool Selections::selFlagsIndicateInside() const
+{
+    switch ( locSelFlags )
+    {
+        case LocSelFlags::West:
+        case LocSelFlags::North:
+        case LocSelFlags::East:
+        case LocSelFlags::South:
+        case LocSelFlags::NorthWest:
+        case LocSelFlags::NorthEast:
+        case LocSelFlags::SouthEast:
+        case LocSelFlags::SouthWest:
+        case LocSelFlags::Middle: return true;
+        default: return false;
+    }
+}
+
 void Selections::addUnit(u16 index)
 {
     if ( !unitIsSelected(index) )
