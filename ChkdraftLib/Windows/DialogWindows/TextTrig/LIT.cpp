@@ -93,7 +93,7 @@ BOOL LitWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 bool LitWindow::GetLitPaths(std::string & litDirectory, std::string & litPath)
 {
-    std::string chkdPath = WinLib::GetCurrentExePath();
+    /*std::string chkdPath = WinLib::GetCurrentExePath();
     if ( chkdPath.length() > 0 )
     {
         auto lastBackslashPos = chkdPath.find_last_of('\\');
@@ -104,14 +104,14 @@ bool LitWindow::GetLitPaths(std::string & litDirectory, std::string & litPath)
             return true;
         }
     }
-    Error("Failed to determine LIT's directory");
+    Error("Failed to determine LIT's directory");*/
     return false;
 }
 
 std::optional<std::string> LitWindow::WriteLitBat(const std::string & inputFilePath, const std::string & litDirectory,
     const std::string & textOutPath, const std::string & trigOutName)
 {
-    auto inputDirectory = ::getSystemFileDirectory(inputFilePath);
+    /*auto inputDirectory = ::getSystemFileDirectory(inputFilePath);
     auto inputFile = ::getSystemFileName(inputFilePath);
 
     std::string litBatPath = litDirectory + "chkd-LIT_LIT.bat";
@@ -130,13 +130,13 @@ std::optional<std::string> LitWindow::WriteLitBat(const std::string & inputFileP
             << textOutPath;
         litBat.close();
         return litBatPath;
-    }
+    }*/
     return std::nullopt;
 }
 
 bool LitWindow::RunLit(Scenario & map)
 {
-    if ( auto litDirectory = GetToolPath("LIT") )
+    /*if ( auto litDirectory = GetToolPath("LIT") )
     {
         auto inputPath = editPath.GetWinText();
         if ( inputPath && ::findFile(*inputPath) )
@@ -181,6 +181,6 @@ bool LitWindow::RunLit(Scenario & map)
             Error(std::string("Input file not found: ") + (inputPath ? *inputPath : "ERROR"));
     }
     else
-        Error("Failed to determine LIT's directory");
+        Error("Failed to determine LIT's directory");*/
     return false;
 }

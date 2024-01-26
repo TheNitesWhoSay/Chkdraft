@@ -645,7 +645,6 @@ LRESULT Chkdraft::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
         // Tools
     case ID_TRIGGERS_TRIGGEREDITOR: textTrigWindow.CreateThis(getHandle()); break;
     case ID_TRIGGERS_MISSIONBRIEFINGEDITOR: briefingTextTrigWindow.CreateThis(getHandle()); break;
-    case ID_TOOLS_LITTRIGGERS: ifmapopen(litWindow.CreateThis(getHandle())); break;
     case ID_TOOLS_PASSWORD: ifmapopen(changePasswordWindow.CreateThis(getHandle())) break;
     case ID_TOOLS_MPQRECOMPILER: runMpqRecompiler(); break;
 

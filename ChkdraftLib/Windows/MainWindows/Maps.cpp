@@ -877,7 +877,6 @@ void Maps::DisableMapping()
         chkd.terrainPalWindow.DestroyThis();
         chkd.tilePropWindow.DestroyThis();
         chkd.textTrigWindow.DestroyThis();
-        chkd.litWindow.DestroyThis();
         chkd.mapSettingsWindow.DestroyThis();
         chkd.trigEditorWindow.DestroyThis();
         chkd.briefingTrigEditorWindow.DestroyThis();
