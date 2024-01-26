@@ -12,9 +12,6 @@ class MiniMap : public WinLib::ClassWindow
     protected:
         void MiniMapClick(LPARAM ClickPoints);
         LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-
-    private:
-        bool cursorLocked = false;
 };
 
 #endif

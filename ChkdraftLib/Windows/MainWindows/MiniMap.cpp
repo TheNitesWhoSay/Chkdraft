@@ -67,27 +67,19 @@ LRESULT MiniMap::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     switch ( msg )
     {
         case WM_LBUTTONDOWN:
-            if ( !cursorLocked )
-            {
-                cursorLocked = true;
-                MiniMapClick(lParam);
-                LockCursor();
-            }
+            MiniMapClick(lParam);
+            LockCursor();
             break;
 
         case WM_LBUTTONUP:
-            ClipCursor(NULL);
-            cursorLocked = false;
+            UnlockCursor();
             break;
 
         case WM_MOUSEMOVE:
             if ( wParam == MK_LBUTTON )
                 MiniMapClick(lParam);
-            else if ( !cursorLocked )
-            {
+            else if ( (wParam & MK_LBUTTON) != MK_LBUTTON )
                 UnlockCursor();
-                cursorLocked = false;
-            }
             break;
 
         case WM_PAINT:
