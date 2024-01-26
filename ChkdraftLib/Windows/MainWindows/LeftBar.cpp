@@ -226,6 +226,13 @@ LRESULT LeftBar::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
             }
             break;
 
+        case WM_MOUSEWHEEL:
+            if ( CM != nullptr && chkd.maps.clipboard.isPasting() )
+                SendMessage(CM->getHandle(), WM_MOUSEWHEEL, wParam, lParam);
+            else
+                return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
+            break;
+
         default:
             return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
             break;

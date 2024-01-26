@@ -74,6 +74,8 @@ bool browseForSave(std::string & filePath, u32 & filterIndex, const std::vector<
 
 bool lastErrorIndicatedFileNotFound();
 
+bool lastErrorIndicatedBadFormat();
+
 unsigned long getLastError();
 
 #endif

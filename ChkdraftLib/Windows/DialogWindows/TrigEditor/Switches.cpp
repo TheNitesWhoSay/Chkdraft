@@ -61,8 +61,9 @@ void SwitchesWindow::RefreshWindow()
             chkd.trigEditorWindow.SetWinText("Trigger Editor - [Switch " + std::to_string(selectedSwitch + 1) + "]");
 
             EnableEditing();
-            size_t switchNameStringId = CM->getSwitchNameStringId(selectedSwitch);
-            bool hasName = switchNameStringId != Chk::StringId::NoString;
+            size_t switchNameStringId = CM->getSwitchNameStringId(selectedSwitch, Chk::Scope::Game);
+            size_t editorSwitchNameStringId = CM->getSwitchNameStringId(selectedSwitch, Chk::Scope::Editor);
+            bool hasName = switchNameStringId != Chk::StringId::NoString || editorSwitchNameStringId != Chk::StringId::NoString;
             bool isExtendedString = false;
 
             checkUseDefaultName.SetCheck(!hasName);

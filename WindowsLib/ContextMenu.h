@@ -2,6 +2,7 @@
 #define CONTEXTMENU_H
 #include <Windows.h>
 #include <functional>
+#include <memory>
 #include <string>
 #include <vector>
 #include "../CrossCutLib/SimpleIcu.h"

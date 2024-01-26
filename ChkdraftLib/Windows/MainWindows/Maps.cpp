@@ -742,7 +742,7 @@ void Maps::updateCursor(s32 xc, s32 yc)
     if ( currentlyActiveMap->getLayer() == Layer::Locations )
     {
         u16 selectedLocation = selections.getSelectedLocation();
-        if ( selectedLocation != NO_LOCATION && selectedLocation < currentlyActiveMap->numUnits() )
+        if ( selectedLocation != NO_LOCATION && selectedLocation < currentlyActiveMap->numLocations() )
         {
             const Chk::Location & loc = currentlyActiveMap->getLocation(selectedLocation);
             s32 locationLeft = std::min(loc.left, loc.right),
@@ -755,7 +755,7 @@ void Maps::updateCursor(s32 xc, s32 yc)
                 bottomOuterBound = locationBottom+5;
 
             if ( xc >= leftOuterBound && xc <= rightOuterBound &&
-                    yc >= topOuterBound && yc <= bottomOuterBound    )
+                 yc >= topOuterBound && yc <= bottomOuterBound )
             {
                 s32 locationWidth = locationRight-locationLeft,
                     locationHeight = locationBottom-locationTop,
@@ -774,7 +774,7 @@ void Maps::updateCursor(s32 xc, s32 yc)
                     bottomInnerBound = locationBottom-5;
 
                 if ( xc >= leftInnerBound && xc <= rightInnerBound &&
-                        yc >= topInnerBound && yc <= bottomInnerBound    )
+                     yc >= topInnerBound && yc <= bottomInnerBound )
                 {
                     currCursor = &sizeAllCursor;
                     SetCursor(sizeAllCursor);
@@ -790,7 +790,7 @@ void Maps::updateCursor(s32 xc, s32 yc)
                     SetCursor(weCursor);
                 } // Invariant: is on a corner
                 else if ( ( xc < leftInnerBound && yc < topInnerBound ) ||
-                            ( xc > rightInnerBound && yc > bottomInnerBound ) )
+                          ( xc > rightInnerBound && yc > bottomInnerBound ) )
                 {
                     currCursor = &nwseCursor;
                     SetCursor(nwseCursor);

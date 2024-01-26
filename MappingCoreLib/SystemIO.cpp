@@ -626,6 +626,15 @@ bool lastErrorIndicatedFileNotFound()
 #endif;
 }
 
+bool lastErrorIndicatedBadFormat()
+{
+#ifdef _WIN32
+    return ::GetLastError() == ERROR_BAD_FORMAT;
+#else
+    return false;
+#endif;
+}
+
 unsigned long getLastError()
 {
 #ifdef _WIN32

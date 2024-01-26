@@ -62,6 +62,7 @@ class Selections
         void selectLocation(s32 clickX, s32 clickY, bool canSelectAnywhere); // Based on map click
         void setLocationFlags(LocSelFlags flags) { locSelFlags = flags; }
         LocSelFlags getLocationFlags() { return locSelFlags; }
+        bool selFlagsIndicateInside() const;
         
         void addUnit(u16 index);
         void removeUnit(u16 index);

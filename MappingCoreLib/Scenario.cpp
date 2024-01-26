@@ -6660,6 +6660,7 @@ Chk::ExtendedTrigData & Scenario::getTriggerExtension(size_t triggerIndex, bool 
             if ( (i & Chk::UnusedExtendedTrigDataIndexCheck) != 0 && usedExtensionIndexes.count(u32(i)) == 0 ) // If index is usable and unused
             {
                 this->triggerExtensions[i] = Chk::ExtendedTrigData{};
+                trigger.setExtendedDataIndex(this->triggerExtensions.size()-1);
                 return this->triggerExtensions[i];
             }
         }

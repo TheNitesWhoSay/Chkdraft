@@ -404,7 +404,7 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
         bool madeChange = false;
         if ( argType == Chk::Action::ArgType::String || argType == Chk::Action::ArgType::Sound )
         {
-            size_t newStringId = CM->findString<SingleLineChkdString>(chkdSuggestText);
+            size_t newStringId = CM->findString<SingleLineChkdString>(newText);
             if ( newStringId == Chk::StringId::NoString )
                 newStringId = CM->findString<SingleLineChkdString>(chkdSuggestText);
 
