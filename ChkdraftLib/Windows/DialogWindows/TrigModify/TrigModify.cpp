@@ -195,8 +195,12 @@ BOOL TrigModifyWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
                 chkd.SetCurrDialog(hWnd);
             else // LOWORD(wParam) == WA_INACTIVE
             {
-                conditionsWindow.HideSuggestions();
-                actionsWindow.HideSuggestions();
+                if ( !conditionsWindow.IsSuggestionsWindow((HWND)lParam) &&
+                     !actionsWindow.IsSuggestionsWindow((HWND)lParam) )
+                {
+                    conditionsWindow.HideSuggestions();
+                    actionsWindow.HideSuggestions();
+                }
             }
             return FALSE;
             break;
@@ -204,8 +208,12 @@ BOOL TrigModifyWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
         case WM_NCACTIVATE:
             if ( (BOOL)wParam == FALSE )
             {
-                conditionsWindow.HideSuggestions();
-                actionsWindow.HideSuggestions();
+                if ( !conditionsWindow.IsSuggestionsWindow((HWND)lParam) &&
+                     !actionsWindow.IsSuggestionsWindow((HWND)lParam) )
+                {
+                    conditionsWindow.HideSuggestions();
+                    actionsWindow.HideSuggestions();
+                }
             }
             return FALSE;
             break;

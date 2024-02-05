@@ -34,7 +34,7 @@ enum_t(Id, u32, {
 });
 
 BriefingTriggersWindow::BriefingTriggersWindow() : currBriefingTrigger(NO_TRIGGER), displayAll(true), numVisibleBriefingTrigs(0),
-    changeGroupHighlightOnly(false), briefingTrigListDc(std::nullopt), drawingAll(false), briefingTextTrigGenerator()
+    changeGroupHighlightOnly(false), briefingTrigListDc(std::nullopt), drawingAll(false), briefingTextTrigGenerator(true)
 {
     for ( u8 i=0; i<Chk::Trigger::MaxOwners; i++ )
         groupSelected[i] = false;
@@ -424,8 +424,8 @@ void BriefingTriggersWindow::CreateSubWindows(HWND hWnd)
     buttonMoveDown.CreateThis(hWnd, 0, 125, 75, 23, "Move Down", Id::BUTTON_MOVEDOWN);
     buttonMoveTo.CreateThis(hWnd, 0, 150, 75, 23, "Move To", Id::BUTTON_MOVETO);
 
-    listGroups.CreateThis(hWnd, 0, 0, 200, 116, true, true, false, false, Id::LIST_GROUPS);
-    if ( listBriefingTriggers.CreateThis(hWnd, 0, 120, 200, 150, true, false, false, false, Id::LIST_TRIGGERS) )
+    listGroups.CreateThis(hWnd, 0, 0, 200, 116, true, true, false, false, false, Id::LIST_GROUPS);
+    if ( listBriefingTriggers.CreateThis(hWnd, 0, 120, 200, 150, true, false, false, false, false, Id::LIST_TRIGGERS) )
         listGroups.SetPeer(listBriefingTriggers.getHandle());
 
     DoSize();

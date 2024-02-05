@@ -34,7 +34,7 @@ enum_t(Id, u32, {
 });
 
 TriggersWindow::TriggersWindow() : currTrigger(NO_TRIGGER), displayAll(true), numVisibleTrigs(0),
-    changeGroupHighlightOnly(false), trigListDc(std::nullopt), drawingAll(false), textTrigGenerator(Settings::useAddressesForMemory, Settings::deathTableStart),
+    changeGroupHighlightOnly(false), trigListDc(std::nullopt), drawingAll(false), textTrigGenerator(Settings::useAddressesForMemory, Settings::deathTableStart, true),
     countTillCachePurge(0)
 {
     for ( u8 i=0; i<Chk::Trigger::MaxOwners; i++ )
@@ -777,8 +777,8 @@ void TriggersWindow::CreateSubWindows(HWND hWnd)
     buttonMoveDown.CreateThis(hWnd, 0, 125, 75, 23, "Move Down", Id::BUTTON_MOVEDOWN);
     buttonMoveTo.CreateThis(hWnd, 0, 150, 75, 23, "Move To", Id::BUTTON_MOVETO);
 
-    listGroups.CreateThis(hWnd, 0, 0, 200, 116, true, true, false, false, Id::LIST_GROUPS);
-    if ( listTriggers.CreateThis(hWnd, 0, 120, 200, 150, true, false, false, false, Id::LIST_TRIGGERS) )
+    listGroups.CreateThis(hWnd, 0, 0, 200, 116, true, true, false, false, false, Id::LIST_GROUPS);
+    if ( listTriggers.CreateThis(hWnd, 0, 120, 200, 150, true, false, false, false, false, Id::LIST_TRIGGERS) )
         listGroups.SetPeer(listTriggers.getHandle());
 
     DoSize();

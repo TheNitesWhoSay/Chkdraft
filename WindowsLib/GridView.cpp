@@ -68,7 +68,7 @@ namespace WinLib {
 
     bool GridViewControl::CreateThis(HWND hParent, int x, int y, int width, int height, u64 id)
     {
-        u32 style = WS_CHILD|WS_CLIPCHILDREN|LVS_REPORT|LVS_SHOWSELALWAYS|LVS_OWNERDRAWFIXED|LVS_OWNERDATA;\
+        u32 style = WS_CHILD|WS_CLIPCHILDREN|LVS_REPORT|LVS_SHOWSELALWAYS|LVS_OWNERDRAWFIXED|LVS_OWNERDATA;
 
         if ( WindowControl::CreateControl(WS_EX_CLIENTEDGE, WC_LISTVIEW, "", style,
                                           x, y, width, height, hParent, (HMENU)id, false) )
@@ -234,16 +234,17 @@ namespace WinLib {
                 focusedY = y;
                 item(x, y).SetSelected(true);
                 SendMessage(GetParent(getHandle()), GV::WM_GRIDSELCHANGED, MAKEWPARAM(focusedX, focusedY), 0);
+                ListViewControl::EnsureVisible(focusedY, true);
             }
         }
     }
 
-    void GridViewControl::SetEditText(const std::string & text)
+    void GridViewControl::SetEditText(const std::string & text, bool focus)
     {
         if ( editing )
         {
             editBox.SetText(text);
-            SetCaretPos(text.length());
+            SetCaretPos(text.length(), focus);
         }
     }
 
@@ -270,6 +271,12 @@ namespace WinLib {
     {
         for ( int i=0; i<numColumns; i++ )
             AutoSizeColumn(i, minWidth, maxWidth);
+    }
+    
+    void GridViewControl::RedrawThis()
+    {
+        ListViewControl::RedrawThis();
+        ListViewControl::RedrawHeader();
     }
 
     int GridViewControl::NumRows()
@@ -538,6 +545,31 @@ namespace WinLib {
         }
     }
 
+    void GridViewControl::HeaderChanged(HWND hWnd, WPARAM idFrom, LPARAM changedHeaderPtr, bool wideChar)
+    {
+        WindowControl::Notify(hWnd, idFrom, (NMHDR*)changedHeaderPtr);
+        if ( wideChar )
+        {
+            NMHEADERW* changedHeader = (NMHEADERW*)changedHeaderPtr;
+            auto item = changedHeader->pitem;
+            if ( (item->mask & HDI_WIDTH) == HDI_WIDTH )
+                WidthChanged(changedHeader->iItem, item->cxy);
+        }
+        else
+        {
+            NMHEADERA* changedHeader = (NMHEADERA*)changedHeaderPtr;
+            auto item = changedHeader->pitem;
+            if ( (item->mask & HDI_WIDTH) == HDI_WIDTH )
+                WidthChanged(changedHeader->iItem, item->cxy);
+        }
+    }
+    
+    void GridViewControl::WidthChanged(int x, int newWidth)
+    {
+        if ( newWidth < 4 )
+            ListViewControl::SetColumnWidth(x, 4);
+    }
+
     void GridViewControl::DragSelectTo(int x, int y)
     {
         int dragMoveX = -1;
@@ -671,11 +703,12 @@ namespace WinLib {
             SetCaretPos(item(x, y).getTextLength());
     }
 
-    void GridViewControl::SetCaretPos(size_t newCaretPos)
+    void GridViewControl::SetCaretPos(size_t newCaretPos, bool focus)
     {
         caretPos = newCaretPos;
         SendMessage(editBox.getHandle(), EM_SETSEL, (WPARAM)caretPos, (LPARAM)caretPos);
-        editBox.FocusThis();
+        if ( focus )
+            editBox.FocusThis();
     }
 
     void GridViewControl::Char(const std::string & character)
@@ -993,6 +1026,7 @@ namespace WinLib {
         {
             WinLib::DeviceContext dc(getHandle(), rcCli.right-rcCli.left, rcCli.bottom-rcCli.top);
             dc.fillRect(rcCli, dc.getBkColor());
+            dc.setDefaultFont();
 
             dis.hDC = dc.getDcHandle();
             for ( int y=0; y<numRows; y++ )
@@ -1016,14 +1050,17 @@ namespace WinLib {
         SendMessage(GetParent(hWnd), LB::WM_PREDRAWITEMS, 0, (LPARAM)hWnd);
         DrawItems(hWnd);
         SendMessage(GetParent(hWnd), LB::WM_POSTDRAWITEMS, 0, (LPARAM)hWnd);
+        ListViewControl::RedrawHeader();
     }
 
     LRESULT GridViewControl::Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
     {
         switch ( nmhdr->code )
         {
-            case HDN_DIVIDERDBLCLICKA: AutoSizeColumn(((NMHEADERA*)nmhdr)->iItem, 0, 100); break;
-            case HDN_DIVIDERDBLCLICKW: AutoSizeColumn(((NMHEADERW*)nmhdr)->iItem, 0, 100); break;
+            case HDN_ITEMCHANGEDA: HeaderChanged(hWnd, idFrom, (LPARAM)nmhdr, false); break;
+            case HDN_ITEMCHANGEDW: HeaderChanged(hWnd, idFrom, (LPARAM)nmhdr, true); break;
+            case HDN_DIVIDERDBLCLICKA: AutoSizeColumn(((NMHEADERA*)nmhdr)->iItem, 0, 200); break;
+            case HDN_DIVIDERDBLCLICKW: AutoSizeColumn(((NMHEADERW*)nmhdr)->iItem, 0, 200); break;
             default: return WindowControl::Notify(hWnd, idFrom, nmhdr); break;
         }
         return 0;
@@ -1047,6 +1084,7 @@ namespace WinLib {
             case WM_MOUSEHOVER: MouseHover(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)); break;
             case WM_LBUTTONUP: LButtonUp(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)); break;
             case WM_LBUTTONDBLCLK: LButtonDblClk(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)); break;
+            case WM_ERASEBKGND: break;
             case WM_PAINT: Paint(hWnd); break;
             default: return WindowControl::ControlProc(hWnd, msg, wParam, lParam); break;
         }

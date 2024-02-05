@@ -289,22 +289,25 @@ bool Chkdraft::DlgKeyListener(HWND hWnd, UINT & msg, WPARAM wParam, LPARAM lPara
                 switch ( wParam )
                 {
                     case VK_TAB:
-                        if ( GetParent(GetParent(hWnd)) == trigEditorWindow.triggersWindow.trigModifyWindow.conditionsWindow.getHandle() ||
-                             GetParent(hWnd) == trigEditorWindow.triggersWindow.trigModifyWindow.conditionsWindow.getHandle() )
+                        if ( trigEditorWindow.triggersWindow.trigModifyWindow.conditionsWindow.getHandle() != NULL &&
+                            (GetParent(GetParent(hWnd)) == trigEditorWindow.triggersWindow.trigModifyWindow.conditionsWindow.getHandle() ||
+                             GetParent(hWnd) == trigEditorWindow.triggersWindow.trigModifyWindow.conditionsWindow.getHandle()) )
                         {
                             msg = WM_NULL; // Dirty fix to prevent tabs from being focused
                             trigEditorWindow.triggersWindow.trigModifyWindow.conditionsWindow.ProcessKeyDown(wParam, lParam);
                             return true;
                         }
-                        else if ( GetParent(GetParent(hWnd)) == trigEditorWindow.triggersWindow.trigModifyWindow.actionsWindow.getHandle() ||
-                            GetParent(hWnd) == trigEditorWindow.triggersWindow.trigModifyWindow.actionsWindow.getHandle() )
+                        else if ( trigEditorWindow.triggersWindow.trigModifyWindow.actionsWindow.getHandle() != NULL &&
+                            (GetParent(GetParent(hWnd)) == trigEditorWindow.triggersWindow.trigModifyWindow.actionsWindow.getHandle() ||
+                            GetParent(hWnd) == trigEditorWindow.triggersWindow.trigModifyWindow.actionsWindow.getHandle()) )
                         {
                             msg = WM_NULL; // Dirty fix to prevent tabs from being focused
                             trigEditorWindow.triggersWindow.trigModifyWindow.actionsWindow.ProcessKeyDown(wParam, lParam);
                             return true;
                         }
-                        else if ( GetParent(GetParent(hWnd)) == briefingTrigEditorWindow.briefingTriggersWindow.briefingTrigModifyWindow.briefingActionsWindow.getHandle() ||
-                            GetParent(hWnd) == briefingTrigEditorWindow.briefingTriggersWindow.briefingTrigModifyWindow.briefingActionsWindow.getHandle() )
+                        else if ( briefingTrigEditorWindow.briefingTriggersWindow.briefingTrigModifyWindow.briefingActionsWindow.getHandle() != NULL &&
+                            (GetParent(GetParent(hWnd)) == briefingTrigEditorWindow.briefingTriggersWindow.briefingTrigModifyWindow.briefingActionsWindow.getHandle() ||
+                            GetParent(hWnd) == briefingTrigEditorWindow.briefingTriggersWindow.briefingTrigModifyWindow.briefingActionsWindow.getHandle()) )
                         {
                             msg = WM_NULL; // Dirty fix to prevent tabs from being focused
                             briefingTrigEditorWindow.briefingTriggersWindow.briefingTrigModifyWindow.briefingActionsWindow.ProcessKeyDown(wParam, lParam);

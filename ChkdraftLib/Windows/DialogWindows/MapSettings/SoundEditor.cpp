@@ -671,11 +671,11 @@ void SoundEditorWindow::CreateSubWindows(HWND hWnd)
     buttonDeleteSound.CreateThis(hWnd, 242, 3, 110, 20, "Delete Selected", Id::BUTTON_DELETESOUND);
     buttonExtractSound.CreateThis(hWnd, 357, 3, 110, 20, "Extract Selected", Id::BUTTON_EXTRACTSOUND);
     buttonPlaySound.CreateThis(hWnd, 472, 3, 110, 20, "Play Selected", Id::BUTTON_PLAYSOUND);
-    listMapSounds.CreateThis(hWnd, 5, 25, 582, 188, true, false, false, false, Id::LB_MAPSOUNDS);
+    listMapSounds.CreateThis(hWnd, 5, 25, 582, 188, true, false, false, false, false, Id::LB_MAPSOUNDS);
 
     textAvailableSounds.CreateThis(hWnd, 5, 219, 200, 20, "Available MPQ sound files (Virtual Sounds)", Id::TEXT_VIRTUALSOUNDS);
     buttonPreviewPlaySound.CreateThis(hWnd, 432, 217, 150, 20, "Play Selected", Id::BUTTON_PLAYVIRTUALSOUND);
-    listVirtualSounds.CreateThis(hWnd, 5, 239, 582, 200, false, false, true, true, Id::LB_VIRTUALSOUNDS);
+    listVirtualSounds.CreateThis(hWnd, 5, 239, 582, 200, false, false, true, true, false, Id::LB_VIRTUALSOUNDS);
     textFileName.CreateThis(hWnd, 5, 434, 100, 20, "Filename", Id::TEXT_SOUNDFILENAME);
     editFileName.CreateThis(hWnd, 140, 434, 352, 20, false, Id::EDIT_SOUNDFILENAME);
     buttonBrowse.CreateThis(hWnd, 502, 434, 80, 20, "Browse", Id::BUTTON_BROWSEFORSOUND);

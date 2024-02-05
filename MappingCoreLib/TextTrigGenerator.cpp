@@ -17,8 +17,9 @@ std::vector<std::string> allyStates = { "Enemy", "Ally", "Allied Victory" };
 std::vector<std::string> numericComparisons = { "At least", "At most", "2", "3", "4", "5", "6", "7", "8", "9", "Exactly" };
 std::vector<std::string> numericModifiers = { "0", "1", "2", "3", "4", "5", "6", "Set To", "Add", "Subtract" };
 
-TextTrigGenerator::TextTrigGenerator(bool useAddressesForMemory, u32 deathTableOffset) :
-    goodConditionTable(false), goodActionTable(false), useAddressesForMemory(useAddressesForMemory), deathTableOffset(deathTableOffset)
+TextTrigGenerator::TextTrigGenerator(bool useAddressesForMemory, u32 deathTableOffset, bool useFancyNoStrings) :
+    goodConditionTable(false), goodActionTable(false),
+    useAddressesForMemory(useAddressesForMemory), deathTableOffset(deathTableOffset), useFancyNoStrings(useFancyNoStrings)
 {
 
 }
@@ -104,6 +105,8 @@ ChkdString TextTrigGenerator::getTrigLocation(size_t locationId) const
 {
     if ( locationId > 0 && locationId < locationTable.size() )
         return SingleLineChkdString(locationTable[locationId]);
+    else if ( locationId == 0 )
+        return ChkdString("No Location");
     else
         return ChkdString(std::to_string(locationId));
 }
@@ -565,7 +568,7 @@ inline void TextTrigGenerator::appendLocation(StringBuffer & output, const size_
 inline void TextTrigGenerator::appendString(StringBuffer & output, const size_t & stringId) const
 {
     if ( stringId == 0 )
-        output += "No String";
+        output += useFancyNoStrings ? "No String" : "0";
     else if ( stringId < stringTable.size() || (65536-stringId) < extendedStringTable.size() )
     {
         if ( stringId < stringTable.size() )
@@ -580,7 +583,7 @@ inline void TextTrigGenerator::appendString(StringBuffer & output, const size_t 
 inline void TextTrigGenerator::appendSound(StringBuffer & output, const size_t & stringId) const
 {
     if ( stringId == 0 )
-        output += "No Sound";
+        output += useFancyNoStrings ? "No Sound" : "0";
     else if ( stringId < stringTable.size() || (65536 - stringId) < extendedStringTable.size() )
     {
         if ( stringId < stringTable.size() )
@@ -696,7 +699,7 @@ inline void TextTrigGenerator::appendNumericModifier(StringBuffer & output, cons
 inline void TextTrigGenerator::appendScript(StringBuffer & output, const Sc::Ai::ScriptId & scriptId) const
 {
     if ( scriptId == Sc::Ai::ScriptId::NoScript )
-        output += "No Script";
+        output += useFancyNoStrings ? "No Script" : "0";
     else
     {
         auto it = scriptTable.find(scriptId);
@@ -1072,8 +1075,8 @@ bool TextTrigGenerator::prepStringTable(const Scenario & map, bool quoteArgs)
     return true;
 }
 
-BriefingTextTrigGenerator::BriefingTextTrigGenerator()
-    : TextTrigGenerator(false, 0x58A364), // These parameters aren't actually used for briefing triggers which have no EUDs
+BriefingTextTrigGenerator::BriefingTextTrigGenerator(bool useFancyNoStrings)
+    : TextTrigGenerator(false, 0x58A364, useFancyNoStrings), // These parameters aren't actually used for briefing triggers which have no EUDs
     goodBriefingActionTable(false), goodSlotTable(false)
 {
 

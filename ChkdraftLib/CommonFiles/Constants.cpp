@@ -343,7 +343,7 @@ const std::vector<std::string> briefingTriggerActions =
 
 const std::vector<std::string> triggerScores =
 {
-    "Buildings", "Custom", "Kills", "Kills and Razings", "Razings"
+    "Buildings", "Custom", "Kills", "Kills and Razings", "Razings",
     "Total", "Units", "Units and Buildings"
 };
 

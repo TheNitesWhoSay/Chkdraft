@@ -37,6 +37,13 @@ namespace WinLib {
             The LPARAM is a (string*) to the newly selected string */
         WM_NEWSELTEXT,
 
+        /** Possibly sent by windows containing ListBoxes to signal
+            other windows that a ListBox's selection was confirmed
+            as accepted, e.g. by double clicking or with certain keypresses *
+            The WPARAM is the key-code, if any, or NULL otherwise
+            The LPARAM is the list box's handle */
+        WM_SELCONFIRMED,
+
         LB_LAST
     });
 

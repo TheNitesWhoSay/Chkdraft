@@ -22,6 +22,8 @@ class TrigConditionsWindow : public WinLib::ClassWindow, public ICndActGridUser
         virtual void CutSelection();
         virtual void CopySelection();
         virtual void Paste();
+        virtual void RedrawThis();
+        bool IsSuggestionsWindow(HWND hWnd);
 
     protected:
         void CreateSubWindows(HWND hWnd);
@@ -57,22 +59,24 @@ class TrigConditionsWindow : public WinLib::ClassWindow, public ICndActGridUser
         void PostDrawItems();
 
         void SuggestNothing();
-        void SuggestUnit();
-        void SuggestLocation();
-        void SuggestPlayer();
-        void SuggestAmount();
-        void SuggestNumericComparison();
-        void SuggestResourceType();
-        void SuggestScoreType();
-        void SuggestSwitch();
-        void SuggestSwitchState();
-        void SuggestComparison();
-        void SuggestConditionType();
-        void SuggestTypeIndex();
-        void SuggestFlags();
-        void SuggestInternalData();
+        void SuggestUnit(u16 currUnit);
+        void SuggestLocation(u32 currLocationId);
+        void SuggestPlayer(u32 currPlayer);
+        void SuggestAmount(u32 currAmount);
+        void SuggestNumericComparison(Chk::Condition::Comparison currNumericComparison);
+        void SuggestResourceType(u8 currType);
+        void SuggestScoreType(u8 currType);
+        void SuggestSwitch(u8 currSwitch);
+        void SuggestSwitchState(Chk::Condition::Comparison currSwitchState);
+        void SuggestComparison(Chk::Condition::Comparison currComparison);
+        void SuggestConditionType(Chk::Condition::Type currConditionType);
+        void SuggestTypeIndex(u8 currTypeIndex);
+        void SuggestFlags(u8 currFlags);
+        void SuggestMaskFlag(Chk::Condition::MaskFlag maskFlag);
 
         void GridEditStart(u16 gridItemX, u16 gridItemY);
+        void SelConfirmed(WPARAM wParam);
+        void NewSelection(u16 gridItemX, u16 gridItemY);
         void NewSuggestion(std::string & str);
 
         LRESULT ShowWindow(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);

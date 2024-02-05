@@ -11,6 +11,7 @@ namespace WinLib {
             virtual ~TabControl();
 
             bool CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, u64 id);
+            bool FindThis(HWND hParent, u32 controlId) override;
 
             u32 GetCurSel();
             bool SetCurSel(u32 tabId);
@@ -25,7 +26,8 @@ namespace WinLib {
 
 
         protected:
-
+            LRESULT Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr) override;
+            LRESULT ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) override;
 
         private:
 

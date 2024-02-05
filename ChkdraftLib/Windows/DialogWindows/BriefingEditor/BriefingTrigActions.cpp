@@ -61,7 +61,7 @@ void BriefingTrigActionsWindow::RefreshWindow(u32 briefingTrigIndex)
     gridActions.ClearItems();
     this->briefingTrigIndex = briefingTrigIndex;
     const auto & briefingTrig = CM->getBriefingTrigger(briefingTrigIndex);
-    BriefingTextTrigGenerator ttg{};
+    BriefingTextTrigGenerator ttg{true};
     if ( ttg.loadScenario(*CM) )
     {
         for ( u8 y = 0; y<Chk::Trigger::MaxActions; y++ )
@@ -100,7 +100,7 @@ void BriefingTrigActionsWindow::RefreshWindow(u32 briefingTrigIndex)
             }
         }
 
-        gridActions.AutoSizeColumns(DEFAULT_COLUMN_WIDTH, DEFAULT_COLUMN_WIDTH * 2);
+        gridActions.AutoSizeColumns(DEFAULT_COLUMN_WIDTH, DEFAULT_COLUMN_WIDTH * 4);
     }
     gridActions.RedrawHeader();
 }
@@ -109,11 +109,11 @@ void BriefingTrigActionsWindow::DoSize()
 {
     if ( stringEditEnabled || soundEditEnabled )
     {
-        gridActions.SetPos(2, TOP_ACTION_PADDING, cliWidth() - 2,
+        gridActions.SetPos(5, TOP_ACTION_PADDING, cliWidth() - 10,
             cliHeight() - TOP_ACTION_PADDING - BOTTOM_ACTION_PADDING - buttonEditString.Height() - 5);
     }
     else
-        gridActions.SetPos(2, TOP_ACTION_PADDING, cliWidth() - 2, cliHeight() - TOP_ACTION_PADDING - BOTTOM_ACTION_PADDING - 5);
+        gridActions.SetPos(5, TOP_ACTION_PADDING, cliWidth() - 10, cliHeight() - TOP_ACTION_PADDING - BOTTOM_ACTION_PADDING - 5);
 
     if ( stringEditEnabled )
     {
@@ -253,6 +253,11 @@ void BriefingTrigActionsWindow::RedrawThis()
     gridActions.RedrawThis();
 }
 
+bool BriefingTrigActionsWindow::IsSuggestionsWindow(HWND hWnd)
+{
+    return hWnd == suggestions.getHandle();
+}
+
 void BriefingTrigActionsWindow::CreateSubWindows(HWND hWnd)
 {
     gridActions.CreateThis(hWnd, 2, 40, 100, 100, Id::GRID_ACTIONS);
@@ -305,6 +310,7 @@ void BriefingTrigActionsWindow::ChangeActionType(Chk::Action & action, Chk::Acti
         action.padding = 0;
         action.maskFlag = Chk::Action::MaskFlag::Disabled;
     }
+    DrawSelectedAction();
 }
 
 bool BriefingTrigActionsWindow::TransformAction(Chk::Action & action, Chk::Action::Type newType, bool refreshImmediately)
@@ -446,7 +452,7 @@ void BriefingTrigActionsWindow::DrawSelectedAction()
         if ( gridActions.GetFocusedItem(focusedX, focusedY) )
         {
             u8 actionNum = (u8)focusedY;
-            BriefingTextTrigGenerator ttg {};
+            BriefingTextTrigGenerator ttg {true};
             ttg.loadScenario(*CM);
             ChkdString str = chkd.briefingTrigEditorWindow.briefingTriggersWindow.GetActionString(actionNum, briefingTrig, ttg);
             ttg.clearScenario();
@@ -472,9 +478,10 @@ int BriefingTrigActionsWindow::GetGridItemWidth(int gridItemX, int gridItemY)
     {
         if ( auto dc = this->getDeviceContext() )
         {
+            dc.setDefaultFont();
             UINT width = 0, height = 0;
             if ( GetStringDrawSize(dc, width, height, text) )
-                return width + 2;
+                return width + 4;
         }
     }
     return 0;
@@ -528,8 +535,9 @@ void BriefingTrigActionsWindow::DrawGridViewItem(const WinLib::DeviceContext & d
     DrawItemBackground(dc, gridItemX, gridItemY, rcItem, width, xStart);
 
     std::string text;
+    RECT rcClip{xStart, rcItem.top, xStart+width-2, rcItem.bottom};
     if ( gridActions.item(gridItemX, gridItemY).getText(text) )
-        DrawString(dc, xStart + 1, rcItem.top, width - 2, RGB(0, 0, 0), text);
+        dc.drawText(text, xStart + 1, rcItem.top, rcClip, true, false);
 
     if ( !gridActions.item(gridItemX, gridItemY).isDisabled() )
         DrawItemFrame(dc, rcItem, width, xStart);
@@ -582,55 +590,62 @@ void BriefingTrigActionsWindow::PostDrawItems()
 
 void BriefingTrigActionsWindow::SuggestNothing()
 {
-    suggestions.ClearStrings();
+    suggestions.ClearItems();
     suggestions.Hide();
 }
 
-void BriefingTrigActionsWindow::SuggestLocation()
+void BriefingTrigActionsWindow::SuggestLocation(u32 currLocationId)
 {
     if ( CM != nullptr )
     {
-        suggestions.AddString(std::string("No Location"));
+        suggestions.AddItem(SuggestionItem{Chk::LocationId::NoLocation, std::string("No Location")});
         size_t numLocations = (u16)CM->numLocations();
         for ( size_t i = 1; i <= numLocations; i++ )
         {
             const Chk::Location & loc = CM->getLocation(i);
             if ( auto locationName = loc.stringId > 0 ? CM->getLocationName<SingleLineChkdString>(i) : std::nullopt )
-                suggestions.AddString(*locationName);
+                suggestions.AddItem(SuggestionItem{uint32_t(i), *locationName});
             else if ( !loc.isBlank() )
             {
                 std::stringstream ssLoc;
                 ssLoc << i;
-                suggestions.AddString(ssLoc.str());
+                suggestions.AddItem(SuggestionItem{uint32_t(i), ssLoc.str()});
             }
         }
     }
     suggestions.Show();
 }
 
-void BriefingTrigActionsWindow::SuggestString()
+void BriefingTrigActionsWindow::SuggestString(u32 currStringId)
 {
     SingleLineChkdString str;
     if ( CM != nullptr )
     {
-        suggestions.AddString(std::string("No String"));
+        suggestions.AddItem(SuggestionItem{Chk::StringId::NoString, std::string("No String")});
         size_t stringCapacity = CM->getCapacity(Chk::Scope::Game);
         for ( size_t i = 1; i <= stringCapacity; i++ )
         {
             if ( auto str = CM->getString<SingleLineChkdString>(i, Chk::Scope::Game) )
-                suggestions.AddString(*str);
+                suggestions.AddItem(SuggestionItem{uint32_t(i), *str});
         }
     }
     suggestions.Show();
 }
 
-void BriefingTrigActionsWindow::SuggestSlot()
+void BriefingTrigActionsWindow::SuggestSlot(u32 currSlot)
 {
-    suggestions.AddStrings(briefingTriggerSlots);
+    static auto briefingTrigSlots = [&]() {
+        std::vector<SuggestionItem> briefingTrigSlots {};
+        for ( size_t i=0; i<briefingTriggerSlots.size(); ++i )
+            briefingTrigSlots.push_back(SuggestionItem{uint32_t(i), briefingTriggerSlots[i]});
+
+        return briefingTrigSlots;
+    }();
+    suggestions.AddItems(briefingTrigSlots);
     suggestions.Show();
 }
 
-void BriefingTrigActionsWindow::SuggestUnit()
+void BriefingTrigActionsWindow::SuggestUnit(u16 currUnit)
 {
     if ( CM != nullptr )
     {
@@ -638,20 +653,20 @@ void BriefingTrigActionsWindow::SuggestUnit()
         for ( u16 i = 0; i < numUnitTypes; i++ )
         {
             auto str = CM->getUnitName<SingleLineChkdString>((Sc::Unit::Type)i, true);
-            suggestions.AddString(*str);
+            suggestions.AddItem(SuggestionItem{uint32_t(i), *str});
             if ( str->compare(std::string(Sc::Unit::defaultDisplayNames[i])) != 0 )
-                suggestions.AddString(std::string(Sc::Unit::defaultDisplayNames[i]));
+                suggestions.AddItem(SuggestionItem{uint32_t(i), std::string(Sc::Unit::defaultDisplayNames[i])});
         }
     }
     suggestions.Show();
 }
 
-void BriefingTrigActionsWindow::SuggestAmount()
+void BriefingTrigActionsWindow::SuggestAmount(u32 currAmount)
 {
 
 }
 
-void BriefingTrigActionsWindow::SuggestSound()
+void BriefingTrigActionsWindow::SuggestSound(u32 currSound)
 {
     for ( size_t i = 0; i < 512; i++ )
     {
@@ -659,53 +674,71 @@ void BriefingTrigActionsWindow::SuggestSound()
         if ( soundStringId != Chk::StringId::UnusedSound )
         {
             if ( auto soundStr = CM->getString<ChkdString>(soundStringId) )
-                suggestions.AddString(*soundStr);
+                suggestions.AddItem(SuggestionItem{uint32_t(soundStringId), *soundStr});
             else
-                suggestions.AddString(std::to_string(soundStringId));
+                suggestions.AddItem(SuggestionItem{uint32_t(soundStringId), std::to_string(soundStringId)});
         }
     }
     suggestions.Show();
 }
 
-void BriefingTrigActionsWindow::SuggestDuration()
+void BriefingTrigActionsWindow::SuggestDuration(u32 currDuration)
 {
 
 }
 
-void BriefingTrigActionsWindow::SuggestNumericMod()
+void BriefingTrigActionsWindow::SuggestNumericMod(u8 currNumericMod)
 {
-    const std::vector<std::string> numericMod = { "Add", "Set to", "Subtract" };
-    suggestions.AddStrings(numericMod);
+    static auto numericMod = [&]() {
+        std::vector<SuggestionItem> numericMod {};
+        numericMod.push_back(SuggestionItem{Chk::Trigger::ValueModifier::Add, "Add"});
+        numericMod.push_back(SuggestionItem{Chk::Trigger::ValueModifier::SetTo, "Set to"});
+        numericMod.push_back(SuggestionItem{Chk::Trigger::ValueModifier::Subtract, "Subtract"});
+        return numericMod;
+    }();
+    suggestions.AddItems(numericMod);
     suggestions.Show();
 }
 
-void BriefingTrigActionsWindow::SuggestActionType()
+void BriefingTrigActionsWindow::SuggestActionType(Chk::Action::Type currActionType)
 {
-    suggestions.AddStrings(briefingTriggerActions);
+    static auto briefingTrigActions = [&]() {
+        std::vector<SuggestionItem> briefingTrigActions {};
+        for ( size_t i=0; i<briefingTriggerActions.size(); ++i )
+            briefingTrigActions.push_back(SuggestionItem{uint32_t(i), briefingTriggerActions[i]});
+
+        return briefingTrigActions;
+    }();
+    suggestions.AddItems(briefingTrigActions);
     suggestions.Show();
 }
 
-void BriefingTrigActionsWindow::SuggestFlags()
+void BriefingTrigActionsWindow::SuggestFlags(u8 currFlags)
 {
 
 }
 
-void BriefingTrigActionsWindow::SuggestNumber() // Amount, Group2, LocDest, UnitPropNum, ScriptNum
+void BriefingTrigActionsWindow::SuggestNumber(u32 currNumber) // Amount, Group2, LocDest, UnitPropNum, ScriptNum
 {
 
 }
 
-void BriefingTrigActionsWindow::SuggestTypeIndex() // Unit, ScoreType, ResourceType, AllianceStatus
+void BriefingTrigActionsWindow::SuggestTypeIndex(u16 currTypeIndex) // Unit, ScoreType, ResourceType, AllianceStatus
 {
 
 }
 
-void BriefingTrigActionsWindow::SuggestSecondaryTypeIndex() // NumUnits (0=all), SwitchAction, UnitOrder, ModifyType
+void BriefingTrigActionsWindow::SuggestSecondaryTypeIndex(u8 currSecondaryTypeIndex) // NumUnits (0=all), SwitchAction, UnitOrder, ModifyType
 {
 
 }
 
-void BriefingTrigActionsWindow::SuggestInternalData()
+void BriefingTrigActionsWindow::SuggestPadding(u8 currPadding)
+{
+
+}
+
+void BriefingTrigActionsWindow::SuggestMaskFlag(Chk::Action::MaskFlag maskFlag)
 {
 
 }
@@ -812,43 +845,73 @@ void BriefingTrigActionsWindow::GridEditStart(u16 gridItemX, u16 gridItemY)
 {
     Chk::Trigger & briefingTrig = CM->getBriefingTrigger(briefingTrigIndex);
     Chk::Action & action = briefingTrig.action((u8)gridItemY);
-    Chk::Action::ArgType argType = Chk::Action::ArgType::NoType;
+    Chk::Action::Argument arg = Chk::Action::noArg;
     if ( gridItemX == 1 ) // Action Name
-        argType = Chk::Action::ArgType::ActionType;
+    {
+        arg.type = Chk::Action::ArgType::ActionType;
+        arg.field = Chk::Action::ArgField::NoField;
+    }
     else if ( gridItemX > 1 ) // Action Arg
     {
         u8 actionArgNum = (u8)gridItemX - 2;
         if ( action.actionType < Chk::Action::NumBriefingActionTypes  )
-            argType = Chk::Action::getBriefingClassicArgType(action.actionType, actionArgNum);
+            arg = Chk::Action::getBriefingClassicArg(action.actionType, actionArgNum);
     }
 
-    if ( argType != Chk::Action::ArgType::NoType )
+    if ( arg.type != Chk::Action::ArgType::NoType )
     {
         POINT pt = gridActions.GetFocusedBottomRightScreenPt();
         if ( pt.x != -1 || pt.y != -1 )
             suggestions.MoveTo(pt.x, pt.y);
     }
 
-    suggestions.ClearStrings();
-    switch ( argType )
+    u32 argData = 0;
+    switch ( arg.field )
+    {
+        case Chk::Action::ArgField::LocationId: argData = action.locationId; break; // u32
+        case Chk::Action::ArgField::StringId: argData = action.stringId; break; // u32
+        case Chk::Action::ArgField::SoundStringId: argData = action.soundStringId; break; // u32
+        case Chk::Action::ArgField::Time: argData = action.time; break; // u32
+        case Chk::Action::ArgField::Group: argData = action.group; break; // u32
+        case Chk::Action::ArgField::Number: argData = action.number; break; // u32
+        case Chk::Action::ArgField::Type: argData = action.type; break; // u16
+        case Chk::Action::ArgField::ActionType: argData = action.actionType; break; // u8
+        case Chk::Action::ArgField::Type2: argData = action.type2; break; // u8
+        case Chk::Action::ArgField::Flags: argData = action.flags; break; // u8
+        case Chk::Action::ArgField::Padding: argData = action.padding; break; // u8
+        case Chk::Action::ArgField::MaskFlag: argData = action.maskFlag; break; // u16
+    }
+
+    suggestions.ClearItems();
+    switch ( arg.type )
     {
         case Chk::Action::ArgType::NoType: SuggestNothing(); break;
-        case Chk::Action::ArgType::Location: SuggestLocation(); break;
-        case Chk::Action::ArgType::String: SuggestString(); break;
-        case Chk::Action::ArgType::BriefingSlot: SuggestSlot(); break;
-        case Chk::Action::ArgType::Unit: SuggestUnit(); break;
-        case Chk::Action::ArgType::Amount: SuggestAmount(); break;
-        case Chk::Action::ArgType::Sound: SuggestSound(); break;
-        case Chk::Action::ArgType::Duration: SuggestDuration(); break;
-        case Chk::Action::ArgType::NumericMod: SuggestNumericMod(); break;
-        case Chk::Action::ArgType::ActionType: SuggestActionType(); break;
-        case Chk::Action::ArgType::Flags: SuggestFlags(); break;
-        case Chk::Action::ArgType::Number: SuggestNumber(); break; // Amount, Group2, LocDest, UnitPropNum, ScriptNum
-        case Chk::Action::ArgType::TypeIndex: SuggestTypeIndex(); break; // Unit, ScoreType, ResourceType, AllianceStatus
-        case Chk::Action::ArgType::SecondaryTypeIndex: SuggestSecondaryTypeIndex(); break; // NumUnits (0=all), SwitchAction, UnitOrder, ModifyType
-        case Chk::Action::ArgType::Padding: SuggestInternalData(); break;
-        case Chk::Action::ArgType::MaskFlag: SuggestInternalData(); break;
+        case Chk::Action::ArgType::Location: SuggestLocation(argData); break;
+        case Chk::Action::ArgType::String: SuggestString(argData); break;
+        case Chk::Action::ArgType::BriefingSlot: SuggestSlot(argData); break;
+        case Chk::Action::ArgType::Unit: SuggestUnit(u16(argData)); break;
+        case Chk::Action::ArgType::Amount: SuggestAmount(argData); break;
+        case Chk::Action::ArgType::Sound: SuggestSound(argData); break;
+        case Chk::Action::ArgType::Duration: SuggestDuration(argData); break;
+        case Chk::Action::ArgType::NumericMod: SuggestNumericMod(u8(argData)); break;
+        case Chk::Action::ArgType::ActionType: SuggestActionType(Chk::Action::Type(argData)); break;
+        case Chk::Action::ArgType::Flags: SuggestFlags(u8(argData)); break;
+        case Chk::Action::ArgType::Number: SuggestNumber(argData); break; // Amount, Group2, LocDest, UnitPropNum, ScriptNum
+        case Chk::Action::ArgType::TypeIndex: SuggestTypeIndex(u16(argData)); break; // Unit, ScoreType, ResourceType, AllianceStatus
+        case Chk::Action::ArgType::SecondaryTypeIndex: SuggestSecondaryTypeIndex(u8(argData)); break; // NumUnits (0=all), SwitchAction, UnitOrder, ModifyType
+        case Chk::Action::ArgType::Padding: SuggestPadding(u8(argData)); break;
+        case Chk::Action::ArgType::MaskFlag: SuggestMaskFlag(Chk::Action::MaskFlag(argData)); break;
     }
+
+    if ( suggestions.HasItems() && !suggestions.HasSelection() )
+        suggestions.SelectFirst();
+}
+
+void BriefingTrigActionsWindow::SelConfirmed(WPARAM wParam)
+{
+    gridActions.EndEditing();
+    gridActions.FocusThis();
+    SendMessage(gridActions.getHandle(), WM_KEYDOWN, wParam, NULL);
 }
 
 void BriefingTrigActionsWindow::NewSelection(u16 gridItemX, u16 gridItemY)
@@ -893,12 +956,12 @@ void BriefingTrigActionsWindow::NewSelection(u16 gridItemX, u16 gridItemY)
 
     }
     DoSize();
-    chkd.briefingTrigEditorWindow.briefingTriggersWindow.briefingTrigModifyWindow.RedrawThis();
+    chkd.briefingTrigEditorWindow.briefingTriggersWindow.briefingTrigModifyWindow.RedrawThis(); // TODO: This fixes some drawing issues but intensifies flashing & should be replaced
 }
 
 void BriefingTrigActionsWindow::NewSuggestion(std::string & str)
 {
-    gridActions.SetEditText(str);
+    gridActions.SetEditText(str, !suggestions.IsShown());
 }
 
 void BriefingTrigActionsWindow::GetCurrentActionString(std::optional<ChkdString> & gameString, std::optional<ChkdString> & editorString)
@@ -978,6 +1041,7 @@ LRESULT BriefingTrigActionsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, L
 {
     switch ( msg )
     {
+        case WM_NCHITTEST: break;
         case WM_MEASUREITEM: return MeasureItem(hWnd, msg, wParam, lParam); break;
         case WM_ERASEBKGND: return EraseBackground(hWnd, msg, wParam, lParam); break;
         case WM_SHOWWINDOW: return ShowWindow(hWnd, msg, wParam, lParam); break;
@@ -994,6 +1058,7 @@ LRESULT BriefingTrigActionsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, L
         case WinLib::GV::WM_GRIDDELETEFINISHED: RefreshWindow(briefingTrigIndex); break;
         case WinLib::GV::WM_GRIDEDITSTART: GridEditStart(LOWORD(wParam), HIWORD(wParam)); break;
         case WinLib::GV::WM_GRIDEDITEND: suggestions.Hide(); break;
+        case WinLib::LB::WM_SELCONFIRMED: SelConfirmed(wParam); break;
         default: return ClassWindow::WndProc(hWnd, msg, wParam, lParam); break;
     }
     return 0;

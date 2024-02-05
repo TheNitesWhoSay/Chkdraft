@@ -23,6 +23,7 @@ class BriefingTrigActionsWindow : public WinLib::ClassWindow, public ICndActGrid
         virtual void CopySelection();
         virtual void Paste();
         virtual void RedrawThis();
+        bool IsSuggestionsWindow(HWND hWnd);
 
     protected:
         void CreateSubWindows(HWND hWnd);
@@ -66,20 +67,21 @@ class BriefingTrigActionsWindow : public WinLib::ClassWindow, public ICndActGrid
         void PostDrawItems();
 
         void SuggestNothing();
-        void SuggestLocation();
-        void SuggestString();
-        void SuggestSlot();
-        void SuggestUnit();
-        void SuggestAmount();
-        void SuggestSound();
-        void SuggestDuration();
-        void SuggestNumericMod();
-        void SuggestActionType();
-        void SuggestFlags();
-        void SuggestNumber(); // Amount, Group2, LocDest, UnitPropNum, ScriptNum
-        void SuggestTypeIndex(); // Unit, ScoreType, ResourceType, AllianceStatus
-        void SuggestSecondaryTypeIndex(); // NumUnits (0=all), SwitchAction, UnitOrder, ModifyType
-        void SuggestInternalData();
+        void SuggestLocation(u32 currLocationId);
+        void SuggestString(u32 currStringId);
+        void SuggestSlot(u32 currSlot);
+        void SuggestUnit(u16 currUnit);
+        void SuggestAmount(u32 currAmount);
+        void SuggestSound(u32 currSound);
+        void SuggestDuration(u32 currDuration);
+        void SuggestNumericMod(u8 currNumericMod);
+        void SuggestActionType(Chk::Action::Type currActionType);
+        void SuggestFlags(u8 currFlags);
+        void SuggestNumber(u32 currNumber); // Amount, Group2, LocDest, UnitPropNum, ScriptNum
+        void SuggestTypeIndex(u16 currTypeIndex); // Unit, ScoreType, ResourceType, AllianceStatus
+        void SuggestSecondaryTypeIndex(u8 currSecondaryTypeIndex); // NumUnits (0=all), SwitchAction, UnitOrder, ModifyType
+        void SuggestPadding(u8 currPadding);
+        void SuggestMaskFlag(Chk::Action::MaskFlag maskFlag);
 
         void EnableStringEdit();
         void DisableStringEdit();
@@ -89,6 +91,7 @@ class BriefingTrigActionsWindow : public WinLib::ClassWindow, public ICndActGrid
         void ButtonEditSound();
 
         void GridEditStart(u16 gridItemX, u16 gridItemY);
+        void SelConfirmed(WPARAM wParam);
         void NewSelection(u16 gridItemX, u16 gridItemY);
         void NewSuggestion(std::string & str);
 

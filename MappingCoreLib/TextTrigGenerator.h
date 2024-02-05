@@ -13,7 +13,7 @@ class TextTrigGenerator
 {
     public:
         
-        TextTrigGenerator(bool useAddressesForMemory, u32 deathTableOffset);
+        TextTrigGenerator(bool useAddressesForMemory, u32 deathTableOffset, bool useFancyNoStrings = false);
 
         // Places text trigs representative of the given TRIG section in trigString if successful
         bool generateTextTrigs(const Scenario & map, std::string & trigString);
@@ -95,6 +95,7 @@ class TextTrigGenerator
         inline void appendTextFlags(StringBuffer & output, const Chk::Action::Flags & textFlags) const;
 
         bool useAddressesForMemory; // If true, uses 1.16.1 addresses for memory conditions and actions
+        bool useFancyNoStrings;
         u32 deathTableOffset;
         std::vector<ChkdString> stringTable; // Array list of map strings
         std::vector<ChkdString> extendedStringTable; // Array list of extended map strings
@@ -122,7 +123,7 @@ class TextTrigGenerator
 class BriefingTextTrigGenerator : private TextTrigGenerator
 {
 public:
-    BriefingTextTrigGenerator();
+    BriefingTextTrigGenerator(bool useFancyNoStrings = false);
 
     // Places briefing text trigs representative of the given MBRF section in briefingTrigString if successful
     bool generateBriefingTextTrigs(const Scenario & map, std::string & briefingTrigString);

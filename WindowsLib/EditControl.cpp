@@ -361,7 +361,7 @@ namespace WinLib {
                         return 0; // Prevent default selection update
                     }
                     break;
-                case VK_LEFT: case VK_UP: case VK_RIGHT: case VK_DOWN:
+                case VK_UP: case VK_DOWN:
                     if ( forwardArrowKeys )
                     {
                         SendMessage(GetParent(hWnd), WM_KEYDOWN, wParam, lParam);

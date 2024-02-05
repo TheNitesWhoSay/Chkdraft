@@ -112,14 +112,14 @@ void StringEditorWindow::CreateSubWindows(HWND hWnd)
     textAboutStrings.CreateThis(hWnd, 5, 5, 150, 20, "String Editor...", 0);
     buttonSwap.CreateThis(hWnd, 310, 5, 150, 20, "", Id::BUTTON_SWITCH);
 
-    listStrings.CreateThis(hWnd, 5, 25, 453, 262, true, false, false, false, Id::LB_STRINGS);
+    listStrings.CreateThis(hWnd, 5, 25, 453, 262, true, false, false, false, false, Id::LB_STRINGS);
 
     buttonDeleteString.CreateThis(hWnd, 130, 290, 200, 20, "Delete String", Id::DELETE_STRING);
     buttonSaveString.CreateThis(hWnd, 340, 290, 75, 20, "Save to...", Id::SAVE_TO);
     editString.CreateThis(hWnd, 5, 310, 453, 140, true, Id::EDIT_STRING);
 
     textStringUsage.CreateThis(hWnd, 480, 379, 125, 20, "String Usage:", 0);
-    listUsage.CreateThis(hWnd, 463, 394, 125, 83, false, false, false, false, Id::LB_STRINGUSE);
+    listUsage.CreateThis(hWnd, 463, 394, 125, 83, false, false, false, false, false, Id::LB_STRINGUSE);
 
     stringGuide.CreateThis(hWnd);
     stringPreviewWindow.CreateThis(hWnd, Id::PREVIEW_STRING);

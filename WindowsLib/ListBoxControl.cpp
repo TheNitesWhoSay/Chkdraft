@@ -2,6 +2,9 @@
 #include <SimpleIcu.h>
 #include <CommCtrl.h>
 #include <iostream>
+#include "../CrossCutLib/Logger.h"
+
+extern Logger logger;
 
 namespace WinLib {
 
@@ -16,7 +19,7 @@ namespace WinLib {
     }
 
     bool ListBoxControl::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height,
-        bool ownerDrawn, bool multiColumn, bool scrollBar, bool alphaSort, u64 id)
+        bool ownerDrawn, bool multiColumn, bool scrollBar, bool alphaSort, bool wantKeyboardInput, u64 id)
     {
         u32 style = WS_CHILD|WS_VISIBLE|WS_TABSTOP|LBS_NOTIFY;
         if ( ownerDrawn && multiColumn )
@@ -31,6 +34,9 @@ namespace WinLib {
 
         if ( scrollBar )
             style |= WS_VSCROLL;
+
+        if ( wantKeyboardInput )
+            style |= LBS_WANTKEYBOARDINPUT;
 
         return WindowControl::CreateControl( WS_EX_CLIENTEDGE|LVS_EX_DOUBLEBUFFER, WC_LISTBOX, "", style,
                                              x, y, width, height, hParent, (HMENU)id, true );

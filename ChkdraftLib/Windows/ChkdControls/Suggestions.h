@@ -4,24 +4,35 @@
 #include <string>
 #include <vector>
 
+struct SuggestionItem
+{
+    std::optional<uint32_t> data; // If present, indicates the data that should be set in the target field
+    std::string str; // The displayed string value, if data is not present then str gives the value to be set in the target field
+};
+
 class Suggestions : public WinLib::ClassWindow
 {
     public:
         Suggestions();
         virtual ~Suggestions();
         bool CreateThis(HWND hParent, int x, int y, int width, int height);
-        void ClearStrings();
+        void ClearItems();
 
-        void AddStrings(const std::vector<std::string> & strings);
-        void AddString(const std::string & string); // Adds a string to the stored list but does not yet display it
-        void SetStrings(); // Sets all the strings in the stored list to the display
-        void SetStrings(const std::vector<std::string> & strings);
+        void AddItems(const std::vector<SuggestionItem> & items); // Adds items to the stored list but does not yet display them
+        int AddItem(const SuggestionItem & item); // Adds an item to the stored list but does not yet display it
+        void SetItems(); // Sets all the items in the stored list to the display
+        void SetItems(const std::vector<SuggestionItem> & strings); // Adds items to the stored list then sets all stored items up for display
         void Show();
         void Hide();
+        bool SuggestIndex(int index);
         void SuggestNear(const std::string & str);
+        bool HasSelection();
+        void SelectFirst();
         void ArrowUp();
         void ArrowDown();
         std::string Take();
+        bool HasItems();
+        bool IsShown();
 
     protected:
         void DoSize();
@@ -36,9 +47,10 @@ class Suggestions : public WinLib::ClassWindow
         HWND suggestParent;
         WinLib::ListBoxControl listSuggestions;
         bool isShown;
+        bool isActive;
 
-        void KeyDown(WPARAM wParam);
-        std::list<std::string> strList;
+        int KeyDown(WPARAM wParam);
+        std::list<SuggestionItem> items;
 };
 
 #endif

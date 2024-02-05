@@ -170,12 +170,15 @@ BOOL BriefingTrigModifyWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARA
             if ( LOWORD(wParam) != WA_INACTIVE )
                 chkd.SetCurrDialog(hWnd);
             else // LOWORD(wParam) == WA_INACTIVE
-                briefingActionsWindow.HideSuggestions();
+            {
+                if ( !briefingActionsWindow.IsSuggestionsWindow((HWND)lParam) )
+                    briefingActionsWindow.HideSuggestions();
+            }
             return FALSE;
             break;
 
         case WM_NCACTIVATE:
-            if ( (BOOL)wParam == FALSE )
+            if ( (BOOL)wParam == FALSE && !briefingActionsWindow.IsSuggestionsWindow((HWND)lParam) )
                 briefingActionsWindow.HideSuggestions();
             return FALSE;
             break;

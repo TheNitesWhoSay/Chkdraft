@@ -1582,7 +1582,7 @@ bool TextTrigCompiler::parseActionName(const std::string & arg, Chk::Action::Vir
                 actionType = Chk::Action::VirtualType::UnpauseGame;
         }
         else if ( arg.compare(1, 15, "NMUTEUNITSPEECH") == 0 )
-            actionType = Chk::Action::VirtualType::MuteUnitSpeech;
+            actionType = Chk::Action::VirtualType::UnmuteUnitSpeech;
         break;
 
     case 'V':
