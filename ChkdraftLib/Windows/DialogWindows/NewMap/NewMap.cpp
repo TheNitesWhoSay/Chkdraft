@@ -22,7 +22,8 @@ BOOL NewMap::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
     {
     case ID_CREATEMAP:
     {
-        int width = 0, height = 0, tileset = 0, terrainTypeIndex = 0, triggers = 0;
+        LPARAM terrainTypeIndex = 0;
+        int width = 0, height = 0, tileset = 0, triggers = 0;
 
         editWidth.GetEditNum<int>(width);
         editHeight.GetEditNum<int>(height);
@@ -36,7 +37,7 @@ BOOL NewMap::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
             if ( height > 65535 ) height %= 65536;
             if ( (u32)width*height < 429496729 )
             {
-                if ( chkd.maps.NewMap((Sc::Terrain::Tileset)tileset, width, height, terrainTypeIndex, (DefaultTriggers)triggers) != nullptr )
+                if ( chkd.maps.NewMap((Sc::Terrain::Tileset)tileset, width, height, size_t(terrainTypeIndex), (DefaultTriggers)triggers) != nullptr )
                 {
                     CM->Scroll(true, true, false);
                     CM->Redraw(true);

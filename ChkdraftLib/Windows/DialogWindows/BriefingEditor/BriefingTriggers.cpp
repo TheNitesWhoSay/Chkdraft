@@ -198,7 +198,7 @@ void BriefingTriggersWindow::CopySelection()
 void BriefingTriggersWindow::MoveUp()
 {
     int sel;
-    u32 prevTrigIndex;
+    LPARAM prevTrigIndex;
     if ( currBriefingTrigger != NO_TRIGGER &&
          listBriefingTriggers.GetCurSel(sel) &&
          sel > 0 &&
@@ -206,8 +206,8 @@ void BriefingTriggersWindow::MoveUp()
     {
         briefingTrigModifyWindow.DestroyThis();
         CM->notifyChange(false);
-        CM->moveBriefingTrigger(currBriefingTrigger, prevTrigIndex);
-        if ( MoveUpTrigListItem(sel, prevTrigIndex) )
+        CM->moveBriefingTrigger(currBriefingTrigger, size_t(prevTrigIndex));
+        if ( MoveUpTrigListItem(sel, u32(prevTrigIndex)) )
         {
             SelectTrigListItem(sel-1);
             listBriefingTriggers.RedrawThis();
@@ -220,7 +220,7 @@ void BriefingTriggersWindow::MoveUp()
 void BriefingTriggersWindow::MoveDown()
 {
     int sel;
-    u32 nextTrigIndex;
+    LPARAM nextTrigIndex;
     if ( currBriefingTrigger != NO_TRIGGER &&
          listBriefingTriggers.GetCurSel(sel) &&
          sel < int(numVisibleBriefingTrigs) &&
@@ -228,8 +228,8 @@ void BriefingTriggersWindow::MoveDown()
     {
         briefingTrigModifyWindow.DestroyThis();
         CM->notifyChange(false);
-        CM->moveBriefingTrigger(currBriefingTrigger, nextTrigIndex);
-        if ( MoveDownTrigListItem(sel, nextTrigIndex) )
+        CM->moveBriefingTrigger(currBriefingTrigger, size_t(nextTrigIndex));
+        if ( MoveDownTrigListItem(sel, u32(nextTrigIndex)) )
         {
             SelectTrigListItem(sel+1);
             listBriefingTriggers.RedrawThis();
@@ -280,24 +280,24 @@ void BriefingTriggersWindow::ButtonNew()
 
     briefingTrigger.conditions[0].conditionType = Chk::Condition::Type::IsBriefing;
 
-    u32 newTrigId = 0;
+    LPARAM newTrigId = 0;
     int sel;
     if ( listBriefingTriggers.GetCurSel(sel) && sel != numVisibleBriefingTrigs-1 )
     {
         if ( listBriefingTriggers.GetItemData(sel, newTrigId) )
         {
             newTrigId ++;
-            CM->insertBriefingTrigger(newTrigId, briefingTrigger);
+            CM->insertBriefingTrigger(size_t(newTrigId), briefingTrigger);
         }
     }
     else
     {
         CM->addBriefingTrigger(briefingTrigger);
-        newTrigId = u32(CM->numBriefingTriggers()-1);
+        newTrigId = LPARAM(CM->numBriefingTriggers()-1);
     }
 
     CM->notifyChange(false);
-    currBriefingTrigger = newTrigId;
+    currBriefingTrigger = u32(newTrigId);
     RefreshWindow(true);
     ButtonModify();
 }
@@ -537,8 +537,10 @@ void BriefingTriggersWindow::RefreshTrigList()
 
 bool BriefingTriggersWindow::SelectTrigListItem(int item)
 {
-    if ( numVisibleBriefingTrigs > 0 && listBriefingTriggers.SetCurSel(item) && listBriefingTriggers.GetItemData(item, currBriefingTrigger) )
+    LPARAM selIndex = 0;
+    if ( numVisibleBriefingTrigs > 0 && listBriefingTriggers.SetCurSel(item) && listBriefingTriggers.GetItemData(item, selIndex) )
     {
+        this->currBriefingTrigger = u32(selIndex);
         briefingTrigModifyWindow.RefreshWindow(currBriefingTrigger);
         return true;
     }
@@ -554,7 +556,7 @@ bool BriefingTriggersWindow::SelectTrigListItem(int item)
 bool BriefingTriggersWindow::DeleteTrigListItem(int item)
 {
     bool removedItem = false;
-    u32 data;
+    LPARAM data = 0;
     bool success = true;
     int totalItems = listBriefingTriggers.GetNumItems();
     for ( int i=item+1; i<totalItems; i++ ) // Attempt to decrement the trigger index of items with higher list indexes
@@ -578,7 +580,7 @@ bool BriefingTriggersWindow::DeleteTrigListItem(int item)
 
 bool BriefingTriggersWindow::CopyTrigListItem(int item)
 {
-    u32 data;
+    LPARAM data = 0;
     bool success = true;
     int totalItems = listBriefingTriggers.GetNumItems();
     for ( int i=item+1; i<totalItems; i++ ) // Attempt to increment the trigger index of items with higher list indexes
@@ -628,7 +630,7 @@ bool BriefingTriggersWindow::MoveTrigListItemTo(int currListIndex, u32 currBrief
     int targetListIndex = -1;
     if ( FindTargetListIndex(currListIndex, currBriefingTrigIndex, targetBriefingTrigIndex, targetListIndex) )
     {
-        u32 listItemData;
+        LPARAM listItemData = 0;
         int listItemHeight,
             preservedHeight;
 
@@ -692,14 +694,14 @@ bool BriefingTriggersWindow::MoveTrigListItemTo(int currListIndex, u32 currBrief
 
 bool BriefingTriggersWindow::FindTargetListIndex(int currListIndex, u32 currBriefingTrigIndex, u32 targetBriefingTrigIndex, int & targetListIndex)
 {
-    u32 listItemData;
+    LPARAM listItemData = 0;
     if ( targetBriefingTrigIndex < currBriefingTrigIndex )
     {
         for ( int i=currListIndex; i>0; i-- )
         {
             if ( !listBriefingTriggers.GetItemData(i, listItemData) )
                 return false;
-            else if ( listItemData <= targetBriefingTrigIndex )
+            else if ( listItemData <= LPARAM(targetBriefingTrigIndex) )
             {
                 targetListIndex = i;
                 return true;
@@ -715,12 +717,12 @@ bool BriefingTriggersWindow::FindTargetListIndex(int currListIndex, u32 currBrie
         {
             if ( !listBriefingTriggers.GetItemData(i, listItemData) )
                 return false;
-            if ( listItemData == targetBriefingTrigIndex )
+            if ( listItemData == LPARAM(targetBriefingTrigIndex) )
             {
                 targetListIndex = i;
                 return true;
             }
-            else if ( listItemData > targetBriefingTrigIndex )
+            else if ( listItemData > LPARAM(targetBriefingTrigIndex) )
             {
                 targetListIndex = i-1;
                 return true;
@@ -831,10 +833,15 @@ LRESULT BriefingTriggersWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
         if ( LOWORD(wParam) == Id::LIST_TRIGGERS ) // Change selection, update info boxes and so fourth
         {
             int sel;
-            if ( !(listBriefingTriggers.GetCurSel(sel) && sel != -1 && listBriefingTriggers.GetItemData(sel, currBriefingTrigger)) )
+            LPARAM currIndex = 0;
+            if ( listBriefingTriggers.GetCurSel(sel) && sel != -1 && listBriefingTriggers.GetItemData(sel, currIndex) )
+            {
+                currBriefingTrigger = u32(currIndex);
+                if ( briefingTrigModifyWindow.getHandle() != NULL )
+                    briefingTrigModifyWindow.RefreshWindow(currBriefingTrigger);
+            }
+            else
                 currBriefingTrigger = NO_TRIGGER;
-            else if ( briefingTrigModifyWindow.getHandle() != NULL )
-                briefingTrigModifyWindow.RefreshWindow(currBriefingTrigger);
         }
         else if ( LOWORD(wParam) == Id::LIST_GROUPS )
         {
@@ -847,7 +854,7 @@ LRESULT BriefingTriggersWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             ClearGroups();
             for ( int i = 0; i<numSel; i++ )
             {
-                int selItem;
+                LPARAM selItem = 0;
                 if ( listGroups.GetSelItem(i, selItem) )
                 {
                     if ( selItem == 28 )

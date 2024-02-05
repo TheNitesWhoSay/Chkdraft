@@ -126,15 +126,15 @@ void SoundEditorWindow::RefreshWindow()
 
 void SoundEditorWindow::UpdateWindowText()
 {
-    u32 soundStringId = 0;
+    LPARAM soundStringId = 0;
     if ( selectedSoundListIndex >= 0 && listMapSounds.GetItemData(selectedSoundListIndex, soundStringId) )
     {
         u16 soundIndex = u16_max;
-        auto soundEntry = soundMap.find(soundStringId);
+        auto soundEntry = soundMap.find(u32(soundStringId));
         if ( soundEntry != soundMap.end() )
             soundIndex = soundEntry->second;
 
-        SoundStatus soundStatus = CM->getSoundStatus(soundStringId);
+        SoundStatus soundStatus = CM->getSoundStatus(size_t(soundStringId));
 
         std::string soundStatusString = "";
         if ( soundStatus == SoundStatus::NoMatch )
@@ -189,10 +189,10 @@ void SoundEditorWindow::UpdateCustomStringList()
 
 void SoundEditorWindow::PlaySoundButtonPressed() // TODO: Support for playing and stopping oggs
 {
-    u32 soundStringId = 0;
+    LPARAM soundStringId = 0;
     if ( selectedSoundListIndex >= 0 && listMapSounds.GetItemData(selectedSoundListIndex, soundStringId) )
     {
-        if ( auto soundData = CM->getSound(soundStringId) ) // Non-virtual sound
+        if ( auto soundData = CM->getSound(size_t(soundStringId)) ) // Non-virtual sound
         {
 #ifdef UNICODE
             PlaySoundW((LPCTSTR)&soundData.value()[0], NULL, SND_ASYNC|SND_MEMORY);
@@ -200,7 +200,7 @@ void SoundEditorWindow::PlaySoundButtonPressed() // TODO: Support for playing an
             PlaySoundA((LPCTSTR)&soundData.value()[0], NULL, SND_ASYNC|SND_MEMORY);
 #endif
         }
-        else if ( auto soundString = CM->getString<RawString>(soundStringId) ) // Might be a virtual sound
+        else if ( auto soundString = CM->getString<RawString>(size_t(soundStringId)) ) // Might be a virtual sound
         {
             if ( CM->isInVirtualSoundList(*soundString) ) // Is a virtual sound
             {
@@ -254,17 +254,17 @@ void SoundEditorWindow::ExtractSoundButtonPressed()
     if ( !listMapSounds.GetCurSel(selectedSoundListIndex) )
         selectedSoundListIndex = -1;
 
-    u32 soundStringId = 0;
+    LPARAM soundStringId = 0;
     if ( selectedSoundListIndex >= 0 && listMapSounds.GetItemData(selectedSoundListIndex, soundStringId) )
     {
-        if ( auto soundArchivePath = CM->getString<RawString>(soundStringId) )
+        if ( auto soundArchivePath = CM->getString<RawString>(size_t(soundStringId)) )
         {
             u32 filterIndex = 0;
             std::string saveFilePath = getMpqFileName(*soundArchivePath);
             FileBrowserPtr<u32> fileBrowser = getDefaultSoundSaver();
             if ( fileBrowser->browseForSavePath(saveFilePath, filterIndex) )
             {
-                SoundStatus soundStatus = CM->getSoundStatus(soundStringId);
+                SoundStatus soundStatus = CM->getSoundStatus(size_t(soundStringId));
                 if ( soundStatus == SoundStatus::VirtualFile )
                 {
                     if ( !Sc::Data::ExtractAsset(*soundArchivePath, saveFilePath, Sc::DataFile::BrowserPtr(new ChkdDataFileBrowser()),
@@ -427,13 +427,13 @@ void SoundEditorWindow::MapSoundSelectionChanged()
     else
     {
         buttonDeleteSound.EnableThis();
-        u32 soundStringId = 0;
+        LPARAM soundStringId = 0;
         if ( selectedSoundListIndex >= 0 && listMapSounds.GetItemData(selectedSoundListIndex, soundStringId) )
         {
-            if ( !CM->stringIsSound(soundStringId) )
+            if ( !CM->stringIsSound(size_t(soundStringId)) )
                 buttonDeleteSound.DisableThis();
 
-            SoundStatus soundStatus = CM->getSoundStatus(soundStringId);
+            SoundStatus soundStatus = CM->getSoundStatus(size_t(soundStringId));
             if ( soundStatus == SoundStatus::PendingMatch || soundStatus == SoundStatus::CurrentMatch || soundStatus == SoundStatus::VirtualFile )
                 buttonExtractSound.EnableThis();
         }
@@ -474,7 +474,7 @@ void SoundEditorWindow::StopSoundsButtonPressed()
 
 void SoundEditorWindow::DeleteSoundButtonPressed()
 {
-    u32 soundStringId = 0;
+    LPARAM soundStringId = 0;
     if ( listMapSounds.GetItemData(selectedSoundListIndex, soundStringId) )
     {
         bool soundStringIdIsUsed = false;
@@ -485,7 +485,7 @@ void SoundEditorWindow::DeleteSoundButtonPressed()
             {
                 if ( (trigger.actions[actionIndex].actionType == Chk::Action::Type::PlaySound ||
                     trigger.actions[actionIndex].actionType == Chk::Action::Type::Transmission) &&
-                    trigger.actions[actionIndex].soundStringId == soundStringId )
+                    trigger.actions[actionIndex].soundStringId == u32(soundStringId) )
                 {
                     soundStringIdIsUsed = true;
                     i = CM->numTriggers();
@@ -502,7 +502,7 @@ void SoundEditorWindow::DeleteSoundButtonPressed()
                 {
                     if ( (trigger.actions[actionIndex].actionType == Chk::Action::Type::BriefingPlaySound ||
                         trigger.actions[actionIndex].actionType == Chk::Action::Type::BriefingTransmission) &&
-                        trigger.actions[actionIndex].soundStringId == soundStringId )
+                        trigger.actions[actionIndex].soundStringId == u32(soundStringId) )
                     {
                         soundStringIdIsUsed = true;
                         i = CM->numBriefingTriggers();
@@ -515,11 +515,11 @@ void SoundEditorWindow::DeleteSoundButtonPressed()
 
         if ( soundStringIdIsUsed )
         {
-            SoundStatus soundStatus = CM->getSoundStatus(soundStringId);
+            SoundStatus soundStatus = CM->getSoundStatus(size_t(soundStringId));
             if ( soundStatus == SoundStatus::NoMatch || soundStatus == SoundStatus::NoMatchExtended )
             {
                 selectedSoundListIndex = -1;
-                CM->removeSoundByStringId(soundStringId, true);
+                CM->removeSoundByStringId(size_t(soundStringId), true);
                 CM->notifyChange(false);
                 CM->refreshScenario();
             }
@@ -539,7 +539,7 @@ void SoundEditorWindow::DeleteSoundButtonPressed()
                 if ( WinLib::GetYesNo(warningMessage, "Warning!") == WinLib::PromptResult::Yes )
                 {
                     selectedSoundListIndex = -1;
-                    CM->removeSoundByStringId(soundStringId, true);
+                    CM->removeSoundByStringId(size_t(soundStringId), true);
                     CM->notifyChange(false);
                     CM->refreshScenario();
                 }
@@ -548,7 +548,7 @@ void SoundEditorWindow::DeleteSoundButtonPressed()
         else
         {
             selectedSoundListIndex = -1;
-            CM->removeSoundByStringId(soundStringId, false);
+            CM->removeSoundByStringId(size_t(soundStringId), false);
             CM->notifyChange(false);
             CM->refreshScenario();
         }

@@ -61,7 +61,7 @@ bool Suggestions::CreateThis(HWND hParent, int x, int y, int width, int height)
         {
             suggestParent = hParent;
             SetWindowPos(getHandle(), HWND_TOPMOST, 0, 0, 0, 0, SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE);
-            listSuggestions.CreateThis(getHandle(), 0, 0, width, height + 12, false, false, true, false, true, 0);
+            listSuggestions.CreateThis(getHandle(), 0, 0, width, height, true, false, true, false, true, 0);
             listSuggestions.setDefaultFont(false);
             DoSize();
             return true;
@@ -91,12 +91,15 @@ int Suggestions::AddItem(const SuggestionItem & item)
 
 void Suggestions::SetItems()
 {
+    listSuggestions.SetRedraw(false);
     listSuggestions.ClearSel();
     listSuggestions.ClearItems();
 
     items.sort(alphabetize);
     for ( auto & item : items )
-        listSuggestions.AddString(item.str);
+        listSuggestions.AddItem((LPARAM)&item);
+
+    listSuggestions.SetRedraw(true);
 }
 
 void Suggestions::SetItems(const std::vector<SuggestionItem> & items)
@@ -154,11 +157,14 @@ void Suggestions::ArrowDown()
 
 std::string Suggestions::Take()
 {
-    std::string str;
+    LPARAM itemData = 0;
     if ( !isShown )
         return "0";
-    else if ( listSuggestions.GetCurSelString(str) )
-        return str;
+    else if ( listSuggestions.GetCurSelItem(itemData) )
+    {
+        SuggestionItem & suggestionItem = *((SuggestionItem*)itemData);
+        return suggestionItem.str;
+    }
     else
         return "";
 }
@@ -244,9 +250,12 @@ LRESULT Suggestions::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     {
         case LBN_SELCHANGE:
             {
-                std::string str;
-                if ( listSuggestions.GetCurSelString(str) )
-                    SendMessage(suggestParent, (UINT)WinLib::LB::WM_NEWSELTEXT, 0, (LPARAM)&str);
+                LPARAM itemData = 0;
+                if ( listSuggestions.GetCurSelItem(itemData) )
+                {
+                    SuggestionItem & suggestionItem = *((SuggestionItem*)itemData);
+                    SendMessage(suggestParent, (UINT)WinLib::LB::WM_NEWSELTEXT, 0, (LPARAM)&suggestionItem.str);
+                }
             }
             break;
         default:
@@ -281,6 +290,67 @@ LRESULT Suggestions::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
         case WM_VKEYTOITEM:
             return KeyDown(LOWORD(wParam));
             break;
+
+        case WinLib::LB::WM_PREMEASUREITEMS:
+            listDc.emplace(listSuggestions.getHandle());
+            break;
+
+        case WM_MEASUREITEM:
+            {
+                MEASUREITEMSTRUCT* mis = (MEASUREITEMSTRUCT*)lParam;
+                SuggestionItem & suggestionItem = *((SuggestionItem*)mis->itemData);
+
+                int32_t width = 0;
+                int32_t height = 0;
+                if ( listDc->getTabTextExtent(suggestionItem.str, width, height) )
+                {
+                    mis->itemWidth = width;
+                    mis->itemHeight = height-3;
+
+                    return TRUE;
+                }
+            }
+            break;
+
+        case WinLib::LB::WM_POSTMEASUREITEMS: // Release items loaded for measurement
+            listDc = std::nullopt;
+            break;
+
+        case WinLib::LB::WM_PREDRAWITEMS:
+            break;
+
+        case WM_DRAWITEM:
+            {
+                PDRAWITEMSTRUCT pdis = (PDRAWITEMSTRUCT)lParam;
+                bool isSelected = ((pdis->itemState&ODS_SELECTED) == ODS_SELECTED),
+                     drawSelection = ((pdis->itemAction&ODA_SELECT) == ODA_SELECT),
+                     drawEntire = ((pdis->itemAction&ODA_DRAWENTIRE) == ODA_DRAWENTIRE);
+
+                if ( pdis->itemID != -1 && ( drawSelection || drawEntire ) )
+                {
+                    WinLib::DeviceContext dc { pdis->hDC };
+                    SuggestionItem & suggestionItem = *((SuggestionItem*)pdis->itemData);
+                    SetBkMode(pdis->hDC, TRANSPARENT);
+                    if ( isSelected )
+                    {
+                        dc.fillRect(pdis->rcItem, RGB(0, 120, 215));
+                        DrawString(dc, pdis->rcItem.left+3, pdis->rcItem.top, pdis->rcItem.right-pdis->rcItem.left,
+                            RGB(255, 255, 255), suggestionItem.str);
+                    }
+                    else
+                    {
+                        dc.fillRect(pdis->rcItem, RGB(255, 255, 255));
+                        DrawString(dc, pdis->rcItem.left+3, pdis->rcItem.top, pdis->rcItem.right-pdis->rcItem.left,
+                            RGB(0, 0, 0), suggestionItem.str);
+                    }
+                }
+                return TRUE;
+            }
+            break;
+
+        case WinLib::LB::WM_POSTDRAWITEMS:
+            break;
+
         default: return ClassWindow::WndProc(hWnd, msg, wParam, lParam); break;
     }
     return 0;

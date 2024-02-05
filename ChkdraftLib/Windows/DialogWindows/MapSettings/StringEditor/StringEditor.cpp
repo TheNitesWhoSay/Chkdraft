@@ -146,8 +146,10 @@ LRESULT StringEditorWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             int lbIndex;
             if ( listStrings.GetCurSel(lbIndex) )
             {
-                if ( listStrings.GetItemData(lbIndex, currSelString) && CM != nullptr )
+                LPARAM itemData = 0;
+                if ( listStrings.GetItemData(lbIndex, itemData) && CM != nullptr )
                 {
+                    this->currSelString = u32(itemData);
                     if ( auto str = CM->getString<ChkdString>(currSelString, this->extended ? Chk::Scope::Editor : Chk::Scope::Game) )
                     {
                         editString.SetText(*str);

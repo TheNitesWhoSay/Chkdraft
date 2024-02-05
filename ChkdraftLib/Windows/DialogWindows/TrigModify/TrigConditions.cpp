@@ -237,7 +237,7 @@ bool TrigConditionsWindow::IsSuggestionsWindow(HWND hWnd)
 void TrigConditionsWindow::CreateSubWindows(HWND hWnd)
 {
     gridConditions.CreateThis(hWnd, 2, 40, 100, 100, Id::GRID_CONDITIONS);
-    suggestions.CreateThis(hWnd, 0, 0, 200, 100);
+    suggestions.CreateThis(hWnd, 0, 0, 200, 95);
     RefreshWindow(trigIndex);
 }
 

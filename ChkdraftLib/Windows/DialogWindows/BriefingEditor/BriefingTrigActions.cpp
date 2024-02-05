@@ -261,7 +261,7 @@ bool BriefingTrigActionsWindow::IsSuggestionsWindow(HWND hWnd)
 void BriefingTrigActionsWindow::CreateSubWindows(HWND hWnd)
 {
     gridActions.CreateThis(hWnd, 2, 40, 100, 100, Id::GRID_ACTIONS);
-    suggestions.CreateThis(hWnd, 0, 0, 262, 100);
+    suggestions.CreateThis(hWnd, 0, 0, 262, 95);
     buttonEditString.CreateThis(hWnd, 0, 0, 100, 22, "Edit String", Id::BUTTON_EDITSTRING);
     buttonEditString.Hide();
     buttonEditSound.CreateThis(hWnd, 0, 0, 100, 22, "Edit Sound", Id::BUTTON_EDITSOUND);

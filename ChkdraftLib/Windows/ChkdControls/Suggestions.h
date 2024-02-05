@@ -46,6 +46,7 @@ class Suggestions : public WinLib::ClassWindow
     private:
         HWND suggestParent;
         WinLib::ListBoxControl listSuggestions;
+        std::optional<WinLib::DeviceContext> listDc;
         bool isShown;
         bool isActive;
 

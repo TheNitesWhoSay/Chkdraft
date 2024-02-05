@@ -64,7 +64,7 @@ void DimensionsWindow::ResizeChangeTileset()
     int newTilesetIndex = CM->getTileset();
     listTileset.GetCurSel(newTilesetIndex);
     const auto & tileset = chkd.scData.terrain.get(Sc::Terrain::Tileset(newTilesetIndex));
-    int newTerrainTypeIndex = 0;
+    LPARAM newTerrainTypeIndex = 0;
     listTerrain.GetCurSelItem(newTerrainTypeIndex);
     auto newLeft = editLeft.GetEditNum<int>();
     auto newTop = editTop.GetEditNum<int>();

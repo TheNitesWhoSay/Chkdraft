@@ -47,9 +47,9 @@ namespace WinLib {
         SendMessage(getHandle(), LB_RESETCONTENT, 0, 0);
     }
 
-    int ListBoxControl::AddItem(u32 item)
+    int ListBoxControl::AddItem(LPARAM item)
     {
-        LRESULT result = SendMessage(getHandle(), LB_ADDSTRING, 0, (LPARAM)item);
+        LRESULT result = SendMessage(getHandle(), LB_ADDSTRING, 0, item);
         if ( result == LB_ERR || result == LB_ERRSPACE )
             return -1;
         else
@@ -90,9 +90,9 @@ namespace WinLib {
         return result != LB_ERR && result != LB_ERRSPACE;
     }
 
-    bool ListBoxControl::InsertItem(int index, u32 item)
+    bool ListBoxControl::InsertItem(int index, LPARAM item)
     {
-        LRESULT result = SendMessage(getHandle(), LB_INSERTSTRING, (WPARAM)index, (LPARAM)item);
+        LRESULT result = SendMessage(getHandle(), LB_INSERTSTRING, (WPARAM)index, item);
         return result != LB_ERR && result != LB_ERRSPACE;
     }
 
@@ -115,9 +115,9 @@ namespace WinLib {
         return SendMessage(getHandle(), LB_SETSEL, TRUE, index) != LB_ERR;
     }
 
-    bool ListBoxControl::SetItemData(int index, u32 data)
+    bool ListBoxControl::SetItemData(int index, LPARAM data)
     {
-        return SendMessage(getHandle(), LB_SETITEMDATA, (WPARAM)index, (LPARAM)data) != LB_ERR;
+        return SendMessage(getHandle(), LB_SETITEMDATA, (WPARAM)index, data) != LB_ERR;
     }
 
     bool ListBoxControl::SetItemHeight(int index, int height)
@@ -247,18 +247,18 @@ namespace WinLib {
         return false;
     }
 
-    bool ListBoxControl::GetCurSelItem(int & itemData)
+    bool ListBoxControl::GetCurSelItem(LPARAM & itemData)
     {
         int selectedItem = -1;
         if ( GetCurSel(selectedItem) )
         {
-            itemData = int(SendMessage(getHandle(), LB_GETITEMDATA, WPARAM(selectedItem), NULL));
+            itemData = SendMessage(getHandle(), LB_GETITEMDATA, WPARAM(selectedItem), NULL);
             return true;
         }
         return false;
     }
 
-    bool ListBoxControl::GetSelItem(int index, int & itemData)
+    bool ListBoxControl::GetSelItem(int index, LPARAM & itemData)
     {
         LRESULT numSel = SendMessage(getHandle(), LB_GETSELCOUNT, 0, 0);
         if ( numSel != LB_ERR && numSel > 0 )
@@ -272,7 +272,7 @@ namespace WinLib {
                 LRESULT result = SendMessage(getHandle(), LB_GETSELITEMS, (WPARAM)arraySize, (LPARAM)selections.get());
                 if ( result != LB_ERR )
                 {
-                    itemData = int(SendMessage(getHandle(), LB_GETITEMDATA, selections[index], 0));
+                    itemData = SendMessage(getHandle(), LB_GETITEMDATA, selections[index], 0);
                     return true;
                 }
             }
@@ -280,12 +280,12 @@ namespace WinLib {
         return false;
     }
 
-    bool ListBoxControl::GetItemData(int index, u32 & data)
+    bool ListBoxControl::GetItemData(int index, LPARAM & data)
     {
         LRESULT result = SendMessage(getHandle(), LB_GETITEMDATA , (WPARAM)index, 0);
         if ( result != LB_ERR )
         {
-            data = (u32)result;
+            data = result;
             return true;
         }
         else
@@ -305,7 +305,7 @@ namespace WinLib {
                 if ( !autoRedraw )
                 {
                     try {
-                        itemsToAdd.push((u32)lParam);
+                        itemsToAdd.push(lParam);
                         return itemsToAdd.size()-1;
                     } catch ( ... ) { return -1; }
                 }

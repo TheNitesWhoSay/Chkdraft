@@ -199,7 +199,7 @@ void TriggersWindow::CopySelection()
 void TriggersWindow::MoveUp()
 {
     int sel;
-    u32 prevTrigIndex;
+    LPARAM prevTrigIndex = 0;
     if ( currTrigger != NO_TRIGGER &&
          listTriggers.GetCurSel(sel) &&
          sel > 0 &&
@@ -207,8 +207,8 @@ void TriggersWindow::MoveUp()
     {
         trigModifyWindow.DestroyThis();
         CM->notifyChange(false);
-        CM->moveTrigger(currTrigger, prevTrigIndex);
-        if ( MoveUpTrigListItem(sel, prevTrigIndex) )
+        CM->moveTrigger(currTrigger, size_t(prevTrigIndex));
+        if ( MoveUpTrigListItem(sel, u32(prevTrigIndex)) )
         {
             SelectTrigListItem(sel-1);
             listTriggers.RedrawThis();
@@ -221,7 +221,7 @@ void TriggersWindow::MoveUp()
 void TriggersWindow::MoveDown()
 {
     int sel;
-    u32 nextTrigIndex;
+    LPARAM nextTrigIndex = 0;
     if ( currTrigger != NO_TRIGGER &&
          listTriggers.GetCurSel(sel) &&
          sel < int(numVisibleTrigs) &&
@@ -229,8 +229,8 @@ void TriggersWindow::MoveDown()
     {
         trigModifyWindow.DestroyThis();
         CM->notifyChange(false);
-        CM->moveTrigger(currTrigger, nextTrigIndex);
-        if ( MoveDownTrigListItem(sel, nextTrigIndex) )
+        CM->moveTrigger(currTrigger, size_t(nextTrigIndex));
+        if ( MoveDownTrigListItem(sel, u32(nextTrigIndex)) )
         {
             SelectTrigListItem(sel+1);
             listTriggers.RedrawThis();
@@ -279,24 +279,24 @@ void TriggersWindow::ButtonNew()
             trigger.owners[i] = Chk::Trigger::Owned::Yes;
     }
 
-    u32 newTrigId = 0;
+    LPARAM newTrigId = 0;
     int sel;
     if ( listTriggers.GetCurSel(sel) && sel != numVisibleTrigs-1 )
     {
         if ( listTriggers.GetItemData(sel, newTrigId) )
         {
             newTrigId ++;
-            CM->insertTrigger(newTrigId, trigger);
+            CM->insertTrigger(size_t(newTrigId), trigger);
         }
     }
     else
     {
         CM->addTrigger(trigger);
-        newTrigId = u32(CM->numTriggers()-1);
+        newTrigId = LPARAM(CM->numTriggers()-1);
     }
 
     CM->notifyChange(false);
-    currTrigger = newTrigId;
+    currTrigger = u32(newTrigId);
     RefreshWindow(true);
     ButtonModify();
 }
@@ -890,8 +890,10 @@ void TriggersWindow::RefreshTrigList()
 
 bool TriggersWindow::SelectTrigListItem(int item)
 {
-    if ( numVisibleTrigs > 0 && listTriggers.SetCurSel(item) && listTriggers.GetItemData(item, currTrigger) )
+    LPARAM selIndex = 0;
+    if ( numVisibleTrigs > 0 && listTriggers.SetCurSel(item) && listTriggers.GetItemData(item, selIndex) )
     {
+        this->currTrigger = u32(selIndex);
         trigModifyWindow.RefreshWindow(currTrigger);
         return true;
     }
@@ -907,7 +909,7 @@ bool TriggersWindow::SelectTrigListItem(int item)
 bool TriggersWindow::DeleteTrigListItem(int item)
 {
     bool removedItem = false;
-    u32 data;
+    LPARAM data = 0;
     bool success = true;
     int totalItems = listTriggers.GetNumItems();
     for ( int i=item+1; i<totalItems; i++ ) // Attempt to decrement the trigger index of items with higher list indexes
@@ -931,7 +933,7 @@ bool TriggersWindow::DeleteTrigListItem(int item)
 
 bool TriggersWindow::CopyTrigListItem(int item)
 {
-    u32 data;
+    LPARAM data = 0;
     bool success = true;
     int totalItems = listTriggers.GetNumItems();
     for ( int i=item+1; i<totalItems; i++ ) // Attempt to increment the trigger index of items with higher list indexes
@@ -981,7 +983,7 @@ bool TriggersWindow::MoveTrigListItemTo(int currListIndex, u32 currTrigIndex, u3
     int targetListIndex = -1;
     if ( FindTargetListIndex(currListIndex, currTrigIndex, targetTrigIndex, targetListIndex) )
     {
-        u32 listItemData;
+        LPARAM listItemData = 0;
         int listItemHeight,
             preservedHeight;
 
@@ -1045,14 +1047,14 @@ bool TriggersWindow::MoveTrigListItemTo(int currListIndex, u32 currTrigIndex, u3
 
 bool TriggersWindow::FindTargetListIndex(int currListIndex, u32 currTrigIndex, u32 targetTrigIndex, int & targetListIndex)
 {
-    u32 listItemData;
+    LPARAM listItemData = 0;
     if ( targetTrigIndex < currTrigIndex )
     {
         for ( int i=currListIndex; i>0; i-- )
         {
             if ( !listTriggers.GetItemData(i, listItemData) )
                 return false;
-            else if ( listItemData <= targetTrigIndex )
+            else if ( listItemData <= LPARAM(targetTrigIndex) )
             {
                 targetListIndex = i;
                 return true;
@@ -1068,12 +1070,12 @@ bool TriggersWindow::FindTargetListIndex(int currListIndex, u32 currTrigIndex, u
         {
             if ( !listTriggers.GetItemData(i, listItemData) )
                 return false;
-            if ( listItemData == targetTrigIndex )
+            if ( listItemData == LPARAM(targetTrigIndex) )
             {
                 targetListIndex = i;
                 return true;
             }
-            else if ( listItemData > targetTrigIndex )
+            else if ( listItemData > LPARAM(targetTrigIndex) )
             {
                 targetListIndex = i-1;
                 return true;
@@ -1249,10 +1251,15 @@ LRESULT TriggersWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
         if ( LOWORD(wParam) == Id::LIST_TRIGGERS ) // Change selection, update info boxes and so fourth
         {
             int sel;
-            if ( !(listTriggers.GetCurSel(sel) && sel != -1 && listTriggers.GetItemData(sel, currTrigger)) )
+            LPARAM currIndex = 0;
+            if ( listTriggers.GetCurSel(sel) && sel != -1 && listTriggers.GetItemData(sel, currIndex) )
+            {
+                currTrigger = u32(currIndex);
+                if ( trigModifyWindow.getHandle() != NULL )
+                    trigModifyWindow.RefreshWindow(currTrigger);
+            }
+            else
                 currTrigger = NO_TRIGGER;
-            else if ( trigModifyWindow.getHandle() != NULL )
-                trigModifyWindow.RefreshWindow(currTrigger);
         }
         else if ( LOWORD(wParam) == Id::LIST_GROUPS )
         {
@@ -1265,7 +1272,7 @@ LRESULT TriggersWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             ClearGroups();
             for ( int i = 0; i<numSel; i++ )
             {
-                int selItem;
+                LPARAM selItem = 0;
                 if ( listGroups.GetSelItem(i, selItem) )
                 {
                     if ( selItem == 28 )
