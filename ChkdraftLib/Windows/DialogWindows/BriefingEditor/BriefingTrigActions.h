@@ -24,6 +24,7 @@ class BriefingTrigActionsWindow : public WinLib::ClassWindow, public ICndActGrid
         virtual void Paste();
         virtual void RedrawThis();
         bool IsSuggestionsWindow(HWND hWnd);
+        void FocusGrid();
 
     protected:
         void CreateSubWindows(HWND hWnd);

@@ -156,6 +156,7 @@ void TrigActionsWindow::ProcessKeyDown(WPARAM wParam, LPARAM lParam)
 void TrigActionsWindow::HideSuggestions()
 {
     suggestions.Hide();
+    gridActions.EndEditing();
 }
 
 void TrigActionsWindow::CndActEnableToggled(u8 actionNum)
@@ -267,6 +268,11 @@ void TrigActionsWindow::RedrawThis()
 bool TrigActionsWindow::IsSuggestionsWindow(HWND hWnd)
 {
     return hWnd == suggestions.getHandle();
+}
+
+void TrigActionsWindow::FocusGrid()
+{
+    gridActions.FocusThis();
 }
 
 void TrigActionsWindow::InitializeScriptTable()
@@ -1285,6 +1291,16 @@ LRESULT TrigActionsWindow::ShowWindow(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
     {
         suggestions.Hide();
         gridActions.EndEditing();
+        gridActions.KillFocus();
+    }
+    else
+    {
+        int x = 0;
+        int y = 0;
+        if ( !gridActions.GetFocusedItem(x, y) )
+            gridActions.FocusItem(1, 0);
+
+        gridActions.FocusThis();
     }
 
     return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
@@ -1317,6 +1333,12 @@ LRESULT TrigActionsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 {
     switch ( msg )
     {
+        case WM_ACTIVATE:
+            if ( wParam != WA_INACTIVE )
+                FocusGrid();
+            else
+                gridActions.KillFocus();
+            break;
         case WM_NCHITTEST: break;
         case WM_MEASUREITEM: return MeasureItem(hWnd, msg, wParam, lParam); break;
         case WM_ERASEBKGND: return EraseBackground(hWnd, msg, wParam, lParam); break;
@@ -1335,6 +1357,7 @@ LRESULT TrigActionsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
         case WinLib::GV::WM_GRIDEDITSTART: GridEditStart(LOWORD(wParam), HIWORD(wParam)); break;
         case WinLib::GV::WM_GRIDEDITEND: suggestions.Hide(); break;
         case WinLib::LB::WM_SELCONFIRMED: SelConfirmed(wParam); break;
+        case WinLib::LB::WM_DISMISSED: gridActions.EndEditing(); break;
         default: return ClassWindow::WndProc(hWnd, msg, wParam, lParam); break;
     }
     return 0;

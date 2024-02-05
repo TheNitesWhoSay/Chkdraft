@@ -168,7 +168,11 @@ BOOL BriefingTrigModifyWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 
         case WM_ACTIVATE:
             if ( LOWORD(wParam) != WA_INACTIVE )
+            {
                 chkd.SetCurrDialog(hWnd);
+                if ( currTab == Tab::Actions )
+                    briefingActionsWindow.FocusGrid();
+            }
             else // LOWORD(wParam) == WA_INACTIVE
             {
                 if ( !briefingActionsWindow.IsSuggestionsWindow((HWND)lParam) )

@@ -277,13 +277,19 @@ LRESULT Suggestions::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
         case WM_MOUSEWHEEL: if ( isShown ) SendMessage(listSuggestions.getHandle(), WM_MOUSEWHEEL, wParam, lParam); break;
         case WM_ACTIVATE:
             if ( LOWORD(wParam) == WA_INACTIVE && isShown )
+            {
+                SendMessage(suggestParent, (UINT)WinLib::LB::WM_DISMISSED, NULL, NULL);
                 Hide();
+            }
 
             return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
             break;
         case WM_NCACTIVATE:
             if ( (BOOL)wParam == FALSE && isShown ) 
+            {
+                SendMessage(suggestParent, (UINT)WinLib::LB::WM_DISMISSED, NULL, NULL);
                 Hide();
+            }
 
             return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
             break;

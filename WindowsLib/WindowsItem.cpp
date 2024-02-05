@@ -416,6 +416,12 @@ namespace WinLib {
         return false;
     }
 
+    void WindowsItem::KillFocus()
+    {
+        if ( getHandle() == GetFocus() )
+            ::SetFocus(NULL);
+    }
+
     void WindowsItem::FocusThis()
     {
         ::SetFocus(getHandle());

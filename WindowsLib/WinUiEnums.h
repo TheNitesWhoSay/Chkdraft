@@ -44,6 +44,12 @@ namespace WinLib {
             The LPARAM is the list box's handle */
         WM_SELCONFIRMED,
 
+        /** Possibly sent by windows containing ListBoxes to signal an action
+            was taken to dismiss the window, e.g. focusing some other window
+            The WPARAM is unused
+            The LPARAM is unused */
+        WM_DISMISSED,
+
         LB_LAST
     });
 

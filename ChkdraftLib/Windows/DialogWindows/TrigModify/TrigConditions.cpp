@@ -121,6 +121,7 @@ void TrigConditionsWindow::ProcessKeyDown(WPARAM wParam, LPARAM lParam)
 void TrigConditionsWindow::HideSuggestions()
 {
     suggestions.Hide();
+    gridConditions.EndEditing();
 }
 
 void TrigConditionsWindow::CndActEnableToggled(u8 conditionNum)
@@ -232,6 +233,11 @@ void TrigConditionsWindow::RedrawThis()
 bool TrigConditionsWindow::IsSuggestionsWindow(HWND hWnd)
 {
     return hWnd == suggestions.getHandle();
+}
+
+void TrigConditionsWindow::FocusGrid()
+{
+    gridConditions.FocusThis();
 }
 
 void TrigConditionsWindow::CreateSubWindows(HWND hWnd)
@@ -782,7 +788,20 @@ void TrigConditionsWindow::NewSuggestion(std::string & str)
 LRESULT TrigConditionsWindow::ShowWindow(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     if ( (BOOL)wParam == FALSE )
+    {
         suggestions.Hide();
+        gridConditions.EndEditing();
+        gridConditions.KillFocus();
+    }
+    else
+    {
+        int x = 0;
+        int y = 0;
+        if ( !gridConditions.GetFocusedItem(x, y) )
+            gridConditions.FocusItem(1, 0);
+
+        gridConditions.FocusThis();
+    }
 
     return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
 }
@@ -796,6 +815,12 @@ LRESULT TrigConditionsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
 {
     switch ( msg )
     {
+        case WM_ACTIVATE:
+            if ( wParam != WA_INACTIVE )
+                FocusGrid();
+            else
+                gridConditions.KillFocus();
+            break;
         case WM_NCHITTEST: break;
         case WM_MEASUREITEM: return MeasureItem(hWnd, msg, wParam, lParam); break;
         case WM_ERASEBKGND: return EraseBackground(hWnd, msg, wParam, lParam); break;
@@ -814,6 +839,7 @@ LRESULT TrigConditionsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
         case WinLib::GV::WM_GRIDEDITSTART: GridEditStart(LOWORD(wParam), HIWORD(wParam)); break;
         case WinLib::GV::WM_GRIDEDITEND: suggestions.Hide(); break;
         case WinLib::LB::WM_SELCONFIRMED: SelConfirmed(wParam); break;
+        case WinLib::LB::WM_DISMISSED: gridConditions.EndEditing(); break;
         default: return ClassWindow::WndProc(hWnd, msg, wParam, lParam); break;
     }
     return 0;

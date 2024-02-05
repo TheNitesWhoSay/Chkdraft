@@ -67,7 +67,8 @@ namespace WinLib {
             void SetMedIcon(HICON hIcon);
             bool SetWinText(const std::string & newText);
             bool AddTooltip(const std::string & text);
-
+            
+            void KillFocus();
             void FocusThis();
             void UpdateWindow();
             virtual void EnableThis();

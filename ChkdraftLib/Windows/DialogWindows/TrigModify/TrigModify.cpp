@@ -192,7 +192,13 @@ BOOL TrigModifyWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 
         case WM_ACTIVATE:
             if ( LOWORD(wParam) != WA_INACTIVE )
+            {
                 chkd.SetCurrDialog(hWnd);
+                if ( currTab == Tab::Conditions )
+                    conditionsWindow.FocusGrid();
+                else if ( currTab == Tab::Actions )
+                    actionsWindow.FocusGrid();
+            }
             else // LOWORD(wParam) == WA_INACTIVE
             {
                 if ( !conditionsWindow.IsSuggestionsWindow((HWND)lParam) &&

@@ -24,6 +24,7 @@ class TrigActionsWindow : public WinLib::ClassWindow, public ICndActGridUser
         virtual void Paste();
         virtual void RedrawThis();
         bool IsSuggestionsWindow(HWND hWnd);
+        void FocusGrid();
 
     protected:
         void InitializeScriptTable();
