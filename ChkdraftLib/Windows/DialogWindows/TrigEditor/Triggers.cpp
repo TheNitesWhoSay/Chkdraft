@@ -460,11 +460,17 @@ std::string TriggersWindow::GetActionString(u8 actionNum, const Chk::Trigger & t
         case Chk::Action::Type::Defeat:
             ssAction << "End scenario in defeat for current player.";
             break;
+        case Chk::Action::Type::DisableDebugMode:
+            ssAction << "Disable debug mode if in single-player.";
+            break;
         case Chk::Action::Type::DisplayTextMessage: // String
             ssAction << "Display for current player:\x08" << tt.getTrigString(action.stringId) << '\x0C';
             break;
         case Chk::Action::Type::Draw:
             ssAction << "End the scenario in a draw for all players.";
+            break;
+        case Chk::Action::Type::EnableDebugMode:
+            ssAction << "Enable debug mode if in single-player.";
             break;
         case Chk::Action::Type::GiveUnitsToPlayer: // Type2, Type, Players, Location, Number
             ssAction << "Give \x08" << tt.getTrigNumUnits((Chk::Action::NumUnits)action.type2) << "\x0C \x08" << tt.getTrigUnit((Sc::Unit::Type)action.type)
@@ -694,8 +700,8 @@ std::string TriggersWindow::GetActionString(u8 actionNum, const Chk::Trigger & t
         default: // Location, String, Sound, Duration, Player, Number, Type, Action, Type2, Flags, Internal
             ssAction << "Action: \x08" << action.locationId << "\x0C, \x08" << action.stringId << "\x0C, \x08" << action.soundStringId
                 << "\x0C, \x08" << action.time << "\x0C, \x08" << action.group << "\x0C, \x08" << action.number
-                << "\x0C, \x08" << action.type << "\x0C, \x08" << u16(action.type2) << "\x0C, \x08" << u16(action.flags)
-                << "\x0C, \x08" << (u16)action.padding << "\x0C, \x08" << action.maskFlag << "\x0C.";
+                << "\x0C, \x08" << action.type << "\x0C, \x08" << u16(action.actionType) << "\x0C, \x08" << u16(action.type2)
+                << "\x0C, \x08" << u16(action.flags) << "\x0C, \x08" << (u16)action.padding << "\x0C, \x08" << action.maskFlag << "\x0C.";
             break;
     }
     return ssAction.str();

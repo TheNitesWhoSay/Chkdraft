@@ -406,6 +406,9 @@ inline void TextTrigGenerator::appendTrigger(StringBuffer & output, const Chk::T
             if ( conditionType == Chk::Condition::VirtualType::Deaths && condition.player > 28 ) // Memory condition
                 conditionType = Chk::Condition::VirtualType::Memory;
 
+            if ( conditionType > Chk::Condition::VirtualType::Never )
+                conditionType = Chk::Condition::VirtualType::Custom;
+
             for ( size_t argumentIndex=0; argumentIndex<Chk::Condition::MaxArguments; argumentIndex++ )
             {
                 const Chk::Condition::Argument & argument = Chk::Condition::getTextArg(conditionType, argumentIndex);
@@ -451,6 +454,9 @@ inline void TextTrigGenerator::appendTrigger(StringBuffer & output, const Chk::T
             // Add action args
             if ( actionType == Chk::Action::VirtualType::SetDeaths && action.group > 28 ) // Memory action
                 actionType = Chk::Action::VirtualType::SetMemory;
+
+            if ( actionType > Chk::Action::VirtualType::EnableDebugMode )
+                actionType = Chk::Action::VirtualType::Custom;
 
             for ( size_t argumentIndex=0; argumentIndex<Chk::Action::MaxArguments; argumentIndex++ )
             {
@@ -1251,6 +1257,9 @@ void BriefingTextTrigGenerator::appendBriefingTrigger(StringBuffer & output, con
             output += '(';
 
             // Add action args
+            if ( actionType > Chk::Action::VirtualType::BriefingSkipTutorialEnabled )
+                actionType = Chk::Action::VirtualType::BriefingCustom;
+
             for ( size_t argumentIndex=0; argumentIndex<Chk::Action::MaxArguments; argumentIndex++ )
             {
                 const Chk::Action::Argument & argument = Chk::Action::getBriefingTextArg(actionType, argumentIndex);
@@ -1326,7 +1335,8 @@ bool BriefingTextTrigGenerator::prepBriefingActionTable()
         "Show Portrait",
         "Hide Portrait",
         "Display Speaking Portrait",
-        "Transmission"
+        "Transmission",
+        "Skip Tutorial Enabled"
     };
 
     const char** briefingActionNames = legacyBriefingActionNames;

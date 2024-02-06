@@ -316,7 +316,7 @@ const std::vector<std::string> triggerConditions =
 const std::vector<std::string> triggerActions =
 {
     "Center View", "Comment", "Create Unit", "Create Unit with Properties",
-    "Defeat", "Display Text Message", "Draw", "Give Units to Player", "Kill Unit", "Kill Unit At Location",
+    "Defeat", "Disable Debug Mode", "Display Text Message", "Draw", "Enable Debug Mode", "Give Units to Player", "Kill Unit", "Kill Unit At Location",
     "Leader Board Control at Location", "Leader Board Control", "Leader Board Greed", "Leader Board Kills",
     "Leader Board Points", "Leader Board Resources", "Leader Board Goal Control At Location",
     "Leader Board Goal Control", "Leader Board Goal Kills", "Leader Board Goal Points", "Leader Board Goal Resources",
@@ -336,6 +336,7 @@ const std::vector<std::string> briefingTriggerActions =
     "Mission Objectives",
     "Play WAV",
     "Show Portrait",
+    "Skip Tutorial Enabled",
     "Text Message",
     "Transmission",
     "Wait"

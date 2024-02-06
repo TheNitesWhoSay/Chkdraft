@@ -1414,6 +1414,13 @@ bool TextTrigCompiler::parseActionName(const std::string & arg, Chk::Action::Vir
             actionType = Chk::Action::VirtualType::Defeat;
         else if ( arg.compare(1, 3, "RAW") == 0 )
             actionType = Chk::Action::VirtualType::Draw;
+        else if ( arg.compare(1, 15, "ISABLEDEBUGMODE") == 0 )
+            actionType = Chk::Action::VirtualType::DisableDebugMode;
+        break;
+
+    case 'E':
+        if ( arg.compare(1, 14, "NABLEDEBUGMODE") == 0 )
+            actionType = Chk::Action::VirtualType::EnableDebugMode;
         break;
 
     case 'G':
@@ -1643,6 +1650,13 @@ bool TextTrigCompiler::parseAction(std::string & text, size_t pos, size_t end, C
             actionType = Chk::Action::VirtualType::Defeat;
         else if ( arg.compare(1, 3, "RAW") == 0 )
             actionType = Chk::Action::VirtualType::Draw;
+        else if ( arg.compare(1, 15, "ISABLEDEBUGMODE") == 0 )
+            actionType = Chk::Action::VirtualType::DisableDebugMode;
+        break;
+
+    case 'E':
+        if ( arg.compare(1, 14, "NABLEDEBUGMODE") == 0 )
+            actionType = Chk::Action::VirtualType::EnableDebugMode;
         break;
 
     case 'G':
@@ -1897,8 +1911,9 @@ bool TextTrigCompiler::parseConditionArg(std::string & text, std::vector<RawStri
             returnMsg( parseByte(text, currCondition.flags, pos, end),
                 "Expected: 1-byte flags" );
         case Chk::Condition::ArgType::MaskFlag:
-            returnMsg( parseShort(text, (u16 &)currCondition.maskFlag, pos, end),
-                "Expected: 2-byte internal data" );
+            returnMsg( parseConditionMaskFlag(text, currCondition.maskFlag, pos, end) ||
+                parseShort(text, (u16 &)currCondition.maskFlag, pos, end),
+                "Expected: 2-byte mask flag" );
         case Chk::Condition::ArgType::MemoryOffset:
             returnMsg( (useAddressesForMemory && parseMemoryAddress(text, currCondition.player, pos, end, deathTableOffset) ||
                 !useAddressesForMemory && parseLong(text, currCondition.player, pos, end)),
@@ -2013,7 +2028,8 @@ bool TextTrigCompiler::parseActionArg(std::string & text, std::vector<RawString>
             returnMsg( parseByte(text, currAction.padding, pos, end),
                 "Expected: 1-byte padding" );
         case Chk::Action::ArgType::MaskFlag:
-            returnMsg( parseShort(text, (u16 &)currAction.maskFlag, pos, end),
+            returnMsg( parseActionMaskFlag(text, currAction.maskFlag, pos, end) ||
+                parseShort(text, (u16 &)currAction.maskFlag, pos, end),
                 "Expected: 2-byte mask flag" );
         case Chk::Action::ArgType::MemoryOffset:
             returnMsg( (useAddressesForMemory && parseMemoryAddress(text, currAction.group, pos, end, deathTableOffset) ||
@@ -3390,6 +3406,40 @@ bool TextTrigCompiler::parseMemoryAddress(const std::string & text, u32 & dest, 
     return false;
 }
 
+bool TextTrigCompiler::parseConditionMaskFlag(const std::string & text, Chk::Condition::MaskFlag & dest, size_t pos, size_t end) const
+{
+    std::array<char, 12> maskFlag = {};
+    copyUpperCaseNoSpace(maskFlag, text, pos, end);
+
+    switch ( maskFlag[0] )
+    {
+        case 'D':
+            if ( strcmp(&maskFlag[1], "ISABLED") == 0 ) { dest = Chk::Condition::MaskFlag::Disabled; return true; }
+            break;
+        case 'E':
+            if ( strcmp(&maskFlag[1], "NABLED") == 0 ) { dest = Chk::Condition::MaskFlag::Enabled; return true; }
+            break;
+    }
+    return false;
+}
+
+bool TextTrigCompiler::parseActionMaskFlag(const std::string & text, Chk::Action::MaskFlag & dest, size_t pos, size_t end) const
+{
+    std::array<char, 12> maskFlag = {};
+    copyUpperCaseNoSpace(maskFlag, text, pos, end);
+
+    switch ( maskFlag[0] )
+    {
+        case 'D':
+            if ( strcmp(&maskFlag[1], "ISABLED") == 0 ) { dest = Chk::Action::MaskFlag::Disabled; return true; }
+            break;
+        case 'E':
+            if ( strcmp(&maskFlag[1], "NABLED") == 0 ) { dest = Chk::Action::MaskFlag::Enabled; return true; }
+            break;
+    }
+    return false;
+}
+
 bool TextTrigCompiler::parseResourceType(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u16 & dest, size_t pos, size_t end) const
 {
     u8 temp = 0;
@@ -4244,6 +4294,10 @@ bool BriefingTextTrigCompiler::parseBriefingActionName(const std::string & arg, 
     char currChar = arg[0];
     switch ( currChar )
     {
+    case 'C':
+        if ( arg.compare(1, 5, "USTOM") == 0 )
+            actionType = Chk::Action::VirtualType::BriefingCustom;
+        break;
     case 'D':
         if ( arg.compare(1, 22, "ISPLAYSPEAKINGPORTRAIT") == 0 )
             actionType = Chk::Action::VirtualType::BriefingDisplaySpeakingPortrait;
@@ -4263,6 +4317,8 @@ bool BriefingTextTrigCompiler::parseBriefingActionName(const std::string & arg, 
     case 'S':
         if ( arg.compare(1, 11, "HOWPORTRAIT") == 0 )
             actionType = Chk::Action::VirtualType::BriefingShowPortrait;
+        else if ( arg.compare(1, 18, "KIPTUTORIALENABLED") == 0 )
+            actionType = Chk::Action::VirtualType::BriefingSkipTutorialEnabled;
         break;
     case 'T':
         if ( arg.compare(1, 10, "EXTMESSAGE") == 0 )
@@ -4300,6 +4356,10 @@ bool BriefingTextTrigCompiler::parseBriefingAction(std::string & text, size_t po
 
     switch ( currChar )
     {
+    case 'C':
+        if ( arg.compare(1, 5, "USTOM") == 0 )
+            actionType = Chk::Action::VirtualType::BriefingCustom;
+        break;
     case 'D':
         if ( arg.compare(1, 22, "ISPLAYSPEAKINGPORTRAIT") == 0 )
             actionType = Chk::Action::VirtualType::BriefingDisplaySpeakingPortrait;
@@ -4319,6 +4379,8 @@ bool BriefingTextTrigCompiler::parseBriefingAction(std::string & text, size_t po
     case 'S':
         if ( arg.compare(1, 11, "HOWPORTRAIT") == 0 )
             actionType = Chk::Action::VirtualType::BriefingShowPortrait;
+        else if ( arg.compare(1, 18, "KIPTUTORIALENABLED") == 0 )
+            actionType = Chk::Action::VirtualType::BriefingSkipTutorialEnabled;
         break;
     case 'T':
         if ( arg.compare(1, 10, "EXTMESSAGE") == 0 )

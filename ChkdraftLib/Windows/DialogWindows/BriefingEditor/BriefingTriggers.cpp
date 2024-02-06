@@ -345,6 +345,9 @@ std::string BriefingTriggersWindow::GetActionString(u8 actionNum, const Chk::Tri
         case Chk::Action::Type::BriefingShowPortrait:
             ssAction << "Show portrait of \x08" << tt.getBriefingTrigUnit(Sc::Unit::Type(action.type)) << "\x0C in slot \x08" << tt.getBriefingSlot(action.group) << "\x0C.";
             break;
+        case Chk::Action::Type::BriefingSkipTutorialEnabled:
+            ssAction << "Enable skip tutorial button.";
+            break;
         case Chk::Action::Type::BriefingTextMessage:
             ssAction << "Display the following text for \x08" << tt.getBriefingTrigNumber(action.time) << "\x0C milliseconds: '\x08" << tt.getBriefingTrigString(action.stringId) << "\x0C'";
             break;

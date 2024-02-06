@@ -152,6 +152,8 @@ class TextTrigCompiler
         bool parseStateMod(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end) const; // Disable, Enable, Toggle
         bool parseOrder(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end) const; // Attack, move, patrol
         bool parseMemoryAddress(const std::string & text, u32 & dest, size_t pos, size_t end, u32 deathTableOffset) const;
+        bool parseConditionMaskFlag(const std::string & text, Chk::Condition::MaskFlag & dest, size_t pos, size_t end) const; // Enabled, Disabled
+        bool parseActionMaskFlag(const std::string & text, Chk::Action::MaskFlag & dest, size_t pos, size_t end) const; // Enabled, Disabled
 
         bool parseResourceType(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u16 & dest, size_t pos, size_t end) const; // Accelerator for 2-byte resource types
         bool parseScoreType(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u16 & dest, size_t pos, size_t end) const; // Accelerator for 2-byte score types

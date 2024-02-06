@@ -729,15 +729,17 @@ namespace Chk {
         static constexpr size_t NumActionTypes = 60;
         static constexpr size_t NumBriefingActionTypes = 10;
         static constexpr size_t InternalDataBytes = 3;
-        static constexpr size_t MaxArguments = 11;
+        static constexpr size_t MaxArguments = 12;
         enum_t(Type, u8, { // u8
             CenterView = 10,
             Comment = 47,
             CreateUnit = 44,
             CreateUnitWithProperties = 11,
             Defeat = 2,
+            DisableDebugMode = 58,
             DisplayTextMessage = 9,
             Draw = 56,
+            EnableDebugMode = 59,
             GiveUnitsToPlayer = 48,
             KillUnit = 22,
             KillUnitAtLocation = 23,
@@ -808,8 +810,10 @@ namespace Chk {
             CreateUnit = 44,
             CreateUnitWithProperties = 11,
             Defeat = 2,
+            DisableDebugMode = 58,
             DisplayTextMessage = 9,
             Draw = 56,
+            EnableDebugMode = 59,
             GiveUnitsToPlayer = 48,
             KillUnit = 22,
             KillUnitAtLocation = 23,

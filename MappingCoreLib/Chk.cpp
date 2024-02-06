@@ -909,7 +909,8 @@ void Chk::Action::deleteBriefingString(size_t stringId)
 std::unordered_map<Chk::Action::VirtualType, Chk::Action::VirtualAction> Chk::Action::virtualActions = {
     std::pair<Chk::Action::VirtualType, Chk::Action::VirtualAction>(
         Chk::Action::VirtualType::Custom, { Chk::Action::VirtualType::Indeterminate, {
-             locationArg, textFlagsArg, soundArg, durationArg, playerArg, numberArg, actionTypeArg, secondaryTypeIndexArg, flagsArg, paddingArg, maskFlagArg } } ),
+            locationArg, stringArg, soundArg, durationArg, playerArg, numberArg, typeIndexArg,
+            actionTypeArg, secondaryTypeIndexArg, flagsArg, paddingArg, maskFlagArg } } ),
     std::pair<Chk::Action::VirtualType, Chk::Action::VirtualAction>(
         Chk::Action::VirtualType::SetMemory, { Chk::Action::VirtualType::SetDeaths, { memoryOffsetArg, numericModArg, amountArg } } )
 };
@@ -917,7 +918,8 @@ std::unordered_map<Chk::Action::VirtualType, Chk::Action::VirtualAction> Chk::Ac
 std::unordered_map<Chk::Action::VirtualType, Chk::Action::VirtualAction> Chk::Action::virtualBriefingActions = {
     std::pair<Chk::Action::VirtualType, Chk::Action::VirtualAction>(
         Chk::Action::VirtualType::BriefingCustom, { Chk::Action::VirtualType::Indeterminate, {
-             locationArg, textFlagsArg, soundArg, durationArg, playerArg, numberArg, actionTypeArg, secondaryTypeIndexArg, flagsArg, paddingArg, maskFlagArg } } )
+            locationArg, stringArg, soundArg, durationArg, playerArg, numberArg, typeIndexArg,
+            actionTypeArg, secondaryTypeIndexArg, flagsArg, paddingArg, maskFlagArg } } )
 };
 
 bool Chk::Action::actionUsesLocationArg[NumActionTypes] = {
