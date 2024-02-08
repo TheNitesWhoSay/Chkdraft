@@ -320,7 +320,13 @@ void TrigConditionsWindow::UpdateConditionName(u8 conditionNum, const std::strin
     Chk::Trigger & trig = CM->getTrigger(trigIndex);
     TextTrigCompiler ttc(Settings::useAddressesForMemory, Settings::deathTableStart);
     Chk::Condition::Type conditionType = Chk::Condition::Type::NoCondition;
-    if ( ttc.parseConditionName(newText, conditionType) || ttc.parseConditionName(suggestions.Take(), conditionType) )
+    SuggestionItem suggestion = suggestions.Take();
+    if ( suggestion.data )
+    {
+        Chk::Condition & condition = trig.condition(conditionNum);
+        TransformCondition(condition, Chk::Condition::Type(suggestion.data.value()), refreshImmediately);
+    }
+    else if ( ttc.parseConditionName(newText, conditionType) || ttc.parseConditionName(suggestion.str, conditionType) )
     {
         Chk::Condition & condition = trig.condition(conditionNum);
         TransformCondition(condition, conditionType, refreshImmediately);
@@ -339,14 +345,33 @@ void TrigConditionsWindow::UpdateConditionName(u8 conditionNum, const std::strin
 void TrigConditionsWindow::UpdateConditionArg(u8 conditionNum, u8 argNum, const std::string & newText, bool refreshImmediately)
 {
     RawString rawUpdateText, rawSuggestText;
-    std::string suggestionString = suggestions.Take();
-    bool hasSuggestion = !suggestionString.empty();
+    SuggestionItem suggestion = suggestions.Take();
     Chk::Trigger & trig = CM->getTrigger(trigIndex);
     TextTrigCompiler ttc(Settings::useAddressesForMemory, Settings::deathTableStart);
     Chk::Condition::Argument argument = Chk::Condition::getClassicArg(trig.condition(conditionNum).conditionType, argNum);
-    if ( ( parseChkdStr(ChkdString(newText), rawUpdateText) &&
-            ttc.parseConditionArg(rawUpdateText, argument, trig.condition(conditionNum), *CM, chkd.scData, trigIndex, hasSuggestion) ) ||
-            ( hasSuggestion && parseChkdStr(ChkdString(suggestionString), rawSuggestText) &&
+    if ( suggestion.data )
+    {
+        Chk::Condition & condition = trig.condition(conditionNum);
+        switch ( argument.field )
+        {
+            case Chk::Condition::ArgField::LocationId: condition.locationId = suggestion.data.value(); break;
+            case Chk::Condition::ArgField::Player: condition.player = suggestion.data.value(); break;
+            case Chk::Condition::ArgField::Amount: condition.amount = suggestion.data.value(); break;
+            case Chk::Condition::ArgField::UnitType: condition.unitType = Sc::Unit::Type(suggestion.data.value()); break;
+            case Chk::Condition::ArgField::Comparison: condition.comparison = Chk::Condition::Comparison(suggestion.data.value()); break;
+            case Chk::Condition::ArgField::ConditionType: condition.conditionType = Chk::Condition::Type(suggestion.data.value()); break;
+            case Chk::Condition::ArgField::TypeIndex: condition.typeIndex = u8(suggestion.data.value()); break;
+            case Chk::Condition::ArgField::Flags: condition.flags = u8(suggestion.data.value()); break;
+            case Chk::Condition::ArgField::MaskFlag: condition.maskFlag = Chk::Condition::MaskFlag(suggestion.data.value()); break;
+            default: logger.error() << "Unknown condition arg field encountered" << std::endl; break;
+        }
+
+        if ( refreshImmediately )
+            RefreshConditionAreas();
+    }
+    else if ( (parseChkdStr(ChkdString(newText), rawUpdateText) &&
+        ttc.parseConditionArg(rawUpdateText, argument, trig.condition(conditionNum), *CM, chkd.scData, trigIndex, !suggestion.str.empty()) ) ||
+        ( !suggestion.str.empty() && parseChkdStr(ChkdString(suggestion.str), rawSuggestText) &&
             ttc.parseConditionArg(rawSuggestText, argument, trig.condition(conditionNum), *CM, chkd.scData, trigIndex, false) ) )
     {
         if ( refreshImmediately )

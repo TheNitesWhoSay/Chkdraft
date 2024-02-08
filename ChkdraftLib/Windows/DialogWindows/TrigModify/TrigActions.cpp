@@ -383,7 +383,13 @@ void TrigActionsWindow::UpdateActionName(u8 actionNum, const std::string & newTe
     auto & trig = CM->getTrigger(trigIndex);
     TextTrigCompiler ttc(Settings::useAddressesForMemory, Settings::deathTableStart);
     Chk::Action::Type newType = Chk::Action::Type::NoAction;
-    if ( ttc.parseActionName(newText, newType) || ttc.parseActionName(suggestions.Take(), newType) )
+    SuggestionItem suggestion = suggestions.Take();
+    if ( suggestion.data )
+    {
+        Chk::Action & action = trig.action(actionNum);
+        TransformAction(action, Chk::Action::Type(suggestion.data.value()), refreshImmediately);
+    }
+    else if ( ttc.parseActionName(newText, newType) || ttc.parseActionName(suggestion.str, newType) )
     {
         Chk::Action & action = trig.action(actionNum);
         TransformAction(action, newType, refreshImmediately);
@@ -402,66 +408,83 @@ void TrigActionsWindow::UpdateActionName(u8 actionNum, const std::string & newTe
 void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::string & newText, bool refreshImmediately)
 {
     RawString rawUpdateText, rawSuggestText;
-    std::string suggestionString = suggestions.Take();
-    bool hasSuggestion = !suggestionString.empty();
+    SuggestionItem suggestion = suggestions.Take();
     TextTrigCompiler ttc(Settings::useAddressesForMemory, Settings::deathTableStart);
     auto & trig = CM->getTrigger(trigIndex);
     Chk::Action & action = trig.action(actionNum);
     if ( action.actionType < Chk::Action::NumActionTypes )
     {
         Chk::Action::ArgType argType = Chk::Action::getClassicArgType(action.actionType, argNum);
-        SingleLineChkdString chkdSuggestText = ChkdString(suggestionString);
         SingleLineChkdString chkdNewText = ChkdString(newText);
 
         bool madeChange = false;
         if ( argType == Chk::Action::ArgType::String || argType == Chk::Action::ArgType::Sound )
         {
-            size_t newStringId = CM->findString<SingleLineChkdString>(newText);
-            if ( newStringId == Chk::StringId::NoString )
-                newStringId = CM->findString<SingleLineChkdString>(chkdSuggestText);
-
-            if ( newStringId != Chk::StringId::NoString )
+            if ( suggestion.data )
             {
+                size_t newStringId = size_t(suggestion.data.value());
                 if ( argType == Chk::Action::ArgType::String )
                     action.stringId = (u32)newStringId;
                 else if ( argType == Chk::Action::ArgType::Sound )
                     action.soundStringId = (u32)newStringId;
-                    
+                
                 CM->deleteUnusedStrings(Chk::Scope::Both);
                 madeChange = true;
+            }
+            else
+            {
+                size_t newStringId = CM->findString<SingleLineChkdString>(newText);
+                if ( newStringId == Chk::StringId::NoString )
+                    newStringId = CM->findString<SingleLineChkdString>(suggestion.str);
+
+                if ( newStringId != Chk::StringId::NoString )
+                {
+                    if ( argType == Chk::Action::ArgType::String )
+                        action.stringId = (u32)newStringId;
+                    else if ( argType == Chk::Action::ArgType::Sound )
+                        action.soundStringId = (u32)newStringId;
+                    
+                    CM->deleteUnusedStrings(Chk::Scope::Both);
+                    madeChange = true;
+                }
             }
         }
         else if ( argType == Chk::Action::ArgType::Script )
         {
             u32 newScriptNum = 0;
-            size_t hash = strHash(suggestionString);
-            size_t numMatching = scriptTable.count(hash);
-            if ( numMatching == 1 )
-            {
-                std::string & scriptDisplayString = scriptTable.find(hash)->second.second;
-                if ( scriptDisplayString.compare(suggestionString) == 0 )
-                    newScriptNum = scriptTable.find(hash)->second.first;
-            }
-            else if ( numMatching > 1 )
-            {
-                auto range = scriptTable.equal_range(hash);
-                for ( auto & pair = range.first; pair != range.second; ++pair )
-                {
-                    std::string & scriptDisplayString = pair->second.second;
-                    if ( scriptDisplayString.compare(suggestionString) == 0 )
-                    {
-                        newScriptNum = scriptTable.find(hash)->second.first;
-                        break;
-                    }
-                }
-            }
+            if ( suggestion.data )
+                newScriptNum = suggestion.data.value();
             else
             {
-                Chk::Action::Argument argument = Chk::Action::getClassicArg(trig.action(actionNum).actionType, argNum);
-                madeChange = (parseChkdStr(chkdNewText, rawUpdateText) &&
-                    ttc.parseActionArg(rawUpdateText, argument, action, *CM, chkd.scData, trigIndex, actionNum, hasSuggestion)) ||
-                    (hasSuggestion && parseChkdStr(chkdSuggestText, rawSuggestText) &&
-                        ttc.parseActionArg(rawSuggestText, argument, action, *CM, chkd.scData, trigIndex, actionNum, false));
+                size_t hash = strHash(suggestion.str);
+                size_t numMatching = scriptTable.count(hash);
+                if ( numMatching == 1 )
+                {
+                    std::string & scriptDisplayString = scriptTable.find(hash)->second.second;
+                    if ( scriptDisplayString.compare(suggestion.str) == 0 )
+                        newScriptNum = scriptTable.find(hash)->second.first;
+                }
+                else if ( numMatching > 1 )
+                {
+                    auto range = scriptTable.equal_range(hash);
+                    for ( auto & pair = range.first; pair != range.second; ++pair )
+                    {
+                        std::string & scriptDisplayString = pair->second.second;
+                        if ( scriptDisplayString.compare(suggestion.str) == 0 )
+                        {
+                            newScriptNum = scriptTable.find(hash)->second.first;
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    Chk::Action::Argument argument = Chk::Action::getClassicArg(trig.action(actionNum).actionType, argNum);
+                    madeChange = (parseChkdStr(chkdNewText, rawUpdateText) &&
+                        ttc.parseActionArg(rawUpdateText, argument, action, *CM, chkd.scData, trigIndex, actionNum, !suggestion.str.empty())) ||
+                        (!suggestion.str.empty() && parseChkdStr(suggestion.str, rawSuggestText) &&
+                            ttc.parseActionArg(rawSuggestText, argument, action, *CM, chkd.scData, trigIndex, actionNum, false));
+                }
             }
 
             if ( newScriptNum != 0 )
@@ -473,10 +496,33 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
         else
         {
             Chk::Action::Argument argument = Chk::Action::getClassicArg(trig.action(actionNum).actionType, argNum);
-            madeChange = (parseChkdStr(chkdNewText, rawUpdateText) &&
-                ttc.parseActionArg(rawUpdateText, argument, action, *CM, chkd.scData, trigIndex, actionNum, hasSuggestion)) ||
-                (hasSuggestion && parseChkdStr(chkdSuggestText, rawSuggestText) &&
-                    ttc.parseActionArg(rawSuggestText, argument, action, *CM, chkd.scData, trigIndex, actionNum, false));
+            if ( suggestion.data )
+            {
+                madeChange = true;
+                switch ( argument.field )
+                {
+                    case Chk::Action::ArgField::LocationId: action.locationId = suggestion.data.value(); break;
+                    case Chk::Action::ArgField::StringId: action.stringId = suggestion.data.value(); break;
+                    case Chk::Action::ArgField::SoundStringId: action.soundStringId = suggestion.data.value(); break;
+                    case Chk::Action::ArgField::Time: action.time = suggestion.data.value(); break;
+                    case Chk::Action::ArgField::Group: action.group = suggestion.data.value(); break;
+                    case Chk::Action::ArgField::Number: action.number = suggestion.data.value(); break;
+                    case Chk::Action::ArgField::Type: action.type = u16(suggestion.data.value()); break;
+                    case Chk::Action::ArgField::ActionType: action.actionType = Chk::Action::Type(suggestion.data.value()); break;
+                    case Chk::Action::ArgField::Type2: action.type2 = u8(suggestion.data.value()); break;
+                    case Chk::Action::ArgField::Flags: action.flags = u8(suggestion.data.value()); break;
+                    case Chk::Action::ArgField::Padding: action.padding = u8(suggestion.data.value()); break;
+                    case Chk::Action::ArgField::MaskFlag: action.maskFlag = Chk::Action::MaskFlag(suggestion.data.value()); break;
+                    default: madeChange = false; logger.error() << "Unknown action arg field encountered" << std::endl; break;
+                }
+            }
+            else
+            {
+                madeChange = (parseChkdStr(chkdNewText, rawUpdateText) &&
+                    ttc.parseActionArg(rawUpdateText, argument, action, *CM, chkd.scData, trigIndex, actionNum, !suggestion.str.empty())) ||
+                    (!suggestion.str.empty() && parseChkdStr(suggestion.str, rawSuggestText) &&
+                        ttc.parseActionArg(rawSuggestText, argument, action, *CM, chkd.scData, trigIndex, actionNum, false));
+            }
         }
 
         if ( madeChange )
@@ -794,8 +840,8 @@ void TrigActionsWindow::SuggestScoreType(u16 currType)
 void TrigActionsWindow::SuggestResourceType(u16 currType)
 {
     suggestions.AddItem(SuggestionItem{Chk::Trigger::ResourceType::Ore, std::string("Ore")});
-    suggestions.AddItem(SuggestionItem{Chk::Trigger::ResourceType::Ore, std::string("Ore and Gas")});
-    suggestions.AddItem(SuggestionItem{Chk::Trigger::ResourceType::Ore, std::string("Gas")});
+    suggestions.AddItem(SuggestionItem{Chk::Trigger::ResourceType::OreAndGas, std::string("Ore and Gas")});
+    suggestions.AddItem(SuggestionItem{Chk::Trigger::ResourceType::Gas, std::string("Gas")});
     suggestions.Show();
 }
 

@@ -30,7 +30,7 @@ class Suggestions : public WinLib::ClassWindow
         void SelectFirst();
         void ArrowUp();
         void ArrowDown();
-        std::string Take();
+        SuggestionItem Take();
         bool HasItems();
         bool IsShown();
 

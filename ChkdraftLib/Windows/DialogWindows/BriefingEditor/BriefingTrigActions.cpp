@@ -344,7 +344,13 @@ void BriefingTrigActionsWindow::UpdateActionName(u8 actionNum, const std::string
     auto & briefingTrig = CM->getBriefingTrigger(briefingTrigIndex);
     BriefingTextTrigCompiler ttc{};
     Chk::Action::Type newType = Chk::Action::Type::NoAction;
-    if ( ttc.parseBriefingActionName(newText, newType) || ttc.parseBriefingActionName(suggestions.Take(), newType) )
+    SuggestionItem suggestion = suggestions.Take();
+    if ( suggestion.data )
+    {
+        Chk::Action & action = briefingTrig.action(actionNum);
+        TransformAction(action, Chk::Action::Type(suggestion.data.value()), refreshImmediately);
+    }
+    else if ( ttc.parseBriefingActionName(newText, newType) || ttc.parseBriefingActionName(suggestion.str, newType) )
     {
         Chk::Action & action = briefingTrig.action(actionNum);
         TransformAction(action, newType, refreshImmediately);
@@ -363,42 +369,77 @@ void BriefingTrigActionsWindow::UpdateActionName(u8 actionNum, const std::string
 void BriefingTrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::string & newText, bool refreshImmediately)
 {
     RawString rawUpdateText, rawSuggestText;
-    std::string suggestionString = suggestions.Take();
-    bool hasSuggestion = !suggestionString.empty();
+    SuggestionItem suggestion = suggestions.Take();
     BriefingTextTrigCompiler ttc {};
     auto & briefingTrig = CM->getBriefingTrigger(briefingTrigIndex);
     Chk::Action & action = briefingTrig.action(actionNum);
     if ( action.actionType < Chk::Action::NumBriefingActionTypes )
     {
         Chk::Action::ArgType argType = Chk::Action::getBriefingClassicArgType(action.actionType, argNum);
-        SingleLineChkdString chkdSuggestText = ChkdString(suggestionString);
         SingleLineChkdString chkdNewText = ChkdString(newText);
 
         bool madeChange = false;
         if ( argType == Chk::Action::ArgType::String || argType == Chk::Action::ArgType::Sound )
         {
-            size_t newStringId = CM->findString<SingleLineChkdString>(chkdSuggestText);
-            if ( newStringId == Chk::StringId::NoString )
-                newStringId = CM->findString<SingleLineChkdString>(chkdSuggestText);
-
-            if ( newStringId != Chk::StringId::NoString )
+            if ( suggestion.data )
             {
+                size_t newStringId = size_t(suggestion.data.value());
                 if ( argType == Chk::Action::ArgType::String )
                     action.stringId = (u32)newStringId;
                 else if ( argType == Chk::Action::ArgType::Sound )
                     action.soundStringId = (u32)newStringId;
-                    
+
                 CM->deleteUnusedStrings(Chk::Scope::Both);
                 madeChange = true;
+            }
+            else
+            {
+                size_t newStringId = CM->findString<SingleLineChkdString>(newText);
+                if ( newStringId == Chk::StringId::NoString )
+                    newStringId = CM->findString<SingleLineChkdString>(suggestion.str);
+
+                if ( newStringId != Chk::StringId::NoString )
+                {
+                    if ( argType == Chk::Action::ArgType::String )
+                        action.stringId = (u32)newStringId;
+                    else if ( argType == Chk::Action::ArgType::Sound )
+                        action.soundStringId = (u32)newStringId;
+                    
+                    CM->deleteUnusedStrings(Chk::Scope::Both);
+                    madeChange = true;
+                }
             }
         }
         else
         {
             Chk::Action::Argument argument = Chk::Action::getBriefingClassicArg(briefingTrig.action(actionNum).actionType, argNum);
-            madeChange = (parseChkdStr(chkdNewText, rawUpdateText) &&
-                ttc.parseBriefingActionArg(rawUpdateText, argument, action, *CM, chkd.scData, briefingTrigIndex, actionNum, hasSuggestion)) ||
-                (hasSuggestion && parseChkdStr(chkdSuggestText, rawSuggestText) &&
-                    ttc.parseBriefingActionArg(rawSuggestText, argument, action, *CM, chkd.scData, briefingTrigIndex, actionNum, false));
+            if ( suggestion.data )
+            {
+                madeChange = true;
+                switch ( argument.field )
+                {
+                    case Chk::Action::ArgField::LocationId: action.locationId = suggestion.data.value(); break; // u32
+                    case Chk::Action::ArgField::StringId: action.stringId = suggestion.data.value(); break; // u32
+                    case Chk::Action::ArgField::SoundStringId: action.soundStringId = suggestion.data.value(); break; // u32
+                    case Chk::Action::ArgField::Time: action.time = suggestion.data.value(); break; // u32
+                    case Chk::Action::ArgField::Group: action.group = suggestion.data.value(); break; // u32
+                    case Chk::Action::ArgField::Number: action.number = suggestion.data.value(); break; // u32
+                    case Chk::Action::ArgField::Type: action.type = u16(suggestion.data.value()); break; // u16
+                    case Chk::Action::ArgField::ActionType: action.actionType = Chk::Action::Type(suggestion.data.value()); break; // u8
+                    case Chk::Action::ArgField::Type2: action.type2 = u8(suggestion.data.value()); break; // u8
+                    case Chk::Action::ArgField::Flags: action.flags = u8(suggestion.data.value()); break; // u8
+                    case Chk::Action::ArgField::Padding: action.padding = u8(suggestion.data.value()); break; // u8
+                    case Chk::Action::ArgField::MaskFlag: action.maskFlag = Chk::Action::MaskFlag(suggestion.data.value()); break; // u16
+                    default: madeChange = false; logger.error() << "Unknown action arg field encountered" << std::endl; break;
+                }
+            }
+            else
+            {
+                madeChange = (parseChkdStr(chkdNewText, rawUpdateText) &&
+                    ttc.parseBriefingActionArg(rawUpdateText, argument, action, *CM, chkd.scData, briefingTrigIndex, actionNum, !suggestion.str.empty())) ||
+                    (!suggestion.str.empty() && parseChkdStr(suggestion.str, rawSuggestText) &&
+                        ttc.parseBriefingActionArg(rawSuggestText, argument, action, *CM, chkd.scData, briefingTrigIndex, actionNum, false));
+            }
         }
 
         if ( madeChange )

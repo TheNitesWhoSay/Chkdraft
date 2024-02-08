@@ -307,45 +307,52 @@ const std::vector<std::string> briefingTriggerSlots = { "Slot 1", "Slot 2", "Slo
 
 const std::vector<std::string> triggerConditions =
 {
-    "Accumulate", "Always", "Bring", "Command", "Command The Least",
-    "Command The Least At", "Command The Most", "Command The Most At", "Countdown Timer", "Custom",
-    "Deaths", "Elapsed Time", "Highest Score", "Kill", "Least Kills", "Least Resources", "Lowest Score",
-    "Memory", "Most Kills", "Most Resources", "Never", "Opponents", "Score", "Switch"
+    "No Condition", "Countdown Timer", "Command", "Bring", "Accumulate", "Kill", "Command The Most", 
+    "Command The Most At", "Most Kills", "Highest Score", "Most Resources", "Switch", "Elapsed Time", 
+    "Never (alt)", "Opponents", "Deaths", "Command The Least", "Command The Least At", "Least Kills", 
+    "Lowest Score", "Least Resources", "Score", "Always", "Never"
 };
 
 const std::vector<std::string> triggerActions =
 {
-    "Center View", "Comment", "Create Unit", "Create Unit with Properties",
-    "Defeat", "Disable Debug Mode", "Display Text Message", "Draw", "Enable Debug Mode", "Give Units to Player", "Kill Unit", "Kill Unit At Location",
-    "Leader Board Control at Location", "Leader Board Control", "Leader Board Greed", "Leader Board Kills",
-    "Leader Board Points", "Leader Board Resources", "Leader Board Goal Control At Location",
-    "Leader Board Goal Control", "Leader Board Goal Kills", "Leader Board Goal Points", "Leader Board Goal Resources",
-    "Leader Board Computer Players", "MiniMap Ping", "Modify Unit Energy", "Modify Unit Hanger Count",
-    "Modify Unit Hit Points", "Modify Unit Resource Amount", "Modify Unit Shield Points", "Move Location",
-    "Move Unit", "Mute Unit Speech", "Order", "Pause Game", "Pause Timer", "Play Wav", "Preserve Trigger", "Remove Unit",
-    "Remove Unit At Location", "Run AI Script", "Run AI Script At Location", "Set Alliance Status", "Set Countdown Timer",
-    "Set Deaths", "Set Doodad State", "Set Invincibility", "Set Mission Objectives", "Set Next Scenario", "Set Resources",
-    "Set Score", "Set Switch", "Talking Portrait", "Transmission", "Unmute Unit Speech", "Unpause Game", "Unpause Timer",
-    "Victory", "Wait"
+    "No Action", "Victory", "Defeat", "Preserve Trigger", "Wait", "Pause Game", "Unpause Game", "Transmission", 
+    "Play Wav", "Display Text Message", "Center View", "Create Unit with Properties", "Set Mission Objectives", 
+    "Set Switch", "Set Countdown Timer", "Run AI Script", "Run AI Script At Location", "Leader Board Control", 
+    "Leader Board Control at Location","Leader Board Resources", "Leader Board Kills", "Leader Board Points", 
+    "Kill Unit", "Kill Unit At Location", "Remove Unit", "Remove Unit At Location", "Set Resources", "Set Score", 
+    "MiniMap Ping", "Talking Portrait", "Mute Unit Speech", "Unmute Unit Speech", "Leader Board Computer Players", 
+    "Leader Board Goal Control", "Leader Board Goal Control At Location", "Leader Board Goal Resources", 
+    "Leader Board Goal Kills", "Leader Board Goal Points", "Move Location", "Move Unit", "Leader Board Greed", 
+    "Set Next Scenario", "Set Doodad State", "Set Invincibility", "Create Unit", "Set Deaths", "Order", "Comment", 
+    "Give Units to Player", "Modify Unit Hit Points", "Modify Unit Energy", "Modify Unit Shield Points", 
+    "Modify Unit Resource Amount", "Modify Unit Hanger Count", "Pause Timer", "Unpause Timer", "Draw", 
+    "Set Alliance Status", "Disable Debug Mode", "Enable Debug Mode"
 };
 
 const std::vector<std::string> briefingTriggerActions =
 {
-    "Display Speaking Portrait",
-    "Hide Portrait",
-    "Mission Objectives",
+    "No Action",
+    "Wait",
     "Play WAV",
-    "Show Portrait",
-    "Skip Tutorial Enabled",
     "Text Message",
+    "Mission Objectives",
+    "Show Portrait",
+    "Hide Portrait",
+    "Display Speaking Portrait",
     "Transmission",
-    "Wait"
+    "Skip Tutorial Enabled",
 };
 
 const std::vector<std::string> triggerScores =
 {
-    "Buildings", "Custom", "Kills", "Kills and Razings", "Razings",
-    "Total", "Units", "Units and Buildings"
+    "Total",
+    "Units",
+    "Buildings",
+    "Units and Buildings",
+    "Kills",
+    "Razings",
+    "Kills and Razings",
+    "Custom"
 };
 
 const std::vector<std::tuple<COLORREF, std::string, std::string>> strColors =

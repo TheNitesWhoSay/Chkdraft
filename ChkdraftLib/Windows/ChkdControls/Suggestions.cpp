@@ -155,18 +155,15 @@ void Suggestions::ArrowDown()
     KeyDown(VK_DOWN);
 }
 
-std::string Suggestions::Take()
+SuggestionItem Suggestions::Take()
 {
     LPARAM itemData = 0;
     if ( !isShown )
-        return "0";
+        return SuggestionItem{std::nullopt, "0"};
     else if ( listSuggestions.GetCurSelItem(itemData) )
-    {
-        SuggestionItem & suggestionItem = *((SuggestionItem*)itemData);
-        return suggestionItem.str;
-    }
+        return *((SuggestionItem*)itemData);
     else
-        return "";
+        return SuggestionItem{std::nullopt, ""};
 }
 
 bool Suggestions::HasItems()
