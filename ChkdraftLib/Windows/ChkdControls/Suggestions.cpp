@@ -43,7 +43,7 @@ bool firstStartsWithSecond(const std::string & first, const std::string & second
     return true;
 }
 
-Suggestions::Suggestions() : isShown(false)
+Suggestions::Suggestions() : isShown(false), suggestCurrentTextFirst(false), currentTextItemIndex(-1), modifying(false), currTextItem{std::numeric_limits<uint32_t>::max(), "[]"}
 {
     suggestParent = NULL;
 }
@@ -96,6 +96,8 @@ void Suggestions::SetItems()
     listSuggestions.ClearItems();
 
     items.sort(alphabetize);
+
+    currentTextItemIndex = -1;
     for ( auto & item : items )
         listSuggestions.AddItem((LPARAM)&item);
 
@@ -111,8 +113,9 @@ void Suggestions::SetItems(const std::vector<SuggestionItem> & items)
     SetItems();
 }
 
-void Suggestions::Show()
+void Suggestions::Show(bool suggestCurrentTextFirst)
 {
+    this->suggestCurrentTextFirst = suggestCurrentTextFirst;
     SetItems();
     ShowWindow(getHandle(), SW_SHOWNA);
     isShown = true;
@@ -195,16 +198,62 @@ void Suggestions::EraseBackground(HDC hDC)
 
 void Suggestions::SuggestFirstStartingWith(const std::string & str)
 {
+    bool exactMatch = false;
     int i = 0;
-    for ( auto & check : items )
+    if ( !str.empty() )
     {
-        if ( firstStartsWithSecond(check.str, str) )
+        for ( auto & check : items )
         {
-            listSuggestions.SetCurSel(i);
-            return;
+            if ( firstStartsWithSecond(check.str, str) )
+            {
+                if ( check.str == str )
+                    exactMatch = true;
+
+                break;
+            }
+            i++;
         }
-        i++;
     }
+    if ( i == items.size() )
+        i = 0;
+
+    currTextItem.str = str;
+
+    if ( suggestCurrentTextFirst )
+    {
+        modifying = true;
+        listSuggestions.SetRedraw(false);
+        if ( exactMatch )
+        {
+            if ( currentTextItemIndex >= 0 ) // Curr-text item currently in list, remove it
+            {
+                listSuggestions.RemoveItem(currentTextItemIndex);
+                listSuggestions.SetCurSel(i);
+                currentTextItemIndex = -1;
+            }
+            else // Curr-text item already not in list, just update selection
+                listSuggestions.SetCurSel(i);
+        }
+        else if ( currentTextItemIndex < 0 ) // Curr-text item does not exist, create and select it
+        {
+            currentTextItemIndex = i;
+            listSuggestions.InsertItem(i, (LPARAM)&currTextItem);
+            listSuggestions.SetCurSel(currentTextItemIndex);
+        }
+        else if ( currentTextItemIndex >= 0 && currentTextItemIndex != i ) // Curr-text item exists at the wrong index, remove, recreate, and select it
+        {
+            listSuggestions.RemoveItem(currentTextItemIndex);
+            currentTextItemIndex = i;
+            listSuggestions.InsertItem(currentTextItemIndex, (LPARAM)&currTextItem);
+            listSuggestions.SetCurSel(currentTextItemIndex);
+        } // Else curr-text item exists at the correct index
+
+        modifying = false;
+        listSuggestions.SetRedraw(true);
+        listSuggestions.RedrawThis();
+    }
+    else // Not suggesting current-text first
+        listSuggestions.SetCurSel(i);
 }
 
 int Suggestions::KeyDown(WPARAM wParam)
@@ -301,16 +350,19 @@ LRESULT Suggestions::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
         case WM_MEASUREITEM:
             {
                 MEASUREITEMSTRUCT* mis = (MEASUREITEMSTRUCT*)lParam;
-                SuggestionItem & suggestionItem = *((SuggestionItem*)mis->itemData);
-
-                int32_t width = 0;
-                int32_t height = 0;
-                if ( listDc->getTabTextExtent(suggestionItem.str, width, height) )
+                if ( !modifying )
                 {
-                    mis->itemWidth = width;
-                    mis->itemHeight = height-3;
+                    SuggestionItem & suggestionItem = *((SuggestionItem*)mis->itemData);
 
-                    return TRUE;
+                    int32_t width = 0;
+                    int32_t height = 0;
+                    if ( listDc->getTabTextExtent(suggestionItem.str, width, height) )
+                    {
+                        mis->itemWidth = width;
+                        mis->itemHeight = height-3;
+
+                        return TRUE;
+                    }
                 }
             }
             break;

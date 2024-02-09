@@ -22,7 +22,7 @@ class Suggestions : public WinLib::ClassWindow
         int AddItem(const SuggestionItem & item); // Adds an item to the stored list but does not yet display it
         void SetItems(); // Sets all the items in the stored list to the display
         void SetItems(const std::vector<SuggestionItem> & strings); // Adds items to the stored list then sets all stored items up for display
-        void Show();
+        void Show(bool suggestCurrentTextFirst = false);
         void Hide();
         bool SuggestIndex(int index);
         void SuggestNear(const std::string & str);
@@ -49,9 +49,13 @@ class Suggestions : public WinLib::ClassWindow
         std::optional<WinLib::DeviceContext> listDc;
         bool isShown;
         bool isActive;
+        bool suggestCurrentTextFirst;
+        int currentTextItemIndex;
+        bool modifying;
 
         int KeyDown(WPARAM wParam);
         std::list<SuggestionItem> items;
+        SuggestionItem currTextItem;
 };
 
 #endif

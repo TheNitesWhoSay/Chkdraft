@@ -383,14 +383,33 @@ void BriefingTrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const s
         {
             if ( suggestion.data )
             {
-                size_t newStringId = size_t(suggestion.data.value());
-                if ( argType == Chk::Action::ArgType::String )
-                    action.stringId = (u32)newStringId;
-                else if ( argType == Chk::Action::ArgType::Sound )
-                    action.soundStringId = (u32)newStringId;
+                if ( suggestion.data.value() == size_t(std::numeric_limits<u32>::max()) )
+                {
+                    size_t newStringId = CM->findString<SingleLineChkdString>(suggestion.str);
+                    if ( newStringId == Chk::StringId::NoString )
+                        newStringId = CM->addString<SingleLineChkdString>(suggestion.str);
 
-                CM->deleteUnusedStrings(Chk::Scope::Both);
-                madeChange = true;
+                    if ( newStringId != Chk::StringId::NoString )
+                    {
+                        if ( argType == Chk::Action::ArgType::String )
+                            action.stringId = (u32)newStringId;
+                        else if ( argType == Chk::Action::ArgType::Sound )
+                            action.soundStringId = (u32)newStringId;
+                
+                        CM->deleteUnusedStrings(Chk::Scope::Both);
+                        madeChange = true;
+                    }
+                }
+                else
+                {
+                    if ( argType == Chk::Action::ArgType::String )
+                        action.stringId = (u32)suggestion.data.value();
+                    else if ( argType == Chk::Action::ArgType::Sound )
+                        action.soundStringId = (u32)suggestion.data.value();
+                
+                    CM->deleteUnusedStrings(Chk::Scope::Both);
+                    madeChange = true;
+                }
             }
             else
             {
@@ -676,7 +695,7 @@ void BriefingTrigActionsWindow::SuggestString(u32 currStringId)
                 suggestions.AddItem(SuggestionItem{uint32_t(i), *str});
         }
     }
-    suggestions.Show();
+    suggestions.Show(true);
 }
 
 void BriefingTrigActionsWindow::SuggestSlot(u32 currSlot)
@@ -726,7 +745,7 @@ void BriefingTrigActionsWindow::SuggestSound(u32 currSound)
                 suggestions.AddItem(SuggestionItem{uint32_t(soundStringId), std::to_string(soundStringId)});
         }
     }
-    suggestions.Show();
+    suggestions.Show(true);
 }
 
 void BriefingTrigActionsWindow::SuggestDuration(u32 currDuration)
