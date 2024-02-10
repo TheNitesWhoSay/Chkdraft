@@ -18,6 +18,7 @@ class TriggersWindow : public WinLib::ClassWindow
         bool CreateThis(HWND hParent, u64 windowId);
         bool DestroyThis();
         void RefreshWindow(bool focus);
+        void RefreshGroupList();
         void DoSize();
 
         void DeleteSelection();
@@ -37,7 +38,6 @@ class TriggersWindow : public WinLib::ClassWindow
         bool SelectTrigListItem(int listIndex); // Attempts to select item at listIndex, updating currTrigger
 
         void CreateSubWindows(HWND hWnd);
-        void RefreshGroupList();
         void RefreshTrigList();
 
         /** Attempts to delete the item at listIndex and decrement higher item's trigger indexes

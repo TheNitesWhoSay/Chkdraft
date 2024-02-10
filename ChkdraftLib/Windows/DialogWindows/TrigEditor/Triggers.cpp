@@ -99,6 +99,71 @@ void TriggersWindow::RefreshWindow(bool focus)
     this->RedrawThis();
 }
 
+void TriggersWindow::RefreshGroupList()
+{
+    listGroups.SetRedraw(false);
+    listGroups.ClearItems();
+
+    u8 firstNotFound = 0;
+    bool addedPlayer[Chk::Trigger::MaxOwners];
+    for ( u8 i=0; i<Chk::Trigger::MaxOwners; i++ )
+        addedPlayer[i] = false;
+
+    if ( CM != nullptr )
+    {
+        size_t numTriggers = CM->numTriggers();
+        for ( size_t i=0; i<numTriggers; i++ )
+        {
+            const Chk::Trigger & trigger = CM->getTrigger(i);
+            for ( u8 player=firstNotFound; player<Chk::Trigger::MaxOwners; player++ )
+            {
+                if ( !addedPlayer[player] && trigger.owners[player] == Chk::Trigger::Owned::Yes )
+                {
+                    addedPlayer[player] = true;
+                    if ( player == firstNotFound ) // Skip already-found players
+                        firstNotFound ++;
+                }
+            }
+        }
+        int selectAllIndex = -1;
+        for ( u8 i=0; i<12; i++ ) // Players
+        {
+            if ( addedPlayer[i] )
+                listGroups.AddItem(i);
+        }
+        for ( u8 i=18; i<22; i++ ) // Forces
+        {
+            if ( addedPlayer[i] )
+                listGroups.AddItem(i);
+        }
+        if ( addedPlayer[17] ) // All Players
+            listGroups.AddItem(17);
+        if ( numTriggers > 0 ) // Show All
+            selectAllIndex = listGroups.AddItem(Chk::Trigger::MaxOwners);
+        for ( u8 i=12; i<17; i++ ) // Lower unused groups
+        {
+            if ( addedPlayer[i] )
+                listGroups.AddItem(i);
+        }
+        for ( u8 i=22; i<Chk::Trigger::MaxOwners; i++ ) // Upper unused groups
+        {
+            if ( addedPlayer[i] )
+                listGroups.AddItem(i);
+        }
+        changeGroupHighlightOnly = true; // Begin selection
+        if ( displayAll )
+            listGroups.SelectItem(selectAllIndex);
+        for ( u8 i=0; i<28; i++ )
+        {
+            if ( groupSelected[i] )
+                listGroups.SelectItem(i);
+        }
+        changeGroupHighlightOnly = false; // End selection
+    }
+
+    listGroups.SetRedraw(true);
+}
+
 void TriggersWindow::DoSize()
 {
     RECT rcCli;
@@ -791,71 +856,6 @@ void TriggersWindow::CreateSubWindows(HWND hWnd)
     RefreshWindow(true);
 }
 
-void TriggersWindow::RefreshGroupList()
-{
-    listGroups.SetRedraw(false);
-    listGroups.ClearItems();
-
-    u8 firstNotFound = 0;
-    bool addedPlayer[Chk::Trigger::MaxOwners];
-    for ( u8 i=0; i<Chk::Trigger::MaxOwners; i++ )
-        addedPlayer[i] = false;
-
-    if ( CM != nullptr )
-    {
-        size_t numTriggers = CM->numTriggers();
-        for ( size_t i=0; i<numTriggers; i++ )
-        {
-            const Chk::Trigger & trigger = CM->getTrigger(i);
-            for ( u8 player=firstNotFound; player<Chk::Trigger::MaxOwners; player++ )
-            {
-                if ( !addedPlayer[player] && trigger.owners[player] == Chk::Trigger::Owned::Yes )
-                {
-                    addedPlayer[player] = true;
-                    if ( player == firstNotFound ) // Skip already-found players
-                        firstNotFound ++;
-                }
-            }
-        }
-        int selectAllIndex = -1;
-        for ( u8 i=0; i<12; i++ ) // Players
-        {
-            if ( addedPlayer[i] )
-                listGroups.AddItem(i);
-        }
-        for ( u8 i=18; i<22; i++ ) // Forces
-        {
-            if ( addedPlayer[i] )
-                listGroups.AddItem(i);
-        }
-        if ( addedPlayer[17] ) // All Players
-            listGroups.AddItem(17);
-        if ( numTriggers > 0 ) // Show All
-            selectAllIndex = listGroups.AddItem(Chk::Trigger::MaxOwners);
-        for ( u8 i=12; i<17; i++ ) // Lower unused groups
-        {
-            if ( addedPlayer[i] )
-                listGroups.AddItem(i);
-        }
-        for ( u8 i=22; i<Chk::Trigger::MaxOwners; i++ ) // Upper unused groups
-        {
-            if ( addedPlayer[i] )
-                listGroups.AddItem(i);
-        }
-        changeGroupHighlightOnly = true; // Begin selection
-        if ( displayAll )
-            listGroups.SelectItem(selectAllIndex);
-        for ( u8 i=0; i<28; i++ )
-        {
-            if ( groupSelected[i] )
-                listGroups.SelectItem(i);
-        }
-        changeGroupHighlightOnly = false; // End selection
-    }
-
-    listGroups.SetRedraw(true);
-}
-
 void TriggersWindow::RefreshTrigList()
 {
     auto start = std::chrono::high_resolution_clock::now();
@@ -1001,7 +1001,7 @@ bool TriggersWindow::MoveTrigListItemTo(int currListIndex, u32 currTrigIndex, u3
             for ( int i=currListIndex; i>=targetListIndex; i-- )
             {
                 if ( !( listTriggers.GetItemData(i-1, listItemData) &&
-                        listTriggers.SetItemData(i, listItemData+1) &&
+                        listTriggers.SetItemData(i, listItemData) &&
                         listTriggers.GetItemHeight(i-1, listItemHeight) &&
                         listTriggers.SetItemHeight(i, listItemHeight) ) )
                 {
@@ -1026,7 +1026,7 @@ bool TriggersWindow::MoveTrigListItemTo(int currListIndex, u32 currTrigIndex, u3
             for ( int i=currListIndex; i<=targetListIndex; i++ )
             {
                 if ( !( listTriggers.GetItemData(i+1, listItemData) &&
-                        listTriggers.SetItemData(i, listItemData-1) &&
+                        listTriggers.SetItemData(i, listItemData) &&
                         listTriggers.GetItemHeight(i+1, listItemHeight) &&
                         listTriggers.SetItemHeight(i, listItemHeight) ) )
                 {

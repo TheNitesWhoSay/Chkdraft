@@ -6593,15 +6593,20 @@ void Scenario::moveTrigger(size_t triggerIndexFrom, size_t triggerIndexTo)
     size_t triggerIndexMax = std::max(triggerIndexFrom, triggerIndexTo);
     if ( triggerIndexMax < this->triggers.size() && triggerIndexFrom != triggerIndexTo )
     {
-        if ( triggerIndexMax-triggerIndexMin == 1 && triggerIndexMax < this->triggers.size() ) // Move up or down by 1 using swap
+        if ( triggerIndexMax-triggerIndexMin == 1 ) // Move up or down by 1 using swap
             std::swap(this->triggers[triggerIndexMin], this->triggers[triggerIndexMax]);
         else // Move up or down by more than one, remove from present location, insert in the list at destination
         {
             auto trigger = this->triggers[triggerIndexFrom];
             auto toErase = std::next(this->triggers.begin(), triggerIndexFrom);
             this->triggers.erase(toErase);
-            auto insertPosition = triggerIndexTo == 0 ? this->triggers.begin() : std::next(this->triggers.begin(), triggerIndexTo-1);
-            this->triggers.insert(insertPosition, trigger);
+            if ( triggerIndexTo == this->triggers.size() )
+                this->triggers.push_back(trigger);
+            else
+            {
+                auto insertPosition = triggerIndexTo == 0 ? this->triggers.begin() : std::next(this->triggers.begin(), triggerIndexTo-1);
+                this->triggers.insert(insertPosition, trigger);
+            }
         }
     }
     fixTriggerExtensions();
