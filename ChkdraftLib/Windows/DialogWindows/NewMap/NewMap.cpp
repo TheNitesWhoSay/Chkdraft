@@ -14,7 +14,6 @@ NewMap::~NewMap()
 void NewMap::CreateThis(HWND hParent)
 {
     ClassDialog::CreateDialogBox(MAKEINTRESOURCE(IDD_DIALOG_NEW), hParent);
-    //SetFocus(chkdgetHandle());
 }
 
 BOOL NewMap::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
@@ -23,12 +22,13 @@ BOOL NewMap::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
     {
     case ID_CREATEMAP:
     {
-        int width = 0, height = 0, tileset = 0, terrain = 0, triggers = 0;
+        LPARAM terrainTypeIndex = 0;
+        int width = 0, height = 0, tileset = 0, triggers = 0;
 
         editWidth.GetEditNum<int>(width);
         editHeight.GetEditNum<int>(height);
         listInitialTileset.GetCurSel(tileset);
-        listInitialTerrain.GetCurSel(terrain);
+        listInitialTerrain.GetCurSelItem(terrainTypeIndex);
         triggers = dropDefaultTriggers.GetSel();
 
         if ( width>0 && height>0 )
@@ -37,26 +37,9 @@ BOOL NewMap::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
             if ( height > 65535 ) height %= 65536;
             if ( (u32)width*height < 429496729 )
             {
-                if ( chkd.maps.NewMap((Sc::Terrain::Tileset)tileset, width, height) )
+                if ( chkd.maps.NewMap((Sc::Terrain::Tileset)tileset, width, height, size_t(terrainTypeIndex), (DefaultTriggers)triggers) != nullptr )
                 {
                     CM->Scroll(true, true, false);
-
-                    // Tiling Code
-                    /*u16 tilenum = 0;
-                    size_t xSize = CM->getTileWidth();
-                    size_t ySize = CM->getTileHeight();
-                    for ( size_t xStart = 0; xStart<xSize; xStart += 16 )
-                    {
-                        for ( size_t yc = 0; yc<ySize; yc++ )
-                        {
-                            for ( size_t xc = xStart; xc<xStart + 16; xc++ )
-                            {
-                                CM->SetTile(s32(xc), s32(yc), tilenum);
-                                tilenum++;
-                            }
-                        }
-                    }*/
-
                     CM->Redraw(true);
                 }
                 EndDialog(hWnd, ID_CREATEMAP);
@@ -85,51 +68,14 @@ BOOL NewMap::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 HWND hInitialTerrain = GetDlgItem(hWnd, IDC_LIST_DEFAULTTERRAIN);
                 HWND hDefaultTrigs = GetDlgItem(hWnd, Id::COMBO_TRIGS);
                 SendMessage(hInitialTerrain, LB_RESETCONTENT, 0, 0);
-                switch ( itemIndex )
+                const auto & tileset = chkd.scData.terrain.get(Sc::Terrain::Tileset(itemIndex));
+                for ( const auto & brushType : tileset.brushes )
                 {
-                case Sc::Terrain::Tileset::Badlands: // Badlands
-                    for (auto initTerrain : badlandsInitTerrain)
-                        SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)icux::toUistring(initTerrain).c_str());
-                    SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
-                    break;
-                case Sc::Terrain::Tileset::SpacePlatform: // Space Platform
-                    for (auto initTerrain : spaceInitTerrain)
-                        SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)icux::toUistring(initTerrain).c_str());
-                    SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
-                    break;
-                case Sc::Terrain::Tileset::Installation: // Installation
-                    for (auto initTerrain : installInitTerrain)
-                        SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)icux::toUistring(initTerrain).c_str());
-                    SendMessage(hInitialTerrain, LB_SETCURSEL, (WPARAM)0, (LPARAM)0);
-                    SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)0, (LPARAM)0);
-                    break;
-                case Sc::Terrain::Tileset::Ashworld: // Ash World
-                    for (auto initTerrain : ashInitTerrain)
-                        SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)icux::toUistring(initTerrain).c_str());
-                    SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
-                    break;
-                case Sc::Terrain::Tileset::Jungle: // Jungle World
-                    for (auto initTerrain : jungInitTerrain)
-                        SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)icux::toUistring(initTerrain).c_str());
-                    SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
-                    break;
-                case Sc::Terrain::Tileset::Desert: // Desert World
-                    for (auto initTerrain : desertInitTerrain)
-                        SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)icux::toUistring(initTerrain).c_str());
-                    SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
-                    break;
-                case Sc::Terrain::Tileset::Arctic: // Ice World
-                    for (auto initTerrain : iceInitTerrain)
-                        SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)icux::toUistring(initTerrain).c_str());
-                    SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
-                    break;
-                case Sc::Terrain::Tileset::Twilight: // Twilight World
-                    for (auto initTerrain : twilightInitTerrain)
-                        SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)icux::toUistring(initTerrain).c_str());
-                    SendMessage(hDefaultTrigs, CB_SETCURSEL, (WPARAM)1, (LPARAM)0);
-                    break;
+                    LRESULT insertionIndex = SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)icux::toUistring(std::string(brushType.name)).c_str());
+                    if ( insertionIndex != LB_ERR && insertionIndex != LB_ERRSPACE )
+                        SendMessage(hInitialTerrain, LB_SETITEMDATA, (WPARAM)insertionIndex, (LPARAM)brushType.index);
                 }
-                SendMessage(hInitialTerrain, LB_SETCURSEL, (WPARAM)0, (LPARAM)0);
+                listInitialTerrain.SetCurSel(tileset.defaultBrush.brushSortOrder);
             }
         }
         break;
@@ -152,13 +98,13 @@ BOOL NewMap::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 upperLeft.y = rcTriggersGroup.top;
                 ScreenToClient(hWnd, &upperLeft);
 
-                SetFont(defaultFont, false);
+                WindowsItem::setDefaultFont(false);
                 const std::vector<std::string> defaultTriggerTitles = {
                     "No triggers", "Default melee triggers", "Melee with observers (2 players)",
                     "Melee with observers (3 players)", "Melee with observers (4 players)", "Melee with observers (5 players)",
                     "Melee with observers (6 players)", "Melee with observers (7 players)"
                 };
-                dropDefaultTriggers.CreateThis(hWnd, upperLeft.x+10, upperLeft.y+20, 305, 200, false, false, Id::COMBO_TRIGS, defaultTriggerTitles, defaultFont);
+                dropDefaultTriggers.CreateThis(hWnd, upperLeft.x+10, upperLeft.y+20, 305, 200, false, false, Id::COMBO_TRIGS, defaultTriggerTitles);
                 dropDefaultTriggers.SetSel(0);
 
                 editWidth.FindThis(hWnd, IDC_EDIT_WIDTH);
@@ -172,12 +118,22 @@ BOOL NewMap::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 listInitialTileset.FindThis(hWnd, IDC_LIST_TILESET);
                 listInitialTileset.AddStrings(tilesetNames);
                 listInitialTileset.SetCurSel(0);
-                listInitialTileset.SetFont(defaultFont, false);
+                listInitialTileset.setDefaultFont(false);
 
                 listInitialTerrain.FindThis(hWnd, IDC_LIST_DEFAULTTERRAIN);
-                listInitialTerrain.AddStrings(badlandsInitTerrain);
-                listInitialTerrain.SetCurSel(0);
-                listInitialTerrain.SetFont(defaultFont, false);
+
+                std::vector<std::string> badlandsTerrainTypes {};
+                const auto & tileset = chkd.scData.terrain.get(Sc::Terrain::Tileset::Badlands);
+                HWND hInitialTerrain = listInitialTerrain.getHandle();
+                for ( const auto & brushType : tileset.brushes )
+                {
+                    LRESULT insertionIndex = SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)icux::toUistring(std::string(brushType.name)).c_str());
+                    if ( insertionIndex != LB_ERR && insertionIndex != LB_ERRSPACE )
+                        SendMessage(hInitialTerrain, LB_SETITEMDATA, (WPARAM)insertionIndex, (LPARAM)brushType.index);
+                }
+
+                listInitialTerrain.SetCurSel(tileset.defaultBrush.brushSortOrder);
+                listInitialTerrain.setDefaultFont(false);
                 return TRUE;
             }
             break;

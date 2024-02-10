@@ -48,7 +48,7 @@ namespace WinLib {
         if ( scrollable )
             dwStyle |= ES_AUTOVSCROLL|ES_AUTOHSCROLL|WS_VSCROLL|WS_HSCROLL;
 
-        return WindowControl::CreateControl( WS_EX_CLIENTEDGE, MSFTEDIT_CLASS, "", dwStyle,
+        return WindowControl::CreateControl( WS_EX_CLIENTEDGE, icux::toUistring(MSFTEDIT_CLASS), "", dwStyle,
                                              x, y, width, height,
                                              hParent, (HMENU)id, true );
     }
@@ -59,7 +59,7 @@ namespace WinLib {
         ::SendMessage(getHandle(), EM_SETTEXTEX, (WPARAM)&setTextSettings, (LPARAM)displayText.c_str());
     }
 
-    void RichEditControl::SetText(const icux::uistring & text)
+    void RichEditControl::SetUiText(const icux::uistring & text)
     {
         ::SendMessage(getHandle(), EM_SETTEXTEX, (WPARAM)&setTextSettings, (LPARAM)text.c_str());
     }
@@ -84,7 +84,8 @@ namespace WinLib {
             ::GetScrollInfo(getHandle(), SB_VERT, &scrollInfo);
             scrollPoint.y = scrollInfo.nPos;
         }
-        PostMessage(scrollMatcher->getHandle(), EM_SETSCROLLPOS, 0, (LPARAM)&scrollPoint);
+        if ( scrollMatcher != nullptr )
+            PostMessage(scrollMatcher->getHandle(), EM_SETSCROLLPOS, 0, (LPARAM)&scrollPoint);
     }
 
     LRESULT RichEditControl::ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)

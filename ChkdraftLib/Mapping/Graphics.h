@@ -61,7 +61,7 @@ class ColorCycler
         static constexpr size_t TotalRotatorSets = 4;
         static constexpr size_t MaxRotatersPerSet = 8;
 
-        static DWORD prevTickCount; // Value from GetTickCount() -- updated every time GetTickCount increases (~16 ms)
+        static DWORD nextTickCount; // Value from prev updates GetTickCount()+42
 
         static const size_t TilesetRotationSet[Sc::Terrain::NumTilesets]; // Index of the rotater to use for a given tileset, all values must be less than TotalRotaterSets
         static Rotator NoRotators[MaxRotatersPerSet]; // An empty rotator set
@@ -76,27 +76,36 @@ class Graphics
         virtual ~Graphics();
         
         ChkdPalette & getPalette();
+        ChkdPalette & getStaticPalette();
         void updatePalette();
 
-        void DrawMap(u16 bitWidth, u16 bitHeight, s32 screenLeft, s32 screenTop, ChkdBitmap & bitmap, HDC hDC, bool showAnywhere);
+        void DrawMap(const WinLib::DeviceContext & dc, u16 bitWidth, u16 bitHeight, s32 screenLeft, s32 screenTop, ChkdBitmap & bitmap, bool showAnywhere);
 
         void DrawTerrain(ChkdBitmap & bitmap);
         void DrawTileElevations(ChkdBitmap & bitmap);
         void DrawGrid(ChkdBitmap & bitmap);
         void DrawLocations(ChkdBitmap & bitmap, bool showAnywhere);
+        void DrawFog(ChkdBitmap & bitmap);
         void DrawUnits(ChkdBitmap & bitmap);
         void DrawSprites(ChkdBitmap & bitmap);
-        void DrawLocationNames(HDC hDC);
-        void DrawTileNumbers(HDC hDC);
+        void DrawSprite(ChkdBitmap & bitmap);
+        void DrawLocationNames(const WinLib::DeviceContext & dc);
+        void DrawIsomNumbers(const WinLib::DeviceContext & dc);
+        void DrawTileNumbers(const WinLib::DeviceContext & dc);
 
         void AdjustSize(u32 newWidth, u32 newHeight); // Updates pane size and first and last sprite nodes
         void AdjustPosition(u32 newX, u32 newY); // Updates first and last sprite nodes
 
+        void ToggleDisplayIsomValues();
         void ToggleTileNumSource(bool MTXMoverTILE);
         bool mtxmOverTile();
+        bool DisplayingIsomNums();
         bool DisplayingTileNums();
         void ToggleLocationNameClip();
         bool ClippingLocationNames();
+
+        void ToggleDisplayBuildability();
+        bool DisplayingBuildability();
 
         void ToggleDisplayElevations();
         bool DisplayingElevations();
@@ -107,7 +116,7 @@ class Graphics
         bool SetGridSize(u32 gridNum, u16 xSize, u16 ySize);
         bool SetGridColor(u32 gridNum, u8 red, u8 green, u8 blue);
 
-        void DrawTools(HDC hDC, HBITMAP tempBitmap, u16 width, u16 height, u32 screenLeft, u32 screenTop,
+        void DrawTools(const WinLib::DeviceContext & dc, u16 width, u16 height, u32 screenLeft, u32 screenTop,
             Selections & selections, bool pasting, Clipboard & clipboard, GuiMap & map);
 
         /** Forces all SpriteNodes to be updated upon next draw
@@ -121,6 +130,7 @@ class Graphics
         GuiMap & map; // Reference to the map this instance of graphics renders
         Selections & selections; // Reference to the selections belonging to the corresponding map
         ChkdPalette palette;
+        ChkdPalette staticPalette;
 
         s32 screenLeft; // X-Position of the screens left edge in the map
         s32 screenTop; // Y-Position of the screens top edge in the map
@@ -131,7 +141,9 @@ class Graphics
 
         MapGrid grids[2]; // The grids drawn over the map
         bool tileNumsFromMTXM; // When false, tile nums are from TILE
+        bool displayingIsomTypes; // Determine whether ISOM terrain types are showing
         bool displayingTileNums; // Determines whether tile numbers are showing
+        bool displayingBuildability; // Determines whether tile buildability is being shown
         bool displayingElevations; // Determines whether tile elevations are colored in
         bool clipLocationNames; // Determines whether the locationName can be drawn partly outside locations
 
@@ -141,49 +153,56 @@ class Graphics
 BITMAPINFO GetBMI(s32 width, s32 height);
 
 void UnitToBits(ChkdBitmap & bitmap, ChkdPalette & palette, u8 color, u16 bitWidth, u16 bitHeight,
-                 s32 & xStart, s32 & yStart, u16 unitID, u16 unitXC, u16 unitYC, u16 frame, bool selected );
+                 s32 & xStart, s32 & yStart, u16 unitID, u16 unitXC, u16 unitYC, u16 frame, bool selected, bool lifted = false, bool attached = false);
 
 void SpriteToBits(ChkdBitmap & bitmap, ChkdPalette & palette, u8 color, u16 bitWidth, u16 bitHeight,
-                   s32 & xStart, s32 & yStart, u16 spriteID, u16 spriteXC, u16 spriteYC );
+                   s32 xStart, s32 yStart, u16 spriteID, u16 spriteXC, u16 spriteYC, bool flipped, bool selected);
 
 void TileToBits(ChkdBitmap & bitmap, ChkdPalette & palette, const Sc::Terrain::Tiles & tiles, s64 xStart, s64 yStart, s64 width, s64 height, u16 TileValue);
 
-void DrawMiniTileElevation(HDC hDC, const Sc::Terrain::Tiles & tiles, s64 xOffset, s64 yOffset, u16 tileValue, s64 miniTileX, s64 miniTileY, BITMAPINFO & bmi);
+void TileToBits(ChkdBitmap & bitmap, ChkdPalette & palette, const Sc::Terrain::Tiles & tiles, s64 xStart, s64 yStart, s64 width, s64 height, u16 TileValue,
+    u8 redOffset, u8 blueOffset, u8 greenOffset);
 
-void DrawTileElevation(HDC hDC, const Sc::Terrain::Tiles & tiles, s16 xOffset, s16 yOffset, u16 tileValue, BITMAPINFO & bmi);
+void DrawMiniTileElevation(const WinLib::DeviceContext & dc, const Sc::Terrain::Tiles & tiles, s64 xOffset, s64 yOffset, u16 tileValue, s64 miniTileX, s64 miniTileY, BITMAPINFO & bmi);
+
+void DrawTileElevation(const WinLib::DeviceContext & dc, const Sc::Terrain::Tiles & tiles, s16 xOffset, s16 yOffset, u16 tileValue, BITMAPINFO & bmi);
 
 void TileElevationsToBits(ChkdBitmap & bitmap, s64 bitWidth, s64 bitHeight, const Sc::Terrain::Tiles & tiles,
                            s64 xOffset, s64 yOffset, u16 TileValue, BITMAPINFO & bmi, u8 miniTileSeparation );
 
-void DrawTile(HDC hDC, ChkdPalette & palette, const Sc::Terrain::Tiles & tiles, s16 xOffset, s16 yOffset, u16 & TileValue, BITMAPINFO & bmi,
+void DrawTile(const WinLib::DeviceContext & dc, ChkdPalette & palette, const Sc::Terrain::Tiles & tiles, s16 xOffset, s16 yOffset, u16 TileValue, BITMAPINFO & bmi,
     u8 redOffset, u8 greenOffset, u8 blueOffset);
 
-void DrawTools( HDC hDC, HBITMAP tempBitmap, ChkdPalette & palette, u16 width, u16 height, u32 screenLeft, u32 screenTop,
+void DrawTools(Graphics & graphics, const WinLib::DeviceContext & dc, ChkdPalette & palette, ChkdPalette & staticPalette, u16 width, u16 height, u32 screenLeft, u32 screenTop,
                 Selections & selections, bool pasting, Clipboard & clipboard, GuiMap & map);
 
-void DrawTileSel(HDC hDC, ChkdPalette & palette, u16 width, u16 height, u32 screenLeft, u32 screenTop, Selections & selections, GuiMap & map);
+void DrawTileBuildability(const WinLib::DeviceContext & dc, ChkdPalette & palette, u16 width, u16 height, u32 screenLeft, u32 screenTop, GuiMap & map);
 
-void DrawPasteGraphics( HDC hDC, HBITMAP tempBitmap, ChkdPalette & palette, u16 width, u16 height, u32 screenLeft, u32 screenTop, Selections & selections,
-                        Clipboard & clipboard, GuiMap & map, Layer layer);
+void DrawTileSel(const WinLib::DeviceContext & dc, ChkdPalette & palette, u16 width, u16 height, u32 screenLeft, u32 screenTop, Selections & selections, GuiMap & map);
 
-void DrawTempLocs(HDC hDC, u32 screenLeft, u32 screenTop, Selections & selections, GuiMap & map);
+void DrawFogTileSel(const WinLib::DeviceContext & dc, ChkdPalette & palette, u16 width, u16 height, u32 screenLeft, u32 screenTop, Selections & selections, GuiMap & map);
 
-void DrawSelectingFrame(HDC hDC, Selections & selections, u32 screenLeft, u32 screenTop, s32 width, s32 height, double scale);
+void DrawDoodadSel(const WinLib::DeviceContext & dc, u16 width, u16 height, u32 screenLeft, u32 screenTop, Selections & selections, GuiMap & map);
 
-void DrawLocationFrame(HDC hDC, s32 left, s32 top, s32 right, s32 bottom);
+void DrawPasteGraphics(const WinLib::DeviceContext & dc, ChkdPalette & palette, ChkdPalette & staticPalette, u16 width, u16 height, u32 screenLeft, u32 screenTop, Selections & selections,
+                        Clipboard & clipboard, GuiMap & map, Layer layer, TerrainSubLayer terrainSubLayer);
 
-void DrawMiniMap(HDC hDC, const ChkdPalette & palette, u16 xSize, u16 ySize, float scale, GuiMap & map);
+void DrawTempLocs(const WinLib::DeviceContext & dc, u32 screenLeft, u32 screenTop, Selections & selections, GuiMap & map);
 
-void DrawMiniMapBox(HDC hDC, u32 screenLeft, u32 screenTop, u16 screenWidth, u16 screenHeight, u16 xSize, u16 ySize, float scale);
+void DrawSelectingFrame(const WinLib::DeviceContext & dc, Selections & selections, u32 screenLeft, u32 screenTop, s32 width, s32 height, double scale);
 
-void DrawStringChunk(HDC hDC, UINT xPos, UINT yPos, std::string str);
+void DrawLocationFrame(const WinLib::DeviceContext & dc, s32 left, s32 top, s32 right, s32 bottom);
 
-void DrawStringLine(HDC hDC, UINT xPos, UINT yPos, LONG width, COLORREF defaultColor, std::string str);
+void DrawMiniMap(const WinLib::DeviceContext & dc, const ChkdPalette & palette, u16 xSize, u16 ySize, float scale, GuiMap & map);
 
-bool GetStringDrawSize(HDC hDC, UINT & width, UINT & height, const std::string & str);
+void DrawMiniMapBox(const WinLib::DeviceContext & dc, u32 screenLeft, u32 screenTop, u16 screenWidth, u16 screenHeight, u16 xSize, u16 ySize, float scale);
 
-bool GetStringDrawSize(HDC hDC, UINT & width, UINT & height, const std::string & str, std::unordered_multimap<size_t, WinLib::LineSize> & lineCache);
+void DrawStringLine(const WinLib::DeviceContext & dc, UINT xPos, UINT yPos, LONG width, COLORREF defaultColor, std::string str);
 
-void DrawString(HDC hDC, UINT xPos, UINT yPos, LONG width, COLORREF defaultColor, std::string str);
+bool GetStringDrawSize(const WinLib::DeviceContext & dc, UINT & width, UINT & height, const std::string & str);
+
+bool GetStringDrawSize(const WinLib::DeviceContext & dc, UINT & width, UINT & height, const std::string & str, std::unordered_multimap<size_t, WinLib::LineSize> & lineCache);
+
+void DrawString(const WinLib::DeviceContext & dc, UINT xPos, UINT yPos, LONG width, COLORREF defaultColor, std::string str);
 
 #endif

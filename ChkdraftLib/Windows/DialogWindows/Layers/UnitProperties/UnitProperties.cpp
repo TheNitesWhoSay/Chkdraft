@@ -4,6 +4,7 @@
 #include "../../../../Mapping/Undos/ChkdUndos/UnitChange.h"
 #include "../../../../Mapping/Undos/ChkdUndos/UnitCreateDel.h"
 #include "../../../../Mapping/Undos/ChkdUndos/UnitIndexMove.h"
+#include <CommCtrl.h>
 #include <string>
 
 enum class UnitListColumn { Name, Owner, Xc, Yc, Index };
@@ -93,7 +94,7 @@ bool UnitPropertiesWindow::CreateSubWindows(HWND hWnd)
 
     listUnits.CreateThis(hWnd, 9, 10, 549, 449, false, false, Id::UnitList);
     listUnits.EnableFullRowSelect();
-    listUnits.SetFont(13, 5, "Tahoma", false);
+    listUnits.setFont(5, 13, "Tahoma", false);
 
     listUnits.AddColumn(0, "Unit Type", 200, LVCFMT_LEFT);
     listUnits.AddColumn(1, "Owner", 100, LVCFMT_LEFT);
@@ -129,10 +130,8 @@ void UnitPropertiesWindow::ChangeCurrOwner(u8 newOwner)
         Chk::Unit & unit = CM->getUnit(unitIndex);
         if ( unit.owner != newOwner ) // If the current and new owners are different
         {
-            u8 prevOwner = unit.owner;
-            unit.owner = newOwner;
+            CM->changeUnitOwner(unitIndex, newOwner, undoableChanges);
             ChangeUnitsDisplayedOwner(unitIndex, newOwner);
-            undoableChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::Owner, prevOwner));
         }
     }
     CM->AddUndo(undoableChanges);
@@ -265,9 +264,9 @@ void UnitPropertiesWindow::RepopulateList()
             auto unitName = CM->getUnitName<ChkdString>(unit.type, true);
             WindowsItem::SetWinText(*unitName);
 
-            int row = listUnits.GetItemRow(selections.getHighestIndex());
+            int row = listUnits.GetItemRow(selections.getHighestUnitIndex());
             listUnits.EnsureVisible(row, false);
-            row = listUnits.GetItemRow(selections.getLowestIndex());
+            row = listUnits.GetItemRow(selections.getLowestUnitIndex());
             listUnits.EnsureVisible(row, false);
         }
     }
@@ -550,7 +549,7 @@ void UnitPropertiesWindow::NotifyMoveTopPressed()
     if ( unitChanges->Count() > 2 )
         CM->AddUndo(unitChanges);
 
-    selections.ensureFirst(unitStackTopIndex);
+    selections.ensureUnitFirst(unitStackTopIndex);
     RepopulateList();
 }
 
@@ -590,7 +589,7 @@ void UnitPropertiesWindow::NotifyMoveEndPressed()
     if ( unitChanges->Count() > 2 )
         CM->AddUndo(unitChanges);
 
-    selections.ensureFirst(unitStackTopIndex);
+    selections.ensureUnitFirst(unitStackTopIndex);
     RepopulateList();
 }
 
@@ -617,9 +616,9 @@ void UnitPropertiesWindow::NotifyMoveUpPressed()
     }
 
     ListView_SortItems(hUnitList, ForwardCompareLvItems, this);
-    int row = listUnits.GetItemRow(selections.getHighestIndex());
+    int row = listUnits.GetItemRow(selections.getHighestUnitIndex());
     listUnits.EnsureVisible(row, false);
-    row = listUnits.GetItemRow(selections.getLowestIndex());
+    row = listUnits.GetItemRow(selections.getLowestUnitIndex());
     listUnits.EnsureVisible(row, false);
     unitChanges->Insert(UnitIndexMoveBoundary::Make());
 
@@ -642,7 +641,7 @@ void UnitPropertiesWindow::NotifyMoveDownPressed()
     auto & selUnits = selections.getUnits();
     for ( u16 & unitIndex : selUnits )
     {
-        if ( unitIndex+1 < CM->numUnits() && !selections.unitIsSelected(unitIndex + 1) )
+        if ( size_t(unitIndex+1) < CM->numUnits() && !selections.unitIsSelected(unitIndex + 1) )
         {
             CM->moveUnit(unitIndex, unitIndex+1);
             unitChanges->Insert(UnitIndexMove::Make(unitIndex, unitIndex + 1));
@@ -656,9 +655,9 @@ void UnitPropertiesWindow::NotifyMoveDownPressed()
         CM->AddUndo(unitChanges);
 
     ListView_SortItems(hUnitList, ForwardCompareLvItems, this);
-    int row = listUnits.GetItemRow(selections.getLowestIndex());
+    int row = listUnits.GetItemRow(selections.getLowestUnitIndex());
     listUnits.EnsureVisible(row, false);
-    row = listUnits.GetItemRow(selections.getHighestIndex());
+    row = listUnits.GetItemRow(selections.getHighestUnitIndex());
     listUnits.EnsureVisible(row, false);
     listUnits.SetRedraw(true);
 }
@@ -709,8 +708,8 @@ void UnitPropertiesWindow::NotifyMoveToPressed()
                 unitCreateDels->Insert(UnitCreateDel::Make(unitMoveTo + i));
             }
 
-            selections.finishMove();
-            selections.ensureFirst(unitStackTopIndex);
+            selections.finishUnitMove();
+            selections.ensureUnitFirst(unitStackTopIndex);
             CM->AddUndo(unitCreateDels);
             RepopulateList();
         }
@@ -725,16 +724,11 @@ void UnitPropertiesWindow::NotifyDeletePressed()
     auto unitDeletes = ReversibleActions::Make();
     while ( selections.hasUnits() )
     {
-        u16 index = selections.getHighestIndex();
+        u16 index = selections.getHighestUnitIndex();
         selections.removeUnit(index);
         listUnits.RemoveRow(index);
 
-        int row = listUnits.GetItemRow(index);
-
-        const Chk::Unit & unit = CM->getUnit(index);
-        unitDeletes->Insert(UnitCreateDel::Make(index, unit));
-
-        CM->deleteUnit(index);
+        CM->unlinkAndDeleteUnit(index, unitDeletes);
 
         for ( size_t i = index + 1; i <= CM->numUnits(); i++ )
             ChangeIndex(hUnitList, i, i - 1);

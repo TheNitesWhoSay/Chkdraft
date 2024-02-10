@@ -1,6 +1,7 @@
 #include "Switches.h"
 #include "../../../Chkdraft.h"
 #include "../../ChkdControls/ChkdStringInput.h"
+#include <CommCtrl.h>
 
 enum_t(Id, u32, {
     TreeSwitches = ID_FIRST,
@@ -40,7 +41,11 @@ bool SwitchesWindow::CreateThis(HWND hParent, u64 windowId)
 
 bool SwitchesWindow::DestroyThis()
 {
-    return false;
+    ClassWindow::DestroyThis();
+    this->selectedSwitch = -1;
+    this->refreshing = false;
+    this->refreshingSwitchList = false;
+    return true;
 }
 
 void SwitchesWindow::RefreshWindow()
@@ -56,8 +61,9 @@ void SwitchesWindow::RefreshWindow()
             chkd.trigEditorWindow.SetWinText("Trigger Editor - [Switch " + std::to_string(selectedSwitch + 1) + "]");
 
             EnableEditing();
-            size_t switchNameStringId = CM->getSwitchNameStringId(selectedSwitch);
-            bool hasName = switchNameStringId != Chk::StringId::NoString;
+            size_t switchNameStringId = CM->getSwitchNameStringId(selectedSwitch, Chk::Scope::Game);
+            size_t editorSwitchNameStringId = CM->getSwitchNameStringId(selectedSwitch, Chk::Scope::Editor);
+            bool hasName = switchNameStringId != Chk::StringId::NoString || editorSwitchNameStringId != Chk::StringId::NoString;
             bool isExtendedString = false;
 
             checkUseDefaultName.SetCheck(!hasName);
@@ -172,28 +178,28 @@ void SwitchesWindow::ButtonSwitchNameProperties()
 {
     if ( selectedSwitch >= 0 && selectedSwitch < Chk::TotalSwitches )
     {
-        auto gameString = CM->getSwitchName<ChkdString>(selectedSwitch, Chk::StrScope::Game);
-        auto editorString = CM->getSwitchName<ChkdString>(selectedSwitch, Chk::StrScope::Editor);
+        auto gameString = CM->getSwitchName<ChkdString>(selectedSwitch, Chk::Scope::Game);
+        auto editorString = CM->getSwitchName<ChkdString>(selectedSwitch, Chk::Scope::Editor);
         ChkdStringInputDialog::Result result = ChkdStringInputDialog::GetChkdString(getHandle(), gameString, editorString, Chk::StringUserFlag::Switch, selectedSwitch);
 
         if ( (result & ChkdStringInputDialog::Result::GameStringChanged) == ChkdStringInputDialog::Result::GameStringChanged )
         {
             if ( gameString )
-                CM->setSwitchName<ChkdString>(selectedSwitch, *gameString, Chk::StrScope::Game);
+                CM->setSwitchName<ChkdString>(selectedSwitch, *gameString, Chk::Scope::Game);
             else
-                CM->setSwitchNameStringId(selectedSwitch, Chk::StringId::NoString, Chk::StrScope::Game);
+                CM->setSwitchNameStringId(selectedSwitch, Chk::StringId::NoString, Chk::Scope::Game);
 
-            CM->deleteUnusedStrings(Chk::StrScope::Game);
+            CM->deleteUnusedStrings(Chk::Scope::Game);
         }
 
         if ( (result & ChkdStringInputDialog::Result::EditorStringChanged) == ChkdStringInputDialog::Result::EditorStringChanged )
         {
             if ( editorString )
-                CM->setSwitchName<ChkdString>(selectedSwitch, *editorString, Chk::StrScope::Editor);
+                CM->setSwitchName<ChkdString>(selectedSwitch, *editorString, Chk::Scope::Editor);
             else
-                CM->setSwitchNameStringId(selectedSwitch, Chk::StringId::NoString, Chk::StrScope::Editor);
+                CM->setSwitchNameStringId(selectedSwitch, Chk::StringId::NoString, Chk::Scope::Editor);
 
-            CM->deleteUnusedStrings(Chk::StrScope::Editor);
+            CM->deleteUnusedStrings(Chk::Scope::Editor);
         }
 
         if ( result > 0 )
@@ -210,7 +216,7 @@ void SwitchesWindow::EditSwitchNameFocusLost()
         {
             ChkdString temp(*editText);
             CM->setSwitchName(selectedSwitch, temp);
-            CM->deleteUnusedStrings(Chk::StrScope::Both);
+            CM->deleteUnusedStrings(Chk::Scope::Both);
             chkd.mapSettingsWindow.RefreshWindow();
             CM->notifyChange(false);
         }
@@ -226,7 +232,7 @@ void SwitchesWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
     }
 }
 
-void SwitchesWindow::NotifyTreeSelChanged(LPARAM newValue)
+void SwitchesWindow::NotifyTreeItemSelected(LPARAM newValue)
 {
     if ( !refreshingSwitchList )
     {

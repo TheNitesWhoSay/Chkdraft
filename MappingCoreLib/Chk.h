@@ -1,9 +1,11 @@
 #ifndef CHK_H
 #define CHK_H
+#include "../RareCpp/include/rarecpp/reflect.h"
 #include "Basics.h"
 #include "EscapeStrings.h"
 #include "Sc.h"
 #include <bitset>
+#include <map>
 
 #undef PlaySound
 
@@ -18,7 +20,7 @@
 namespace Chk {
 #pragma pack(push, 1)
 
-    struct Unit; struct IsomEntry; struct Doodad; struct Sprite; struct Cuwp; struct Location; struct Condition; struct Action; struct Trigger; struct StringProperties;
+    struct Unit; struct IsomRect; struct Doodad; struct Sprite; struct Cuwp; struct Location; struct Condition; struct Action; struct Trigger; struct StringProperties;
     struct ExtendedTrigData; struct TriggerGroup;
 
     enum_t(Type, u32, { // u32
@@ -143,20 +145,174 @@ namespace Chk {
         u16 stateFlags;
         u32 unused;
         u32 relationClassId; // classId of related unit (may be an addon or the building that has an addon)
+        
+        constexpr bool isLifted() const { return (stateFlags & State::InTransit) == State::InTransit; }
+        constexpr bool isAttached() const { return (relationFlags & RelationFlag::AddonLink) == RelationFlag::AddonLink; }
 
         REFLECT(Unit, classId, xc, yc, type, relationFlags, validStateFlags, validFieldFlags, owner,
             hitpointPercent, shieldPercent, energyPercent, resourceAmount, hangerAmount, stateFlags, unused, relationClassId)
     }; // 36 (0x24) bytes
 
-    __declspec(align(1)) struct IsomEntry { // 8 bytes
-        u16 left;
-        u16 top;
-        u16 right;
-        u16 bottom;
+    struct IsomRect
+    {
+        using Side = Sc::Isom::Side;
 
-        REFLECT(IsomEntry, left, top, right, bottom)
+        struct EditorFlag_ {
+            enum uint16_t_ : uint16_t {
+                Modified = 0x0001,
+                Visited = 0x8000,
+
+                xModified = 0xFFFE,
+                xVisited = 0x7FFF,
+
+                ClearAll = 0x7FFE
+            };
+        };
+        using EditorFlag = EditorFlag_::uint16_t_;
+
+        struct Point
+        {
+            size_t x;
+            size_t y;
+        };
+
+        struct IsomDiamond // A "diamond" exists along the isometric coordinate space and has a projection to an 8x4 rectangular shape with four quadrants
+        {
+            struct Neighbor_ {
+                enum int_ : int {
+                    UpperLeft,
+                    UpperRight,
+                    LowerRight,
+                    LowerLeft
+                };
+            };
+            using Neighbor = Neighbor_::int_;
+            static constexpr Neighbor neighbors[] { Neighbor::UpperLeft, Neighbor::UpperRight, Neighbor::LowerRight, Neighbor::LowerLeft };
+
+            size_t x;
+            size_t y;
+
+            constexpr IsomDiamond getNeighbor(Neighbor neighbor) const {
+                switch ( neighbor ) {
+                    case Neighbor::UpperLeft: return { x - 1, y - 1 };
+                    case Neighbor::UpperRight: return { x + 1, y - 1 };
+                    case Neighbor::LowerRight: return { x + 1, y + 1 };
+                    default: /*Neighbor::LowerLeft*/ return { x - 1, y + 1 };
+                }
+            }
+            constexpr Point getRectangleCoords(Sc::Isom::Quadrant quadrant) const {
+                switch ( quadrant ) {
+                    case Sc::Isom::Quadrant::TopLeft: return Point { x - 1, y - 1 };
+                    case Sc::Isom::Quadrant::TopRight: return Point { x, y - 1 };
+                    case Sc::Isom::Quadrant::BottomRight: return Point { x, y }; // Diamond (x, y) is the same as the diamonds bottom-right rectangle (x, y)
+                    default: /*Sc::Isom::Quadrant::BottomLeft*/ return Point { x - 1, y };
+                }
+            }
+            constexpr operator Point() const { return { x, y }; } // Conversion implies going to the bottom-right rectangle for the isom diamond
+            constexpr bool isValid() const { return (x+y)%2 == 0; }
+
+            static constexpr IsomDiamond fromMapCoordinates(size_t x, size_t y)
+            {
+                s32 calcX = s32(x) - s32(y)*2;
+                s32 calcY = s32(x)/2 + s32(y);
+                calcX -= ((calcX-64) & 127);
+                calcY -= ((calcY-32) & 63);
+                return { size_t(((calcY + 32 + (calcX / 2 + 64 / 2)) / 32) / 2), size_t(((calcY + 32 - (calcX / 2 + 64 / 2)) / 2) / 32) };
+            }
+
+            static constexpr IsomDiamond none() { return {std::numeric_limits<size_t>::max(), std::numeric_limits<size_t>::max()}; }
+
+            constexpr bool operator!=(const IsomDiamond & other) { return this->x != other.x || this->y != other.y; }
+        };
+
+        uint16_t left = 0;
+        uint16_t top = 0;
+        uint16_t right = 0;
+        uint16_t bottom = 0;
+
+        constexpr IsomRect() = default;
+        constexpr IsomRect(uint16_t left, uint16_t top, uint16_t right, uint16_t bottom) : left(left), top(top), right(right), bottom(bottom) {}
+
+        constexpr uint16_t & side(Side side) {
+            switch ( side ) {
+                case Side::Left: return left;
+                case Side::Top: return top;
+                case Side::Right: return right;
+                default: /*Side::Bottom*/ return bottom;
+            }
+        }
+
+        constexpr uint16_t getIsomValue(Side side) const {
+            switch ( side ) {
+                case Side::Left: return left & EditorFlag::ClearAll;
+                case Side::Top: return top & EditorFlag::ClearAll;
+                case Side::Right: return right & EditorFlag::ClearAll;
+                default: /*Side::Bottom*/ return bottom & EditorFlag::ClearAll;
+            }
+        }
+
+        constexpr void setIsomValue(Side side, uint16_t value) {
+            this->side(side) = value;
+        }
+
+        constexpr uint32_t getHash(Span<Sc::Isom::ShapeLinks> isomLinks) const
+        {
+            uint32_t hash = 0;
+            uint16_t lastTerrainType = 0;
+            for ( auto side : Sc::Isom::sides )
+            {
+                auto isomValue = this->getIsomValue(side);
+                if ( (isomValue >> 4) < isomLinks.size() )
+                {
+                    const auto & shapeLinks = isomLinks[isomValue >> 4];
+                    auto edgeLink = shapeLinks.getEdgeLink(isomValue);
+                    hash = (hash | uint32_t(edgeLink)) << 6;
+
+                    if ( shapeLinks.terrainType != 0 && edgeLink > Sc::Isom::Link::SoftLinks )
+                        lastTerrainType = shapeLinks.terrainType;
+                }
+            }
+            return hash | lastTerrainType; // 6 bits per component (left, top, right, bottom, terrainType)
+        }
+
+        constexpr void set(Sc::Isom::ProjectedQuadrant quadrant, uint16_t value) {
+            setIsomValue(quadrant.firstSide, (value << 4) | quadrant.firstEdgeFlags);
+            setIsomValue(quadrant.secondSide, (value << 4) | quadrant.secondEdgeFlags);
+        }
+
+        constexpr bool isLeftModified() const { return left & EditorFlag::Modified; }
+
+        constexpr bool isLeftOrRightModified() const { return ((left | right) & EditorFlag::Modified) == EditorFlag::Modified; }
+
+        constexpr void setModified(Sc::Isom::ProjectedQuadrant quadrant) {
+            this->side(quadrant.firstSide) |= EditorFlag::Modified;
+            this->side(quadrant.secondSide) |= EditorFlag::Modified;
+        }
+
+        constexpr bool isVisited() const { return (right & EditorFlag::Visited) == EditorFlag::Visited; }
+
+        constexpr void setVisited() { right |= EditorFlag::Visited; }
+
+        constexpr void clearEditorFlags() {
+            left &= EditorFlag::ClearAll;
+            top &= EditorFlag::ClearAll;
+            right &= EditorFlag::ClearAll;
+            bottom &= EditorFlag::ClearAll;
+        }
+
+        constexpr void clear() {
+            left = 0;
+            top = 0;
+            right = 0;
+            bottom = 0;
+        }
+
+        REFLECT(IsomRect, left, top, right, bottom)
     };
-    
+    static_assert(sizeof(IsomRect) == 8, "IsomRect must be exactly 8 bytes!");
+
+    using IsomDiamond = IsomRect::IsomDiamond;
+
     __declspec(align(1)) struct Doodad
     {
         enum_t(Enabled, u8, {
@@ -176,11 +332,38 @@ namespace Chk {
     __declspec(align(1)) struct Sprite
     {
         enum_t(SpriteFlags, u16, {
-            DrawAsSprite = BIT_12, // If deselected this is a SpriteUnit
-            Disabled = BIT_15 // Only valid if draw as sprite is unchecked, disables the unit
+            
+            BitZero = BIT_0, // Set in staredit, not read by SC
+            BitOne = BIT_1, // Bit 1 Unused in staredit/SC
+            BitTwo = BIT_2, // Bit 2 Unused in staredit/SC
+            BitThree = BIT_3, // Bit 3 Unused in staredit/SC
+            BitFour = BIT_4, // Scmdraft notes "(Provides Cover?)", the flag is set in some doodads and is not read by SC
+            BitFive = BIT_5, // Bit 5 Unused in staredit/SC
+            BitSix = BIT_6, // Bit 6 Unused in staredit/SC
+            BitSeven = BIT_7, // Scmdraft notes "(Always set!)"; set for doodads which include an overlay (& some which do not) and is not read by SC
+            BitEight = BIT_8, // Set in staredit, not read by SC
+            BitNine = BIT_9, // Scmdraft notes "(Medium Ground Lvl?), it's set for some doodads, and is not read by SC
+            BitTen = BIT_10, // Scmdraft notes "(High Ground Lvl?), it's set for some doodads, and is not read by SC
+            BitEleven = BIT_11, // Bit 11 Unused in staredit/SC
+            DrawAsSprite = BIT_12, // Indicates whether this sprite should be treated as a unit; in SC: receeding creep
+            IsUnit = BIT_13, // Set in staredit, but is not read by SC - rather SpriteOverlay or !SpriteOverlay is checked
+            OverlayFlipped_Deprecated = BIT_14, // In SC: temporary creep
+            SpriteUnitDiabled = BIT_15 // If the SpriteOverlay flag is NOT set (this is a sprite-unit), then the unit is disabled
         });
+        enum class Field {
+            Type, Xc, Yc, Owner, Unused, Flags
+        };
+
+        inline static u16 toPureSpriteFlags(u16 flags)
+        {
+            flags |= SpriteFlags::DrawAsSprite;
+            flags &= (~SpriteFlags::IsUnit);
+            flags &= (~SpriteFlags::SpriteUnitDiabled);
+            return flags;
+        }
 
         bool isDrawnAsSprite() const;
+        bool isUnit() const;
 
         Sc::Sprite::Type type;
         u16 xc;
@@ -546,15 +729,17 @@ namespace Chk {
         static constexpr size_t NumActionTypes = 60;
         static constexpr size_t NumBriefingActionTypes = 10;
         static constexpr size_t InternalDataBytes = 3;
-        static constexpr size_t MaxArguments = 11;
+        static constexpr size_t MaxArguments = 12;
         enum_t(Type, u8, { // u8
             CenterView = 10,
             Comment = 47,
             CreateUnit = 44,
             CreateUnitWithProperties = 11,
             Defeat = 2,
+            DisableDebugMode = 58,
             DisplayTextMessage = 9,
             Draw = 56,
+            EnableDebugMode = 59,
             GiveUnitsToPlayer = 48,
             KillUnit = 22,
             KillUnitAtLocation = 23,
@@ -615,9 +800,9 @@ namespace Chk {
             BriefingMissionObjectives = 4,
             BriefingShowPortrait = 5,
             BriefingHidePortrait = 6,
-            BriefingDisplayTalkingPortrait = 7,
+            BriefingDisplaySpeakingPortrait = 7,
             BriefingTransmission = 8,
-            BriefingEnableSkipTutorial = 9
+            BriefingSkipTutorialEnabled = 9
         });
         enum_t(VirtualType, s32, { // s32
             CenterView = 10,
@@ -625,8 +810,10 @@ namespace Chk {
             CreateUnit = 44,
             CreateUnitWithProperties = 11,
             Defeat = 2,
+            DisableDebugMode = 58,
             DisplayTextMessage = 9,
             Draw = 56,
+            EnableDebugMode = 59,
             GiveUnitsToPlayer = 48,
             KillUnit = 22,
             KillUnitAtLocation = 23,
@@ -691,9 +878,11 @@ namespace Chk {
             BriefingMissionObjectives = 4,
             BriefingShowPortrait = 5,
             BriefingHidePortrait = 6,
-            BriefingDisplayTalkingPortrait = 7,
+            BriefingDisplaySpeakingPortrait = 7,
             BriefingTransmission = 8,
-            BriefingEnableSkipTutorial = 9
+            BriefingSkipTutorialEnabled = 9,
+
+            BriefingCustom = -3
         });
         enum_t(ExtendedBaseType, s32, { // s32
             SetMemory = (u8)Type::SetDeaths, // SetDeaths
@@ -736,7 +925,9 @@ namespace Chk {
             SecondaryTypeIndex = 25, // NumUnits (0=all), SwitchAction, UnitOrder, ModifyType
             Padding = 26,
             MaskFlag = 27,
-            MemoryOffset = 28
+            MemoryOffset = 28,
+
+            BriefingSlot = 29
         };
         enum class ArgField : u32 { // u32
             LocationId = 0,
@@ -773,6 +964,12 @@ namespace Chk {
             Enabled = 0x4353, // "SC" in little-endian; 'S' = 0x53, 'C' = 0x43
             Disabled = 0
         });
+        enum_t(BriefingSlot, u32, {
+            Slot1 = 0,
+            Slot2 = 1,
+            Slot3 = 2,
+            Slot4 = 3
+        });
         struct Argument {
             ArgType type;
             ArgField field;
@@ -801,16 +998,28 @@ namespace Chk {
         void toggleDisabled();
         static const Argument & getClassicArg(Type actionType, size_t argIndex);
         static const Argument & getClassicArg(VirtualType actionType, size_t argIndex);
+        static const Argument & getBriefingClassicArg(Type actionType, size_t argIndex);
+        static const Argument & getBriefingClassicArg(VirtualType actionType, size_t argIndex);
         static ArgType getClassicArgType(Type actionType, size_t argIndex);
         static ArgType getClassicArgType(VirtualType actionType, size_t argIndex);
+        static ArgType getBriefingClassicArgType(Type actionType, size_t argIndex);
+        static ArgType getBriefingClassicArgType(VirtualType actionType, size_t argIndex);
         static const Argument & getTextArg(Type actionType, size_t argIndex);
         static const Argument & getTextArg(VirtualType actionType, size_t argIndex);
+        static const Argument & getBriefingTextArg(Type actionType, size_t argIndex);
+        static const Argument & getBriefingTextArg(VirtualType actionType, size_t argIndex);
         static ArgType getTextArgType(Type actionType, size_t argIndex);
         static ArgType getTextArgType(VirtualType actionType, size_t argIndex);
+        static ArgType getBriefingTextArgType(Type actionType, size_t argIndex);
+        static ArgType getBriefingTextArgType(VirtualType actionType, size_t argIndex);
         static u8 getDefaultFlags(Type actionType);
         static u8 getDefaultFlags(VirtualType actionType);
+        static u8 getBriefingDefaultFlags(Type actionType);
+        static u8 getBriefingDefaultFlags(VirtualType actionType);
         bool hasStringArgument() const;
         bool hasSoundArgument() const;
+        bool hasBriefingStringArgument() const;
+        bool hasBriefingSoundArgument() const;
         inline bool locationUsed(size_t locationId) const;
         inline bool stringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyTrigger) const;
         inline bool gameStringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyTrigger) const;
@@ -833,6 +1042,7 @@ namespace Chk {
         static Argument textArguments[NumActionTypes][MaxArguments];
         static u8 defaultFlags[NumActionTypes];
         static std::unordered_map<VirtualType, VirtualAction> virtualActions;
+        static std::unordered_map<VirtualType, VirtualAction> virtualBriefingActions;
         static bool actionUsesLocationArg[NumActionTypes];
         static bool actionUsesSecondaryLocationArg[NumActionTypes];
         static bool actionUsesStringArg[NumActionTypes];
@@ -984,7 +1194,7 @@ namespace Chk {
         sizePlusOneStep = BIT_7
     });
     
-    enum_t(StrScope, u32, { // u32
+    enum_t(Scope, u32, { // u32
         None = 0,
         Game = BIT_1,
         Editor = BIT_2,
@@ -1247,7 +1457,7 @@ namespace Chk {
     }; // Size: Multiple of 36 (validated)
     
     __declspec(align(1)) struct ISOM {
-        //IsomEntry isomData[0]; // IsomEntry isomData[tileWidth/2 + 1][tileHeight + 1]; // Access x*2, width*y
+        //IsomRect isomRect[0]; // IsomRect isomRects[tileWidth/2 + 1][tileHeight + 1]; // Access x*2, width*y
     }; // Size: (tileWidth / 2 + 1) * (tileHeight + 1) * 8 (not validated)
     
     __declspec(align(1)) struct TILE {
@@ -1639,7 +1849,7 @@ namespace Chk {
     };
     
     std::ostream & operator<< (std::ostream & out, const Unit & unit);
-    std::ostream & operator<< (std::ostream & out, const IsomEntry & isomEntry);
+    std::ostream & operator<< (std::ostream & out, const IsomRect & isomRect);
     std::ostream & operator<< (std::ostream & out, const Doodad & doodad);
     std::ostream & operator<< (std::ostream & out, const Sprite & sprite);
     std::ostream & operator<< (std::ostream & out, const Location & location);
@@ -1830,6 +2040,138 @@ namespace Chk {
             StrProp strProp; // Additional color and font details, if this string is extended and gets stored
 
             static void adopt(ScStr* parent, ScStr* child, size_t parentLength, size_t childLength, const char* parentSubString);
+    };
+
+    struct IsomRectUndo {
+        Chk::IsomDiamond diamond {};
+        Chk::IsomRect oldValue {};
+        Chk::IsomRect newValue {};
+
+        constexpr void setOldValue(const Chk::IsomRect & oldValue) {
+            this->oldValue.left = oldValue.left & Chk::IsomRect::EditorFlag::ClearAll;
+            this->oldValue.right = oldValue.right & Chk::IsomRect::EditorFlag::ClearAll;
+            this->oldValue.top = oldValue.top & Chk::IsomRect::EditorFlag::ClearAll;
+            this->oldValue.bottom = oldValue.bottom & Chk::IsomRect::EditorFlag::ClearAll;
+        }
+
+        constexpr void setNewValue(const Chk::IsomRect & newValue) {
+            this->newValue.left = newValue.left & Chk::IsomRect::EditorFlag::ClearAll;
+            this->newValue.right = newValue.right & Chk::IsomRect::EditorFlag::ClearAll;
+            this->newValue.top = newValue.top & Chk::IsomRect::EditorFlag::ClearAll;
+            this->newValue.bottom = newValue.bottom & Chk::IsomRect::EditorFlag::ClearAll;
+        }
+
+        IsomRectUndo(Chk::IsomDiamond diamond, const Chk::IsomRect & oldValue, const Chk::IsomRect & newValue)
+            : diamond(diamond)
+        {
+            setOldValue(oldValue);
+            setNewValue(newValue);
+        }
+    };
+
+    // IsomCache holds all the data required to edit isometric terrain which is not a part of scenario; as well as methods that operate on said data exclusively
+    // IsomCache is invalidated & must be re-created whenever tileset, map width, or map height changes
+    struct IsomCache
+    {
+        Sc::Terrain::Tileset tileset; // If tileset changes the cache should be recreated with the new tileset
+        size_t isomWidth; // This is a sort of isometric width, not tileWidth
+        size_t isomHeight; // This is a sort of isometric height, not tileHeight
+        Sc::BoundingBox changedArea {};
+
+        std::vector<std::optional<IsomRectUndo>> undoMap {}; // Undo per x, y coordinate
+
+        Span<Sc::Terrain::TileGroup> tileGroups {};
+        Span<Sc::Isom::ShapeLinks> isomLinks {};
+        Span<Sc::Isom::TerrainTypeInfo> terrainTypes {};
+        Span<uint16_t> terrainTypeMap {};
+        const std::unordered_map<uint32_t, std::vector<uint16_t>>* hashToTileGroup;
+
+        inline IsomCache(Sc::Terrain::Tileset tileset, size_t tileWidth, size_t tileHeight, const Sc::Terrain::Tiles & tilesetData) :
+            tileset(tileset),
+            isomWidth(tileWidth/2 + 1),
+            isomHeight(tileHeight + 1),
+            tileGroups(&tilesetData.tileGroups[0], tilesetData.tileGroups.size()),
+            isomLinks(&tilesetData.isomLinks[0], tilesetData.isomLinks.size()),
+            terrainTypes(&tilesetData.terrainTypes[0], tilesetData.terrainTypes.size()),
+            terrainTypeMap(&tilesetData.terrainTypeMap[0], tilesetData.terrainTypeMap.size()),
+            hashToTileGroup(&tilesetData.hashToTileGroup),
+            undoMap(isomWidth*isomHeight, std::nullopt)
+        {
+            resetChangedArea();
+        }
+
+        constexpr void resetChangedArea()
+        {
+            changedArea.left = isomWidth;
+            changedArea.right = 0;
+            changedArea.top = isomHeight;
+            changedArea.bottom = 0;
+        }
+
+        constexpr void setAllChanged()
+        {
+            changedArea.left = 0;
+            changedArea.right = isomWidth-1;
+            changedArea.top = 0;
+            changedArea.bottom = isomHeight-1;
+        }
+
+        constexpr uint16_t getTerrainTypeIsomValue(size_t terrainType) const
+        {
+            return terrainType < terrainTypes.size() ? terrainTypes[terrainType].isomValue : 0;
+        }
+
+        inline uint16_t getRandomSubtile(uint16_t tileGroup) const
+        {
+            if ( tileGroup < tileGroups.size() )
+            {
+                size_t totalCommon = 0;
+                size_t totalRare = 0;
+                for ( ; totalCommon < 16 && tileGroups[tileGroup].megaTileIndex[totalCommon] != 0; ++totalCommon );
+                for ( ; totalCommon+totalRare+1 < 16 && tileGroups[tileGroup].megaTileIndex[totalCommon+totalRare+1] != 0; ++totalRare );
+
+                if ( totalRare != 0 && std::rand() <= RAND_MAX / 20 ) // 1 in 20 chance of using a rare tile
+                    return 16*tileGroup + uint16_t(totalCommon + 1 + (std::rand() % totalRare)); // Select particular rare tile
+                else if ( totalCommon != 0 ) // Use a common tile
+                    return 16*tileGroup + uint16_t(std::rand() % totalCommon); // Select particular common tile
+            }
+            return 16*tileGroup; // Default/fall-back to first tile in group
+        }
+
+        virtual inline void setTileValue(size_t tileX, size_t tileY, uint16_t tileValue) {} // Does nothing unless overridden
+
+        virtual inline void addIsomUndo(const IsomRectUndo & /*isomUndo*/) {} // Does nothing unless overridden
+
+        // Call when one undoable operation is complete, e.g. resize a map, or mouse up after pasting/brushing some terrain
+        // When changing lots of terrain (e.g. by holding the mouse button and moving around), undos are blocked from being added to the same tiles multiple times
+        // Calling this method clears out said blockers
+        inline void finalizeUndoableOperation()
+        {
+            undoMap.assign(isomWidth*isomHeight, std::nullopt); // Clears out the undoMap so new entries can be set
+        }
+    };
+
+    // When tiles change... doodads, units, and possibly other things may be invalidated and need to be removed (depending on editor configuration settings)
+    // It can be very expensive to check for what occupies tiles when performing a lot of tile operations at once (e.g. dragging around an ISOM brush)
+    // TileOccupationCache provides a constant-runtime means of checking whether a tile is occupied and potentially requires further operations
+    class TileOccupationCache
+    {
+        std::vector<bool> tileIsOccupied {};
+
+    public:
+        TileOccupationCache() = default;
+
+        TileOccupationCache(std::vector<bool> & tileOccupied) {
+            this->tileIsOccupied.swap(tileOccupied);
+        }
+
+        bool tileOccupied(size_t x, size_t y, size_t tileWidth) const {
+            return tileIsOccupied[tileWidth*y+x];
+        }
+
+        void swap(TileOccupationCache & other) {
+            this->tileIsOccupied.swap(other.tileIsOccupied);
+        }
     };
 }
 

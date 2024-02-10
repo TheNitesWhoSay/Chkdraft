@@ -1,4 +1,5 @@
 #include "WindowsItem.h"
+#include "ResourceManager.h"
 #include <SimpleIcu.h>
 #include <memory>
 #include <CommCtrl.h>
@@ -8,13 +9,9 @@ namespace WinLib {
 
     std::list<std::string> WindowsItem::registeredClasses; // Obligatory definition of static variable
 
-    WindowsItem::WindowsItem() : hFont(NULL), paintFont(NULL), windowsItemHandle(NULL), tooltipHandle(NULL), paintWidth(0), paintHeight(0),
-        paintDc(NULL), paintFinalDc(NULL), paintMemBitmap(NULL), paintStatus(PaintStatus::NotPainting)
+    WindowsItem::WindowsItem() : windowsItemHandle(NULL), tooltipHandle(NULL)
     {
-        paintRect.left = 0;
-        paintRect.top = 0;
-        paintRect.right = 0;
-        paintRect.bottom = 0;
+
     }
 
     WindowsItem::~WindowsItem()
@@ -31,30 +28,26 @@ namespace WinLib {
         if ( tooltipHandle != NULL )
             ::DestroyWindow(tooltipHandle);
         tooltipHandle = NULL;
-
-        paintWidth = 0;
-        paintHeight = 0;
-        paintDc = NULL;
-        paintFinalDc = NULL;
-        paintMemBitmap = NULL;
-        paintStatus = PaintStatus::NotPainting;
-        paintRect.left = 0;
-        paintRect.top = 0;
-        paintRect.right = 0;
-        paintRect.bottom = 0;
+        
+        windowClassName.clear();
     }
 
     HWND WindowsItem::getHandle()
     {
-        if ( this != nullptr )
-            return windowsItemHandle;
-        else
-            return NULL;
+        return windowsItemHandle;
     }
 
     HWND WindowsItem::getParent()
     {
         return ::GetParent(getHandle());
+    }
+    
+    WinLib::DeviceContext WindowsItem::getDeviceContext()
+    {
+        if ( windowsItemHandle != NULL )
+            return WinLib::DeviceContext(windowsItemHandle);
+        else
+            return WinLib::DeviceContext{};
     }
 
     bool WindowsItem::operator==(HWND hWnd)
@@ -75,7 +68,7 @@ namespace WinLib {
             if ( WindowClassIsRegistered(className) )
             {
                 try { windowClassName = className; }
-                catch ( std::exception ) { return false; }
+                catch ( ... ) { return false; }
                 return true;
             }
             else
@@ -95,7 +88,7 @@ namespace WinLib {
                 if ( RegisterClassEx(&wc) != 0 )
                 {
                     try { windowClassName = className; registeredClasses.push_back(windowClassName); }
-                    catch ( std::exception ) { return false; }
+                    catch ( ... ) { return false; }
                     return true;
                 }
             }
@@ -106,7 +99,7 @@ namespace WinLib {
     bool WindowsItem::WindowClassIsRegistered(const std::string & lpszClassName)
     {
         try { windowClassName = lpszClassName; }
-        catch ( std::exception ) { return false; }
+        catch ( ... ) { return false; }
         if ( std::find(registeredClasses.begin(), registeredClasses.end(), windowClassName) == registeredClasses.end() )
         {
             windowClassName.clear();
@@ -129,135 +122,6 @@ namespace WinLib {
     std::string & WindowsItem::WindowClassName()
     {
         return windowClassName;
-    }
-
-    HDC WindowsItem::StartSimplePaint()
-    {
-        if ( paintStatus == PaintStatus::NotPainting )
-        {
-            getClientRect(paintRect);
-            paintWidth = paintRect.right - paintRect.left;
-            paintHeight = paintRect.bottom - paintRect.top;
-            paintDc = getDC();
-            paintStatus = PaintStatus::SimplePaint;
-            return paintDc;
-        }
-        return NULL;
-    }
-
-    HDC WindowsItem::StartBufferedPaint()
-    {
-        if ( paintStatus == PaintStatus::NotPainting )
-        {
-            getClientRect(paintRect);
-            paintWidth = paintRect.right - paintRect.left;
-            paintHeight = paintRect.bottom - paintRect.top;
-            paintFinalDc = getDC();
-            paintDc = ::CreateCompatibleDC(paintFinalDc);
-            paintMemBitmap = ::CreateCompatibleBitmap(paintFinalDc, paintWidth, paintHeight);
-            ::SelectObject(paintDc, paintMemBitmap);
-            paintStatus = PaintStatus::BufferedPaint;
-            return paintDc;
-        }
-        return NULL;
-    }
-
-    HDC WindowsItem::GetPaintDc()
-    {
-        return paintDc;
-    }
-
-    void WindowsItem::SetPaintFont(int height, int width, const std::string & fontString)
-    {
-        if ( paintStatus != PaintStatus::NotPainting )
-        {
-            paintFont = CreateFont(height, width, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, icux::toFilestring(fontString).c_str());
-            SelectObject(paintDc, paintFont);
-        }
-    }
-
-    void WindowsItem::PaintText(const std::string & str, int x, int y, bool clipped, bool opaque, const rect & rc)
-    {
-        if ( paintStatus != PaintStatus::NotPainting )
-        {
-            UINT options = 0;
-            if ( clipped )
-                options |= ETO_CLIPPED;
-            if ( opaque )
-                options |= ETO_OPAQUE;
-
-            icux::uistring uiStr = icux::toUistring(str);
-            ExtTextOut(paintDc, x, y, options, (RECT*)&rc, uiStr.c_str(), (UINT)uiStr.length(), 0);
-        }
-    }
-
-    void WindowsItem::EndPaint()
-    {
-        if ( paintStatus == PaintStatus::SimplePaint )
-        {
-            ReleaseDC(paintDc);
-            ValidateRect(getHandle(), NULL);
-
-            paintRect.left = 0;
-            paintRect.top = 0;
-            paintRect.right = 0;
-            paintRect.bottom = 0;
-            paintWidth = 0;
-            paintHeight = 0;
-            paintDc = NULL;
-            if ( paintFont != NULL )
-            {
-                DeleteObject(paintFont);
-                paintFont = NULL;
-            }
-            paintStatus = PaintStatus::NotPainting;
-        }
-        else if ( paintStatus == PaintStatus::BufferedPaint )
-        {
-            ::BitBlt(paintFinalDc, paintRect.left, paintRect.top, paintWidth, paintHeight, paintDc, 0, 0, SRCCOPY);
-            ::DeleteObject(paintMemBitmap);
-            ::DeleteDC(paintDc);
-            ReleaseDC(paintFinalDc);
-            ValidateRect(getHandle(), NULL);
-
-            paintRect.left = 0;
-            paintRect.top = 0;
-            paintRect.right = 0;
-            paintRect.bottom = 0;
-            paintWidth = 0;
-            paintHeight = 0;
-            paintDc = NULL;
-            paintFinalDc = NULL;
-            if ( paintFont != NULL )
-            {
-                DeleteObject(paintFont);
-                paintFont = NULL;
-            }
-            paintMemBitmap = NULL;
-            paintStatus = PaintStatus::NotPainting;
-        }
-    }
-
-    int WindowsItem::PaintWidth()
-    {
-        return paintWidth;
-    }
-
-    int WindowsItem::PaintHeight()
-    {
-        return paintHeight;
-    }
-
-    void WindowsItem::FillPaintArea(HBRUSH hBrush)
-    {
-        if ( paintStatus != PaintStatus::NotPainting )
-            ::FillRect(paintDc, &paintRect, hBrush);
-    }
-
-    void WindowsItem::FrameRect(HBRUSH hBrush, RECT & rect)
-    {
-        if ( rect.left < rect.right || rect.top < rect.bottom )
-            ::FrameRect(paintDc, &rect, hBrush);
     }
 
     int WindowsItem::GetWinTextLen()
@@ -357,11 +221,6 @@ namespace WinLib {
             return 0;
     }
 
-    HDC WindowsItem::getDC()
-    {
-        return ::GetDC(getHandle());
-    }
-
     bool WindowsItem::isEnabled()
     {
         return ::IsWindowEnabled(getHandle()) != 0;
@@ -383,57 +242,69 @@ namespace WinLib {
         return TRUE;
     }
 
-    void WindowsItem::SetFont(HFONT hFont, bool redrawImmediately)
+    void WindowsItem::setFont(int width, int height, const std::string & fontName, bool redrawImmediately)
     {
-        if ( redrawImmediately )
-            ::SendMessage(getHandle(), WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
-        else
-            ::SendMessage(getHandle(), WM_SETFONT, (WPARAM)hFont, MAKELPARAM(FALSE, 0));
+        HFONT hFont = ResourceManager::getFont(width, height, fontName);
+        if ( hFont != NULL )
+            ::SendMessage(getHandle(), WM_SETFONT, (WPARAM)hFont, MAKELPARAM(redrawImmediately ? TRUE : FALSE, 0));
     }
 
-    void WindowsItem::SetFont(int height, int width, const std::string & fontString, bool redrawImmediately)
+    void WindowsItem::setFont(HFONT hFont, bool redrawImmediately)
+    {
+        ::SendMessage(getHandle(), WM_SETFONT, (WPARAM)hFont, MAKELPARAM(redrawImmediately ? TRUE : FALSE, 0));
+    }
+
+    void WindowsItem::setDefaultFont(bool redrawImmediately)
+    {
+        HFONT hFont = ResourceManager::getDefaultFont();
+        if ( hFont != NULL )
+            ::SendMessage(getHandle(), WM_SETFONT, (WPARAM)hFont, MAKELPARAM(redrawImmediately ? TRUE : FALSE, 0));
+    }
+
+    void WindowsItem::replaceChildFonts(int width, int height, const std::string & fontName)
+    {
+        HFONT hFont = ResourceManager::getFont(width, height, fontName);
+        if ( hFont != NULL )
+            ::EnumChildWindows(getHandle(), (WNDENUMPROC)WinLib::SetFont, (LPARAM)hFont);
+    }
+
+    void WindowsItem::replaceChildFonts(HFONT hFont)
     {
         if ( hFont != NULL )
-        {
-            SetFont(NULL, false);
-            DeleteObject(hFont);
-        }
-        hFont = CreateFont(height, width, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, icux::toFilestring(fontString).c_str());
-        SetFont(hFont, redrawImmediately);
+            ::EnumChildWindows(getHandle(), (WNDENUMPROC)WinLib::SetFont, (LPARAM)hFont);
     }
 
-    void WindowsItem::ReplaceChildFonts(HFONT hFont)
+    void WindowsItem::defaultChildFonts()
     {
-        ::EnumChildWindows(getHandle(), (WNDENUMPROC)WinLib::SetFont, (LPARAM)hFont);
+        HFONT hFont = ResourceManager::getDefaultFont();
+        if ( hFont != NULL )
+            ::EnumChildWindows(getHandle(), (WNDENUMPROC)WinLib::SetFont, (LPARAM)hFont);
     }
 
     void WindowsItem::LockCursor()
     {
-        if ( this != nullptr )
+        if ( getHandle() == NULL )
+            ::ClipCursor(NULL);
+        else
         {
-            if ( getHandle() == NULL )
-                ::ClipCursor(NULL);
-            else
-            {
-                RECT clientRect, clipRect;
-                ::GetClientRect(getHandle(), &clientRect);
+            RECT clientRect, clipRect;
+            ::GetClientRect(getHandle(), &clientRect);
 
-                POINT upperLeft, lowerRight;
-                upperLeft.x = 0;
-                upperLeft.y = 0;
-                lowerRight.x = clientRect.right - 1;
-                lowerRight.y = clientRect.bottom - 1;
+            POINT upperLeft, lowerRight;
+            upperLeft.x = 0;
+            upperLeft.y = 0;
+            lowerRight.x = clientRect.right - 1;
+            lowerRight.y = clientRect.bottom - 1;
 
-                ::ClientToScreen(getHandle(), &upperLeft);
-                ::ClientToScreen(getHandle(), &lowerRight);
+            ::ClientToScreen(getHandle(), &upperLeft);
+            ::ClientToScreen(getHandle(), &lowerRight);
 
-                clipRect.left = upperLeft.x;
-                clipRect.top = upperLeft.y;
-                clipRect.bottom = lowerRight.y;
-                clipRect.right = lowerRight.x;
+            clipRect.left = upperLeft.x;
+            clipRect.top = upperLeft.y;
+            clipRect.bottom = lowerRight.y;
+            clipRect.right = lowerRight.x;
 
-                ::ClipCursor(&clipRect);
-            }
+            ::ClipCursor(&clipRect);
         }
     }
 
@@ -500,12 +371,12 @@ namespace WinLib {
         ::ShowWindow(getHandle(), SW_HIDE);
     }
 
-    void WindowsItem::SetSmallIcon(HANDLE hIcon)
+    void WindowsItem::SetSmallIcon(HICON hIcon)
     {
         ::SendMessage(getHandle(), WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
     }
 
-    void WindowsItem::SetMedIcon(HANDLE hIcon)
+    void WindowsItem::SetMedIcon(HICON hIcon)
     {
         ::SendMessage(getHandle(), WM_SETICON, ICON_BIG, (LPARAM)hIcon);
     }
@@ -545,9 +416,10 @@ namespace WinLib {
         return false;
     }
 
-    bool WindowsItem::ReleaseDC(HDC hDC)
+    void WindowsItem::KillFocus()
     {
-        return ::ReleaseDC(getHandle(), hDC) != 0;
+        if ( getHandle() == GetFocus() )
+            ::SetFocus(NULL);
     }
 
     void WindowsItem::FocusThis()

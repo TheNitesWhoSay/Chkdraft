@@ -1,5 +1,6 @@
 #include "Forces.h"
 #include "../../../Chkdraft.h"
+#include <CommCtrl.h>
 #include <string>
 
 enum_t(Id, u32, {
@@ -86,7 +87,8 @@ bool ForcesWindow::CreateThis(HWND hParent, u64 windowId)
 
 bool ForcesWindow::DestroyThis()
 {
-    playerBeingDragged = 255;
+    ClassWindow::DestroyThis();
+    this->playerBeingDragged = 255;
     return true;
 }
 
@@ -310,6 +312,7 @@ LRESULT ForcesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                                             SendMessage(GetDlgItem(hWnd, Id::LB_F1PLAYERS+force), LB_SELECTSTRING, -1, (LPARAM)icux::toUistring(ssPlayer.str()).c_str());
                                             CM->notifyChange(false);
                                             chkd.trigEditorWindow.RefreshWindow();
+                                            chkd.briefingTrigEditorWindow.RefreshWindow();
                                             SetFocus(getHandle());
                                         }
                                     }
@@ -340,7 +343,7 @@ void ForcesWindow::CheckReplaceForceName(Chk::Force force)
         if ( newMapForce && newMapForce->length() > 0 )
         {
             CM->setForceName<ChkdString>(force, *newMapForce);
-            CM->deleteUnusedStrings(Chk::StrScope::Both);
+            CM->deleteUnusedStrings(Chk::Scope::Both);
             CM->notifyChange(false);
             CM->refreshScenario();
             possibleForceNameUpdate[(size_t)force] = false;

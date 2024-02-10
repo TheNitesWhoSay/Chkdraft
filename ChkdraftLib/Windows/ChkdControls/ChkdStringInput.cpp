@@ -49,17 +49,9 @@ void ChkdStringInputDialog::ChangeTab(Tab tab)
 void ChkdStringInputDialog::ExitDialog(ExitCode exitCode)
 {
     this->exitCode = exitCode;
-    switch ( exitCode )
-    {
-        case ExitCode::Ok:
-            EndDialog(getHandle(), IDOK);
-            break;
-
-        case ExitCode::Cancel:
-        default:
-            EndDialog(getHandle(), IDCANCEL);
-            break;
-    }
+    gameStringWindow.DestroyThis();
+    editorStringWindow.DestroyThis();
+    EndDialog(getHandle(), (INT_PTR)exitCode);
 }
 
 ChkdStringInputDialog::ChkdStringInputDialog() : stringUser(Chk::StringUserFlag::None), stringUserIndex(0), stringSubUserIndex(0),
@@ -195,12 +187,8 @@ BOOL ChkdStringInputDialog::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
         }
         UpdateWindowText();
         ChangeTab(currTab);
-        ReplaceChildFonts(defaultFont);
+        defaultChildFonts();
         DoSize();
-
-        //editString.FindThis(hWnd, IDC_EDIT1);
-        //editString.SetText(initialString);
-        //SetFocus(GetDlgItem(hWnd, IDC_EDIT1));
     }
     else if ( msg == WM_CLOSE )
         ExitDialog(ExitCode::Cancel);
@@ -249,6 +237,12 @@ bool ChkdStringInputDialog::GameStringWindow::CreateThis(HWND hParent, u64 windo
     }
     else
         return false;
+}
+
+bool ChkdStringInputDialog::GameStringWindow::DestroyThis()
+{
+    ClassWindow::DestroyThis();
+    return true;
 }
 
 void ChkdStringInputDialog::GameStringWindow::DoSize()
@@ -300,7 +294,6 @@ void ChkdStringInputDialog::GameStringWindow::ButtonReset()
     parent.newGameString = parent.initialGameString;
     checkNoString.SetCheck(!parent.newGameString);
     editString.SetWinText(parent.newGameString ? *parent.newGameString : "");
-    logger.info() << "Game Button Reset" << std::endl;
 }
 
 void ChkdStringInputDialog::GameStringWindow::ButtonCancel()
@@ -363,6 +356,12 @@ bool ChkdStringInputDialog::EditorStringWindow::CreateThis(HWND hParent, u64 win
         return false;
 }
 
+bool ChkdStringInputDialog::EditorStringWindow::DestroyThis()
+{
+    ClassWindow::DestroyThis();
+    return true;
+}
+
 void ChkdStringInputDialog::EditorStringWindow::DoSize()
 {
 
@@ -412,7 +411,6 @@ void ChkdStringInputDialog::EditorStringWindow::ButtonReset()
     parent.newEditorString = parent.initialEditorString;
     checkNoString.SetCheck(!parent.newEditorString);
     editString.SetWinText(parent.newEditorString ? *parent.newEditorString : "");
-    logger.info() << "Editor Button Reset" << std::endl;
 }
 
 void ChkdStringInputDialog::EditorStringWindow::ButtonCancel()

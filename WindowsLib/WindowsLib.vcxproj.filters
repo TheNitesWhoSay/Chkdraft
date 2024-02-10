@@ -122,10 +122,16 @@
     <ClInclude Include="FileSystem.h">
       <Filter>Header Files\%2a</Filter>
     </ClInclude>
-    <ClInclude Include="Painting.h">
+    <ClInclude Include="RichEditControl.h">
+      <Filter>Header Files\Controls\Specifics</Filter>
+    </ClInclude>
+    <ClInclude Include="DeviceContext.h">
       <Filter>Header Files\%2a</Filter>
     </ClInclude>
-    <ClInclude Include="RichEditControl.h">
+    <ClInclude Include="ResourceManager.h">
+      <Filter>Header Files\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="ContextMenu.h">
       <Filter>Header Files\Controls\Specifics</Filter>
     </ClInclude>
   </ItemGroup>
@@ -202,10 +208,10 @@
     <ClCompile Include="FileSystem.cpp">
       <Filter>Source Files\%2a</Filter>
     </ClCompile>
-    <ClCompile Include="Painting.cpp">
-      <Filter>Source Files\%2a</Filter>
-    </ClCompile>
     <ClCompile Include="RichEditControl.cpp">
+      <Filter>Source Files\Controls\Specifics</Filter>
+    </ClCompile>
+    <ClCompile Include="ContextMenu.cpp">
       <Filter>Source Files\Controls\Specifics</Filter>
     </ClCompile>
   </ItemGroup>

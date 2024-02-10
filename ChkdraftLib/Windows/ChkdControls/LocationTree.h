@@ -8,8 +8,8 @@ class LocationTree : public WinLib::TreeViewControl
     public:
         virtual ~LocationTree();
         bool AddThis(HWND hTree, HTREEITEM hParent);
-        void InsertLocationItem(const std::string & text, u32 index);
-        void RebuildLocationTree();
+        HTREEITEM InsertLocationItem(const std::string & text, u32 index);
+        void RebuildLocationTree(bool updateSelection = false);
 
     private:
         HTREEITEM hLocationRoot;

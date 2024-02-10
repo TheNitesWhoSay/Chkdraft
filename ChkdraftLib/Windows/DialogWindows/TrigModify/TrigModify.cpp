@@ -43,6 +43,14 @@ bool TrigModifyWindow::CreateThis(HWND hParent, u32 trigIndex)
 
 bool TrigModifyWindow::DestroyThis()
 {
+    ClassDialog::Hide();
+    generalWindow.DestroyThis();
+    playersWindow.DestroyThis();
+    conditionsWindow.DestroyThis();
+    actionsWindow.DestroyThis();
+    trigModifyTextWindow.DestroyThis();
+    this->trigIndex = NO_TRIGGER;
+    this->currTab = Tab::General;
     return ClassDialog::DestroyDialog();
 }
 
@@ -71,7 +79,6 @@ void TrigModifyWindow::ChangeTab(Tab tab)
 void TrigModifyWindow::RefreshWindow(u32 trigIndex)
 {
     this->trigIndex = trigIndex;
-    //Show();
     WindowsItem::SetWinText("Modify Trigger #" + std::to_string(trigIndex));
     generalWindow.RefreshWindow(trigIndex);
     playersWindow.RefreshWindow(trigIndex);
@@ -178,33 +185,55 @@ BOOL TrigModifyWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
                 trigModifyTextWindow.ParentHidden();
             else if ( wParam == FALSE && currTab == Tab::Conditions )
                 conditionsWindow.HideSuggestions();
+            else if ( wParam == FALSE && currTab == Tab::Actions )
+                actionsWindow.HideSuggestions();
             return FALSE;
             break;
 
         case WM_ACTIVATE:
             if ( LOWORD(wParam) != WA_INACTIVE )
+            {
                 chkd.SetCurrDialog(hWnd);
+                if ( currTab == Tab::Conditions )
+                    conditionsWindow.FocusGrid();
+                else if ( currTab == Tab::Actions )
+                    actionsWindow.FocusGrid();
+            }
             else // LOWORD(wParam) == WA_INACTIVE
-                conditionsWindow.HideSuggestions();
+            {
+                if ( !conditionsWindow.IsSuggestionsWindow((HWND)lParam) &&
+                     !actionsWindow.IsSuggestionsWindow((HWND)lParam) )
+                {
+                    conditionsWindow.HideSuggestions();
+                    actionsWindow.HideSuggestions();
+                }
+            }
             return FALSE;
             break;
 
         case WM_NCACTIVATE:
             if ( (BOOL)wParam == FALSE )
-                conditionsWindow.HideSuggestions();
+            {
+                if ( !conditionsWindow.IsSuggestionsWindow((HWND)lParam) &&
+                     !actionsWindow.IsSuggestionsWindow((HWND)lParam) )
+                {
+                    conditionsWindow.HideSuggestions();
+                    actionsWindow.HideSuggestions();
+                }
+            }
             return FALSE;
             break;
 
         case WM_INITDIALOG:
             {
-                SetSmallIcon((HANDLE)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_PROGRAM_ICON), IMAGE_ICON, 16, 16, 0 ));
+                SetSmallIcon(WinLib::ResourceManager::getIcon(IDI_PROGRAM_ICON, 16, 16));
                 tabs.FindThis(hWnd, IDC_TRIGMODIFYTABS);
                 const std::vector<std::string> tabLabels = { "General", "Players", "Conditions", "Actions", "Text" };
                 for ( size_t i=0; i<tabLabels.size(); i++ )
                     tabs.InsertTab((u32)i, tabLabels[i]);
                 CreateSubWindows(hWnd);
                 DoSize();
-                ReplaceChildFonts(defaultFont);
+                defaultChildFonts();
                 RedrawWindow(hWnd, NULL, NULL, RDW_INVALIDATE);
             }
             break;

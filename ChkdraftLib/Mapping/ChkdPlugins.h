@@ -3,7 +3,7 @@
 #include <Windows.h>
 
 #define PLUGIN_MSG_START        (WM_APP+200)
-#define PLUGIN_MSG_END          (WM_APP+204)
+#define PLUGIN_MSG_END          (WM_APP+205)
 
 /** Basic messages, get a handle to CHKDraft with the above
     messages, then you can use the messages that follow */
@@ -14,6 +14,13 @@
             wParam: mapID, if NULL, the current map is saved
             lParam: NULL
             return: The saved mapID if successful, 0 otherwise */
+
+    #define CLOSE_MAP            (PLUGIN_MSG_START+5)
+        /** This will cause CHKDraft to close the specified map
+
+            wParam: mapID, if NULL, the current map (if any) is closed
+            lParam: NULL
+            return: The closed mapID if successful, 0 otherwise */
 
 
 /** Getting a scenario file, modifying it, and returning it is one of
@@ -60,5 +67,7 @@
 
 
 LRESULT CALLBACK PluginProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+bool runMpqRecompiler();
 
 #endif

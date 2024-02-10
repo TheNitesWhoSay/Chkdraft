@@ -9,9 +9,11 @@ class MoveToDialog : public WinLib::ClassDialog
 {
     public:
         virtual ~MoveToDialog() {}
-        static bool GetIndex(indexType & index, HWND hParent)
+        static bool GetIndex(indexType & index, HWND hParent, const std::string & dialogTitle = "Move Selection To...", const std::string & prompt = "New Index:")
         {
             MoveToDialog<indexType> moveTo;
+            moveTo.windowTitle = dialogTitle;
+            moveTo.prompt = prompt;
             return moveTo.InternalGetMoveTo(index, hParent);
         }
 
@@ -45,6 +47,9 @@ class MoveToDialog : public WinLib::ClassDialog
             if ( msg == WM_INITDIALOG )
             {
                 editMoveTo.FindThis(hWnd, IDC_EDIT1);
+                textIndex.FindThis(hWnd, IDC_STATIC_TEXT);
+                this->SetWinText(windowTitle);
+                textIndex.SetWinText(prompt);
                 SetFocus(GetDlgItem(hWnd, IDC_EDIT1));
             }
             return ClassDialog::DlgProc(hWnd, msg, wParam, lParam);
@@ -53,7 +58,10 @@ class MoveToDialog : public WinLib::ClassDialog
     private:
         bool gotIndex = false;
         indexType indexMovedTo = 0;
+        WinLib::TextControl textIndex;
         WinLib::EditControl editMoveTo;
+        std::string windowTitle = "";
+        std::string prompt = "";
 };
 
 #endif

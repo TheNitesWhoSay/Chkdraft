@@ -2,7 +2,7 @@
 #define LOGGERWINDOW_H
 #include "../../CommonFiles/CommonFiles.h"
 #include "../WindowsLib/WindowsUi.h"
-#include "../IcuLib/SimpleIcu.h"
+#include "../CrossCutLib/SimpleIcu.h"
 #include <deque>
 #include <ostream>
 #include <streambuf>
@@ -37,22 +37,6 @@ class LoggerWindow : public WinLib::ClassWindow, public std::ostream, public std
         std::string currLine;
         WinLib::RichEditControl lineNumbers;
         WinLib::RichEditControl richText;
-
-        enum_t(ContextMenuItem, UINT, {
-            HideLogger = 1,
-            ToggleLineNumbers,
-            OpenLogFile,
-            OpenLogFileDirectory,
-            LogLevel,
-            LogLevelOff,
-            LogLevelFatal,
-            LogLevelError,
-            LogLevelWarn,
-            LogLevelInfo,
-            LogLevelDebug,
-            LogLevelTrace,
-            LogLevelAll
-        });
 };
 
 #endif

@@ -1,5 +1,8 @@
 #include "CndActGrid.h"
 #include <string>
+#include "../../../CrossCutLib/Logger.h"
+
+extern Logger logger;
 
 // Copy -> escape tabs to \t
 // Paste -> parse \t to tabs
@@ -29,7 +32,7 @@ CndActGrid::~CndActGrid()
 bool CndActGrid::CreateThis(HWND hParent, int x, int y, int width, int height, u32 id)
 {
     GridViewControl::CreateThis(hParent, 2, 40, 100, 100, id);
-    GridViewControl::SetFont(defaultFont, false);
+    GridViewControl::setDefaultFont(false);
     for ( int i = 0; i<9; i++ )
         GridViewControl::AddColumn(0, " - ", 50, LVCFMT_CENTER);
     GridViewControl::AddColumn(0, "", 14, LVCFMT_CENTER);
@@ -207,7 +210,7 @@ void CndActGrid::StartEditing(int xClick, int yClick, const std::string & initCh
     if ( initChar.empty() ) // Started via click
     {
         startedByClick = true;
-        GridViewControl::EditBox().SetForwardArrowKeys(false);
+        GridViewControl::EditBox().SetForwardArrowKeys(true);
         GridViewControl::EditBox().SetStopForwardOnClick(true);
     }
     else
@@ -325,6 +328,17 @@ LRESULT CndActGrid::ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
             }
             else
                 return GridViewControl::ControlProc(hWnd, msg, wParam, lParam); break;
+            break;
+
+        case WM_MOUSEWHEEL:
+            if ( suggestions.IsShown() )
+                SendMessage(suggestions.getHandle(), WM_MOUSEWHEEL, wParam, lParam);
+            else
+            {
+                LRESULT result = GridViewControl::ControlProc(hWnd, msg, wParam, lParam);
+                GridViewControl::RedrawThis();
+                return result;
+            }
             break;
 
         default: return GridViewControl::ControlProc(hWnd, msg, wParam, lParam); break;

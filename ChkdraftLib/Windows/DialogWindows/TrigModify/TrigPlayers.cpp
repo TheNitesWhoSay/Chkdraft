@@ -59,7 +59,11 @@ bool TrigPlayersWindow::CreateThis(HWND hParent, u64 windowId)
 
 bool TrigPlayersWindow::DestroyThis()
 {
-    return false;
+    ClassWindow::DestroyThis();
+    this->trigIndex = 0;
+    this->refreshing = true;
+    this->advancedMode = true;
+    return true;
 }
 
 void TrigPlayersWindow::RefreshWindow(u32 trigIndex)
@@ -233,6 +237,7 @@ void TrigPlayersWindow::CheckBoxUpdated(u16 checkId)
         else
             editRawPlayers.DisableThis();
     }
+    chkd.trigEditorWindow.triggersWindow.RefreshGroupList();
     RefreshWindow(trigIndex);
 }
 

@@ -21,6 +21,7 @@ void Undos::AddUndo(ReversiblePtr action)
 {
     if ( action->Count() > 0 )
     {
+        redos.clear();
         undos.push_front(action);
         AdjustChangeCount(action->GetType(), 1);
     }

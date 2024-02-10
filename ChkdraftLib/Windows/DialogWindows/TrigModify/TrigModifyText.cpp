@@ -50,7 +50,10 @@ bool TrigModifyTextWindow::CreateThis(HWND hParent, u64 windowId)
 
 bool TrigModifyTextWindow::DestroyThis()
 {
-    return false;
+    ClassWindow::DestroyThis();
+    this->trigIndex = 0;
+    this->autoCompile = false;
+    return true;
 }
 
 void TrigModifyTextWindow::SetTrigIndex(u32 trigIndex)
@@ -135,6 +138,7 @@ void TrigModifyTextWindow::Compile(bool silent, bool saveAfter)
                     else if ( !silent )
                         WinLib::Message("Success", "Compiler");
 
+                    chkd.trigEditorWindow.triggersWindow.RefreshGroupList();
                     RefreshWindow(trigIndex);
                 }
             }

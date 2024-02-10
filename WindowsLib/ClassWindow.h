@@ -4,7 +4,6 @@
 #include "WindowsItem.h"
 #include "WinUIEnums.h"
 #include "MdiClient.h"
-#include <CommCtrl.h>
 #include <Windows.h>
 #include <string>
 #include <list>
@@ -58,7 +57,7 @@ namespace WinLib {
 
                         /** When overidden, these methods serve as easy ways to process
                         notifications/commands */
-                        virtual void NotifyTreeSelChanged(LPARAM newValue); // Sent when a new tree item is selected
+                        virtual void NotifyTreeItemSelected(LPARAM newValue); // Sent when a tree item is selected, or an already-selected item is re-clicked
                         virtual void NotifyButtonClicked(int idFrom, HWND hWndFrom); // Sent when a button or checkbox is clicked
                         virtual void NotifyEditUpdated(int idFrom, HWND hWndFrom); // Sent when edit text changes, before redraw
                         virtual void NotifyEditFocused(int idFrom, HWND hWndFrom); // Sent when an edit box receives focus

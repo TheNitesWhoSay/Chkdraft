@@ -33,46 +33,62 @@ bool TrigEditorWindow::CreateThis(HWND hParent)
     else
     {
         ChangeTab(currTab);
+        RefreshWindow();
         return false;
     }
-    RefreshWindow();
 }
 
 bool TrigEditorWindow::DestroyThis()
 {
-    triggersWindow.trigModifyWindow.Hide();
+    this->Hide();
+    triggersWindow.trigModifyWindow.DestroyThis();
+    triggersWindow.DestroyThis();
+    templatesWindow.DestroyThis();
+    countersWindow.DestroyThis();
+    cuwpsWindow.DestroyThis();
+    switchesWindow.DestroyThis();
+    this->currTab = Tab::Triggers;
     return ClassDialog::DestroyDialog();
 }
 
 void TrigEditorWindow::ChangeTab(Tab tab)
 {
-    tabs.SetCurSel((u32)tab);
-
-    tabs.HideTab(Id::WIN_TRIGGERS);
-    tabs.HideTab(Id::WIN_TEMPLATES);
-    tabs.HideTab(Id::WIN_COUNTERS);
-    tabs.HideTab(Id::WIN_CUWPS);
-    tabs.HideTab(Id::WIN_SWITCHES);
-
-    switch ( tab )
+    if ( tabs.GetCurSel() != u32(tab) )
     {
-        case Tab::Triggers  : tabs.ShowTab(Id::WIN_TRIGGERS ); break;
-        case Tab::Templates : tabs.ShowTab(Id::WIN_TEMPLATES); break;
-        case Tab::Counters  : tabs.ShowTab(Id::WIN_COUNTERS ); break;
-        case Tab::Cuwps     : tabs.ShowTab(Id::WIN_CUWPS    ); break;
-        case Tab::Switches  : tabs.ShowTab(Id::WIN_SWITCHES ); break;
-    }
+        tabs.SetCurSel((u32)tab);
 
-    currTab = tab;
+        tabs.HideTab(Id::WIN_TRIGGERS);
+        tabs.HideTab(Id::WIN_TEMPLATES);
+        tabs.HideTab(Id::WIN_COUNTERS);
+        tabs.HideTab(Id::WIN_CUWPS);
+        tabs.HideTab(Id::WIN_SWITCHES);
+
+        switch ( tab )
+        {
+            case Tab::Triggers  : tabs.ShowTab(Id::WIN_TRIGGERS ); break;
+            case Tab::Templates : tabs.ShowTab(Id::WIN_TEMPLATES); break;
+            case Tab::Counters  : tabs.ShowTab(Id::WIN_COUNTERS ); break;
+            case Tab::Cuwps     : tabs.ShowTab(Id::WIN_CUWPS    ); break;
+            case Tab::Switches  : tabs.ShowTab(Id::WIN_SWITCHES ); break;
+        }
+
+        currTab = tab;
+    }
 }
 
 void TrigEditorWindow::RefreshWindow()
 {
-    triggersWindow.RefreshWindow(false);
-    templatesWindow.RefreshWindow();
-    countersWindow.RefreshWindow();
-    cuwpsWindow.RefreshWindow(true);
-    switchesWindow.RefreshWindow();
+    if ( getHandle() == NULL )
+        return;
+
+    switch ( currTab )
+    {
+        case Tab::Triggers: triggersWindow.RefreshWindow(false); break;
+        case Tab::Templates: templatesWindow.RefreshWindow(); break;
+        case Tab::Counters: countersWindow.RefreshWindow(); break;
+        case Tab::Cuwps: cuwpsWindow.RefreshWindow(true); break;
+        case Tab::Switches: switchesWindow.RefreshWindow(); break;
+    }
     ChangeTab(currTab);
 }
 
@@ -161,9 +177,9 @@ BOOL TrigEditorWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
             break;
 
         case WM_INITDIALOG:
-            SetSmallIcon((HANDLE)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_PROGRAM_ICON), IMAGE_ICON, 16, 16, 0));
+            SetSmallIcon(WinLib::ResourceManager::getIcon(IDI_PROGRAM_ICON, 16, 16));
             CreateSubWindows(hWnd);
-            ReplaceChildFonts(defaultFont);
+            defaultChildFonts();
             RedrawWindow(hWnd, NULL, NULL, RDW_INVALIDATE);
             break;
 
@@ -172,8 +188,7 @@ BOOL TrigEditorWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
             break;
 
         case WM_CLOSE:
-            triggersWindow.trigModifyWindow.Hide();
-            ClassDialog::DestroyDialog();
+            DestroyThis();
             return FALSE;
             break;
 

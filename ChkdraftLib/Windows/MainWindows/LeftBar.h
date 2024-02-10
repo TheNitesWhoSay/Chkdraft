@@ -14,7 +14,7 @@ class LeftBar : public WinLib::ClassWindow
         bool CreateThis(HWND hParent);
 
     protected:
-        virtual void NotifyTreeSelChanged(LPARAM newValue); // Sent when a new tree item is selected
+        virtual void NotifyTreeItemSelected(LPARAM newValue); // Sent when a new tree item is selected
         LRESULT Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr);
         LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 };

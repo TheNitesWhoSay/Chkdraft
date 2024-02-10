@@ -289,28 +289,28 @@ void LocationWindow::NotifyLocNamePropertiesClicked()
 {
     if ( currentLocationId != NO_LOCATION && currentLocationId < CM->numLocations() )
     {
-        auto gameString = CM->getLocationName<ChkdString>(currentLocationId, Chk::StrScope::Game);
-        auto editorString = CM->getLocationName<ChkdString>(currentLocationId, Chk::StrScope::Editor);
+        auto gameString = CM->getLocationName<ChkdString>(currentLocationId, Chk::Scope::Game);
+        auto editorString = CM->getLocationName<ChkdString>(currentLocationId, Chk::Scope::Editor);
         ChkdStringInputDialog::Result result = ChkdStringInputDialog::GetChkdString(getHandle(), gameString, editorString, Chk::StringUserFlag::Location, currentLocationId);
 
         if ( (result & ChkdStringInputDialog::Result::GameStringChanged) == ChkdStringInputDialog::Result::GameStringChanged )
         {
             if ( gameString )
-                CM->setLocationName<ChkdString>(currentLocationId, *gameString, Chk::StrScope::Game);
+                CM->setLocationName<ChkdString>(currentLocationId, *gameString, Chk::Scope::Game);
             else
-                CM->setLocationNameStringId(currentLocationId, Chk::StringId::NoString, Chk::StrScope::Game);
+                CM->setLocationNameStringId(currentLocationId, Chk::StringId::NoString, Chk::Scope::Game);
 
-            CM->deleteUnusedStrings(Chk::StrScope::Game);
+            CM->deleteUnusedStrings(Chk::Scope::Game);
         }
 
         if ( (result & ChkdStringInputDialog::Result::EditorStringChanged) == ChkdStringInputDialog::Result::EditorStringChanged )
         {
             if ( editorString )
-                CM->setLocationName<ChkdString>(currentLocationId, *editorString, Chk::StrScope::Editor);
+                CM->setLocationName<ChkdString>(currentLocationId, *editorString, Chk::Scope::Editor);
             else
-                CM->setLocationNameStringId(currentLocationId, Chk::StringId::NoString, Chk::StrScope::Editor);
+                CM->setLocationNameStringId(currentLocationId, Chk::StringId::NoString, Chk::Scope::Editor);
 
-            CM->deleteUnusedStrings(Chk::StrScope::Editor);
+            CM->deleteUnusedStrings(Chk::Scope::Editor);
         }
 
         if ( result > 0 )
@@ -381,7 +381,7 @@ void LocationWindow::LocationNameFocusLost()
         if ( auto locationName = editLocName.GetWinText() )
         {
             CM->replaceString<ChkdString>(locRef.stringId, *locationName);
-            CM->deleteUnusedStrings(Chk::StrScope::Both);
+            CM->deleteUnusedStrings(Chk::Scope::Both);
             CM->notifyChange(false);
             CM->refreshScenario();
         }
@@ -502,7 +502,6 @@ void LocationWindow::NotifyEditFocused(int idFrom, HWND hWndFrom)
         const Chk::Location & locRef = CM->getLocation(currentLocationId);
         switch ( idFrom )
         {
-            case Id::EditLocationName: preservedStat = locRef.stringId; break; // TODO: This is sketchy, replace this
             case Id::EditRawFlags: preservedStat = locRef.elevationFlags; break;
             case Id::EditLocationLeft: preservedStat = locRef.left; break;
             case Id::EditLocationTop: preservedStat = locRef.top; break;

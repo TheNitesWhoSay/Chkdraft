@@ -1,5 +1,8 @@
 #include "TreeViewControl.h"
+#include "WinUiEnums.h"
 #include <SimpleIcu.h>
+#include <CommCtrl.h>
+#include <windowsx.h>
 
 namespace WinLib {
 
@@ -82,13 +85,53 @@ namespace WinLib {
             hChild = TreeView_GetChild(getHandle(), hRoot);
         }
     }
+    
+    void TreeViewControl::SelectItem(HTREEITEM hItem)
+    {
+        TreeView_SelectItem(getHandle(), hItem);
+    }
+    
+    std::optional<LPARAM> TreeViewControl::GetSelData()
+    {
+        HTREEITEM selection = TreeView_GetSelection(getHandle());
+        if ( selection != NULL )
+        {
+            TVITEMEX item {};
+            item.mask = TVIF_HANDLE;
+            item.hItem = selection;
+            if ( TreeView_GetItem(getHandle(), &item) == TRUE )
+                return item.lParam;
+        }
+        return std::nullopt;
+    }
 
     LRESULT TreeViewControl::ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     {
-        if ( msg == WM_CHAR && (GetKeyState(VK_CONTROL) & 0x8000) )
-             return 0; // Prevent ctrl + key from causing beeps
-        else
-            return WindowControl::ControlProc(hWnd, msg, wParam, lParam);
+        switch ( msg )
+        {
+            case WM_LBUTTONDOWN:
+            {
+                TVHITTESTINFO test {};
+                test.pt.x = GET_X_LPARAM(lParam);
+                test.pt.y = GET_Y_LPARAM(lParam);
+                HTREEITEM item = (HTREEITEM)SendMessage(hWnd, TVM_HITTEST, (WPARAM)0, (LPARAM)&test);
+                if ( item != NULL )
+                {
+                    TVITEMEX itemInfo {};
+                    itemInfo.mask = TVIF_HANDLE | TVIF_STATE | TVIF_PARAM;
+                    itemInfo.hItem = item;
+                    if ( TreeView_GetItem(getHandle(), &itemInfo) == TRUE && (itemInfo.state & TVIS_SELECTED) == TVIS_SELECTED )
+                        SendMessage(WindowControl::getParent(), TV::WM_SELTREEITEM, (WPARAM)0, itemInfo.lParam);
+                }
+            }
+            break;
+
+            case WM_CHAR:
+                if ( (GetKeyState(VK_CONTROL) & 0x8000) )
+                    return 0; // Prevent ctrl + key from causing beeps
+                break;
+        }
+        return WindowControl::ControlProc(hWnd, msg, wParam, lParam);
     }
 
 }

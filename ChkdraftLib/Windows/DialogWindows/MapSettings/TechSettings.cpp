@@ -51,6 +51,15 @@ bool TechSettingsWindow::CreateThis(HWND hParent, u64 windowId)
         return false;
 }
 
+bool TechSettingsWindow::DestroyThis()
+{
+    ClassWindow::DestroyThis();
+    this->selectedTech = -1;
+    this->refreshing = false;
+    this->isDisabled = true;
+    return true;
+}
+
 void TechSettingsWindow::RefreshWindow()
 {
     refreshing = true;
@@ -183,7 +192,7 @@ void TechSettingsWindow::CreateSubWindows(HWND hWnd)
             ssPlayerTech << player+1;
 
         checkUsePlayerDefaults[player].CreateThis(hWnd, 215, 210+20*player, 150, 20, false, ssPlayerTech.str(), Id::CHECK_P1TECHDEFAULT+player);
-        dropPlayerTechSettings[player].CreateThis(hWnd, 460, 210+20*player, 120, 100, false, false, Id::DROP_P1TECHSETTINGS+player, playerTechSettings, defaultFont);
+        dropPlayerTechSettings[player].CreateThis(hWnd, 460, 210+20*player, 120, 100, false, false, Id::DROP_P1TECHSETTINGS+player, playerTechSettings);
     }
 
     DisableTechEditing();

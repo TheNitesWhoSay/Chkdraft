@@ -1,7 +1,6 @@
 #ifndef CLASSDIALOG_H
 #define CLASSDIALOG_H
 #include "WindowsItem.h"
-#include <CommCtrl.h>
 
 namespace WinLib {
 
@@ -35,7 +34,7 @@ namespace WinLib {
 
             /** When overidden, these methods serve as easy ways to process
             notifications/commands */
-            virtual void NotifyTreeSelChanged(LPARAM newValue); // Sent when a new tree item is selected
+            virtual void NotifyTreeItemSelected(LPARAM newValue); // Sent when a new tree item is selected
             virtual void NotifyButtonClicked(int idFrom, HWND hWndFrom); // Sent when a button or checkbox is clicked
             virtual void NotifyEditUpdated(int idFrom, HWND hWndFrom); // Sent when edit text changes, before redraw
             virtual void NotifyEditFocused(int idFrom, HWND hWndFrom); // Sent when an edit box receives focus
@@ -58,6 +57,7 @@ namespace WinLib {
 
         private:
 
+            bool modeless = false;
             bool allowEditNotify; // Used to prevent edit update recursion
             WNDPROC defaultProc; // Stores the default proc for the encapsulated dialog
 

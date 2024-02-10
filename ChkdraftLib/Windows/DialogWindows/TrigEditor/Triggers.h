@@ -18,6 +18,7 @@ class TriggersWindow : public WinLib::ClassWindow
         bool CreateThis(HWND hParent, u64 windowId);
         bool DestroyThis();
         void RefreshWindow(bool focus);
+        void RefreshGroupList();
         void DoSize();
 
         void DeleteSelection();
@@ -37,7 +38,6 @@ class TriggersWindow : public WinLib::ClassWindow
         bool SelectTrigListItem(int listIndex); // Attempts to select item at listIndex, updating currTrigger
 
         void CreateSubWindows(HWND hWnd);
-        void RefreshGroupList();
         void RefreshTrigList();
 
         /** Attempts to delete the item at listIndex and decrement higher item's trigger indexes
@@ -81,7 +81,7 @@ class TriggersWindow : public WinLib::ClassWindow
         PeerListBox listGroups;
         WinLib::ListBoxControl listTriggers;
         TextTrigGenerator textTrigGenerator; // Text trig generator for assisting trigger display
-        HDC trigListDC; // Trig list HDC for speeding up trigger measurement
+        std::optional<WinLib::DeviceContext> trigListDc; // Trig list HDC for speeding up trigger measurement
         std::hash<std::string> strHash; // A hasher to help generate tables
         struct CommentSize {
             std::string str;
@@ -90,13 +90,13 @@ class TriggersWindow : public WinLib::ClassWindow
         };
         std::unordered_multimap<size_t, CommentSize> commentSizeTable;
         std::unordered_multimap<size_t, WinLib::LineSize> trigLineSizeTable;
+        int countTillCachePurge;
 
         bool ShowTrigger(const Chk::Trigger & trigger); // Checks if trigger should currently be shown
         void ClearGroups();
-        bool GetTriggerDrawSize(HDC hDC, UINT & width, UINT & height, Scenario & chk, u32 triggerNum, const Chk::Trigger & trigger);
-        void DrawGroup(HDC hDC, RECT & rcItem, bool isSelected, u8 groupNum);
-        void DrawTrigger(HDC hDC, RECT & rcItem, bool isSelected, Scenario & chk, u32 triggerNum, const Chk::Trigger & trigger);
-        void PrepDoubleBuffer(HWND hWnd, HDC hDC);
+        bool GetTriggerDrawSize(const WinLib::DeviceContext & dc, UINT & width, UINT & height, Scenario & chk, u32 triggerNum, const Chk::Trigger & trigger);
+        void DrawGroup(const WinLib::DeviceContext & dc, RECT & rcItem, bool isSelected, u8 groupNum);
+        void DrawTrigger(const WinLib::DeviceContext & dc, RECT & rcItem, bool isSelected, Scenario & chk, u32 triggerNum, const Chk::Trigger & trigger);
 };
 
 #endif

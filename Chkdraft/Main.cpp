@@ -12,6 +12,9 @@ Chkdraft chkd; // The main instance of Chkdraft
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
+#ifdef _DEBUG
+    return chkd.Run(lpCmdLine, nCmdShow); // Forward the run command line params and the show options
+#else
     int result = 0;
     try {
         result = chkd.Run(lpCmdLine, nCmdShow); // Forward the run command line params and the show options
@@ -19,4 +22,5 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         logger.fatal() << "Unhandled exception: " << e.what() << std::endl;
     }
     return result;
+#endif
 }

@@ -29,7 +29,16 @@ bool MapSettingsWindow::CreateThis(HWND hParent)
 bool MapSettingsWindow::DestroyThis()
 {
     currTab = Tab::MapProperties;
+    ClassDialog::Hide();
+    mapPropertiesWindow.DestroyThis();
+    forcesWindow.DestroyThis();
+    unitSettingsWindow.DestroyThis();
+    upgradeSettingsWindow.DestroyThis();
+    techSettingsWindow.DestroyThis();
+    stringEditorWindow.DestroyThis();
+    soundEditorWindow.DestroyThis();
     ClassDialog::DestroyDialog();
+    this->currTab = Tab::MapProperties;
     return true;
 }
 
@@ -143,9 +152,9 @@ BOOL MapSettingsWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
                 };
 
                 tabs.FindThis(getHandle(), IDC_MAPSETTINGSTABS);
-                HANDLE icon = LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_PROGRAM_ICON), IMAGE_ICON, 16, 16, 0);
+                HICON icon = WinLib::ResourceManager::getIcon(IDI_PROGRAM_ICON, 16, 16);
                 tabs.SetSmallIcon(icon);
-                tabs.SetFont(defaultFont, false);
+                tabs.setDefaultFont(false);
                 
                 TCITEM item = { };
                 item.mask = TCIF_TEXT;
@@ -161,7 +170,7 @@ BOOL MapSettingsWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
                 techSettingsWindow.CreateThis(tabs.getHandle(), Id::WIN_TECHSETTINGS);
                 stringEditorWindow.CreateThis(tabs.getHandle(), Id::WIN_STRINGEDITOR);
                 soundEditorWindow.CreateThis(tabs.getHandle(), Id::WIN_SOUNDEDITOR);
-                ReplaceChildFonts(defaultFont);
+                WindowsItem::defaultChildFonts();
                 RedrawWindow(hWnd, NULL, NULL, RDW_INVALIDATE);
             }
             break;

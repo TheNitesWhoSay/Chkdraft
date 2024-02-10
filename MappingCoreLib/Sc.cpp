@@ -1,7 +1,12 @@
 #include "Sc.h"
+#include "../CrossCutLib/Logger.h"
 #include "MpqFile.h"
 #include "CascArchive.h"
+#include <algorithm>
 #include <chrono>
+#include <set>
+
+extern Logger logger;
 
 const std::string Sc::DataFile::starCraftFileName = "StarCraft.exe";
 const std::string Sc::DataFile::starDatFileName = "StarDat.mpq";
@@ -239,7 +244,7 @@ bool Sc::Unit::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles)
             dat.unitDirection[i], dat.shieldEnable[i], dat.shieldAmount[i], dat.hitPoints[i], dat.elevationLevel[i],
             dat.unknown[i], dat.sublabel[i], dat.compAIIdle[i], dat.humanAIIdle[i], dat.returntoIdle[i], dat.attackUnit[i],
             dat.attackMove[i], dat.groundWeapon[i], dat.maxGroundHits[i], dat.airWeapon[i], dat.maxAirHits[i], dat.aiInternal[i],
-            dat.specialAbilityFlags[i], dat.targetAcquisitionRange[i], dat.sightRange[i], dat.armorUpgrade[i], dat.unitSize[i],
+            dat.flags[i], dat.targetAcquisitionRange[i], dat.sightRange[i], dat.armorUpgrade[i], dat.unitSize[i],
             dat.armor[i], dat.rightClickAction[i], dat.readySound[i], dat.whatSoundStart[i], dat.whatSoundEnd[i],
             dat.pissSoundStart[i], dat.pissSoundEnd[i], dat.yesSoundStart[i], dat.yesSoundEnd[i],
             dat.starEditPlacementBox[i].width, dat.starEditPlacementBox[i].height, u16(0), u16(0),
@@ -252,14 +257,14 @@ bool Sc::Unit::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles)
     for ( ; i<DatFile::IdRange::From0To105+DatFile::IdRange::From106To201; i++ )
     {
         units.push_back(Sc::Unit::DatEntry {
-            dat.graphics[i], dat.subunit1[i], dat.subunit2[i], dat.infestation[i], dat.constructionAnimation[i],
+            dat.graphics[i], dat.subunit1[i], dat.subunit2[i], dat.infestation[i-106], dat.constructionAnimation[i],
             dat.unitDirection[i], dat.shieldEnable[i], dat.shieldAmount[i], dat.hitPoints[i], dat.elevationLevel[i],
             dat.unknown[i], dat.sublabel[i], dat.compAIIdle[i], dat.humanAIIdle[i], dat.returntoIdle[i], dat.attackUnit[i],
             dat.attackMove[i], dat.groundWeapon[i], dat.maxGroundHits[i], dat.airWeapon[i], dat.maxAirHits[i], dat.aiInternal[i],
-            dat.specialAbilityFlags[i], dat.targetAcquisitionRange[i], dat.sightRange[i], dat.armorUpgrade[i], dat.unitSize[i],
+            dat.flags[i], dat.targetAcquisitionRange[i], dat.sightRange[i], dat.armorUpgrade[i], dat.unitSize[i],
             dat.armor[i], dat.rightClickAction[i], u16(0), dat.whatSoundStart[i], dat.whatSoundEnd[i],
             u16(0), u16(0), u16(0), u16(0),
-            dat.starEditPlacementBox[i].width, dat.starEditPlacementBox[i].height, dat.addonHorizontal[i], dat.addonVertical[i],
+            dat.starEditPlacementBox[i].width, dat.starEditPlacementBox[i].height, dat.addonOffset[i-106].width, dat.addonOffset[i-106].height,
             dat.unitExtent[i].left, dat.unitExtent[i].up, dat.unitExtent[i].right, dat.unitExtent[i].down, dat.portrait[i], dat.mineralCost[i],
             dat.vespeneCost[i], dat.buildTime[i], dat.unknown1[i], dat.starEditGroupFlags[i], dat.supplyProvided[i], dat.supplyRequired[i],
             dat.spaceRequired[i], dat.spaceProvided[i], dat.buildScore[i], dat.destroyScore[i], dat.unitMapString[i], dat.broodWarUnitFlag[i],
@@ -273,7 +278,7 @@ bool Sc::Unit::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles)
             dat.unitDirection[i], dat.shieldEnable[i], dat.shieldAmount[i], dat.hitPoints[i], dat.elevationLevel[i],
             dat.unknown[i], dat.sublabel[i], dat.compAIIdle[i], dat.humanAIIdle[i], dat.returntoIdle[i], dat.attackUnit[i],
             dat.attackMove[i], dat.groundWeapon[i], dat.maxGroundHits[i], dat.airWeapon[i], dat.maxAirHits[i], dat.aiInternal[i],
-            dat.specialAbilityFlags[i], dat.targetAcquisitionRange[i], dat.sightRange[i], dat.armorUpgrade[i], dat.unitSize[i],
+            dat.flags[i], dat.targetAcquisitionRange[i], dat.sightRange[i], dat.armorUpgrade[i], dat.unitSize[i],
             dat.armor[i], dat.rightClickAction[i], u16(0), dat.whatSoundStart[i], dat.whatSoundEnd[i],
             u16(0), u16(0), u16(0), u16(0),
             dat.starEditPlacementBox[i].width, dat.starEditPlacementBox[i].height, u16(0), u16(0),
@@ -1603,7 +1608,200 @@ const std::vector<std::string> Sc::Terrain::TilesetNames = {
     "Twilight"
 };
 
-bool Sc::Terrain::Tiles::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, const std::string & tilesetName)
+void Sc::Terrain::Tiles::populateTerrainTypeMap(size_t tilesetIndex)
+{
+    const auto & compressedTerrainTypeMap = Isom::compressedTerrainTypeMaps[tilesetIndex];
+
+    size_t totalTerrainTypes = terrainTypes.size();
+    terrainTypeMap.assign(totalTerrainTypes*totalTerrainTypes, uint16_t(0));
+    std::vector<uint16_t> tempTypeMap(totalTerrainTypes*totalTerrainTypes, 0);
+    std::vector<uint16_t> rowData {};
+
+    // The compressedTerrainTypeMap maps terrain types to terrain types that isom searches start at, separated by zeroes
+    for ( size_t i=0; compressedTerrainTypeMap[i] != 0; ++i )
+    {
+        for ( size_t j=totalTerrainTypes*size_t(compressedTerrainTypeMap[i++]); compressedTerrainTypeMap[i] != 0; ++i,++j )
+            tempTypeMap[j] = compressedTerrainTypeMap[i];
+    }
+
+    // This expand the compressed type map to a square letting you use two types as x and y coordinates to get search start terrain types
+    for ( int i=int(totalTerrainTypes)-1; i>=0; --i )
+    {
+        rowData.assign(totalTerrainTypes, 0);
+        std::deque<uint16_t> terrainTypeStack { uint16_t(i) };
+        terrainTypeMap[totalTerrainTypes*i+terrainTypeStack[0]] = i;
+
+        while ( !terrainTypeStack.empty() )
+        {
+            uint16_t destRow = terrainTypeStack.front();
+            terrainTypeStack.pop_front();
+
+            size_t start = i*totalTerrainTypes;
+            for ( size_t j=destRow*totalTerrainTypes; tempTypeMap[j] != 0; ++j )
+            {
+                auto tempPath = tempTypeMap[j];
+                if ( terrainTypeMap[start+tempPath] == 0 )
+                {
+                    uint16_t nextValue = rowData[destRow] == 0 ? tempPath : rowData[destRow];
+                    terrainTypeStack.push_back(tempPath);
+                    terrainTypeMap[start+tempPath] = nextValue;
+                    rowData[tempPath] = nextValue;
+                }
+            }
+        }
+    }
+}
+
+void Sc::Terrain::Tiles::generateIsomLinks()
+{
+    size_t totalTileGroups = std::min(size_t(1024), tileGroups.size());
+    Span<TileGroup> tilesetCv5s((TileGroup*)&tileGroups[0], totalTileGroups);
+
+    std::vector<std::vector<uint16_t>> terrainTypeTileGroups(terrainTypes.size(), std::vector<uint16_t>{});
+    for ( uint16_t i=0; i<totalTileGroups; i +=2 )
+    {
+        if ( tilesetCv5s[i].terrainType > 0 )
+            terrainTypeTileGroups[tilesetCv5s[i].terrainType].push_back(i);
+    }
+
+    std::vector<Isom::TerrainTypeInfo> solidBrushes {};
+    std::vector<Isom::TerrainTypeInfo> otherTerrainTypes {};
+    size_t i = 1;
+    for ( ; i<=terrainTypes.size()/2; ++i )
+    {
+        if ( terrainTypes[i].isomValue != 0 )
+            solidBrushes.push_back(terrainTypes[i]);
+    }
+    for ( ; i<terrainTypes.size(); ++i )
+    {
+        if ( terrainTypes[i].isomValue != 0 )
+            otherTerrainTypes.push_back({uint16_t(i), terrainTypes[i].isomValue});
+    }
+    std::sort(solidBrushes.begin(), solidBrushes.end(), [](const Isom::TerrainTypeInfo & l, const Isom::TerrainTypeInfo & r) {
+        return l.isomValue < r.isomValue;
+    });
+    std::sort(otherTerrainTypes.begin(), otherTerrainTypes.end(), [](const Isom::TerrainTypeInfo & l, const Isom::TerrainTypeInfo & r) {
+        return l.isomValue < r.isomValue;
+    });
+
+    for ( const auto & solidBrush : solidBrushes )
+    {
+        while ( isomLinks.size() < size_t(solidBrush.isomValue) )
+            isomLinks.push_back(Isom::ShapeLinks{});
+
+        auto tileGroup = terrainTypeTileGroups[solidBrush.index][0];
+        const auto & links = tilesetCv5s[tileGroup].links;
+        isomLinks.push_back(
+            Isom::ShapeLinks{uint8_t(solidBrush.index),
+                {links.right, links.bottom, solidBrush.linkId},
+                {links.left, links.bottom, solidBrush.linkId},
+                {links.left, links.top, solidBrush.linkId},
+                {links.top, links.right, solidBrush.linkId}
+            }
+        );
+    }
+
+    size_t totalSolidBrushEntries = isomLinks.size();
+    while ( isomLinks.size() < otherTerrainTypes[0].isomValue )
+        isomLinks.push_back(Isom::ShapeLinks{});
+
+    for ( const auto & otherTerrainType : otherTerrainTypes )
+    {
+        // In the isomLink table there are 14 shapes/entries per terrain types that are not solid brushes
+        size_t terrainTypeIsomLinkStart = isomLinks.size();
+        for ( size_t i=0; i<14; ++i )
+            isomLinks.push_back(Isom::ShapeLinks{uint8_t(otherTerrainType.index)});
+
+        const auto & tileGroupIndexes = terrainTypeTileGroups[otherTerrainType.index]; // All tile group indexes that belong to this terrain type
+        Isom::TerrainTypeShapes & shapes = (Isom::TerrainTypeShapes &)isomLinks[terrainTypeIsomLinkStart]; // Treat these 14 entries as a shapes struct
+        Isom::ShapeTileGroup shapeTileGroups[14] {}; // Record all tile group indexes that get used as shape quadrants
+
+        for ( auto tileGroupIndex : tileGroupIndexes )
+        {
+            const auto & tileGroup = tilesetCv5s[tileGroupIndex];
+
+            bool noStackAbove = (tileGroup.stackConnections.top == 0);
+            for ( size_t shapeIndex=0; shapeIndex<Isom::shapes.size(); ++shapeIndex )
+            {
+                if ( !tileGroup.links.isShapeQuadrant() )
+                    continue; // Tile groups that have all hard links or no hard links do not refer to shape quadrants
+
+                // If this tile group matches any quadrants of this shape, update shape links & shapeTileGroups
+                const auto & checkShape = Isom::shapes[shapeIndex];
+                if ( checkShape.matches(Isom::Quadrant::TopLeft, tileGroup.links, noStackAbove) )
+                {
+                    shapes[shapeIndex].topLeft.right = tileGroup.links.right;
+                    shapes[shapeIndex].topLeft.bottom = tileGroup.links.bottom;
+                    shapeTileGroups[shapeIndex].topLeft = tileGroupIndex;
+                }
+                if ( checkShape.matches(Isom::Quadrant::TopRight, tileGroup.links, noStackAbove) )
+                {
+                    shapes[shapeIndex].topRight.left = tileGroup.links.left;
+                    shapes[shapeIndex].topRight.bottom = tileGroup.links.bottom;
+                    shapeTileGroups[shapeIndex].topRight = tileGroupIndex;
+                }
+                if ( checkShape.matches(Isom::Quadrant::BottomRight, tileGroup.links, noStackAbove) )
+                {
+                    shapes[shapeIndex].bottomRight.left = tileGroup.links.left;
+                    shapes[shapeIndex].bottomRight.top = tileGroup.links.top;
+                    shapeTileGroups[shapeIndex].bottomRight = tileGroupIndex;
+                }
+                if ( checkShape.matches(Isom::Quadrant::BottomLeft, tileGroup.links, noStackAbove) )
+                {
+                    shapes[shapeIndex].bottomLeft.top = tileGroup.links.top;
+                    shapes[shapeIndex].bottomLeft.right = tileGroup.links.right;
+                    shapeTileGroups[shapeIndex].bottomLeft = tileGroupIndex;
+                }
+            }
+        }
+
+        shapes.populateJutInEastWest(tilesetCv5s, shapeTileGroups);
+        shapes.populateEmptyQuadrantLinks();
+        shapes.populateHardcodedLinkIds();
+        shapes.populateLinkIdsToSolidBrushes(tilesetCv5s, shapeTileGroups, totalSolidBrushEntries, isomLinks);
+    }
+}
+
+void Sc::Terrain::Tiles::loadIsom(size_t tilesetIndex)
+{
+    Span<Isom::TerrainTypeInfo> terrainTypeInfo = Isom::tilesetTerrainTypes[tilesetIndex];
+    this->terrainTypes = terrainTypeInfo;
+    populateTerrainTypeMap(tilesetIndex);
+
+    for ( size_t i=0; i<tileGroups.size(); i+=2 )
+    {
+        const auto & groupLinks = tileGroups[i].links;
+        uint32_t left = uint32_t(groupLinks.left);
+        uint32_t top = uint32_t(groupLinks.top);
+        uint32_t right = uint32_t(groupLinks.right);
+        uint32_t bottom = uint32_t(groupLinks.bottom);
+
+        uint32_t tileGroupHash = (((left << 6 | top) << 6 | right) << 6 | bottom) << 6;
+        if ( left >= 48 || top >= 48 || right >= 48 || bottom >= 48 )
+            tileGroupHash |= tileGroups[i].terrainType;
+
+        auto existing = hashToTileGroup.find(tileGroupHash);
+        if ( existing != hashToTileGroup.end() )
+            existing->second.push_back(uint16_t(i));
+        else
+            hashToTileGroup.insert(std::make_pair(tileGroupHash, std::vector<uint16_t>{uint16_t(i)}));
+    }
+
+    generateIsomLinks();
+
+    for ( const auto & terrainType : terrainTypeInfo )
+    {
+        if ( terrainType.brushSortOrder >= 0 )
+            brushes.push_back(terrainType);
+    }
+    std::sort(brushes.begin(), brushes.end(), [&](const Isom::TerrainTypeInfo & l, const Isom::TerrainTypeInfo & r) {
+        return l.brushSortOrder < r.brushSortOrder;
+    });
+    defaultBrush = terrainTypeInfo[Isom::defaultBrushIndex[tilesetIndex]];
+}
+
+bool Sc::Terrain::Tiles::load(size_t tilesetIndex, const std::vector<ArchiveFilePtr> & orderedSourceFiles, const std::string & tilesetName, Sc::TblFilePtr statTxt,
+    std::array<u16, Sprite::TotalSprites> & doodadSpriteFlags, std::array<u16, Unit::TotalTypes> & doodadUnitFlags)
 {
     const std::string tilesetMpqDirectory = "tileset";
     const std::string mpqFilePath = makeMpqFilePath(tilesetMpqDirectory, tilesetName);
@@ -1613,6 +1811,7 @@ bool Sc::Terrain::Tiles::load(const std::vector<ArchiveFilePtr> & orderedSourceF
     const std::string vx4FilePath = makeExtMpqFilePath(mpqFilePath, "vx4");
     const std::string vx4exFilePath = makeExtMpqFilePath(mpqFilePath, "vx4ex");
     const std::string wpeFilePath = makeExtMpqFilePath(mpqFilePath, "wpe");
+    const std::string ddDataFilePath = makeExtMpqFilePath(makeMpqFilePath(mpqFilePath, "dddata"), "bin");
     
     auto cv5Data = Sc::Data::GetAsset(orderedSourceFiles, cv5FilePath);
     auto vf4Data = Sc::Data::GetAsset(orderedSourceFiles, vf4FilePath);
@@ -1620,8 +1819,9 @@ bool Sc::Terrain::Tiles::load(const std::vector<ArchiveFilePtr> & orderedSourceF
     bool isVx4ex = false;
     auto vx4Data = Sc::Data::GetAsset(orderedSourceFiles, isVx4ex, vx4exFilePath, vx4FilePath);
     auto wpeData = Sc::Data::GetAsset(orderedSourceFiles, wpeFilePath);
+    auto ddData = Sc::Data::GetAsset(orderedSourceFiles, ddDataFilePath);
 
-    if ( cv5Data && vf4Data && vr4Data && vx4Data && wpeData )
+    if ( cv5Data && vf4Data && vr4Data && vx4Data && wpeData && ddData )
     {
         if ( cv5Data->size() % sizeof(Sc::Terrain::TileGroup) == 0 &&
             vf4Data->size() % sizeof(Sc::Terrain::TileFlags) == 0 &&
@@ -1630,10 +1830,10 @@ bool Sc::Terrain::Tiles::load(const std::vector<ArchiveFilePtr> & orderedSourceF
             wpeData->size() == sizeof(Sc::Terrain::WpeDat) )
         {
             size_t numTileGroups = Cv5Dat::tileGroupsSize(cv5Data->size());
-            size_t numDoodads = Cv5Dat::doodadsSize(cv5Data->size());
             size_t numTileFlags = Vf4Dat::size(vf4Data->size());
             size_t numMiniTilePixels = Vr4Dat::size(vr4Data->size());
             size_t numTileGraphics = Vx4Dat::size(isVx4ex, vx4Data->size());
+            size_t totalDoodadDats = DdData::size(ddData->size());
 
             if ( numTileGroups > 0 )
             {
@@ -1642,14 +1842,6 @@ bool Sc::Terrain::Tiles::load(const std::vector<ArchiveFilePtr> & orderedSourceF
             }
             else
                 tileGroups.clear();
-
-            if ( numDoodads > 0 )
-            {
-                Doodad* rawDoodads = (Doodad*)&cv5Data.value()[Cv5Dat::MaxTileGroups];
-                doodads.assign(&rawDoodads[0], &rawDoodads[numDoodads]);
-            }
-            else
-                doodads.clear();
 
             if ( numTileFlags > 0 )
             {
@@ -1701,6 +1893,57 @@ bool Sc::Terrain::Tiles::load(const std::vector<ArchiveFilePtr> & orderedSourceF
             {
                 throw std::logic_error("Unrecognized color swap required to load system colors, please update the code!");
             }
+            staticSystemColorPalette = systemColorPalette;
+
+            if ( totalDoodadDats > 0 )
+            {
+                DoodadPlacibility* rawDoodadPlacibility = (DoodadPlacibility*)&ddData.value()[0];
+                doodadPlacibility.assign(&rawDoodadPlacibility[0], &rawDoodadPlacibility[totalDoodadDats]);
+            }
+            else
+                doodadPlacibility.clear();
+
+            for ( size_t tileGroupIndex=0; tileGroupIndex<tileGroups.size(); ++tileGroupIndex )
+            {
+                const auto & doodad = (const DoodadCv5 &)tileGroups[tileGroupIndex];
+                if ( doodad.index == 1 && doodad.doodadName != 0 )
+                {
+                    if ( doodad.overlayIndex != 0 )
+                    {
+                        if ( (doodad.flags & Doodad::Flags::DrawAsSprite) == Doodad::Flags::DrawAsSprite )
+                            doodadSpriteFlags[doodad.overlayIndex] = doodad.flags;
+                        else
+                            doodadUnitFlags[doodad.overlayIndex] = doodad.flags;
+                    }
+                    bool newGroup = true;
+                    for ( auto & existingGroup : doodadGroups )
+                    {
+                        if ( doodad.doodadName == existingGroup.nameIndex )
+                        {
+                            const auto & previousDoodad = (const DoodadCv5 &)tileGroups[existingGroup.doodadStartTileGroup.back()];
+                            if ( doodad.ddDataIndex != previousDoodad.ddDataIndex )
+                            {
+                                doodadIdToTileGroup.try_emplace(doodad.ddDataIndex, u16(tileGroupIndex));
+                                existingGroup.doodadStartTileGroup.push_back(u16(tileGroupIndex));
+                            }
+
+                            newGroup = false;
+                            break;
+                        }
+                    }
+
+                    if ( newGroup )
+                    {
+                        doodadIdToTileGroup.try_emplace(doodad.ddDataIndex, u16(tileGroupIndex));
+                        doodadGroups.push_back({doodad.doodadName, statTxt == nullptr ? "" : statTxt->getString(doodad.doodadName), {u16(tileGroupIndex)}});
+                    }
+                }
+            }
+            std::sort(doodadGroups.begin(), doodadGroups.end(), [&](auto & l, auto & r) {
+                return l.name < r.name;
+            });
+
+            loadIsom(tilesetIndex);
 
             return true;
         }
@@ -1713,6 +1956,15 @@ bool Sc::Terrain::Tiles::load(const std::vector<ArchiveFilePtr> & orderedSourceF
     return false;
 }
 
+std::optional<uint16_t> Sc::Terrain::Tiles::getDoodadGroupIndex(uint16_t doodadId) const
+{
+    auto found = doodadIdToTileGroup.find(doodadId);
+    if ( found != doodadIdToTileGroup.end() )
+        return found->second;
+    else
+        return std::nullopt;
+}
+
 const Sc::Terrain::Tiles & Sc::Terrain::get(const Tileset & tileset) const
 {
     if ( tileset < NumTilesets )
@@ -1721,12 +1973,14 @@ const Sc::Terrain::Tiles & Sc::Terrain::get(const Tileset & tileset) const
         return tilesets[tileset % NumTilesets];
 }
 
-bool Sc::Terrain::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles)
+bool Sc::Terrain::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, Sc::TblFilePtr statTxt)
 {
     auto start = std::chrono::high_resolution_clock::now();
     bool success = true;
+    this->doodadSpriteFlags.fill(0);
+    this->doodadUnitFlags.fill(0);
     for ( size_t i=0; i<NumTilesets; i++ )
-        success &= tilesets[i].load(orderedSourceFiles, TilesetNames[i]);
+        success &= tilesets[i].load(i, orderedSourceFiles, TilesetNames[i], statTxt, doodadSpriteFlags, doodadUnitFlags);
     
     auto finish = std::chrono::high_resolution_clock::now();
     logger.debug() << "Terrain loading completed in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
@@ -1739,6 +1993,20 @@ const std::array<Sc::SystemColor, Sc::NumColors> & Sc::Terrain::getColorPalette(
         return tilesets[tileset].systemColorPalette;
     else
         return tilesets[tileset % Terrain::NumTilesets].systemColorPalette;
+}
+
+const std::array<Sc::SystemColor, Sc::NumColors> & Sc::Terrain::getStaticColorPalette(Tileset tileset) const
+{
+    if ( tileset < Terrain::NumTilesets )
+        return tilesets[tileset].staticSystemColorPalette;
+    else
+        return tilesets[tileset % Terrain::NumTilesets].staticSystemColorPalette;
+}
+
+void Sc::Terrain::mergeSpriteFlags(const Sc::Unit & unitData)
+{
+    for ( size_t i=0; i<Sc::Unit::TotalTypes; ++i )
+        doodadSpriteFlags[unitData.getFlingy(unitData.getUnit(Sc::Unit::Type(i)).graphics).sprite] = doodadUnitFlags[i];
 }
 
 bool Sc::Weapon::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles)
@@ -1934,25 +2202,187 @@ bool Sc::Sprite::Grp::framesAreValid(const std::string & assetArchivePath) const
     return true;
 }
 
-bool Sc::Sprite::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles)
+std::vector<std::string_view> Sc::Sprite::OpName {
+    "playfram",
+    "playframtile",
+    "sethorpos",
+    "setvertpos",
+    "setpos",
+    "wait",
+    "waitrand",
+    "goto_",
+    "imgol",
+    "imgul",
+    "imgolorig",
+    "switchul",
+    "unknown_0c",
+    "imgoluselo",
+    "imguluselo",
+    "sprol",
+    "highsprol",
+    "lowsprul",
+    "uflunstable",
+    "spruluselo",
+    "sprul",
+    "sproluselo",
+    "end",
+    "setflipstate",
+    "playsnd",
+    "playsndrand",
+    "playsndbtwn",
+    "domissiledmg",
+    "attackmelee",
+    "followmaingraphic",
+    "randcondjmp",
+    "turnccwise",
+    "turncwise",
+    "turn1cwise",
+    "turnrand",
+    "setspawnframe",
+    "sigorder",
+    "attackwith",
+    "attack",
+    "castspell",
+    "useweapon",
+    "move",
+    "gotorepeatattk",
+    "engframe",
+    "engset",
+    "unknown_2d",
+    "nobrkcodestart",
+    "nobrkcodeend",
+    "ignorerest",
+    "attkshiftproj",
+    "tmprmgraphicstart",
+    "tmprmgraphicend",
+    "setfldirect",
+    "call",
+    "return_",
+    "setflspeed",
+    "creategasoverlays",
+    "pwrupcondjmp",
+    "trgtrangecondjmp",
+    "trgtarccondjmp",
+    "curdirectcondjmp",
+    "imgulnextid",
+    "unknown_3e",
+    "liftoffcondjmp",
+    "warpoverlay",
+    "orderdone",
+    "grdsprol",
+    "unknown_43",
+    "dogrddamage"
+};
+
+std::vector<std::vector<Sc::Sprite::ParamType>> Sc::Sprite::OpParams {
+    /*          playfram */ {ParamType::frame},
+    /*      playframtile */ {ParamType::frame},
+    /*         sethorpos */ {ParamType::sbyte},
+    /*        setvertpos */ {ParamType::sbyte},
+    /*            setpos */ {ParamType::sbyte, ParamType::sbyte},
+    /*              wait */ {ParamType::byte},
+    /*          waitrand */ {ParamType::byte, ParamType::byte},
+    /*             goto_ */ {ParamType::label},
+    /*             imgol */ {ParamType::imageid, ParamType::sbyte, ParamType::sbyte},
+    /*             imgul */ {ParamType::imageid, ParamType::sbyte, ParamType::sbyte},
+    /*         imgolorig */ {ParamType::imageid},
+    /*          switchul */ {ParamType::imageid},
+    /*        unknown_0c */ {},
+    /*        imgoluselo */ {ParamType::imageid, ParamType::sbyte, ParamType::sbyte},
+    /*        imguluselo */ {ParamType::imageid, ParamType::sbyte, ParamType::sbyte},
+    /*             sprol */ {ParamType::spriteid, ParamType::sbyte, ParamType::sbyte},
+    /*         highsprol */ {ParamType::spriteid, ParamType::sbyte, ParamType::sbyte},
+    /*          lowsprul */ {ParamType::spriteid, ParamType::sbyte, ParamType::sbyte},
+    /*       uflunstable */ {ParamType::flingyid},
+    /*        spruluselo */ {ParamType::spriteid, ParamType::sbyte, ParamType::sbyte},
+    /*             sprul */ {ParamType::spriteid, ParamType::sbyte, ParamType::sbyte},
+    /*        sproluselo */ {ParamType::spriteid, ParamType::overlayid},
+    /*               end */ {},
+    /*      setflipstate */ {ParamType::flipstate},
+    /*           playsnd */ {ParamType::soundid},
+    /*       playsndrand */ {ParamType::sounds, ParamType::soundid},
+    /*       playsndbtwn */ {ParamType::soundid, ParamType::soundid},
+    /*      domissiledmg */ {},
+    /*       attackmelee */ {ParamType::sounds, ParamType::soundid},
+    /* followmaingraphic */ {},
+    /*       randcondjmp */ {ParamType::byte, ParamType::label},
+    /*        turnccwise */ {ParamType::byte},
+    /*         turncwise */ {ParamType::byte},
+    /*        turn1cwise */ {},
+    /*          turnrand */ {ParamType::byte},
+    /*     setspawnframe */ {ParamType::byte},
+    /*          sigorder */ {ParamType::signalid},
+    /*        attackwith */ {ParamType::weapon},
+    /*            attack */ {},
+    /*         castspell */ {},
+    /*         useweapon */ {ParamType::weaponid},
+    /*              move */ {ParamType::byte},
+    /*    gotorepeatattk */ {},
+    /*          engframe */ {ParamType::bframe},
+    /*            engset */ {ParamType::frameset},
+    /*        unknown_2d */ {},
+    /*    nobrkcodestart */ {},
+    /*      nobrkcodeend */ {},
+    /*        ignorerest */ {},
+    /*     attkshiftproj */ {ParamType::byte},
+    /* tmprmgraphicstart */ {},
+    /*   tmprmgraphicend */ {},
+    /*       setfldirect */ {ParamType::byte},
+    /*              call */ {ParamType::label},
+    /*           return_ */ {},
+    /*        setflspeed */ {ParamType::speed},
+    /* creategasoverlays */ {ParamType::gasoverlay},
+    /*      pwrupcondjmp */ {ParamType::label},
+    /*  trgtrangecondjmp */ {ParamType::short_, ParamType::label},
+    /*    trgtarccondjmp */ {ParamType::short_, ParamType::short_, ParamType::label},
+    /*  curdirectcondjmp */ {ParamType::short_, ParamType::short_, ParamType::label},
+    /*       imgulnextid */ {ParamType::sbyte, ParamType::sbyte},
+    /*        unknown_3e */ {},
+    /*    liftoffcondjmp */ {ParamType::label},
+    /*       warpoverlay */ {ParamType::frame},
+    /*         orderdone */ {ParamType::signalid},
+    /*          grdsprol */ {ParamType::spriteid, ParamType::sbyte, ParamType::sbyte},
+    /*        unknown_43 */ {},
+    /*       dogrddamage */ {}
+};
+
+std::vector<size_t> Sc::Sprite::ParamSize {
+    /* bframe */ 1,
+    /* frame */ 2,
+    /* frameset */ 1,
+    /* byte */ 1,
+    /* sbyte */ 1,
+    /* label */ 2,
+    /* imageid */ 2,
+    /* spriteid */ 2,
+    /* flingyid */ 2,
+    /* overlayid */ 1,
+    /* flipstate */ 1,
+    /* soundid */ 2,
+    /* sounds */ 1,
+    /* signalid */ 1,
+    /* weapon */ 1,
+    /* weaponid */ 1,
+    /* speed */ 2,
+    /* gasoverlay */ 1,
+    /* short_ */ 2
+};
+
+bool Sc::Sprite::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, Sc::TblFilePtr imagesTbl)
 {
     logger.debug("Loading Sprites...");
     auto start = std::chrono::high_resolution_clock::now();
-    TblFile tblFile;
-    if ( !tblFile.load(orderedSourceFiles, "arr\\images.tbl") )
-    {
-        logger.info() << "Failed to load arr\\images.tbl" << std::endl;
-        return false;
-    }
+
+    this->imagesTbl = imagesTbl;
 
     Sc::Sprite::Grp blankGrp;
     blankGrp.makeBlank();
     
     grps.push_back(blankGrp);
-    size_t numStrings = tblFile.numStrings();
+    size_t numStrings = imagesTbl->numStrings();
     for ( size_t i=1; i<=numStrings; i++ )
     {
-        const std::string & imageFilePath = tblFile.getString(i);
+        const std::string & imageFilePath = imagesTbl->getString(i);
         Sc::Sprite::Grp grp;
         if ( getMpqFileExtension(imageFilePath).compare(".grp") == 0 )
         {
@@ -2016,8 +2446,118 @@ bool Sc::Sprite::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles)
     }
     
     auto finish = std::chrono::high_resolution_clock::now();
+
+    auto iscriptFile = Sc::Data::GetAsset(orderedSourceFiles, "scripts\\ISCRIPT.BIN");
+    if ( !iscriptFile )
+    {
+        logger.error() << "Failed to load scripts\\ISCRIPT.BIN" << std::endl;
+        return false;
+    }
+    this->iscript.swap(*iscriptFile);
+
+    IScriptDatFileHeader* scriptHeader = (IScriptDatFileHeader*)&iscript[0];
+    size_t isIdTableOffset = size_t(scriptHeader->isIdTableOffset);
+    IScriptIdTableEntry* iScriptIdTable = (IScriptIdTableEntry*)&iscript[isIdTableOffset];
+    for ( ; iScriptIdTable->id != 0xFFFF; ++iScriptIdTable )
+    {
+        u16 id = iScriptIdTable->id;
+        bool idIncludesFlip = false;
+        bool idIncludesUnflip = false;
+        size_t animationsOffset = size_t(iScriptIdTable->offset);
+        if ( animationsOffset >= iscript.size() )
+        {
+            logger.error() << "Failed to parse scripts\\ISCRIPT.BIN" << std::endl;
+            return false;
+        }
+        IScriptAnimationHeader* iScriptAnimationHeader = (IScriptAnimationHeader*)&iscript[animationsOffset];
+        size_t totalAnimations = size_t(iScriptAnimationHeader->animationCount & 0xFFFE) + 2;
+        //logger << id << " has " << totalAnimations << " animations" << std::endl;
+        for ( size_t animationIndex=0; animationIndex < totalAnimations; ++animationIndex )
+        {
+            size_t animationOffset = iScriptAnimationHeader->animationsOffset[animationIndex];
+            if ( animationOffset > 0 )
+            {
+                size_t currOffset = animationOffset;
+                if ( currOffset >= iscript.size() )
+                {
+                    logger.error() << "Failed to parse scripts\\ISCRIPT.BIN" << std::endl;
+                    return false;
+                }
+                //logger << currOffset << ": " << std::endl;
+
+                if ( currOffset < iscript.size() )
+                {
+                    IScriptAnimation* animation = (IScriptAnimation*)&iscript[currOffset];
+                    std::set<size_t> visitedOffsets {};
+                    visitedOffsets.insert(currOffset);
+                    if ( !loadAnimation(animation, currOffset, idIncludesFlip, idIncludesUnflip, visitedOffsets) )
+                        return false;
+                }
+                else
+                {
+                    logger.error() << "Failed to parse scripts\\ISCRIPT.BIN" << std::endl;
+                    return false;
+                }
+            }
+        }
+        if ( idIncludesFlip && !idIncludesUnflip )
+            iscriptIdFlipsGrp.insert(id);
+    }
+
     logger.debug() << "Sprite loading completed in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
     return true;
+}
+
+bool Sc::Sprite::loadAnimation(IScriptAnimation* animation, size_t currOffset, bool & idIncludesFlip, bool & idIncludesUnflip, std::set<size_t> & visitedOffsets)
+{
+    for ( ; ; )
+    {
+        if ( currOffset >= iscript.size() )
+            return true;
+        Op code = Op(animation->code);
+        ++currOffset; // 1-byte code
+        //std::string opName = code < OpName.size() ? std::string(OpName[code]) : std::to_string(int(code));
+        //logger << "  " << opName << ", ";
+        if ( code < OpParams.size() )
+        {
+            auto & opCodeParams = OpParams[code];
+            if ( code == Op::setflipstate && iscript[currOffset] == 1 )
+                idIncludesFlip = true;
+            else if ( code == Op::setflipstate && iscript[currOffset] == 0 )
+                idIncludesUnflip = true;
+            else if ( code == Op::end || code == Op::return_ )
+                return true;
+            else if ( code == Op::goto_ ) // TODO: There are more such jump codes
+            {
+                u16 dest = (u16 &)iscript[currOffset];
+                if ( dest > iscript.size() )
+                {
+                    logger.error() << "Failed to parse scripts\\ISCRIPT.BIN" << std::endl;
+                    return true;
+                }
+                else if ( visitedOffsets.find(dest) == visitedOffsets.end() )
+                {
+                    visitedOffsets.insert(dest);
+                    IScriptAnimation* subAnimation = (IScriptAnimation*)&iscript[dest];
+                    if ( !loadAnimation(subAnimation, dest, idIncludesFlip, idIncludesUnflip, visitedOffsets) )
+                        return false;
+                }
+            }
+            
+            // Move currOffset past all the parameters
+            for ( int param=0; param<opCodeParams.size(); ++param )
+            {
+                auto currParam = opCodeParams[param];
+                auto paramSize = ParamSize[size_t(currParam)];
+                u16 paramValue = paramSize == 1 ? iscript[currOffset] : (u16 &)iscript[currOffset];
+                //logger << paramValue << ", ";
+                currOffset += paramSize;
+            }
+            if ( currOffset < iscript.size() )
+                animation = (IScriptAnimation*)&iscript[currOffset];
+        }
+        //logger << std::endl;
+    }
 }
 
 const Sc::Sprite::Grp & Sc::Sprite::getGrp(size_t grpIndex)
@@ -2057,6 +2597,11 @@ size_t Sc::Sprite::numImages() const
 size_t Sc::Sprite::numSprites() const
 {
     return sprites.size();
+}
+
+bool Sc::Sprite::imageFlipped(u16 imageId) const
+{
+    return this->iscriptIdFlipsGrp.find(this->images[imageId].iScriptId) != this->iscriptIdFlipsGrp.end();
 }
 
 bool Sc::Upgrade::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles)
@@ -2159,9 +2704,9 @@ const Sc::Tech::DatEntry & Sc::Tech::getTech(Type techType) const
 
 const std::vector<std::string> Sc::Sound::virtualSoundPaths = {
     "sound\\Zerg\\Drone\\ZDrErr00.WAV",
-    "sound\\Misc\\Buzz.wav (1)",
+    "sound\\Misc\\Buzz.wav",
     "sound\\Misc\\PError.WAV",
-    "sound\\Misc\\ZBldgPlc.wav (1)",
+    "sound\\Misc\\ZBldgPlc.wav",
     "sound\\Misc\\TBldgPlc.wav",
     "sound\\Misc\\PBldgPlc.wav",
     "sound\\Misc\\ExploLrg.wav",
@@ -2240,10 +2785,8 @@ const std::vector<std::string> Sc::Sound::virtualSoundPaths = {
     "sound\\Bullet\\HKMISSLE.wav",
     "sound\\Bullet\\TGoFi200.wav",
     "sound\\Bullet\\TPhFi200.wav",
-    "sound\\Bullet\\TNsFir00.wav (1)",
-    "sound\\Bullet\\TNsFir00.wav (2)",
+    "sound\\Bullet\\TNsFir00.wav",
     "sound\\Bullet\\TNsHit00.wav",
-    "sound\\Bullet\\PhoAtt00.wav",
     "sound\\Bullet\\PhoHit00.wav",
     "sound\\Bullet\\PSIBLADE.wav",
     "sound\\Bullet\\PSIBOLT.wav",
@@ -2261,8 +2804,6 @@ const std::vector<std::string> Sc::Sound::virtualSoundPaths = {
     "sound\\Bullet\\LaserB.wav",
     "sound\\Bullet\\pTrFir00.wav",
     "sound\\Bullet\\pTrFir01.wav",
-    "sound\\Bullet\\pzeFir00.wav",
-    "sound\\Bullet\\tbaFir00.wav",
     "sound\\Bullet\\tvuFir00.wav",
     "sound\\Bullet\\tvuHit00.wav",
     "sound\\Bullet\\tvuHit01.wav",
@@ -2281,7 +2822,7 @@ const std::vector<std::string> Sc::Sound::virtualSoundPaths = {
     "sound\\Terran\\Advisor\\TAdUpd01.WAV",
     "sound\\Protoss\\Advisor\\PAdUpd01.WAV",
     "sound\\Zerg\\Advisor\\ZAdUpd02.WAV",
-    "sound\\Terran\\Advisor\\TAdUpd02.WAV (1)",
+    "sound\\Terran\\Advisor\\TAdUpd02.WAV",
     "sound\\Protoss\\Advisor\\PAdUpd02.WAV",
     "sound\\Terran\\Advisor\\TAdUpd03.WAV",
     "sound\\Zerg\\Advisor\\ZAdUpd04.WAV",
@@ -2289,22 +2830,15 @@ const std::vector<std::string> Sc::Sound::virtualSoundPaths = {
     "sound\\Protoss\\Advisor\\PAdUpd04.WAV",
     "sound\\Terran\\Advisor\\TAdUpd05.WAV",
     "sound\\Terran\\Advisor\\TAdUpd06.WAV",
-    "sound\\Terran\\Advisor\\TAdUpd02.WAV (2)",
     "sound\\Protoss\\Advisor\\PAdUpd06.WAV",
     "sound\\Terran\\Advisor\\TAdUpd07.WAV",
     "sound\\Zerg\\Bldg\\ZChRdy00.WAV",
     "sound\\Terran\\SCV\\TSCUpd00.WAV",
-    "sound\\Zerg\\DRONE\\ZDrErr00.WAV (1)",
-    "sound\\Zerg\\DRONE\\ZDrErr00.WAV (2)",
-    "sound\\Misc\\Buzz.wav (2)",
+    "sound\\Zerg\\DRONE\\ZDrErr00.WAV",
     "sound\\Misc\\PError.wav",
-    "sound\\Misc\\ZBldgPlc.wav (2)",
-    "sound\\Terran\\Advisor\\tAdErr04.WAV [1]",
-    "sound\\Terran\\Advisor\\tAdErr03.WAV (1)",
-    "sound\\Terran\\Advisor\\tAdErr03.WAV (2)",
-    "sound\\Terran\\Advisor\\tAdErr04.WAV [2]",
-    "sound\\Zerg\\Advisor\\ZAdErr00.WAV (1)",
-    "sound\\Zerg\\Advisor\\ZAdErr00.WAV (2)",
+    "sound\\Terran\\Advisor\\tAdErr04.WAV",
+    "sound\\Terran\\Advisor\\tAdErr03.WAV",
+    "sound\\Zerg\\Advisor\\ZAdErr00.WAV",
     "sound\\Terran\\Advisor\\tAdErr00.WAV",
     "sound\\Protoss\\Advisor\\PAdErr00.WAV",
     "sound\\Zerg\\Advisor\\ZAdErr01.WAV",
@@ -2317,10 +2851,8 @@ const std::vector<std::string> Sc::Sound::virtualSoundPaths = {
     "sound\\Terran\\Advisor\\tAdErr06.WAV",
     "sound\\Protoss\\Advisor\\PAdErr06.WAV",
     "sound\\Terran\\SCV\\TSCErr01.WAV",
-    "sound\\Terran\\Advisor\\tAdErr04.WAV [3]",
     "sound\\Protoss\\PROBE\\PPrErr00.WAV",
     "sound\\Terran\\SCV\\TSCErr00.WAV",
-    "sound\\Terran\\Advisor\\tAdErr04.WAV [4]",
     "sound\\Protoss\\PROBE\\PPrErr01.WAV",
     "sound\\glue\\mousedown2.wav",
     "sound\\glue\\mouseover.wav",
@@ -2640,7 +3172,7 @@ const std::vector<std::string> Sc::Sound::virtualSoundPaths = {
     "sound\\Protoss\\Bldg\\pGcWht00.WAV",
     "sound\\Protoss\\Bldg\\PbaAct00.wav",
     "sound\\Misc\\Button.WAV",
-    "sound\\Protoss\\Bldg\\pNaWht00.WAV (1)",
+    "sound\\Protoss\\Bldg\\pNaWht00.WAV",
     "sound\\Protoss\\Bldg\\pNeWht00.WAV",
     "sound\\Protoss\\Bldg\\pPBWht00.WAV",
     "sound\\Misc\\UTmWht00.WAV",
@@ -2759,7 +3291,7 @@ const std::vector<std::string> Sc::Sound::virtualSoundPaths = {
     "sound\\Protoss\\PROBE\\PPrAtt00.WAV",
     "sound\\Protoss\\PROBE\\PPrAtt01.WAV",
     "sound\\Protoss\\PROBE\\PPrMin00.WAV",
-    "sound\\Protoss\\PROBE\\PPrPss00.WAV (1)",
+    "sound\\Protoss\\PROBE\\PPrPss00.WAV",
     "sound\\Protoss\\PROBE\\PPrPss01.WAV",
     "sound\\Protoss\\PROBE\\PPrPss02.WAV",
     "sound\\Protoss\\PROBE\\PPrPss03.WAV",
@@ -2772,9 +3304,7 @@ const std::vector<std::string> Sc::Sound::virtualSoundPaths = {
     "sound\\Protoss\\PROBE\\PPrYes02.WAV",
     "sound\\Protoss\\PROBE\\PPrYes03.WAV",
     "sound\\Protoss\\INTERCEP\\PInLau00.WAV",
-    "sound\\Protoss\\PROBE\\PPrPss00.WAV (2)",
-    "sound\\Protoss\\TEMPLAR\\PTeSum00.WAV (1)",
-    "sound\\Protoss\\TEMPLAR\\PTeSum00.WAV (2)",
+    "sound\\Protoss\\TEMPLAR\\PTeSum00.WAV",
     "sound\\Protoss\\TEMPLAR\\PTeHal00.WAV",
     "sound\\Protoss\\TEMPLAR\\PTeHal01.WAV",
     "sound\\Protoss\\TEMPLAR\\PTeSto00.WAV",
@@ -2922,7 +3452,6 @@ const std::vector<std::string> Sc::Sound::virtualSoundPaths = {
     "sound\\Zerg\\Bldg\\ZLrWht00.WAV",
     "sound\\Zerg\\Bldg\\ZLuWht00.WAV",
     "sound\\Zerg\\Bldg\\ZMcWht00.WAV",
-    "sound\\Protoss\\Bldg\\pNaWht00.WAV (2)",
     "sound\\Zerg\\Bldg\\ZMhWht00.WAV",
     "sound\\Zerg\\Bldg\\ZNeWht00.WAV",
     "sound\\Zerg\\Bldg\\ZNyWht00.WAV",
@@ -2956,8 +3485,7 @@ const std::vector<std::string> Sc::Sound::virtualSoundPaths = {
     "sound\\Zerg\\BROODLING\\ZBrYes00.WAV",
     "sound\\Zerg\\BROODLING\\ZBrYes01.WAV",
     "sound\\Zerg\\BROODLING\\ZBrYes02.WAV",
-    "sound\\Zerg\\BUGGUY\\ZBGRdy00.wav (1)",
-    "sound\\Zerg\\BUGGUY\\ZBGRdy00.wav (2)",
+    "sound\\Zerg\\BUGGUY\\ZBGRdy00.wav",
     "sound\\Zerg\\BUGGUY\\ZBGPss00.wav",
     "sound\\Zerg\\BUGGUY\\ZBGPss01.wav",
     "sound\\Zerg\\BUGGUY\\ZBGPss02.wav",
@@ -3006,7 +3534,6 @@ const std::vector<std::string> Sc::Sound::virtualSoundPaths = {
     "sound\\Zerg\\DRONE\\ZDrYes04.WAV",
     "sound\\Zerg\\DRONE\\ZDrMin00.wav",
     "sound\\Zerg\\Larva\\ZLaDth00.WAV",
-    "sound\\Terran\\Advisor\\tAdErr04.WAV [5]",
     "sound\\Zerg\\Larva\\ZLaPss00.WAV",
     "sound\\Zerg\\Larva\\ZLaWht00.WAV",
     "sound\\Zerg\\Guardian\\ZGuDth00.WAV",
@@ -3223,7 +3750,6 @@ const std::vector<std::string> Sc::Sound::virtualSoundPaths = {
     "sound\\Protoss\\Darchon\\ParaAttk.wav",
     "sound\\Protoss\\Darchon\\Parahit.wav",
     "sound\\Protoss\\DARCHON\\PDaRdy00.WAV",
-    "sound\\Protoss\\DARCHON\\PDrDth00.WAV",
     "sound\\Protoss\\DARCHON\\PDaPss00.WAV",
     "sound\\Protoss\\DARCHON\\PDaPss01.WAV",
     "sound\\Protoss\\DARCHON\\PDaPss02.WAV",
@@ -3402,6 +3928,394 @@ bool Sc::Pcx::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, const
     return false;
 }
 
+void Sc::Isom::TerrainTypeShapes::populateJutInEastWest(Span<TileGroup> tilesetCv5s, Span<ShapeTileGroup> shapeTileGroups) {
+    // The right sides of JutInE are not always present in CV5, when missing they're filled by a merge of EdgeNe/EdgeSe
+    if ( jutInEast.topRight.left == Link::None )
+    {
+        jutInEast.topRight.left = tilesetCv5s[shapeTileGroups[Shape::EdgeNorthEast].bottomLeft].links.left;
+        jutInEast.topRight.bottom = tilesetCv5s[shapeTileGroups[Shape::EdgeNorthEast].bottomLeft].links.bottom;
+        jutInEast.bottomRight.left = tilesetCv5s[shapeTileGroups[Shape::EdgeSouthEast].topLeft].links.left;
+        jutInEast.bottomRight.top = tilesetCv5s[shapeTileGroups[Shape::EdgeSouthEast].topLeft].links.top;
+    }
+
+    // The left sides of JutInW are not always present in CV5, when missing they're filled in by a merge of EdgeNw/EdgeSw
+    if ( jutInWest.topLeft.right == Link::None )
+    {
+        jutInWest.topLeft.right = tilesetCv5s[shapeTileGroups[Shape::EdgeNorthWest].bottomRight].links.right;
+        jutInWest.topLeft.bottom = tilesetCv5s[shapeTileGroups[Shape::EdgeNorthWest].bottomRight].links.bottom;
+        jutInWest.bottomLeft.top = tilesetCv5s[shapeTileGroups[Shape::EdgeSouthWest].topRight].links.top;
+        jutInWest.bottomLeft.right = tilesetCv5s[shapeTileGroups[Shape::EdgeSouthWest].topRight].links.right;
+    }
+}
+
+// Populate the links in quadrants that are not part of the primary shape using adjacent link values
+void Sc::Isom::TerrainTypeShapes::populateEmptyQuadrantLinks() {
+    edgeNorthWest.topLeft.right = edgeNorthWest.topRight.left;
+    edgeNorthWest.topLeft.bottom = edgeNorthWest.bottomLeft.top;
+
+    edgeNorthEast.topRight.left = edgeNorthEast.topLeft.right;
+    edgeNorthEast.topRight.bottom = edgeNorthEast.bottomRight.top;
+
+    edgeSouthEast.bottomRight.left = edgeSouthEast.bottomLeft.right;
+    edgeSouthEast.bottomRight.top = edgeSouthEast.topRight.bottom;
+
+    edgeSouthWest.bottomLeft.top = edgeSouthWest.topLeft.bottom;
+    edgeSouthWest.bottomLeft.right = edgeSouthWest.bottomRight.left;
+
+    jutOutNorth.topLeft.bottom = jutOutNorth.bottomLeft.top;
+    jutOutNorth.topLeft.right = jutOutNorth.topLeft.bottom;
+    jutOutNorth.topRight.bottom = jutOutNorth.bottomRight.top;
+    jutOutNorth.topRight.left = jutOutNorth.topRight.bottom;
+
+    auto fillLink = jutOutEast.topLeft.right;
+    jutOutEast.topRight.left = fillLink;
+    jutOutEast.topRight.bottom = fillLink;
+    jutOutEast.bottomRight.left = fillLink;
+    jutOutEast.bottomRight.top = fillLink;
+                
+    jutOutSouth.bottomRight.top = jutOutSouth.topRight.bottom;
+    jutOutSouth.bottomRight.left = jutOutSouth.bottomRight.top;
+    jutOutSouth.bottomLeft.top = jutOutSouth.topLeft.bottom;
+    jutOutSouth.bottomLeft.right = jutOutSouth.bottomLeft.top;
+
+    fillLink = jutOutWest.topRight.left;
+    jutOutWest.topLeft.right = fillLink;
+    jutOutWest.topLeft.bottom = fillLink;
+    jutOutWest.bottomLeft.right = fillLink;
+    jutOutWest.bottomLeft.top = fillLink;
+}
+
+// Fill in the hardcoded linkIds (which are always the same for the set of 14 shapes making up one terrain type)
+void Sc::Isom::TerrainTypeShapes::populateHardcodedLinkIds()
+{
+    for ( size_t shapeIndex=0; shapeIndex<shapes.size(); ++shapeIndex )
+    {
+        const auto & shape = shapes[shapeIndex];
+        if ( shape.topLeft.linkId >= LinkId::OnlyMatchSameType )
+            (*this)[shapeIndex].topLeft.linkId = shape.topLeft.linkId;
+        if ( shape.topRight.linkId >= LinkId::OnlyMatchSameType )
+            (*this)[shapeIndex].topRight.linkId = shape.topRight.linkId;
+        if ( shape.bottomRight.linkId >= LinkId::OnlyMatchSameType )
+            (*this)[shapeIndex].bottomRight.linkId = shape.bottomRight.linkId;
+        if ( shape.bottomLeft.linkId >= LinkId::OnlyMatchSameType )
+            (*this)[shapeIndex].bottomLeft.linkId = shape.bottomLeft.linkId;
+    }
+}
+
+void Sc::Isom::TerrainTypeShapes::fillOuterLinkIds(LinkId linkId)
+{
+    edgeNorthWest.topLeft.linkId = linkId;
+                
+    edgeNorthEast.topRight.linkId = linkId;
+                
+    edgeSouthEast.bottomRight.linkId = linkId;
+                
+    edgeSouthWest.bottomLeft.linkId = linkId;
+                
+    jutOutNorth.topLeft.linkId = linkId;
+    jutOutNorth.topRight.linkId = linkId;
+                
+    jutOutEast.topRight.linkId = linkId;
+    jutOutEast.bottomRight.linkId = linkId;
+                
+    jutOutWest.topLeft.linkId = linkId;
+    jutOutWest.bottomLeft.linkId = linkId;
+                
+    jutOutSouth.bottomRight.linkId = linkId;
+    jutOutSouth.bottomLeft.linkId = linkId;
+}
+
+void Sc::Isom::TerrainTypeShapes::fillInnerLinkIds(LinkId linkId)
+{
+    edgeNorthWest.bottomRight.linkId = linkId;
+                
+    edgeNorthEast.bottomLeft.linkId = linkId;
+                
+    edgeSouthEast.topLeft.linkId = linkId;
+                
+    edgeSouthWest.topRight.linkId = linkId;
+                
+    jutInEast.topRight.linkId = linkId;
+    jutInEast.bottomRight.linkId = linkId;
+                
+    jutInWest.topLeft.linkId = linkId;
+    jutInWest.bottomLeft.linkId = linkId;
+                
+    jutInNorth.bottomRight.linkId = linkId;
+    jutInNorth.bottomLeft.linkId = linkId;
+                
+    jutInSouth.topLeft.linkId = linkId;
+    jutInSouth.topRight.linkId = linkId;
+}
+
+void Sc::Isom::TerrainTypeShapes::populateLinkIdsToSolidBrushes(Span<TileGroup> tilesetCv5s, Span<ShapeTileGroup> shapeTileGroups,
+    size_t totalSolidBrushEntries, const std::vector<ShapeLinks> & isomLinks)
+{
+    // Using completed edge links, lookup and fill in the linkIds to the solid brushes
+    for ( size_t i=0; i<totalSolidBrushEntries; ++i )
+    {
+        auto brushLink = isomLinks[i].topLeft.right; // Arbitrary quadrant/direction since links/ids are all the same across a given solid brush
+        auto brushLinkId = isomLinks[i].topLeft.linkId;
+
+        if ( brushLink == tilesetCv5s[shapeTileGroups[Shape::EdgeNorthWest].topRight].links.left ) // Found the outer solid brush
+            fillOuterLinkIds(brushLinkId);
+
+        if ( brushLink == tilesetCv5s[shapeTileGroups[Shape::EdgeNorthWest].bottomRight].links.right ) // Found the inner solid brush
+            fillInnerLinkIds(brushLinkId);
+    }
+}
+
+bool Sc::Data::loadSpriteNames(const Sc::Sprite::SpriteGroup & spriteGroup)
+{
+    auto & spriteGroups = sprites.spriteGroups;
+    for ( const auto & subGroup : spriteGroup.subGroups )
+        loadSpriteNames(subGroup);
+    
+    for ( auto memberSprite : spriteGroup.memberSprites )
+        sprites.spriteNames[memberSprite.spriteIndex] = memberSprite.spriteName;
+
+    return true;
+}
+
+bool Sc::Data::loadSpriteGroups(Sc::TblFilePtr imagesTbl)
+{
+    constexpr auto totalSprites = Sc::Sprite::TotalSprites;
+
+    auto & doodads = sprites.spriteGroups.emplace_back(Sc::Sprite::SpriteGroup{"Doodads"});
+    for ( u16 tilesetIndex = Sc::Terrain::Tileset::Badlands; tilesetIndex < Sc::Terrain::NumTilesets; ++tilesetIndex )
+    {
+        std::string tilesetName = terrain.TilesetNames[tilesetIndex];
+        tilesetName[0] = std::toupper(tilesetName[0]);
+        auto & tilesetDoodads = doodads.subGroups.emplace_back(Sc::Sprite::SpriteGroup{tilesetName});
+        const auto & tileset = terrain.get(Sc::Terrain::Tileset(tilesetIndex));
+        for ( const auto & doodadGroup : tileset.doodadGroups )
+        {
+            auto & doodadGroupSprites = tilesetDoodads.subGroups.emplace_back(Sc::Sprite::SpriteGroup{doodadGroup.name});
+            Sc::Sprite::SpriteGroup* spriteGroup = nullptr;
+            for ( const auto & doodadStartTileGroup : doodadGroup.doodadStartTileGroup )
+            {
+                const auto & doodadDat = (Sc::Terrain::DoodadCv5 &)tileset.tileGroups[doodadStartTileGroup];
+                bool hasSprite = (doodadDat.flags & Sc::Terrain::Doodad::Flags::DrawAsSprite) == Sc::Terrain::Doodad::Flags::DrawAsSprite;
+                if ( hasSprite )
+                {
+                    const auto & spriteDat = sprites.getSprite(doodadDat.overlayIndex);
+                    const auto & imageDat = sprites.getImage(spriteDat.imageFile);
+                    const auto & imageFileStr = imagesTbl->getString(imageDat.grpFile);
+                    std::string imageFileName = getSystemFileName(imageFileStr);
+
+                    doodadGroupSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{doodadDat.overlayIndex, imageFileName});
+                }
+            }
+
+            switch ( tilesetIndex )
+            {
+                case Sc::Terrain::Tileset::Badlands:
+                    if ( doodadGroup.name == "Asphalt" )
+                    {
+                        doodadGroupSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{112, "LCSignCC.grp (unused)"});
+                        doodadGroupSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{113, "LCSignCC.grp (unused)"});
+                        doodadGroupSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{114, "LCSignCC.grp (unused)"});
+                        doodadGroupSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{115, "LCSignCC.grp (unused)"});
+                        doodadGroupSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{116, "LCSignCC.grp (unused)"});
+                        doodadGroupSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{117, "LCSignCC.grp (unused)"});
+                        doodadGroupSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{118, "LCSignCC.grp (unused)"});
+                        doodadGroupSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{125, "LCSignCC.grp (unused)"});
+                        doodadGroupSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{126, "LCSignCC.grp (unused)"});
+                        doodadGroupSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{129, "LCSignCC.grp (unused)"});
+                    }
+                    break;
+                case Sc::Terrain::Tileset::Desert:
+                    if ( doodadGroup.name == "High Dirt" )
+                    {
+                        doodadGroupSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{452, "HDPLNT03.grp (unused)"});
+                        doodadGroupSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{471, "HDLbox01.grp (flipped, unused)"});
+                    }
+                    else if ( doodadGroup.name == "Dirt" )
+                        doodadGroupSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{475, "LDLbox01.grp (flipped, unused)"});
+                    else if ( doodadGroup.name == "Sand Dunes" )
+                        doodadGroupSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{477, "LDMachn1.grp (flipped, unused)"});
+                    break;
+                case Sc::Terrain::Tileset::Arctic:
+                    if ( doodadGroup.name == "High Snow" )
+                    {
+                        doodadGroupSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{406, "HDradarl.grp (unused)"});
+                        doodadGroupSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{410, "HDSTre01.grp (unused)"});
+                        doodadGroupSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{411, "HDSTre02.grp (unused)"});
+                        doodadGroupSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{412, "HDSTre03.grp (unused)"});
+                        doodadGroupSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{413, "HDSTre04.grp (unused)"});
+                        doodadGroupSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{439, "HDRadr02.grp (flipped, unused)"});
+                    }
+                    else if ( doodadGroup.name == "Snow" )
+                    {
+                        doodadGroupSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{416, "HDTwr02.grp (unused)"});
+                        doodadGroupSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{435, "LDRck01.grp (flipped, unused)"});
+                        doodadGroupSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{436, "LDRck02.grp (flipped, unused)"});
+                    }
+                    break;
+                case Sc::Terrain::Tileset::Twilight:
+                    if ( doodadGroup.name == "Dirt" )
+                        doodadGroupSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{393, "Lddrill.grp (unused)"});
+                    break;
+            }
+
+            if ( doodadGroupSprites.memberSprites.empty() )
+                tilesetDoodads.subGroups.pop_back();
+            else
+            {
+                std::sort(tilesetDoodads.subGroups.back().memberSprites.begin(), tilesetDoodads.subGroups.back().memberSprites.end(),
+                    [](const auto & l, const auto & r) { return l.spriteIndex < r.spriteIndex; });
+            }
+        }
+    }
+    
+    auto & unitSprites = sprites.spriteGroups.emplace_back(Sc::Sprite::SpriteGroup{"Units"});
+    for ( size_t i=0; i<Sc::Unit::TotalTypes; ++i )
+    {
+        const auto & unitDat = units.getUnit(Sc::Unit::Type(i));
+        const auto & flingyDat = units.getFlingy(unitDat.graphics);
+        const auto & spriteDat = sprites.getSprite(flingyDat.sprite);
+        const auto & imageDat = sprites.getImage(spriteDat.imageFile);
+        const auto & imageFileStr = imagesTbl->getString(imageDat.grpFile);
+        std::string imageFileName = getSystemFileName(imageFileStr);
+
+        unitSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{flingyDat.sprite, units.defaultDisplayNames[i]});
+    }
+    
+    auto & remains = sprites.spriteGroups.emplace_back(Sc::Sprite::SpriteGroup{"Remains"});
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{230, "Ghost Remains"});
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{236, "Marine Remains"});
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{490, "Medic Remains"});
+
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{134, "Broodling Remains"});
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{139, "Defiler Remains"});
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{141, "Drone Remains"});
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{143, "Egg Remains"});
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{147, "Hydralisk Remains"});
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{150, "Larva Remains"});
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{158, "Ultralisk Remains"});
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{160, "Zergling Remains"});
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{484, "Lurker Remains"});
+
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{192, "Dragoon Remains"});
+    
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{186, "Zerg Building Rubble - Small"});
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{187, "Zerg Building Rubble - Large"});
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{223, "Protoss Building Rubble - Small"});
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{224, "Protoss Building Rubble - Large"});
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{273, "Terran Building Rubble - Small"});
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{274, "Terran Building Rubble - Large"});
+
+    auto & construction = sprites.spriteGroups.emplace_back(Sc::Sprite::SpriteGroup{"Construction"});
+    construction.memberSprites.push_back(Sc::Sprite::TreeSprite{270, "Terran Construction - Large"});
+    construction.memberSprites.push_back(Sc::Sprite::TreeSprite{271, "Terran Construction - Small"});
+    construction.memberSprites.push_back(Sc::Sprite::TreeSprite{182, "Zergling Building Spawn - Small"});
+    construction.memberSprites.push_back(Sc::Sprite::TreeSprite{183, "Zergling Building Spawn - Medium"});
+    construction.memberSprites.push_back(Sc::Sprite::TreeSprite{184, "Zergling Building Spawn - Large"});
+    construction.memberSprites.push_back(Sc::Sprite::TreeSprite{319, "Egg Spawn"});
+
+    auto & explosions = sprites.spriteGroups.emplace_back(Sc::Sprite::SpriteGroup{"Explosions"});
+    explosions.memberSprites.push_back(Sc::Sprite::TreeSprite{136, "Infested Terran Explosion"});
+    explosions.memberSprites.push_back(Sc::Sprite::TreeSprite{185, "Zerg Building Explosion"});
+    explosions.memberSprites.push_back(Sc::Sprite::TreeSprite{222, "Explosion - Large"});
+    explosions.memberSprites.push_back(Sc::Sprite::TreeSprite{267, "Nuke Hit"});
+    explosions.memberSprites.push_back(Sc::Sprite::TreeSprite{272, "Building Explosion - Large"});
+    explosions.memberSprites.push_back(Sc::Sprite::TreeSprite{316, "Small Explosion (Unused)"});
+    explosions.memberSprites.push_back(Sc::Sprite::TreeSprite{317, "Double Explosion"});
+    explosions.memberSprites.push_back(Sc::Sprite::TreeSprite{131, "Scourge Death"});
+    explosions.memberSprites.push_back(Sc::Sprite::TreeSprite{132, "Scourge Explosion"});
+    explosions.memberSprites.push_back(Sc::Sprite::TreeSprite{145, "Guardian Death"});
+    explosions.memberSprites.push_back(Sc::Sprite::TreeSprite{152, "Mutalisk Death"});
+    explosions.memberSprites.push_back(Sc::Sprite::TreeSprite{154, "Overlord Death"});
+    explosions.memberSprites.push_back(Sc::Sprite::TreeSprite{156, "Queen Death"});
+    explosions.memberSprites.push_back(Sc::Sprite::TreeSprite{483, "Devourer Death"});
+    
+    std::set<u16> knownWeaponSprites {};
+    auto & weaponSprites = sprites.spriteGroups.emplace_back(Sc::Sprite::SpriteGroup{"Weapons"});
+    for ( size_t i=0; i<Weapon::Total; ++i )
+    {
+        const auto & weapon = weapons.get(Sc::Weapon::Type(i));
+        const auto & flingyDat = units.getFlingy(weapon.graphics);
+        if ( knownWeaponSprites.find(flingyDat.sprite) == knownWeaponSprites.end() )
+        {
+            knownWeaponSprites.insert(flingyDat.sprite);
+            const auto & spriteDat = sprites.getSprite(flingyDat.sprite);
+            const auto & imageDat = sprites.getImage(spriteDat.imageFile);
+            const auto & imageFileStr = imagesTbl->getString(imageDat.grpFile);
+            std::string imageFileName = getSystemFileName(imageFileStr);
+
+            weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{flingyDat.sprite, imageFileName});
+        }
+    }
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{309, "smoke.grp"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{310, "GreSmoke.grp"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{332, "spooge.grp"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{365, "SporeHit.grp"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{367, "SpoTrail.grp"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{368, "gSmoke.grp"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{371, "plasma.grp"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{372, "PlasDrip.grp"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{373, "HKTrail.grp"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{374, "ehaMed.grp"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{375, "ehaMed.grp"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{376, "ehaMed.grp"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{378, "flamer.grp"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{505, "bsmoke.grp"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{513, "ZDvHit.grp"});
+    
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{354, "PDripHit.grp"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{369, "dragbull.grp (unused)"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{511, "Spike.grp"});
+
+    std::sort(weaponSprites.memberSprites.begin(), weaponSprites.memberSprites.end(),
+        [](const auto & l, const auto & r) { return l.spriteIndex < r.spriteIndex; });
+
+    auto & abilities = sprites.spriteGroups.emplace_back(Sc::Sprite::SpriteGroup{"Abilities"});
+    abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{231, "Nuke Target Dot"});
+    abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{322, "Burrowing Dust"});
+    abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{361, "Stasis"});
+    abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{364, "Ensnare"});
+    abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{379, "Recall Field"});
+    abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{380, "Scanner Sweep Hit"});
+    abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{500, "Feedback - Small"});
+    abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{501, "Feedback - Medium"});
+    abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{502, "Feedback - Large"});
+    abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{507, "Neutron Flare"});
+    abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{514, "Maelstrom Hit"});
+    abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{351, "Yamato Gun"});
+
+    abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{323, "Building Landing Dust 1"});
+    abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{324, "Building Landing Dust 2"});
+    abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{325, "Building Landing Dust 3"});
+    abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{326, "Building Landing Dust 4"});
+    abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{327, "Building Landing Dust 5"});
+    abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{328, "Building Lifting Dust 1"});
+    abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{329, "Building Lifting Dust 2"});
+    abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{330, "Building Lifting Dust 3"});
+    abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{331, "Building Lifting Dust 4"});
+
+    auto & misc = sprites.spriteGroups.emplace_back(Sc::Sprite::SpriteGroup{"Misc"});
+    misc.memberSprites.push_back(Sc::Sprite::TreeSprite{318, "Cursor"});
+    misc.memberSprites.push_back(Sc::Sprite::TreeSprite{320, "High Templar Glow"});
+    misc.memberSprites.push_back(Sc::Sprite::TreeSprite{321, "Psi Field - Right Upper"});
+    misc.memberSprites.push_back(Sc::Sprite::TreeSprite{344, "Magna Pulse"});
+    misc.memberSprites.push_back(Sc::Sprite::TreeSprite{300, "White Circle"});
+    misc.memberSprites.push_back(Sc::Sprite::TreeSprite{504, "White Circle"});
+    misc.memberSprites.push_back(Sc::Sprite::TreeSprite{247, "Science Vessel Turret"});
+    misc.memberSprites.push_back(Sc::Sprite::TreeSprite{377, "Bunker Overlay"});
+
+    misc.memberSprites.push_back(Sc::Sprite::TreeSprite{311, "Vespene Puff 1"});
+    misc.memberSprites.push_back(Sc::Sprite::TreeSprite{312, "Vespene Puff 2"});
+    misc.memberSprites.push_back(Sc::Sprite::TreeSprite{313, "Vespene Puff 3"});
+    misc.memberSprites.push_back(Sc::Sprite::TreeSprite{314, "Vespene Puff 4"});
+    misc.memberSprites.push_back(Sc::Sprite::TreeSprite{315, "Vespene Puff 5"});
+
+    sprites.spriteNames.assign(517, "");
+    for ( auto & spriteGroup : sprites.spriteGroups )
+        loadSpriteNames(spriteGroup);
+
+    return true;
+}
+
 bool Sc::Data::load(Sc::DataFile::BrowserPtr dataFileBrowser, const std::vector<Sc::DataFile::Descriptor> & dataFiles,
     const std::string & expectedStarCraftDirectory, FileBrowserPtr<u32> starCraftBrowser)
 {
@@ -3420,9 +4334,16 @@ bool Sc::Data::load(Sc::DataFile::BrowserPtr dataFileBrowser, const std::vector<
         logger.error("No archives selected, many features will not work without the game files.\n\nInstall or locate StarCraft for the best experience.");
         return false;
     }
+
+    Sc::TblFilePtr statTxt = Sc::TblFilePtr(new Sc::TblFile());
+    if ( !statTxt->load(orderedSourceFiles, "Rez\\stat_txt.tbl") )
+        CHKD_ERR("Failed to load stat_txt.tbl");
     
-    if ( !terrain.load(orderedSourceFiles) )
+    if ( !terrain.load(orderedSourceFiles, statTxt) )
         CHKD_ERR("Failed to load terrain");
+
+    if ( !ai.load(orderedSourceFiles, statTxt) )
+        CHKD_ERR("Failed to load AiScripts");
 
     if ( !upgrades.load(orderedSourceFiles) )
         CHKD_ERR("Failed to load upgrades");
@@ -3432,11 +4353,17 @@ bool Sc::Data::load(Sc::DataFile::BrowserPtr dataFileBrowser, const std::vector<
 
     if ( !units.load(orderedSourceFiles) )
         CHKD_ERR("Failed to load unit dat");
+    else
+        terrain.mergeSpriteFlags(units);
 
     if ( !weapons.load(orderedSourceFiles) )
         CHKD_ERR("Failed to load Weapons.dat");
+    
+    Sc::TblFilePtr imagesTbl = Sc::TblFilePtr(new Sc::TblFile());
+    if ( !imagesTbl->load(orderedSourceFiles, "arr\\images.tbl") )
+        CHKD_ERR("Failed to load arr\\images.tbl");
 
-    if ( !sprites.load(orderedSourceFiles) )
+    if ( !sprites.load(orderedSourceFiles, imagesTbl) )
         CHKD_ERR("Failed to load sprites!");
 
     if ( !tunit.load(orderedSourceFiles, "game\\tunit.pcx") )
@@ -3448,12 +4375,8 @@ bool Sc::Data::load(Sc::DataFile::BrowserPtr dataFileBrowser, const std::vector<
     if ( !tselect.load(orderedSourceFiles, "game\\tselect.pcx") )
         CHKD_ERR("Failed to load tselect.pcx");
 
-    Sc::TblFilePtr statTxt = Sc::TblFilePtr(new Sc::TblFile());
-    if ( !statTxt->load(orderedSourceFiles, "Rez\\stat_txt.tbl") )
-        CHKD_ERR("Failed to load stat_txt.tbl");
-
-    if ( !ai.load(orderedSourceFiles, statTxt) )
-        CHKD_ERR("Failed to load AiScripts");
+    if ( !loadSpriteGroups(imagesTbl) )
+        CHKD_ERR("Failed to load sprite groups");
     
     auto finish = std::chrono::high_resolution_clock::now();
     logger.debug() << "StarCraft data loading completed in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;

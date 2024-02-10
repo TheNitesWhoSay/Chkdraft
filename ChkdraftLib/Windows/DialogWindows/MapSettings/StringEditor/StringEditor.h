@@ -12,6 +12,7 @@ class StringEditorWindow : public WinLib::ClassWindow
         StringEditorWindow();
         virtual ~StringEditorWindow();
         bool CreateThis(HWND hParent, u64 windowId);
+        bool DestroyThis();
         void RefreshWindow();
 
     protected:
@@ -40,7 +41,7 @@ class StringEditorWindow : public WinLib::ClassWindow
         WinLib::ButtonControl buttonDeleteString;
         WinLib::ListBoxControl listStrings;
         WinLib::ListBoxControl listUsage;
-        HDC stringListDC; // String list HDC for speeding up string measurement
+        std::optional<WinLib::DeviceContext> stringListDc; // String list HDC for speeding up string measurement
         FileBrowser<> fileBrowser;
 };
 

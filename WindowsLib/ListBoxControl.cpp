@@ -1,6 +1,10 @@
 #include "ListBoxControl.h"
 #include <SimpleIcu.h>
+#include <CommCtrl.h>
 #include <iostream>
+#include "../CrossCutLib/Logger.h"
+
+extern Logger logger;
 
 namespace WinLib {
 
@@ -15,7 +19,7 @@ namespace WinLib {
     }
 
     bool ListBoxControl::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height,
-        bool ownerDrawn, bool multiColumn, bool scrollBar, bool alphaSort, u64 id)
+        bool ownerDrawn, bool multiColumn, bool scrollBar, bool alphaSort, bool wantKeyboardInput, u64 id)
     {
         u32 style = WS_CHILD|WS_VISIBLE|WS_TABSTOP|LBS_NOTIFY;
         if ( ownerDrawn && multiColumn )
@@ -31,6 +35,9 @@ namespace WinLib {
         if ( scrollBar )
             style |= WS_VSCROLL;
 
+        if ( wantKeyboardInput )
+            style |= LBS_WANTKEYBOARDINPUT;
+
         return WindowControl::CreateControl( WS_EX_CLIENTEDGE|LVS_EX_DOUBLEBUFFER, WC_LISTBOX, "", style,
                                              x, y, width, height, hParent, (HMENU)id, true );
     }
@@ -40,9 +47,9 @@ namespace WinLib {
         SendMessage(getHandle(), LB_RESETCONTENT, 0, 0);
     }
 
-    int ListBoxControl::AddItem(u32 item)
+    int ListBoxControl::AddItem(LPARAM item)
     {
-        LRESULT result = SendMessage(getHandle(), LB_ADDSTRING, 0, (LPARAM)item);
+        LRESULT result = SendMessage(getHandle(), LB_ADDSTRING, 0, item);
         if ( result == LB_ERR || result == LB_ERRSPACE )
             return -1;
         else
@@ -83,9 +90,9 @@ namespace WinLib {
         return result != LB_ERR && result != LB_ERRSPACE;
     }
 
-    bool ListBoxControl::InsertItem(int index, u32 item)
+    bool ListBoxControl::InsertItem(int index, LPARAM item)
     {
-        LRESULT result = SendMessage(getHandle(), LB_INSERTSTRING, (WPARAM)index, (LPARAM)item);
+        LRESULT result = SendMessage(getHandle(), LB_INSERTSTRING, (WPARAM)index, item);
         return result != LB_ERR && result != LB_ERRSPACE;
     }
 
@@ -108,9 +115,9 @@ namespace WinLib {
         return SendMessage(getHandle(), LB_SETSEL, TRUE, index) != LB_ERR;
     }
 
-    bool ListBoxControl::SetItemData(int index, u32 data)
+    bool ListBoxControl::SetItemData(int index, LPARAM data)
     {
-        return SendMessage(getHandle(), LB_SETITEMDATA, (WPARAM)index, (LPARAM)data) != LB_ERR;
+        return SendMessage(getHandle(), LB_SETITEMDATA, (WPARAM)index, data) != LB_ERR;
     }
 
     bool ListBoxControl::SetItemHeight(int index, int height)
@@ -240,7 +247,18 @@ namespace WinLib {
         return false;
     }
 
-    bool ListBoxControl::GetSelItem(int index, int & itemData)
+    bool ListBoxControl::GetCurSelItem(LPARAM & itemData)
+    {
+        int selectedItem = -1;
+        if ( GetCurSel(selectedItem) )
+        {
+            itemData = SendMessage(getHandle(), LB_GETITEMDATA, WPARAM(selectedItem), NULL);
+            return true;
+        }
+        return false;
+    }
+
+    bool ListBoxControl::GetSelItem(int index, LPARAM & itemData)
     {
         LRESULT numSel = SendMessage(getHandle(), LB_GETSELCOUNT, 0, 0);
         if ( numSel != LB_ERR && numSel > 0 )
@@ -248,29 +266,26 @@ namespace WinLib {
             if ( index < numSel ) // Index must be within the amount of items selected
             {
                 int arraySize = index+1;
-                int* selections = nullptr;
-                try { selections = new int[arraySize]; } // Need space for this index and all items before
-                catch ( std::bad_alloc ) { return false; }
-                LRESULT result = SendMessage(getHandle(), LB_GETSELITEMS, (WPARAM)arraySize, (LPARAM)selections);
+                std::unique_ptr<int[]> selections = nullptr;
+                try { selections = std::make_unique<int[]>(arraySize); } // Need space for this index and all items before
+                catch ( ... ) { return false; }
+                LRESULT result = SendMessage(getHandle(), LB_GETSELITEMS, (WPARAM)arraySize, (LPARAM)selections.get());
                 if ( result != LB_ERR )
                 {
-                    itemData = int(SendMessage(getHandle(), LB_GETITEMDATA, selections[index], 0));
-                    delete[] selections;
+                    itemData = SendMessage(getHandle(), LB_GETITEMDATA, selections[index], 0);
                     return true;
                 }
-                else
-                    delete[] selections;
             }
         }
         return false;
     }
 
-    bool ListBoxControl::GetItemData(int index, u32 & data)
+    bool ListBoxControl::GetItemData(int index, LPARAM & data)
     {
         LRESULT result = SendMessage(getHandle(), LB_GETITEMDATA , (WPARAM)index, 0);
         if ( result != LB_ERR )
         {
-            data = (u32)result;
+            data = result;
             return true;
         }
         else
@@ -290,9 +305,9 @@ namespace WinLib {
                 if ( !autoRedraw )
                 {
                     try {
-                        itemsToAdd.push((u32)lParam);
+                        itemsToAdd.push(lParam);
                         return itemsToAdd.size()-1;
-                    } catch ( std::exception ) { return -1; }
+                    } catch ( ... ) { return -1; }
                 }
                 break;
             case WM_SETREDRAW:

@@ -19,7 +19,7 @@ class CUWPsWindow : public WinLib::ClassWindow
         void DisableEditing();
         void EnableEditing();
         LRESULT Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr);
-        virtual void NotifyTreeSelChanged(LPARAM newValue); // Sent when a new tree item is selected
+        virtual void NotifyTreeItemSelected(LPARAM newValue); // Sent when a new tree item is selected
         virtual void NotifyButtonClicked(int idFrom, HWND hWndFrom); // Sent when a button or checkbox is clicked
         virtual void NotifyEditUpdated(int idFrom, HWND hWndFrom); // Sent when edit text changes, before redraw
         LRESULT Command(HWND hWnd, WPARAM wParam, LPARAM lParam);

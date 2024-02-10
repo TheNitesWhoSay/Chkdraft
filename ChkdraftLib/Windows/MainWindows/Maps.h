@@ -22,19 +22,31 @@ class Maps : public WinLib::MdiClient
         GuiMapPtr GetMap(u16 mapId);
         u16 GetMapID(GuiMapPtr guiMap);
 
-        bool NewMap(Sc::Terrain::Tileset tileset, u16 width, u16 height);
+        GuiMapPtr NewMap(Sc::Terrain::Tileset tileset = Sc::Terrain::Tileset::Badlands,
+                         u16 width = 64,
+                         u16 height = 64,
+                         size_t terrainTypeIndex = Sc::Isom::defaultBrushIndex[Sc::Terrain::Tileset::Badlands],
+                         DefaultTriggers defaultTriggers = DefaultTriggers::NoTriggers);
         bool OpenMap(const std::string & fileName);
         bool OpenMap(FileBrowserPtr<SaveType> fileBrowser = MapFile::getDefaultOpenMapBrowser());
         bool SaveCurr(bool saveAs);
         void CloseMap(HWND hMap);
+        bool CloseAll();
         void CloseActive();
 
         void UpdateTreeView();
         void SetGrid(s16 xSize, s16 ySize);
         void SetGridColor(u8 red, u8 green, u8 blue);
         void ChangeLayer(Layer newLayer);
+        void ChangeSubLayer(TerrainSubLayer subLayer);
         void ChangeZoom(bool increment);
-        void ChangePlayer(u8 newPlayer);
+        void ChangePlayer(u8 newPlayer, bool updateMapPlayers = true);
+        void UpdatePlayerStatus();
+        bool toggleCutCopyPasteTerrain();
+        bool toggleCutCopyPasteDoodads();
+        bool toggleCutCopyPasteSprites();
+        bool toggleCutCopyPasteUnits();
+        bool toggleCutCopyPasteFog();
         void cut();
         void copy();
         void startPaste(bool isQuickPaste);

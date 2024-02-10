@@ -1,5 +1,6 @@
 #include "LeftBar.h"
 #include "../../Chkdraft.h"
+#include <CommCtrl.h>
 
 enum_t(Id, u32, {
     IDR_MAIN_TREE,
@@ -14,11 +15,11 @@ LeftBar::~LeftBar()
 
 bool LeftBar::CreateThis(HWND hParent)
 {
-    return RegisterWindowClass(0, NULL, LoadCursor(NULL, IDC_ARROW), CreateSolidBrush(RGB(240, 240, 240)), NULL, "LeftBar", NULL, false) &&
+    return RegisterWindowClass(0, NULL, LoadCursor(NULL, IDC_ARROW), WinLib::ResourceManager::getSolidBrush(RGB(240, 240, 240)), NULL, "LeftBar", NULL, false) &&
            CreateClassWindow(WS_EX_CLIENTEDGE, "", WS_CHILD|WS_THICKFRAME, 0, 0, 162, 50, hParent, (HMENU)Id::IDR_LEFT_BAR);
 }
 
-void LeftBar::NotifyTreeSelChanged(LPARAM newValue)
+void LeftBar::NotifyTreeItemSelected(LPARAM newValue)
 {
     if ( CM != nullptr )
     {
@@ -29,7 +30,7 @@ void LeftBar::NotifyTreeSelChanged(LPARAM newValue)
         {
             //case TREE_TYPE_ROOT: // Same as category
         case TreeTypeCategory: if ( CM->getLayer() != (Layer)itemData ) chkd.maps.ChangeLayer((Layer)itemData); break; // The layer was AND'd with the category
-        case TreeTypeIsom: if ( CM->getLayer() != Layer::Terrain ) chkd.maps.ChangeLayer(Layer::Terrain); break;
+        case TreeTypeIsom: chkd.maps.ChangeSubLayer(TerrainSubLayer::Isom); break;
         case TreeTypeUnit: if ( CM->getLayer() != Layer::Units ) chkd.maps.ChangeLayer(Layer::Units); break;
         case TreeTypeLocation: if ( CM->getLayer() != Layer::Locations ) chkd.maps.ChangeLayer(Layer::Locations); break;
         case TreeTypeSprite: if ( CM->getLayer() != Layer::Sprites ) chkd.maps.ChangeLayer(Layer::Sprites); break;
@@ -38,6 +39,15 @@ void LeftBar::NotifyTreeSelChanged(LPARAM newValue)
 
         switch ( itemType )
         {
+        case TreeTypeIsom: // itemData == terrainTypeIndex
+            chkd.maps.clipboard.setQuickIsom(itemData);
+            break;
+
+        case TreeTypeDoodad:
+            chkd.maps.clipboard.setQuickDoodad(u16(itemData));
+            CM->Redraw(false);
+            break;
+
         case TreeTypeUnit: // itemData == UnitID
         {
             CM->clearSelectedUnits();
@@ -46,6 +56,24 @@ void LeftBar::NotifyTreeSelChanged(LPARAM newValue)
                 chkd.maps.ChangeLayer(Layer::Units);
 
             Chk::Unit unit {};
+            unit.validStateFlags = Chk::Unit::State::Invincible;
+            const auto & unitDat = chkd.scData.units.getUnit(Sc::Unit::Type(itemData));
+
+            if ( (unitDat.flags & Sc::Unit::Flags::FlyingBuilding) == Sc::Unit::Flags::FlyingBuilding )
+                unit.validStateFlags |= Chk::Unit::State::InTransit;
+
+            if ( (unitDat.flags & Sc::Unit::Flags::Burrowable) == Sc::Unit::Flags::Burrowable )
+                unit.validStateFlags |= Chk::Unit::State::Burrow;
+
+            if ( (unitDat.flags & Sc::Unit::Flags::Cloakable) == Sc::Unit::Flags::Cloakable )
+                unit.validStateFlags |= Chk::Unit::State::Cloak;
+
+            if ( (unitDat.flags & Sc::Unit::Flags::Invincible) == Sc::Unit::Flags::Invincible )
+                unit.validStateFlags &= Chk::Unit::State::xInvincible;
+
+            if ( (unitDat.flags & Sc::Unit::Flags::Invincible) == 0 && (unitDat.flags & Sc::Unit::Flags::Building) == 0 )
+                unit.validStateFlags |= Chk::Unit::State::Hallucinated;
+
             unit.energyPercent = 100;
             unit.hangerAmount = 0;
             unit.hitpointPercent = 100;
@@ -56,7 +84,6 @@ void LeftBar::NotifyTreeSelChanged(LPARAM newValue)
             unit.resourceAmount = 0;
             unit.classId = 0;
             unit.shieldPercent = 100;
-            unit.validStateFlags = 0;
             unit.stateFlags = 0;
             unit.unused = 0;
             unit.validFieldFlags = 0;
@@ -69,10 +96,28 @@ void LeftBar::NotifyTreeSelChanged(LPARAM newValue)
         break;
 
         case TreeTypeLocation: // itemData = location index
-            CM->GetSelections().selectLocation(u16(itemData));
-            if ( chkd.locationWindow.getHandle() != nullptr )
-                chkd.locationWindow.RefreshLocationInfo();
-            CM->viewLocation(u16(itemData));
+            if ( CM->GetSelectedLocation() != u16(itemData) )
+            {
+                CM->GetSelections().selectLocation(u16(itemData));
+                if ( chkd.locationWindow.getHandle() != nullptr )
+                    chkd.locationWindow.RefreshLocationInfo();
+                CM->viewLocation(u16(itemData));
+            }
+            break;
+
+        case TreeTypeSprite: // itemData = sprite index
+            CM->clearSelectedSprites();
+            chkd.maps.endPaste();
+            if ( CM->getLayer() != Layer::Sprites )
+                chkd.maps.ChangeLayer(Layer::Sprites);
+
+            Chk::Sprite sprite {};
+            sprite.type = (Sc::Sprite::Type)itemData;
+            sprite.owner = CM->getCurrPlayer();
+            sprite.flags = Chk::Sprite::toPureSpriteFlags(chkd.scData.terrain.doodadSpriteFlags[itemData]); // TODO: sprite-units?
+
+            chkd.maps.clipboard.addQuickSprite(sprite);
+            chkd.maps.startPaste(true);
             break;
         }
     }
@@ -117,6 +162,17 @@ LRESULT LeftBar::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     switch ( msg )
     {
+        case WM_NCHITTEST:
+        {
+            auto result = ClassWindow::WndProc(hWnd, msg, wParam, lParam);
+            if ( result == HTLEFT || result == HTTOPLEFT || result == HTTOP || result == HTTOPRIGHT ||
+                 result == HTBOTTOMRIGHT || result == HTBOTTOM || result == HTBOTTOMLEFT )
+                return HTCLIENT; // Prevent use of any sizing border except right as a sizing border
+            else
+                return result;
+        }
+        break;
+
         case WM_SIZE:
             {
                 // Get the size of the client area, toolbar, status bar, and left bar
@@ -142,7 +198,7 @@ LRESULT LeftBar::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                     rcMain.right-rcMain.left-rcLeftBar.right+rcLeftBar.left+xBorder-1, chkd.mainPlot.loggerWindow.IsVisible() ? chkd.mainPlot.loggerWindow.Top() : rcStatus.top - rcTool.bottom, SWP_NOZORDER);
 
                 // Fit the minimap to the center of the top part of the left bar
-                SetWindowPos(miniMap.getHandle(), NULL, (rcLeftBar.right-rcLeftBar.left-(132+2*(xBorder+1)))/2, 3, 132, 132, SWP_NOZORDER);
+                SetWindowPos(miniMap.getHandle(), NULL, (rcLeftBar.right-rcLeftBar.left-(132+2*(xBorder+1)))/2-3, 5, 132, 132, SWP_NOZORDER);
 
                 // Fit the tree to the bottom part of the left bar
                 GetClientRect(hWnd, &rcLeftBar);
@@ -163,11 +219,18 @@ LRESULT LeftBar::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
                 if ( mainTree.CreateThis(hWnd, -2, 14, 162, 150, true, Id::IDR_MAIN_TREE) )
                 {
-                    SendMessage(mainTree.getHandle(), WM_SETFONT, (WPARAM)defaultFont, MAKELPARAM(TRUE, 0));
+                    mainTree.setDefaultFont();
                     mainTree.unitTree.UpdateUnitNames(Sc::Unit::defaultDisplayNames);
                     mainTree.BuildMainTree();
                 }
             }
+            break;
+
+        case WM_MOUSEWHEEL:
+            if ( CM != nullptr && chkd.maps.clipboard.isPasting() )
+                SendMessage(CM->getHandle(), WM_MOUSEWHEEL, wParam, lParam);
+            else
+                return ClassWindow::WndProc(hWnd, msg, wParam, lParam);
             break;
 
         default:

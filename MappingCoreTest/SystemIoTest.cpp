@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include "../MappingCoreLib/MappingCore.h"
-#include "../IcuLib/SimpleIcu.h"
+#include "../CrossCutLib/SimpleIcu.h"
 #include "TestAssets.h"
 #include <filesystem>
 #include <regex>
@@ -73,8 +73,20 @@ TEST(SystemIoTest, FixSystemPathSeparators)
 
 TEST(SystemIoTest, GetSystemPathSeparator)
 {
-    constexpr bool typeMatchesCodepoint = std::is_same<std::remove_const<icux::codepoint>::type,
-        std::remove_const<decltype(std::filesystem::path::preferred_separator)>::type>::value;
+#ifdef WINDOWS_MULTIBYTE
+    const std::string systemPathSeparator = getSystemPathSeparator();
+    EXPECT_FALSE(systemPathSeparator.empty());
+    EXPECT_EQ(systemPathSeparator.length(), 1);
+    icux::filestring separatorAsFileString = icux::toFilestring(systemPathSeparator);
+    EXPECT_FALSE(separatorAsFileString.empty());
+    EXPECT_EQ(separatorAsFileString.length(), 1);
+    auto preferredSeparator = icux::toUtf8(std::wstring(1, std::filesystem::path::preferred_separator));
+    EXPECT_EQ(1, preferredSeparator.length());
+    EXPECT_EQ(separatorAsFileString[0], preferredSeparator[0]);
+#else
+    constexpr bool typeMatchesCodepoint = std::is_same_v<
+        std::remove_const_t<icux::codepoint>,
+        std::remove_const_t<decltype(std::filesystem::path::preferred_separator)>>;
     EXPECT_TRUE(typeMatchesCodepoint);
     const std::string systemPathSeparator = getSystemPathSeparator();
     EXPECT_FALSE(systemPathSeparator.empty());
@@ -83,6 +95,7 @@ TEST(SystemIoTest, GetSystemPathSeparator)
     EXPECT_FALSE(separatorAsFileString.empty());
     EXPECT_EQ(separatorAsFileString.length(), 1);
     EXPECT_EQ(separatorAsFileString[0], std::filesystem::path::preferred_separator);
+#endif
 }
 
 TEST(SystemIoTest, GetSystemFileName)

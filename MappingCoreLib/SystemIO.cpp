@@ -12,6 +12,7 @@
 #include <regex>
 #ifdef _WIN32
 #include <Windows.h>
+#include <direct.h>
 #endif
 
 constexpr u32 size_1kb = 0x400;
@@ -299,7 +300,7 @@ std::optional<std::string> fileToString(const std::string & fileName)
             return success ? str : std::nullopt;
         }
     }
-    catch ( std::exception ) { }
+    catch ( ... ) { }
     return std::nullopt;
 }
 
@@ -341,7 +342,7 @@ bool makeFileCopy(const std::string & inFilePath, const std::string & outFilePat
             inFile.close();
         }
     }
-    catch ( std::exception ) { }
+    catch ( ... ) { }
 
     if ( inFile.is_open() )
         inFile.close();
@@ -402,12 +403,13 @@ std::optional<std::string> getModuleDirectory(bool includeTrailingSeparator)
 
 bool getDefaultScPath(std::string & data)
 {
-    return ""; // TODO: Implement me
+    data = getDefaultScPath();
+    return true;
 }
 
 std::string getDefaultScPath()
 {
-    return ""; // TODO: Implement me
+    return "C:\\Program Files (x86)\\StarCraft"; // TODO: More logic
 }
 
 // Windows registry functions
@@ -613,4 +615,31 @@ bool browseForSave(std::string & filePath, uint32_t & filterIndex, const std::ve
 #else
     return false;
 #endif
+}
+
+bool lastErrorIndicatedFileNotFound()
+{
+#ifdef _WIN32
+    return ::GetLastError() == ERROR_FILE_NOT_FOUND;
+#else
+    return false;
+#endif;
+}
+
+bool lastErrorIndicatedBadFormat()
+{
+#ifdef _WIN32
+    return ::GetLastError() == ERROR_BAD_FORMAT;
+#else
+    return false;
+#endif;
+}
+
+unsigned long getLastError()
+{
+#ifdef _WIN32
+    return ::GetLastError();
+#else
+    return 0;
+#endif;
 }

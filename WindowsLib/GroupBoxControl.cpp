@@ -1,4 +1,5 @@
 #include "GroupBoxControl.h"
+#include <CommCtrl.h>
 #include <SimpleIcu.h>
 
 namespace WinLib {

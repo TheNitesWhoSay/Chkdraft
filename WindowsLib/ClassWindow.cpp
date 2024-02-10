@@ -1,10 +1,8 @@
 #include "ClassWindow.h"
+#include <CommCtrl.h>
 #include <SimpleIcu.h>
 #include <sstream>
 #include <iostream>
-#include "../CommanderLib/Logger.h"
-
-extern Logger logger;
 
 namespace WinLib {
 
@@ -66,7 +64,6 @@ namespace WinLib {
         windowType = WindowType::None;
         allowEditNotify = true;
         defaultProc = NULL;
-        WindowClassName().clear();
     }
 
     bool ClassWindow::CreateMdiChild( const std::string & windowName, DWORD dwStyle,
@@ -118,7 +115,7 @@ namespace WinLib {
         return DefWindowProc(hWnd, WM_NOTIFY, idFrom, (LPARAM)nmhdr);
     }
 
-    void ClassWindow::NotifyTreeSelChanged(LPARAM)
+    void ClassWindow::NotifyTreeItemSelected(LPARAM)
     {
 
     }
@@ -270,12 +267,16 @@ namespace WinLib {
                 switch ( ((NMHDR*)lParam)->code )
                 {
                     case TVN_SELCHANGED:
-                        classWindow->NotifyTreeSelChanged(((NMTREEVIEW*)lParam)->itemNew.lParam);
+                        classWindow->NotifyTreeItemSelected(((NMTREEVIEW*)lParam)->itemNew.lParam);
                         break;
                 }
                 return classWindow->Notify(hWnd, wParam, (NMHDR*)lParam);
             }
             break;
+
+            case TV::WM_SELTREEITEM:
+                classWindow->NotifyTreeItemSelected(lParam);
+                break;
 
             case WM_DROPFILES:
             {

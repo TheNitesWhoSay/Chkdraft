@@ -41,7 +41,24 @@ namespace WinLib {
             bool SetHexByteString(u8* bytes, u32 numBytes);
 
             template <typename numType>
-                bool GetEditNum(numType & dest);
+            bool GetEditNum(numType & dest);
+
+            template <typename NumType>
+            std::optional<NumType> GetEditNum()
+            {
+                auto text = GetWinText();
+                if ( text && text->length() > 0 )
+                {
+                    errno = 0;
+                    char* endPtr = nullptr;
+                    long long temp = std::strtoll(text->c_str(), &endPtr, 0);
+                    if ( temp != 0 )
+                        return NumType(temp);
+                    else if ( errno == 0 && endPtr == &text.value()[text->size()] )
+                        return NumType(0);
+                }
+                return std::nullopt;
+            }
 
 
         protected:

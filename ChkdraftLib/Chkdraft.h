@@ -8,7 +8,7 @@
 #include "Windows/MainWindows/MainPlot.h"
 #include "Windows/DialogWindows/NewMap/NewMap.h"
 #include "Windows/MainWindows/Maps.h"
-#include "../CommanderLib/Commander.h"
+#include "../CrossCutLib/Commander.h"
 
 class Chkdraft : public WinLib::ClassWindow
 {
@@ -27,15 +27,19 @@ class Chkdraft : public WinLib::ClassWindow
                     MainToolbar mainToolbar; // Main window's toolbar
 
 /*   Modeless   */  UnitPropertiesWindow unitWindow; // Modeless unit properties
+                    SpritePropertiesWindow spriteWindow; // Modeless sprite properties
                     LocationWindow locationWindow; // Modeless location properties
                     TerrainPaletteWindow terrainPalWindow; // Modeless terrain palette
                     TilePropWindow tilePropWindow; // Modeless tile properties
                     TextTrigWindow textTrigWindow; // Modeless text triggers
-                    LitWindow litWindow; // Modeless lit window
+                    BriefingTextTrigWindow briefingTextTrigWindow; // Modeless briefing text triggers
                     MapSettingsWindow mapSettingsWindow; // Modeless map settings
                     TrigEditorWindow trigEditorWindow; // Modeless trig editor
+                    BriefingTrigEditorWindow briefingTrigEditorWindow; // Modeless briefing trig editor
+                    DimensionsWindow dimensionsWindow; // Modeless dimensions window
                     ChangePasswordDialog changePasswordWindow; // Modeless password editor
                     EnterPasswordDialog enterPasswordWindow; // Modeless login window
+                    AboutWindow aboutWindow; // Modeless about window
 
 /* Constructors */  Chkdraft();
                     
@@ -53,6 +57,7 @@ class Chkdraft : public WinLib::ClassWindow
                     void SizeSubWindows();
                     void OpenLogFile();
                     void OpenLogFileDirectory();
+                    void OpenBackupsDirectory();
                     void UpdateLogLevelCheckmarks(LogLevel logLevel);
                     void SetLogLevel(LogLevel newLogLevel);
 
@@ -68,7 +73,8 @@ class Chkdraft : public WinLib::ClassWindow
 /*    Procs     */  LRESULT Command(HWND hWnd, WPARAM wParam, LPARAM lParam);
                     LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-                    virtual void HandleDroppedFile(const std::string & dropFilePath);
+                    void HandleDroppedFile(const std::string & dropFilePath) override;
+                    void NotifyButtonClicked(int idFrom, HWND hWndFrom) override;
 
     private:
 

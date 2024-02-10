@@ -69,6 +69,11 @@ bool UnitSettingsWindow::CreateThis(HWND hParent, u64 windowId)
 
 bool UnitSettingsWindow::DestroyThis()
 {
+    ClassWindow::DestroyThis();
+    this->selectedUnitType = Sc::Unit::Type::NoUnit;
+    this->possibleUnitNameUpdate = false;
+    this->isDisabled = true;
+    this->refreshing = false;
     return true;
 }
 
@@ -278,8 +283,7 @@ void UnitSettingsWindow::CreateSubWindows(HWND hParent)
         for ( int x=0; x<2; x++ )
         {
             int player = y*2+x;
-            dropPlayerAvailability[player].CreateThis( hParent, 304+188*x, 336+27*y, 84, 100, false, false,
-                Id::DROP_P1UNITAVAILABILITY+player, items, defaultFont );
+            dropPlayerAvailability[player].CreateThis(hParent, 304+188*x, 336+27*y, 84, 100, false, false, Id::DROP_P1UNITAVAILABILITY+player, items);
         }
     }
 
@@ -402,7 +406,7 @@ void UnitSettingsWindow::CheckReplaceUnitName()
         if ( auto newUnitName = editUnitName.GetWinText() )
         {
             CM->setUnitName<ChkdString>((Sc::Unit::Type)selectedUnitType, *newUnitName);
-            CM->deleteUnusedStrings(Chk::StrScope::Both);
+            CM->deleteUnusedStrings(Chk::Scope::Both);
             CM->notifyChange(false);
             chkd.unitWindow.RepopulateList();
             RedrawWindow(chkd.unitWindow.getHandle(), NULL, NULL, RDW_INVALIDATE);
@@ -422,7 +426,7 @@ void UnitSettingsWindow::SetDefaultUnitProperties()
         u16 expName = (u16)CM->getUnitNameStringId(selectedUnitType, Chk::UseExpSection::Yes);
         CM->setUnitNameStringId(selectedUnitType, 0, Chk::UseExpSection::No);
         CM->setUnitNameStringId(selectedUnitType, 0, Chk::UseExpSection::Yes);
-        CM->deleteUnusedStrings(Chk::StrScope::Both);
+        CM->deleteUnusedStrings(Chk::Scope::Both);
         
         auto unitName = CM->getUnitName<ChkdString>(selectedUnitType, true);
         editUnitName.SetText(*unitName);
@@ -580,7 +584,7 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 {
                     editUnitName.DisableThis();
                     CM->setUnitNameStringId(selectedUnitType, 0, Chk::UseExpSection::Both);
-                    CM->deleteUnusedStrings(Chk::StrScope::Both);
+                    CM->deleteUnusedStrings(Chk::Scope::Both);
                     auto unitName = CM->getUnitName<ChkdString>(selectedUnitType, true);
                     editUnitName.SetText(*unitName);
                     chkd.unitWindow.RepopulateList();

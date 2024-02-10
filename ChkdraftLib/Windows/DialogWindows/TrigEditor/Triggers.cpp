@@ -34,7 +34,8 @@ enum_t(Id, u32, {
 });
 
 TriggersWindow::TriggersWindow() : currTrigger(NO_TRIGGER), displayAll(true), numVisibleTrigs(0),
-    changeGroupHighlightOnly(false), trigListDC(NULL), drawingAll(false), textTrigGenerator(Settings::useAddressesForMemory, Settings::deathTableStart)
+    changeGroupHighlightOnly(false), trigListDc(std::nullopt), drawingAll(false), textTrigGenerator(Settings::useAddressesForMemory, Settings::deathTableStart, true),
+    countTillCachePurge(0)
 {
     for ( u8 i=0; i<Chk::Trigger::MaxOwners; i++ )
         groupSelected[i] = false;
@@ -66,11 +67,21 @@ bool TriggersWindow::CreateThis(HWND hParent, u64 windowId)
 
 bool TriggersWindow::DestroyThis()
 {
-    return false;
+    ClassWindow::DestroyThis();
+    this->currTrigger = NO_TRIGGER;
+    this->displayAll = true;
+    this->numVisibleTrigs = 0;
+    this->changeGroupHighlightOnly = false;
+    this->trigListDc = std::nullopt;
+    this->drawingAll = false;
+    return true;
 }
 
 void TriggersWindow::RefreshWindow(bool focus)
 {
+    if ( getHandle() == NULL )
+        return;
+
     this->SetRedraw(false);
     RefreshGroupList();
     RefreshTrigList();
@@ -86,6 +97,71 @@ void TriggersWindow::RefreshWindow(bool focus)
     }
     this->SetRedraw(true);
     this->RedrawThis();
+}
+
+void TriggersWindow::RefreshGroupList()
+{
+    listGroups.SetRedraw(false);
+    listGroups.ClearItems();
+
+    u8 firstNotFound = 0;
+    bool addedPlayer[Chk::Trigger::MaxOwners];
+    for ( u8 i=0; i<Chk::Trigger::MaxOwners; i++ )
+        addedPlayer[i] = false;
+
+    if ( CM != nullptr )
+    {
+        size_t numTriggers = CM->numTriggers();
+        for ( size_t i=0; i<numTriggers; i++ )
+        {
+            const Chk::Trigger & trigger = CM->getTrigger(i);
+            for ( u8 player=firstNotFound; player<Chk::Trigger::MaxOwners; player++ )
+            {
+                if ( !addedPlayer[player] && trigger.owners[player] == Chk::Trigger::Owned::Yes )
+                {
+                    addedPlayer[player] = true;
+                    if ( player == firstNotFound ) // Skip already-found players
+                        firstNotFound ++;
+                }
+            }
+        }
+        int selectAllIndex = -1;
+        for ( u8 i=0; i<12; i++ ) // Players
+        {
+            if ( addedPlayer[i] )
+                listGroups.AddItem(i);
+        }
+        for ( u8 i=18; i<22; i++ ) // Forces
+        {
+            if ( addedPlayer[i] )
+                listGroups.AddItem(i);
+        }
+        if ( addedPlayer[17] ) // All Players
+            listGroups.AddItem(17);
+        if ( numTriggers > 0 ) // Show All
+            selectAllIndex = listGroups.AddItem(Chk::Trigger::MaxOwners);
+        for ( u8 i=12; i<17; i++ ) // Lower unused groups
+        {
+            if ( addedPlayer[i] )
+                listGroups.AddItem(i);
+        }
+        for ( u8 i=22; i<Chk::Trigger::MaxOwners; i++ ) // Upper unused groups
+        {
+            if ( addedPlayer[i] )
+                listGroups.AddItem(i);
+        }
+        changeGroupHighlightOnly = true; // Begin selection
+        if ( displayAll )
+            listGroups.SelectItem(selectAllIndex);
+        for ( u8 i=0; i<28; i++ )
+        {
+            if ( groupSelected[i] )
+                listGroups.SelectItem(i);
+        }
+        changeGroupHighlightOnly = false; // End selection
+    }
+
+    listGroups.SetRedraw(true);
 }
 
 void TriggersWindow::DoSize()
@@ -156,7 +232,7 @@ void TriggersWindow::DeleteSelection()
     if ( currTrigger != NO_TRIGGER )
     {
         CM->deleteTrigger(currTrigger);
-        CM->deleteUnusedStrings(Chk::StrScope::Both);
+        CM->deleteUnusedStrings(Chk::Scope::Both);
         trigModifyWindow.DestroyThis();
         CM->notifyChange(false);
         int sel;
@@ -188,7 +264,7 @@ void TriggersWindow::CopySelection()
 void TriggersWindow::MoveUp()
 {
     int sel;
-    u32 prevTrigIndex;
+    LPARAM prevTrigIndex = 0;
     if ( currTrigger != NO_TRIGGER &&
          listTriggers.GetCurSel(sel) &&
          sel > 0 &&
@@ -196,8 +272,8 @@ void TriggersWindow::MoveUp()
     {
         trigModifyWindow.DestroyThis();
         CM->notifyChange(false);
-        CM->moveTrigger(currTrigger, prevTrigIndex);
-        if ( MoveUpTrigListItem(sel, prevTrigIndex) )
+        CM->moveTrigger(currTrigger, size_t(prevTrigIndex));
+        if ( MoveUpTrigListItem(sel, u32(prevTrigIndex)) )
         {
             SelectTrigListItem(sel-1);
             listTriggers.RedrawThis();
@@ -210,7 +286,7 @@ void TriggersWindow::MoveUp()
 void TriggersWindow::MoveDown()
 {
     int sel;
-    u32 nextTrigIndex;
+    LPARAM nextTrigIndex = 0;
     if ( currTrigger != NO_TRIGGER &&
          listTriggers.GetCurSel(sel) &&
          sel < int(numVisibleTrigs) &&
@@ -218,8 +294,8 @@ void TriggersWindow::MoveDown()
     {
         trigModifyWindow.DestroyThis();
         CM->notifyChange(false);
-        CM->moveTrigger(currTrigger, nextTrigIndex);
-        if ( MoveDownTrigListItem(sel, nextTrigIndex) )
+        CM->moveTrigger(currTrigger, size_t(nextTrigIndex));
+        if ( MoveDownTrigListItem(sel, u32(nextTrigIndex)) )
         {
             SelectTrigListItem(sel+1);
             listTriggers.RedrawThis();
@@ -268,24 +344,24 @@ void TriggersWindow::ButtonNew()
             trigger.owners[i] = Chk::Trigger::Owned::Yes;
     }
 
-    u32 newTrigId = 0;
+    LPARAM newTrigId = 0;
     int sel;
     if ( listTriggers.GetCurSel(sel) && sel != numVisibleTrigs-1 )
     {
         if ( listTriggers.GetItemData(sel, newTrigId) )
         {
             newTrigId ++;
-            CM->insertTrigger(newTrigId, trigger);
+            CM->insertTrigger(size_t(newTrigId), trigger);
         }
     }
     else
     {
         CM->addTrigger(trigger);
-        newTrigId = u32(CM->numTriggers()-1);
+        newTrigId = LPARAM(CM->numTriggers()-1);
     }
 
     CM->notifyChange(false);
-    currTrigger = newTrigId;
+    currTrigger = u32(newTrigId);
     RefreshWindow(true);
     ButtonModify();
 }
@@ -449,11 +525,17 @@ std::string TriggersWindow::GetActionString(u8 actionNum, const Chk::Trigger & t
         case Chk::Action::Type::Defeat:
             ssAction << "End scenario in defeat for current player.";
             break;
+        case Chk::Action::Type::DisableDebugMode:
+            ssAction << "Disable debug mode if in single-player.";
+            break;
         case Chk::Action::Type::DisplayTextMessage: // String
             ssAction << "Display for current player:\x08" << tt.getTrigString(action.stringId) << '\x0C';
             break;
         case Chk::Action::Type::Draw:
             ssAction << "End the scenario in a draw for all players.";
+            break;
+        case Chk::Action::Type::EnableDebugMode:
+            ssAction << "Enable debug mode if in single-player.";
             break;
         case Chk::Action::Type::GiveUnitsToPlayer: // Type2, Type, Players, Location, Number
             ssAction << "Give \x08" << tt.getTrigNumUnits((Chk::Action::NumUnits)action.type2) << "\x0C \x08" << tt.getTrigUnit((Sc::Unit::Type)action.type)
@@ -683,8 +765,8 @@ std::string TriggersWindow::GetActionString(u8 actionNum, const Chk::Trigger & t
         default: // Location, String, Sound, Duration, Player, Number, Type, Action, Type2, Flags, Internal
             ssAction << "Action: \x08" << action.locationId << "\x0C, \x08" << action.stringId << "\x0C, \x08" << action.soundStringId
                 << "\x0C, \x08" << action.time << "\x0C, \x08" << action.group << "\x0C, \x08" << action.number
-                << "\x0C, \x08" << action.type << "\x0C, \x08" << u16(action.type2) << "\x0C, \x08" << u16(action.flags)
-                << "\x0C, \x08" << (u16)action.padding << "\x0C, \x08" << action.maskFlag << "\x0C.";
+                << "\x0C, \x08" << action.type << "\x0C, \x08" << u16(action.actionType) << "\x0C, \x08" << u16(action.type2)
+                << "\x0C, \x08" << u16(action.flags) << "\x0C, \x08" << (u16)action.padding << "\x0C, \x08" << action.maskFlag << "\x0C.";
             break;
     }
     return ssAction.str();
@@ -766,77 +848,12 @@ void TriggersWindow::CreateSubWindows(HWND hWnd)
     buttonMoveDown.CreateThis(hWnd, 0, 125, 75, 23, "Move Down", Id::BUTTON_MOVEDOWN);
     buttonMoveTo.CreateThis(hWnd, 0, 150, 75, 23, "Move To", Id::BUTTON_MOVETO);
 
-    listGroups.CreateThis(hWnd, 0, 0, 200, 116, true, true, false, false, Id::LIST_GROUPS);
-    if ( listTriggers.CreateThis(hWnd, 0, 120, 200, 150, true, false, false, false, Id::LIST_TRIGGERS) )
+    listGroups.CreateThis(hWnd, 0, 0, 200, 116, true, true, false, false, false, Id::LIST_GROUPS);
+    if ( listTriggers.CreateThis(hWnd, 0, 120, 200, 150, true, false, false, false, false, Id::LIST_TRIGGERS) )
         listGroups.SetPeer(listTriggers.getHandle());
 
     DoSize();
     RefreshWindow(true);
-}
-
-void TriggersWindow::RefreshGroupList()
-{
-    listGroups.SetRedraw(false);
-    listGroups.ClearItems();
-
-    u8 firstNotFound = 0;
-    bool addedPlayer[Chk::Trigger::MaxOwners];
-    for ( u8 i=0; i<Chk::Trigger::MaxOwners; i++ )
-        addedPlayer[i] = false;
-
-    if ( CM != nullptr )
-    {
-        size_t numTriggers = CM->numTriggers();
-        for ( size_t i=0; i<numTriggers; i++ )
-        {
-            const Chk::Trigger & trigger = CM->getTrigger(i);
-            for ( u8 player=firstNotFound; player<Chk::Trigger::MaxOwners; player++ )
-            {
-                if ( !addedPlayer[player] && trigger.owners[player] == Chk::Trigger::Owned::Yes )
-                {
-                    addedPlayer[player] = true;
-                    if ( player == firstNotFound ) // Skip already-found players
-                        firstNotFound ++;
-                }
-            }
-        }
-        int selectAllIndex = -1;
-        for ( u8 i=0; i<12; i++ ) // Players
-        {
-            if ( addedPlayer[i] )
-                listGroups.AddItem(i);
-        }
-        for ( u8 i=18; i<22; i++ ) // Forces
-        {
-            if ( addedPlayer[i] )
-                listGroups.AddItem(i);
-        }
-        if ( addedPlayer[17] ) // All Players
-            listGroups.AddItem(17);
-        if ( numTriggers > 0 ) // Show All
-            selectAllIndex = listGroups.AddItem(Chk::Trigger::MaxOwners);
-        for ( u8 i=12; i<17; i++ ) // Lower unused groups
-        {
-            if ( addedPlayer[i] )
-                listGroups.AddItem(i);
-        }
-        for ( u8 i=22; i<Chk::Trigger::MaxOwners; i++ ) // Upper unused groups
-        {
-            if ( addedPlayer[i] )
-                listGroups.AddItem(i);
-        }
-        changeGroupHighlightOnly = true; // Begin selection
-        if ( displayAll )
-            listGroups.SelectItem(selectAllIndex);
-        for ( u8 i=0; i<28; i++ )
-        {
-            if ( groupSelected[i] )
-                listGroups.SelectItem(i);
-        }
-        changeGroupHighlightOnly = false; // End selection
-    }
-
-    listGroups.SetRedraw(true);
 }
 
 void TriggersWindow::RefreshTrigList()
@@ -879,8 +896,10 @@ void TriggersWindow::RefreshTrigList()
 
 bool TriggersWindow::SelectTrigListItem(int item)
 {
-    if ( numVisibleTrigs > 0 && listTriggers.SetCurSel(item) && listTriggers.GetItemData(item, currTrigger) )
+    LPARAM selIndex = 0;
+    if ( numVisibleTrigs > 0 && listTriggers.SetCurSel(item) && listTriggers.GetItemData(item, selIndex) )
     {
+        this->currTrigger = u32(selIndex);
         trigModifyWindow.RefreshWindow(currTrigger);
         return true;
     }
@@ -896,7 +915,7 @@ bool TriggersWindow::SelectTrigListItem(int item)
 bool TriggersWindow::DeleteTrigListItem(int item)
 {
     bool removedItem = false;
-    u32 data;
+    LPARAM data = 0;
     bool success = true;
     int totalItems = listTriggers.GetNumItems();
     for ( int i=item+1; i<totalItems; i++ ) // Attempt to decrement the trigger index of items with higher list indexes
@@ -920,7 +939,7 @@ bool TriggersWindow::DeleteTrigListItem(int item)
 
 bool TriggersWindow::CopyTrigListItem(int item)
 {
-    u32 data;
+    LPARAM data = 0;
     bool success = true;
     int totalItems = listTriggers.GetNumItems();
     for ( int i=item+1; i<totalItems; i++ ) // Attempt to increment the trigger index of items with higher list indexes
@@ -970,7 +989,7 @@ bool TriggersWindow::MoveTrigListItemTo(int currListIndex, u32 currTrigIndex, u3
     int targetListIndex = -1;
     if ( FindTargetListIndex(currListIndex, currTrigIndex, targetTrigIndex, targetListIndex) )
     {
-        u32 listItemData;
+        LPARAM listItemData = 0;
         int listItemHeight,
             preservedHeight;
 
@@ -982,7 +1001,7 @@ bool TriggersWindow::MoveTrigListItemTo(int currListIndex, u32 currTrigIndex, u3
             for ( int i=currListIndex; i>=targetListIndex; i-- )
             {
                 if ( !( listTriggers.GetItemData(i-1, listItemData) &&
-                        listTriggers.SetItemData(i, listItemData+1) &&
+                        listTriggers.SetItemData(i, listItemData) &&
                         listTriggers.GetItemHeight(i-1, listItemHeight) &&
                         listTriggers.SetItemHeight(i, listItemHeight) ) )
                 {
@@ -1007,7 +1026,7 @@ bool TriggersWindow::MoveTrigListItemTo(int currListIndex, u32 currTrigIndex, u3
             for ( int i=currListIndex; i<=targetListIndex; i++ )
             {
                 if ( !( listTriggers.GetItemData(i+1, listItemData) &&
-                        listTriggers.SetItemData(i, listItemData-1) &&
+                        listTriggers.SetItemData(i, listItemData) &&
                         listTriggers.GetItemHeight(i+1, listItemHeight) &&
                         listTriggers.SetItemHeight(i, listItemHeight) ) )
                 {
@@ -1034,14 +1053,14 @@ bool TriggersWindow::MoveTrigListItemTo(int currListIndex, u32 currTrigIndex, u3
 
 bool TriggersWindow::FindTargetListIndex(int currListIndex, u32 currTrigIndex, u32 targetTrigIndex, int & targetListIndex)
 {
-    u32 listItemData;
+    LPARAM listItemData = 0;
     if ( targetTrigIndex < currTrigIndex )
     {
         for ( int i=currListIndex; i>0; i-- )
         {
             if ( !listTriggers.GetItemData(i, listItemData) )
                 return false;
-            else if ( listItemData <= targetTrigIndex )
+            else if ( listItemData <= LPARAM(targetTrigIndex) )
             {
                 targetListIndex = i;
                 return true;
@@ -1057,12 +1076,12 @@ bool TriggersWindow::FindTargetListIndex(int currListIndex, u32 currTrigIndex, u
         {
             if ( !listTriggers.GetItemData(i, listItemData) )
                 return false;
-            if ( listItemData == targetTrigIndex )
+            if ( listItemData == LPARAM(targetTrigIndex) )
             {
                 targetListIndex = i;
                 return true;
             }
-            else if ( listItemData > targetTrigIndex )
+            else if ( listItemData > LPARAM(targetTrigIndex) )
             {
                 targetListIndex = i-1;
                 return true;
@@ -1098,7 +1117,7 @@ void TriggersWindow::ClearGroups()
         groupSelected[i] = false;
 }
 
-bool TriggersWindow::GetTriggerDrawSize(HDC hDC, UINT & width, UINT & height, Scenario & chk, u32 triggerNum, const Chk::Trigger & trigger)
+bool TriggersWindow::GetTriggerDrawSize(const WinLib::DeviceContext & dc, UINT & width, UINT & height, Scenario & chk, u32 triggerNum, const Chk::Trigger & trigger)
 {
     auto commentString = CM->getExtendedComment<RawString>(triggerNum);
     if ( !commentString )
@@ -1130,54 +1149,41 @@ bool TriggersWindow::GetTriggerDrawSize(HDC hDC, UINT & width, UINT & height, Sc
         else
             commentString->append((std::string(TRIGGER_NUM_PREFACE) + std::to_string(triggerNum) + '\x0C'));
 
-        if ( GetStringDrawSize(hDC, width, height, *commentString) )
+        if ( GetStringDrawSize(dc, width, height, *commentString) )
         {
             width += TRIGGER_LEFT_PADDING+TRIGGER_RIGHT_PADDING+STRING_LEFT_PADDING+STRING_RIGHT_PADDING;
             height += TRIGGER_TOP_PADDING+TRIGGER_BOTTOM_PADDING+STRING_TOP_PADDING+STRING_BOTTOM_PADDING;
             commentSize.width = width;
             commentSize.height = height;
             commentSizeTable.insert(std::pair<size_t, CommentSize>(hash, commentSize));
+            return true;
         }
     }
     else
     {
         RawString str = GetTriggerString(triggerNum, trigger, textTrigGenerator);
-        HGDIOBJ sel = SelectObject(hDC, defaultFont);
-        if ( sel != NULL && sel != HGDI_ERROR )
+        width = 0;
+        height = TRIGGER_TOP_PADDING+TRIGGER_BOTTOM_PADDING+STRING_TOP_PADDING+STRING_BOTTOM_PADDING;
+
+        UINT strWidth, strHeight;
+        if ( GetStringDrawSize(dc, strWidth, strHeight, str, trigLineSizeTable) )
         {
-            width = 0;
-            height = TRIGGER_TOP_PADDING+TRIGGER_BOTTOM_PADDING+STRING_TOP_PADDING+STRING_BOTTOM_PADDING;
+            UINT newWidth = strWidth+TRIGGER_LEFT_PADDING+TRIGGER_RIGHT_PADDING+STRING_LEFT_PADDING+STRING_RIGHT_PADDING;
+            if ( newWidth > width )
+                width = newWidth;
 
-            UINT strWidth, strHeight;
-            if ( GetStringDrawSize(hDC, strWidth, strHeight, str, trigLineSizeTable) )
-            {
-                UINT newWidth = strWidth+TRIGGER_LEFT_PADDING+TRIGGER_RIGHT_PADDING+STRING_LEFT_PADDING+STRING_RIGHT_PADDING;
-                if ( newWidth > width )
-                    width = newWidth;
-
-                height += strHeight;
-                return true;
-            }
+            height += strHeight;
+            return true;
         }
     }
     return false;
 }
 
-void TriggersWindow::DrawGroup(HDC hDC, RECT & rcItem, bool isSelected, u8 groupNum)
+void TriggersWindow::DrawGroup(const WinLib::DeviceContext & dc, RECT & rcItem, bool isSelected, u8 groupNum)
 {
-    HBRUSH hBackground = NULL;
-    if ( isSelected )
-        hBackground = CreateSolidBrush(RGB(51, 153, 255));
-    else
-        hBackground = CreateSolidBrush(RGB(255, 255, 255));
+    dc.fillRect(rcItem, isSelected ? RGB(51, 153, 255) : RGB(255, 255, 255));
 
-    if ( hBackground != NULL )
-    {
-        FillRect(hDC, &rcItem, hBackground);
-        DeleteObject(hBackground);
-    }
-
-    SetBkMode(hDC, TRANSPARENT);
+    dc.setBkMode(TRANSPARENT);
     if ( groupNum < 29 )
     {
         std::string groupNames[] = { "Player 1", "Player 2", "Player 3", "Player 4", "Player 5", "Player 6",
@@ -1188,47 +1194,31 @@ void TriggersWindow::DrawGroup(HDC hDC, RECT & rcItem, bool isSelected, u8 group
                                      "22", "23", "24", "25",
                                      "Non AV Players (unused)", "Show All" };
 
-        DrawString(hDC, rcItem.left+STRING_LEFT_PADDING, rcItem.top+STRING_TOP_PADDING,
+        DrawString(dc, rcItem.left+STRING_LEFT_PADDING, rcItem.top+STRING_TOP_PADDING,
             rcItem.right-rcItem.left, RGB(0, 0, 0), groupNames[groupNum]);
     }
     else
     {
         std::stringstream ssGroup;
         ssGroup << "Group: " << u16(groupNum);
-        DrawString(hDC, rcItem.left+STRING_LEFT_PADDING, rcItem.top+STRING_TOP_PADDING,
+        DrawString(dc, rcItem.left+STRING_LEFT_PADDING, rcItem.top+STRING_TOP_PADDING,
             rcItem.right-rcItem.left, RGB(0, 0, 0), ssGroup.str());
     }
 }
 
-void TriggersWindow::DrawTrigger(HDC hDC, RECT & rcItem, bool isSelected, Scenario & chk, u32 triggerNum, const Chk::Trigger & trigger)
+void TriggersWindow::DrawTrigger(const WinLib::DeviceContext & dc, RECT & rcItem, bool isSelected, Scenario & chk, u32 triggerNum, const Chk::Trigger & trigger)
 {
-    HBRUSH hBackground = CreateSolidBrush(RGB(171, 171, 171)); // Same color as in WM_CTLCOLORLISTBOX
-    if ( hBackground != NULL )
-    {
-        FillRect(hDC, &rcItem, hBackground); // Draw far background
-        DeleteObject(hBackground);
-        hBackground = NULL;
-    }
+    dc.fillRect(rcItem, RGB(171, 171, 171)); // Draw far background, same color as in WM_CTLCOLORLISTBOX
 
+    RECT rcNote;
+    rcNote.left = rcItem.left+TRIGGER_LEFT_PADDING;
+    rcNote.top = rcItem.top+TRIGGER_TOP_PADDING;
+    rcNote.right = rcItem.right-TRIGGER_RIGHT_PADDING;
+    rcNote.bottom = rcItem.bottom-TRIGGER_BOTTOM_PADDING;
+
+    dc.fillRect(rcNote, isSelected ? RGB(51, 153, 255) : RGB(253, 246, 208)); // Draw specific trigger's background
     if ( isSelected )
-        hBackground = CreateSolidBrush(RGB(51, 153, 255));
-    else
-        hBackground = CreateSolidBrush(RGB(253, 246, 208));
-    
-    if ( hBackground != NULL )
-    {
-        RECT rcNote;
-        rcNote.left = rcItem.left+TRIGGER_LEFT_PADDING;
-        rcNote.top = rcItem.top+TRIGGER_TOP_PADDING;
-        rcNote.right = rcItem.right-TRIGGER_RIGHT_PADDING;
-        rcNote.bottom = rcItem.bottom-TRIGGER_BOTTOM_PADDING;
-
-        FillRect(hDC, &rcNote, hBackground); // Draw specific trigger's background
-        if ( isSelected )
-            DrawFocusRect(hDC, &rcNote);
-
-        DeleteObject(hBackground);
-    }
+        dc.drawFocusRect(rcNote);
 
     LONG left = rcItem.left+TRIGGER_LEFT_PADDING+STRING_LEFT_PADDING;
     size_t commentStringId = trigger.getComment();
@@ -1246,15 +1236,15 @@ void TriggersWindow::DrawTrigger(HDC hDC, RECT & rcItem, bool isSelected, Scenar
         else
             commentString->append(std::string(TRIGGER_NUM_PREFACE) + num + '\x0C');
 
-        SetBkMode(hDC, TRANSPARENT);
-        DrawString(hDC, left, rcItem.top+TRIGGER_TOP_PADDING+STRING_TOP_PADDING,
+        dc.setBkMode(TRANSPARENT);
+        DrawString(dc, left, rcItem.top+TRIGGER_TOP_PADDING+STRING_TOP_PADDING,
             rcItem.right-left-TRIGGER_RIGHT_PADDING-STRING_RIGHT_PADDING, RGB(0, 0, 0), *commentString);
     }
     else
     {
         RawString str = GetTriggerString(triggerNum, trigger, textTrigGenerator);
-        SetBkMode(hDC, TRANSPARENT);
-        DrawString(hDC, left, rcItem.top+TRIGGER_TOP_PADDING+STRING_TOP_PADDING,
+        dc.setBkMode(TRANSPARENT);
+        DrawString(dc, left, rcItem.top+TRIGGER_TOP_PADDING+STRING_TOP_PADDING,
             rcItem.right-left-TRIGGER_RIGHT_PADDING-STRING_RIGHT_PADDING, RGB(0, 0, 0), str);
     }
 }
@@ -1267,10 +1257,15 @@ LRESULT TriggersWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
         if ( LOWORD(wParam) == Id::LIST_TRIGGERS ) // Change selection, update info boxes and so fourth
         {
             int sel;
-            if ( !(listTriggers.GetCurSel(sel) && sel != -1 && listTriggers.GetItemData(sel, currTrigger)) )
+            LPARAM currIndex = 0;
+            if ( listTriggers.GetCurSel(sel) && sel != -1 && listTriggers.GetItemData(sel, currIndex) )
+            {
+                currTrigger = u32(currIndex);
+                if ( trigModifyWindow.getHandle() != NULL )
+                    trigModifyWindow.RefreshWindow(currTrigger);
+            }
+            else
                 currTrigger = NO_TRIGGER;
-            else if ( trigModifyWindow.getHandle() != NULL )
-                trigModifyWindow.RefreshWindow(currTrigger);
         }
         else if ( LOWORD(wParam) == Id::LIST_GROUPS )
         {
@@ -1283,7 +1278,7 @@ LRESULT TriggersWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             ClearGroups();
             for ( int i = 0; i<numSel; i++ )
             {
-                int selItem;
+                LPARAM selItem = 0;
                 if ( listGroups.GetSelItem(i, selItem) )
                 {
                     if ( selItem == 28 )
@@ -1297,6 +1292,7 @@ LRESULT TriggersWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             }
             RefreshTrigList();
         }
+        break;
     case LBN_KILLFOCUS: // List box item may have lost focus, check if anything should be updated
         if ( LOWORD(wParam) == Id::LIST_TRIGGERS )
         {
@@ -1306,6 +1302,7 @@ LRESULT TriggersWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
         {
 
         }
+        break;
     case BN_CLICKED:
         if ( LOWORD(wParam) == Id::BUTTON_NEW )
             ButtonNew();
@@ -1349,13 +1346,17 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
             break;
 
         case WinLib::LB::WM_PREMEASUREITEMS: // Measuring is time sensative, load necessary items for measuring all triggers once
-            if ( this != nullptr )
+            textTrigGenerator.loadScenario(*CM);
+            trigListDc.emplace(listTriggers.getHandle());
+            trigListDc->setDefaultFont();
+            if ( countTillCachePurge == 0 )
             {
-                textTrigGenerator.loadScenario(*CM);
-                trigListDC = listTriggers.getDC();
                 commentSizeTable.clear();
                 trigLineSizeTable.clear();
+                countTillCachePurge = 500;
             }
+            else
+                --countTillCachePurge;
             break;
 
         case WM_MEASUREITEM:
@@ -1365,8 +1366,14 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
                 u32 triggerNum = (u32)mis->itemData;
                 
                 const Chk::Trigger & trigger = CM->getTrigger(triggerNum);
-                GetTriggerDrawSize(trigListDC, mis->itemWidth, mis->itemHeight, *CM, triggerNum, trigger);
-                
+                if ( trigListDc )
+                    GetTriggerDrawSize(*trigListDc, mis->itemWidth, mis->itemHeight, *CM, triggerNum, trigger);
+                else
+                    GetTriggerDrawSize(listTriggers.getDeviceContext(), mis->itemWidth, mis->itemHeight, *CM, triggerNum, trigger);
+
+                if ( mis->itemHeight > 255 )
+                    mis->itemHeight = 255;
+
                 return TRUE;
             }
             else if ( wParam == Id::LIST_GROUPS )
@@ -1381,15 +1388,14 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
             break;
 
         case WinLib::LB::WM_POSTMEASUREITEMS: // Release items loaded for measurement
-            listTriggers.ReleaseDC(trigListDC);
-            trigListDC = NULL;
+            trigListDc = std::nullopt;
             textTrigGenerator.clearScenario();
             break;
 
         case WM_CTLCOLORLISTBOX:
             if ( listTriggers == (HWND)lParam )
             {
-                HBRUSH hBrush = CreateSolidBrush(RGB(171, 171, 171));
+                HBRUSH hBrush = WinLib::ResourceManager::getSolidBrush(RGB(171, 171, 171));
                 if ( hBrush != NULL )
                     return (LPARAM)hBrush;
             }

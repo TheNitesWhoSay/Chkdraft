@@ -1,4 +1,5 @@
 #include "RadioButtonControl.h"
+#include <CommCtrl.h>
 
 namespace WinLib {
 

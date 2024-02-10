@@ -1,7 +1,10 @@
 #include "TextTrigGenerator.h"
+#include "../CrossCutLib/Logger.h"
 #include "Math.h"
 #include <string>
 #include <chrono>
+
+extern Logger logger;
 
 std::vector<std::string> textFlags = { "Don't Always Display", "Always Display" };
 std::vector<std::string> scoreTypes = { "Total", "Units", "Buildings", "Units and buildings", "Kills", "Razings", "Kills and razings", "Custom" };
@@ -14,13 +17,9 @@ std::vector<std::string> allyStates = { "Enemy", "Ally", "Allied Victory" };
 std::vector<std::string> numericComparisons = { "At least", "At most", "2", "3", "4", "5", "6", "7", "8", "9", "Exactly" };
 std::vector<std::string> numericModifiers = { "0", "1", "2", "3", "4", "5", "6", "Set To", "Add", "Subtract" };
 
-TextTrigGenerator::TextTrigGenerator(bool useAddressesForMemory, u32 deathTableOffset) :
-    goodConditionTable(false), goodActionTable(false), useAddressesForMemory(useAddressesForMemory), deathTableOffset(deathTableOffset)
-{
-
-}
-
-TextTrigGenerator::~TextTrigGenerator()
+TextTrigGenerator::TextTrigGenerator(bool useAddressesForMemory, u32 deathTableOffset, bool useFancyNoStrings) :
+    goodConditionTable(false), goodActionTable(false),
+    useAddressesForMemory(useAddressesForMemory), deathTableOffset(deathTableOffset), useFancyNoStrings(useFancyNoStrings)
 {
 
 }
@@ -106,6 +105,8 @@ ChkdString TextTrigGenerator::getTrigLocation(size_t locationId) const
 {
     if ( locationId > 0 && locationId < locationTable.size() )
         return SingleLineChkdString(locationTable[locationId]);
+    else if ( locationId == 0 )
+        return ChkdString("No Location");
     else
         return ChkdString(std::to_string(locationId));
 }
@@ -128,7 +129,7 @@ ChkdString TextTrigGenerator::getTrigString(size_t stringId) const
 ChkdString TextTrigGenerator::getTrigSound(size_t stringId) const
 {
     if ( stringId == 0 )
-        return ChkdString("No WAV");
+        return ChkdString("No Sound");
     else
         return getTrigString(stringId);
 }
@@ -405,6 +406,9 @@ inline void TextTrigGenerator::appendTrigger(StringBuffer & output, const Chk::T
             if ( conditionType == Chk::Condition::VirtualType::Deaths && condition.player > 28 ) // Memory condition
                 conditionType = Chk::Condition::VirtualType::Memory;
 
+            if ( conditionType > Chk::Condition::VirtualType::Never )
+                conditionType = Chk::Condition::VirtualType::Custom;
+
             for ( size_t argumentIndex=0; argumentIndex<Chk::Condition::MaxArguments; argumentIndex++ )
             {
                 const Chk::Condition::Argument & argument = Chk::Condition::getTextArg(conditionType, argumentIndex);
@@ -450,6 +454,9 @@ inline void TextTrigGenerator::appendTrigger(StringBuffer & output, const Chk::T
             // Add action args
             if ( actionType == Chk::Action::VirtualType::SetDeaths && action.group > 28 ) // Memory action
                 actionType = Chk::Action::VirtualType::SetMemory;
+
+            if ( actionType > Chk::Action::VirtualType::EnableDebugMode )
+                actionType = Chk::Action::VirtualType::Custom;
 
             for ( size_t argumentIndex=0; argumentIndex<Chk::Action::MaxArguments; argumentIndex++ )
             {
@@ -567,7 +574,7 @@ inline void TextTrigGenerator::appendLocation(StringBuffer & output, const size_
 inline void TextTrigGenerator::appendString(StringBuffer & output, const size_t & stringId) const
 {
     if ( stringId == 0 )
-        output += "No String";
+        output += useFancyNoStrings ? "No String" : "0";
     else if ( stringId < stringTable.size() || (65536-stringId) < extendedStringTable.size() )
     {
         if ( stringId < stringTable.size() )
@@ -582,7 +589,7 @@ inline void TextTrigGenerator::appendString(StringBuffer & output, const size_t 
 inline void TextTrigGenerator::appendSound(StringBuffer & output, const size_t & stringId) const
 {
     if ( stringId == 0 )
-        output += "No WAV";
+        output += useFancyNoStrings ? "No Sound" : "0";
     else if ( stringId < stringTable.size() || (65536 - stringId) < extendedStringTable.size() )
     {
         if ( stringId < stringTable.size() )
@@ -698,7 +705,7 @@ inline void TextTrigGenerator::appendNumericModifier(StringBuffer & output, cons
 inline void TextTrigGenerator::appendScript(StringBuffer & output, const Sc::Ai::ScriptId & scriptId) const
 {
     if ( scriptId == Sc::Ai::ScriptId::NoScript )
-        output += "No Script";
+        output += useFancyNoStrings ? "No Script" : "0";
     else
     {
         auto it = scriptTable.find(scriptId);
@@ -831,7 +838,7 @@ bool TextTrigGenerator::prepLocationTable(const Scenario & map, bool quoteArgs)
         }
         else if ( loc.stringId > 0 )
         {
-            if ( auto locationName = map.getLocationName<EscString>(i, Chk::StrScope::Game) )
+            if ( auto locationName = map.getLocationName<EscString>(i, Chk::Scope::Game) )
             {
                 if ( quoteArgs )
                     locationTable.push_back( "\"" + *locationName + "\"" );
@@ -1014,15 +1021,15 @@ bool TextTrigGenerator::prepStringTable(const Scenario & map, bool quoteArgs)
     extendedStringTable.clear();
 
     std::bitset<Chk::MaxStrings> stringUsed, extendedStringUsed;
-    map.markValidUsedStrings(stringUsed, Chk::StrScope::Either, Chk::StrScope::Game);
-    map.markValidUsedStrings(extendedStringUsed, Chk::StrScope::Either, Chk::StrScope::Editor);
+    map.markValidUsedStrings(stringUsed, Chk::Scope::Either, Chk::Scope::Game);
+    map.markValidUsedStrings(extendedStringUsed, Chk::Scope::Either, Chk::Scope::Editor);
 
-    size_t numStrings = map.getCapacity(Chk::StrScope::Game);
+    size_t numStrings = map.getCapacity(Chk::Scope::Game);
     for ( size_t i=0; i<numStrings; i++ )
     {
         if ( stringUsed[i] )
         {
-            if ( auto str = map.getString<EscString>(i, Chk::StrScope::Game) )
+            if ( auto str = map.getString<EscString>(i, Chk::Scope::Game) )
             {
                 EscString newString;
                 for ( auto & character : *str )
@@ -1040,12 +1047,12 @@ bool TextTrigGenerator::prepStringTable(const Scenario & map, bool quoteArgs)
             stringTable.push_back("");
     }
 
-    numStrings = map.getCapacity(Chk::StrScope::Editor);
+    numStrings = map.getCapacity(Chk::Scope::Editor);
     for ( size_t i=0; i<numStrings; i++ )
     {
         if ( extendedStringUsed[i] )
         {
-            if ( auto str = map.getString<EscString>(i, Chk::StrScope::Editor) )
+            if ( auto str = map.getString<EscString>(i, Chk::Scope::Editor) )
             {
                 EscString newString;
                 for ( auto & character : *str )
@@ -1071,5 +1078,276 @@ bool TextTrigGenerator::prepStringTable(const Scenario & map, bool quoteArgs)
             stringTable.push_back("");
     }
 
+    return true;
+}
+
+BriefingTextTrigGenerator::BriefingTextTrigGenerator(bool useFancyNoStrings)
+    : TextTrigGenerator(false, 0x58A364, useFancyNoStrings), // These parameters aren't actually used for briefing triggers which have no EUDs
+    goodBriefingActionTable(false), goodSlotTable(false)
+{
+
+}
+
+bool BriefingTextTrigGenerator::generateBriefingTextTrigs(const Scenario & map, std::string & briefingTrigString)
+{
+    logger.info() << "Starting briefing text trig generation..." << std::endl;
+    auto start = std::chrono::high_resolution_clock::now();
+    if ( loadScenario(map, true, false) && buildBriefingTextTrigs(map, briefingTrigString) )
+    {
+        auto finish = std::chrono::high_resolution_clock::now();
+        logger.info() << "Briefing text trig generation completed in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
+        return true;
+    }
+    return false;
+}
+
+bool BriefingTextTrigGenerator::generateBriefingTextTrigs(const Scenario & map, size_t briefingTrigIndex, std::string & briefingTrigString)
+{
+    return briefingTrigIndex < map.numBriefingTriggers() && loadScenario(map, true, false) && buildBriefingTextTrig(map.getBriefingTrigger(briefingTrigIndex), briefingTrigString);
+}
+
+bool BriefingTextTrigGenerator::loadScenario(const Scenario & map)
+{
+    return loadScenario(map, false, true);
+}
+
+void BriefingTextTrigGenerator::clearScenario()
+{
+    TextTrigGenerator::clearScenario();
+}
+
+std::string BriefingTextTrigGenerator::getBriefingActionName(Chk::Action::Type actionType) const
+{
+    if ( size_t(actionType) < briefingActionTable.size() )
+        return briefingActionTable[actionType];
+    else
+        return std::to_string((int)actionType);
+}
+
+std::string BriefingTextTrigGenerator::getBriefingActionArgument(const Chk::Action & action, size_t textArgumentIndex) const
+{
+    StringBuffer output;
+    appendBriefingActionArgument(output, action, Chk::Action::getBriefingTextArg(action.actionType, textArgumentIndex));
+    return output.str();
+}
+
+std::string BriefingTextTrigGenerator::getBriefingActionArgument(const Chk::Action & action, Chk::Action::Argument argument) const
+{
+    StringBuffer output;
+    appendBriefingActionArgument(output, action, argument);
+    return output.str();
+}
+
+ChkdString BriefingTextTrigGenerator::getBriefingTrigString(size_t stringId) const
+{
+    return TextTrigGenerator::getTrigString(stringId);
+}
+
+ChkdString BriefingTextTrigGenerator::getBriefingTrigSound(size_t stringId) const
+{
+    return TextTrigGenerator::getTrigSound(stringId);
+}
+
+ChkdString BriefingTextTrigGenerator::getBriefingTrigUnit(Sc::Unit::Type unitType) const
+{
+    return TextTrigGenerator::getTrigUnit(unitType);
+}
+
+std::string BriefingTextTrigGenerator::getBriefingSlot(u32 number) const
+{
+    if ( number < slotTable.size() )
+        return slotTable[number];
+    else
+        return ChkdString(std::to_string(number));
+}
+
+std::string BriefingTextTrigGenerator::getBriefingTrigNumericModifier(Chk::Trigger::ValueModifier numericModifier) const
+{
+    return TextTrigGenerator::getTrigNumericModifier(numericModifier);
+}
+
+std::string BriefingTextTrigGenerator::getBriefingTrigNumber(u32 number) const
+{
+    return TextTrigGenerator::getTrigNumber(number);
+}
+
+bool BriefingTextTrigGenerator::loadScenario(const Scenario & map, bool quoteArgs, bool useCustomNames)
+{
+    return prepSlotTable(quoteArgs) && prepBriefingActionTable() && TextTrigGenerator::loadScenario(map, quoteArgs, useCustomNames);
+}
+
+bool BriefingTextTrigGenerator::buildBriefingTextTrigs(const Scenario & scenario, std::string & briefingTrigString)
+{
+    StringBuffer output;
+    appendBriefingTriggers(output, scenario);
+    correctLineEndings(output);
+    briefingTrigString = output.str();
+    clearScenario();
+    return true;
+}
+
+bool BriefingTextTrigGenerator::buildBriefingTextTrig(const Chk::Trigger & trigger, std::string & briefingTrigString)
+{
+    StringBuffer output;
+    appendBriefingTrigger(output, trigger);
+    correctLineEndings(output);
+    briefingTrigString += output.str();
+    clearScenario();
+    return true;
+}
+
+void BriefingTextTrigGenerator::appendBriefingTriggers(StringBuffer & output, const Scenario & scenario) const
+{
+    for ( const auto & briefingTrigger : scenario.briefingTriggers )
+        appendBriefingTrigger(output, briefingTrigger);
+}
+
+void BriefingTextTrigGenerator::appendBriefingTrigger(StringBuffer & output, const Chk::Trigger & briefingTrigger) const
+{
+    output += "Briefing(";
+
+    // Add players
+    bool hasPrevious = false;
+    for ( size_t groupNum=0; groupNum<Chk::Trigger::MaxOwners; groupNum++ )
+    {
+        if ( briefingTrigger.owned(groupNum) == Chk::Trigger::Owned::Yes )
+        {
+            if ( hasPrevious )
+                output += ',';
+            else
+                hasPrevious = true;
+
+            EscString groupName = groupTable[groupNum];
+            output += (std::string &)groupName;
+        }
+        else if ( briefingTrigger.owned(groupNum) != Chk::Trigger::Owned::No )
+        {
+            if ( hasPrevious )
+                output += ',';
+            else
+                hasPrevious = true;
+
+            output += (std::string &)groupTable[groupNum];
+            output += ':';
+            output += std::to_string((int)briefingTrigger.owned(groupNum));
+        }
+    }
+
+    output += "){";
+
+    // Add actions
+    for ( size_t i=0; i<Chk::Trigger::MaxActions; i++ )
+    {
+        const Chk::Action & action = briefingTrigger.action(i);
+        Chk::Action::VirtualType actionType = (Chk::Action::VirtualType)action.actionType;
+
+        if ( actionType != Chk::Action::VirtualType::NoAction )
+        {
+            if ( (action.flags&Chk::Action::Flags::Disabled) == Chk::Action::Flags::Disabled )
+                output += "\n;\t";
+            else
+                output += "\n\t";
+
+            // Add action name
+            if ( actionType >= 0 && (size_t)actionType < briefingActionTable.size() )
+                output += briefingActionTable[actionType];
+            else
+                output += "Custom";
+
+            output += '(';
+
+            // Add action args
+            if ( actionType > Chk::Action::VirtualType::BriefingSkipTutorialEnabled )
+                actionType = Chk::Action::VirtualType::BriefingCustom;
+
+            for ( size_t argumentIndex=0; argumentIndex<Chk::Action::MaxArguments; argumentIndex++ )
+            {
+                const Chk::Action::Argument & argument = Chk::Action::getBriefingTextArg(actionType, argumentIndex);
+                if ( argument.type == Chk::Action::ArgType::NoType )
+                    break;
+                else
+                {
+                    if ( argumentIndex > 0 )
+                        output += ", ";
+
+                    appendBriefingActionArgument(output, action, argument);
+                }
+            }
+
+            output += ");";
+        }
+    }
+
+    output += "\n}\n\n//-----------------------------------------------------------------//\n\n";
+}
+
+void BriefingTextTrigGenerator::appendBriefingActionArgument(StringBuffer & output, const Chk::Action & action, Chk::Action::Argument argument) const
+{
+    if ( argument.type == Chk::Action::ArgType::BriefingSlot )
+        appendBriefingSlot(output, action.group);
+    else
+        return TextTrigGenerator::appendActionArgument(output, action, argument);
+}
+
+void BriefingTextTrigGenerator::appendBriefingSlot(StringBuffer & output, const size_t & slotIndex) const
+{
+    if ( slotIndex < slotTable.size() )
+        output += (std::string &)slotTable[slotIndex];
+    else
+        output += std::to_string(slotIndex);
+}
+
+bool BriefingTextTrigGenerator::prepSlotTable(bool quoteArgs)
+{
+    if ( goodSlotTable )
+        return true;
+
+    if ( quoteArgs )
+    {
+        slotTable.emplace_back("0");
+        slotTable.emplace_back("1");
+        slotTable.emplace_back("2");
+        slotTable.emplace_back("3");
+    }
+    else
+    {
+        slotTable.emplace_back("Slot 1");
+        slotTable.emplace_back("Slot 2");
+        slotTable.emplace_back("Slot 3");
+        slotTable.emplace_back("Slot 4");
+    }
+
+    goodSlotTable = true;
+    return true;
+}
+
+bool BriefingTextTrigGenerator::prepBriefingActionTable()
+{
+    if ( goodBriefingActionTable )
+        return true;
+
+    const char* legacyBriefingActionNames[] = {
+        "No Action",
+        "Wait",
+        "Play WAV",
+        "Text Message",
+        "Mission Objectives",
+        "Show Portrait",
+        "Hide Portrait",
+        "Display Speaking Portrait",
+        "Transmission",
+        "Skip Tutorial Enabled"
+    };
+
+    const char** briefingActionNames = legacyBriefingActionNames;
+
+    for ( size_t i=0; i<sizeof(legacyBriefingActionNames)/sizeof(const char*); ++i )
+        briefingActionTable.push_back(std::string(briefingActionNames[i]));
+
+    std::string custom("Custom");
+    for ( size_t i=sizeof(legacyBriefingActionNames)/sizeof(const char*); i<256; i++ )
+        briefingActionTable.push_back(custom);
+
+    goodBriefingActionTable = true;
     return true;
 }

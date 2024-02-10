@@ -22,10 +22,10 @@ void LocationCreateDel::Reverse(void *guiMap)
     {
         location = std::unique_ptr<Chk::Location>(new Chk::Location);
         *location = ((GuiMap*)guiMap)->getLocation(locationId);
-        auto locName = ((GuiMap*)guiMap)->getLocationName<RawString>((size_t)locationId, Chk::StrScope::Game);
+        auto locName = ((GuiMap*)guiMap)->getLocationName<RawString>((size_t)locationId, Chk::Scope::Game);
         locationName = locName ? *locName : "";
         ((GuiMap*)guiMap)->deleteLocation(locationId);
-        ((GuiMap*)guiMap)->deleteUnusedStrings(Chk::StrScope::Both);
+        ((GuiMap*)guiMap)->deleteUnusedStrings(Chk::Scope::Both);
     }
     else // Do create
     {

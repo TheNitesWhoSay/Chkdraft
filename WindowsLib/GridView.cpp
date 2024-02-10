@@ -1,8 +1,10 @@
 #include "GridView.h"
+#include "../CrossCutLib/Logger.h"
 #include <iostream>
 #include <string>
 #include <SimpleIcu.h>
-#include "../CommanderLib/Logger.h"
+#include <CommCtrl.h>
+#include <WindowsX.h>
 
 extern Logger logger;
 
@@ -18,7 +20,7 @@ namespace WinLib {
 
     GridViewControl::~GridViewControl()
     {
-
+        resize(0, 0);
     }
 
     GridControlItem & GridViewControl::item(int x, int y)
@@ -66,7 +68,7 @@ namespace WinLib {
 
     bool GridViewControl::CreateThis(HWND hParent, int x, int y, int width, int height, u64 id)
     {
-        u32 style = WS_CHILD|WS_CLIPCHILDREN|LVS_REPORT|LVS_SHOWSELALWAYS|LVS_OWNERDRAWFIXED|LVS_OWNERDATA;\
+        u32 style = WS_CHILD|WS_CLIPCHILDREN|LVS_REPORT|LVS_SHOWSELALWAYS|LVS_OWNERDRAWFIXED|LVS_OWNERDATA;
 
         if ( WindowControl::CreateControl(WS_EX_CLIENTEDGE, WC_LISTVIEW, "", style,
                                           x, y, width, height, hParent, (HMENU)id, false) )
@@ -232,16 +234,17 @@ namespace WinLib {
                 focusedY = y;
                 item(x, y).SetSelected(true);
                 SendMessage(GetParent(getHandle()), GV::WM_GRIDSELCHANGED, MAKEWPARAM(focusedX, focusedY), 0);
+                ListViewControl::EnsureVisible(focusedY, true);
             }
         }
     }
 
-    void GridViewControl::SetEditText(const std::string & text)
+    void GridViewControl::SetEditText(const std::string & text, bool focus)
     {
         if ( editing )
         {
             editBox.SetText(text);
-            SetCaretPos(text.length());
+            SetCaretPos(text.length(), focus);
         }
     }
 
@@ -268,6 +271,12 @@ namespace WinLib {
     {
         for ( int i=0; i<numColumns; i++ )
             AutoSizeColumn(i, minWidth, maxWidth);
+    }
+    
+    void GridViewControl::RedrawThis()
+    {
+        ListViewControl::RedrawThis();
+        ListViewControl::RedrawHeader();
     }
 
     int GridViewControl::NumRows()
@@ -459,7 +468,7 @@ namespace WinLib {
                 for ( int y=0; y<newNumRows; y++ )
                     newGridItems[y] = new GridControlItem[newNumColumns];
             }
-            catch ( std::bad_alloc ) { return false; }
+            catch ( ... ) { return false; }
 
             int maxCopyRow = std::min(newNumRows, this->numRows);
             int maxCopyColumn = std::min(newNumColumns, this->numColumns);
@@ -536,6 +545,31 @@ namespace WinLib {
         }
     }
 
+    void GridViewControl::HeaderChanged(HWND hWnd, WPARAM idFrom, LPARAM changedHeaderPtr, bool wideChar)
+    {
+        WindowControl::Notify(hWnd, idFrom, (NMHDR*)changedHeaderPtr);
+        if ( wideChar )
+        {
+            NMHEADERW* changedHeader = (NMHEADERW*)changedHeaderPtr;
+            auto item = changedHeader->pitem;
+            if ( (item->mask & HDI_WIDTH) == HDI_WIDTH )
+                WidthChanged(changedHeader->iItem, item->cxy);
+        }
+        else
+        {
+            NMHEADERA* changedHeader = (NMHEADERA*)changedHeaderPtr;
+            auto item = changedHeader->pitem;
+            if ( (item->mask & HDI_WIDTH) == HDI_WIDTH )
+                WidthChanged(changedHeader->iItem, item->cxy);
+        }
+    }
+    
+    void GridViewControl::WidthChanged(int x, int newWidth)
+    {
+        if ( newWidth < 4 )
+            ListViewControl::SetColumnWidth(x, 4);
+    }
+
     void GridViewControl::DragSelectTo(int x, int y)
     {
         int dragMoveX = -1;
@@ -599,7 +633,7 @@ namespace WinLib {
         {
             editing = true;
 
-            editBox.SetFont(GetWindowFont(getHandle()), false);
+            editBox.setDefaultFont(false);
             bool startedByInput = false;
 
             int x = -1;
@@ -669,11 +703,12 @@ namespace WinLib {
             SetCaretPos(item(x, y).getTextLength());
     }
 
-    void GridViewControl::SetCaretPos(size_t newCaretPos)
+    void GridViewControl::SetCaretPos(size_t newCaretPos, bool focus)
     {
         caretPos = newCaretPos;
         SendMessage(editBox.getHandle(), EM_SETSEL, (WPARAM)caretPos, (LPARAM)caretPos);
-        editBox.FocusThis();
+        if ( focus )
+            editBox.FocusThis();
     }
 
     void GridViewControl::Char(const std::string & character)
@@ -969,8 +1004,8 @@ namespace WinLib {
     {
         HWND hWndParent = GetParent(hWnd);
         UINT ctrlId = (UINT)GetDlgCtrlID(hWnd);
-        PAINTSTRUCT ps = { };
-        DRAWITEMSTRUCT dis = { };
+        PAINTSTRUCT ps {};
+        DRAWITEMSTRUCT dis {};
         dis.CtlType = ODT_LISTVIEW;
         dis.CtlID = ctrlId;
         dis.itemID = 0; // Row number
@@ -986,48 +1021,28 @@ namespace WinLib {
         LPARAM rectPointer = LPARAM(&dis.rcItem);
         LPARAM disPointer = LPARAM(&dis);
 
-        RECT rcCli = {};
-        HDC hDC = BeginPaint(hWnd, &ps);
-        if ( hDC != NULL && GetClientRect((HWND)hWnd, &rcCli) != 0 )
+        RECT rcCli {};
+        if ( getClientRect(rcCli) )
         {
-            LONG width = rcCli.right - rcCli.left;
-            LONG height = rcCli.bottom - rcCli.top;
-            dis.hDC = CreateCompatibleDC(hDC);
-            if ( dis.hDC != NULL )
-            {
-                HBITMAP memBitmap = CreateCompatibleBitmap(hDC, width, height);
-                if ( memBitmap != NULL )
-                {
-                    HGDIOBJ hGdiObj = SelectObject(dis.hDC, memBitmap);
-                    if ( hGdiObj != NULL && hGdiObj != HGDI_ERROR )
-                    {
-                        HBRUSH hBackgroundColor = CreateSolidBrush(GetBkColor(hDC));
-                        if ( hBackgroundColor != NULL )
-                        {
-                            FillRect(dis.hDC, &rcCli, hBackgroundColor);
-                            DeleteObject(hBackgroundColor);
-                        }
-                    
-                        for ( int y=0; y<numRows; y++ )
-                        {
-                            dis.itemID = (UINT)y;
-                            LPARAM state = SendMessage(hWnd, LVM_GETITEMSTATE, (WPARAM)y, LVIS_FOCUSED|LVIS_SELECTED);
-                            if ( state & LVIS_FOCUSED ) dis.itemState |= ODS_FOCUS;
-                            if ( state & LVIS_SELECTED ) dis.itemState |= ODS_SELECTED;
-                            dis.rcItem.left = LVIR_BOUNDS;
-                            if ( SendMessage(hWnd, LVM_GETITEMRECT, (WPARAM)y, rectPointer) == TRUE )
-                                SendMessage(hWndParent, GV::WM_DRAWGRIDVIEWITEM, ctrlId, disPointer);
-                        }
+            WinLib::DeviceContext dc(getHandle(), rcCli.right-rcCli.left, rcCli.bottom-rcCli.top);
+            dc.fillRect(rcCli, dc.getBkColor());
+            dc.setDefaultFont();
 
-                        SendMessage(hWndParent, GV::WM_DRAWTOUCHUPS, (WPARAM)dis.hDC, 0);
-                        BitBlt(hDC, rcCli.left, rcCli.top, width, height, dis.hDC, 0, 0, SRCCOPY);
-                    }
-                    DeleteObject(memBitmap);
-                }
-                DeleteDC(dis.hDC);
+            dis.hDC = dc.getDcHandle();
+            for ( int y=0; y<numRows; y++ )
+            {
+                dis.itemID = (UINT)y;
+                LPARAM state = SendMessage(hWnd, LVM_GETITEMSTATE, (WPARAM)y, LVIS_FOCUSED|LVIS_SELECTED);
+                if ( state & LVIS_FOCUSED ) dis.itemState |= ODS_FOCUS;
+                if ( state & LVIS_SELECTED ) dis.itemState |= ODS_SELECTED;
+                dis.rcItem.left = LVIR_BOUNDS;
+                if ( SendMessage(hWnd, LVM_GETITEMRECT, (WPARAM)y, rectPointer) == TRUE )
+                    SendMessage(hWndParent, GV::WM_DRAWGRIDVIEWITEM, ctrlId, disPointer);
             }
+
+            SendMessage(hWndParent, GV::WM_DRAWTOUCHUPS, (WPARAM)dis.hDC, 0);
+            dc.flushBuffer();
         }
-        ::EndPaint(hWnd, &ps);
     }
 
     void GridViewControl::Paint(HWND hWnd)
@@ -1035,14 +1050,17 @@ namespace WinLib {
         SendMessage(GetParent(hWnd), LB::WM_PREDRAWITEMS, 0, (LPARAM)hWnd);
         DrawItems(hWnd);
         SendMessage(GetParent(hWnd), LB::WM_POSTDRAWITEMS, 0, (LPARAM)hWnd);
+        ListViewControl::RedrawHeader();
     }
 
     LRESULT GridViewControl::Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
     {
         switch ( nmhdr->code )
         {
-            case HDN_DIVIDERDBLCLICKA: AutoSizeColumn(((NMHEADERA*)nmhdr)->iItem, 0, 100); break;
-            case HDN_DIVIDERDBLCLICKW: AutoSizeColumn(((NMHEADERW*)nmhdr)->iItem, 0, 100); break;
+            case HDN_ITEMCHANGEDA: HeaderChanged(hWnd, idFrom, (LPARAM)nmhdr, false); break;
+            case HDN_ITEMCHANGEDW: HeaderChanged(hWnd, idFrom, (LPARAM)nmhdr, true); break;
+            case HDN_DIVIDERDBLCLICKA: AutoSizeColumn(((NMHEADERA*)nmhdr)->iItem, 0, 200); break;
+            case HDN_DIVIDERDBLCLICKW: AutoSizeColumn(((NMHEADERW*)nmhdr)->iItem, 0, 200); break;
             default: return WindowControl::Notify(hWnd, idFrom, nmhdr); break;
         }
         return 0;
@@ -1066,6 +1084,7 @@ namespace WinLib {
             case WM_MOUSEHOVER: MouseHover(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)); break;
             case WM_LBUTTONUP: LButtonUp(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)); break;
             case WM_LBUTTONDBLCLK: LButtonDblClk(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)); break;
+            case WM_ERASEBKGND: break;
             case WM_PAINT: Paint(hWnd); break;
             default: return WindowControl::ControlProc(hWnd, msg, wParam, lParam); break;
         }

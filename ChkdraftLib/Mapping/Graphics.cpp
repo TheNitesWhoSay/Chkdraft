@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <string>
 
-DWORD ColorCycler::prevTickCount = 0;
+DWORD ColorCycler::nextTickCount = 0;
 
 enum_t(MaxUnitBounds, s32, {
     Left = 128, Right = 127, Up = 80, Down = 79
@@ -49,7 +49,8 @@ ColorCycler::~ColorCycler()
 bool ColorCycler::CycleColors(const u16 tileset, ChkdPalette & palette)
 {
     bool redraw = false;
-    if ( GetTickCount() > prevTickCount )
+    auto tickCount = GetTickCount();
+    if ( tickCount >= nextTickCount )
     {
         size_t currentRotationSet = TilesetRotationSet[tileset];
         Rotator* rotatorSet = currentRotationSet < TotalRotatorSets ? RotatorSets[currentRotationSet] : NoRotators;
@@ -71,7 +72,7 @@ bool ColorCycler::CycleColors(const u16 tileset, ChkdPalette & palette)
             }
         }
 
-        prevTickCount = GetTickCount();
+        nextTickCount = tickCount + 10;
     }
 
     return redraw;
@@ -131,7 +132,8 @@ inline void BoundedAdjustPx(Sc::SystemColor & pixel, s16 redOffset, s16 greenOff
 Sc::SystemColor black = Sc::SystemColor();
 
 Graphics::Graphics(GuiMap & map, Selections & selections) : map(map), selections(selections),
-    displayingTileNums(false), tileNumsFromMTXM(false), displayingElevations(false), clipLocationNames(true), mapWidth(0), mapHeight(0), screenWidth(0), screenHeight(0), screenLeft(0), screenTop(0)
+    displayingIsomTypes(false), displayingTileNums(false), tileNumsFromMTXM(false), displayingBuildability(false), displayingElevations(false),
+    clipLocationNames(true), mapWidth(0), mapHeight(0), screenWidth(0), screenHeight(0), screenLeft(0), screenTop(0)
 {
     if ( !map.empty() )
         updatePalette();
@@ -147,13 +149,21 @@ ChkdPalette & Graphics::getPalette()
     return palette;
 }
 
+ChkdPalette & Graphics::getStaticPalette()
+{
+    return staticPalette;
+}
+
 void Graphics::updatePalette()
 {
     palette = chkd.scData.terrain.getColorPalette(map.getTileset());
+    staticPalette = chkd.scData.terrain.getStaticColorPalette(map.getTileset());
 }
 
-void Graphics::DrawMap(u16 bitWidth, u16 bitHeight, s32 screenLeft, s32 screenTop, ChkdBitmap & bitmap, HDC hDC, bool showAnywhere)
+void Graphics::DrawMap(const WinLib::DeviceContext & dc, u16 bitWidth, u16 bitHeight, s32 screenLeft, s32 screenTop, ChkdBitmap & bitmap, bool showAnywhere)
 {
+    std::fill(bitmap.begin(), bitmap.end(), Sc::SystemColor(0, 0, 0));
+
     this->screenLeft = screenLeft;
     this->screenTop = screenTop;
 
@@ -176,40 +186,32 @@ void Graphics::DrawMap(u16 bitWidth, u16 bitHeight, s32 screenLeft, s32 screenTo
 
     if ( map.getLayer() == Layer::Locations )
         DrawLocations(bitmap, showAnywhere);
+    else if ( map.getLayer() == Layer::FogEdit || map.getLayer() == Layer::CutCopyPaste )
+        DrawFog(bitmap);
 
     BITMAPINFO bmi = GetBMI(screenWidth, screenHeight);
-    SetDIBitsToDevice( hDC, 0, 0, screenWidth, screenHeight, 0, 0, 0,
-                       screenHeight, bitmap.data(), &bmi, DIB_RGB_COLORS);
+    dc.setBitsToDevice(0, 0, screenWidth, screenHeight, 0, 0, 0, screenHeight, bitmap.data(), &bmi);
 
     if ( map.getLayer() == Layer::Locations )
-        DrawLocationNames(hDC);
+        DrawLocationNames(dc);
 
     if ( displayingTileNums )
-        DrawTileNumbers(hDC);
+        DrawTileNumbers(dc);
+
+    if ( displayingIsomTypes )
+        DrawIsomNumbers(dc);
 }
 
 void Graphics::DrawTerrain(ChkdBitmap & bitmap)
 {
-    u32 maxRowX, maxRowY;
-
     Sc::Terrain::Tileset tileset = map.getTileset();
-
-    u16 yTile, xTile;
     const Sc::Terrain::Tiles & tiles = chkd.scData.terrain.get(tileset);
+    u32 maxRowY = screenHeight > (s32)mapHeight*32 || (screenTop+screenHeight)/32+1 > mapHeight ? mapHeight : (screenTop+screenHeight)/32+1;
+    u32 maxRowX = screenWidth > (s32)mapWidth*32 || (screenLeft+screenWidth)/32+1 > mapWidth ? mapWidth : (screenLeft+screenWidth)/32+1;
 
-    if ( screenHeight > (s32)mapHeight*32 || (screenTop+screenHeight)/32+1 > mapHeight )
-        maxRowY = mapHeight;
-    else
-        maxRowY = (screenTop+screenHeight)/32+1;
-
-    if ( screenWidth > (s32)mapWidth*32 || (screenLeft+screenWidth)/32+1 > mapWidth )
-        maxRowX = mapWidth;
-    else
-        maxRowX = (screenLeft+screenWidth)/32+1;
-
-    for ( yTile = (u16)(screenTop/32); yTile < maxRowY; yTile++ ) // Cycle through all rows on the screen
+    for ( u16 yTile = (u16)(screenTop/32); yTile < maxRowY; yTile++ ) // Cycle through all rows on the screen
     {
-        for ( xTile = (u16)(screenLeft/32); xTile < maxRowX; xTile++ ) // Cycle through all columns on the screen
+        for ( u16 xTile = (u16)(screenLeft/32); xTile < maxRowX; xTile++ ) // Cycle through all columns on the screen
         {
             TileToBits(bitmap, palette, tiles, s32(xTile)*32-screenLeft, s32(yTile)*32-screenTop,
                 u16(screenWidth), u16(screenHeight), map.getTile(xTile, yTile));
@@ -438,6 +440,38 @@ void Graphics::DrawLocations(ChkdBitmap & bitmap, bool showAnywhere)
     }
 }
 
+void Graphics::DrawFog(ChkdBitmap & bitmap)
+{
+    u8 currPlayer = map.getCurrPlayer();
+    if ( currPlayer >= 8 )
+        currPlayer = 0;
+
+    u8 currPlayerMask = u8Bits[currPlayer];
+    Sc::Terrain::Tileset tileset = map.getTileset();
+    const Sc::Terrain::Tiles & tiles = chkd.scData.terrain.get(tileset);
+    u32 maxRowY = screenHeight > (s32)mapHeight*32 || (screenTop+screenHeight)/32+1 > mapHeight ? mapHeight : (screenTop+screenHeight)/32+1;
+    u32 maxRowX = screenWidth > (s32)mapWidth*32 || (screenLeft+screenWidth)/32+1 > mapWidth ? mapWidth : (screenLeft+screenWidth)/32+1;
+
+    for ( u16 yTile = (u16)(screenTop/32); yTile < maxRowY; yTile++ ) // Cycle through all rows on the screen
+    {
+        for ( u16 xTile = (u16)(screenLeft/32); xTile < maxRowX; xTile++ ) // Cycle through all columns on the screen
+        {
+            if ( (map.getFog(xTile, yTile) & currPlayerMask) != 0 ) // Covered in fog
+            {
+                s64 xStart = s32(xTile)*32-screenLeft;
+                s64 yStart = s32(yTile)*32-screenTop;
+                s64 yEnd = std::min(yStart + 32, s64(screenHeight));
+                s64 xEnd = std::min(xStart + 32, s64(screenWidth));
+                for ( s64 yc = std::max(s64(0), yStart); yc < yEnd; yc++ )
+                {
+                    for ( s64 xc = std::max(s64(0), xStart); xc < xEnd; xc++ )
+                        bitmap[size_t(yc*screenWidth + xc)].darken();
+                }
+            }
+        }
+    }
+}
+
 void Graphics::DrawUnits(ChkdBitmap & bitmap)
 {
     s32 screenRight = screenLeft+screenWidth,
@@ -464,7 +498,7 @@ void Graphics::DrawUnits(ChkdBitmap & bitmap)
 
                 UnitToBits(bitmap, palette, color, u16(screenWidth), u16(screenHeight),
                     screenLeft, screenTop, (u16)unit.type, unit.xc, unit.yc,
-                    u16(frame), isSelected);
+                    u16(frame), isSelected, unit.isLifted(), unit.isAttached());
             }
         }
     }
@@ -493,28 +527,28 @@ void Graphics::DrawSprites(ChkdBitmap & bitmap)
                 Chk::PlayerColor color = (sprite.owner < Sc::Player::TotalSlots ?
                     map.getPlayerColor(sprite.owner) : (Chk::PlayerColor)sprite.owner);
 
+                bool isSelected = selections.spriteIsSelected(spriteId);
+
                 if ( isSprite )
-                    SpriteToBits(bitmap, palette, color, u16(screenWidth), u16(screenHeight),
-                        screenLeft, screenTop, (u16)sprite.type, sprite.xc, sprite.yc);
+                    SpriteToBits(bitmap, staticPalette, color, u16(screenWidth), u16(screenHeight),
+                        screenLeft, screenTop, (u16)sprite.type, sprite.xc, sprite.yc, false, isSelected);
                 else
                     UnitToBits(bitmap, palette, color, u16(screenWidth), u16(screenHeight),
                         screenLeft, screenTop, (u16)sprite.type, sprite.xc, sprite.yc,
-                        frame, false);
+                        frame, isSelected);
             }
         }
     }
 }
 
-void Graphics::DrawLocationNames(HDC hDC)
+void Graphics::DrawLocationNames(const WinLib::DeviceContext & dc)
 {
     s32 screenRight = screenLeft + screenWidth;
     s32 screenBottom = screenTop + screenHeight;
 
-    WinLib::PaintFont paintFont = WinLib::PaintFont(14, 5, "Microsoft Sans Serif");
-    HFONT numFont = paintFont.getFont();
-    SelectObject(hDC, numFont);
-    SetBkMode( hDC, TRANSPARENT );
-    SetTextColor(hDC, RGB(255, 255, 0));
+    dc.setDefaultFont();
+    dc.setBkMode(TRANSPARENT);
+    dc.setTextColor(RGB(255, 255, 0));
 
     for ( size_t locationId = 1; locationId <= map.numLocations(); locationId++ )
     {
@@ -533,58 +567,63 @@ void Graphics::DrawLocationNames(HDC hDC)
                         s32 bottomMost = std::max(location.top, location.bottom);
                         if ( bottomMost > screenTop )
                         {
-                            if ( auto str = map.getLocationName<ChkdString>(locationId, Chk::StrScope::EditorOverGame) )
+                            if ( auto str = map.getLocationName<ChkdString>(locationId, Chk::Scope::EditorOverGame) )
                             {
                                 leftMost = leftMost - screenLeft + 2;
                                 topMost = topMost - screenTop + 2;
                                 RECT rect = {};
-                                s32 lineWidth = 0, lineHeight = 0;
-                                WinLib::getTextExtent(hDC, *str, lineWidth, lineHeight);
-                                if ( clipLocationNames )
+                                if ( auto textSize = dc.getTextExtentPoint32(icux::toUistring(*str)) )
                                 {
-                                    rect.left = (leftMost < 0) ? 0 : leftMost;
-                                    rect.top = (topMost < 0) ? 0 : topMost;
-                                    rect.bottom = bottomMost - screenTop - 1;
-                                    rect.right = rightMost - screenLeft - 1;
-                                    LONG rectWidth = rect.right - rect.left,
-                                        rectHeight = rect.bottom - rect.top;
-
-                                    if ( lineWidth < rectWidth )
-                                        WinLib::drawText(hDC, *str, leftMost, topMost, rect, true, false);
-                                    else if ( rectHeight > lineHeight ) // Can word wrap
+                                    if ( clipLocationNames )
                                     {
-                                        size_t lastCharPos = str->size() - 1;
-                                        s32 prevBottom = rect.top;
+                                        rect.left = (leftMost < 0) ? 0 : leftMost;
+                                        rect.top = (topMost < 0) ? 0 : topMost;
+                                        rect.bottom = bottomMost - screenTop - 1;
+                                        rect.right = rightMost - screenLeft - 1;
+                                        LONG rectWidth = rect.right - rect.left,
+                                            rectHeight = rect.bottom - rect.top;
 
-                                        while ( rect.bottom - prevBottom > lineHeight && str->size() > 0 )
+                                        if ( textSize->cx < rectWidth )
+                                            dc.drawText(*str, leftMost, topMost, rect, true, false);
+                                        else if ( rectHeight > textSize->cy ) // Can word wrap
                                         {
-                                            // Binary search for the character length of this line
-                                            size_t floor = 0;
-                                            size_t ceil = str->size();
-                                            while ( ceil - 1 > floor )
-                                            {
-                                                lastCharPos = (ceil - floor) / 2 + floor;
-                                                WinLib::getTextExtent(hDC, str->substr(0, lastCharPos), lineWidth, lineHeight);
-                                                if ( lineWidth > rectWidth )
-                                                    ceil = lastCharPos;
-                                                else
-                                                    floor = lastCharPos;
-                                            }
-                                            WinLib::getTextExtent(hDC, str->substr(0, floor + 1), lineWidth, lineHeight); // Correct last character if needed
-                                            if ( lineWidth > rectWidth )
-                                                lastCharPos = floor;
-                                            else
-                                                lastCharPos = ceil;
-                                            // End binary search
+                                            size_t lastCharPos = str->size() - 1;
+                                            s32 prevBottom = rect.top;
 
-                                            WinLib::drawText(hDC, str->substr(0, lastCharPos), leftMost, prevBottom, rect, true, false);
-                                            (*str) = str->substr(lastCharPos, str->size());
-                                            prevBottom += lineHeight;
+                                            while ( rect.bottom - prevBottom > textSize->cy && str->size() > 0 )
+                                            {
+                                                // Binary search for the character length of this line
+                                                size_t floor = 0;
+                                                size_t ceil = str->size();
+                                                while ( ceil - 1 > floor )
+                                                {
+                                                    lastCharPos = (ceil - floor) / 2 + floor;
+                                                    if ( textSize = dc.getTextExtentPoint32(str->substr(0, lastCharPos)) )
+                                                    {
+                                                        if ( textSize->cx > rectWidth )
+                                                            ceil = lastCharPos;
+                                                        else
+                                                            floor = lastCharPos;
+                                                    }
+                                                }
+                                                if ( textSize = dc.getTextExtentPoint32(str->substr(0, floor + 1)) ) // Correct last character if needed
+                                                {
+                                                    if ( textSize->cx > rectWidth )
+                                                        lastCharPos = floor;
+                                                    else
+                                                        lastCharPos = ceil;
+                                                }
+                                                // End binary search
+
+                                                dc.drawText(str->substr(0, lastCharPos), leftMost, prevBottom, rect, true, false);
+                                                (*str) = str->substr(lastCharPos, str->size());
+                                                prevBottom += textSize->cy;
+                                            }
                                         }
                                     }
+                                    else
+                                        dc.drawText(*str, leftMost, topMost, rect, false, false);
                                 }
-                                else
-                                    WinLib::drawText(hDC, *str, leftMost, topMost, rect, false, false);
                             }
                         }
                     }
@@ -594,7 +633,68 @@ void Graphics::DrawLocationNames(HDC hDC)
     }
 }
 
-void Graphics::DrawTileNumbers(HDC hDC)
+void Graphics::DrawIsomNumbers(const WinLib::DeviceContext & dc)
+{
+    u32 maxRowX, maxRowY, yc;
+
+    if ( screenHeight > (s32)mapHeight*32 || (screenTop+screenHeight)/32+1 > mapHeight )
+        maxRowY = mapHeight;
+    else
+        maxRowY = (screenTop+screenHeight)/32+1;
+
+    if ( screenWidth > (s32)mapWidth*32 || (screenLeft+screenWidth)/32+1 > mapWidth )
+        maxRowX = mapWidth;
+    else
+        maxRowX = (screenLeft+screenWidth)/32+1;
+
+    dc.setFont(4, 14, "Microsoft Sans Serif");
+    dc.setBkMode(TRANSPARENT);
+    dc.setTextColor(RGB(255, 255, 0));
+    dc.setPen(PS_SOLID, 0, RGB(255, 255, 255));
+
+    RECT nullRect = { };
+    std::string TileHex;
+
+    for ( yc=screenTop/32; yc<maxRowY; yc++ )
+    {
+        u32 xc = screenLeft/32;
+        if ( xc%2 > 0 )
+            xc -= 1;
+        for ( ; xc<maxRowX; xc+=2 )
+        {
+            auto i = yc*(u32(mapWidth)/2)+xc/2;
+            auto isomRect = map.getIsomRect(yc*(u32(mapWidth)/2+1)+xc/2);
+
+            auto str = to_hex_string((isomRect.left & 0x7FF0) >> 4, false);
+            dc.drawText(str, xc * 32 - screenLeft + 2, yc * 32 - screenTop + 10, nullRect, false, true);
+
+            str = to_hex_string((isomRect.right & 0x7FF0) >> 4, false);
+            if ( auto textSize = dc.getTextExtentPoint32(str) )
+                dc.drawText(str, xc*32-screenLeft+63-textSize->cx, yc*32-screenTop+10, nullRect, false, true);
+
+            str = to_hex_string((isomRect.top & 0x7FF0) >> 4, false);
+            if ( auto textSize = dc.getTextExtentPoint32(str) )
+                dc.drawText(str, xc*32-screenLeft+32-textSize->cx/2, yc*32-screenTop+1, nullRect, false, true);
+
+            str = to_hex_string((isomRect.bottom & 0x7FF0) >> 4, false);
+            if ( auto textSize = dc.getTextExtentPoint32(str) )
+                dc.drawText(str, xc*32-screenLeft+32-textSize->cx/2, yc*32-screenTop+20, nullRect, false, true);
+
+            if ( (xc/2 + yc) % 2 == 0 )
+            {
+                dc.moveTo(xc*32-screenLeft+64, yc*32-screenTop);
+                dc.lineTo(xc*32-screenLeft, yc*32-screenTop+32);
+            }
+            else
+            {
+                dc.moveTo(xc*32-screenLeft, yc*32-screenTop);
+                dc.lineTo(xc*32-screenLeft+64, yc*32-screenTop+32);
+            }
+        }
+    }
+}
+
+void Graphics::DrawTileNumbers(const WinLib::DeviceContext & dc)
 {
     u32 maxRowX, maxRowY,
         xc, yc;
@@ -611,11 +711,9 @@ void Graphics::DrawTileNumbers(HDC hDC)
     else
         maxRowX = (screenLeft+screenWidth)/32+1;
 
-    WinLib::PaintFont paintFont = WinLib::PaintFont(14, 4, "Microsoft Sans Serif");
-    HFONT numFont = paintFont.getFont();
-    SelectObject(hDC, numFont);
-    SetBkMode( hDC, TRANSPARENT );
-    SetTextColor(hDC, RGB(255, 255, 0));
+    dc.setFont(4, 14, "Microsoft Sans Serif");
+    dc.setBkMode(TRANSPARENT);
+    dc.setTextColor(RGB(255, 255, 0));
     RECT nullRect = { };
     std::string TileHex;
 
@@ -623,12 +721,17 @@ void Graphics::DrawTileNumbers(HDC hDC)
     {
         for ( xc=screenLeft/32; xc<maxRowX; xc++ )
         {
-            wTileHex = map.getTile(xc, yc, tileNumsFromMTXM ? Chk::StrScope::Game : Chk::StrScope::Editor);
+            wTileHex = map.getTile(xc, yc, tileNumsFromMTXM ? Chk::Scope::Game : Chk::Scope::Editor);
             TileHex = std::to_string(wTileHex);
 
-            WinLib::drawText(hDC, TileHex, xc * 32 - screenLeft + 3, yc * 32 - screenTop + 2, nullRect, false, true);
+            dc.drawText(TileHex, xc * 32 - screenLeft + 3, yc * 32 - screenTop + 2, nullRect, false, true);
         }
     }
+}
+
+void Graphics::ToggleDisplayIsomValues()
+{
+    displayingIsomTypes = !displayingIsomTypes;
 }
 
 void Graphics::ToggleTileNumSource(bool MTXMoverTILE)
@@ -642,6 +745,11 @@ void Graphics::ToggleTileNumSource(bool MTXMoverTILE)
 bool Graphics::mtxmOverTile()
 {
     return tileNumsFromMTXM;
+}
+
+bool Graphics::DisplayingIsomNums()
+{
+    return displayingIsomTypes;
 }
 
 bool Graphics::DisplayingTileNums()
@@ -659,9 +767,23 @@ bool Graphics::ClippingLocationNames()
     return clipLocationNames;
 }
 
+void Graphics::ToggleDisplayBuildability()
+{
+    displayingBuildability = !displayingBuildability;
+    if ( displayingBuildability && displayingElevations )
+        displayingElevations = false;
+}
+
+bool Graphics::DisplayingBuildability()
+{
+    return displayingBuildability;
+}
+
 void Graphics::ToggleDisplayElevations()
 {
     displayingElevations = !displayingElevations;
+    if ( displayingBuildability && displayingElevations )
+        displayingBuildability = false;
 }
 
 bool Graphics::DisplayingElevations()
@@ -738,10 +860,10 @@ bool Graphics::SetGridColor(u32 gridNum, u8 red, u8 green, u8 blue)
 }
 
 
-void Graphics::DrawTools(HDC hDC, HBITMAP tempBitmap, u16 width, u16 height, u32 screenLeft, u32 screenTop,
+void Graphics::DrawTools(const WinLib::DeviceContext & dc, u16 width, u16 height, u32 screenLeft, u32 screenTop,
     Selections & selections, bool pasting, Clipboard & clipboard, GuiMap & map)
 {
-    ::DrawTools(hDC, tempBitmap, palette, width, height, screenLeft, screenTop, selections, pasting, clipboard, map);
+    ::DrawTools(*this, dc, palette, staticPalette, width, height, screenLeft, screenTop, selections, pasting, clipboard, map);
 }
 
 BITMAPINFO GetBMI(s32 width, s32 height)
@@ -798,7 +920,7 @@ void TileElevationsToBits(ChkdBitmap & bitmap, s64 bitWidth, s64 bitHeight, cons
                         for ( s64 xc = 0; xc < 8; xc ++ )
                         {
                             if ( xc + miniTileXc >= 0 && xc + miniTileXc < bitWidth )
-                                bitmap[(yc + miniTileYc)*bitWidth + xc + miniTileXc] = Sc::SystemColor(red, green, blue);
+                                bitmap[size_t((yc + miniTileYc)*bitWidth + xc + miniTileXc)] = Sc::SystemColor(red, green, blue);
                         }
                     }
                 }
@@ -821,7 +943,7 @@ void TileElevationsToBits(ChkdBitmap & bitmap, s64 bitWidth, s64 bitHeight, cons
                         for ( s64 xc = 0; xc < 8; xc ++ )
                         {
                             if ( xc + miniTileXc >= 0 && xc + miniTileXc < bitWidth )
-                                bitmap[(yc + miniTileYc)*bitWidth + xc + miniTileXc] = Sc::SystemColor(0, 0, 0);
+                                bitmap[size_t((yc + miniTileYc)*bitWidth + xc + miniTileXc)] = Sc::SystemColor(0, 0, 0);
                         }
                     }
                 }
@@ -855,65 +977,133 @@ void GrpToBits(ChkdBitmap & bitmap, ChkdPalette & palette, s64 bitWidth, s64 bit
         
         size_t frameOffset = size_t(grpFrameHeader.frameOffset);
         const Sc::Sprite::GrpFrame & grpFrame = (const Sc::Sprite::GrpFrame &)((u8*)&grpFile)[frameOffset];
-        for ( ; row < frameHeight; row++ )
+        if ( flipped )
         {
-            size_t rowOffset = size_t(grpFrame.rowOffsets[row]);
-            const Sc::Sprite::PixelRow & grpPixelRow = (const Sc::Sprite::PixelRow &)((u8*)&grpFile)[frameOffset+rowOffset];
-            const s64 rowStart = (row+yOffset)*bitWidth;
-            const s64 rowLimit = (row+yOffset+1)*bitWidth;
-            s64 currPixelIndex = rowStart + xOffset;
-            size_t pixelLineOffset = 0;
-            if ( currPixelIndex < (s64)bitmap.size() && currPixelIndex+frameWidth >= rowStart )
+            for ( ; row < frameHeight; row++ )
             {
-                auto currPixel = currPixelIndex < rowStart ? bitmap.begin()+rowStart : bitmap.begin()+currPixelIndex; // Start from the left-most pixel of this row of the frame
-                auto frameEnd = currPixelIndex+frameWidth > rowLimit ? bitmap.begin()+rowLimit : bitmap.begin()+(currPixelIndex+frameWidth);
-                while ( currPixelIndex < rowStart ) // Skip any pixels before the left-edge, draw visible parts of lines overlapping left edge
+                size_t rowOffset = size_t(grpFrame.rowOffsets[row]);
+                const Sc::Sprite::PixelRow & grpPixelRow = (const Sc::Sprite::PixelRow &)((u8*)&grpFile)[frameOffset+rowOffset];
+                const s64 rowStart = (row+yOffset)*bitWidth;
+                const s64 rowLimit = (row+yOffset+1)*bitWidth;
+                s64 currPixelIndex = rowStart+xOffset+frameWidth-1;
+                size_t pixelLineOffset = 0;
+                if ( currPixelIndex >= 0 && currPixelIndex-frameWidth < rowLimit )
                 {
-                    const Sc::Sprite::PixelLine & pixelLine = (const Sc::Sprite::PixelLine &)((u8*)&grpPixelRow)[pixelLineOffset];
-                    s64 lineLength = s64(pixelLine.lineLength());
-                    s64 inBoundLength = currPixelIndex+lineLength-rowStart;
-                    if ( rowStart+inBoundLength > rowLimit )
-                        inBoundLength = bitWidth;
-                    
-                    if ( inBoundLength > 0 )
+                    auto currPixel = currPixelIndex >= rowLimit ? bitmap.begin()+size_t(rowLimit)-1 : bitmap.begin()+currPixelIndex; // Start from the right-most pixel of this row of the frame
+                    auto frameEnd = currPixelIndex-frameWidth < rowStart ? bitmap.begin()+size_t(rowStart) : bitmap.begin()+size_t(currPixelIndex-frameWidth);
+                    while ( currPixelIndex >= rowLimit ) // Skip any pixels before the right-edge, draw visible parts of lines overlapping right edge
                     {
+                        const Sc::Sprite::PixelLine & pixelLine = (const Sc::Sprite::PixelLine &)((u8*)&grpPixelRow)[pixelLineOffset];
+                        s64 lineLength = s64(pixelLine.lineLength());
+                        s64 inBoundLength = lineLength-(currPixelIndex-rowLimit);
+                        if ( rowLimit-1-inBoundLength < rowStart )
+                            inBoundLength = bitWidth;
+
+                        if ( inBoundLength > 0 )
+                        {
+                            if ( pixelLine.isSpeckled() )
+                            {
+                                for ( s64 linePixel = lineLength-inBoundLength; linePixel<lineLength; linePixel++, --currPixel )
+                                    *currPixel = palette[pixelLine.paletteIndex[linePixel]]; // Place color from palette index specified in the array at current pixel
+                            }
+                            else // Solid or transparent
+                            {
+                                if ( pixelLine.isSolidLine() )
+                                    std::fill_n(currPixel-inBoundLength, inBoundLength, palette[pixelLine.paletteIndex[0]]); // Place single color across the entire line
+                            
+                                currPixel -= size_t(inBoundLength);
+                            }
+                        }
+                        currPixelIndex -= lineLength;
+                        pixelLineOffset += pixelLine.sizeInBytes();
+                    }
+
+                    while ( currPixel >= frameEnd && s64(pixelLineOffset) < frameWidth ) // Draw all remaining adjacent horizontal lines
+                    {
+                        const Sc::Sprite::PixelLine & pixelLine = (const Sc::Sprite::PixelLine &)((u8*)&grpPixelRow)[pixelLineOffset];
+                        s64 lineLength = s64(pixelLine.lineLength());
+                        if ( std::distance(frameEnd, currPixel) < lineLength )
+                            lineLength = currPixel - frameEnd;
+                    
                         if ( pixelLine.isSpeckled() )
                         {
-                            for ( s64 linePixel = lineLength-inBoundLength; linePixel<lineLength; linePixel++, ++currPixel )
+                            for ( s64 linePixel=0; linePixel<lineLength; linePixel++, --currPixel ) // For every pixel in the line
                                 *currPixel = palette[pixelLine.paletteIndex[linePixel]]; // Place color from palette index specified in the array at current pixel
                         }
                         else // Solid or transparent
                         {
                             if ( pixelLine.isSolidLine() )
-                                std::fill_n(currPixel, inBoundLength, palette[pixelLine.paletteIndex[0]]); // Place single color across the entire line
-                            
-                            currPixel += inBoundLength;
+                                std::fill_n(currPixel-lineLength, lineLength, palette[pixelLine.paletteIndex[0]]); // Place single color across the entire line
+
+                            currPixel -= size_t(lineLength);
                         }
+                        pixelLineOffset += pixelLine.sizeInBytes();
                     }
-                    currPixelIndex += lineLength;
-                    pixelLineOffset += pixelLine.sizeInBytes();
                 }
-
-                while ( currPixel < frameEnd ) // Draw all remaining adjacent horizontal lines
+            }
+        }
+        else
+        {
+            for ( ; row < frameHeight; row++ )
+            {
+                size_t rowOffset = size_t(grpFrame.rowOffsets[row]);
+                const Sc::Sprite::PixelRow & grpPixelRow = (const Sc::Sprite::PixelRow &)((u8*)&grpFile)[frameOffset+rowOffset];
+                const s64 rowStart = (row+yOffset)*bitWidth;
+                const s64 rowLimit = (row+yOffset+1)*bitWidth;
+                s64 currPixelIndex = rowStart + xOffset;
+                size_t pixelLineOffset = 0;
+                if ( currPixelIndex < (s64)bitmap.size() && currPixelIndex+frameWidth >= rowStart )
                 {
-                    const Sc::Sprite::PixelLine & pixelLine = (const Sc::Sprite::PixelLine &)((u8*)&grpPixelRow)[pixelLineOffset];
-                    s64 lineLength = s64(pixelLine.lineLength());
-                    if ( std::distance(currPixel, frameEnd) < lineLength )
-                        lineLength = frameEnd - currPixel;
+                    auto currPixel = currPixelIndex < rowStart ? bitmap.begin()+size_t(rowStart) : bitmap.begin()+size_t(currPixelIndex); // Start from the left-most pixel of this row of the frame
+                    auto frameEnd = currPixelIndex+frameWidth > rowLimit ? bitmap.begin()+size_t(rowLimit) : bitmap.begin()+size_t(currPixelIndex+frameWidth);
+                    while ( currPixelIndex < rowStart ) // Skip any pixels before the left-edge, draw visible parts of lines overlapping left edge
+                    {
+                        const Sc::Sprite::PixelLine & pixelLine = (const Sc::Sprite::PixelLine &)((u8*)&grpPixelRow)[pixelLineOffset];
+                        s64 lineLength = s64(pixelLine.lineLength());
+                        s64 inBoundLength = currPixelIndex+lineLength-rowStart;
+                        if ( rowStart+inBoundLength > rowLimit )
+                            inBoundLength = bitWidth;
                     
-                    if ( pixelLine.isSpeckled() )
-                    {
-                        for ( s64 linePixel=0; linePixel<lineLength; linePixel++, ++currPixel ) // For every pixel in the line
-                            *currPixel = palette[pixelLine.paletteIndex[linePixel]]; // Place color from palette index specified in the array at current pixel
+                        if ( inBoundLength > 0 )
+                        {
+                            if ( pixelLine.isSpeckled() )
+                            {
+                                for ( s64 linePixel = lineLength-inBoundLength; linePixel<lineLength; linePixel++, ++currPixel )
+                                    *currPixel = palette[pixelLine.paletteIndex[linePixel]]; // Place color from palette index specified in the array at current pixel
+                            }
+                            else // Solid or transparent
+                            {
+                                if ( pixelLine.isSolidLine() )
+                                    std::fill_n(currPixel, inBoundLength, palette[pixelLine.paletteIndex[0]]); // Place single color across the entire line
+                            
+                                currPixel += size_t(inBoundLength);
+                            }
+                        }
+                        currPixelIndex += lineLength;
+                        pixelLineOffset += pixelLine.sizeInBytes();
                     }
-                    else // Solid or transparent
-                    {
-                        if ( pixelLine.isSolidLine() )
-                            std::fill_n(currPixel, lineLength, palette[pixelLine.paletteIndex[0]]); // Place single color across the entire line'
 
-                        currPixel += lineLength;
+                    while ( currPixel < frameEnd ) // Draw all remaining adjacent horizontal lines
+                    {
+                        const Sc::Sprite::PixelLine & pixelLine = (const Sc::Sprite::PixelLine &)((u8*)&grpPixelRow)[pixelLineOffset];
+                        s64 lineLength = s64(pixelLine.lineLength());
+                        if ( std::distance(currPixel, frameEnd) < lineLength )
+                            lineLength = frameEnd - currPixel;
+                    
+                        if ( pixelLine.isSpeckled() )
+                        {
+                            for ( s64 linePixel=0; linePixel<lineLength; linePixel++, ++currPixel ) // For every pixel in the line
+                                *currPixel = palette[pixelLine.paletteIndex[linePixel]]; // Place color from palette index specified in the array at current pixel
+                        }
+                        else // Solid or transparent
+                        {
+                            if ( pixelLine.isSolidLine() )
+                                std::fill_n(currPixel, lineLength, palette[pixelLine.paletteIndex[0]]); // Place single color across the entire line
+
+                            currPixel += size_t(lineLength);
+                        }
+                        pixelLineOffset += pixelLine.sizeInBytes();
                     }
-                    pixelLineOffset += pixelLine.sizeInBytes();
                 }
             }
         }
@@ -921,10 +1111,82 @@ void GrpToBits(ChkdBitmap & bitmap, ChkdPalette & palette, s64 bitWidth, s64 bit
 }
 
 void UnitToBits(ChkdBitmap & bitmap, ChkdPalette & palette, u8 color, u16 bitWidth, u16 bitHeight,
-                 s32 & xStart, s32 & yStart, u16 unitID, u16 unitXC, u16 unitYC, u16 frame, bool selected )
+                 s32 & xStart, s32 & yStart, u16 unitID, u16 unitXC, u16 unitYC, u16 frame, bool selected, bool lifted, bool attached)
 {
+    auto getPreferredFrame = [&](u16 unitId) {
+        switch ( Sc::Unit::Type(unitId) )
+        {
+            case Sc::Unit::Type::TerranSiegeTank_SiegeMode:
+            case Sc::Unit::Type::EdmundDuke_SiegeMode: return 5;
+            case Sc::Unit::Type::SiegeTankTurret_SiegeMode:
+            case Sc::Unit::Type::DukeTurretType2: return 0x55;
+            case Sc::Unit::Type::TerranGoliath:
+            case Sc::Unit::Type::GoliathTurret:
+            case Sc::Unit::Type::AlanSchezar_Goliath:
+            case Sc::Unit::Type::AlanTurret: return 0x77;
+            default: return 0;
+        }
+    };
+    auto getLiftedFrame = [&](u16 unitId) {
+        switch ( Sc::Unit::Type(unitId) )
+        {
+            case Sc::Unit::Type::InfestedCommandCenter:
+            case Sc::Unit::Type::TerranBarracks:
+            case Sc::Unit::Type::TerranCommandCenter:
+            case Sc::Unit::Type::TerranEngineeringBay: return 4;
+            case Sc::Unit::Type::TerranFactory:
+            case Sc::Unit::Type::TerranScienceFacility: return 5;
+            case Sc::Unit::Type::TerranStarport: return 3;
+            default: return 0;
+        }
+    };
+    auto getSubUnitOffset = [&](u16 unitId) {
+        switch ( Sc::Unit::Type(unitId) )
+        {
+            case Sc::Unit::Type::SiegeTankTurret_SiegeMode:
+            case Sc::Unit::Type::DukeTurretType2: return point{8, 16};
+            default: return point{0, 0};
+        }
+    };
+    auto getOverlay = [&](u16 unitId) -> std::optional<u16> {
+        switch ( Sc::Unit::Type(unitId) )
+        {
+            case Sc::Unit::Type::InfestedCommandCenter: return 101;
+            default: return std::nullopt;
+        }
+    };
+    auto getAttachedOverlay = [&](u16 unitId) -> std::optional<u16> {
+        switch ( Sc::Unit::Type(unitId) )
+        {
+            case Sc::Unit::Type::TerranComsatStation: return 272;
+            case Sc::Unit::Type::TerranControlTower: return 282;
+            case Sc::Unit::Type::TerranCovertOps: return 289;
+            case Sc::Unit::Type::TerranMachineShop: return 294;
+            case Sc::Unit::Type::TerranNuclearSilo: return 313;
+            case Sc::Unit::Type::TerranPhysicsLab: return 302;
+            default: return std::nullopt;
+        }
+    };
+    auto getAttachedOverlayPreferredFrame = [&](u16 unitId) {
+        switch ( Sc::Unit::Type(unitId) )
+        {
+            case Sc::Unit::Type::TerranComsatStation: return 3;
+            case Sc::Unit::Type::TerranControlTower: return 4;
+            case Sc::Unit::Type::TerranCovertOps: return 4;
+            case Sc::Unit::Type::TerranMachineShop: return 3;
+            case Sc::Unit::Type::TerranNuclearSilo: return 4;
+            case Sc::Unit::Type::TerranPhysicsLab: return 4;
+            default: return 0;
+        }
+    };
+
     Sc::Unit::Type drawnUnitId = unitID < 228 ? (Sc::Unit::Type)unitID : Sc::Unit::Type::TerranMarine; // Extended units use ID:0's graphics (for now)
-    u32 grpId = chkd.scData.sprites.getImage(chkd.scData.sprites.getSprite(chkd.scData.units.getFlingy(chkd.scData.units.getUnit(drawnUnitId).graphics).sprite).imageFile).grpFile;
+    auto & unitDat = chkd.scData.units.getUnit(Sc::Unit::Type(drawnUnitId));
+    u16 imageId = chkd.scData.sprites.getSprite(chkd.scData.units.getFlingy(unitDat.graphics).sprite).imageFile;
+    u32 grpId = chkd.scData.sprites.getImage(imageId).grpFile;
+    u16 subUnitImageId = unitDat.subunit1 == 228 ? std::numeric_limits<u16>::max() :
+        chkd.scData.sprites.getSprite(chkd.scData.units.getFlingy(chkd.scData.units.getUnit(unitDat.subunit1).graphics).sprite).imageFile;
+    u32 subUnitGrpId = unitDat.subunit1 == 228 ? std::numeric_limits<u32>::max() : chkd.scData.sprites.getImage(subUnitImageId).grpFile;
 
     if ( (size_t)grpId < chkd.scData.sprites.numGrps() )
     {
@@ -946,19 +1208,61 @@ void UnitToBits(ChkdBitmap & bitmap, ChkdPalette & palette, u8 color, u16 bitWid
         const Sc::Sprite::GrpFile & curr = chkd.scData.sprites.getGrp(grpId).get();
         std::memcpy(remapped, &palette[8], sizeof(remapped));
         std::memcpy(&palette[8], &chkd.scData.tunit.palette[color < 16 ? 8*color : 8*(color%16)], sizeof(remapped));
-        GrpToBits(bitmap, palette, bitWidth, bitHeight, xStart, yStart, curr, unitXC, unitYC, frame, color, false);
+        GrpToBits(bitmap, palette, bitWidth, bitHeight, xStart, yStart, curr, unitXC, unitYC, lifted ? getLiftedFrame(drawnUnitId) : getPreferredFrame(drawnUnitId), color, chkd.scData.sprites.imageFlipped(imageId));
+        if ( (size_t)subUnitGrpId < chkd.scData.sprites.numGrps() )
+        {
+            const Sc::Sprite::GrpFile & subUnit = chkd.scData.sprites.getGrp(subUnitGrpId).get();
+            auto offset = getSubUnitOffset(unitDat.subunit1);
+            GrpToBits(bitmap, palette, bitWidth, bitHeight, s64(xStart)+offset.x, s64(yStart)+offset.y, subUnit, unitXC, unitYC, getPreferredFrame(unitDat.subunit1), color, false);
+        }
+        if ( auto overlay = getOverlay(drawnUnitId) )
+        {
+            const Sc::Sprite::GrpFile & overlayGrp = chkd.scData.sprites.getGrp(chkd.scData.sprites.getImage(*overlay).grpFile).get();
+            GrpToBits(bitmap, palette, bitWidth, bitHeight, xStart, yStart, overlayGrp, unitXC, unitYC, 0, color, false);
+        }
+        if ( attached )
+        {
+            if ( auto attachment = getAttachedOverlay(drawnUnitId) )
+            {
+                const Sc::Sprite::GrpFile & overlayGrp = chkd.scData.sprites.getGrp(chkd.scData.sprites.getImage(*attachment).grpFile).get();
+                GrpToBits(bitmap, palette, bitWidth, bitHeight, xStart, yStart, overlayGrp, unitXC, unitYC, getAttachedOverlayPreferredFrame(drawnUnitId), color, false);
+            }
+        }
         std::memcpy(&palette[8], remapped, sizeof(remapped));
     }
 }
 
 void SpriteToBits(ChkdBitmap & bitmap, ChkdPalette & palette, u8 color, u16 bitWidth, u16 bitHeight,
-                   s32 & xStart, s32 & yStart, u16 spriteID, u16 spriteXC, u16 spriteYC )
+                   s32 xStart, s32 yStart, u16 spriteID, u16 spriteXC, u16 spriteYC, bool flipped, bool selected)
 {
-    const Sc::Sprite::GrpFile & curr = chkd.scData.sprites.getGrp(chkd.scData.sprites.getImage(chkd.scData.sprites.getSprite(spriteID).imageFile).grpFile).get();
+    if ( spriteID >= chkd.scData.sprites.numSprites() )
+        spriteID = 0;
+
+    const Sc::Sprite::GrpFile & curr = chkd.scData.sprites.getGrp(chkd.scData.sprites.getImage(
+        chkd.scData.sprites.getSprite(spriteID).imageFile
+    ).grpFile).get();
+
     Sc::SystemColor remapped[8];
+    if ( selected )
+    {
+        u32 selectionGrpId = spriteID >= 130 && spriteID <= 517 ?
+            chkd.scData.sprites.getImage(chkd.scData.sprites.getSprite(spriteID).selectionCircleImage+561).grpFile :
+            chkd.scData.sprites.getImage(chkd.scData.sprites.getSprite(130).selectionCircleImage+561).grpFile;
+
+        if ( selectionGrpId < chkd.scData.sprites.numGrps() )
+        {
+            const Sc::Sprite::GrpFile & selCirc = chkd.scData.sprites.getGrp(selectionGrpId).get();
+            u16 offsetY = spriteYC + chkd.scData.sprites.getSprite(spriteID).selectionCircleOffset;
+            std::memcpy(remapped, &palette[0], sizeof(remapped));
+            std::memcpy(&palette[0], &chkd.scData.tselect.palette[0], sizeof(remapped));
+            GrpToBits(bitmap, palette, bitWidth, bitHeight, xStart, yStart, selCirc, spriteXC, offsetY, 0, 0, false);
+            std::memcpy(&palette[0], remapped, sizeof(remapped));
+        }
+    }
+
     std::memcpy(remapped, &palette[8], sizeof(remapped));
     std::memcpy(&palette[8], &chkd.scData.tunit.palette[color < 16 ? 8*color : 8*(color%16)], sizeof(remapped));
-    GrpToBits(bitmap, palette, bitWidth, bitHeight, xStart, yStart, curr, spriteXC, spriteYC, 0, color, false);
+    GrpToBits(bitmap, palette, bitWidth, bitHeight, xStart, yStart, curr, spriteXC, spriteYC, 0, color, flipped);
     std::memcpy(&palette[8], remapped, sizeof(remapped));
 }
 
@@ -988,7 +1292,7 @@ void TileToBits(ChkdBitmap & bitmap, ChkdPalette & palette, const Sc::Terrain::T
                     {
                         const Sc::Terrain::MiniTilePixels & miniTilePixels = tiles.miniTilePixels[vr4Index];
                         const u8 & wpeIndex = miniTilePixels.wpeIndex[yMiniPixel][flipped ? 7-xMiniPixel : xMiniPixel];
-                        bitmap[(yMiniOffset+yMiniPixel)*width + (xMiniOffset+xMiniPixel)] = palette[wpeIndex];
+                        bitmap[size_t((yMiniOffset+yMiniPixel)*width + (xMiniOffset+xMiniPixel))] = palette[wpeIndex];
                     }
                 }
             }
@@ -1001,12 +1305,57 @@ void TileToBits(ChkdBitmap & bitmap, ChkdPalette & palette, const Sc::Terrain::T
         for ( s64 yc = std::max(s64(0), yStart); yc < yEnd; yc++ )
         {
             for ( s64 xc = std::max(s64(0), xStart); xc < xEnd; xc++ )
-                bitmap[yc*width + xc] = black;
+                bitmap[size_t(yc*width + xc)] = black;
         }
     }
 }
 
-void DrawMiniTileElevation(HDC hDC, const Sc::Terrain::Tiles & tiles, s64 xOffset, s64 yOffset, u16 tileValue, s64 miniTileX, s64 miniTileY, BITMAPINFO & bmi)
+void TileToBits(ChkdBitmap & bitmap, ChkdPalette & palette, const Sc::Terrain::Tiles & tiles, s64 xStart, s64 yStart, s64 width, s64 height, u16 TileValue,
+    u8 redOffset, u8 blueOffset, u8 greenOffset)
+{
+    size_t groupIndex = Sc::Terrain::Tiles::getGroupIndex(TileValue);
+    if ( groupIndex < tiles.tileGroups.size() )
+    {
+        const Sc::Terrain::TileGroup & tileGroup = tiles.tileGroups[groupIndex];
+        const u16 & megaTileIndex = tileGroup.megaTileIndex[tiles.getGroupMemberIndex(TileValue)];
+        const Sc::Terrain::TileGraphicsEx & tileGraphics = tiles.tileGraphics[megaTileIndex];
+        for ( size_t yMiniTile = 0; yMiniTile < 4; yMiniTile++ )
+        {
+            s64 yMiniOffset = yStart + yMiniTile*8;
+            for ( size_t xMiniTile = 0; xMiniTile < 4; xMiniTile++ )
+            {
+                const Sc::Terrain::TileGraphicsEx::MiniTileGraphics & miniTileGraphics = tileGraphics.miniTileGraphics[yMiniTile][xMiniTile];
+                bool flipped = miniTileGraphics.isFlipped();
+                size_t vr4Index = size_t(miniTileGraphics.vr4Index());
+                
+                s64 xMiniOffset = xStart + xMiniTile*8;
+                s64 yMiniLimit = yMiniOffset+8 > height ? height-yMiniOffset : 8;
+                s64 xMiniLimit = xMiniOffset+8 > width ? width-xMiniOffset : 8;
+                for ( s64 yMiniPixel = yMiniOffset < 0 ? -yMiniOffset : 0; yMiniPixel < yMiniLimit; yMiniPixel++ )
+                {
+                    for ( s64 xMiniPixel = xMiniOffset < 0 ? -xMiniOffset : 0; xMiniPixel < xMiniLimit; xMiniPixel++ )
+                    {
+                        const Sc::Terrain::MiniTilePixels & miniTilePixels = tiles.miniTilePixels[vr4Index];
+                        const u8 & wpeIndex = miniTilePixels.wpeIndex[yMiniPixel][flipped ? 7-xMiniPixel : xMiniPixel];
+                        bitmap[size_t((yMiniOffset+yMiniPixel)*width + (xMiniOffset+xMiniPixel))] = Sc::SystemColor(palette[wpeIndex], redOffset, greenOffset, blueOffset);
+                    }
+                }
+            }
+        }
+    }
+    else // No CV5 Reference
+    {
+        s64 yEnd = std::min(yStart + 32, height);
+        s64 xEnd = std::min(xStart + 32, width);
+        for ( s64 yc = std::max(s64(0), yStart); yc < yEnd; yc++ )
+        {
+            for ( s64 xc = std::max(s64(0), xStart); xc < xEnd; xc++ )
+                bitmap[size_t(yc*width + xc)] = Sc::SystemColor(redOffset, greenOffset, blueOffset);
+        }
+    }
+}
+
+void DrawMiniTileElevation(const WinLib::DeviceContext & dc, const Sc::Terrain::Tiles & tiles, s64 xOffset, s64 yOffset, u16 tileValue, s64 miniTileX, s64 miniTileY, BITMAPINFO & bmi)
 {
     ChkdBitmap graphicBits;
     graphicBits.resize(64);
@@ -1020,21 +1369,21 @@ void DrawMiniTileElevation(HDC hDC, const Sc::Terrain::Tiles & tiles, s64 xOffse
         u8 red = 0, blue = 0, green = 100;
         switch ( miniTileFlags.getElevation() )
         {
-            case Sc::Terrain::TileElevation::Low: blue = 100; green = 0; break;
-            case Sc::Terrain::TileElevation::Mid: red = 100; green = 0; break;
+            //case Sc::Terrain::TileElevation::Low: break;
+            case Sc::Terrain::TileElevation::Mid: blue = 100; green = 0; break;
             case Sc::Terrain::TileElevation::High: red = 100; green = 0; break;
         }
 
         for ( s64 yc=0; yc<8; yc++ )
         {
             for ( s64 xc = 0; xc < 8; xc++ )
-                graphicBits[yc * 8 + xc] = Sc::SystemColor(red, green, blue);
+                graphicBits[size_t(yc * 8 + xc)] = Sc::SystemColor(red, green, blue);
         }
     }
-    SetDIBitsToDevice(hDC, (int)xOffset, (int)yOffset, 8, 8, 0, 0, 0, 8, &graphicBits[0], &bmi, DIB_RGB_COLORS);
+    dc.setBitsToDevice(int(xOffset), int(yOffset), 8, 8, 0, 0, 0, 8, &graphicBits[0], &bmi);
 }
 
-void DrawTileElevation(HDC hDC, const Sc::Terrain::Tiles & tiles, s16 xOffset, s16 yOffset, u16 tileValue, BITMAPINFO & bmi)
+void DrawTileElevation(const WinLib::DeviceContext & dc, const Sc::Terrain::Tiles & tiles, s16 xOffset, s16 yOffset, u16 tileValue, BITMAPINFO & bmi)
 {
     ChkdBitmap graphicBits;
     graphicBits.resize(1024);
@@ -1077,10 +1426,10 @@ void DrawTileElevation(HDC hDC, const Sc::Terrain::Tiles & tiles, s16 xOffset, s
             }
         }
     }
-    SetDIBitsToDevice(hDC, xOffset, yOffset, 32, 32, 0, 0, 0, 32, &graphicBits[0], &bmi, DIB_RGB_COLORS);
+    dc.setBitsToDevice(xOffset, yOffset, 32, 32, 0, 0, 0, 32, &graphicBits[0], &bmi);
 }
 
-void DrawTile(HDC hDC, ChkdPalette & palette, const Sc::Terrain::Tiles & tiles, s16 xOffset, s16 yOffset, u16 & TileValue, BITMAPINFO & bmi, u8 redOffset, u8 greenOffset, u8 blueOffset)
+void DrawTile(const WinLib::DeviceContext & dc, ChkdPalette & palette, const Sc::Terrain::Tiles & tiles, s16 xOffset, s16 yOffset, u16 TileValue, BITMAPINFO & bmi, u8 redOffset, u8 greenOffset, u8 blueOffset)
 {
     size_t groupIndex = Sc::Terrain::Tiles::getGroupIndex(TileValue);
     if ( groupIndex < tiles.tileGroups.size() )
@@ -1107,31 +1456,81 @@ void DrawTile(HDC hDC, ChkdPalette & palette, const Sc::Terrain::Tiles & tiles, 
                     {
                         const Sc::Terrain::MiniTilePixels & miniTilePixels = tiles.miniTilePixels[vr4Index];
                         const u8 & wpeIndex = miniTilePixels.wpeIndex[yMiniPixel][flipped ? 7-xMiniPixel : xMiniPixel];
-                        graphicBits[(yMiniOffset+yMiniPixel)*32 + (xMiniOffset+xMiniPixel)] = Sc::SystemColor(palette[wpeIndex], redOffset, greenOffset, blueOffset);
+                        graphicBits[size_t((yMiniOffset+yMiniPixel)*32 + (xMiniOffset+xMiniPixel))] = Sc::SystemColor(palette[wpeIndex], redOffset, greenOffset, blueOffset);
                     }
                 }
             }
         }
-        SetDIBitsToDevice(hDC, xOffset, yOffset, 32, 32, 0, 0, 0, 32, &graphicBits[0], &bmi, DIB_RGB_COLORS);
+        dc.setBitsToDevice(xOffset, yOffset, 32, 32, 0, 0, 0, 32, &graphicBits[0], &bmi);
     }
 }
 
-void DrawTools(HDC hDC, HBITMAP bitmap, ChkdPalette & palette, u16 width, u16 height, u32 screenLeft, u32 screenTop,
+void DrawTools(Graphics & graphics, const WinLib::DeviceContext & dc, ChkdPalette & palette, ChkdPalette & staticPalette, u16 width, u16 height, u32 screenLeft, u32 screenTop,
     Selections & selections, bool pasting, Clipboard & clipboard, GuiMap & map)
 {
-    if ( map.getLayer() == Layer::Terrain && selections.hasTiles() ) // Draw selected tiles
-        DrawTileSel(hDC, palette, width, height, screenLeft, screenTop, selections, map);
+    if ( map.getLayer() == Layer::Terrain && graphics.DisplayingBuildability() )
+        DrawTileBuildability(dc, palette, width, height, screenLeft, screenTop, map);
+    if ( selections.hasTiles() && (map.getLayer() == Layer::Terrain || map.getLayer() == Layer::CutCopyPaste) ) // Draw selected tiles
+        DrawTileSel(dc, palette, width, height, screenLeft, screenTop, selections, map);
     else if ( map.getLayer() == Layer::Locations ) // Draw Location Creation/Movement Graphics
-        DrawTempLocs(hDC, screenLeft, screenTop, selections, map);
+        DrawTempLocs(dc, screenLeft, screenTop, selections, map);
+    
+    if ( map.getLayer() == Layer::Doodads || map.getLayer() == Layer::CutCopyPaste ) // Draw selected doodads
+        DrawDoodadSel(dc, width, height, screenLeft, screenTop, selections, map);
 
-    if ( pasting ) // Draw paste graphics
-        DrawPasteGraphics(hDC, bitmap, palette, width, height, screenLeft, screenTop, selections, clipboard, map, map.getLayer());
+    if ( map.getLayer() == Layer::CutCopyPaste )
+        DrawFogTileSel(dc, palette, width, height, screenLeft, screenTop, selections, map);
+
+    if ( pasting || map.getLayer() == Layer::FogEdit ) // Draw paste graphics
+        DrawPasteGraphics(dc, palette, staticPalette, width, height, screenLeft, screenTop, selections, clipboard, map, map.getLayer(), map.getSubLayer());
 }
 
-void DrawTileSel(HDC hDC, ChkdPalette & palette, u16 width, u16 height, u32 screenLeft, u32 screenTop, Selections & selections, GuiMap & map)
+void DrawTileBuildability(const WinLib::DeviceContext & dc, ChkdPalette & palette, u16 width, u16 height, u32 screenLeft, u32 screenTop, GuiMap & map)
 {
-    HPEN pen = CreatePen(PS_SOLID, 0, RGB(0, 255, 255));
-    SelectObject(hDC, pen);
+    WinLib::DeviceContext unbuildableTile {dc, 32, 32};
+    unbuildableTile.fillRect(RECT{0, 0, 32, 32}, RGB(255, 0, 0));
+    WinLib::DeviceContext buildableTile {dc, 32, 32};
+    buildableTile.fillRect(RECT{0, 0, 32, 32}, RGB(0, 255, 0));
+
+    BLENDFUNCTION blendFunction {};
+    blendFunction.BlendOp = AC_SRC_OVER;
+    blendFunction.SourceConstantAlpha = 32;
+
+    u16 leftTile = screenLeft/32;
+    u16 topTile = screenTop/32;
+    u16 rightTile = (screenLeft+width+31)/32;
+    u16 bottomTile = (screenTop+height+31)/32;
+    
+    Sc::Terrain::Tileset tileset = map.getTileset();
+    const Sc::Terrain::Tiles & tiles = chkd.scData.terrain.get(tileset);
+
+    for ( u16 y=topTile; y<bottomTile; ++y )
+    {
+        for ( u16 x=leftTile; x<rightTile; ++x )
+        {
+            auto tile = map.getTile(x, y);
+            auto & tileGroup = tiles.tileGroups[Sc::Terrain::Tiles::getGroupIndex(tile)];
+            auto tileFlags = tileGroup.flags;
+            bool unbuildable = (tileFlags & Sc::Terrain::TileGroup::Flags::Unbuildable) == Sc::Terrain::TileGroup::Flags::Unbuildable;
+            
+            int xStart = int(x)*32-screenLeft;
+            int yStart = int(y)*32-screenTop;
+            AlphaBlend(dc.getDcHandle(), xStart, yStart, 32, 32,
+                unbuildable ? unbuildableTile.getDcHandle() : buildableTile.getDcHandle(), 0, 0, 32, 32, blendFunction);
+        }
+    }
+}
+
+void DrawTileSel(const WinLib::DeviceContext & dc, ChkdPalette & palette, u16 width, u16 height, u32 screenLeft, u32 screenTop, Selections & selections, GuiMap & map)
+{
+    WinLib::DeviceContext tileBlend {dc, 32, 32};
+    tileBlend.fillRect(RECT{0, 0, 32, 32}, RGB(0, 0, 255));
+
+    BLENDFUNCTION blendFunction {};
+    blendFunction.BlendOp = AC_SRC_OVER;
+    blendFunction.SourceConstantAlpha = 32;
+
+    dc.setPen(PS_SOLID, 0, RGB(0, 255, 255));
     RECT rect, rcBorder;
     
     Sc::Terrain::Tileset tileset = map.getTileset();
@@ -1152,18 +1551,10 @@ void DrawTileSel(HDC hDC, ChkdPalette & palette, u16 width, u16 height, u32 scre
              tile.yc < rcBorder.bottom )
         // If tile is within current map border
         {
-            // Draw tile with a blue haze, might replace with blending
-                DrawTile( hDC,
-                          palette,
-                          tiles,
-                          s16(tile.xc*32-screenLeft),
-                          s16(tile.yc*32-screenTop),
-                          tile.value,
-                          bmi,
-                          0,
-                          0,
-                          32
-                        );
+            int xStart = int(tile.xc)*32-screenLeft;
+            int yStart = int(tile.yc)*32-screenTop;
+            AlphaBlend(dc.getDcHandle(), xStart, yStart, 32, 32,
+                tileBlend.getDcHandle(), 0, 0, 32, 32, blendFunction);
 
             if ( tile.neighbors != TileNeighbor::None ) // if any edges need to be drawn
             {
@@ -1174,44 +1565,241 @@ void DrawTileSel(HDC hDC, ChkdPalette & palette, u16 width, u16 height, u32 scre
 
                 if ( (tile.neighbors & TileNeighbor::Top) == TileNeighbor::Top )
                 {
-                    MoveToEx(hDC, rect.left , rect.top, NULL);
-                    LineTo  (hDC, rect.right, rect.top      );
+                    dc.moveTo(rect.left, rect.top);
+                    dc.lineTo(rect.right, rect.top);
                 }
                 if ( (tile.neighbors & TileNeighbor::Right) == TileNeighbor::Right )
                 {
                     if ( rect.right >= width )
                         rect.right --;
 
-                    MoveToEx(hDC, rect.right, rect.top     , NULL);
-                    LineTo  (hDC, rect.right, rect.bottom+1      );
+                    dc.moveTo(rect.right, rect.top);
+                    dc.lineTo(rect.right, rect.bottom+1);
                 }
                 if ( (tile.neighbors & TileNeighbor::Bottom) == TileNeighbor::Bottom )
                 {
                     if ( rect.bottom >= height )
                         rect.bottom --;
 
-                    MoveToEx(hDC, rect.left , rect.bottom, NULL);
-                    LineTo  (hDC, rect.right, rect.bottom      );
+                    dc.moveTo(rect.left, rect.bottom);
+                    dc.lineTo(rect.right, rect.bottom);
                 }
                 if ( (tile.neighbors & TileNeighbor::Left) == TileNeighbor::Left )
                 {
-                    MoveToEx(hDC, rect.left, rect.bottom, NULL);
-                    LineTo  (hDC, rect.left, rect.top-1       );
+                    dc.moveTo(rect.left, rect.bottom);
+                    dc.lineTo(rect.left, rect.top-1);
                 }
             }
         }
     }
 }
 
-void DrawPasteGraphics( HDC hDC, HBITMAP bitmap, ChkdPalette & palette, u16 width, u16 height, u32 screenLeft, u32 screenTop,
-                        Selections & selections, Clipboard & clipboard, GuiMap & map, Layer layer )
+void DrawFogTileSel(const WinLib::DeviceContext & dc, ChkdPalette & palette, u16 width, u16 height, u32 screenLeft, u32 screenTop, Selections & selections, GuiMap & map)
 {
-    if ( layer == Layer::Terrain )
+    auto currPlayer = Sc::Player::Id(map.getCurrPlayer());
+    if ( currPlayer > Sc::Player::Id::Player8 )
+        return;
+
+    WinLib::DeviceContext tileBlend {dc, 32, 32};
+    tileBlend.fillRect(RECT{0, 0, 32, 32}, RGB(255, 128, 0));
+
+    BLENDFUNCTION blendFunction {};
+    blendFunction.BlendOp = AC_SRC_OVER;
+    blendFunction.SourceConstantAlpha = 32;
+
+    dc.setPen(PS_SOLID, 0, RGB(255, 50, 255));
+    RECT rect, rcBorder;
+
+    BITMAPINFO bmi = GetBMI(32, 32);
+    rcBorder.left   = (0      + screenLeft)/32 - 1;
+    rcBorder.right  = (width  + screenLeft)/32 + 1;
+    rcBorder.top    = (0      + screenTop)/32 - 1;
+    rcBorder.bottom = (height + screenTop)/32 + 1;
+
+    auto & selFogTiles = selections.getFogTiles();
+    for ( auto & tile : selFogTiles )
     {
-        HPEN pen = CreatePen(PS_SOLID, 0, RGB(0, 255, 255));
-        SelectObject(hDC, pen);
+        if ( tile.xc > rcBorder.left &&
+             tile.xc < rcBorder.right &&
+             tile.yc > rcBorder.top &&
+             tile.yc < rcBorder.bottom )
+        // If tile is within current map border
+        {
+            AlphaBlend(dc.getDcHandle(), int(tile.xc)*32-screenLeft, int(tile.yc)*32-screenTop, 32, 32,
+                tileBlend.getDcHandle(), 0, 0, 32, 32, blendFunction);
+
+            if ( tile.neighbors != TileNeighbor::None ) // if any edges need to be drawn
+            {
+                rect.left   = tile.xc*32 - screenLeft;
+                rect.right  = tile.xc*32 - screenLeft + 32;
+                rect.top    = tile.yc*32 - screenTop;
+                rect.bottom = tile.yc*32 - screenTop + 32;
+
+                if ( (tile.neighbors & TileNeighbor::Top) == TileNeighbor::Top )
+                {
+                    dc.moveTo(rect.left, rect.top);
+                    dc.lineTo(rect.right, rect.top);
+                }
+                if ( (tile.neighbors & TileNeighbor::Right) == TileNeighbor::Right )
+                {
+                    if ( rect.right >= width )
+                        rect.right --;
+
+                    dc.moveTo(rect.right, rect.top);
+                    dc.lineTo(rect.right, rect.bottom+1);
+                }
+                if ( (tile.neighbors & TileNeighbor::Bottom) == TileNeighbor::Bottom )
+                {
+                    if ( rect.bottom >= height )
+                        rect.bottom --;
+
+                    dc.moveTo(rect.left, rect.bottom);
+                    dc.lineTo(rect.right, rect.bottom);
+                }
+                if ( (tile.neighbors & TileNeighbor::Left) == TileNeighbor::Left )
+                {
+                    dc.moveTo(rect.left, rect.bottom);
+                    dc.lineTo(rect.left, rect.top-1);
+                }
+            }
+        }
+    }
+}
+
+void DrawDoodadSel(const WinLib::DeviceContext & dc, u16 width, u16 height, u32 screenLeft, u32 screenTop, Selections & selections, GuiMap & map)
+{
+    dc.setPen(PS_SOLID, 0, RGB(255, 0, 0));
+    const auto & selDoodads = selections.getDoodads();
+    for ( auto index : selDoodads )
+    {
+        const auto & selDoodad = map.getDoodad(index);
+        const auto & tileset = chkd.scData.terrain.get(CM->getTileset());
+        if ( auto doodadGroupIndex = tileset.getDoodadGroupIndex(selDoodad.type) )
+        {
+            const auto & doodad = (Sc::Terrain::DoodadCv5 &)tileset.tileGroups[size_t(*doodadGroupIndex)];
+            s32 doodadWidth = 32*s32(doodad.tileWidth);
+            s32 doodadHeight = 32*s32(doodad.tileHeight);
+            s32 left = (s32(selDoodad.xc) - doodadWidth/2 + 16)/32*32;
+            s32 top = (s32(selDoodad.yc) - doodadHeight/2 + 16)/32*32;
+            s32 right = left+doodadWidth;
+            s32 bottom = top+doodadHeight;
+
+            s32 screenRight = s32(screenLeft)+width;
+            s32 screenBottom = s32(screenTop)+height;
+            bool inBounds = left <= screenRight && top <= screenBottom && right >= s32(screenLeft) && bottom >= s32(screenTop);
+            if ( inBounds )
+            {            
+                left -= screenLeft;
+                right -= screenLeft;
+                top -= screenTop;
+                bottom -= screenTop;
+                dc.moveTo(left, top);
+                dc.lineTo(right, top);
+                dc.lineTo(right, bottom);
+                dc.lineTo(left, bottom);
+                dc.lineTo(left, top);
+            }
+        }
+    }
+}
+
+void DrawPasteGraphics(const WinLib::DeviceContext & dc, ChkdPalette & palette, ChkdPalette & staticPalette, u16 width, u16 height, u32 screenLeft, u32 screenTop,
+                        Selections & selections, Clipboard & clipboard, GuiMap & map, Layer layer, TerrainSubLayer subLayer)
+{
+    auto drawPasteTerrain = [&](POINT paste) {
+        if ( subLayer == TerrainSubLayer::Isom && layer != Layer::CutCopyPaste )
+        {
+            dc.setPen(PS_SOLID, 0, RGB(255, 0, 0));
+            auto diamond = Chk::IsomDiamond::fromMapCoordinates(paste.x, paste.y);
+
+            s32 diamondCenterX = s32(diamond.x)*64-screenLeft;
+            s32 diamondCenterY = s32(diamond.y)*32-screenTop;
+            dc.moveTo(diamondCenterX-64, diamondCenterY); // Start from diamond left corner
+            dc.lineTo(diamondCenterX, diamondCenterY-32); // Draw top-left
+            dc.lineTo(diamondCenterX+64, diamondCenterY); // Draw top-right
+            dc.lineTo(diamondCenterX, diamondCenterY+32); // Draw bottom-right
+            dc.lineTo(diamondCenterX-64, diamondCenterY); // Draw bottom-left
+        }
+        else if ( subLayer == TerrainSubLayer::Rectangular || layer == Layer::CutCopyPaste )
+        {
+            dc.setPen(PS_SOLID, 0, RGB(0, 255, 255));
     
-        RECT rect, rcShade;
+            RECT rect, rcShade;
+            Sc::Terrain::Tileset tileset = map.getTileset();
+            const Sc::Terrain::Tiles & tiles = chkd.scData.terrain.get(tileset);
+    
+            BITMAPINFO bmi = GetBMI(32, 32);
+            rcShade.left   = -32;
+            rcShade.right  = width  + 32;
+            rcShade.top    = -32;
+            rcShade.bottom = height + 32;
+    
+            POINT center;
+            center.x = paste.x + 16;
+            center.y = paste.y + 16;
+    
+            std::vector<PasteTileNode> & pasteTiles = clipboard.getTiles();
+            for ( auto & tile : pasteTiles )
+            {
+                rect.left   = ( tile.xc + center.x      )/32*32 - screenLeft;
+                rect.top    = ( tile.yc + center.y      )/32*32 - screenTop;
+                rect.right  = ( tile.xc + 32 + center.x )/32*32 - screenLeft;
+                rect.bottom = ( tile.yc + 32 + center.y )/32*32 - screenTop;
+
+                if ( rect.left > rcShade.left && rect.left < rcShade.right && rect.top > rcShade.top && rect.top < rcShade.bottom )
+                // If tile is within current map border
+                {
+                    // Draw tile with a blue haze
+                    DrawTile(dc, palette, tiles, (s16)rect.left, (s16)rect.top, tile.value, bmi, 0, 0, 32);
+
+                    if ( tile.neighbors != TileNeighbor::None ) // if any edges need to be drawn
+                    {
+                        if ( (tile.neighbors & TileNeighbor::Top) == TileNeighbor::Top )
+                        {
+                            dc.moveTo(rect.left, rect.top);
+                            dc.lineTo(rect.right, rect.top);
+                        }
+                        if ( (tile.neighbors & TileNeighbor::Right) == TileNeighbor::Right )
+                        {
+                            if ( rect.right >= width )
+                                rect.right --;
+    
+                            dc.moveTo(rect.right, rect.top);
+                            dc.lineTo(rect.right, rect.bottom+1);
+                        }
+                        if ( (tile.neighbors & TileNeighbor::Bottom) == TileNeighbor::Bottom )
+                        {
+                            if ( rect.bottom >= height )
+                                rect.bottom --;
+
+                            dc.moveTo(rect.left, rect.bottom);
+                            dc.lineTo(rect.right, rect.bottom);
+                        }
+                        if ( (tile.neighbors & TileNeighbor::Left) == TileNeighbor::Left )
+                        {
+                            dc.moveTo(rect.left, rect.bottom);
+                            dc.lineTo(rect.left, rect.top-1);
+                        }
+                    }
+                }
+            }
+        }
+    };
+    auto drawPasteFog = [&](POINT paste) {
+        auto currPlayer = Sc::Player::Id(CM->getCurrPlayer());
+        if ( currPlayer > Sc::Player::Id::Player8 )
+            return; // No fog to render
+
+        WinLib::DeviceContext tileBlend {dc, 32, 32};
+        tileBlend.fillRect(RECT{0, 0, 32, 32}, RGB(0, 0, 0));
+
+        BLENDFUNCTION blendFunction {};
+        blendFunction.BlendOp = AC_SRC_OVER;
+        blendFunction.SourceConstantAlpha = 96;
+
+        dc.setPen(PS_SOLID, 0, RGB(0, 255, 255));
+    
+        RECT rect {}, rcShade {};
         Sc::Terrain::Tileset tileset = map.getTileset();
         const Sc::Terrain::Tiles & tiles = chkd.scData.terrain.get(tileset);
     
@@ -1222,90 +1810,280 @@ void DrawPasteGraphics( HDC hDC, HBITMAP bitmap, ChkdPalette & palette, u16 widt
         rcShade.bottom = height + 32;
     
         POINT center;
-        center.x = selections.getEndDrag().x + 16;
-        center.y = selections.getEndDrag().y + 16;
-    
-        std::vector<PasteTileNode> & pasteTiles = clipboard.getTiles();
-        for ( auto & tile : pasteTiles )
+        center.x = paste.x + 16;
+        center.y = paste.y + 16;
+
+        auto fogTiles = clipboard.getFogTiles();
+        for ( auto & fogTile : fogTiles )
         {
-            rect.left   = ( tile.xc + center.x      )/32*32 - screenLeft;
-            rect.top    = ( tile.yc + center.y      )/32*32 - screenTop;
-            rect.right  = ( tile.xc + 32 + center.x )/32*32 - screenLeft;
-            rect.bottom = ( tile.yc + 32 + center.y )/32*32 - screenTop;
+            rect.left   = ( fogTile.xc + center.x      )/32*32 - screenLeft;
+            rect.top    = ( fogTile.yc + center.y      )/32*32 - screenTop;
+            rect.right  = ( fogTile.xc + 32 + center.x )/32*32 - screenLeft;
+            rect.bottom = ( fogTile.yc + 32 + center.y )/32*32 - screenTop;
 
             if ( rect.left > rcShade.left && rect.left < rcShade.right && rect.top > rcShade.top && rect.top < rcShade.bottom )
             // If tile is within current map border
             {
-                // Draw tile with a blue haze
-                    DrawTile(hDC, palette, tiles, (s16)rect.left, (s16)rect.top, tile.value, bmi, 0, 0, 32);
-
-                if ( tile.neighbors != TileNeighbor::None ) // if any edges need to be drawn
+                if ( (fogTile.value & u8Bits[currPlayer]) != 0 )
                 {
-                    if ( (tile.neighbors & TileNeighbor::Top) == TileNeighbor::Top )
+                    AlphaBlend(dc.getDcHandle(), rect.left, rect.top, 32, 32,
+                        tileBlend.getDcHandle(), 0, 0, 32, 32, blendFunction);
+                }
+
+                if ( fogTile.neighbors != TileNeighbor::None ) // if any edges need to be drawn
+                {
+                    if ( (fogTile.neighbors & TileNeighbor::Top) == TileNeighbor::Top )
                     {
-                        MoveToEx(hDC, rect.left , rect.top, NULL);
-                        LineTo  (hDC, rect.right, rect.top      );
+                        dc.moveTo(rect.left, rect.top);
+                        dc.lineTo(rect.right, rect.top);
                     }
-                    if ( (tile.neighbors & TileNeighbor::Right) == TileNeighbor::Right )
+                    if ( (fogTile.neighbors & TileNeighbor::Right) == TileNeighbor::Right )
                     {
                         if ( rect.right >= width )
                             rect.right --;
     
-                        MoveToEx(hDC, rect.right, rect.top, NULL);
-                        LineTo  (hDC, rect.right, rect.bottom+1 );
+                        dc.moveTo(rect.right, rect.top);
+                        dc.lineTo(rect.right, rect.bottom+1);
                     }
-                    if ( (tile.neighbors & TileNeighbor::Bottom) == TileNeighbor::Bottom )
+                    if ( (fogTile.neighbors & TileNeighbor::Bottom) == TileNeighbor::Bottom )
                     {
                         if ( rect.bottom >= height )
                             rect.bottom --;
 
-                        MoveToEx(hDC, rect.left , rect.bottom, NULL);
-                        LineTo  (hDC, rect.right, rect.bottom      );
+                        dc.moveTo(rect.left, rect.bottom);
+                        dc.lineTo(rect.right, rect.bottom);
                     }
-                    if ( (tile.neighbors & TileNeighbor::Left) == TileNeighbor::Left )
+                    if ( (fogTile.neighbors & TileNeighbor::Left) == TileNeighbor::Left )
                     {
-                        MoveToEx(hDC, rect.left, rect.bottom, NULL);
-                        LineTo  (hDC, rect.left, rect.top-1       );
+                        dc.moveTo(rect.left, rect.bottom);
+                        dc.lineTo(rect.left, rect.top-1);
                     }
                 }
             }
         }
-    }
-    else if ( layer == Layer::Units )
-    {
+    };
+    auto drawPasteDoodads = [&](POINT paste) {
+        bool allowIllegalDoodads = map.AllowIllegalDoodadPlacement();
+        const auto & doodads = clipboard.getDoodads();
+        if ( !doodads.empty() )
+        {
+            ChkdBitmap graphicBits {};
+            graphicBits.resize(((size_t)width)*((size_t)height));
+
+            BITMAPINFO bmi = GetBMI(width, height);
+            dc.getDiBits(0, height, &graphicBits[0], &bmi);
+
+            const Sc::Terrain::Tiles & tiles = chkd.scData.terrain.get(map.getTileset());
+            POINT center { paste.x, paste.y };
+            for ( auto & doodad : doodads )
+            {
+                auto tileWidth = doodad.tileWidth;
+                auto tileHeight = doodad.tileHeight;
+                bool evenWidth = tileWidth%2 == 0;
+                bool evenHeight = tileHeight%2 == 0;
+                auto xStart = evenWidth ? -16*doodad.tileWidth - screenLeft + (center.x+doodad.tileX*32+16)/32*32 : -16*(doodad.tileWidth-1) - screenLeft + (center.x+doodad.tileX*32)/32*32;
+                auto yStart = evenHeight ? -16*doodad.tileHeight - screenTop + (center.y+doodad.tileY*32+16)/32*32 : -16*(doodad.tileHeight-1) - screenTop + (center.y+doodad.tileY*32)/32*32;
+                auto xTileStart = (screenLeft+xStart)/32;
+                auto yTileStart = (screenTop+yStart)/32;
+                const auto & placability = tiles.doodadPlacibility[doodad.doodadId];
+                if ( xStart < width && yStart < height )
+                {
+                    for ( u16 y=0; y<tileHeight; ++y )
+                    {
+                        for ( u16 x=0; x<tileWidth; ++x )
+                        {
+                            if ( doodad.tileIndex[x][y] != 0 )
+                            {
+                                if ( placability.tileGroup[y*tileWidth+x] == 0 )
+                                    TileToBits(graphicBits, palette, tiles, xStart+32*x, yStart+32*y, width, height, doodad.tileIndex[x][y]);
+                                else
+                                {
+                                    size_t tileXc = xTileStart+x;
+                                    size_t tileYc = yTileStart+y;
+                                    if ( tileXc < map.dimensions.tileWidth && tileYc < map.dimensions.tileHeight )
+                                    {
+                                        u16 existingTileGroup = map.getTile(tileXc, tileYc) / 16;
+                                        if ( existingTileGroup == placability.tileGroup[y*tileWidth+x] || allowIllegalDoodads )
+                                            TileToBits(graphicBits, palette, tiles, xStart+32*x, yStart+32*y, width, height, doodad.tileIndex[x][y], 0, 0, 25);
+                                        else
+                                            TileToBits(graphicBits, palette, tiles, xStart+32*x, yStart+32*y, width, height, doodad.tileIndex[x][y], 100, 0, 0);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if ( doodad.overlayIndex != 0 )
+                    {
+                        if ( doodad.isSprite() )
+                        {
+                            SpriteToBits(graphicBits, staticPalette, Chk::PlayerColor::Azure_NeutralColor, width, height,
+                                0, 0, doodad.overlayIndex, u16(xStart+tileWidth*16), u16(yStart+tileHeight*16), doodad.overlayFlipped(), false);
+                        }
+                        else // Overlay is unit index
+                        {
+                            auto spriteIndex = chkd.scData.units.getFlingy(chkd.scData.units.getUnit(Sc::Unit::Type(doodad.overlayIndex)).graphics).sprite;
+                            SpriteToBits(graphicBits, palette, Chk::PlayerColor::Azure_NeutralColor, width, height,
+                                0, 0, spriteIndex, u16(xStart+tileWidth*16), u16(yStart+tileHeight*16), doodad.overlayFlipped(), false);
+                        }
+                    }
+                }
+            }
+
+            dc.setBitsToDevice(0, 0, width, height, 0, 0, 0, height, &graphicBits[0], &bmi);
+        }
+    };
+    auto drawPasteUnits = [&](POINT paste) {
         ChkdBitmap graphicBits;
         graphicBits.resize(((size_t)width)*((size_t)height));
 
         BITMAPINFO bmi = GetBMI(width, height);
-        GetDIBits(hDC, bitmap, 0, height, &graphicBits[0], &bmi, DIB_RGB_COLORS);
+        dc.getDiBits(0, height, &graphicBits[0], &bmi);
 
         u16 tileset = map.getTileset();
 
         s32 sScreenLeft = screenLeft;
         s32 sScreenTop = screenTop;
 
-        POINT cursor = selections.getEndDrag();
-        if ( cursor.x != -1 && cursor.y != -1 )
+        if ( paste.x != -1 && paste.y != -1 )
         {
             std::vector<PasteUnitNode> units = clipboard.getUnits();
             for ( auto & pasteUnit : units )
             {
                 Chk::PlayerColor color = (pasteUnit.unit.owner < Sc::Player::TotalSlots ?
                     map.getPlayerColor(pasteUnit.unit.owner) : (Chk::PlayerColor)pasteUnit.unit.owner);
-                if ( cursor.y+ pasteUnit.yc >= 0 )
+
+                if ( paste.y + pasteUnit.yc >= 0 )
                 {
                     UnitToBits(graphicBits, palette, color, width, height, sScreenLeft, sScreenTop,
-                        (u16)pasteUnit.unit.type, u16(cursor.x+ pasteUnit.xc), u16(cursor.y+ pasteUnit.yc), 0, false );
+                        (u16)pasteUnit.unit.type, u16(paste.x + pasteUnit.xc), u16(paste.y + pasteUnit.yc), 0, false, pasteUnit.unit.isLifted());
                 }
             }
         }
 
-        SetDIBitsToDevice( hDC, 0, 0, width, height, 0, 0, 0,
-                           height, &graphicBits[0], &bmi, DIB_RGB_COLORS);
+        dc.setBitsToDevice(0, 0, width, height, 0, 0, 0, height, &graphicBits[0], &bmi);
+        
+        if ( paste.x != -1 && paste.y != -1 )
+        {
+            std::vector<PasteUnitNode> units = clipboard.getUnits();
+            for ( auto & pasteUnit : units )
+            {
+                if ( pasteUnit.unit.type < Sc::Unit::TotalTypes )
+                {
+                    const auto & unitDat = chkd.scData.units.getUnit(pasteUnit.unit.type);
+                    bool isValidPlacement = map.isValidUnitPlacement(pasteUnit.unit.type, paste.x + pasteUnit.xc, paste.y + pasteUnit.yc);
+                    bool isBuilding = (unitDat.flags & Sc::Unit::Flags::Building) == Sc::Unit::Flags::Building;
+                    if ( isBuilding )
+                    {
+                        s32 left = paste.x + pasteUnit.xc - unitDat.starEditPlacementBoxWidth/2 - screenLeft;
+                        s32 top = paste.y + pasteUnit.yc - unitDat.starEditPlacementBoxHeight/2 - screenTop;
+                        s32 right = paste.x + pasteUnit.xc + unitDat.starEditPlacementBoxWidth/2 - screenLeft;
+                        s32 bottom = paste.y + pasteUnit.yc + unitDat.starEditPlacementBoxHeight/2 - screenTop;
+                        dc.frameRect(RECT{left, top, right, bottom}, isValidPlacement ? RGB(0, 255, 0) : RGB(255, 0, 0));
+                    }
+                    else
+                    {
+                        s32 left = paste.x + pasteUnit.xc - unitDat.unitSizeLeft - screenLeft;
+                        s32 top = paste.y + pasteUnit.yc - unitDat.unitSizeUp - screenTop;
+                        s32 right = paste.x + pasteUnit.xc + unitDat.unitSizeRight - screenLeft;
+                        s32 bottom = paste.y + pasteUnit.yc + unitDat.unitSizeDown - screenTop;
+                        dc.frameRect(RECT{left, top, right, bottom}, isValidPlacement ? RGB(0, 255, 0) : RGB(255, 0, 0));
+                    }
+                }
+            }
+        }
+    };
+    auto drawPasteSprites = [&](POINT paste) {
+        ChkdBitmap graphicBits;
+        graphicBits.resize(((size_t)width)*((size_t)height));
+
+        BITMAPINFO bmi = GetBMI(width, height);
+        dc.getDiBits(0, height, &graphicBits[0], &bmi);
+
+        u16 tileset = map.getTileset();
+
+        s32 sScreenLeft = screenLeft;
+        s32 sScreenTop = screenTop;
+
+        if ( paste.x != -1 && paste.y != -1 )
+        {
+            std::vector<PasteSpriteNode> sprites = clipboard.getSprites();
+            for ( auto & pasteSprite : sprites )
+            {
+                Chk::PlayerColor color = (pasteSprite.sprite.owner < Sc::Player::TotalSlots ?
+                    map.getPlayerColor(pasteSprite.sprite.owner) : (Chk::PlayerColor)pasteSprite.sprite.owner);
+
+                if ( paste.y + pasteSprite.yc >= 0 )
+                {
+                    if ( pasteSprite.sprite.isDrawnAsSprite() )
+                    {
+                        SpriteToBits(graphicBits, staticPalette, color, width, height, sScreenLeft, sScreenTop,
+                            (u16)pasteSprite.sprite.type, u16(paste.x + pasteSprite.xc), u16(paste.y + pasteSprite.yc), false, false);
+                    }
+                    else
+                    {
+                        UnitToBits(graphicBits, palette, color, width, height,
+                            sScreenLeft, sScreenTop, (u16)pasteSprite.sprite.type, u16(paste.x + pasteSprite.xc), u16(paste.y + pasteSprite.yc),
+                            0, false);
+                    }
+                }
+            }
+        }
+
+        dc.setBitsToDevice(0, 0, width, height, 0, 0, 0, height, &graphicBits[0], &bmi);
+    };
+
+    if ( layer == Layer::Terrain )
+        drawPasteTerrain(selections.getEndDrag());
+    else if ( layer == Layer::Doodads )
+        drawPasteDoodads(selections.getEndDrag());
+    else if ( layer == Layer::Units )
+        drawPasteUnits(selections.getEndDrag());
+    else if ( layer == Layer::Sprites )
+        drawPasteSprites(selections.getEndDrag());
+    else if ( layer == Layer::FogEdit )
+    {
+        const auto brushWidth = clipboard.getFogBrush().width;
+        const auto brushHeight = clipboard.getFogBrush().height;
+        s32 hoverTileX = (selections.getEndDrag().x + (brushWidth % 2 == 0 ? 16 : 0))/32;
+        s32 hoverTileY = (selections.getEndDrag().y + (brushHeight % 2 == 0 ? 16 : 0))/32;
+
+        const auto startX = 32*(hoverTileX - brushWidth/2) - screenLeft;
+        const auto startY = 32*(hoverTileY - brushHeight/2) - screenTop;
+        const auto endX = startX+32*brushWidth;
+        const auto endY = startY+32*brushHeight;
+
+        dc.setPen(PS_SOLID, 0, RGB(0, 255, 255));
+        dc.moveTo(startX, startY); // From top-right...
+        dc.lineTo(endX, startY); // Draw top
+        dc.lineTo(endX, endY); // Draw right
+        dc.lineTo(startX, endY); // Draw bottom
+        dc.lineTo(startX, startY); // Draw left
+    }
+    else if ( layer == Layer::CutCopyPaste )
+    {
+        POINT paste = selections.getEndDrag();
+        bool pastingTerrain = map.getCutCopyPasteTerrain() && clipboard.hasTiles();
+        bool pastingDoodads = map.getCutCopyPasteDoodads() && clipboard.hasDoodads();
+        bool pastingFog = map.getCutCopyPasteFog() && clipboard.hasFogTiles();
+        if ( pastingTerrain || pastingDoodads || pastingFog ) // If paste includes tile-based entities, force paste onto tiles
+        {
+            paste.x = (paste.x+16)/32*32;
+            paste.y = (paste.y+16)/32*32;
+        }
+        if ( pastingTerrain )
+            drawPasteTerrain(paste);
+        if ( pastingDoodads )
+            drawPasteDoodads(paste);
+        if ( pastingFog)
+            drawPasteFog(paste);
+        if ( map.getCutCopyPasteUnits() )
+            drawPasteUnits(paste);
+        if ( map.getCutCopyPasteSprites() )
+            drawPasteSprites(paste);
     }
 }
 
-void DrawTempLocs(HDC hDC, u32 screenLeft, u32 screenTop, Selections & selections, GuiMap & map)
+void DrawTempLocs(const WinLib::DeviceContext & dc, u32 screenLeft, u32 screenTop, Selections & selections, GuiMap & map)
 {
     POINT start = selections.getStartDrag();
     POINT end = selections.getEndDrag();
@@ -1315,7 +2093,7 @@ void DrawTempLocs(HDC hDC, u32 screenLeft, u32 screenTop, Selections & selection
             top = start.y-screenTop,
             right = end.x-screenLeft,
             bottom = end.y-screenTop;
-        DrawLocationFrame(hDC, start.x-screenLeft, start.y-screenTop, end.x-screenLeft, end.y-screenTop);
+        DrawLocationFrame(dc, start.x-screenLeft, start.y-screenTop, end.x-screenLeft, end.y-screenTop);
     }
     else 
     {
@@ -1352,23 +2130,23 @@ void DrawTempLocs(HDC hDC, u32 screenLeft, u32 screenTop, Selections & selection
 
             switch ( locFlags )
             {
-                case LocSelFlags::North: DrawLocationFrame(hDC, locLeft, locTop+dragY, locRight, locBottom); break;
-                case LocSelFlags::South: DrawLocationFrame(hDC, locLeft, locTop, locRight, locBottom+dragY); break;
-                case LocSelFlags::East: DrawLocationFrame(hDC, locLeft, locTop, locRight+dragX, locBottom); break;
-                case LocSelFlags::West: DrawLocationFrame(hDC, locLeft+dragX, locTop, locRight, locBottom); break;
-                case LocSelFlags::NorthWest: DrawLocationFrame(hDC, locLeft+dragX, locTop+dragY, locRight, locBottom); break;
-                case LocSelFlags::NorthEast: DrawLocationFrame(hDC, locLeft, locTop+dragY, locRight+dragX, locBottom); break;
-                case LocSelFlags::SouthWest: DrawLocationFrame(hDC, locLeft+dragX, locTop, locRight, locBottom+dragY); break;
-                case LocSelFlags::SouthEast: DrawLocationFrame(hDC, locLeft, locTop, locRight+dragX, locBottom+dragY); break;
+                case LocSelFlags::North: DrawLocationFrame(dc, locLeft, locTop+dragY, locRight, locBottom); break;
+                case LocSelFlags::South: DrawLocationFrame(dc, locLeft, locTop, locRight, locBottom+dragY); break;
+                case LocSelFlags::East: DrawLocationFrame(dc, locLeft, locTop, locRight+dragX, locBottom); break;
+                case LocSelFlags::West: DrawLocationFrame(dc, locLeft+dragX, locTop, locRight, locBottom); break;
+                case LocSelFlags::NorthWest: DrawLocationFrame(dc, locLeft+dragX, locTop+dragY, locRight, locBottom); break;
+                case LocSelFlags::NorthEast: DrawLocationFrame(dc, locLeft, locTop+dragY, locRight+dragX, locBottom); break;
+                case LocSelFlags::SouthWest: DrawLocationFrame(dc, locLeft+dragX, locTop, locRight, locBottom+dragY); break;
+                case LocSelFlags::SouthEast: DrawLocationFrame(dc, locLeft, locTop, locRight+dragX, locBottom+dragY); break;
                 case LocSelFlags::Middle:
-                    DrawLocationFrame(hDC, locLeft+dragX, locTop+dragY, locRight+dragX, locBottom+dragY);
+                    DrawLocationFrame(dc, locLeft+dragX, locTop+dragY, locRight+dragX, locBottom+dragY);
                     break;
             }
         }
     }
 }
 
-void DrawSelectingFrame(HDC hDC, Selections & selections, u32 screenLeft, u32 screenTop, s32 width,  s32 height, double scale)
+void DrawSelectingFrame(const WinLib::DeviceContext & dc, Selections & selections, u32 screenLeft, u32 screenTop, s32 width,  s32 height, double scale)
 {
     if ( !selections.selectionAreaIsNull() )
     {
@@ -1398,16 +2176,12 @@ void DrawSelectingFrame(HDC hDC, Selections & selections, u32 screenLeft, u32 sc
         if ( rect.bottom >= height )
             rect.bottom --;
 
-        HBRUSH brush = CreateSolidBrush(RGB(255, 0, 0));
-        FrameRect(hDC, &rect, brush);
-        DeleteObject(brush);
+        dc.frameRect(rect, RGB(255, 0, 0));
     }
 }
 
-void DrawLocationFrame(HDC hDC, s32 left, s32 top, s32 right, s32 bottom)
+void DrawLocationFrame(const WinLib::DeviceContext & dc, s32 left, s32 top, s32 right, s32 bottom)
 {
-    HBRUSH brush = CreateSolidBrush(RGB(255, 0, 0));
-
     RECT rect;
     if ( left < right ) {
         rect.left = left;
@@ -1423,16 +2197,14 @@ void DrawLocationFrame(HDC hDC, s32 left, s32 top, s32 right, s32 bottom)
         rect.bottom = top;
     }
 
-    FrameRect(hDC, &rect, brush);
+    dc.frameRect(rect, RGB(255, 0, 0));
 
     rect.left --;
     rect.top --;
     rect.right ++;
     rect.bottom ++;
 
-    FrameRect(hDC, &rect, brush);
-
-    DeleteObject(brush);
+    dc.frameRect(rect, RGB(255, 0, 0));
 }
 
 void DrawMiniMapTiles(ChkdBitmap & bitmap, const ChkdPalette & palette, s64 bitWidth, s64 bitHeight, s64 xSize, s64 ySize,
@@ -1460,19 +2232,22 @@ void DrawMiniMapTiles(ChkdBitmap & bitmap, const ChkdPalette & palette, s64 bitW
                     xMiniTile %= 4; // Correct for invalid x-minitiles
             }
 
-            u16 tileIndex = map.getTile(xTile, yTile);
-            size_t groupIndex = Sc::Terrain::Tiles::getGroupIndex(tileIndex);
-            if ( groupIndex < tiles.tileGroups.size() )
+            if ( size_t(xTile) < map.getTileWidth() && size_t(yTile) < map.getTileHeight() )
             {
-                const Sc::Terrain::TileGroup & tileGroup = tiles.tileGroups[groupIndex];
-                const u16 & megaTileIndex = tileGroup.megaTileIndex[tiles.getGroupMemberIndex(tileIndex)];
-                const Sc::Terrain::TileGraphicsEx & tileGraphics = tiles.tileGraphics[megaTileIndex];
+                u16 tileIndex = map.getTile(size_t(xTile), size_t(yTile));
+                size_t groupIndex = Sc::Terrain::Tiles::getGroupIndex(tileIndex);
+                if ( groupIndex < tiles.tileGroups.size() )
+                {
+                    const Sc::Terrain::TileGroup & tileGroup = tiles.tileGroups[groupIndex];
+                    const u16 & megaTileIndex = tileGroup.megaTileIndex[tiles.getGroupMemberIndex(tileIndex)];
+                    const Sc::Terrain::TileGraphicsEx & tileGraphics = tiles.tileGraphics[megaTileIndex];
 
-                const size_t vr4Index = size_t(tileGraphics.miniTileGraphics[yMiniTile][xMiniTile].vr4Index());
-                const Sc::Terrain::MiniTilePixels & miniTilePixels = tiles.miniTilePixels[vr4Index];
-                const u8 & wpeIndex = miniTilePixels.wpeIndex[6][7];
+                    const size_t vr4Index = size_t(tileGraphics.miniTileGraphics[yMiniTile][xMiniTile].vr4Index());
+                    const Sc::Terrain::MiniTilePixels & miniTilePixels = tiles.miniTilePixels[vr4Index];
+                    const u8 & wpeIndex = miniTilePixels.wpeIndex[6][7];
                 
-                bitmap[(yc + yOffset) * 128 + xc + xOffset] = palette[wpeIndex];
+                    bitmap[size_t((yc + yOffset) * 128 + xc + xOffset)] = palette[wpeIndex];
+                }
             }
         }
     }
@@ -1519,7 +2294,29 @@ void DrawMiniMapUnits(ChkdBitmap & bitmap, u16 bitWidth, u16 bitHeight, u16 xSiz
     }
 }
 
-void DrawMiniMap(HDC hDC, const ChkdPalette & palette, u16 xSize, u16 ySize, float scale, GuiMap & map)
+void DrawMiniMapFog(ChkdBitmap & bitmap, const ChkdPalette & palette, s64 bitWidth, s64 bitHeight, s64 xSize, s64 ySize,
+                       s64 xOffset, s64 yOffset, float scale, const Sc::Terrain::Tiles & tiles, GuiMap & map)
+{
+    u8 currPlayer = map.getCurrPlayer();
+    if ( currPlayer >= 8 )
+        currPlayer = 0;
+
+    u8 currPlayerMask = u8Bits[currPlayer];
+    for ( s64 yc=0; yc<128-2*yOffset; yc++ ) // Cycle through all minimap pixel rows
+    {
+        s64 yTile = (s64)(yc/scale); // Get the yc of tile used for the pixel
+        for ( s64 xc=0; xc<128-2*xOffset; xc++ ) // Cycle through all minimap pixel columns
+        {
+            s64 xTile = (s64)(xc/scale); // Get the xc of the tile used for the pixel
+
+            u8 fog = map.getFog(size_t(xTile), size_t(yTile));
+            if ( (fog & currPlayerMask) != 0 )
+                bitmap[size_t((yc + yOffset) * 128 + xc + xOffset)].darken();
+        }
+    }
+}
+
+void DrawMiniMap(const WinLib::DeviceContext & dc, const ChkdPalette & palette, u16 xSize, u16 ySize, float scale, GuiMap & map)
 {
     ChkdBitmap graphicBits;
     graphicBits.resize(65536);
@@ -1533,24 +2330,21 @@ void DrawMiniMap(HDC hDC, const ChkdPalette & palette, u16 xSize, u16 ySize, flo
     const Sc::Terrain::Tiles & tiles = chkd.scData.terrain.get(tileset);
     DrawMiniMapTiles(graphicBits, palette, 128, 128, xSize, ySize, xOffset, yOffset, scale, tiles, map);
     DrawMiniMapUnits(graphicBits, 128, 128, xSize, ySize, xOffset, yOffset, scale, tiles, map);
-    SetDIBitsToDevice(hDC, xOffset, yOffset, 128-2*xOffset, 128-2*yOffset, xOffset, yOffset, 0, 128, &graphicBits[0], &bmi, DIB_RGB_COLORS);
+    if ( map.getLayer() == Layer::FogEdit )
+        DrawMiniMapFog(graphicBits, palette, 128, 128, xSize, ySize, xOffset, yOffset, scale, tiles, map);
+    dc.setBitsToDevice(xOffset, yOffset, 128-2*xOffset, 128-2*yOffset, xOffset, yOffset, 0, 128, &graphicBits[0], &bmi);
 
     // Draw Map Borders
-
-    HPEN pen = CreatePen(PS_SOLID, 0, RGB(255, 255, 255));
-    SelectObject(hDC, pen);
-
-    MoveToEx(hDC, xOffset-1, yOffset-1, NULL);
-    LineTo(hDC, 128-xOffset, yOffset-1);
-    LineTo(hDC, 128-xOffset, 128-yOffset);
-    LineTo(hDC, xOffset-1, 128-yOffset);
-    LineTo(hDC, xOffset-1, yOffset-1);
+    dc.setPen(PS_SOLID, 0, RGB(255, 255, 255));
+    dc.moveTo(xOffset-1, yOffset-1);
+    dc.lineTo(128-xOffset, yOffset-1);
+    dc.lineTo(128-xOffset, 128-yOffset);
+    dc.lineTo(xOffset-1, 128-yOffset);
+    dc.lineTo(xOffset-1, yOffset-1);
 }
 
-void DrawMiniMapBox(HDC hDC, u32 screenLeft, u32 screenTop, u16 screenWidth, u16 screenHeight, u16 xSize, u16 ySize, float scale)
+void DrawMiniMapBox(const WinLib::DeviceContext & dc, u32 screenLeft, u32 screenTop, u16 screenWidth, u16 screenHeight, u16 xSize, u16 ySize, float scale)
 {
-    HPEN pen = CreatePen(PS_SOLID, 0, RGB(255, 255, 255));
-
     u16 xOffset = (u16)((128-xSize*scale)/2),
         yOffset = (u16)((128-ySize*scale)/2);
 
@@ -1570,30 +2364,15 @@ void DrawMiniMapBox(HDC hDC, u32 screenLeft, u32 screenTop, u16 screenWidth, u16
     if ( Y2 > 127-yOffset )
         Y2 = 127-yOffset;
 
-    SelectObject(hDC, pen);
-
-    MoveToEx(hDC, X1, Y1, NULL);
-    LineTo(hDC, X2, Y1);
-    LineTo(hDC, X2, Y2);
-    LineTo(hDC, X1, Y2);
-    LineTo(hDC, X1, Y1);
-
-    DeleteObject(pen);
+    dc.setPen(PS_SOLID, 0, RGB(255, 255, 255));
+    dc.moveTo(X1, Y1);
+    dc.lineTo(X2, Y1);
+    dc.lineTo(X2, Y2);
+    dc.lineTo(X1, Y2);
+    dc.lineTo(X1, Y1);
 }
 
-UINT GetStringDrawWidth(HDC hDC, std::string str)
-{
-    s32 width = 0, height = 0;
-    WinLib::getTabTextExtent(hDC, str, width, height);
-    return width;
-}
-
-void DrawStringChunk(HDC hDC, UINT xPos, UINT yPos, std::string str)
-{
-    WinLib::drawTabbedText(hDC, str, xPos, yPos);
-}
-
-void DrawStringLine(HDC hDC, UINT xPos, UINT yPos, LONG width, COLORREF defaultColor, std::string str)
+void DrawStringLine(const WinLib::DeviceContext & dc, UINT xPos, UINT yPos, LONG width, COLORREF defaultColor, std::string str)
 {
     COLORREF lastColor = defaultColor;
     const char* cStr = str.c_str();
@@ -1611,7 +2390,7 @@ void DrawStringLine(HDC hDC, UINT xPos, UINT yPos, LONG width, COLORREF defaultC
                 if ( center )
                 {
                     UINT chunkWidth, chunkHeight;
-                    if ( GetStringDrawSize(hDC, chunkWidth, chunkHeight, chunk) )
+                    if ( GetStringDrawSize(dc, chunkWidth, chunkHeight, chunk) )
                     {
                         xPos = UINT(width)/2-chunkWidth/2;
                         if ( xPos >= UINT(width) )
@@ -1621,15 +2400,15 @@ void DrawStringLine(HDC hDC, UINT xPos, UINT yPos, LONG width, COLORREF defaultC
                 else if ( right )
                 {
                     UINT chunkWidth, chunkHeight;
-                    if ( GetStringDrawSize(hDC, chunkWidth, chunkHeight, chunk) )
+                    if ( GetStringDrawSize(dc, chunkWidth, chunkHeight, chunk) )
                     {
                         xPos = UINT(width)-chunkWidth-1;
                         if ( xPos >= UINT(width) )
                             xPos = 0;
                     }
                 }
-                DrawStringChunk(hDC, xPos, yPos, chunk); // Output everything before the color/alignment
-                xPos += GetStringDrawWidth(hDC, chunk);
+                dc.drawTabbedText(chunk, xPos, yPos); // Output everything before the color/alignment
+                xPos += UINT(dc.getTextWidth(chunk));
                 chunkStartChar = i+1;
             }
             else if ( i == chunkStartChar )
@@ -1668,7 +2447,7 @@ void DrawStringLine(HDC hDC, UINT xPos, UINT yPos, LONG width, COLORREF defaultC
                     case 0x1E: lastColor = RGB(144, 144, 184); break;
                     case 0x1F: lastColor = RGB(  0, 228, 252); break;
                 }
-                SetTextColor(hDC, lastColor);
+                dc.setTextColor(lastColor);
             }
         }
     }
@@ -1679,7 +2458,7 @@ void DrawStringLine(HDC hDC, UINT xPos, UINT yPos, LONG width, COLORREF defaultC
         if ( center )
         {
             UINT chunkWidth, chunkHeight;
-            if ( GetStringDrawSize(hDC, chunkWidth, chunkHeight, chunk) )
+            if ( GetStringDrawSize(dc, chunkWidth, chunkHeight, chunk) )
             {
                 xPos = UINT(width)/2-chunkWidth/2;
                 if ( xPos >= UINT(width) )
@@ -1689,18 +2468,18 @@ void DrawStringLine(HDC hDC, UINT xPos, UINT yPos, LONG width, COLORREF defaultC
         else if ( right )
         {
             UINT chunkWidth, chunkHeight;
-            if ( GetStringDrawSize(hDC, chunkWidth, chunkHeight, chunk) )
+            if ( GetStringDrawSize(dc, chunkWidth, chunkHeight, chunk) )
             {
                 xPos = (UINT(width))-chunkWidth-1;
                 if ( (LONG(xPos)) >= width )
                     xPos = 0;
             }
         }
-        DrawStringChunk(hDC, xPos, yPos, chunk);
+        dc.drawTabbedText(chunk, xPos, yPos);
     }
 }
 
-bool GetStringDrawSize(HDC hDC, UINT & width, UINT & height, const std::string & str)
+bool GetStringDrawSize(const WinLib::DeviceContext & dc, UINT & width, UINT & height, const std::string & str)
 {
     // This method is very time sensative and should be optimized as much as possible
     width = 0;
@@ -1726,8 +2505,8 @@ bool GetStringDrawSize(HDC hDC, UINT & width, UINT & height, const std::string &
         if ( rawStr[i] == carriageReturn && i+1 < codepointCount && rawStr[i+1] == lineFeed ) // Line ending found
         {
             rawStr[i] = icux::nullChar; // Null-terminate currLine, replacing the carriageReturn
-            if ( WinLib::getTabTextExtent(hDC, currLine, i-lineStart, lineWidth, lineHeight) || // Regular line
-                (i == lineStart && WinLib::getTabTextExtent(hDC, &emptyLine[0], emptyLineLength, lineWidth, lineHeight)) ) // Empty line
+            if ( dc.getTabTextExtent(currLine, i-lineStart, lineWidth, lineHeight) || // Regular line
+                 (i == lineStart && dc.getTabTextExtent(&emptyLine[0], emptyLineLength, lineWidth, lineHeight)) ) // Empty line
             {
                 height += lineHeight;
                 if ( lineWidth > s32(width) )
@@ -1745,7 +2524,7 @@ bool GetStringDrawSize(HDC hDC, UINT & width, UINT & height, const std::string &
     // If currLine != nullptr, then either the last character(s) were not line endings or there were no line endings, process last line
     if ( currLine != nullptr )
     {
-        if ( !WinLib::getTabTextExtent(hDC, currLine, codepointCount-lineStart, lineWidth, lineHeight) )
+        if ( !dc.getTabTextExtent(currLine, codepointCount-lineStart, lineWidth, lineHeight) )
             return false;
 
         height += lineHeight;
@@ -1755,7 +2534,7 @@ bool GetStringDrawSize(HDC hDC, UINT & width, UINT & height, const std::string &
     return true;
 }
 
-bool GetStringDrawSize(HDC hDC, UINT & width, UINT & height, const std::string & str, std::unordered_multimap<size_t, WinLib::LineSize> & lineCache)
+bool GetStringDrawSize(const WinLib::DeviceContext & dc, UINT & width, UINT & height, const std::string & str, std::unordered_multimap<size_t, WinLib::LineSize> & lineCache)
 {
     // This method is very time sensative and should be optimized as much as possible
     width = 0;
@@ -1779,7 +2558,7 @@ bool GetStringDrawSize(HDC hDC, UINT & width, UINT & height, const std::string &
         if ( rawStr[i] == carriageReturn && i+1 < codepointCount && rawStr[i+1] == lineFeed ) // Line ending found
         {
             rawStr[i] = icux::nullChar; // Null-terminate currLine, replacing the carriageReturn
-            if ( WinLib::getTabTextExtent(hDC, currLine, i-lineStart, lineWidth, lineHeight, lineCache) )
+            if ( dc.getTabTextExtent(currLine, i-lineStart, lineWidth, lineHeight, lineCache) )
             {
                 height += lineHeight;
                 if ( lineWidth > s32(width) )
@@ -1797,7 +2576,7 @@ bool GetStringDrawSize(HDC hDC, UINT & width, UINT & height, const std::string &
     // If currLine != nullptr, then either the last character(s) were not line endings or there were no line endings, process last line
     if ( currLine != nullptr )
     {
-        if ( !WinLib::getTabTextExtent(hDC, currLine, codepointCount-lineStart, lineWidth, lineHeight, lineCache) )
+        if ( !dc.getTabTextExtent(currLine, codepointCount-lineStart, lineWidth, lineHeight, lineCache) )
             return false;
 
         height += lineHeight;
@@ -1807,11 +2586,10 @@ bool GetStringDrawSize(HDC hDC, UINT & width, UINT & height, const std::string &
     return true;
 }
 
-void DrawString(HDC hDC, UINT xPos, UINT yPos, LONG width, COLORREF defaultColor, std::string str)
+void DrawString(const WinLib::DeviceContext & dc, UINT xPos, UINT yPos, LONG width, COLORREF defaultColor, std::string str)
 {
-    SetTextColor(hDC, defaultColor);
-    HGDIOBJ sel = SelectObject(hDC, defaultFont);
-    if ( sel != NULL && sel != HGDI_ERROR )
+    dc.setTextColor(defaultColor);
+    if ( dc.setDefaultFont() )
     {
         size_t start = 0,
                loc,
@@ -1825,9 +2603,9 @@ void DrawString(HDC hDC, UINT xPos, UINT yPos, LONG width, COLORREF defaultColor
         {
             // Do first line
             std::string firstLine = str.substr(0, loc);
-            DrawStringLine(hDC, xPos, yPos, width, defaultColor, firstLine);
-            if ( WinLib::getTabTextExtent(hDC, firstLine, lineWidth, lineHeight) ||
-                (loc == 0 && str.length() > 0 && WinLib::getTabTextExtent(hDC, std::string("\r\n"), lineWidth, lineHeight)) )
+            DrawStringLine(dc, xPos, yPos, width, defaultColor, firstLine);
+            if ( dc.getTabTextExtent(firstLine, lineWidth, lineHeight) ||
+                (loc == 0 && str.length() > 0 && dc.getTabTextExtent(std::string("\r\n"), lineWidth,  lineHeight)) )
             {
                 start = loc+2;
                 yPos += lineHeight;
@@ -1841,11 +2619,11 @@ void DrawString(HDC hDC, UINT xPos, UINT yPos, LONG width, COLORREF defaultColor
                         if ( loc-start > 0 )
                         {
                             line = str.substr(start, loc-start);
-                            DrawStringLine(hDC, xPos, yPos, width, defaultColor, line);
+                            DrawStringLine(dc, xPos, yPos, width, defaultColor, line);
                         }
 
                         start = loc+2;
-                        if ( WinLib::getTabTextExtent(hDC, line, lineWidth, lineHeight) )
+                        if ( dc.getTabTextExtent(line, lineWidth, lineHeight) )
                             yPos += lineHeight;
                         else
                             break;
@@ -1854,9 +2632,9 @@ void DrawString(HDC hDC, UINT xPos, UINT yPos, LONG width, COLORREF defaultColor
                     {
                         // Do last line
                         std::string lastLine = str.substr(start, max-start);
-                        if ( WinLib::getTabTextExtent(hDC, lastLine, lineWidth, lineHeight) )
+                        if ( dc.getTabTextExtent(lastLine, lineWidth, lineHeight) )
                         {
-                            DrawStringLine(hDC, xPos, yPos, width, defaultColor, lastLine);
+                            DrawStringLine(dc, xPos, yPos, width, defaultColor, lastLine);
                             yPos += lineHeight;
                         }
                         break;
@@ -1864,9 +2642,9 @@ void DrawString(HDC hDC, UINT xPos, UINT yPos, LONG width, COLORREF defaultColor
                 } while ( start < max );
             }
         }
-        else if ( WinLib::getTabTextExtent(hDC, str, lineWidth, lineHeight) )
+        else if ( dc.getTabTextExtent(str, lineWidth, lineHeight) )
         {
-            DrawStringLine(hDC, xPos, yPos, width, defaultColor, str);
+            DrawStringLine(dc, xPos, yPos, width, defaultColor, str);
             yPos += lineHeight;
         }
     }

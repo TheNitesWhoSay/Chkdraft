@@ -1,5 +1,8 @@
 #include "TabControl.h"
 #include <SimpleIcu.h>
+#include "../CrossCutLib/Logger.h"
+
+extern Logger logger;
 
 namespace WinLib {
 
@@ -11,6 +14,12 @@ namespace WinLib {
     bool TabControl::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, u64 id)
     {
         return WindowControl::CreateControl(NULL, WC_TABCONTROL, "", WS_VISIBLE|WS_CHILD, x, y, width, height, hParent, (HMENU)id, false);
+    }
+    
+    bool TabControl::FindThis(HWND hParent, u32 controlId)
+    {
+        return WindowControl::FindThis(hParent, controlId) &&
+               WindowControl::RedirectProc();
     }
 
     u32 TabControl::GetCurSel()
@@ -53,6 +62,16 @@ namespace WinLib {
     void TabControl::SetMinTabWidth(int minTabWidth)
     {
         SendMessage(getHandle(), TCM_SETMINTABWIDTH, 0, minTabWidth);
+    }
+
+    LRESULT TabControl::Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
+    {
+        return WindowControl::Notify(hWnd, idFrom, nmhdr); // Take default action
+    }
+
+    LRESULT TabControl::ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+    {
+        return WindowControl::ControlProc(hWnd, msg, wParam, lParam); // Take default action
     }
 
 }

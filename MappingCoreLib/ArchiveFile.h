@@ -2,7 +2,11 @@
 #define ARCHIVEFILE_H
 #include "Basics.h"
 #include "FileBrowser.h"
+#include <memory>
+#include <optional>
+#include <sstream>
 #include <string>
+#include <vector>
 
 /**
     This file defines a standard interface for archive files, e.g. zip, casc or MoPaQ (mpq)

@@ -1,8 +1,8 @@
 #ifndef TEXTTRIGGENERATOR_H
 #define TEXTTRIGGENERATOR_H
+#include "../RareCpp/include/rarecpp/string_buffer.h"
 #include "Basics.h"
 #include "Scenario.h"
-#include "../RareCpp/include/rarecpp/string_buffer.h"
 #include <vector>
 #include <string>
 #include <map>
@@ -13,8 +13,7 @@ class TextTrigGenerator
 {
     public:
         
-        TextTrigGenerator(bool useAddressesForMemory, u32 deathTableOffset);
-        virtual ~TextTrigGenerator();
+        TextTrigGenerator(bool useAddressesForMemory, u32 deathTableOffset, bool useFancyNoStrings = false);
 
         // Places text trigs representative of the given TRIG section in trigString if successful
         bool generateTextTrigs(const Scenario & map, std::string & trigString);
@@ -95,9 +94,8 @@ class TextTrigGenerator
         inline void appendMemory(StringBuffer & output, const u32 & memory) const;
         inline void appendTextFlags(StringBuffer & output, const Chk::Action::Flags & textFlags) const;
 
-    private:
-
         bool useAddressesForMemory; // If true, uses 1.16.1 addresses for memory conditions and actions
+        bool useFancyNoStrings;
         u32 deathTableOffset;
         std::vector<ChkdString> stringTable; // Array list of map strings
         std::vector<ChkdString> extendedStringTable; // Array list of extended map strings
@@ -120,6 +118,51 @@ class TextTrigGenerator
         bool prepGroupTable(const Scenario & map, bool quoteArgs); // Fills groupTable
         bool prepScriptTable(const Scenario & map, bool quoteArgs); // Fills scriptTable
         bool prepStringTable(const Scenario & map, bool quoteArgs); // Fills stringTable
+};
+
+class BriefingTextTrigGenerator : private TextTrigGenerator
+{
+public:
+    BriefingTextTrigGenerator(bool useFancyNoStrings = false);
+
+    // Places briefing text trigs representative of the given MBRF section in briefingTrigString if successful
+    bool generateBriefingTextTrigs(const Scenario & map, std::string & briefingTrigString);
+
+    // Places briefing text trigs representative of the given briefing trigger in briefingTrigString if successful
+    bool generateBriefingTextTrigs(const Scenario & map, size_t briefingTrigIndex, std::string & briefingTrigString);
+        
+    bool loadScenario(const Scenario & map); // Loads data about the given scenario for use outside briefing text trigs
+
+    void clearScenario(); // Clears loaded scenario data
+
+    std::string getBriefingActionName(Chk::Action::Type actionType) const;
+    std::string getBriefingActionArgument(const Chk::Action & action, size_t textArgumentIndex) const;
+    std::string getBriefingActionArgument(const Chk::Action & action, Chk::Action::Argument argument) const;
+
+    ChkdString getBriefingTrigString(size_t stringId) const;
+    ChkdString getBriefingTrigSound(size_t stringId) const;
+    ChkdString getBriefingTrigUnit(Sc::Unit::Type unitType) const;
+    std::string getBriefingSlot(u32 number) const;
+    std::string getBriefingTrigNumericModifier(Chk::Trigger::ValueModifier numericModifier) const;
+    std::string getBriefingTrigNumber(u32 number) const;
+
+private:
+    bool loadScenario(const Scenario & map, bool quoteArgs, bool useCustomNames);
+
+    bool buildBriefingTextTrigs(const Scenario & scenario, std::string & briefingTrigString);
+    bool buildBriefingTextTrig(const Chk::Trigger & trigger, std::string & briefingTrigString);
+    inline void appendBriefingTriggers(StringBuffer & output, const Scenario & scenario) const;
+    inline void appendBriefingTrigger(StringBuffer & output, const Chk::Trigger & briefingTrigger) const;
+    inline void appendBriefingActionArgument(StringBuffer & output, const Chk::Action & action, Chk::Action::Argument argument) const;
+    inline void appendBriefingSlot(StringBuffer & output, const size_t & slotIndex) const;
+    
+    std::vector<std::string> slotTable; // Array of briefing slot names
+    std::vector<std::string> briefingActionTable; // Array of briefing action names
+    bool goodSlotTable;
+    bool goodBriefingActionTable;
+    
+    bool prepSlotTable(bool quoteArgs); // Fills slotTable
+    bool prepBriefingActionTable(); // Fills briefingActionTable
 };
 
 #endif

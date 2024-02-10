@@ -47,9 +47,6 @@
     <Filter Include="strings">
       <UniqueIdentifier>{2c52192a-7b17-4c3b-998e-ca025063bd3c}</UniqueIdentifier>
     </Filter>
-    <Filter Include="simple">
-      <UniqueIdentifier>{7d3ef7c1-953d-4622-bf56-495d256ced1e}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ubidi.cpp">
@@ -610,9 +607,6 @@
     <ClCompile Include="ubiditransform.cpp">
       <Filter>bidi</Filter>
     </ClCompile>
-    <ClCompile Include="SimpleIcu.cpp">
-      <Filter>simple</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ubidi_props.h">
@@ -941,9 +935,6 @@
     </ClInclude>
     <ClInclude Include="unicode\ubiditransform.h">
       <Filter>bidi</Filter>
-    </ClInclude>
-    <ClInclude Include="SimpleIcu.h">
-      <Filter>simple</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

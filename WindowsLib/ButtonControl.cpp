@@ -1,18 +1,18 @@
 #include "ButtonControl.h"
 #include <SimpleIcu.h>
+#include <CommCtrl.h>
 #include <iostream>
 
 namespace WinLib {
 
-    ButtonControl::ButtonControl() : image(NULL)
+    ButtonControl::ButtonControl()
     {
     
     }
 
     ButtonControl::~ButtonControl()
     {
-        if ( image != NULL )
-            ::DeleteObject(image);
+
     }
 
     bool ButtonControl::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, const std::string & initText, u64 id, bool imageButton)
@@ -46,7 +46,7 @@ namespace WinLib {
     
     bool ButtonControl::SetImageFromResourceId(u64 resourceId)
     {
-        image = LoadBitmap(GetModuleHandle(NULL), MAKEINTRESOURCE(resourceId));
+        HBITMAP image = ResourceManager::getBitmap(WORD(resourceId));
         if ( image != NULL )
         {
             SendMessage(getHandle(), BM_SETIMAGE, IMAGE_BITMAP, (LPARAM)image);

@@ -25,7 +25,7 @@ enum_t(Id, u32, {
     DROP_CUSTOMMPQPATH
 });
 
-SoundEditorWindow::SoundEditorWindow() : wavQuality(WavQuality::Uncompressed), selectedSoundListIndex(-1), soundListDC(NULL)
+SoundEditorWindow::SoundEditorWindow() : wavQuality(WavQuality::Uncompressed), selectedSoundListIndex(-1), soundListDc(std::nullopt)
 {
 
 }
@@ -48,6 +48,15 @@ bool SoundEditorWindow::CreateThis(HWND hParent, u64 windowId)
     }
     else
         return false;
+}
+
+bool SoundEditorWindow::DestroyThis()
+{
+    ClassWindow::DestroyThis();
+    this->wavQuality = WavQuality::Uncompressed;
+    this->selectedSoundListIndex = -1;
+    this->soundListDc = std::nullopt;
+    return true;
 }
 
 void SoundEditorWindow::RefreshWindow()
@@ -117,15 +126,15 @@ void SoundEditorWindow::RefreshWindow()
 
 void SoundEditorWindow::UpdateWindowText()
 {
-    u32 soundStringId = 0;
+    LPARAM soundStringId = 0;
     if ( selectedSoundListIndex >= 0 && listMapSounds.GetItemData(selectedSoundListIndex, soundStringId) )
     {
         u16 soundIndex = u16_max;
-        auto soundEntry = soundMap.find(soundStringId);
+        auto soundEntry = soundMap.find(u32(soundStringId));
         if ( soundEntry != soundMap.end() )
             soundIndex = soundEntry->second;
 
-        SoundStatus soundStatus = CM->getSoundStatus(soundStringId);
+        SoundStatus soundStatus = CM->getSoundStatus(size_t(soundStringId));
 
         std::string soundStatusString = "";
         if ( soundStatus == SoundStatus::NoMatch )
@@ -162,11 +171,11 @@ void SoundEditorWindow::UpdateCustomStringList()
     {
         dropCustomMpqString.ClearItems();
         std::bitset<Chk::MaxStrings> stringIdUsed;
-        CM->markValidUsedStrings(stringIdUsed, Chk::StrScope::Either, Chk::StrScope::Game);
-        size_t stringCapacity = CM->getCapacity(Chk::StrScope::Game);
+        CM->markValidUsedStrings(stringIdUsed, Chk::Scope::Either, Chk::Scope::Game);
+        size_t stringCapacity = CM->getCapacity(Chk::Scope::Game);
         for ( size_t stringId=1; stringId<stringCapacity; stringId++ )
         {
-            if ( auto str = CM->getString<SingleLineChkdString>(stringId, Chk::StrScope::Game) )
+            if ( auto str = CM->getString<SingleLineChkdString>(stringId, Chk::Scope::Game) )
                 dropCustomMpqString.AddItem(*str);
         }
         dropCustomMpqString.EnableThis();
@@ -180,10 +189,10 @@ void SoundEditorWindow::UpdateCustomStringList()
 
 void SoundEditorWindow::PlaySoundButtonPressed() // TODO: Support for playing and stopping oggs
 {
-    u32 soundStringId = 0;
+    LPARAM soundStringId = 0;
     if ( selectedSoundListIndex >= 0 && listMapSounds.GetItemData(selectedSoundListIndex, soundStringId) )
     {
-        if ( auto soundData = CM->getSound(soundStringId) ) // Non-virtual sound
+        if ( auto soundData = CM->getSound(size_t(soundStringId)) ) // Non-virtual sound
         {
 #ifdef UNICODE
             PlaySoundW((LPCTSTR)&soundData.value()[0], NULL, SND_ASYNC|SND_MEMORY);
@@ -191,7 +200,7 @@ void SoundEditorWindow::PlaySoundButtonPressed() // TODO: Support for playing an
             PlaySoundA((LPCTSTR)&soundData.value()[0], NULL, SND_ASYNC|SND_MEMORY);
 #endif
         }
-        else if ( auto soundString = CM->getString<RawString>(soundStringId) ) // Might be a virtual sound
+        else if ( auto soundString = CM->getString<RawString>(size_t(soundStringId)) ) // Might be a virtual sound
         {
             if ( CM->isInVirtualSoundList(*soundString) ) // Is a virtual sound
             {
@@ -245,17 +254,17 @@ void SoundEditorWindow::ExtractSoundButtonPressed()
     if ( !listMapSounds.GetCurSel(selectedSoundListIndex) )
         selectedSoundListIndex = -1;
 
-    u32 soundStringId = 0;
+    LPARAM soundStringId = 0;
     if ( selectedSoundListIndex >= 0 && listMapSounds.GetItemData(selectedSoundListIndex, soundStringId) )
     {
-        if ( auto soundArchivePath = CM->getString<RawString>(soundStringId) )
+        if ( auto soundArchivePath = CM->getString<RawString>(size_t(soundStringId)) )
         {
             u32 filterIndex = 0;
             std::string saveFilePath = getMpqFileName(*soundArchivePath);
             FileBrowserPtr<u32> fileBrowser = getDefaultSoundSaver();
             if ( fileBrowser->browseForSavePath(saveFilePath, filterIndex) )
             {
-                SoundStatus soundStatus = CM->getSoundStatus(soundStringId);
+                SoundStatus soundStatus = CM->getSoundStatus(size_t(soundStringId));
                 if ( soundStatus == SoundStatus::VirtualFile )
                 {
                     if ( !Sc::Data::ExtractAsset(*soundArchivePath, saveFilePath, Sc::DataFile::BrowserPtr(new ChkdDataFileBrowser()),
@@ -418,10 +427,13 @@ void SoundEditorWindow::MapSoundSelectionChanged()
     else
     {
         buttonDeleteSound.EnableThis();
-        u32 soundStringId = 0;
+        LPARAM soundStringId = 0;
         if ( selectedSoundListIndex >= 0 && listMapSounds.GetItemData(selectedSoundListIndex, soundStringId) )
         {
-            SoundStatus soundStatus = CM->getSoundStatus(soundStringId);
+            if ( !CM->stringIsSound(size_t(soundStringId)) )
+                buttonDeleteSound.DisableThis();
+
+            SoundStatus soundStatus = CM->getSoundStatus(size_t(soundStringId));
             if ( soundStatus == SoundStatus::PendingMatch || soundStatus == SoundStatus::CurrentMatch || soundStatus == SoundStatus::VirtualFile )
                 buttonExtractSound.EnableThis();
         }
@@ -462,7 +474,7 @@ void SoundEditorWindow::StopSoundsButtonPressed()
 
 void SoundEditorWindow::DeleteSoundButtonPressed()
 {
-    u32 soundStringId = 0;
+    LPARAM soundStringId = 0;
     if ( listMapSounds.GetItemData(selectedSoundListIndex, soundStringId) )
     {
         bool soundStringIdIsUsed = false;
@@ -473,7 +485,7 @@ void SoundEditorWindow::DeleteSoundButtonPressed()
             {
                 if ( (trigger.actions[actionIndex].actionType == Chk::Action::Type::PlaySound ||
                     trigger.actions[actionIndex].actionType == Chk::Action::Type::Transmission) &&
-                    trigger.actions[actionIndex].soundStringId == soundStringId )
+                    trigger.actions[actionIndex].soundStringId == u32(soundStringId) )
                 {
                     soundStringIdIsUsed = true;
                     i = CM->numTriggers();
@@ -490,7 +502,7 @@ void SoundEditorWindow::DeleteSoundButtonPressed()
                 {
                     if ( (trigger.actions[actionIndex].actionType == Chk::Action::Type::BriefingPlaySound ||
                         trigger.actions[actionIndex].actionType == Chk::Action::Type::BriefingTransmission) &&
-                        trigger.actions[actionIndex].soundStringId == soundStringId )
+                        trigger.actions[actionIndex].soundStringId == u32(soundStringId) )
                     {
                         soundStringIdIsUsed = true;
                         i = CM->numBriefingTriggers();
@@ -503,11 +515,11 @@ void SoundEditorWindow::DeleteSoundButtonPressed()
 
         if ( soundStringIdIsUsed )
         {
-            SoundStatus soundStatus = CM->getSoundStatus(soundStringId);
+            SoundStatus soundStatus = CM->getSoundStatus(size_t(soundStringId));
             if ( soundStatus == SoundStatus::NoMatch || soundStatus == SoundStatus::NoMatchExtended )
             {
                 selectedSoundListIndex = -1;
-                CM->removeSoundByStringId(soundStringId, true);
+                CM->removeSoundByStringId(size_t(soundStringId), true);
                 CM->notifyChange(false);
                 CM->refreshScenario();
             }
@@ -527,7 +539,7 @@ void SoundEditorWindow::DeleteSoundButtonPressed()
                 if ( WinLib::GetYesNo(warningMessage, "Warning!") == WinLib::PromptResult::Yes )
                 {
                     selectedSoundListIndex = -1;
-                    CM->removeSoundByStringId(soundStringId, true);
+                    CM->removeSoundByStringId(size_t(soundStringId), true);
                     CM->notifyChange(false);
                     CM->refreshScenario();
                 }
@@ -536,11 +548,11 @@ void SoundEditorWindow::DeleteSoundButtonPressed()
         else
         {
             selectedSoundListIndex = -1;
-            CM->removeSoundByStringId(soundStringId, false);
+            CM->removeSoundByStringId(size_t(soundStringId), false);
             CM->notifyChange(false);
             CM->refreshScenario();
         }
-        CM->deleteUnusedStrings(Chk::StrScope::Both);
+        CM->deleteUnusedStrings(Chk::Scope::Both);
     }
 }
 
@@ -565,25 +577,27 @@ LRESULT SoundEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
             break;
 
         case WinLib::LB::WM_PREMEASUREITEMS: // Measuring is time sensative, load necessary items for measuring all strings once
-            soundListDC = listMapSounds.getDC();
+            soundListDc.emplace(listMapSounds.getHandle());
             break;
 
         case WM_MEASUREITEM:
         {
             MEASUREITEMSTRUCT* mis = (MEASUREITEMSTRUCT*)lParam;
             auto str = CM->getString<RawString>((size_t)mis->itemData);
-            if ( str && GetStringDrawSize(soundListDC, mis->itemWidth, mis->itemHeight, *str) )
+            if ( str && GetStringDrawSize(*soundListDc, mis->itemWidth, mis->itemHeight, *str) )
             {
                 mis->itemWidth += 5;
                 mis->itemHeight += 2;
+
+                if ( mis->itemHeight > 255 )
+                    mis->itemHeight = 255;
             }
             return TRUE;
         }
         break;
 
         case WinLib::LB::WM_POSTMEASUREITEMS: // Release items loaded for measurement
-            listMapSounds.ReleaseDC(soundListDC);
-            soundListDC = NULL;
+            soundListDc = std::nullopt;
             break;
 
         case WinLib::LB::WM_PREDRAWITEMS:
@@ -598,18 +612,13 @@ LRESULT SoundEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 
             if ( pdis->itemID != -1 && ( drawSelection || drawEntire ) )
             {
+                WinLib::DeviceContext dc { pdis->hDC };
                 auto str = CM->getString<RawString>((size_t)pdis->itemData);
                 if ( CM != nullptr && str )
                 {
-                    HBRUSH hBackground = CreateSolidBrush(RGB(0, 0, 0)); // Same color as in WM_CTLCOLORLISTBOX
-                    if ( hBackground != NULL )
-                    {
-                        FillRect(pdis->hDC, &pdis->rcItem, hBackground); // Draw far background
-                        DeleteObject(hBackground);
-                        hBackground = NULL;
-                    }
+                    dc.fillRect(pdis->rcItem, RGB(0, 0, 0)); // Same color as in WM_CTLCOLORLISTBOX
                     SetBkMode(pdis->hDC, TRANSPARENT);
-                    DrawString(pdis->hDC, pdis->rcItem.left+3, pdis->rcItem.top+1, pdis->rcItem.right-pdis->rcItem.left,
+                    DrawString(dc, pdis->rcItem.left+3, pdis->rcItem.top+1, pdis->rcItem.right-pdis->rcItem.left,
                         RGB(16, 252, 24), *str);
                 }
                 if ( isSelected )
@@ -662,22 +671,22 @@ void SoundEditorWindow::CreateSubWindows(HWND hWnd)
     buttonDeleteSound.CreateThis(hWnd, 242, 3, 110, 20, "Delete Selected", Id::BUTTON_DELETESOUND);
     buttonExtractSound.CreateThis(hWnd, 357, 3, 110, 20, "Extract Selected", Id::BUTTON_EXTRACTSOUND);
     buttonPlaySound.CreateThis(hWnd, 472, 3, 110, 20, "Play Selected", Id::BUTTON_PLAYSOUND);
-    listMapSounds.CreateThis(hWnd, 5, 25, 582, 188, true, false, false, false, Id::LB_MAPSOUNDS);
+    listMapSounds.CreateThis(hWnd, 5, 25, 582, 188, true, false, false, false, false, Id::LB_MAPSOUNDS);
 
     textAvailableSounds.CreateThis(hWnd, 5, 219, 200, 20, "Available MPQ sound files (Virtual Sounds)", Id::TEXT_VIRTUALSOUNDS);
     buttonPreviewPlaySound.CreateThis(hWnd, 432, 217, 150, 20, "Play Selected", Id::BUTTON_PLAYVIRTUALSOUND);
-    listVirtualSounds.CreateThis(hWnd, 5, 239, 582, 200, false, false, true, true, Id::LB_VIRTUALSOUNDS);
+    listVirtualSounds.CreateThis(hWnd, 5, 239, 582, 200, false, false, true, true, false, Id::LB_VIRTUALSOUNDS);
     textFileName.CreateThis(hWnd, 5, 434, 100, 20, "Filename", Id::TEXT_SOUNDFILENAME);
     editFileName.CreateThis(hWnd, 140, 434, 352, 20, false, Id::EDIT_SOUNDFILENAME);
     buttonBrowse.CreateThis(hWnd, 502, 434, 80, 20, "Browse", Id::BUTTON_BROWSEFORSOUND);
     textCompressionLevel.CreateThis(hWnd, 5, 459, 100, 20, "Compression Level", Id::TEXT_COMPRESSIONLEVEL);
     const std::vector<std::string> compressionLevels = { "Uncompressed", "Low Quality", "Medium Quality", "High Quality" };
-    dropCompressionLevel.CreateThis(hWnd, 140, 459, 150, 200, false, false, Id::DROP_COMPRESSIONQUALITY, compressionLevels, defaultFont);
+    dropCompressionLevel.CreateThis(hWnd, 140, 459, 150, 200, false, false, Id::DROP_COMPRESSIONQUALITY, compressionLevels);
     dropCompressionLevel.SetSel(0);
     checkVirtualFile.CreateThis(hWnd, 300, 459, 100, 20, false, "Virtual File", Id::CHECK_VIRTUALFILE);
     buttonAddFile.CreateThis(hWnd, 502, 459, 80, 20, "Add File", Id::BUTTON_ADDFILE);
     textCustomMpqString.CreateThis(hWnd, 5, 484, 100, 20, "Custom MPQ Path", Id::TEXT_CUSTOMMPQSTRING);
-    dropCustomMpqString.CreateThis(hWnd, 140, 484, 150, 200, true, true, Id::DROP_CUSTOMMPQPATH, {}, defaultFont);
+    dropCustomMpqString.CreateThis(hWnd, 140, 484, 150, 200, true, true, Id::DROP_CUSTOMMPQPATH, {});
     checkCustomMpqString.CreateThis(hWnd, 300, 484, 150, 20, false, "Use Custom Path", Id::CHECK_CUSTOMMPQPATH);
 
     size_t numVirtualSounds = Sc::Sound::virtualSoundPaths.size();

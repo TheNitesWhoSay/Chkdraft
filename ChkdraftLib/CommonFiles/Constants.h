@@ -48,11 +48,9 @@ using s8 = std::int8_t;
 // "CHKD" = 67|72|75|68 = 0x43484B44 = 1128811332
 constexpr int ascii_chkd = 1128811332;
 
-constexpr DWORD defaultHoverTime = 10;
+constexpr DWORD defaultHoverTime = 50;
 
 constexpr u16 NO_LOCATION = 0xFFFF;
-
-extern const HFONT defaultFont;
 
 extern const std::vector<double> defaultZooms;
 
@@ -74,9 +72,13 @@ extern const std::vector<std::string> playerColors;
 
 extern const std::vector<std::string> triggerPlayers;
 
+extern const std::vector<std::string> briefingTriggerSlots;
+
 extern const std::vector<std::string> triggerConditions;
 
 extern const std::vector<std::string> triggerActions;
+
+extern const std::vector<std::string> briefingTriggerActions;
 
 extern const std::vector<std::string> triggerScores;
 
@@ -84,17 +86,6 @@ extern const std::vector<std::tuple<COLORREF, std::string, std::string>> strColo
 constexpr int numScStringColors = 28; // Could make StringGuide dynamic with respect to the size of strColors
 
 extern const std::vector<std::string> tilesetNames;
-
-extern const std::vector<std::string> badlandsInitTerrain;
-extern const std::vector<std::string> spaceInitTerrain;
-extern const std::vector<std::string> installInitTerrain;
-extern const std::vector<std::string> ashInitTerrain;
-extern const std::vector<std::string> jungInitTerrain;
-extern const std::vector<std::string> desertInitTerrain;
-extern const std::vector<std::string> iceInitTerrain;
-extern const std::vector<std::string> twilightInitTerrain;
-
-extern const std::vector<std::vector<std::string>> initTerrains;
 
 
 /** Used for identifying layers, should be equivilant
@@ -108,6 +99,10 @@ enum class Layer {
     Sprites,
     FogView,
     CutCopyPaste
+};
+enum class TerrainSubLayer {
+    Isom,
+    Rectangular
 };
 
 // Generally for trees...

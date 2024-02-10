@@ -48,9 +48,19 @@
     <ClInclude Include="Mapping\Graphics.h" />
     <ClInclude Include="Mapping\Selections.h" />
     <ClInclude Include="Mapping\Settings.h" />
+    <ClInclude Include="Mapping\Undos\ChkdUndos\CutCopyPasteChange.h" />
+    <ClInclude Include="Mapping\Undos\ChkdUndos\DimensionChange.h" />
+    <ClInclude Include="Mapping\Undos\ChkdUndos\DoodadChange.h" />
+    <ClInclude Include="Mapping\Undos\ChkdUndos\DoodadCreateDel.h" />
+    <ClInclude Include="Mapping\Undos\ChkdUndos\FogChange.h" />
+    <ClInclude Include="Mapping\Undos\ChkdUndos\IsomChange.h" />
     <ClInclude Include="Mapping\Undos\ChkdUndos\LocationChange.h" />
     <ClInclude Include="Mapping\Undos\ChkdUndos\LocationCreateDel.h" />
     <ClInclude Include="Mapping\Undos\ChkdUndos\LocationMove.h" />
+    <ClInclude Include="Mapping\Undos\ChkdUndos\MtxmChange.h" />
+    <ClInclude Include="Mapping\Undos\ChkdUndos\SpriteChange.h" />
+    <ClInclude Include="Mapping\Undos\ChkdUndos\SpriteCreateDel.h" />
+    <ClInclude Include="Mapping\Undos\ChkdUndos\SpriteIndexMove.h" />
     <ClInclude Include="Mapping\Undos\ChkdUndos\TileChange.h" />
     <ClInclude Include="Mapping\Undos\ChkdUndos\UndoTypes.h" />
     <ClInclude Include="Mapping\Undos\ChkdUndos\UnitChange.h" />
@@ -61,17 +71,31 @@
     <ClInclude Include="Windows\ChkdControls\ChkdStringInput.h" />
     <ClInclude Include="Windows\ChkdControls\CndActGrid.h" />
     <ClInclude Include="Windows\ChkdControls\CuwpInput.h" />
+    <ClInclude Include="Windows\ChkdControls\DoodadTree.h" />
+    <ClInclude Include="Windows\ChkdControls\IsomTree.h" />
     <ClInclude Include="Windows\ChkdControls\LocationTree.h" />
     <ClInclude Include="Windows\ChkdControls\MainTree.h" />
     <ClInclude Include="Windows\ChkdControls\MoveTo.h" />
     <ClInclude Include="Windows\ChkdControls\PeerListBox.h" />
     <ClInclude Include="Windows\ChkdControls\PlayerDropdown.h" />
+    <ClInclude Include="Windows\ChkdControls\SpriteTree.h" />
     <ClInclude Include="Windows\ChkdControls\Suggestions.h" />
     <ClInclude Include="Windows\ChkdControls\TechTree.h" />
     <ClInclude Include="Windows\ChkdControls\UnitTree.h" />
     <ClInclude Include="Windows\ChkdControls\UpgradeTree.h" />
+    <ClInclude Include="Windows\DialogWindows\About.h" />
+    <ClInclude Include="Windows\DialogWindows\BriefingEditor\BriefingEditor.h" />
+    <ClInclude Include="Windows\DialogWindows\BriefingEditor\BriefingTemplates.h" />
+    <ClInclude Include="Windows\DialogWindows\BriefingEditor\BriefingTrigActions.h" />
+    <ClInclude Include="Windows\DialogWindows\BriefingEditor\BriefingTriggers.h" />
+    <ClInclude Include="Windows\DialogWindows\BriefingEditor\BriefingTrigModify.h" />
+    <ClInclude Include="Windows\DialogWindows\BriefingEditor\BriefingTrigModifyText.h" />
+    <ClInclude Include="Windows\DialogWindows\BriefingEditor\BriefingTrigPlayers.h" />
     <ClInclude Include="Windows\DialogWindows\DialogWindows.h" />
+    <ClInclude Include="Windows\DialogWindows\Dimensions.h" />
     <ClInclude Include="Windows\DialogWindows\Layers\LocationProperties.h" />
+    <ClInclude Include="Windows\DialogWindows\Layers\SpriteProperties\PreservedSpriteStats.h" />
+    <ClInclude Include="Windows\DialogWindows\Layers\SpriteProperties\SpriteProperties.h" />
     <ClInclude Include="Windows\DialogWindows\Layers\TerrainPalette.h" />
     <ClInclude Include="Windows\DialogWindows\Layers\TileProperties.h" />
     <ClInclude Include="Windows\DialogWindows\Layers\UnitProperties\PreservedUnitStats.h" />
@@ -90,6 +114,7 @@
     <ClInclude Include="Windows\DialogWindows\MapSettings\UpgradeSettings.h" />
     <ClInclude Include="Windows\DialogWindows\MapSettings\SoundEditor.h" />
     <ClInclude Include="Windows\DialogWindows\NewMap\NewMap.h" />
+    <ClInclude Include="Windows\DialogWindows\TextTrig\BriefingTextTrig.h" />
     <ClInclude Include="Windows\DialogWindows\TextTrig\LIT.h" />
     <ClInclude Include="Windows\DialogWindows\TextTrig\TextTrig.h" />
     <ClInclude Include="Windows\DialogWindows\TrigEditor\Counters.h" />
@@ -124,9 +149,19 @@
     <ClCompile Include="Mapping\Graphics.cpp" />
     <ClCompile Include="Mapping\Selections.cpp" />
     <ClCompile Include="Mapping\Settings.cpp" />
+    <ClCompile Include="Mapping\Undos\ChkdUndos\CutCopyPasteChange.cpp" />
+    <ClCompile Include="Mapping\Undos\ChkdUndos\DimensionChange.cpp" />
+    <ClCompile Include="Mapping\Undos\ChkdUndos\DoodadChange.cpp" />
+    <ClCompile Include="Mapping\Undos\ChkdUndos\DoodadCreateDel.cpp" />
+    <ClCompile Include="Mapping\Undos\ChkdUndos\FogChange.cpp" />
+    <ClCompile Include="Mapping\Undos\ChkdUndos\IsomChange.cpp" />
     <ClCompile Include="Mapping\Undos\ChkdUndos\LocationChange.cpp" />
     <ClCompile Include="Mapping\Undos\ChkdUndos\LocationCreateDel.cpp" />
     <ClCompile Include="Mapping\Undos\ChkdUndos\LocationMove.cpp" />
+    <ClCompile Include="Mapping\Undos\ChkdUndos\MtxmChange.cpp" />
+    <ClCompile Include="Mapping\Undos\ChkdUndos\SpriteChange.cpp" />
+    <ClCompile Include="Mapping\Undos\ChkdUndos\SpriteCreateDel.cpp" />
+    <ClCompile Include="Mapping\Undos\ChkdUndos\SpriteIndexMove.cpp" />
     <ClCompile Include="Mapping\Undos\ChkdUndos\TileChange.cpp" />
     <ClCompile Include="Mapping\Undos\ChkdUndos\UnitChange.cpp" />
     <ClCompile Include="Mapping\Undos\ChkdUndos\UnitCreateDel.cpp" />
@@ -136,16 +171,30 @@
     <ClCompile Include="Windows\ChkdControls\ChkdStringInput.cpp" />
     <ClCompile Include="Windows\ChkdControls\CndActGrid.cpp" />
     <ClCompile Include="Windows\ChkdControls\CuwpInput.cpp" />
+    <ClCompile Include="Windows\ChkdControls\DoodadTree.cpp" />
+    <ClCompile Include="Windows\ChkdControls\IsomTree.cpp" />
     <ClCompile Include="Windows\ChkdControls\LocationTree.cpp" />
     <ClCompile Include="Windows\ChkdControls\MainTree.cpp" />
     <ClCompile Include="Windows\ChkdControls\MoveTo.cpp" />
     <ClCompile Include="Windows\ChkdControls\PeerListBox.cpp" />
     <ClCompile Include="Windows\ChkdControls\PlayerDropdown.cpp" />
+    <ClCompile Include="Windows\ChkdControls\SpriteTree.cpp" />
     <ClCompile Include="Windows\ChkdControls\Suggestions.cpp" />
     <ClCompile Include="Windows\ChkdControls\TechTree.cpp" />
     <ClCompile Include="Windows\ChkdControls\UnitTree.cpp" />
     <ClCompile Include="Windows\ChkdControls\UpgradeTree.cpp" />
+    <ClCompile Include="Windows\DialogWindows\About.cpp" />
+    <ClCompile Include="Windows\DialogWindows\BriefingEditor\BriefingEditor.cpp" />
+    <ClCompile Include="Windows\DialogWindows\BriefingEditor\BriefingTemplates.cpp" />
+    <ClCompile Include="Windows\DialogWindows\BriefingEditor\BriefingTrigActions.cpp" />
+    <ClCompile Include="Windows\DialogWindows\BriefingEditor\BriefingTriggers.cpp" />
+    <ClCompile Include="Windows\DialogWindows\BriefingEditor\BriefingTrigModify.cpp" />
+    <ClCompile Include="Windows\DialogWindows\BriefingEditor\BriefingTrigModifyText.cpp" />
+    <ClCompile Include="Windows\DialogWindows\BriefingEditor\BriefingTrigPlayers.cpp" />
+    <ClCompile Include="Windows\DialogWindows\Dimensions.cpp" />
     <ClCompile Include="Windows\DialogWindows\Layers\LocationProperties.cpp" />
+    <ClCompile Include="Windows\DialogWindows\Layers\SpriteProperties\PreservedSpriteStats.cpp" />
+    <ClCompile Include="Windows\DialogWindows\Layers\SpriteProperties\SpriteProperties.cpp" />
     <ClCompile Include="Windows\DialogWindows\Layers\TerrainPalette.cpp" />
     <ClCompile Include="Windows\DialogWindows\Layers\TileProperties.cpp" />
     <ClCompile Include="Windows\DialogWindows\Layers\UnitProperties\PreservedUnitStats.cpp" />
@@ -164,6 +213,7 @@
     <ClCompile Include="Windows\DialogWindows\MapSettings\UpgradeSettings.cpp" />
     <ClCompile Include="Windows\DialogWindows\MapSettings\SoundEditor.cpp" />
     <ClCompile Include="Windows\DialogWindows\NewMap\NewMap.cpp" />
+    <ClCompile Include="Windows\DialogWindows\TextTrig\BriefingTextTrig.cpp" />
     <ClCompile Include="Windows\DialogWindows\TextTrig\LIT.cpp" />
     <ClCompile Include="Windows\DialogWindows\TextTrig\TextTrig.cpp" />
     <ClCompile Include="Windows\DialogWindows\TrigEditor\Counters.cpp" />
@@ -185,17 +235,6 @@
     <ClCompile Include="Windows\MainWindows\MainToolbar.cpp" />
     <ClCompile Include="Windows\MainWindows\Maps.cpp" />
     <ClCompile Include="Windows\MainWindows\MiniMap.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\CommanderLib\CommanderLib.vcxproj">
-      <Project>{e56cb8f1-772d-4266-8239-14322a96f274}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\MappingCoreLib\MappingCoreLib.vcxproj">
-      <Project>{0b7f9d23-a773-4ea5-80a5-c141d3e884ec}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\WindowsLib\WindowsLib.vcxproj">
-      <Project>{7357debc-f4e5-4c6f-b1da-9459609bceed}</Project>
-    </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
@@ -287,43 +326,43 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseUS|Win32'">
-    <IncludePath>..\IcuLib\;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <IncludePath>..\CrossCutLib\;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
     <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(Platform)\$(Configuration)\</IntDir>
     <LibraryPath>$(SolutionDir)$(Platform)\$(Configuration)\;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAS|Win32'">
-    <IncludePath>..\IcuLib\;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <IncludePath>..\CrossCutLib\;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
     <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(Platform)\$(Configuration)\</IntDir>
     <LibraryPath>$(SolutionDir)$(Platform)\$(Configuration)\;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseUS|x64'">
-    <IncludePath>..\IcuLib\;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <IncludePath>..\CrossCutLib\;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
     <LibraryPath>$(SolutionDir)$(Platform)\$(Configuration)\;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAS|x64'">
-    <IncludePath>..\IcuLib\;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <IncludePath>..\CrossCutLib\;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
     <LibraryPath>$(SolutionDir)$(Platform)\$(Configuration)\;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugUS|x64'">
-    <IncludePath>..\IcuLib\;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <IncludePath>..\CrossCutLib\;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
     <LibraryPath>$(SolutionDir)$(Platform)\$(Configuration)\;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugAS|x64'">
-    <IncludePath>..\IcuLib\;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <IncludePath>..\CrossCutLib\;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
     <LibraryPath>$(SolutionDir)$(Platform)\$(Configuration)\;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugUS|Win32'">
     <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(Platform)\$(Configuration)\</IntDir>
-    <IncludePath>..\IcuLib\;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <IncludePath>..\CrossCutLib\;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
     <LibraryPath>$(SolutionDir)$(Platform)\$(Configuration)\;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugAS|Win32'">
     <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(Platform)\$(Configuration)\</IntDir>
-    <IncludePath>..\IcuLib\;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <IncludePath>..\CrossCutLib\;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
     <LibraryPath>$(SolutionDir)$(Platform)\$(Configuration)\;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugUS|Win32'">
@@ -335,6 +374,7 @@
       <PreprocessorDefinitions>CHKDRAFT;STORMLIB_NO_AUTO_LINK;_CRT_SECURE_NO_WARNINGS;NOMINMAX;_UNICODE;UNICODE;CHKD_DEBUG;_UNICODE;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugAS|Win32'">
@@ -346,6 +386,7 @@
       <PreprocessorDefinitions>CHKDRAFT;STORMLIB_NO_AUTO_LINK;_CRT_SECURE_NO_WARNINGS;NOMINMAX;CHKD_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugUS|x64'">
@@ -357,6 +398,7 @@
       <PreprocessorDefinitions>CHKDRAFT;STORMLIB_NO_AUTO_LINK;_CRT_SECURE_NO_WARNINGS;NOMINMAX;_UNICODE;UNICODE;CHKD_DEBUG;_UNICODE;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugAS|x64'">
@@ -368,6 +410,7 @@
       <PreprocessorDefinitions>CHKDRAFT;STORMLIB_NO_AUTO_LINK;_CRT_SECURE_NO_WARNINGS;NOMINMAX;CHKD_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseUS|Win32'">
@@ -381,6 +424,7 @@
       <PreprocessorDefinitions>CHKDRAFT;STORMLIB_NO_AUTO_LINK;_CRT_SECURE_NO_WARNINGS;NOMINMAX;_UNICODE;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -398,6 +442,7 @@
       <PreprocessorDefinitions>CHKDRAFT;STORMLIB_NO_AUTO_LINK;_CRT_SECURE_NO_WARNINGS;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -415,6 +460,7 @@
       <PreprocessorDefinitions>CHKDRAFT;STORMLIB_NO_AUTO_LINK;_CRT_SECURE_NO_WARNINGS;NOMINMAX;_UNICODE;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -432,6 +478,7 @@
       <PreprocessorDefinitions>CHKDRAFT;STORMLIB_NO_AUTO_LINK;_CRT_SECURE_NO_WARNINGS;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>

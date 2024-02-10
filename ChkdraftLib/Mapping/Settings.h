@@ -7,6 +7,8 @@ std::optional<std::string> getPreSavePath(); // Gets path holding assets to be w
 
 std::optional<std::string> GetLoggerPath(); // Gets the path at which logs are stored
 
+std::optional<std::string> GetBackupsPath(); // Gets the path at which backups are stored
+
 std::optional<std::string> GetSettingsPath();
 
 std::optional<std::string> GetToolPath(const std::string & toolName);

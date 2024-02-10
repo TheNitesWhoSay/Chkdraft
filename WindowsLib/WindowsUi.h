@@ -10,6 +10,7 @@
 // Controls
 #include "ButtonControl.h"
 #include "CheckBoxControl.h"
+#include "ContextMenu.h"
 #include "DropdownControl.h"
 #include "DragListControl.h"
 #include "EditControl.h"
@@ -36,8 +37,9 @@
 #include "MdiClient.h"
 
 // Misc
-#include "Painting.h"
 #include "Popup.h"
 #include "FileSystem.h"
+#include "DeviceContext.h"
+#include "ResourceManager.h"
 
 #endif

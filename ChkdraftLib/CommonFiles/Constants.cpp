@@ -7,8 +7,6 @@
 #include <tuple>
 #include <vector>
 
-const HFONT defaultFont = CreateFontA(14, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Microsoft Sans Serif");
-
 const std::vector<double> defaultZooms =
 {
     4.0, 3.0, 2.0, 1.5, 1.0, .66, .50, .33, .25, .10
@@ -17,17 +15,19 @@ const std::vector<double> defaultZooms =
 const std::vector<u32> onOffMenuItems =
 {
     ID_FILE_CLOSE1, ID_FILE_SAVE1, ID_FILE_SAVEAS1,
-    ID_EDIT_UNDO1, ID_EDIT_REDO1, ID_EDIT_CUT1, ID_EDIT_COPY1, ID_EDIT_PASTE1, ID_EDIT_SELECTALL, ID_EDIT_DELETE, ID_EDIT_CLEARSELECTIONS,
+    ID_EDIT_UNDO1, ID_EDIT_REDO1, ID_EDIT_CUT1, ID_EDIT_COPY1, ID_EDIT_PASTE1, ID_EDIT_SELECTALL, ID_EDIT_DELETE, ID_EDIT_CLEARSELECTIONS, ID_EDIT_PROPERTIES, ID_EDIT_CONVERTTOTERRAIN,
     ID_GRID_ULTRAFINE, ID_GRID_FINE, ID_GRID_NORMAL, ID_GRID_LARGE, ID_GRID_EXTRALARGE, ID_GRID_DISABLED,
     ID_COLOR_BLACK, ID_COLOR_GREY, ID_COLOR_WHITE, ID_COLOR_GREEN, ID_COLOR_RED, ID_COLOR_BLUE,
     ID_ZOOM_400, ID_ZOOM_300, ID_ZOOM_200, ID_ZOOM_150, ID_ZOOM_100, ID_ZOOM_66, ID_ZOOM_50, ID_ZOOM_33, ID_ZOOM_25, ID_ZOOM_10,
-    ID_TERRAIN_DISPLAYTILEELEVATIONS, ID_TERRAIN_DISPLAYTILEVALUES, ID_TERRAIN_DISPLAYTILEVALUESMTXM,
-    ID_UNITS_UNITSSNAPTOGRID, ID_UNITS_ALLOWSTACK,
+    ID_TERRAIN_DISPLAYTILEBUILDABILITY, ID_TERRAIN_DISPLAYTILEELEVATIONS, ID_TERRAIN_DISPLAYISOMVALUES, ID_TERRAIN_DISPLAYTILEVALUES, ID_TERRAIN_DISPLAYTILEVALUESMTXM,
+    ID_UNITS_BUILDINGSSNAPTOTILE, ID_UNITS_UNITSSNAPTOGRID, ID_UNITS_ALLOWSTACK, ID_UNITS_ENABLEAIRSTACK, ID_UNITS_PLACEUNITSANYWHERE, ID_UNITS_PLACEBUILDINGSANYWHERE, ID_UNITS_ADDONAUTOPLAYERSWAP, ID_UNITS_REQUIREMINERALDISTANCE,
     ID_LOCATIONS_NOSNAP, ID_LOCATIONS_SNAPTOACTIVEGRID, ID_LOCATIONS_SNAPTOTILE, ID_LOCATIONS_LOCKANYWHERE, ID_LOCATIONS_CLIPNAMES,
-    ID_CUTCOPYPASTE_FILLSIMILARTILES,
-    ID_TRIGGERS_CLASSICMAPTRIGGERS, ID_SCENARIO_DESCRIPTION, ID_SCENARIO_FORCES, ID_SCENARIO_UNITSETTINGS, ID_SCENARIO_UPGRADESETTINGS, ID_SCENARIO_TECHSETTINGS,
+    ID_DOODADS_ALLOWILLEGALPLACEMENT,
+    ID_SPRITES_SNAPTOGRID,
+    ID_CUTCOPYPASTE_SNAPSELECTIONTOTILES, ID_CUTCOPYPASTE_SNAPSELECTIONTOGRID, ID_CUTCOPYPASTE_NOSNAP, ID_CUTCOPYPASTE_INCLUDEDOODADTILES, ID_CUTCOPYPASTE_FILLSIMILARTILES,
+    ID_TRIGGERS_CLASSICMAPTRIGGERS, ID_TRIGGERS_CLASSICMISSIONBRIEFING, ID_SCENARIO_MAPDIMENSIONS, ID_SCENARIO_DESCRIPTION, ID_SCENARIO_FORCES, ID_SCENARIO_UNITSETTINGS, ID_SCENARIO_UPGRADESETTINGS, ID_SCENARIO_TECHSETTINGS,
     ID_SCENARIO_STRINGS, ID_SCENARIO_SOUNDEDITOR,
-    ID_TRIGGERS_TRIGGEREDITOR, ID_TOOLS_PASSWORD, ID_TOOLS_LITTRIGGERS,
+    ID_TRIGGERS_TRIGGEREDITOR, ID_TRIGGERS_MISSIONBRIEFINGEDITOR, ID_TOOLS_PASSWORD,
     ID_WINDOWS_CASCADE, ID_WINDOWS_TILEHORIZONTALLY, ID_WINDOWS_TILEVERTICALLY, ID_WINDOW_CLOSE
 };
 
@@ -303,34 +303,56 @@ const std::vector<std::string> triggerPlayers = {
     "Force 1", "Force 2", "Force 3", "Force 4", "Unused 1", "Unused 2",
     "Unused 3", "Unused 4", "Non AV Players" };
 
+const std::vector<std::string> briefingTriggerSlots = { "Slot 1", "Slot 2", "Slot 3", "Slot 4" };
+
 const std::vector<std::string> triggerConditions =
 {
-    "Accumulate", "Always", "Bring", "Command", "Command The Least",
-    "Command The Least At", "Command The Most", "Command The Most At", "Countdown Timer", "Custom",
-    "Deaths", "Elapsed Time", "Highest Score", "Kill", "Least Kills", "Least Resources", "Lowest Score",
-    "Memory", "Most Kills", "Most Resources", "Never", "Opponents", "Score", "Switch"
+    "No Condition", "Countdown Timer", "Command", "Bring", "Accumulate", "Kill", "Command The Most", 
+    "Command The Most At", "Most Kills", "Highest Score", "Most Resources", "Switch", "Elapsed Time", 
+    "Never (alt)", "Opponents", "Deaths", "Command The Least", "Command The Least At", "Least Kills", 
+    "Lowest Score", "Least Resources", "Score", "Always", "Never"
 };
 
 const std::vector<std::string> triggerActions =
 {
-    "Center View", "Comment", "Create Unit", "Create Unit with Properties",
-    "Defeat", "Display Text Message", "Draw", "Give Units to Player", "Kill Unit", "Kill Unit At Location",
-    "Leader Board Control at Location", "Leader Board Control", "Leader Board Greed", "Leader Board Kills",
-    "Leader Board Points", "Leader Board Resources", "Leader Board Goal Control At Location",
-    "Leader Board Goal Control", "Leader Board Goal Kills", "Leader Board Goal Points", "Leader Board Goal Resources",
-    "Leader Board Computer Players", "MiniMap Ping", "Modify Unit Energy", "Modify Unit Hanger Count",
-    "Modify Unit Hit Points", "Modify Unit Resource Amount", "Modify Unit Shield Points", "Move Location",
-    "Move Unit", "Mute Unit Speech", "Order", "Pause Game", "Pause Timer", "Play Wav", "Preserve Trigger", "Remove Unit",
-    "Remove Unit At Location", "Run AI Script", "Run AI Script At Location", "Set Alliance Status", "Set Countdown Timer",
-    "Set Deaths", "Set Doodad State", "Set Invincibility", "Set Mission Objectives", "Set Next Scenario", "Set Resources",
-    "Set Score", "Set Switch", "Talking Portrait", "Transmission", "Unmute Unit Speech", "Unpause Game", "Unpause Timer",
-    "Victory", "Wait"
+    "No Action", "Victory", "Defeat", "Preserve Trigger", "Wait", "Pause Game", "Unpause Game", "Transmission", 
+    "Play Wav", "Display Text Message", "Center View", "Create Unit with Properties", "Set Mission Objectives", 
+    "Set Switch", "Set Countdown Timer", "Run AI Script", "Run AI Script At Location", "Leader Board Control", 
+    "Leader Board Control at Location","Leader Board Resources", "Leader Board Kills", "Leader Board Points", 
+    "Kill Unit", "Kill Unit At Location", "Remove Unit", "Remove Unit At Location", "Set Resources", "Set Score", 
+    "MiniMap Ping", "Talking Portrait", "Mute Unit Speech", "Unmute Unit Speech", "Leader Board Computer Players", 
+    "Leader Board Goal Control", "Leader Board Goal Control At Location", "Leader Board Goal Resources", 
+    "Leader Board Goal Kills", "Leader Board Goal Points", "Move Location", "Move Unit", "Leader Board Greed", 
+    "Set Next Scenario", "Set Doodad State", "Set Invincibility", "Create Unit", "Set Deaths", "Order", "Comment", 
+    "Give Units to Player", "Modify Unit Hit Points", "Modify Unit Energy", "Modify Unit Shield Points", 
+    "Modify Unit Resource Amount", "Modify Unit Hanger Count", "Pause Timer", "Unpause Timer", "Draw", 
+    "Set Alliance Status", "Disable Debug Mode", "Enable Debug Mode"
+};
+
+const std::vector<std::string> briefingTriggerActions =
+{
+    "No Action",
+    "Wait",
+    "Play WAV",
+    "Text Message",
+    "Mission Objectives",
+    "Show Portrait",
+    "Hide Portrait",
+    "Display Speaking Portrait",
+    "Transmission",
+    "Skip Tutorial Enabled",
 };
 
 const std::vector<std::string> triggerScores =
 {
-    "Buildings", "Custom", "Kills", "Kills and Razings", "Razings"
-    "Total", "Units", "Units and Buildings"
+    "Total",
+    "Units",
+    "Buildings",
+    "Units and Buildings",
+    "Kills",
+    "Razings",
+    "Kills and Razings",
+    "Custom"
 };
 
 const std::vector<std::tuple<COLORREF, std::string, std::string>> strColors =
@@ -368,54 +390,4 @@ const std::vector<std::tuple<COLORREF, std::string, std::string>> strColors =
 const std::vector<std::string> tilesetNames =
 {
     "Badlands", "Space Platform", "Installation", "Ash World", "Jungle World", "Desert World", "Ice World", "Twilight World"
-};
-
-const std::vector<std::string> badlandsInitTerrain =
-{
-    "Dirt", "Mud", "High Dirt", "Water", "Grass", "High Grass", "Structure", "Asphalt", "Rocky Ground", "Null Terrain"
-};
-const std::vector<std::string> spaceInitTerrain =
-{
-    "Space", "Low Platform", "Rusty Pit", "Platform", "Dark Platform", "Plating",
-    "Solar Array", "High Platform", "High Plating", "Elevated Catwalk", "Null Terrain"
-};
-const std::vector<std::string> installInitTerrain =
-{
-    "Substructure", "Floor", "Roof", "Substructure Plating", "Plating", "Substructure Panels", "Bottomless Pit", "Null Terrain"
-};
-const std::vector<std::string> ashInitTerrain =
-{
-    "Magma", "Dirt", "Lava", "Shale", "Broken Rock", "High Dirt", "High Lava", "High Shale", "Null Terrain"
-};
-const std::vector<std::string> jungInitTerrain =
-{
-    "Water", "Dirt", "Mud", "Jungle", "Rocky Ground", "Ruins", "Raised Jungle",
-    "Temple", "High Dirt", "High Jungle", "High Ruins", "High Raised Jungle", "High Temple", "Null Terrain"
-};
-const std::vector<std::string> desertInitTerrain =
-{
-    "Tar", "Dirt", "Dried Mud", "Sand Dunes", "Rocky Ground", "Crags", "Sandy Sunken Pit",
-    "Compound", "High Dirt", "High Sand Dunes", "High Crags", "High Sandy Sunken Pit", "High Compound", "Null Terrain"
-};
-const std::vector<std::string> iceInitTerrain =
-{
-    "Ice", "Snow", "Moguls", "Dirt", "Rocky Snow", "Grass", "Water", "Outpost",
-    "High Snow", "High Dirt", "High Grass", "High Water", "High Outpost", "Null Terrain"
-};
-const std::vector<std::string> twilightInitTerrain =
-{
-    "Water", "Dirt", "Mud", "Crushed Rock", "Crevices", "Flagstones", "Sunken Ground",
-    "Basilica", "High Dirt", "High Crushed Rock", "High Flagstones", "High Sunken Ground", "High Basilica", "Null Terrain"
-};
-
-const std::vector<std::vector<std::string>> initTerrains =
-{
-    badlandsInitTerrain,
-    spaceInitTerrain,
-    installInitTerrain,
-    ashInitTerrain,
-    jungInitTerrain,
-    desertInitTerrain,
-    iceInitTerrain,
-    twilightInitTerrain
 };

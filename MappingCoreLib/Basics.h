@@ -1,18 +1,9 @@
 #ifndef BASICS_H
 #define BASICS_H
-#include <string>
-#include <cstring>
+#include <cmath>
 #include <cstdint>
-#include <optional>
-#include <vector>
-#include <cstdarg>
 #include <stdexcept>
-#include <unordered_map>
-#include <map>
-#include "../CommanderLib/Logger.h"
-#include "../RareCpp/include/rarecpp/reflect.h"
-
-extern Logger logger;
+#include <string>
 
 /**
     Basics contains several things...
@@ -187,6 +178,8 @@ constexpr u64 size_1tb = 0x10000000000;
 
 const u8 u8Bits[] = { BIT_0, BIT_1, BIT_2, BIT_3, BIT_4, BIT_5, BIT_6, BIT_7 };
 
+const u8 xU8Bits[] = { x8BIT_0, x8BIT_1, x8BIT_2, x8BIT_3, x8BIT_4, x8BIT_5, x8BIT_6, x8BIT_7 };
+
 const u16 u16Bits[] = { BIT_0, BIT_1, BIT_2, BIT_3, BIT_4, BIT_5, BIT_6, BIT_7,
 BIT_8, BIT_9, BIT_10, BIT_11, BIT_12, BIT_13, BIT_14, BIT_15 };
 
@@ -216,10 +209,10 @@ s32 round(T value)
 }
 
 template <typename T>
-inline std::string to_hex_string(const T & t)
+inline std::string to_hex_string(const T & t, bool prefix = true)
 {
     char buf[36];
-    std::snprintf(buf, sizeof(buf)/sizeof(char), "0x%X", t);
+    std::snprintf(buf, sizeof(buf)/sizeof(char), (prefix ? "0x%X" : "%X"), t);
     return std::string(buf);
 }
 
@@ -239,5 +232,25 @@ inline std::string to_hex_string(const T & t)
 
 /** enum_t "enum type (scoped)" documentation minimized for expansion visibility, see definition for description and usage */
 #define enum_t(name, type, ...) struct name ## _ { enum type ## _ : type __VA_ARGS__; }; using name = name ## _::type ## _;
+
+template <typename T>
+class Span {
+    const T* data = nullptr;
+    size_t length = 0;
+
+public:
+    constexpr Span() {}
+    template <size_t N> constexpr Span(T const (&data)[N]) : data(&data[0]), length(N) {}
+    constexpr Span(const T* data, size_t length) : data(data), length(length) {}
+    constexpr const size_t size() const { return length; }
+    constexpr const T* begin() const { return data; }
+    constexpr const T* end() const { return data + length; }
+    constexpr const T & operator[](size_t index) const {
+        if ( index < length )
+            return data[index];
+        else
+            throw std::out_of_range("Span index out of bounds");
+    }
+};
 
 #endif

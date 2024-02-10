@@ -3,6 +3,7 @@
 #include "DataTypes.h"
 #include "WinUIEnums.h"
 #include <Windows.h>
+#include <string>
 
 namespace WinLib {
 
@@ -12,6 +13,7 @@ namespace WinLib {
             WindowMenu();
             virtual ~WindowMenu();
 
+            HMENU getHandle();
             bool FindThis(HWND hParent);
             void SetCheck(u32 itemId, bool checked);
             void SetText(u32 itemId, const std::string & text);

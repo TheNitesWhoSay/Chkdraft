@@ -166,7 +166,7 @@ Chk::Action::Argument flagsArg = { Chk::Action::ArgType::Flags, Chk::Action::Arg
 Chk::Action::Argument paddingArg = { Chk::Action::ArgType::Padding, Chk::Action::ArgField::Padding };
 Chk::Action::Argument maskFlagArg = { Chk::Action::ArgType::MaskFlag, Chk::Action::ArgField::MaskFlag };
 
-Chk::Action::Argument briefingSlotArg = { Chk::Action::ArgType::Amount, Chk::Action::ArgField::Group };
+Chk::Action::Argument briefingSlotArg = { Chk::Action::ArgType::BriefingSlot, Chk::Action::ArgField::Group };
 
 Chk::Action::Argument Chk::Action::classicArguments[NumActionTypes][MaxArguments] = {
     /**  0 = No Action                              */ {},
@@ -490,6 +490,28 @@ const Chk::Action::Argument & Chk::Action::getClassicArg(VirtualType actionType,
     return Chk::Action::noArg;
 }
 
+const Chk::Action::Argument & Chk::Action::getBriefingClassicArg(Chk::Action::Type actionType, size_t argIndex)
+{
+    if ( actionType < NumBriefingActionTypes && argIndex < MaxArguments )
+        return classicBriefingArguments[actionType][argIndex];
+    else
+        return Chk::Action::noArg;
+}
+
+const Chk::Action::Argument & Chk::Action::getBriefingClassicArg(Chk::Action::VirtualType actionType, size_t argIndex)
+{
+    if ( argIndex < MaxArguments )
+    {
+        if ( (size_t)actionType < NumBriefingActionTypes )
+            return classicBriefingArguments[actionType][argIndex];
+
+        auto virtualAction = virtualBriefingActions.find(actionType);
+        if ( virtualAction != virtualBriefingActions.end() )
+            return virtualAction->second.arguments[argIndex];
+    }
+    return Chk::Action::noArg;
+}
+
 Chk::Action::ArgType Chk::Action::getClassicArgType(Type actionType, size_t argIndex)
 {
     if ( actionType < NumActionTypes && argIndex < MaxArguments )
@@ -507,6 +529,28 @@ Chk::Action::ArgType Chk::Action::getClassicArgType(VirtualType actionType, size
 
         auto virtualAction = virtualActions.find(actionType);
         if ( virtualAction != virtualActions.end() )
+            return virtualAction->second.arguments[argIndex].type;
+    }
+    return Chk::Action::ArgType::NoType;
+}
+
+Chk::Action::ArgType Chk::Action::getBriefingClassicArgType(Chk::Action::Type actionType, size_t argIndex)
+{
+    if ( actionType < NumBriefingActionTypes && argIndex < MaxArguments )
+        return classicBriefingArguments[actionType][argIndex].type;
+    else
+        return Chk::Action::ArgType::NoType;
+}
+
+Chk::Action::ArgType Chk::Action::getBriefingClassicArgType(Chk::Action::VirtualType actionType, size_t argIndex)
+{
+    if ( argIndex < MaxArguments )
+    {
+        if ( (size_t)actionType < NumBriefingActionTypes )
+            return classicBriefingArguments[actionType][argIndex].type;
+
+        auto virtualAction = virtualBriefingActions.find(actionType);
+        if ( virtualAction != virtualBriefingActions.end() )
             return virtualAction->second.arguments[argIndex].type;
     }
     return Chk::Action::ArgType::NoType;
@@ -534,9 +578,31 @@ const Chk::Action::Argument & Chk::Action::getTextArg(VirtualType actionType, si
     return Chk::Action::noArg;
 }
 
+const Chk::Action::Argument & Chk::Action::getBriefingTextArg(Chk::Action::Type actionType, size_t argIndex)
+{
+    if ( actionType < NumBriefingActionTypes && argIndex < MaxArguments )
+        return briefingTextArguments[actionType][argIndex];
+    else
+        return Chk::Action::noArg;
+}
+
+const Chk::Action::Argument & Chk::Action::getBriefingTextArg(Chk::Action::VirtualType actionType, size_t argIndex)
+{
+    if ( argIndex < MaxArguments )
+    {
+        if ( (size_t)actionType < NumBriefingActionTypes )
+            return briefingTextArguments[actionType][argIndex];
+
+        auto virtualAction = virtualBriefingActions.find(actionType);
+        if ( virtualAction != virtualBriefingActions.end() )
+            return virtualAction->second.arguments[argIndex];
+    }
+    return Chk::Action::noArg;
+}
+
 Chk::Action::ArgType Chk::Action::getTextArgType(Type actionType, size_t argIndex)
 {
-    if ( actionType < NumActionTypes && argIndex < MaxArguments )
+    if ( actionType < NumBriefingActionTypes && argIndex < MaxArguments )
         return textArguments[actionType][argIndex].type;
     else
         return Chk::Action::ArgType::NoType;
@@ -551,6 +617,28 @@ Chk::Action::ArgType Chk::Action::getTextArgType(VirtualType actionType, size_t 
 
         auto virtualAction = virtualActions.find(actionType);
         if ( virtualAction != virtualActions.end() )
+            return virtualAction->second.arguments[argIndex].type;
+    }
+    return Chk::Action::ArgType::NoType;
+}
+
+Chk::Action::ArgType Chk::Action::getBriefingTextArgType(Chk::Action::Type actionType, size_t argIndex)
+{
+    if ( actionType < NumBriefingActionTypes && argIndex < MaxArguments )
+        return briefingTextArguments[actionType][argIndex].type;
+    else
+        return Chk::Action::ArgType::NoType;
+}
+
+Chk::Action::ArgType Chk::Action::getBriefingTextArgType(Chk::Action::VirtualType actionType, size_t argIndex)
+{
+    if ( argIndex < MaxArguments )
+    {
+        if ( (size_t)actionType < NumBriefingActionTypes )
+            return briefingTextArguments[actionType][argIndex].type;
+
+        auto virtualAction = virtualBriefingActions.find(actionType);
+        if ( virtualAction != virtualBriefingActions.end() )
             return virtualAction->second.arguments[argIndex].type;
     }
     return Chk::Action::ArgType::NoType;
@@ -579,6 +667,22 @@ u8 Chk::Action::getDefaultFlags(VirtualType actionType)
         return getDefaultFlags((Action::Type)actionType);
 }
 
+u8 Chk::Action::getBriefingDefaultFlags(Chk::Action::Type actionType)
+{
+    if ( actionType < NumBriefingActionTypes )
+        return briefingDefaultFlags[actionType];
+    else
+        return u8(0);
+}
+
+u8 Chk::Action::getBriefingDefaultFlags(Chk::Action::VirtualType actionType)
+{
+    if ( actionType < 0 )
+        return u8(0); // TODO: Any briefing virtual types?
+    else
+        return getBriefingDefaultFlags((Action::Type)actionType);
+}
+
 bool Chk::Action::hasStringArgument() const
 {
     for ( u8 i = 0; i < Chk::Action::MaxArguments; i++ )
@@ -594,6 +698,26 @@ bool Chk::Action::hasSoundArgument() const
     for ( u8 i = 0; i < Chk::Action::MaxArguments; i++ )
     {
         if ( Chk::Action::getClassicArgType(actionType, i) == Chk::Action::ArgType::Sound )
+            return true;
+    }
+    return false;
+}
+
+bool Chk::Action::hasBriefingStringArgument() const
+{
+    for ( u8 i = 0; i < Chk::Action::MaxArguments; i++ )
+    {
+        if ( Chk::Action::getBriefingClassicArgType(actionType, i) == Chk::Action::ArgType::String )
+            return true;
+    }
+    return false;
+}
+
+bool Chk::Action::hasBriefingSoundArgument() const
+{
+    for ( u8 i = 0; i < Chk::Action::MaxArguments; i++ )
+    {
+        if ( Chk::Action::getBriefingClassicArgType(actionType, i) == Chk::Action::ArgType::Sound )
             return true;
     }
     return false;
@@ -785,9 +909,17 @@ void Chk::Action::deleteBriefingString(size_t stringId)
 std::unordered_map<Chk::Action::VirtualType, Chk::Action::VirtualAction> Chk::Action::virtualActions = {
     std::pair<Chk::Action::VirtualType, Chk::Action::VirtualAction>(
         Chk::Action::VirtualType::Custom, { Chk::Action::VirtualType::Indeterminate, {
-             locationArg, textFlagsArg, soundArg, durationArg, playerArg, numberArg, actionTypeArg, secondaryTypeIndexArg, flagsArg, paddingArg, maskFlagArg } } ),
+            locationArg, stringArg, soundArg, durationArg, playerArg, numberArg, typeIndexArg,
+            actionTypeArg, secondaryTypeIndexArg, flagsArg, paddingArg, maskFlagArg } } ),
     std::pair<Chk::Action::VirtualType, Chk::Action::VirtualAction>(
         Chk::Action::VirtualType::SetMemory, { Chk::Action::VirtualType::SetDeaths, { memoryOffsetArg, numericModArg, amountArg } } )
+};
+
+std::unordered_map<Chk::Action::VirtualType, Chk::Action::VirtualAction> Chk::Action::virtualBriefingActions = {
+    std::pair<Chk::Action::VirtualType, Chk::Action::VirtualAction>(
+        Chk::Action::VirtualType::BriefingCustom, { Chk::Action::VirtualType::Indeterminate, {
+            locationArg, stringArg, soundArg, durationArg, playerArg, numberArg, typeIndexArg,
+            actionTypeArg, secondaryTypeIndexArg, flagsArg, paddingArg, maskFlagArg } } )
 };
 
 bool Chk::Action::actionUsesLocationArg[NumActionTypes] = {
@@ -933,13 +1065,13 @@ Chk::Action::Argument Chk::Action::briefingTextArguments[NumBriefingActionTypes]
 
 u8 Chk::Action::briefingDefaultFlags[NumBriefingActionTypes] = {
     /** 0 = No Action                 */ 0,
-    /** 1 = Wait -------------------- */ 0,
-    /** 2 = Play Sound                */ 0,
+    /** 1 = Wait -------------------- */ 4,
+    /** 2 = Play Sound                */ 4,
     /** 3 = Text Message ------------ */ 0,
     /** 4 = Mission Objectives        */ 0,
-    /** 5 = Show Portrait ----------- */ Chk::Action::Flags::UnitTypeUsed,
-    /** 6 = Hide Portrait             */ 0,
-    /** 7 = Display Speaking Portrait */ 0,
+    /** 5 = Show Portrait ----------- */ 4 | Chk::Action::Flags::UnitTypeUsed,
+    /** 6 = Hide Portrait             */ 4,
+    /** 7 = Display Speaking Portrait */ 4,
     /** 8 = Transmission              */ 0,
     /** 9 = Skip Tutorial Enabled --- */ 0
 };
@@ -1502,9 +1634,9 @@ std::ostream & Chk::operator<< (std::ostream & out, const Chk::Unit & unit)
     return out;
 }
 
-std::ostream & Chk::operator<< (std::ostream & out, const Chk::IsomEntry & isomEntry)
+std::ostream & Chk::operator<< (std::ostream & out, const Chk::IsomRect & isomRect)
 {
-    out.write(reinterpret_cast<const char*>(&isomEntry), sizeof(Chk::IsomEntry));
+    out.write(reinterpret_cast<const char*>(&isomRect), sizeof(Chk::IsomRect));
     return out;
 }
 
@@ -1549,6 +1681,11 @@ std::ostream & Chk::operator<< (std::ostream & out, const Chk::Trigger & trigger
 bool Chk::Sprite::isDrawnAsSprite() const
 {
     return (flags & SpriteFlags::DrawAsSprite) == SpriteFlags::DrawAsSprite;
+}
+
+bool Chk::Sprite::isUnit() const
+{
+    return (flags & SpriteFlags::DrawAsSprite) != SpriteFlags::DrawAsSprite;
 }
 
 bool Chk::Cuwp::isCloaked() const

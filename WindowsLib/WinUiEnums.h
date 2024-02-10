@@ -1,7 +1,7 @@
 #ifndef WINUIENUMERATIONS_H
 #define WINUIENUMERATIONS_H
-#include <Windows.h>
 #include "DataTypes.h"
+#include <Windows.h>
 
 namespace WinLib {
 
@@ -36,6 +36,19 @@ namespace WinLib {
             The WPARAM is unused
             The LPARAM is a (string*) to the newly selected string */
         WM_NEWSELTEXT,
+
+        /** Possibly sent by windows containing ListBoxes to signal
+            other windows that a ListBox's selection was confirmed
+            as accepted, e.g. by double clicking or with certain keypresses *
+            The WPARAM is the key-code, if any, or NULL otherwise
+            The LPARAM is the list box's handle */
+        WM_SELCONFIRMED,
+
+        /** Possibly sent by windows containing ListBoxes to signal an action
+            was taken to dismiss the window, e.g. focusing some other window
+            The WPARAM is unused
+            The LPARAM is unused */
+        WM_DISMISSED,
 
         LB_LAST
     });
@@ -124,8 +137,18 @@ namespace WinLib {
         GV_LAST
     });
 
+    enum_t(TV, u32, {
+        /** Sent to the parent when a tree view item was selected (either in response to TVN_SELCHANGED, or WM_LBUTTONDOWN)
+            WPARAM: Unused
+            LPARAM: The lParam of the selected item
+            Return: Unused */
+        WM_SELTREEITEM = GV::GV_LAST,
+
+        TV_LAST
+    });
+
     // First user-message used by a given set of sub-windows
-    #define MSG_FIRST (GV_LAST+1)
+    #define MSG_FIRST (WinLib::TV::TV_LAST+1)
 
     // First identifier used by a given set of sub-windows
     #define ID_FIRST 41001

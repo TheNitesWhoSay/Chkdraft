@@ -1,4 +1,6 @@
 #include "Settings.h"
+#include "../../CrossCutLib/Logger.h"
+#include <fstream>
 
 std::string Settings::starCraftPath("");
 std::string Settings::starDatPath("");
@@ -28,7 +30,7 @@ bool ParseLong(const std::string & text, u32 & dest, size_t pos, size_t end)
                 dest = (u32)std::stoll(potentialLong, nullptr, 16);
                 return true;
             }
-            catch (std::exception e) {}
+            catch ( ... ) {}
         }
         else
         {
@@ -67,6 +69,16 @@ std::optional<std::string> GetLoggerPath()
     {
         if ( makeDirectory(*chkdPath + "\\Logs") )
             return *chkdPath + "\\Logs\\";
+    }
+    return std::nullopt;
+}
+
+std::optional<std::string> GetBackupsPath()
+{
+    if ( auto chkdPath = GetChkdPath() )
+    {
+        if ( makeDirectory(*chkdPath + "\\Backups") )
+            return *chkdPath + "\\Backups\\";
     }
     return std::nullopt;
 }

@@ -10,6 +10,7 @@ class MapPropertiesWindow : public WinLib::ClassWindow
         MapPropertiesWindow();
         virtual ~MapPropertiesWindow();
         bool CreateThis(HWND hParent, u64 windowId);
+        bool DestroyThis();
         void RefreshWindow();
 
     protected:

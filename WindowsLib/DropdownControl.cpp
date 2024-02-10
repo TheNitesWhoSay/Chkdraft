@@ -1,5 +1,6 @@
 #include "DropdownControl.h"
 #include <SimpleIcu.h>
+#include <CommCtrl.h>
 #include <memory>
 
 namespace WinLib {
@@ -10,7 +11,7 @@ namespace WinLib {
     }
 
     bool DropdownControl::CreateThis(HWND hParent, int x, int y, int width, int height, bool editable, bool alwaysList,
-        u64 id, const std::vector<std::string> & items, HFONT font)
+        u64 id, const std::vector<std::string> & items)
     {
         DWORD style = WS_VISIBLE | WS_CHILD | WS_VSCROLL | CBS_AUTOHSCROLL | CBS_HASSTRINGS;
 
@@ -32,7 +33,7 @@ namespace WinLib {
         if ( WindowControl::CreateControl(0, WC_COMBOBOX, "", style, x, y, width, height, hParent, (HMENU)id, false) )
         {
             HWND hWnd = getHandle();
-            SendMessage(hWnd, WM_SETFONT, (WPARAM)font, MAKELPARAM(TRUE, 0));
+            setDefaultFont();
             for ( size_t i = 0; i < items.size(); i++ )
                 SendMessage(hWnd, CB_ADDSTRING, 0, (LPARAM)icux::toUistring(items[i]).c_str());
             return true;
@@ -53,6 +54,15 @@ namespace WinLib {
     int DropdownControl::GetSel()
     {
         return (int)SendMessage(getHandle(), CB_GETCURSEL, 0, 0);
+    }
+
+    int DropdownControl::GetSelData()
+    {
+        LRESULT selIndex = SendMessage(getHandle(), CB_GETCURSEL, 0, 0);
+        if ( selIndex != CB_ERR && selIndex != CB_ERRSPACE )
+            return int(SendMessage(getHandle(), CB_GETITEMDATA, (WPARAM)selIndex, NULL));
+        else
+            return int(selIndex);
     }
 
     bool DropdownControl::GetItemText(int index, std::string & dest)
@@ -83,6 +93,15 @@ namespace WinLib {
     int DropdownControl::AddItem(const std::string & item)
     {
         LRESULT result = SendMessage(getHandle(), CB_ADDSTRING, (WPARAM)NULL, (LPARAM)icux::toUistring(item).c_str());
+        return int(result);// != CB_ERR && result != CB_ERRSPACE;
+    }
+
+    int DropdownControl::AddItem(const std::string & item, int data)
+    {
+        LRESULT result = SendMessage(getHandle(), CB_ADDSTRING, (WPARAM)NULL, (LPARAM)icux::toUistring(item).c_str());
+        if ( result != CB_ERR && result != CB_ERRSPACE )
+            SendMessage(getHandle(), CB_SETITEMDATA, result, data);
+        
         return int(result);// != CB_ERR && result != CB_ERRSPACE;
     }
     

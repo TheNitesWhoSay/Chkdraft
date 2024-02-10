@@ -49,9 +49,10 @@ namespace WinLib {
             void SelectSquareTo(int x, int y);
             void SelectSquare(int xStart, int yStart, int xEnd, int yEnd);
             void FocusItem(int x, int y);
-            void SetEditText(const std::string & text);
+            void SetEditText(const std::string & text, bool focus = true);
             void EndEditing();
             void AutoSizeColumns(int minWidth, int maxWidth);
+            void RedrawThis();
         
             int NumRows();
             int NumColumns();
@@ -73,10 +74,12 @@ namespace WinLib {
         protected:
             bool resize(int numRows, int numColumns);
             void AutoSizeColumn(int x, int minWidth, int maxWidth);
+            void HeaderChanged(HWND hWnd, WPARAM idFrom, LPARAM changedHeader, bool wideChar);
+            void WidthChanged(int x, int newWidth);
             void DragSelectTo(int x, int y);
             virtual void StartEditing(int xClick, int yClick, const std::string & initChar); // Pass -1, -1 if starting via typing, "" if by click
             void UpdateCaretPos(int xClick, int yClick);
-            void SetCaretPos(size_t newCaretPos);
+            void SetCaretPos(size_t newCaretPos, bool focus = true);
             virtual void Char(const std::string & character);
             virtual void KeyDown(WPARAM wParam);
 
