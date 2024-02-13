@@ -1,0 +1,122 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Header Files\%2a">
+      <UniqueIdentifier>{3778b5a6-7f5a-498d-8352-c9816d545066}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\%2a">
+      <UniqueIdentifier>{b8707e34-c1a6-4a82-a688-747eddecb2ff}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\System">
+      <UniqueIdentifier>{bacb8800-f19c-40ec-9982-817036c3bad7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\System">
+      <UniqueIdentifier>{373e92c8-be79-41cf-a5b1-5c0eff11eab1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\StarCraft">
+      <UniqueIdentifier>{cbf2e9bf-1d54-42a6-8fcb-a92683ea2cc4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\StarCraft">
+      <UniqueIdentifier>{b84d5c95-83a3-4f61-83e8-d53ab0b39de3}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="MappingCore.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Basics.h">
+      <Filter>Header Files\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="sha256.h">
+      <Filter>Header Files\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="ArchiveFile.h">
+      <Filter>Header Files\System</Filter>
+    </ClInclude>
+    <ClInclude Include="SystemIO.h">
+      <Filter>Header Files\System</Filter>
+    </ClInclude>
+    <ClInclude Include="FileBrowser.h">
+      <Filter>Header Files\System</Filter>
+    </ClInclude>
+    <ClInclude Include="TextTrigCompiler.h">
+      <Filter>Header Files\StarCraft</Filter>
+    </ClInclude>
+    <ClInclude Include="TextTrigGenerator.h">
+      <Filter>Header Files\StarCraft</Filter>
+    </ClInclude>
+    <ClInclude Include="Scenario.h">
+      <Filter>Header Files\StarCraft</Filter>
+    </ClInclude>
+    <ClInclude Include="Sc.h">
+      <Filter>Header Files\StarCraft</Filter>
+    </ClInclude>
+    <ClInclude Include="MpqFile.h">
+      <Filter>Header Files\StarCraft</Filter>
+    </ClInclude>
+    <ClInclude Include="MapFile.h">
+      <Filter>Header Files\StarCraft</Filter>
+    </ClInclude>
+    <ClInclude Include="Chk.h">
+      <Filter>Header Files\StarCraft</Filter>
+    </ClInclude>
+    <ClInclude Include="EscapeStrings.h">
+      <Filter>Header Files\StarCraft</Filter>
+    </ClInclude>
+    <ClInclude Include="CascArchive.h">
+      <Filter>Header Files\StarCraft</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Basics.cpp">
+      <Filter>Source Files\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="sha256.cpp">
+      <Filter>Source Files\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="SystemIO.cpp">
+      <Filter>Source Files\System</Filter>
+    </ClCompile>
+    <ClCompile Include="FileBrowser.cpp">
+      <Filter>Source Files\System</Filter>
+    </ClCompile>
+    <ClCompile Include="ArchiveFile.cpp">
+      <Filter>Source Files\System</Filter>
+    </ClCompile>
+    <ClCompile Include="Scenario.cpp">
+      <Filter>Source Files\StarCraft</Filter>
+    </ClCompile>
+    <ClCompile Include="Sc.cpp">
+      <Filter>Source Files\StarCraft</Filter>
+    </ClCompile>
+    <ClCompile Include="MpqFile.cpp">
+      <Filter>Source Files\StarCraft</Filter>
+    </ClCompile>
+    <ClCompile Include="MapFile.cpp">
+      <Filter>Source Files\StarCraft</Filter>
+    </ClCompile>
+    <ClCompile Include="EscapeStrings.cpp">
+      <Filter>Source Files\StarCraft</Filter>
+    </ClCompile>
+    <ClCompile Include="Chk.cpp">
+      <Filter>Source Files\StarCraft</Filter>
+    </ClCompile>
+    <ClCompile Include="TextTrigGenerator.cpp">
+      <Filter>Source Files\StarCraft</Filter>
+    </ClCompile>
+    <ClCompile Include="TextTrigCompiler.cpp">
+      <Filter>Source Files\StarCraft</Filter>
+    </ClCompile>
+    <ClCompile Include="CascArchive.cpp">
+      <Filter>Source Files\StarCraft</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
