@@ -215,10 +215,16 @@ void repairSounds()
 {
     if ( CM == nullptr )
         return;
+    
+    std::set<u32> knownSoundPaths {};
+    bool isNew = CM->getFilePath().empty();
 
     bool warn = false;
-    CM->addSaveSection(Chk::SectionName::WAV);
-    std::set<u32> knownSoundPaths;
+    if ( !CM->hasSection(Chk::SectionName::WAV) )
+    {
+        CM->addSaveSection(Chk::SectionName::WAV);
+        logger.info() << "Found the WAV section was missing, added the WAV section to the map." << std::endl;
+    }
 
     // Look for any strings to delete
     for ( size_t i=0; i<Chk::TotalSounds; ++i )
@@ -302,8 +308,11 @@ void repairSounds()
                     break;
 
                 case SoundStatus::FileInUse:
-                    warn = true;
-                    logger.warn() << "Map file in use or does not exist, sound could not be examined!" << std::endl;
+                    if ( !isNew )
+                    {
+                        warn = true;
+                        logger.warn() << "Map file in use or does not exist, sound could not be examined!" << std::endl;
+                    }
                     break;
                 case SoundStatus::Unknown:
                     warn = true;
@@ -326,6 +335,6 @@ void repairSounds()
     else
     {
         logger.info() << "Sound repair succeeded" << std::endl;
-        mb("Recompile success!");
+        mb("Sound repair success!");
     }
 }
