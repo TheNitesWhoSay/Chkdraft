@@ -30,17 +30,24 @@ FileBrowserPtr<SaveType> MapFile::getDefaultSaveMapBrowser()
 MapFile::MapFile(const std::string & filePath) :
     saveType(SaveType::Unknown), mapFilePath(""), temporaryMpqPath(""), temporaryMpq(true, true)
 {
+    initializeVirtualSoundTable();
     load(filePath);
 }
 
 MapFile::MapFile(FileBrowserPtr<SaveType> fileBrowser) :
     saveType(SaveType::Unknown), mapFilePath(""), temporaryMpqPath(""), temporaryMpq(true, true)
 {
+    initializeVirtualSoundTable();
     load(fileBrowser);
 }
 
 MapFile::MapFile(Sc::Terrain::Tileset tileset, u16 width, u16 height)
     : Scenario(tileset, width, height), saveType(SaveType::HybridScm), mapFilePath(""), temporaryMpqPath(""), temporaryMpq(true, true)
+{
+    initializeVirtualSoundTable();
+}
+
+void MapFile::initializeVirtualSoundTable()
 {
     if ( MapFile::virtualSoundTable.size() == 0 )
     {
