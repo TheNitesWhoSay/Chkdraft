@@ -47,20 +47,6 @@ MapFile::MapFile(Sc::Terrain::Tileset tileset, u16 width, u16 height)
     initializeVirtualSoundTable();
 }
 
-void MapFile::initializeVirtualSoundTable()
-{
-    if ( MapFile::virtualSoundTable.size() == 0 )
-    {
-        size_t numVirtualSounds = Sc::Sound::virtualSoundPaths.size();
-        for ( size_t i=0; i<numVirtualSounds; i++ )
-        {
-            std::string soundPath(Sc::Sound::virtualSoundPaths[i]);
-            size_t hash = strHash(soundPath);
-            virtualSoundTable.insert(std::pair<size_t, std::string>(hash, soundPath));
-        }
-    }
-}
-
 MapFile::~MapFile()
 {
 
@@ -398,6 +384,20 @@ bool MapFile::processModifiedAssets(bool updateListFile)
             modifiedAssets.erase(processedAsset);
 
         return false;
+    }
+}
+
+void MapFile::initializeVirtualSoundTable()
+{
+    if ( MapFile::virtualSoundTable.size() == 0 )
+    {
+        size_t numVirtualSounds = Sc::Sound::virtualSoundPaths.size();
+        for ( size_t i=0; i<numVirtualSounds; i++ )
+        {
+            std::string soundPath(Sc::Sound::virtualSoundPaths[i]);
+            size_t hash = strHash(soundPath);
+            virtualSoundTable.insert(std::pair<size_t, std::string>(hash, soundPath));
+        }
     }
 }
 
