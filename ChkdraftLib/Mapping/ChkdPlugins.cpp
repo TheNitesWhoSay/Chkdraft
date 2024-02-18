@@ -210,3 +210,122 @@ bool runMpqRecompiler()
     }
     return true;
 }
+
+void repairSounds()
+{
+    if ( CM == nullptr )
+        return;
+
+    bool warn = false;
+    CM->addSaveSection(Chk::SectionName::WAV);
+    std::set<u32> knownSoundPaths;
+
+    // Look for any strings to delete
+    for ( size_t i=0; i<Chk::TotalSounds; ++i )
+    {
+        auto soundStringId = CM->soundPaths[i];
+        if ( soundStringId != Chk::StringId::UnusedSound )
+        {
+            if ( soundStringId >= CM->strings.size() )
+            {
+                CM->soundPaths[i] = Chk::StringId::UnusedSound;
+                CM->deleteString(soundStringId, Chk::Scope::Game, true);
+                auto foundStr = CM->getString<ChkdString>(soundStringId);
+                logger.info()
+                    << "Sound [" << i << "] string [" << soundStringId << "] \"" << (foundStr ? *foundStr : ChkdString(""))
+                    << "\" had a duplicated WAV section entry which was removed." << std::endl;
+            }
+            else
+            {
+                auto soundStatus = CM->getSoundStatus(soundStringId);
+                switch ( soundStatus )
+                {
+                    case SoundStatus::PendingMatch:
+                    case SoundStatus::CurrentMatch:
+                    case SoundStatus::VirtualFile:
+                        if ( knownSoundPaths.find(soundStringId) == knownSoundPaths.end() )
+                            knownSoundPaths.insert(soundStringId); // Sound is fine, no action needed
+                        else // Sound has a duplicate entry
+                        {
+                            CM->soundPaths[i] = Chk::StringId::UnusedSound;
+                            logger.info()
+                                << "Sound [" << i << "] string [" << soundStringId << "] \""
+                                << "\" was removed not refer to a valid string so it was removed from the WAV section." << std::endl;
+                        }
+                        break;
+
+                    case SoundStatus::FileInUse:
+                        warn = true;
+                        logger.warn() << "Map file in use or does not exist, sound could not be examined!" << std::endl;
+                        break;
+                    case SoundStatus::Unknown:
+                        warn = true;
+                        logger.warn() << "An unknown sound status was encountered, no action will be taken." << std::endl;
+                        break;
+
+                    case SoundStatus::NoMatch:
+                    case SoundStatus::NoMatchExtended:
+                        {
+                            CM->soundPaths[i] = Chk::StringId::UnusedSound;
+                            CM->deleteString(soundStringId, Chk::Scope::Game, true);
+                            auto foundStr = CM->getString<ChkdString>(soundStringId);
+                            logger.info()
+                                << "Sound [" << i << "] string [" << soundStringId << "] \"" << (foundStr ? *foundStr : ChkdString(""))
+                                << "\" does not refer to a valid sound so it was removed from the WAV section." << std::endl;
+                        }
+                        break;
+                }
+            }
+        }
+    }
+
+    for ( size_t i=0; i<CM->strings.size(); ++i )
+    {
+        auto & potentialSoundPath = CM->strings[i];
+        if ( knownSoundPaths.find(u32(i)) == knownSoundPaths.end() && potentialSoundPath && !potentialSoundPath->empty() )
+        {
+            switch ( CM->getSoundStatus(i) )
+            {
+                case SoundStatus::PendingMatch:
+                case SoundStatus::CurrentMatch:
+                case SoundStatus::VirtualFile:
+                    {
+                        auto result = ((Scenario &)*CM).addSound(i);
+                        if ( result < Chk::TotalSounds )
+                            logger.info() << "Sound string [" << i << "] was added to the WAV section successfully at index [" << result << "]" << std::endl;
+                        else
+                        {
+                            warn = true;
+                            logger.warn() << "Sound string [" << i << "] could not be added to the WAV section as the WAV section is full!" << std::endl;
+                        }
+                    }
+                    break;
+
+                case SoundStatus::FileInUse:
+                    warn = true;
+                    logger.warn() << "Map file in use or does not exist, sound could not be examined!" << std::endl;
+                    break;
+                case SoundStatus::Unknown:
+                    warn = true;
+                    logger.warn() << "An unknown sound status was encountered, no action will be taken." << std::endl;
+                    break;
+
+                case SoundStatus::NoMatch:
+                case SoundStatus::NoMatchExtended:
+                    break; // Just a regular string, do nothing
+            }
+        }
+    }
+    CM->refreshScenario();
+
+    if ( warn )
+    {
+        logger.info() << "Sound repair succeeded with warnings shown above." << std::endl;
+        mb("Sound repair success with warnings (see logs)");
+    }
+    else
+    {
+        logger.info() << "Sound repair succeeded" << std::endl;
+        mb("Recompile success!");
+    }
+}
