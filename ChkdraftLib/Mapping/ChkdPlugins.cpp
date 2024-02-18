@@ -166,10 +166,29 @@ bool runMpqRecompiler()
                         logger.warn() << "Failed to transfer sound to new MPQ: " << *soundPathStr << std::endl;
                     }
                 }
-                else
+                else if ( !inputMapFile.isInVirtualSoundList(*soundPathStr) )
                 {
                     warn = true;
                     logger.warn() << "Failed to get sound for transfer to new MPQ: " << *soundPathStr << std::endl;
+                }
+            }
+        }
+    }
+    for ( auto potentialSoundPath : inputMapFile.strings )
+    {
+        if ( potentialSoundPath && !potentialSoundPath->empty() )
+        {
+            if ( inputMapFile.findFile(potentialSoundPath->str) )
+            {
+                if ( auto soundFile = inputMapFile.getFile(potentialSoundPath->str) )
+                {
+                    if ( outputFile.addFile(potentialSoundPath->str, *soundFile) )
+                        logger.info() << "Added " << potentialSoundPath->str << std::endl;
+                    else if ( !inputMapFile.isInVirtualSoundList(potentialSoundPath->str) )
+                    {
+                        warn = true;
+                        logger.warn() << "Failed to transfer sound to new MPQ: " << potentialSoundPath->str << std::endl;
+                    }
                 }
             }
         }
