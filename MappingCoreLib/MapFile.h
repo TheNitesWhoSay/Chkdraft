@@ -82,7 +82,6 @@ class MapFile : public Scenario, public MpqFile // MapFile is a scenario file an
         bool openMapFile(const std::string & filePath);
         bool openTemporaryMpq();
         bool processModifiedAssets(bool updateListfile);
-        void initializeVirtualSoundTable();
         
         MapFile();
 };
