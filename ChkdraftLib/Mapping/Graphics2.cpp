@@ -1,11 +1,12 @@
 // Extended graphical functions -- primarily focused on iscript and animation
 
+#include "Defines.h"
 #include "Graphics.h"
-#include "CommonFiles/CommonFiles.h"
-#include "Chkdraft.h"
+#include "../CommonFiles/CommonFiles.h"
+#include "../Chkdraft.h"
 
 // iscript get opcode parameter macro, to make it marginally easier to read
-#define is_get(t,o) chkd.scData.iScripts.iscriptBin.get<t>(o)
+#define is_get(t,o) (*((t*)&chkd.scData.iScripts.iscriptBin[o]))
 
 // Some (x,y) lookup table
 const POINT arr_512D28[256] = {
@@ -102,24 +103,24 @@ const struct {
 } imgRenderFxns[18] = {
     // Not all of these are defined, so any that are missing are set to Fxn0_0 (Normal draw, not flipped).
     // The correct functions are listed in the comment
-    { DRAW_NORMAL,          &Graphics::imageRenderFxn0_0, &Graphics::imageRenderFxn0_0 }, // &Graphics::imageRenderFxn0_0, &Graphics::imageRenderFxn0_1 },
-    { DRAW_UNKNOWN1,        &Graphics::imageRenderFxn0_0, &Graphics::imageRenderFxn0_0 }, // &Graphics::imageRenderFxn0_0, &Graphics::imageRenderFxn0_1 },
+    { DRAW_NORMAL,          &Graphics::drawGrp, &Graphics::drawGrp }, // &Graphics::imageRenderFxn0_0, &Graphics::imageRenderFxn0_1 },
+    { DRAW_UNKNOWN1,        &Graphics::drawGrp, &Graphics::drawGrp }, // &Graphics::imageRenderFxn0_0, &Graphics::imageRenderFxn0_1 },
     { DRAW_ENEMY_CLOAK,     &Graphics::imageRenderFxn2_0, &Graphics::imageRenderFxn2_0 }, // &Graphics::imageRenderFxn2_0, &Graphics::imageRenderFxn2_1 },
-    { DRAW_OWN_CLOAK,       &Graphics::imageRenderFxn3_0, &Graphics::imageRenderFxn3_0 }, // &Graphics::imageRenderFxn3_0, &Graphics::imageRenderFxn3_1 },
+    { DRAW_OWN_CLOAK,       &Graphics::drawCloakedGrp, &Graphics::drawCloakedGrp }, // &Graphics::imageRenderFxn3_0, &Graphics::imageRenderFxn3_1 },
     { DRAW_ALLY_CLOAK,      &Graphics::imageRenderFxn2_0, &Graphics::imageRenderFxn2_0 }, // &Graphics::imageRenderFxn2_0, &Graphics::imageRenderFxn2_1 },
     { DRAW_CLOAK,           &Graphics::imageRenderFxn5_0, &Graphics::imageRenderFxn5_0 }, // &Graphics::imageRenderFxn5_0, &Graphics::imageRenderFxn5_1 },
     { DRAW_CLOAKED,         &Graphics::imageRenderFxn6_0, &Graphics::imageRenderFxn6_0 }, // &Graphics::imageRenderFxn6_0, &Graphics::imageRenderFxn6_1 },
     { DRAW_DECLOAK,         &Graphics::imageRenderFxn5_0, &Graphics::imageRenderFxn5_0 }, // &Graphics::imageRenderFxn5_0, &Graphics::imageRenderFxn5_1 },
-    { DRAW_EMP,             &Graphics::imageRenderFxn8_0, &Graphics::imageRenderFxn8_0 }, // &Graphics::imageRenderFxn8_0, &Graphics::imageRenderFxn8_1 },
-    { DRAW_EFFECT,          &Graphics::imageRenderFxn9_0, &Graphics::imageRenderFxn9_0 }, // &Graphics::imageRenderFxn9_0, &Graphics::imageRenderFxn9_1 },
-    { DRAW_SHADOW,          &Graphics::imageRenderFxn10_0, &Graphics::imageRenderFxn10_0 }, // &Graphics::imageRenderFxn10_0, &Graphics::imageRenderFxn10_1 },
-    { DRAW_HPFLOATDRAW,     &Graphics::imageRenderFxn0_0, &Graphics::imageRenderFxn0_0 }, // &Graphics::imageRenderFxn11_0, &Graphics::imageRenderFxn11_0 }, // No flip function
-    { DRAW_WARP_IN,         &Graphics::imageRenderFxn0_0, &Graphics::imageRenderFxn0_0 }, // &Graphics::imageRenderFxn12_0, &Graphics::imageRenderFxn12_1 },
+    { DRAW_EMP,             &Graphics::drawEmpGrp, &Graphics::drawEmpGrp }, // &Graphics::imageRenderFxn8_0, &Graphics::imageRenderFxn8_1 },
+    { DRAW_EFFECT,          &Graphics::drawRemappedGrp, &Graphics::drawRemappedGrp }, // &Graphics::imageRenderFxn9_0, &Graphics::imageRenderFxn9_1 },
+    { DRAW_SHADOW,          &Graphics::drawShadowGrp, &Graphics::drawShadowGrp }, // &Graphics::imageRenderFxn10_0, &Graphics::imageRenderFxn10_1 },
+    { DRAW_HPFLOATDRAW,     &Graphics::drawGrp, &Graphics::drawGrp }, // &Graphics::imageRenderFxn11_0, &Graphics::imageRenderFxn11_0 }, // No flip function
+    { DRAW_WARP_IN,         &Graphics::drawGrp, &Graphics::drawGrp }, // &Graphics::imageRenderFxn12_0, &Graphics::imageRenderFxn12_1 },
     { DRAW_SELECTION,       &Graphics::imageRenderFxn13_0, &Graphics::imageRenderFxn13_0 }, // No flip function
     { DRAW_PLAYER_SIDE,     &Graphics::imageRenderFxn14_0, &Graphics::imageRenderFxn14_0 }, // &Graphics::imageRenderFxn14_0, &Graphics::imageRenderFxn14_1 },
-    { DRAW_SIZE_RECT,       &Graphics::imageRenderFxn0_0, &Graphics::imageRenderFxn0_0 }, // &Graphics::imageRenderFxn15_0, &Graphics::imageRenderFxn15_0 }, // No flip function
+    { DRAW_SIZE_RECT,       &Graphics::drawGrp, &Graphics::drawGrp }, // &Graphics::imageRenderFxn15_0, &Graphics::imageRenderFxn15_0 }, // No flip function
     { DRAW_HALLUCINATION,   &Graphics::imageRenderFxn16_0, &Graphics::imageRenderFxn16_0 }, // &Graphics::imageRenderFxn16_0, &Graphics::imageRenderFxn16_1 },
-    { DRAW_WARP_FLASH,      &Graphics::imageRenderFxn0_0, &Graphics::imageRenderFxn0_0 } // &Graphics::imageRenderFxn17_0, &Graphics::imageRenderFxn17_1 } };
+    { DRAW_WARP_FLASH,      &Graphics::drawGrp, &Graphics::drawGrp } // &Graphics::imageRenderFxn17_0, &Graphics::imageRenderFxn17_1 } };
 };
 
 bool Graphics::doAnimation()
@@ -181,7 +182,7 @@ UnitNode* Graphics::CreateUnitXY(int player, u16 id, int x, int y) {
         return NULL;
     }
     
-    if (spreadsCreep(tmp->unitType, true) || (chkd.scData.UnitDat(tmp->unitType)->SpecialAbilityFlags & USTATUS_ISABUILDING))
+    if (spreadsCreep(tmp->unitType, true) || (chkd.scData.units.getUnit((Sc::Unit::Type)tmp->unitType).flags & USTATUS_ISABUILDING))
     {
         ApplyCreepAtLocationFromUnitType(tmp->unitType, tmp->sprite->position.x, tmp->sprite->position.y);
     }
@@ -235,12 +236,12 @@ UnitNode* Graphics::CreateUnit(int unit, int x, int y, int player)
     tmp->prev = unitLastCreated;
     unitLastCreated = tmp;
 
-    if (unit > 0x69 || chkd.scData.UnitDat(unit)->Subunit1 == 0xE4)
+    if (unit > 0x69 || chkd.scData.units.getUnit((Sc::Unit::Type)unit).subunit1 == 0xE4)
     {
         tmp->subUnit = NULL;
         return tmp;
     }
-    UnitNode* subunit = UnitConstructor(chkd.scData.UnitDat(unit)->Subunit1, x, y, player, EBP4);
+    UnitNode* subunit = UnitConstructor(chkd.scData.units.getUnit((Sc::Unit::Type)unit).subunit1, x, y, player, EBP4);
     if (subunit == NULL)
     {
         UnitDestructor(tmp);
@@ -319,7 +320,7 @@ void Graphics::updateUnitStatsFinishBuilding(UnitNode* unit) {
     {
         if (unit->statusFlags & 0x10000) // IsAUnit ?
         {
-            int direction = chkd.scData.UnitDat(unit->unitType)->UnitDirection;
+            int direction = chkd.scData.units.getUnit((Sc::Unit::Type)unit->unitType).unitDirection;
             if (direction == 0x20) {
                 direction = getRand() & 0x1F;
             }
@@ -337,7 +338,7 @@ bool Graphics::unknown_0049EC30(UnitNode* unit)
     if(unit->sprite->flags & 0x20)
     {
         points pos = {unit->sprite->position.x, unit->sprite->position.y};
-        int EBPC; // ?
+        //int EBPC; // ?
         //EDX = unit->position.y
         //ECX = &[EBP-4]
         //EAX = 0
@@ -353,11 +354,11 @@ bool Graphics::unknown_0049EC30(UnitNode* unit)
         //MoveUnit( ? )
         //EDI = unit->subUnit
         
-        if(unit->subUnit != NULL && (chkd.scData.UnitDat(unit->unitType)->SpecialAbilityFlags & 0x10) == 0) // Is Subunit
+        if(unit->subUnit != NULL && (chkd.scData.units.getUnit((Sc::Unit::Type)unit->unitType).flags & 0x10) == 0) // Is Subunit
         {
             //incrementUnitScoresEx(1, 0);
             unit->subUnit->statusFlags |= 1;
-            unit->subUnit->hitPoints = chkd.scData.UnitDat(unit->subUnit->unitType)->HitPoints;
+            unit->subUnit->hitPoints = chkd.scData.units.getUnit((Sc::Unit::Type)unit->subUnit->unitType).hitPoints;
             //EAX = [EBP-C]
             //EDX = unit->subUnit
             //ECX = 0
@@ -640,7 +641,7 @@ void Graphics::UnitDestructor(UnitNode* unit)
     if (unit->subUnit != NULL)
     {
         
-        if (chkd.scData.UnitDat(unit->subUnit->unitType)->SpecialAbilityFlags & 10) // has subunit
+        if (chkd.scData.units.getUnit((Sc::Unit::Type)unit->subUnit->unitType).flags & 10) // has subunit
         {
             UnitDestructor(unit->subUnit);
             unit->subUnit = NULL;
@@ -654,7 +655,7 @@ void Graphics::UnitDestructor(UnitNode* unit)
 
 void Graphics::_UnitDestructor(UnitNode* unit)
 {
-    u32 abilflags = chkd.scData.UnitDat(unit->unitType)->SpecialAbilityFlags;
+    u32 abilflags = chkd.scData.units.getUnit((Sc::Unit::Type)unit->unitType).flags;
     if (abilflags & 1) // Building
     {
         //*6D5BD0 = 1 // I duno lol
@@ -854,7 +855,7 @@ void Graphics::UnitDestructor_SpecialCases(UnitNode* unit)
 
 bool Graphics::unknown_004A0080(UnitNode* unit) // Destroy subunits and geyser buildings -- true on destruction
 {
-    if (chkd.scData.UnitDat(unit->unitType)->SpecialAbilityFlags & 0x10) // Subunit
+    if (chkd.scData.units.getUnit((Sc::Unit::Type)unit->unitType).flags & 0x10) // Subunit
     { // Destruct the subunit
         /*if (*62842C != NULL) // I don't know what these are, I assume just more empty unit lists.
         {
@@ -1047,7 +1048,7 @@ void Graphics::unknown_00498170(SpriteNode* sprite) // Show images hidden by clo
 {
     for (ImageNode* image = sprite->pImageHead; image != NULL; image = image->next)
     {
-        if (chkd.scData.ImageDat(image->imageID)->DrawIfCloaked == 0 &&
+        if (chkd.scData.sprites.getImage(image->imageID).drawIfCloaked == 0 &&
             (image->flags & 0x40) == 1) // Hidden/Invisible
         {
             image->flags &= ~40; // Hidden/Invsiible
@@ -1130,7 +1131,7 @@ void Graphics::unknown_0049FD00(UnitNode* unit)
     }
     
     // Huge functions I don't feel like dealing with
-    /*if (chkd.scData.UnitDat(unit->unitType)->StarEditGroupFlags & 1) // Zerg
+    /*if (chkd.scData.units.getUnit((Sc::Unit::Type)unit->unitType)->StarEditGroupFlags & 1) // Zerg
     {
         if (isMorphing(unit)) // It probably is.
         {
@@ -1406,7 +1407,7 @@ bool Graphics::unknown_004A0320(UnitNode* unit, int unitid, int x, int y, int pl
     //unit->wireframeRandomizer = getRand(); // RandomizeShort(15);
 
     if (unit->statusFlags & 2) { // GoundedBuilding
-        unit->orderID = chkd.scData.UnitDat(unitid)->HumanAIIdle;
+        unit->orderID = chkd.scData.units.getUnit((Sc::Unit::Type)unitid).humanAIIdle;
     }
     else
     {
@@ -1441,7 +1442,7 @@ bool Graphics::unknown_004A0320(UnitNode* unit, int unitid, int x, int y, int pl
         refreshAllVisibleImagesAtScreenPosition(unit->sprite, 0); // EBX ?
     }
     unit->visibilityStatus = -1;
-    if (chkd.scData.UnitDat(unit->unitType)->SpecialAbilityFlags & 0x10) { // UPROP_SUBUNIT
+    if (chkd.scData.units.getUnit((Sc::Unit::Type)unit->unitType).flags & 0x10) { // UPROP_SUBUNIT
         unit->sprite->flags |= 0x10; // subunit?
     }
     else
@@ -1456,10 +1457,10 @@ bool Graphics::unknown_004A0320(UnitNode* unit, int unitid, int x, int y, int pl
 bool Graphics::unknown_0049ECF0(UnitNode* unit, int y, u16 unitid, int x, u8 player) {
     UnitNode* unittmp = activeIscriptUnit;
 
-    UNITDAT* unitdat = chkd.scData.UnitDat(unitid);
+    const Sc::Unit::DatEntry & unitdat = chkd.scData.units.getUnit((Sc::Unit::Type)unitid);
 
     activeIscriptUnit = unit;
-    if (!unknown_00496360(unitdat->Graphics, x, y, unit, player, 0)) // (EAX, ECX, EDX, push, push, push)
+    if (!unknown_00496360(unitdat.graphics, x, y, unit, player, 0)) // (EAX, ECX, EDX, push, push, push)
     {
         activeIscriptUnit = unittmp;
         return false;
@@ -1487,18 +1488,18 @@ bool Graphics::unknown_0049ECF0(UnitNode* unit, int y, u16 unitid, int x, u8 pla
     }
     unit->lastAttackingPlayer = 8;
     activeIscriptUnit = unittmp;
-    unit->sprite->elevationLevel = unitdat->ElevationLevel;
-    unit->statusFlags ^= ((unitdat->SpecialAbilityFlags << 1) ^ unit->statusFlags) & 2; // Set GroundedBuilding if Building
-    unit->statusFlags ^= (unitdat->SpecialAbilityFlags ^ unit->statusFlags) & 4; // Set InAir if UPROP_FLYER
-    unit->statusFlags ^= (unitdat->SpecialAbilityFlags >> 12) & 0x10000; // Set IsAUnit // canAttack? if UPROP_AUTOATTACK
+    unit->sprite->elevationLevel = unitdat.elevationLevel;
+    unit->statusFlags ^= ((unitdat.flags << 1) ^ unit->statusFlags) & 2; // Set GroundedBuilding if Building
+    unit->statusFlags ^= (unitdat.flags ^ unit->statusFlags) & 4; // Set InAir if UPROP_FLYER
+    unit->statusFlags ^= (unitdat.flags >> 12) & 0x10000; // Set IsAUnit // canAttack? if UPROP_AUTOATTACK
                                                                        // UPROP_BATTLEREACTIONS
-    unit->statusFlags = ((~(((((unitdat->SpecialAbilityFlags >> 0xA) ^ unit->statusFlags) & 0x20000 ^ unit->statusFlags) >> 2) << 0x14) ^ (((unitdat->SpecialAbilityFlags >> 0xA) ^ unit->statusFlags) & 0x20000 ^ unit->statusFlags)) & 0x100000) ^ (((unitdat->SpecialAbilityFlags >> 0xA) ^ unit->statusFlags) & 0x20000 ^ unit->statusFlags); // What the fuuuuuck
-    unit->pathingFlags ^= ((unitdat->ElevationLevel < 12) ^ unit->pathingFlags) & 1;
+    unit->statusFlags = ((~(((((unitdat.flags >> 0xA) ^ unit->statusFlags) & 0x20000 ^ unit->statusFlags) >> 2) << 0x14) ^ (((unitdat.flags >> 0xA) ^ unit->statusFlags) & 0x20000 ^ unit->statusFlags)) & 0x100000) ^ (((unitdat.flags >> 0xA) ^ unit->statusFlags) & 0x20000 ^ unit->statusFlags); // What the fuuuuuck
+    unit->pathingFlags ^= ((unitdat.elevationLevel < 12) ^ unit->pathingFlags) & 1;
     if ((unit->unitType >= 194 && unit->unitType <= 199) || unit->unitType == 204) // Beacon or floor hatch
     {
         unit->statusFlags |= 0x200000; // NoCollide
     }
-    if (unitdat->SpecialAbilityFlags & 1) // UPROP_BUILDING
+    if (unitdat.flags & 1) // UPROP_BUILDING
     {
         unit->building.techType = 44; // None
         unit->building.upgradeType = 61; // None
@@ -1506,12 +1507,12 @@ bool Graphics::unknown_0049ECF0(UnitNode* unit, int y, u16 unitid, int x, u8 pla
     unit->path = 0;
     unit->movementState = 0;
     unit->recentOrderTimer = 0;
-    if(unitdat->SpecialAbilityFlags & 0x20000000) { // UPROP_INVINCIBLE
+    if(unitdat.flags & 0x20000000) { // UPROP_INVINCIBLE
         unit->statusFlags |= 0x4000000; // Invincible
     }
     else
     {
-        if (!(chkd.scData.UnitDat(unit->unitType)->SpecialAbilityFlags & 0x20000000)) {// UPROP_INVINCIBLE
+        if (!(chkd.scData.units.getUnit((Sc::Unit::Type)unit->unitType).flags & 0x20000000)) {// UPROP_INVINCIBLE
             unit->statusFlags &= ~0x4000000; // Invincible
         }
     }
@@ -1537,13 +1538,13 @@ void Graphics::SetConstructionGraphic(UnitNode* unit, int unk1)
     UnitNode* tmpunit = activeIscriptUnit;
     activeIscriptUnit = unit;
 
-    if (unk1 == 0 || chkd.scData.UnitDat(unit->unitType)->ConstructionAnimation == 0)
+    if (unk1 == 0 || chkd.scData.units.getUnit((Sc::Unit::Type)unit->unitType).constructionAnimation == 0)
     {
-        ReplaceSpriteOverlayImage(unit->sprite, chkd.scData.SpriteDat(unit->sprite->spriteID)->ImageFile, unit->currentDirection1);
+        ReplaceSpriteOverlayImage(unit->sprite, chkd.scData.sprites.getSprite(unit->sprite->spriteID).imageFile, unit->currentDirection1);
     }
     else
     {
-        ReplaceSpriteOverlayImage(unit->sprite, chkd.scData.UnitDat(unit->unitType)->ConstructionAnimation, unit->currentDirection1); // (EAX, push, push) ?
+        ReplaceSpriteOverlayImage(unit->sprite, chkd.scData.units.getUnit((Sc::Unit::Type)unit->unitType).constructionAnimation, unit->currentDirection1); // (EAX, push, push) ?
     }
     activeIscriptUnit = tmpunit;
     if (cloaked)
@@ -1600,7 +1601,7 @@ void Graphics::playImageIscript(ImageNode* image, char anim)
     }
 
     image->anim = anim;
-    image->iscriptOffset = chkd.scData.iScripts.GetAnimOffset(image->iscriptHeader, anim, true);
+    image->iscriptOffset = chkd.scData.iScripts.getAnimOffset(image->iscriptHeader, anim, true);
     image->iscriptReturn = 0;
     image->sleep = 0;
 
@@ -1631,7 +1632,7 @@ void Graphics::initUnitTrapDoodad(UnitNode* unit)
     unit->sprite->flags &= ~0x20; // Hidden
 
     if (unit->subUnit != NULL) {
-        if (chkd.scData.UnitDat(unit->subUnit->unitType)->SpecialAbilityFlags & 0x10) { // Sub Unit
+        if (chkd.scData.units.getUnit((Sc::Unit::Type)unit->subUnit->unitType).flags & 0x10) { // Sub Unit
             unit->subUnit->sprite->flags &= ~0x20; // Hidden
         }
     }
@@ -1652,7 +1653,7 @@ void Graphics::initUnitTrapDoodad(UnitNode* unit)
     elevationLevel ^= (unit->pathingFlags) & 1;
     unit->pathingFlags = unit->pathingFlags ^ elevationLevel;
     if (unit->subUnit) {
-        if (chkd.scData.UnitDat(unit->subUnit->unitType)->SpecialAbilityFlags & 0x10) { // Is SubUnit
+        if (chkd.scData.units.getUnit((Sc::Unit::Type)unit->subUnit->unitType).flags & 0x10) { // Is SubUnit
             toggleUnitPath(unit->subUnit); // (ESI, ?)
             unit->subUnit->movementState = 0;
             if (unit->subUnit->sprite->elevationLevel < 0xC) elevationLevel = 1;
@@ -1883,14 +1884,14 @@ void Graphics::refreshUnitVision(UnitNode* unit)
 // initFlingySprite ?
 bool Graphics::unknown_00496360(int flingyid, s16 x, s16 y, UnitNode* flingy, int player, u8 direction)
 {
-    FLINGYDAT* flingydat = chkd.scData.FlingyDat(flingyid);
+    const Sc::Unit::FlingyDatEntry & flingydat = chkd.scData.units.getFlingy(flingyid);
     flingy->flingyID = flingyid;
     flingy->movementFlags = 0;
     flingy->current_speed2 = 0;
-    flingy->flingyTopSpeed = flingydat->TopSpeed;
-    flingy->flingyAcceleration = flingydat->Acceleration;
-    flingy->flingyTurnRadius = flingydat->TurnRadius;
-    flingy->flingyMovementType = flingydat->MoveControl;
+    flingy->flingyTopSpeed = flingydat.topSpeed;
+    flingy->flingyAcceleration = flingydat.acceleration;
+    flingy->flingyTurnRadius = flingydat.turnRadius;
+    flingy->flingyMovementType = flingydat.moveControl;
     flingy->position.x = x;
     flingy->halt.x = x << 8;
     flingy->position.y = y;
@@ -1911,7 +1912,7 @@ bool Graphics::unknown_00496360(int flingyid, s16 x, s16 y, UnitNode* flingy, in
     flingy->currentDirection1 = direction;
     flingy->velocityDirection1 = direction;
     flingy->hitPoints = 1;
-    flingy->sprite = createSprite(chkd.scData.FlingyDat(flingyid)->Sprite, x, y, player);
+    flingy->sprite = createSprite(chkd.scData.units.getFlingy(flingyid).sprite, x, y, player);
     if (flingy->sprite == NULL) {
         return false;
     }
@@ -2154,7 +2155,7 @@ void Graphics::refreshAllVisibleSprites(SpriteNode* sprite)
 {
     for (ImageNode* image = sprite->pImageHead; image != NULL; image = image->next)
     {
-        if (chkd.scData.ImageDat(image->imageID)->DrawIfCloaked == 0 &&
+        if (chkd.scData.sprites.getImage(image->imageID).drawIfCloaked == 0 &&
             image->flags & 0x40) // Hidden
         {
             if (//*(u8*)6CEFB5 == 1 && // What is it?
@@ -2211,7 +2212,7 @@ void Graphics::iscript_OpcodeCases(ImageNode *image, u16 hdr, int unk_arg2, int 
                 isptr += 2;
                 if (unk_arg2) break;
                 u16 frame = is_get(u16, isptr - 2) + map.getTileset();
-                if (frame >= (image->GRPFile->numFrames() & 0x7FFF)) break;
+                if (frame >= (image->GRPFile->get().numFrames & 0x7FFF)) break;
                 ISCRIPT_PlayFrame(image, frame);
                 break;
             }
@@ -2337,7 +2338,7 @@ void Graphics::iscript_OpcodeCases(ImageNode *image, u16 hdr, int unk_arg2, int 
                         {
                             u8 upgd = 0;
                             if ( (chkd.maps.curr->getUpgradePlayerStartLevel(54, unk_unit_6D11F8->sourceUnit->srcPlayer, &upgd) && upgd) || // Charon Boosters upgraded
-                                 ((chkd.scData.UnitDat(unk_unit_6D11F8->sourceUnit->unitType)->SpecialAbilityFlags & 0x40) && chkd.maps.curr->isExpansion()) ) // Or Hero && Expansion
+                                 ((chkd.scData.units.getUnit((Sc::Unit::Type)unk_unit_6D11F8->sourceUnit->unitType).flags & 0x40) && chkd.maps.curr->isExpansion()) ) // Or Hero && Expansion
                             {
                                 ISCript_CreateSprite(image, 0x1F9, is_get(s8, isptr - 2), is_get(s8, isptr - 1), image->spriteOwner->elevationLevel + 1); // Charon Booster overlay
                                 break;
@@ -2400,7 +2401,7 @@ void Graphics::iscript_OpcodeCases(ImageNode *image, u16 hdr, int unk_arg2, int 
                 {
                     if (activeIscriptUnit->statusFlags & 3) // (Requires Detection | Cloaked)
                     {
-                        if (chkd.scData.ImageDat(chkd.scData.SpriteDat(is_get(u16, isptr - 4))->ImageFile)->DrawIfCloaked == 0) break;
+                        if (chkd.scData.sprites.getImage(chkd.scData.sprites.getSprite(is_get(u16, isptr - 4)).imageFile).drawIfCloaked == 0) break;
                     }
                 }
                 SpriteNode* ret = ISCRIPT_CreateSprite(image, is_get(u16, isptr - 4), is_get(s8, isptr - 2), is_get(s8, isptr - 1), image->spriteOwner->elevationLevel); // CThingy ?
@@ -2425,7 +2426,7 @@ void Graphics::iscript_OpcodeCases(ImageNode *image, u16 hdr, int unk_arg2, int 
                 if (unk_arg2) break;
                 if (activeIscriptUnit != NULL && (activeIscriptUnit->statusFlags & 3)) // (RequiresDetection | Cloaked)
                 {
-                    if (chkd.scData.ImageDat(chkd.scData.SpriteDat(is_get(u16, isptr - 4))->ImageFile)->DrawIfCloaked == 0) break;
+                    if (chkd.scData.sprites.getImage(chkd.scData.sprites.getSprite(is_get(u16, isptr - 4)).imageFile).drawIfCloaked == 0) break;
                 }
                 SpriteNode* ret = ISCRIPT_CreateSprite(image, is_get(u16, isptr - 4), is_get(s8, isptr - 2), is_get(s8, isptr - 1), image->spriteOwner->elevationLevel - 1); // CThingy ?
                 if (ret == NULL)
@@ -2551,7 +2552,7 @@ void Graphics::iscript_OpcodeCases(ImageNode *image, u16 hdr, int unk_arg2, int 
                 isptr++;
                 if (unk_arg2) break;
                 image->direction = image->spriteOwner->pImagePrimary->direction;
-                image->frameSet = (image->spriteOwner->pImagePrimary->GRPFile->numFrames() & 0x7FFF) * is_get(u8, isptr - 1) + image->spriteOwner->pImagePrimary->frameSet;
+                image->frameSet = (image->spriteOwner->pImagePrimary->GRPFile->get().numFrames & 0x7FFF) * is_get(u8, isptr - 1) + image->spriteOwner->pImagePrimary->frameSet;
                 image->flags ^= (image->spriteOwner->pImagePrimary->flags ^ image->flags) & 2; // Flipped
                 setImagePaletteType(image, image->paletteType);
                 updateImageFrameIndex(image);
@@ -3158,7 +3159,7 @@ ImageNode* Graphics::ISCRIPT_CreateImage(ImageNode* parent, int id, int horizont
     {
         if (activeIscriptUnit->statusFlags & 0x300) // RequiresDetection | Cloaked
         {
-            if (chkd.scData.ImageDat(id)->DrawIfCloaked == 0)
+            if (chkd.scData.sprites.getImage(id).drawIfCloaked == 0)
             {
                 
                 hideImage(newImage);
@@ -3175,11 +3176,11 @@ ImageNode* Graphics::ISCRIPT_CreateImage(ImageNode* parent, int id, int horizont
 
 void Graphics::updateImagePositionOffset(ImageNode* image)
 {
-    GRP& lo = chkd.scData.grps[chkd.scData.ImageDat(image->spriteOwner->pImagePrimary->imageID)->SpecialOverlay - 1];
-    LODATA* lodata = lo.LoGetOffset(image->spriteOwner->pImagePrimary->frameIndex, 0);
+    const Sc::Sprite::Grp & lo = chkd.scData.sprites.getGrp(chkd.scData.sprites.getImage(image->spriteOwner->pImagePrimary->imageID).specialOverlay);
+    const Sc::Sprite::LODATA* lodata = lo.LoGetOffset(image->spriteOwner->pImagePrimary->frameIndex, 0);
     if (image->spriteOwner->pImagePrimary->flags & 2) // Flipped
     {
-        lodata->xOffset = -lodata->xOffset;
+        image->horizontalOffset = -lodata->xOffset;
     }
     if (image->horizontalOffset != lodata->xOffset || image->verticalOffset != lodata->yOffset)
     {
@@ -3195,43 +3196,51 @@ void Graphics::ISCRIPT_UseLOFile(ImageNode* image, u32 losrc, u32 goffs, point* 
     switch (losrc) // CHKD doesn't have a happy LO? array for easy indexing like SC does
     {
         case IMAGES_ATTACK_OVERLAY:
-            loID = chkd.scData.ImageDat(image->imageID)->AttackOverlay;
+            loID = chkd.scData.sprites.getImage(image->imageID).attackOverlay;
             break;
         case IMAGES_DAMAGE_OVERLAY:
-            loID = chkd.scData.ImageDat(image->imageID)->DamageOverlay;
+            loID = chkd.scData.sprites.getImage(image->imageID).damageOverlay;
             break;
         case IMAGES_SPECIAL_OVERLAY:
-            loID = chkd.scData.ImageDat(image->imageID)->SpecialOverlay;
+            loID = chkd.scData.sprites.getImage(image->imageID).specialOverlay;
             break;
         case IMAGES_LANDING_OVERLAY:
-            loID = chkd.scData.ImageDat(image->imageID)->LandingDustOverlay;
+            loID = chkd.scData.sprites.getImage(image->imageID).landingDustOverlay;
             break;
         case IMAGES_LIFTING_OVERLAY:
-            loID = chkd.scData.ImageDat(image->imageID)->LiftOffOverlay;
+            loID = chkd.scData.sprites.getImage(image->imageID).liftOffOverlay;
             break;
         default:
             loID = 0; // Error ?
     }
     // Error checking ? -- SC doesn't, but it might be nice.
 
-    GRP& lo = chkd.scData.grps[loID - 1];
-    LODATA* lodata = lo.LoGetOffset(image->frameIndex, goffs);
-    out->x = lodata->xOffset;
-    out->y = lodata->yOffset;
-    if (image->flags & 2) // Flipped/Mirrored
+    const Sc::Sprite::Grp & lo = chkd.scData.sprites.getGrp(loID);
+    const Sc::Sprite::LODATA* lodata = lo.LoGetOffset(image->frameIndex, goffs);
+    if ( lodata != nullptr )
     {
-        out->x = -out->x;
+        out->x = lodata->xOffset;
+        out->y = lodata->yOffset;
+        if (image->flags & 2) // Flipped/Mirrored
+        {
+            out->x = -out->x;
+        }
+    }
+    else
+    {
+        out->x = 0;
+        out->y = 0;
     }
     return;
 }
 
 bool Graphics::canUnitTypeFitAt(u16 unitID, s16 x, s16 y) {
-    /*if (x < chkd.scData.UnitDat(unitID)->UnitSizeLeft) return false;
-    if ((chkd.scData.UnitDat(unitID)->UnitSizeRight + x) >= (u16)628450) return false;
-    if (y < chkd.scData.UnitDat(unitID)->UnitSizeUp) return false;
-    if ((chkd.scData.UnitDat(unitID)->UnitSizeDown + y) >= (u16)6284B4) return false;
+    /*if (x < chkd.scData.units.getUnit((Sc::Unit::Type)unitID)->UnitSizeLeft) return false;
+    if ((chkd.scData.units.getUnit((Sc::Unit::Type)unitID)->UnitSizeRight + x) >= (u16)628450) return false;
+    if (y < chkd.scData.units.getUnit((Sc::Unit::Type)unitID)->UnitSizeUp) return false;
+    if ((chkd.scData.units.getUnit((Sc::Unit::Type)unitID)->UnitSizeDown + y) >= (u16)6284B4) return false;
 
-    EAX = (s16)chkd.scData.UnitDat(unitID)->UnitSizeDown + y
+    EAX = (s16)chkd.scData.units.getUnit((Sc::Unit::Type)unitID)->UnitSizeDown + y
     ECX = y
     EDX = (u16)6284B4
     ESI = x
@@ -3379,10 +3388,10 @@ void Graphics::unknown_004762C0(UnitNode* unit, int* unk_x, int* unk_y)
     pos.x = unit->sprite->position.x;
     pos.y = unit->sprite->position.y;
 
-    d.left = unit->orderTargetUnit->sprite->position.x - chkd.scData.UnitDat(unit->orderTargetUnit->unitType)->UnitSizeLeft;
-    d.top = unit->orderTargetUnit->sprite->position.y - chkd.scData.UnitDat(unit->orderTargetUnit->unitType)->UnitSizeUp;
-    d.right = unit->orderTargetUnit->sprite->position.x + chkd.scData.UnitDat(unit->orderTargetUnit->unitType)->UnitSizeRight;
-    d.bottom = unit->orderTargetUnit->sprite->position.y + chkd.scData.UnitDat(unit->orderTargetUnit->unitType)->UnitSizeDown;
+    d.left = unit->orderTargetUnit->sprite->position.x - chkd.scData.units.getUnit((Sc::Unit::Type)unit->orderTargetUnit->unitType).unitSizeLeft;
+    d.top = unit->orderTargetUnit->sprite->position.y - chkd.scData.units.getUnit((Sc::Unit::Type)unit->orderTargetUnit->unitType).unitSizeUp;
+    d.right = unit->orderTargetUnit->sprite->position.x + chkd.scData.units.getUnit((Sc::Unit::Type)unit->orderTargetUnit->unitType).unitSizeRight;
+    d.bottom = unit->orderTargetUnit->sprite->position.y + chkd.scData.units.getUnit((Sc::Unit::Type)unit->orderTargetUnit->unitType).unitSizeDown;
 
     
     tgt_center.x = (d.right - d.left) / 4;
@@ -3628,24 +3637,24 @@ bool Graphics::initSpriteData(SpriteNode* sprite, short id, short x, short y, u8
     sprite->elevationLevel = 4;
     sprite->selectionTimer = 0;
     
-    if (chkd.scData.SpriteDat(id)->IsVisible == 0)
+    if (chkd.scData.sprites.getSprite(id).isVisible == 0)
     {
         sprite->flags = 0x20; // Hidden
         refreshAllVisibleImagesAtScreenPosition(sprite, 0);
     }
-    if (CreateImageOverlay(sprite, chkd.scData.SpriteDat(id)->ImageFile, 0, 0, 0) == NULL) return false;
+    if (CreateImageOverlay(sprite, chkd.scData.sprites.getSprite(id).imageFile, 0, 0, 0) == NULL) return false;
     sprite->unkflags_12 = 0xFF;
-    if (sprite->pImagePrimary->GRPFile->GrpWidth() <= 0xFF)
+    if (sprite->pImagePrimary->GRPFile->get().grpWidth <= 0xFF)
     {
-        sprite->unkflags_12 = (u8)sprite->pImagePrimary->GRPFile->GrpWidth();
+        sprite->unkflags_12 = (u8)sprite->pImagePrimary->GRPFile->get().grpWidth;
     }
-    if (sprite->pImagePrimary->GRPFile->GrpHeight() >= 0xFF)
+    if (sprite->pImagePrimary->GRPFile->get().grpHeight >= 0xFF)
     {
         sprite->unkflags_13 = 0xFF;
     }
     else
     {
-        sprite->unkflags_13 = (u8)sprite->pImagePrimary->GRPFile->GrpHeight();
+        sprite->unkflags_13 = (u8)sprite->pImagePrimary->GRPFile->get().grpHeight;
     }
     return true;
 }
@@ -3695,16 +3704,16 @@ ImageNode* Graphics::unknown_004D4E30() // GetNextUnusedImage
 
 void Graphics::InitializeImageData(ImageNode* image, SpriteNode* sprite, int imageID, int x, int y)
 {
-    IMAGEDAT* imagesdat = chkd.scData.ImageDat(imageID);
+    const Sc::Sprite::ImageDatEntry & imagesdat = chkd.scData.sprites.getImage(imageID);
     image->imageID = imageID;
-    image->GRPFile = &chkd.scData.grps[imagesdat->GRPFile - 1];
-    image->flags |= (imagesdat->GraphicTurns & 1) << 3; // 0x0008 - Has rotation frames
+    image->GRPFile = &chkd.scData.sprites.getGrp(imagesdat.grpFile);
+    image->flags |= (imagesdat.graphicTurns & 1) << 3; // 0x0008 - Has rotation frames
     image->flags &= ~0x20; // Clickable
     image->frameSet = 0;
     image->direction = 0;
     image->anim = 0;
     image->spriteOwner = sprite;
-    image->flags |= (imagesdat->Clickable & 1) << 5; // 0x0020 - Clickable
+    image->flags |= (imagesdat.clickable & 1) << 5; // 0x0020 - Clickable
     image->horizontalOffset = x;
     image->verticalOffset = y;
     image->grpBounds.left = 0;
@@ -3717,19 +3726,19 @@ void Graphics::InitializeImageData(ImageNode* image, SpriteNode* sprite, int ima
     image->iscriptReturn = 0;
     image->anim = 0;
     image->sleep = 0;
-    if (imagesdat->DrawFunction == DRAW_PLAYER_SIDE)
+    if (imagesdat.drawFunction == DRAW_PLAYER_SIDE)
     {
         image->coloringData.playerColor = image->spriteOwner->playerID;
     }
-    if (imagesdat->DrawFunction == DRAW_EFFECT)
+    if (imagesdat.drawFunction == DRAW_EFFECT)
     {
-        if (imagesdat->Remapping == 0) // This normally reads from a table, like imgRender/UpdateFxns, with the 0 entry being NULL
+        if (imagesdat.remapping == 0) // This normally reads from a table, like imgRender/UpdateFxns, with the 0 entry being NULL
         {
             image->coloringData.effect = NULL;
         }
         else // More error checking is probably good
         {
-            image->coloringData.effect = &chkd.scData.tilesets.set[map.getTileset()].remap[imagesdat->Remapping - 1]; // No 0 entry, so -1
+            image->coloringData.effect = &chkd.scData.terrain.get(map.getTileset()).remap[imagesdat.remapping - 1]; // No 0 entry, so -1
         }
     }
     return;
@@ -3737,7 +3746,7 @@ void Graphics::InitializeImageData(ImageNode* image, SpriteNode* sprite, int ima
 
 void Graphics::unknown_004D66B0(ImageNode* image, SpriteNode* sprite, int imageid)
 {
-    image->paletteType = chkd.scData.ImageDat(image->imageID)->DrawFunction;
+    image->paletteType = chkd.scData.sprites.getImage(image->imageID).drawFunction;
     image->updateFunction = imgUpdateFxns[image->paletteType].func;
     if (image->flags & 2) // Flipped
     {
@@ -3754,8 +3763,8 @@ void Graphics::unknown_004D66B0(ImageNode* image, SpriteNode* sprite, int imagei
     }
     image->flags |= 1; // Redraw
     image->flags &= ~0x10;
-    image->flags |= (chkd.scData.ImageDat(image->imageID)->UseFullIscript & 1) << 4; // 0x10 - (Use Full Iscript)
-    image->iscriptHeader = chkd.scData.iScripts.GetHeaderOffset(chkd.scData.ImageDat(image->imageID)->IscriptID);
+    image->flags |= (chkd.scData.sprites.getImage(image->imageID).useFullIScript & 1) << 4; // 0x10 - (Use Full Iscript)
+    image->iscriptHeader = chkd.scData.iScripts.getHeaderOffset(chkd.scData.sprites.getImage(image->imageID).iScriptId);
     playImageIscript(image, ANIM_INIT); // Init
     CImage__updateGraphicData(image);
 }
@@ -4288,7 +4297,7 @@ void Graphics::ISCRIPT_CastSpell(UnitNode* unit, u8 weapon)
     //EAX = unit
     //ESI = unit
 //  FireUnitWeapon(unit, weapon); // (ESI, push)
-    if (chkd.scData.WeaponDat(weapon)->DamageFactor == 2)
+    if (chkd.scData.weapons.get(Sc::Weapon::Type(weapon)).damageFactor == 2)
     {
 //      FireUnitWeapon(unit, weapon); // (ESI, push)
     }
@@ -4296,18 +4305,18 @@ void Graphics::ISCRIPT_CastSpell(UnitNode* unit, u8 weapon)
 }
 
 
-void Graphics::editUnitFlags(UnitNode* unit, ChkUnit* chkUnit)
+void Graphics::editUnitFlags(UnitNode* unit, Chk::Unit* chkUnit)
 {
     // These don't change anything for us; more functions we don't need.
     // setUnitHP( stuff );
     // unit->shieldPoints = stuff;
     // setUnitEnergyEx(unit, cuwp->validflags, cuwp->energy);
 
-    if (chkUnit->validFlags & 0x100000) // Has Resources
+    if (chkUnit->validFieldFlags & 0x100000) // Has Resources
     {
-        if (chkd.scData.UnitDat(unit->unitType)->SpecialAbilityFlags & 0x2000) // Resource Container
+        if (chkd.scData.units.getUnit((Sc::Unit::Type)unit->unitType).flags & 0x2000) // Resource Container
         {
-            unit->resource.resourceCount = chkUnit->resources;
+            unit->resource.resourceCount = chkUnit->resourceAmount;
             if (unit->unitType >= 176 && unit->unitType <= 178) // Mineral Field 1, 2, 3
             {
                 setResourceCount(unit);
@@ -4317,7 +4326,7 @@ void Graphics::editUnitFlags(UnitNode* unit, ChkUnit* chkUnit)
 
     //setHangerCount(unit, cuwp->validflags, cuwp->hangar); // (EDI, EAX, arg1)
 
-    if(chkUnit->validFlags & chkUnit->stateFlags & 1) // Cloak
+    if(chkUnit->validFieldFlags & chkUnit->stateFlags & 1) // Cloak
     {
     //  thing = getCloakingTech( stuff );
     //  if (TechUseAllowed( stuff, thing ))
@@ -4326,17 +4335,17 @@ void Graphics::editUnitFlags(UnitNode* unit, ChkUnit* chkUnit)
     //  }
     }
 
-    CHK_UNIT_ApplyBurrowFlag(unit, chkUnit->validFlags, chkUnit->stateFlags & 2); // Burrow
+    CHK_UNIT_ApplyBurrowFlag(unit, chkUnit->validFieldFlags, chkUnit->stateFlags & 2); // Burrow
 
-    CHK_UNIT_ApplyOtherFlags(unit, chkUnit->validFlags, chkUnit->stateFlags & 4); // In Transit
+    CHK_UNIT_ApplyOtherFlags(unit, chkUnit->validFieldFlags, chkUnit->stateFlags & 4); // In Transit
 
-    if (chkUnit->validFlags & chkUnit->stateFlags & 8) { // Hallucination
+    if (chkUnit->validFieldFlags & chkUnit->stateFlags & 8) { // Hallucination
             CHK_UNIT_FinalCreateStep(unit);
     }
 
     // These last two don't change much for us
 
-    if (chkUnit->validFlags & chkUnit->stateFlags & 0x10) { // Invincible
+    if (chkUnit->validFieldFlags & chkUnit->stateFlags & 0x10) { // Invincible
         unit->statusFlags |= 0x4000000; // Invincible
     }
 
@@ -4508,7 +4517,7 @@ void Graphics::CHK_UNIT_FinalCreateStep(UnitNode* unit) {
         unit->status.lockdownTimer == 0 &&
         unit->status.stasisTimer == 0 &&
         unit->status.maelstromTimer == 0) ||
-        (chkd.scData.UnitDat(unit->unitType)->SpecialAbilityFlags & 1)) { // Building
+        (chkd.scData.units.getUnit((Sc::Unit::Type)unit->unitType).flags & 1)) { // Building
         unit->currentButtonSet = 0xF4;
     }
     unit->statusFlags |= 0x40000000; // IsHallucination
@@ -4522,7 +4531,7 @@ void Graphics::CHK_UNIT_FinalCreateStep(UnitNode* unit) {
         setSpriteColoringData(unit->sprite, 0, true); // (EAX, BL)
     //}
 
-    if (chkd.scData.UnitDat(unit->unitType)->SpecialAbilityFlags & 0x10) return; // Is SubUnit
+    if (chkd.scData.units.getUnit((Sc::Unit::Type)unit->unitType).flags & 0x10) return; // Is SubUnit
 
     if (unit->statusFlags & 0x40000000)
     {
@@ -4573,30 +4582,45 @@ void Graphics::CHK_UNIT_FinalCreateStep(UnitNode* unit) {
 
 void Graphics::CImage__updateGraphicData(ImageNode* image)
 {
-    if (image->frameIndex >= image->GRPFile->numFrames())
+    if (image->frameIndex >= image->GRPFile->get().numFrames)
         image->frameIndex = 0;
 
     if (image->flags & 2)
     {
-        image->mapPosition.x = image->spriteOwner->position.x + image->horizontalOffset + (image->GRPFile->GrpWidth() / 2) - image->GRPFile->frameWidth(image->frameIndex) - image->GRPFile->xOffset(image->frameIndex);
+        image->mapPosition.x =
+            image->spriteOwner->position.x +
+            image->horizontalOffset +
+            (image->GRPFile->get().grpWidth / 2) -
+            image->GRPFile->get().frameHeaders[image->frameIndex].frameWidth -
+            image->GRPFile->get().frameHeaders[image->frameIndex].xOffset;
     }
     else
     {
-        image->mapPosition.x = image->spriteOwner->position.x + image->horizontalOffset + (image->GRPFile->xOffset(image->frameIndex) - (image->GRPFile->GrpWidth() / 2));
+        image->mapPosition.x =
+            image->spriteOwner->position.x +
+            image->horizontalOffset +
+            (
+                image->GRPFile->get().frameHeaders[image->frameIndex].xOffset -
+                (image->GRPFile->get().grpWidth / 2)
+            );
     }
     if (!(image->flags & 4)) // 0x04 - Don't Calc Y?
     {
-        image->mapPosition.y = image->GRPFile->yOffset(image->frameIndex) - (image->GRPFile->GrpHeight() / 2) + image->verticalOffset + image->spriteOwner->position.y;
+        image->mapPosition.y =
+            image->GRPFile->get().frameHeaders[image->frameIndex].yOffset -
+            (image->GRPFile->get().grpHeight / 2) +
+            image->verticalOffset +
+            image->spriteOwner->position.y;
     }
 
     image->grpBounds.left = 0;
-    image->grpBounds.right = image->GRPFile->frameWidth(image->frameIndex);
+    image->grpBounds.right = image->GRPFile->get().frameHeaders[image->frameIndex].frameWidth;
     image->screenPosition.x = image->mapPosition.x - screenLeft;
 
     if (image->screenPosition.x < 0)
     {
         image->grpBounds.left = -image->screenPosition.x;
-        image->grpBounds.right = image->GRPFile->frameWidth(image->frameIndex) + image->screenPosition.x;
+        image->grpBounds.right = image->GRPFile->get().frameHeaders[image->frameIndex].frameWidth + image->screenPosition.x;
         image->screenPosition.x = 0;
     }
     if (image->grpBounds.right >= ((s32)screenWidth - image->screenPosition.x)) // 640 = screen width
@@ -4605,12 +4629,12 @@ void Graphics::CImage__updateGraphicData(ImageNode* image)
     }
 
     image->grpBounds.top = 0;
-    image->grpBounds.bottom = image->GRPFile->frameHeight(image->frameIndex);
+    image->grpBounds.bottom = image->GRPFile->get().frameHeaders[image->frameIndex].frameHeight;
     image->screenPosition.y = image->mapPosition.y - screenTop;
     if (image->screenPosition.y < 0)
     {
         image->grpBounds.top = -image->screenPosition.y;
-        image->grpBounds.bottom = image->GRPFile->frameHeight(image->frameIndex) + image->screenPosition.y;
+        image->grpBounds.bottom = image->GRPFile->get().frameHeaders[image->frameIndex].frameHeight + image->screenPosition.y;
         image->screenPosition.y = 0;
     }
     if (image->grpBounds.bottom >= ((s32)screenHeight - image->screenPosition.y)) // 400 = screen height
@@ -4807,7 +4831,7 @@ void Graphics::drawSprite(ChkdBitmap& bitmap, SpriteNode* sprite)
 {
     activePlayerColor = sprite->playerID;
     
-    for (int i = 0; i < 8; i ++) grpReindexing[i + 8] = chkd.scData.tunit.pcxDat.get<u8>(activePlayerColor * 8 + i);
+    for (int i = 0; i < 8; i ++) grpReindexing[i + 8] = chkd.scData.tunit.paletteIndex[activePlayerColor*8 + i];
     if (sprite->pImagePrimary != NULL)
     {
         updateTrans50PlayerColors(sprite->pImagePrimary->paletteType, sprite->playerID);
@@ -4823,12 +4847,12 @@ void Graphics::updateTrans50PlayerColors(u8 paletteType, u8 playerID) // unknown
     if (paletteType >= DRAW_CLOAK && paletteType <= DRAW_DECLOAK) // Is Cloaked ?
     {
         // Get pointer so we don't have this whole line, every time
-        u8* trans50 = (u8*)chkd.scData.tilesets.set[map.getTileset()].remap[REMAP_CLOAK].pcxDat.getPtr(0);
+        u8* trans50 = (u8*)&chkd.scData.terrain.get(map.getTileset()).remap[REMAP_CLOAK].paletteIndex[0];
 
         for (int i = 0; i < 8; i++) // For each color in the player color
         {
             memmove(&trans50[0x800 + 0x100 * i], // Store to player color row
-                    &trans50[chkd.scData.tunit.pcxDat.get<u8>(playerID * 8 + i) * 0x100], // From tunit color's row
+                    &trans50[chkd.scData.tunit.paletteIndex[playerID * 8 + i] * 0x100], // From tunit color's row
                     0x100);
         }
     }
@@ -4842,7 +4866,7 @@ void Graphics::drawImage(ChkdBitmap& bitmap, ImageNode* image)
         ((image->flags & 1) /*|| isImageRefreshable(image)*/)) // Is refreshable? Probably.
     {
         RECT grpBounds = { image->grpBounds.left, image->grpBounds.top, image->grpBounds.right, image->grpBounds.bottom };
-        (this->*image->renderFunction)(bitmap, &chkd.scData.tilesets.set[map.getTileset()].wpe,
+        (this->*image->renderFunction)(bitmap, &palette,
             image->screenPosition.x, image->screenPosition.y, image->GRPFile, image->frameIndex,
             &grpBounds, image->coloringData);
     }
@@ -4922,7 +4946,7 @@ void Graphics::updateWarpFlash(ImageNode* image)
         image->anim = ANIM_DEATH;
         image->sleep = 0;
         image->iscriptReturn = 0;
-        image->iscriptOffset = chkd.scData.iScripts.GetAnimOffset(image->iscriptHeader, ANIM_DEATH, false);
+        image->iscriptOffset = chkd.scData.iScripts.getAnimOffset(image->iscriptHeader, ANIM_DEATH, false);
         iscript_OpcodeCases(image, image->iscriptHeader, 0, 0);
     }
     unk_unit_6D11F4->orderSignal |= 1;
@@ -4930,825 +4954,64 @@ void Graphics::updateWarpFlash(ImageNode* image)
     return;
 }
 
-void Graphics::imageRenderFxn0_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData)
-// Normal draw -- Writes the decompressed bytes through grpReindexing[], set with the active player color, to the bitmap
-{
-    u32 bitmapIndex = screenWidth * y + x;
-
-    u8* lineDat;
-    u8 compSect;
-
-    u32 lineOffs = screenWidth - grpRect->right;
-    s32 linesLeft = grpRect->bottom - 1;
-    s32 drawLeft, drawRight;
-    u32 line = grpRect->top;
-
-    while (linesLeft > 0)
-    {
-        lineDat = grp->data(frame, line);
-        line++;
-        drawLeft = grpRect->left;
-        drawRight = grpRect->right;
-        while (drawLeft != 0) // Bytes to skip -- left of drawing rect
-        {
-            compSect = *lineDat;
-            lineDat++;
-            if (compSect & 0x80)
-            {
-                compSect &= ~0x80;
-                drawLeft -= compSect;
-                if (drawLeft == 0) break;
-                if (drawLeft >= 0) continue;
-                bitmapIndex -= drawLeft;
-                drawRight += drawLeft;
-                break; // Bytes remaining to draw -- go to loop below
-            }
-            else if (compSect & 0x40)
-            {
-                compSect &= ~0x40;
-                lineDat++;
-                drawLeft -= compSect;
-                if (drawLeft == 0) break;
-                if (drawLeft >= 0) continue;
-                drawLeft = -drawLeft;
-                lineDat--;
-                compSect = drawLeft;
-                // jump down
-                drawRight -= compSect;
-                if (drawRight < 0)
-                {
-                    compSect += drawRight;
-                }
-                do
-                {
-                    bitmap[bitmapIndex] = palette->get<u32>(grpReindexing[*lineDat] * 4);
-                    bitmapIndex++;
-                    compSect--;
-                } while (compSect > 0);
-                lineDat++;
-                break; // Bytes remaining to draw -- go to loop below
-            }
-            else
-            {
-                lineDat += compSect;
-                drawLeft -= compSect;
-                if (drawLeft == 0) break;
-                if (drawLeft >= 0) continue;
-                drawLeft = -drawLeft;
-                lineDat -= drawLeft;
-                compSect = drawLeft;
-                // jump down
-                drawRight -= compSect;
-                if (drawRight < 0)
-                {
-                    compSect += drawRight;
-                }
-                do
-                {
-                    bitmap[bitmapIndex] = palette->get<u32>(grpReindexing[*lineDat] * 4);
-                    lineDat++;
-                    bitmapIndex++;
-                    compSect--;
-                } while (compSect > 0);
-                break; // Bytes remaining to draw -- go to loop below
-            }
-        }
-        if (drawRight <= 0) { // Bytes remaining to skip
-            bitmapIndex += drawRight;
-        }
-        else
-        {
-            while (drawRight > 0)
-            {
-                compSect = *lineDat;
-                lineDat++;
-                if (compSect & 0x80)
-                {
-                    compSect &= ~0x80;
-                    drawRight -= compSect;
-                    if (drawRight < 0)
-                    {
-                        compSect += drawRight;
-                    }
-                    bitmapIndex += compSect;
-                }
-                else if (compSect & 0x40)
-                {
-                    compSect &= ~0x40;
-                    drawRight -= compSect;
-                    if (drawRight < 0)
-                    {
-                        compSect += drawRight;
-                    }
-                    do
-                    {
-                        bitmap[bitmapIndex] = palette->get<u32>(grpReindexing[*lineDat] * 4);
-                        bitmapIndex++;
-                        compSect--;
-                    } while (compSect > 0);
-                    lineDat++;
-                }
-                else
-                {
-                    drawRight -= compSect;
-                    if (drawRight < 0)
-                    {
-                        compSect += drawRight;
-                    }
-                    do
-                    {
-                        bitmap[bitmapIndex] = palette->get<u32>(grpReindexing[*lineDat] * 4);
-                        lineDat++;
-                        bitmapIndex++;
-                        compSect--;
-                    } while (compSect > 0);
-                }
-            }
-        }
-        bitmapIndex += lineOffs;
-        linesLeft--;
-    }
-}
-
-void Graphics::imageRenderFxn2_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData)
+void Graphics::imageRenderFxn2_0(ChkdBitmap& bitmap, ChkdPalette* palette, s32 x, s32 y, const Sc::Sprite::Grp* grp, u16 frame, RECT *grpRect, ColoringData colorData)
 // Unvisioned Cloaking / Decloaking Draw -- Draws unvisioned cloak effect based on GRP, and then parts of the normal GRP based on the GRP through cloakingTable
 {
-    imageRenderFxn3_0(bitmap, palette, x, y, grp, frame, grpRect, (u32)0);
-    imageRenderFxn5_2__0_common(bitmap, palette, x, y, grp, frame, grpRect, colorData);
+    drawCloakedGrp(bitmap, palette, x, y, grp, frame, grpRect, (u32)0);
+    drawRevealedGrp(bitmap, palette, x, y, grp, frame, grpRect, colorData);
 }
 
-void Graphics::imageRenderFxn2_1(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData)
+void Graphics::imageRenderFxn2_1(ChkdBitmap& bitmap, ChkdPalette* palette, s32 x, s32 y, const Sc::Sprite::Grp* grp, u16 frame, RECT *grpRect, ColoringData colorData)
 // Flipped Unvisioned Cloaking / Decloaking Draw
 {
     //imageRenderFxn3_1(bitmap, palette, x, y, grp, frame, grpRect, (u32)0);
     //imageRenderFxn5_2__1_common(bitmap, palette, x, y, grp, frame, grpRect, colorData);
 }
 
-void Graphics::imageRenderFxn3_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData)
-// Unvisioned Cloaked Effect -- Copies drawbuffer values some pixels away based on the cloakingTable values
-{
-    u32 bitmapIndex = screenWidth * y + x;
-    u32 maxIndex = screenWidth * screenHeight;
-    u32 effect;
-
-    u8* lineDat;
-    u8 compSect;
-
-    u32 lineOffs = screenWidth - grpRect->right;
-    s32 linesLeft = grpRect->bottom - 1;
-    s32 drawLeft, drawRight;
-    u32 line = grpRect->top;
-
-    while (linesLeft > 0)
-    {
-        lineDat = grp->data(frame, line);
-        line++;
-        drawLeft = grpRect->left;
-        drawRight = grpRect->right;
-        while (drawLeft != 0) // Bytes to skip -- left of drawing rect
-        {
-            compSect = *lineDat;
-            lineDat++;
-            if (compSect & 0x80)
-            {
-                compSect &= ~0x80;
-                drawLeft -= compSect;
-                if (drawLeft == 0) break;
-                if (drawLeft >= 0) continue;
-                bitmapIndex -= drawLeft;
-                drawRight += drawLeft;
-                break; // Bytes remaining to draw -- go to loop below
-            }
-            else if (compSect & 0x40)
-            {
-                compSect &= ~0x40;
-                lineDat++;
-                drawLeft -= compSect;
-                if (drawLeft == 0) break;
-                if (drawLeft >= 0) continue;
-                drawLeft = -drawLeft;
-                lineDat--;
-                compSect = drawLeft;
-                // jump down
-                drawRight -= compSect;
-                if (drawRight < 0)
-                {
-                    compSect += drawRight;
-                }
-                effect = bitmapIndex + cloakingTable[*lineDat];
-                lineDat++;
-                do
-                {
-                    if (effect >= maxIndex)
-                    {
-                        effect -= maxIndex;
-                    }
-                    bitmap[bitmapIndex] = bitmap[effect];
-                    effect++;
-                    bitmapIndex++;
-                    compSect--;
-                } while (compSect > 0);
-                break; // Bytes remaining to draw -- go to loop below
-            }
-            else
-            {
-                lineDat += compSect;
-                drawLeft -= compSect;
-                if (drawLeft == 0) break;
-                if (drawLeft >= 0) continue;
-                drawLeft = -drawLeft;
-                lineDat -= drawLeft;
-                compSect = drawLeft;
-                // jump down
-                drawRight -= compSect;
-                if (drawRight < 0)
-                {
-                    compSect += drawRight;
-                }
-                do
-                {
-                    effect = bitmapIndex + cloakingTable[*lineDat];
-                    lineDat++;
-                    if (effect >= maxIndex)
-                    {
-                        effect -= maxIndex;
-                    }
-                    bitmap[bitmapIndex] = bitmap[effect];
-                    bitmapIndex--;
-                    compSect--;
-                } while (compSect > 0);
-                break; // Bytes remaining to draw -- go to loop below
-            }
-        }
-        if (drawRight <= 0) { // Bytes remaining to skip
-            bitmapIndex += drawRight;
-        }
-        else
-        {
-            while (drawRight > 0)
-            {
-                compSect = *lineDat;
-                lineDat++;
-                if (compSect & 0x80)
-                {
-                    compSect &= ~0x80;
-                    drawRight -= compSect;
-                    if (drawRight < 0)
-                    {
-                        compSect += drawRight;
-                    }
-                    bitmapIndex += compSect;
-                }
-                else if (compSect & 0x40)
-                {
-                    compSect &= ~0x40;
-                    drawRight -= compSect;
-                    if (drawRight < 0)
-                    {
-                        compSect += drawRight;
-                    }
-                    effect = bitmapIndex + cloakingTable[*lineDat];
-                    lineDat++;
-                    do
-                    {
-                        if (effect >= maxIndex)
-                        {
-                            effect -= maxIndex;
-                        }
-                        bitmap[bitmapIndex] = bitmap[effect];
-                        effect++;
-                        bitmapIndex++;
-                        compSect--;
-                    } while (compSect > 0);
-                }
-                else
-                {
-                    drawRight -= compSect;
-                    if (drawRight < 0)
-                    {
-                        compSect += drawRight;
-                    }
-                    do
-                    {
-                        effect = bitmapIndex + cloakingTable[*lineDat];
-                        lineDat++;
-                        if (effect >= maxIndex)
-                        {
-                            effect -= maxIndex;
-                        }
-                        bitmap[bitmapIndex] = bitmap[effect];
-                        bitmapIndex--;
-                        compSect--;
-                    } while (compSect > 0);
-                }
-            }
-        }
-        bitmapIndex += lineOffs;
-        linesLeft--;
-    }
-}
-
-void Graphics::imageRenderFxn5_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData)
+void Graphics::imageRenderFxn5_0(ChkdBitmap& bitmap, ChkdPalette* palette, s32 x, s32 y, const Sc::Sprite::Grp* grp, u16 frame, RECT *grpRect, ColoringData colorData)
 // Visioned Cloaking/Decloaking Draw -- Draws trans50 effect with GRP, then parts of GRP based on cloakingTable
 {
-    imageRenderFxn9_0(bitmap, palette, x, y, grp, frame, grpRect, &chkd.scData.tilesets.set[map.getTileset()].remap[REMAP_CLOAK - 1]);
-    imageRenderFxn5_2__0_common(bitmap, palette, x, y, grp, frame, grpRect, colorData);
+    drawRemappedGrp(bitmap, palette, x, y, grp, frame, grpRect, &chkd.scData.terrain.get(map.getTileset()).remap[REMAP_CLOAK - 1]);
+    drawRevealedGrp(bitmap, palette, x, y, grp, frame, grpRect, colorData);
 }
 
 
-void Graphics::imageRenderFxn5_1(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData)
+void Graphics::imageRenderFxn5_1(ChkdBitmap& bitmap, ChkdPalette* palette, s32 x, s32 y, const Sc::Sprite::Grp* grp, u16 frame, RECT *grpRect, ColoringData colorData)
 // Flipped Visioned Cloaking/Decloaking Draw
 {
     //imageRenderFxn9_1(bitmap, palette, x, y, grp, frame, grpRect, &chkd.scData.tilesets.set[chk.getTileset()].remap[REMAP_CLOAK - 1]);
     //imageRenderFxn5_2__1_common(bitmap, palette, x, y, grp, frame, grpRect, colorData);
 }
 
-void Graphics::imageRenderFxn6_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData)
+void Graphics::imageRenderFxn6_0(ChkdBitmap& bitmap, ChkdPalette* palette, s32 x, s32 y, const Sc::Sprite::Grp* grp, u16 frame, RECT *grpRect, ColoringData colorData)
 // Visioned Cloaked Draw -- Draws GRP with trans50 remapping table
 {
-    imageRenderFxn9_0(bitmap, palette, x, y, grp, frame, grpRect, &chkd.scData.tilesets.set[map.getTileset()].remap[REMAP_CLOAK - 1]);
+    drawRemappedGrp(bitmap, palette, x, y, grp, frame, grpRect, &chkd.scData.terrain.get(map.getTileset()).remap[REMAP_CLOAK - 1]);
 }
 
-void Graphics::imageRenderFxn6_1(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData)
+void Graphics::imageRenderFxn6_1(ChkdBitmap& bitmap, ChkdPalette* palette, s32 x, s32 y, const Sc::Sprite::Grp* grp, u16 frame, RECT *grpRect, ColoringData colorData)
 // FLipped Visioned Cloaked Draw
 {
     //imageRenderFxn9_1(bitmap, palette, x, y, grp, frame, grpRect, &chkd.scData.tilesets.set[chk.getTileset()].remap[REMAP_CLOAK - 1]);
 }
 
-void Graphics::imageRenderFxn8_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData)
-// EMP effect -- Copies the color some pixels away based on the decompressed value
-{
-    u32 bitmapIndex = screenWidth * y + x;
-    u32 maxIndex = screenWidth * screenHeight;
-    u32 effect;
-
-    u8* lineDat;
-    u8 compSect;
-
-    u32 lineOffs = screenWidth - grpRect->right;
-    s32 linesLeft = grpRect->bottom - 1;
-    s32 drawLeft, drawRight;
-    u32 line = grpRect->top;
-
-    while (linesLeft > 0)
-    {
-        lineDat = grp->data(frame, line);
-        line++;
-        drawLeft = grpRect->left;
-        drawRight = grpRect->right;
-        while (drawLeft != 0) // Bytes to skip -- left of drawing rect
-        {
-            compSect = *lineDat;
-            lineDat++;
-            if (compSect & 0x80)
-            {
-                compSect &= ~0x80;
-                drawLeft -= compSect;
-                if (drawLeft == 0) break;
-                if (drawLeft >= 0) continue;
-                bitmapIndex -= drawLeft;
-                drawRight += drawLeft;
-                break; // Bytes remaining to draw -- go to loop below
-            }
-            else if (compSect & 0x40)
-            {
-                compSect &= ~0x40;
-                lineDat++;
-                drawLeft -= compSect;
-                if (drawLeft == 0) break;
-                if (drawLeft >= 0) continue;
-                drawLeft = -drawLeft;
-                lineDat--;
-                compSect = drawLeft;
-                // jump down
-                drawRight -= compSect;
-                if (drawRight < 0)
-                {
-                    compSect += drawRight;
-                }
-                effect = bitmapIndex + *lineDat;
-                lineDat++;
-                do
-                {
-                    if (effect >= maxIndex)
-                    {
-                        effect -= maxIndex;
-                    }
-                    bitmap[bitmapIndex] = bitmap[effect];
-                    effect++;
-                    bitmapIndex++;
-                    compSect--;
-                } while (compSect > 0);
-                break; // Bytes remaining to draw -- go to loop below
-            }
-            else
-            {
-                lineDat += compSect;
-                drawLeft -= compSect;
-                if (drawLeft == 0) break;
-                if (drawLeft >= 0) continue;
-                drawLeft = -drawLeft;
-                lineDat -= drawLeft;
-                compSect = drawLeft;
-                // jump down
-                drawRight -= compSect;
-                if (drawRight < 0)
-                {
-                    compSect += drawRight;
-                }
-                do
-                {
-                    effect = bitmapIndex + *lineDat;
-                    lineDat++;
-                    if (effect >= maxIndex)
-                    {
-                        effect -= maxIndex;
-                    }
-                    compSect--;
-                    bitmap[bitmapIndex] = bitmap[effect];
-                    bitmapIndex++;
-                } while (compSect > 0);
-                break; // Bytes remaining to draw -- go to loop below
-            }
-        }
-        if (drawRight <= 0) { // Bytes remaining to skip
-            bitmapIndex += drawRight;
-        }
-        else
-        {
-            while (drawRight > 0)
-            {
-                compSect = *lineDat;
-                lineDat++;
-                if (compSect & 0x80)
-                {
-                    compSect &= ~0x80;
-                    drawRight -= compSect;
-                    if (drawRight < 0)
-                    {
-                        compSect += drawRight;
-                    }
-                    bitmapIndex += compSect;
-                }
-                else if (compSect & 0x40)
-                {
-                    compSect &= ~0x40;
-                    drawRight -= compSect;
-                    if (drawRight < 0)
-                    {
-                        compSect += drawRight;
-                    }
-                    effect = bitmapIndex + *lineDat;
-                    lineDat++;
-                    do
-                    {
-                        if (effect >= maxIndex)
-                        {
-                            effect -= maxIndex;
-                        }
-                        bitmap[bitmapIndex] = bitmap[effect];
-                        effect++;
-                        bitmapIndex++;
-                        compSect--;
-                    } while (compSect > 0);
-                }
-                else
-                {
-                    drawRight -= compSect;
-                    if (drawRight < 0)
-                    {
-                        compSect += drawRight;
-                    }
-                    do
-                    {
-                        effect = bitmapIndex + *lineDat;
-                        lineDat++;
-                        if (effect >= maxIndex)
-                        {
-                            effect -= maxIndex;
-                        }
-                        compSect--;
-                        bitmap[bitmapIndex] = bitmap[effect];
-                        bitmapIndex++;
-                    } while (compSect > 0);
-                }
-            }
-        }
-        bitmapIndex += lineOffs;
-        linesLeft--;
-    }
-}
-
-void Graphics::imageRenderFxn9_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData)
-// Remapping function -- Looks up a new color based on the palette index of the bitmap coordinate being written to and the decompressed value
-{
-    u32 bitmapIndex = screenWidth * y + x;
-    //u32 maxIndex = screenWidth * screenHeight;
-    u32 effect;
-
-    u8* lineDat;
-    u8 compSect;
-
-    u32 lineOffs = screenWidth - grpRect->right;
-    s32 linesLeft = grpRect->bottom - 1;
-    s32 drawLeft, drawRight;
-    u32 line = grpRect->top;
-
-    while (linesLeft > 0)
-    {
-        lineDat = grp->data(frame, line);
-        line++;
-        drawLeft = grpRect->left;
-        drawRight = grpRect->right;
-        while (drawLeft != 0) // Bytes to skip -- left of drawing rect
-        {
-            compSect = *lineDat;
-            lineDat++;
-            if (compSect & 0x80)
-            {
-                compSect &= ~0x80;
-                drawLeft -= compSect;
-                if (drawLeft == 0) break;
-                if (drawLeft >= 0) continue;
-                bitmapIndex -= drawLeft;
-                drawRight += drawLeft;
-                break; // Bytes remaining to draw -- go to loop below
-            }
-            else if (compSect & 0x40)
-            {
-                compSect &= ~0x40;
-                lineDat++;
-                drawLeft -= compSect;
-                if (drawLeft == 0) break;
-                if (drawLeft >= 0) continue;
-                drawLeft = -drawLeft;
-                lineDat--;
-                compSect = drawLeft;
-                // jump down
-                drawRight -= compSect;
-                if (drawRight < 0)
-                {
-                    compSect += drawRight;
-                }
-                do
-                {
-                    effect = ((*lineDat - 1) << 8) | ((bitmap[bitmapIndex] & 0xFF000000) >> 24);
-                    bitmap[bitmapIndex] = palette->get<u32>(colorData.effect->pcxDat.get<u8>(effect) * 4);
-                    bitmapIndex++;
-                    compSect--;
-                } while (compSect > 0);
-                lineDat++;
-                break; // Bytes remaining to draw -- go to loop below
-            }
-            else
-            {
-                lineDat += compSect;
-                drawLeft -= compSect;
-                if (drawLeft == 0) break;
-                if (drawLeft >= 0) continue;
-                drawLeft = -drawLeft;
-                lineDat -= drawLeft;
-                compSect = drawLeft;
-                // jump down
-                drawRight -= compSect;
-                if (drawRight < 0)
-                {
-                    compSect += drawRight;
-                }
-                do
-                {
-                    effect = ((*lineDat - 1) << 8) | ((bitmap[bitmapIndex] & 0xFF000000) >> 24);
-                    bitmap[bitmapIndex] = palette->get<u32>(colorData.effect->pcxDat.get<u8>(effect) * 4);
-                    lineDat++;
-                    bitmapIndex++;
-                    compSect--;
-                } while (compSect > 0);
-                break; // Bytes remaining to draw -- go to loop below
-            }
-        }
-        if (drawRight <= 0) { // Bytes remaining to skip
-            bitmapIndex += drawRight;
-        }
-        else
-        {
-            while (drawRight > 0)
-            {
-                compSect = *lineDat;
-                lineDat++;
-                if (compSect & 0x80)
-                {
-                    compSect &= ~0x80;
-                    drawRight -= compSect;
-                    if (drawRight < 0)
-                    {
-                        compSect += drawRight;
-                    }
-                    bitmapIndex += compSect;
-                }
-                else if (compSect & 0x40)
-                {
-                    compSect &= ~0x40;
-                    drawRight -= compSect;
-                    if (drawRight < 0)
-                    {
-                        compSect += drawRight;
-                    }
-                    do
-                    {
-                        effect = ((*lineDat - 1) << 8) | ((bitmap[bitmapIndex] & 0xFF000000) >> 24);
-                        bitmap[bitmapIndex] = palette->get<u32>(colorData.effect->pcxDat.get<u8>(effect) * 4);
-                        bitmapIndex++;
-                        compSect--;
-                    } while (compSect > 0);
-                    lineDat++;
-                }
-                else
-                {
-                    drawRight -= compSect;
-                    if (drawRight < 0)
-                    {
-                        compSect += drawRight;
-                    }
-                    do
-                    {
-                        effect = ((*lineDat - 1) << 8) | ((bitmap[bitmapIndex] & 0xFF000000) >> 24);
-                        bitmap[bitmapIndex] = palette->get<u32>(colorData.effect->pcxDat.get<u8>(effect) * 4);
-                        lineDat++;
-                        bitmapIndex++;
-                        compSect--;
-                    } while (compSect > 0);
-                }
-            }
-        }
-        bitmapIndex += lineOffs;
-        linesLeft--;
-    }
-}
-
-void Graphics::imageRenderFxn10_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData)
-// Shadow -- Draws a shaded color based on the existing color index of the pixel being written to
-{
-    u32 bitmapIndex = screenWidth * y + x;
-    u32 effect;
-
-    buffer& dark = chkd.scData.tilesets.set[map.getTileset()].dark.pcxDat;
-
-    u8* lineDat;
-    u8 compSect;
-
-    u32 lineOffs = screenWidth - grpRect->right;
-    s32 linesLeft = grpRect->bottom - 1;
-    s32 drawLeft, drawRight;
-    u32 line = grpRect->top;
-
-    while (linesLeft > 0)
-    {
-        lineDat = grp->data(frame, line);
-        line++;
-        drawLeft = grpRect->left;
-        drawRight = grpRect->right;
-        while (drawLeft != 0) // Bytes to skip -- left of drawing rect
-        {
-            compSect = *lineDat;
-            lineDat++;
-            if (compSect & 0x80)
-            {
-                compSect &= ~0x80;
-                drawLeft -= compSect;
-                if (drawLeft == 0) break;
-                if (drawLeft >= 0) continue;
-                bitmapIndex -= drawLeft;
-                drawRight += drawLeft;
-                break; // Bytes remaining to draw -- go to loop below
-            }
-            else if (compSect & 0x40)
-            {
-                compSect &= ~0x40;
-                lineDat++;
-                drawLeft -= compSect;
-                if (drawLeft == 0) break;
-                if (drawLeft >= 0) continue;
-                drawLeft = -drawLeft;
-                lineDat--;
-                compSect = drawLeft;
-                // jump down
-                drawRight -= compSect;
-                if (drawRight < 0)
-                {
-                    compSect += drawRight;
-                }
-                do
-                {
-                    effect = (18 << 8) | ((bitmap[bitmapIndex] & 0xFF000000) >> 24);
-                    bitmap[bitmapIndex] = palette->get<u32>(dark.get<u8>(effect) * 4);
-                    bitmapIndex++;
-                    compSect--;
-                } while (compSect > 0);
-                lineDat++;
-                break; // Bytes remaining to draw -- go to loop below
-            }
-            else
-            {
-                lineDat += compSect;
-                drawLeft -= compSect;
-                if (drawLeft == 0) break;
-                if (drawLeft >= 0) continue;
-                drawLeft = -drawLeft;
-                lineDat -= drawLeft;
-                compSect = drawLeft;
-                // jump down
-                drawRight -= compSect;
-                if (drawRight < 0)
-                {
-                    compSect += drawRight;
-                }
-                do
-                {
-                    effect = (18 << 8) | ((bitmap[bitmapIndex] & 0xFF000000) >> 24);
-                    bitmap[bitmapIndex] = palette->get<u32>(dark.get<u8>(effect) * 4);
-                    lineDat++;
-                    bitmapIndex++;
-                    compSect--;
-                } while (compSect > 0);
-                break; // Bytes remaining to draw -- go to loop below
-            }
-        }
-        if (drawRight <= 0) { // Bytes remaining to skip
-            bitmapIndex += drawRight;
-        }
-        else
-        {
-            while (drawRight > 0)
-            {
-                compSect = *lineDat;
-                lineDat++;
-                if (compSect & 0x80)
-                {
-                    compSect &= ~0x80;
-                    drawRight -= compSect;
-                    if (drawRight < 0)
-                    {
-                        compSect += drawRight;
-                    }
-                    bitmapIndex += compSect;
-                }
-                else if (compSect & 0x40)
-                {
-                    compSect &= ~0x40;
-                    drawRight -= compSect;
-                    if (drawRight < 0)
-                    {
-                        compSect += drawRight;
-                    }
-                    do
-                    {
-                        effect = (18 << 8) | ((bitmap[bitmapIndex] & 0xFF000000) >> 24);
-                        bitmap[bitmapIndex] = palette->get<u32>(dark.get<u8>(effect) * 4);
-                        bitmapIndex++;
-                        compSect--;
-                    } while (compSect > 0);
-                    lineDat++;
-                }
-                else
-                {
-                    drawRight -= compSect;
-                    if (drawRight < 0)
-                    {
-                        compSect += drawRight;
-                    }
-                    do
-                    {
-                        effect = (18 << 8) | ((bitmap[bitmapIndex] & 0xFF000000) >> 24);
-                        bitmap[bitmapIndex] = palette->get<u32>(dark.get<u8>(effect) * 4);
-                        lineDat++;
-                        bitmapIndex++;
-                        compSect--;
-                    } while (compSect > 0);
-                }
-            }
-        }
-        bitmapIndex += lineOffs;
-        linesLeft--;
-    }
-}
-
-void Graphics::imageRenderFxn13_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData)
+void Graphics::imageRenderFxn13_0(ChkdBitmap& bitmap, ChkdPalette* palette, s32 x, s32 y, const Sc::Sprite::Grp* grp, u16 frame, RECT *grpRect, ColoringData colorData)
 // Selection Circle -- calls Normal Draw, but with a selection circle color reindexing applied
 {
     u8 tselectPrev[8];
     for (int i = 0; i < 8; i++)
     {
         tselectPrev[i] = grpReindexing[i + 1]; // Back up old tselect reindexing values
-        grpReindexing[i + 1] = chkd.scData.tselect.pcxDat.get<u8>(colorData.selectColor * 8 + i); // Load tselect reindex value
+        grpReindexing[i + 1] = chkd.scData.tselect.paletteIndex[colorData.selectColor * 8 + i]; // Load tselect reindex value
     }
-    imageRenderFxn0_0(bitmap, palette, x, y, grp, frame, grpRect, (u32)0);
+    drawGrp(bitmap, palette, x, y, grp, frame, grpRect, (u32)0);
     for (int i = 0; i < 8; i++)
     {
         grpReindexing[i + 1] = tselectPrev[i]; // Restore saved tselect reindexing values
     }
 }
 
-void Graphics::imageRenderFxn14_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData)
+void Graphics::imageRenderFxn14_0(ChkdBitmap& bitmap, ChkdPalette* palette, s32 x, s32 y, const Sc::Sprite::Grp* grp, u16 frame, RECT *grpRect, ColoringData colorData)
 // Draw with Player Color -- calls Normal Draw, but with a specified player color applied
 {
     u8 prevColor = activePlayerColor;
@@ -5757,194 +5020,952 @@ void Graphics::imageRenderFxn14_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s3
     activePlayerColor = colorData.playerColor; // Normally calls a function, but it just changes the player color based on minimap state
     for (int i = 0; i < 8; i++)
     {
-        grpReindexing[i + 1] = chkd.scData.tunit.pcxDat.get<u8>(activePlayerColor * 8 + i); // Load tunit reindex value
+        grpReindexing[i + 1] = chkd.scData.tunit.paletteIndex[activePlayerColor * 8 + i]; // Load tunit reindex value
     }
 
-    imageRenderFxn0_0(bitmap, palette, x, y, grp, frame, grpRect, (u32)0);
+    drawGrp(bitmap, palette, x, y, grp, frame, grpRect, (u32)0);
 
     // Load previous player color values
     activePlayerColor = prevColor;
     for (int i = 0; i < 8; i++)
     {
-        grpReindexing[i + 1] = chkd.scData.tunit.pcxDat.get<u8>(activePlayerColor * 8 + i); // Load tunit reindex value
+        grpReindexing[i + 1] = chkd.scData.tunit.paletteIndex[activePlayerColor * 8 + i]; // Load tunit reindex value
     }
 }
 
-void Graphics::imageRenderFxn16_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData)
+void Graphics::imageRenderFxn16_0(ChkdBitmap& bitmap, ChkdPalette* palette, s32 x, s32 y, const Sc::Sprite::Grp* grp, u16 frame, RECT *grpRect, ColoringData colorData)
 // Hallucination Draw -- Fills grpReindexing table with shift.pcx data, then calls Normal Draw
 {
     u8 tmp[0x100];
-    PCX* shift = &chkd.scData.tilesets.set[map.getTileset()].shift;
+    const Sc::Pcx* shift = &chkd.scData.terrain.get(map.getTileset()).shift;
     for (int i = 0; i < 0x100; i++)
     {
         tmp[i] = grpReindexing[i];
-        grpReindexing[i] = shift->pcxDat.get<u8>(colorData.shiftRow << 8 + i); // shift.pcx only has one row, and this doesn't ever seem to be set > 0 -- But maybe mods can change it.
+        grpReindexing[i] = shift->paletteIndex[(colorData.shiftRow << 8) + i]; // shift.pcx only has one row, and this doesn't ever seem to be set > 0 -- But maybe mods can change it.
     }
-    imageRenderFxn0_0(bitmap, palette, x, y, grp, frame, grpRect, (u32)0);
+    drawGrp(bitmap, palette, x, y, grp, frame, grpRect, (u32)0);
     for (int i = 0; i < 0x100; i++) grpReindexing[i] = tmp[i];
 }
 
-
-void Graphics::imageRenderFxn5_2__0_common(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData)
-// Unvisioned cloaking/decloaking common -- Draws the normal-colored components of GRP based on cloakingTable, making parts transparent
+void Graphics::drawGrp(ChkdBitmap& bitmap, ChkdPalette* palette, s32 x, s32 y, const Sc::Sprite::Grp* grp, u16 frame, RECT *grpRect, ColoringData colorData)
 {
-    u32 bitmapIndex = screenWidth * y + x;
+	const Sc::Sprite::GrpFile & grpFile = grp->get();
 
-    u8* lineDat;
-    u8 compSect;
+	u32 bitmapIndex = screenWidth * y + x;
 
-    u32 lineOffs = screenWidth - grpRect->right;
-    s32 linesLeft = grpRect->bottom - 1;
-    s32 drawLeft, drawRight;
-    u32 line = grpRect->top;
+	u8* lineDat;
+	u8 compSect;
 
-    while (linesLeft > 0)
-    {
-        lineDat = grp->data(frame, line);
-        line++;
-        drawLeft = grpRect->left;
-        drawRight = grpRect->right;
-        while (drawLeft != 0) // Bytes to skip -- left of drawing rect
-        {
-            compSect = *lineDat;
-            lineDat++;
-            if (compSect & 0x80)
-            {
-                compSect &= ~0x80;
-                drawLeft -= compSect;
-                if (drawLeft == 0) break;
-                if (drawLeft >= 0) continue;
-                bitmapIndex -= drawLeft;
-                drawRight += drawLeft;
-                break; // Bytes remaining to draw -- go to loop below
-            }
-            else if (compSect & 0x40)
-            {
-                compSect &= ~0x40;
+	u32 lineOffs = screenWidth - grpRect->right;
+	s32 linesLeft = grpRect->bottom - 1;
+	s32 drawLeft, drawRight;
+	u32 line = grpRect->top;
+
+	while (linesLeft > 0)
+	{
+		lineDat = grpFile.data(frame, line);
+		line++;
+		drawLeft = grpRect->left;
+		drawRight = grpRect->right;
+		while (drawLeft != 0) // Bytes to skip -- left of drawing rect
+		{
+			compSect = *lineDat;
+			lineDat++;
+			if (compSect & 0x80)
+			{
+				compSect &= ~0x80;
+				drawLeft -= compSect;
+				if (drawLeft == 0) break;
+				if (drawLeft >= 0) continue;
+				bitmapIndex -= drawLeft;
+				drawRight += drawLeft;
+				break; // Bytes remaining to draw -- go to loop below
+			}
+			else if (compSect & 0x40)
+			{
+				compSect &= ~0x40;
+				lineDat++;
+				drawLeft -= compSect;
+				if (drawLeft == 0) break;
+				if (drawLeft >= 0) continue;
+				drawLeft = -drawLeft;
+				lineDat--;
+				compSect = drawLeft;
+				// jump down
+				drawRight -= compSect;
+				if (drawRight < 0)
+				{
+					compSect += drawRight;
+				}
+				do
+				{
+                    bitmap[bitmapIndex] = (*palette)[grpReindexing[*lineDat]];
+					bitmapIndex++;
+					compSect--;
+				} while (compSect > 0);
                 lineDat++;
-                drawLeft -= compSect;
-                if (drawLeft == 0) break;
-                if (drawLeft >= 0) continue;
-                drawLeft = -drawLeft;
-                lineDat--;
-                compSect = drawLeft;
-                // jump down
-                drawRight -= compSect;
-                if (drawRight < 0)
-                {
-                    compSect += drawRight;
-                }
-                if (cloakingTable[grpReindexing[*lineDat]] <= colorData.cloak.state)
-                {
-                    bitmapIndex += compSect;
-                }
-                else
-                {
-                    do
-                    {
-                        bitmap[bitmapIndex] = grpReindexing[*lineDat];
+				break; // Bytes remaining to draw -- go to loop below
+			}
+			else
+			{
+				lineDat += compSect;
+				drawLeft -= compSect;
+				if (drawLeft == 0) break;
+				if (drawLeft >= 0) continue;
+				drawLeft = -drawLeft;
+				lineDat -= drawLeft;
+				compSect = drawLeft;
+				// jump down
+				drawRight -= compSect;
+				if (drawRight < 0)
+				{
+					compSect += drawRight;
+				}
+				do
+				{
+					bitmap[bitmapIndex] = (*palette)[grpReindexing[*lineDat]];
+					bitmapIndex++;
+					lineDat++;
+					compSect--;
+				} while (compSect > 0);
+				break; // Bytes remaining to draw -- go to loop below
+			}
+		}
+		if (drawRight <= 0) { // Bytes remaining to skip
+			bitmapIndex += drawRight;
+		}
+		else
+		{
+			while (drawRight > 0)
+			{
+				compSect = *lineDat;
+				lineDat++;
+				if (compSect & 0x80)
+				{
+					compSect &= ~0x80;
+					drawRight -= compSect;
+					if (drawRight < 0)
+					{
+						compSect += drawRight;
+					}
+					bitmapIndex += compSect;
+				}
+				else if (compSect & 0x40)
+				{
+					compSect &= ~0x40;
+					drawRight -= compSect;
+					if (drawRight < 0)
+					{
+						compSect += drawRight;
+					}
+
+					do
+					{
+						bitmap[bitmapIndex] = (*palette)[grpReindexing[*lineDat]];
+						bitmapIndex++;
+						compSect--;
+					} while (compSect > 0);
+					lineDat++;
+				}
+				else
+				{
+					drawRight -= compSect;
+					if (drawRight < 0)
+					{
+						compSect += drawRight;
+					}
+					do
+					{
+						bitmap[bitmapIndex] = (*palette)[grpReindexing[*lineDat]];
+					    bitmapIndex++;
+						lineDat++;
+						compSect--;
+					} while (compSect > 0);
+				}
+			}
+		}
+		bitmapIndex += lineOffs;
+		linesLeft--;
+	}
+}
+
+void Graphics::drawCloakedGrp(ChkdBitmap& bitmap, ChkdPalette* palette, s32 x, s32 y, const Sc::Sprite::Grp* grp, u16 frame, RECT *grpRect, ColoringData colorData)
+{
+	const Sc::Sprite::GrpFile & grpFile = grp->get();
+
+	u32 bitmapIndex = screenWidth * y + x;
+	u32 maxIndex = screenWidth * screenHeight;
+	u32 effect;
+
+	u8* lineDat;
+	u8 compSect;
+
+	u32 lineOffs = screenWidth - grpRect->right;
+	s32 linesLeft = grpRect->bottom - 1;
+	s32 drawLeft, drawRight;
+	u32 line = grpRect->top;
+
+	while (linesLeft > 0)
+	{
+		lineDat = grpFile.data(frame, line);
+		line++;
+		drawLeft = grpRect->left;
+		drawRight = grpRect->right;
+		while (drawLeft != 0) // Bytes to skip -- left of drawing rect
+		{
+			compSect = *lineDat;
+			lineDat++;
+			if (compSect & 0x80)
+			{
+				compSect &= ~0x80;
+				drawLeft -= compSect;
+				if (drawLeft == 0) break;
+				if (drawLeft >= 0) continue;
+				bitmapIndex -= drawLeft;
+				drawRight += drawLeft;
+				break; // Bytes remaining to draw -- go to loop below
+			}
+			else if (compSect & 0x40)
+			{
+				compSect &= ~0x40;
+				lineDat++;
+				drawLeft -= compSect;
+				if (drawLeft == 0) break;
+				if (drawLeft >= 0) continue;
+				drawLeft = -drawLeft;
+				lineDat--;
+				compSect = drawLeft;
+				// jump down
+				drawRight -= compSect;
+				if (drawRight < 0)
+				{
+					compSect += drawRight;
+				}
+				effect = bitmapIndex + cloakingTable[*lineDat];
+				lineDat++;
+                
+				do
+				{
+					if (effect >= maxIndex)
+						effect -= maxIndex;
+					bitmap[bitmapIndex] = bitmap[effect];
+					effect++;
+					bitmapIndex++;
+					compSect--;
+				} while (compSect > 0);
+				break; // Bytes remaining to draw -- go to loop below
+			}
+			else
+			{
+				lineDat += compSect;
+				drawLeft -= compSect;
+				if (drawLeft == 0) break;
+				if (drawLeft >= 0) continue;
+				drawLeft = -drawLeft;
+				lineDat -= drawLeft;
+				compSect = drawLeft;
+				// jump down
+				drawRight -= compSect;
+				if (drawRight < 0)
+				{
+					compSect += drawRight;
+				}
+				do
+				{
+					effect = bitmapIndex + cloakingTable[*lineDat];
+					if (effect >= maxIndex)
+						effect -= maxIndex;
+					bitmap[bitmapIndex] = bitmap[effect];
+					bitmapIndex--;
+
+					lineDat++;
+					compSect--;
+				} while (compSect > 0);
+				break; // Bytes remaining to draw -- go to loop below
+			}
+		}
+		if (drawRight <= 0) { // Bytes remaining to skip
+			bitmapIndex += drawRight;
+		}
+		else
+		{
+			while (drawRight > 0)
+			{
+				compSect = *lineDat;
+				lineDat++;
+				if (compSect & 0x80)
+				{
+					compSect &= ~0x80;
+					drawRight -= compSect;
+					if (drawRight < 0)
+					{
+						compSect += drawRight;
+					}
+					bitmapIndex += compSect;
+				}
+				else if (compSect & 0x40)
+				{
+					compSect &= ~0x40;
+					drawRight -= compSect;
+					if (drawRight < 0)
+					{
+						compSect += drawRight;
+					}
+					effect = bitmapIndex + cloakingTable[*lineDat];
+					lineDat++;
+
+					do
+					{
+						if ( effect >= maxIndex )
+							effect -= maxIndex;
+						bitmap[bitmapIndex] = bitmap[effect];
+						effect++;
+						bitmapIndex++;
+						compSect--;
+					} while (compSect > 0);
+				}
+				else
+				{
+					drawRight -= compSect;
+					if (drawRight < 0)
+					{
+						compSect += drawRight;
+					}
+					do
+					{
+						effect = bitmapIndex + cloakingTable[*lineDat];
+						if ( effect >= maxIndex )
+						{
+							effect -= maxIndex;
+						}
+						bitmap[bitmapIndex] = bitmap[effect];
+						bitmapIndex--;
+						lineDat++;
+						compSect--;
+					} while (compSect > 0);
+				}
+			}
+		}
+		bitmapIndex += lineOffs;
+		linesLeft--;
+	}
+}
+
+void Graphics::drawEmpGrp(ChkdBitmap& bitmap, ChkdPalette* palette, s32 x, s32 y, const Sc::Sprite::Grp* grp, u16 frame, RECT *grpRect, ColoringData colorData)
+{
+	const Sc::Sprite::GrpFile & grpFile = grp->get();
+
+	u32 bitmapIndex = screenWidth * y + x;
+	u32 maxIndex = screenWidth * screenHeight;
+	u32 effect;
+
+	u8* lineDat;
+	u8 compSect;
+
+	u32 lineOffs = screenWidth - grpRect->right;
+	s32 linesLeft = grpRect->bottom - 1;
+	s32 drawLeft, drawRight;
+	u32 line = grpRect->top;
+
+	while (linesLeft > 0)
+	{
+		lineDat = grpFile.data(frame, line);
+		line++;
+		drawLeft = grpRect->left;
+		drawRight = grpRect->right;
+		while (drawLeft != 0) // Bytes to skip -- left of drawing rect
+		{
+			compSect = *lineDat;
+			lineDat++;
+			if (compSect & 0x80)
+			{
+				compSect &= ~0x80;
+				drawLeft -= compSect;
+				if (drawLeft == 0) break;
+				if (drawLeft >= 0) continue;
+				bitmapIndex -= drawLeft;
+				drawRight += drawLeft;
+				break; // Bytes remaining to draw -- go to loop below
+			}
+			else if (compSect & 0x40)
+			{
+				compSect &= ~0x40;
+				lineDat++;
+				drawLeft -= compSect;
+				if (drawLeft == 0) break;
+				if (drawLeft >= 0) continue;
+				drawLeft = -drawLeft;
+				lineDat--;
+				compSect = drawLeft;
+				// jump down
+				drawRight -= compSect;
+				if (drawRight < 0)
+				{
+					compSect += drawRight;
+				}
+				effect = bitmapIndex + *lineDat;
+				lineDat++;
+                
+				do
+				{
+					if (effect >= maxIndex)
+						effect -= maxIndex;
+					bitmap[bitmapIndex] = bitmap[effect];
+					effect++;
+					bitmapIndex++;
+					compSect--;
+				} while (compSect > 0);
+				break; // Bytes remaining to draw -- go to loop below
+			}
+			else
+			{
+				lineDat += compSect;
+				drawLeft -= compSect;
+				if (drawLeft == 0) break;
+				if (drawLeft >= 0) continue;
+				drawLeft = -drawLeft;
+				lineDat -= drawLeft;
+				compSect = drawLeft;
+				// jump down
+				drawRight -= compSect;
+				if (drawRight < 0)
+				{
+					compSect += drawRight;
+				}
+				do
+				{
+					effect = bitmapIndex + *lineDat;
+					if (effect >= maxIndex)
+						effect -= maxIndex;
+					bitmap[bitmapIndex] = bitmap[effect];
+					bitmapIndex++;
+
+					lineDat++;
+					compSect--;
+				} while (compSect > 0);
+				break; // Bytes remaining to draw -- go to loop below
+			}
+		}
+		if (drawRight <= 0) { // Bytes remaining to skip
+			bitmapIndex += drawRight;
+		}
+		else
+		{
+			while (drawRight > 0)
+			{
+				compSect = *lineDat;
+				lineDat++;
+				if (compSect & 0x80)
+				{
+					compSect &= ~0x80;
+					drawRight -= compSect;
+					if (drawRight < 0)
+					{
+						compSect += drawRight;
+					}
+					bitmapIndex += compSect;
+				}
+				else if (compSect & 0x40)
+				{
+					compSect &= ~0x40;
+					drawRight -= compSect;
+					if (drawRight < 0)
+					{
+						compSect += drawRight;
+					}
+					effect = bitmapIndex + *lineDat;
+					lineDat++;
+
+					do
+					{
+						if ( effect >= maxIndex )
+							effect -= maxIndex;
+						bitmap[bitmapIndex] = bitmap[effect];
+						effect++;
+						bitmapIndex++;
+						compSect--;
+					} while (compSect > 0);
+				}
+				else
+				{
+					drawRight -= compSect;
+					if (drawRight < 0)
+					{
+						compSect += drawRight;
+					}
+					do
+					{
+						effect = bitmapIndex + *lineDat;
+						if ( effect >= maxIndex )
+						{
+							effect -= maxIndex;
+						}
+						bitmap[bitmapIndex] = bitmap[effect];
+						bitmapIndex++;
+						lineDat++;
+						compSect--;
+					} while (compSect > 0);
+				}
+			}
+		}
+		bitmapIndex += lineOffs;
+		linesLeft--;
+	}
+}
+
+void Graphics::drawRemappedGrp(ChkdBitmap& bitmap, ChkdPalette* palette, s32 x, s32 y, const Sc::Sprite::Grp* grp, u16 frame, RECT *grpRect, ColoringData colorData)
+{
+	const Sc::Sprite::GrpFile & grpFile = grp->get();
+
+	u32 bitmapIndex = screenWidth * y + x;
+	u32 maxIndex = screenWidth * screenHeight;
+	u32 effect;
+
+	u8* lineDat;
+	u8 compSect;
+
+	u32 lineOffs = screenWidth - grpRect->right;
+	s32 linesLeft = grpRect->bottom - 1;
+	s32 drawLeft, drawRight;
+	u32 line = grpRect->top;
+
+	while (linesLeft > 0)
+	{
+		lineDat = grpFile.data(frame, line);
+		line++;
+		drawLeft = grpRect->left;
+		drawRight = grpRect->right;
+		while (drawLeft != 0) // Bytes to skip -- left of drawing rect
+		{
+			compSect = *lineDat;
+			lineDat++;
+			if (compSect & 0x80)
+			{
+				compSect &= ~0x80;
+				drawLeft -= compSect;
+				if (drawLeft == 0) break;
+				if (drawLeft >= 0) continue;
+				bitmapIndex -= drawLeft;
+				drawRight += drawLeft;
+				break; // Bytes remaining to draw -- go to loop below
+			}
+			else if (compSect & 0x40)
+			{
+				compSect &= ~0x40;
+				lineDat++;
+				drawLeft -= compSect;
+				if (drawLeft == 0) break;
+				if (drawLeft >= 0) continue;
+				drawLeft = -drawLeft;
+				lineDat--;
+				compSect = drawLeft;
+				// jump down
+				drawRight -= compSect;
+				if (drawRight < 0)
+				{
+					compSect += drawRight;
+				}
+
+				do
+				{
+					effect = ((*lineDat - 1) << 8) | ((u32(bitmap[bitmapIndex]) & 0xFF000000) >> 24);
+					bitmap[bitmapIndex] = (*palette)[colorData.effect->paletteIndex[effect]];
+					compSect--;
+				} while (compSect > 0);
+				lineDat++;
+				break; // Bytes remaining to draw -- go to loop below
+			}
+			else
+			{
+				lineDat += compSect;
+				drawLeft -= compSect;
+				if (drawLeft == 0) break;
+				if (drawLeft >= 0) continue;
+				drawLeft = -drawLeft;
+				lineDat -= drawLeft;
+				compSect = drawLeft;
+				// jump down
+				drawRight -= compSect;
+				if (drawRight < 0)
+				{
+					compSect += drawRight;
+				}
+				do
+				{
+					effect = ((*lineDat - 1) << 8) | ((u32(bitmap[bitmapIndex]) & 0xFF000000) >> 24);
+					bitmap[bitmapIndex] = (*palette)[colorData.effect->paletteIndex[effect]];
+					bitmapIndex++;
+
+					lineDat++;
+					compSect--;
+				} while (compSect > 0);
+				break; // Bytes remaining to draw -- go to loop below
+			}
+		}
+		if (drawRight <= 0) { // Bytes remaining to skip
+			bitmapIndex += drawRight;
+		}
+		else
+		{
+			while (drawRight > 0)
+			{
+				compSect = *lineDat;
+				lineDat++;
+				if (compSect & 0x80)
+				{
+					compSect &= ~0x80;
+					drawRight -= compSect;
+					if (drawRight < 0)
+					{
+						compSect += drawRight;
+					}
+					bitmapIndex += compSect;
+				}
+				else if (compSect & 0x40)
+				{
+					compSect &= ~0x40;
+					drawRight -= compSect;
+					if (drawRight < 0)
+					{
+						compSect += drawRight;
+					}
+					do
+					{
+						effect = ((*lineDat - 1) << 8) | ((u32(bitmap[bitmapIndex]) & 0xFF000000) >> 24);
+						bitmap[bitmapIndex] = (*palette)[colorData.effect->paletteIndex[effect]];
                         bitmapIndex++;
                         compSect--;
-                    } while (compSect > 0);
-                }
-                lineDat++;
-                break; // Bytes remaining to draw -- go to loop below
-            }
-            else
-            {
-                lineDat += compSect;
-                drawLeft -= compSect;
-                if (drawLeft == 0) break;
-                if (drawLeft >= 0) continue;
-                drawLeft = -drawLeft;
-                lineDat -= drawLeft;
-                compSect = drawLeft;
-                // jump down
-                drawRight -= compSect;
-                if (drawRight < 0)
-                {
-                    compSect += drawRight;
-                }
-                do
-                {
-                    if (cloakingTable[grpReindexing[*lineDat]] > colorData.cloak.state)
-                    {
-                        bitmap[bitmapIndex] = grpReindexing[*lineDat];
-                    }
+					} while (compSect > 0);
                     lineDat++;
-                    bitmapIndex++;
-                    compSect--;
-                } while (compSect > 0);
-                    break; // Bytes remaining to draw -- go to loop below
-            }
-        }
-        if (drawRight <= 0) { // Bytes remaining to skip
-            bitmapIndex += drawRight;
-        }
-        else
-        {
-            while (drawRight > 0)
-            {
-                compSect = *lineDat;
+				}
+				else
+				{
+					drawRight -= compSect;
+					if (drawRight < 0)
+					{
+						compSect += drawRight;
+					}
+					do
+					{
+						effect = ((*lineDat - 1) << 8) | ((u32(bitmap[bitmapIndex]) & 0xFF000000) >> 24);
+						bitmap[bitmapIndex] = (*palette)[colorData.effect->paletteIndex[effect]];
+						bitmapIndex++;
+						lineDat++;
+						compSect--;
+					} while (compSect > 0);
+				}
+			}
+		}
+		bitmapIndex += lineOffs;
+		linesLeft--;
+	}
+}
+
+void Graphics::drawShadowGrp(ChkdBitmap& bitmap, ChkdPalette* palette, s32 x, s32 y, const Sc::Sprite::Grp* grp, u16 frame, RECT *grpRect, ColoringData colorData)
+{
+	const Sc::Sprite::GrpFile & grpFile = grp->get();
+
+	u32 bitmapIndex = screenWidth * y + x;
+	u32 maxIndex = screenWidth * screenHeight;
+	u32 effect;
+	auto & dark = chkd.scData.terrain.get(map.getTileset()).dark.paletteIndex;
+
+	u8* lineDat;
+	u8 compSect;
+
+	u32 lineOffs = screenWidth - grpRect->right;
+	s32 linesLeft = grpRect->bottom - 1;
+	s32 drawLeft, drawRight;
+	u32 line = grpRect->top;
+
+	while (linesLeft > 0)
+	{
+		lineDat = grpFile.data(frame, line);
+		line++;
+		drawLeft = grpRect->left;
+		drawRight = grpRect->right;
+		while (drawLeft != 0) // Bytes to skip -- left of drawing rect
+		{
+			compSect = *lineDat;
+			lineDat++;
+			if (compSect & 0x80)
+			{
+				compSect &= ~0x80;
+				drawLeft -= compSect;
+				if (drawLeft == 0) break;
+				if (drawLeft >= 0) continue;
+				bitmapIndex -= drawLeft;
+				drawRight += drawLeft;
+				break; // Bytes remaining to draw -- go to loop below
+			}
+			else if (compSect & 0x40)
+			{
+				compSect &= ~0x40;
+				lineDat++;
+				drawLeft -= compSect;
+				if (drawLeft == 0) break;
+				if (drawLeft >= 0) continue;
+				drawLeft = -drawLeft;
+				lineDat--;
+				compSect = drawLeft;
+				// jump down
+				drawRight -= compSect;
+				if (drawRight < 0)
+				{
+					compSect += drawRight;
+				}
+                
+				do
+				{
+                    effect = (18 << 8) | ((u32(bitmap[bitmapIndex]) & 0xFF000000) >> 24);
+                    bitmap[bitmapIndex] = (*palette)[dark[effect]];
+					bitmapIndex++;
+					compSect--;
+				} while (compSect > 0);
+				lineDat++;
+				break; // Bytes remaining to draw -- go to loop below
+			}
+			else
+			{
+				lineDat += compSect;
+				drawLeft -= compSect;
+				if (drawLeft == 0) break;
+				if (drawLeft >= 0) continue;
+				drawLeft = -drawLeft;
+				lineDat -= drawLeft;
+				compSect = drawLeft;
+				// jump down
+				drawRight -= compSect;
+				if (drawRight < 0)
+				{
+					compSect += drawRight;
+				}
+				do
+				{
+					effect = (18 << 8) | ((u32(bitmap[bitmapIndex]) & 0xFF000000) >> 24);
+					bitmap[bitmapIndex] = (*palette)[dark[effect]];
+					bitmapIndex++;
+
+					lineDat++;
+					compSect--;
+				} while (compSect > 0);
+				break; // Bytes remaining to draw -- go to loop below
+			}
+		}
+		if (drawRight <= 0) { // Bytes remaining to skip
+			bitmapIndex += drawRight;
+		}
+		else
+		{
+			while (drawRight > 0)
+			{
+				compSect = *lineDat;
+				lineDat++;
+				if (compSect & 0x80)
+				{
+					compSect &= ~0x80;
+					drawRight -= compSect;
+					if (drawRight < 0)
+					{
+						compSect += drawRight;
+					}
+					bitmapIndex += compSect;
+				}
+				else if (compSect & 0x40)
+				{
+					compSect &= ~0x40;
+					drawRight -= compSect;
+					if (drawRight < 0)
+					{
+						compSect += drawRight;
+					}
+
+					do
+					{
+						effect = (18 << 8) | ((u32(bitmap[bitmapIndex]) & 0xFF000000) >> 24);
+						bitmap[bitmapIndex] = (*palette)[dark[effect]];
+						bitmapIndex++;
+						compSect--;
+					} while (compSect > 0);
+					lineDat++;
+				}
+				else
+				{
+					drawRight -= compSect;
+					if (drawRight < 0)
+					{
+						compSect += drawRight;
+					}
+					do
+					{
+						effect = (18 << 8) | ((u32(bitmap[bitmapIndex]) & 0xFF000000) >> 24);
+						bitmap[bitmapIndex] = (*palette)[dark[effect]];
+						bitmapIndex++;
+						lineDat++;
+						compSect--;
+					} while (compSect > 0);
+				}
+			}
+		}
+		bitmapIndex += lineOffs;
+		linesLeft--;
+	}
+}
+
+void Graphics::drawRevealedGrp(ChkdBitmap& bitmap, ChkdPalette* palette, s32 x, s32 y, const Sc::Sprite::Grp* grp, u16 frame, RECT *grpRect, ColoringData colorData)
+{
+	const Sc::Sprite::GrpFile & grpFile = grp->get();
+
+	u32 bitmapIndex = screenWidth * y + x;
+	u32 maxIndex = screenWidth * screenHeight;
+	auto & dark = chkd.scData.terrain.get(map.getTileset()).dark.palette;
+
+	u8* lineDat;
+	u8 compSect;
+
+	u32 lineOffs = screenWidth - grpRect->right;
+	s32 linesLeft = grpRect->bottom - 1;
+	s32 drawLeft, drawRight;
+	u32 line = grpRect->top;
+
+	while (linesLeft > 0)
+	{
+		lineDat = grpFile.data(frame, line);
+		line++;
+		drawLeft = grpRect->left;
+		drawRight = grpRect->right;
+		while (drawLeft != 0) // Bytes to skip -- left of drawing rect
+		{
+			compSect = *lineDat;
+			lineDat++;
+			if (compSect & 0x80)
+			{
+				compSect &= ~0x80;
+				drawLeft -= compSect;
+				if (drawLeft == 0) break;
+				if (drawLeft >= 0) continue;
+				bitmapIndex -= drawLeft;
+				drawRight += drawLeft;
+				break; // Bytes remaining to draw -- go to loop below
+			}
+			else if (compSect & 0x40)
+			{
+				compSect &= ~0x40;
+				lineDat++;
+				drawLeft -= compSect;
+				if (drawLeft == 0) break;
+				if (drawLeft >= 0) continue;
+				drawLeft = -drawLeft;
+				lineDat--;
+				compSect = drawLeft;
+				// jump down
+				drawRight -= compSect;
+				if (drawRight < 0)
+				{
+					compSect += drawRight;
+				}
+                
+				if ( cloakingTable[grpReindexing[*lineDat]] <= colorData.cloak.state )
+					bitmapIndex += compSect;
+				else
+				{
+					do
+					{
+						bitmap[bitmapIndex] = (*palette)[grpReindexing[*lineDat]];
+						bitmapIndex++;
+						compSect--;
+					} while ( compSect > 0 );
+				}
                 lineDat++;
-                if (compSect & 0x80)
-                {
-                    compSect &= ~0x80;
-                    drawRight -= compSect;
-                    if (drawRight < 0)
-                    {
-                        compSect += drawRight;
-                    }
-                    bitmapIndex += compSect;
-                }
-                else if (compSect & 0x40)
-                {
-                    compSect &= ~0x40;
-                    drawRight -= compSect;
-                    if (drawRight < 0)
-                    {
-                        compSect += drawRight;
-                    }
+				break; // Bytes remaining to draw -- go to loop below
+			}
+			else
+			{
+				lineDat += compSect;
+				drawLeft -= compSect;
+				if (drawLeft == 0) break;
+				if (drawLeft >= 0) continue;
+				drawLeft = -drawLeft;
+				lineDat -= drawLeft;
+				compSect = drawLeft;
+				// jump down
+				drawRight -= compSect;
+				if (drawRight < 0)
+				{
+					compSect += drawRight;
+				}
+				do
+				{
+					if ( cloakingTable[grpReindexing[*lineDat]] > colorData.cloak.state)
+						bitmap[bitmapIndex] = (*palette)[grpReindexing[*lineDat]];
+					bitmapIndex++;
 
-                    if (cloakingTable[grpReindexing[*lineDat]] <= colorData.cloak.state)
-                    {
-                        bitmapIndex += compSect;
-                    }
-                    else
-                    {
-                        do
-                        {
-                            bitmap[bitmapIndex] = grpReindexing[*lineDat];
-                            bitmapIndex++;
-                            compSect--;
-                        } while (compSect > 0);
-                    }
-
+					lineDat++;
+					compSect--;
+				} while (compSect > 0);
+				break; // Bytes remaining to draw -- go to loop below
+			}
+		}
+		if (drawRight <= 0) { // Bytes remaining to skip
+			bitmapIndex += drawRight;
+		}
+		else
+		{
+			while (drawRight > 0)
+			{
+				compSect = *lineDat;
+				lineDat++;
+				if (compSect & 0x80)
+				{
+					compSect &= ~0x80;
+					drawRight -= compSect;
+					if (drawRight < 0)
+					{
+						compSect += drawRight;
+					}
+					bitmapIndex += compSect;
+				}
+				else if (compSect & 0x40)
+				{
+					compSect &= ~0x40;
+					drawRight -= compSect;
+					if (drawRight < 0)
+					{
+						compSect += drawRight;
+					}
+					if ( cloakingTable[grpReindexing[*lineDat]] <= colorData.cloak.state )
+						bitmapIndex += compSect;
+					else
+					{
+						do
+						{
+							bitmap[bitmapIndex] = (*palette)[grpReindexing[*lineDat]];
+							bitmapIndex ++;
+							compSect--;
+						} while ( compSect > 0 );
+					}
                     lineDat++;
-                }
-                else
-                {
-                    drawRight -= compSect;
-                    if (drawRight < 0)
-                    {
-                        compSect += drawRight;
-                    }
+				}
+				else
+				{
+					drawRight -= compSect;
+					if (drawRight < 0)
+					{
+						compSect += drawRight;
+					}
+					do
+					{
+						if ( cloakingTable[grpReindexing[*lineDat]] > colorData.cloak.state )
+							bitmap[bitmapIndex] = (*palette)[grpReindexing[*lineDat]];
 
-                    do
-                    {
-                        if (cloakingTable[grpReindexing[*lineDat]] > colorData.cloak.state)
-                        {
-                            bitmap[bitmapIndex] = grpReindexing[*lineDat];
-                        }
                         lineDat++;
-                        bitmapIndex++;
-                        compSect--;
-                    } while (compSect > 0);
-
-                }
-            }
-        }
-        bitmapIndex += lineOffs;
-        linesLeft--;
-    }
+						bitmapIndex++;
+						compSect--;
+					} while (compSect > 0);
+				}
+			}
+		}
+		bitmapIndex += lineOffs;
+		linesLeft--;
+	}
 }

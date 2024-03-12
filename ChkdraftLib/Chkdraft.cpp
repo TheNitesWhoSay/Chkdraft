@@ -102,7 +102,7 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
             }
         }
 
-        if ( CM != nullptr && chkd.maps.curr->doAnimation() )
+        if ( CM != nullptr && CM->doAnimation() )
             CM->Redraw(false);
 
         std::this_thread::sleep_for(std::chrono::milliseconds(1)); // Avoid consuming a core

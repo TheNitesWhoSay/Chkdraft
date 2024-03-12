@@ -29,7 +29,7 @@ union ColoringData
 	// Special parameters for certain render functions
 {
 	public:
-	PCX* effect;
+	const Sc::Pcx* effect;
 	u8 selectColor;
 	u8 playerColor;
 	u8 shiftRow;
@@ -42,13 +42,13 @@ union ColoringData
 	u32 raw32; // Direct access to the whole value
 
 	ColoringData() {} // Doesn't do anything, except make it not be mad about the next one
-	ColoringData(PCX* effect) : effect(effect) {}
+	ColoringData(const Sc::Pcx* effect) : effect(effect) {}
 	ColoringData(u32 a) : raw32(a) {} // Initialize with a value, for passing as direct a parameter value
 };
 
 // Prototypes for function lists
 typedef void (Graphics::*UpdateFunction)(ImageNode* image);
-typedef void (Graphics::*RenderFunction)(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP* grp, u16 frame, RECT* grpRect, ColoringData colorData);
+typedef void (Graphics::*RenderFunction)(ChkdBitmap& bitmap, ChkdPalette* palette, s32 x, s32 y, const Sc::Sprite::Grp* grp, u16 frame, RECT* grpRect, ColoringData colorData);
 
 class ImageNode
 	// Single image to be drawn. References Images.dat, owned by SpriteNode.
@@ -84,7 +84,7 @@ public:
 	points mapPosition;
 	points screenPosition;
 	rect grpBounds; // Rect showing screen clipping.
-	GRP* GRPFile;
+	const Sc::Sprite::Grp* GRPFile;
 	ColoringData coloringData; // Values used for certain paletteTypes, passed to renderFunction
 	RenderFunction renderFunction;
 	UpdateFunction updateFunction;
@@ -506,16 +506,16 @@ class Graphics
         void InvalidateSprites();
         
 		// Basic unit/sprite management functions -- Mostly just ideas and sample functionality
-		bool addUnit(ChkUnit* unit); // Adds unit node and unit to graphic list
-		bool insertUnit(u16 index, ChkUnit* unit); // Adds unit node and inserts in to graphic list
+		bool addUnit(Chk::Unit* unit); // Adds unit node and unit to graphic list
+		bool insertUnit(u16 index, Chk::Unit* unit); // Adds unit node and inserts in to graphic list
 		void removeUnit(int index); // Deletes unit node and removes from graphic list
-		bool recreateUnit(int index, ChkUnit* unit); // Recreates the unit at index in the graphic list, such as for when entirely changing a unit's type
-		void updateUnit(int index, ChkUnit* unit); // Used for stat changes, etc.
+		bool recreateUnit(int index, Chk::Unit* unit); // Recreates the unit at index in the graphic list, such as for when entirely changing a unit's type
+		void updateUnit(int index, Chk::Unit* unit); // Used for stat changes, etc.
 
-		bool addSprite(ChkSprite* thg2);
+		bool addSprite(Chk::Sprite* thg2);
 		void removeSprite(int index);
-		bool recreateSprite(int index, ChkSprite* thg2);
-		void updateSprite(int index, ChkSprite* thg2); // Updates stat changes, etc.
+		bool recreateSprite(int index, Chk::Sprite* thg2);
+		void updateSprite(int index, Chk::Sprite* thg2); // Updates stat changes, etc.
 
 		bool doAnimation();
 
@@ -526,33 +526,29 @@ class Graphics
 		void updateWarpFlash(ImageNode* image);
 
 		// Render functions should be renamed to be more descriptive -- Referencing the imgRenderFxns table helps
-		void imageRenderFxn0_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData);
-		void imageRenderFxn0_1(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData);
-		void imageRenderFxn2_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData);
-		void imageRenderFxn2_1(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData);
-		void imageRenderFxn3_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData);
-		void imageRenderFxn3_1(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData);
-		void imageRenderFxn5_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData);
-		void imageRenderFxn5_1(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData);
-		void imageRenderFxn6_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData);
-		void imageRenderFxn6_1(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData);
-		void imageRenderFxn8_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData);
-		void imageRenderFxn8_1(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData);
-		void imageRenderFxn9_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData);
-		void imageRenderFxn9_1(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData);
-		void imageRenderFxn10_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData);
-		void imageRenderFxn10_1(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData);
-		void imageRenderFxn11_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData);
-		void imageRenderFxn12_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData);
-		void imageRenderFxn12_1(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData);
-		void imageRenderFxn13_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData);
-		void imageRenderFxn14_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData);
-		void imageRenderFxn14_1(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData);
-		void imageRenderFxn15_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData);
-		void imageRenderFxn16_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData);
-		void imageRenderFxn16_1(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData);
-		void imageRenderFxn17_0(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData);
-		void imageRenderFxn17_1(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData);
+		//void imageRenderFxn0_0(ChkdBitmap& bitmap, ChkdPalette* palette, s32 x, s32 y, const Sc::Sprite::Grp *grp, u16 frame, RECT *grpRect, ColoringData colorData);
+		void imageRenderFxn0_1(ChkdBitmap& bitmap, ChkdPalette* palette, s32 x, s32 y, const Sc::Sprite::Grp *grp, u16 frame, RECT *grpRect, ColoringData colorData);
+		void imageRenderFxn2_0(ChkdBitmap& bitmap, ChkdPalette* palette, s32 x, s32 y, const Sc::Sprite::Grp *grp, u16 frame, RECT *grpRect, ColoringData colorData);
+		void imageRenderFxn2_1(ChkdBitmap& bitmap, ChkdPalette* palette, s32 x, s32 y, const Sc::Sprite::Grp *grp, u16 frame, RECT *grpRect, ColoringData colorData);
+		void imageRenderFxn3_1(ChkdBitmap& bitmap, ChkdPalette* palette, s32 x, s32 y, const Sc::Sprite::Grp *grp, u16 frame, RECT *grpRect, ColoringData colorData);
+		void imageRenderFxn5_0(ChkdBitmap& bitmap, ChkdPalette* palette, s32 x, s32 y, const Sc::Sprite::Grp *grp, u16 frame, RECT *grpRect, ColoringData colorData);
+		void imageRenderFxn5_1(ChkdBitmap& bitmap, ChkdPalette* palette, s32 x, s32 y, const Sc::Sprite::Grp *grp, u16 frame, RECT *grpRect, ColoringData colorData);
+		void imageRenderFxn6_0(ChkdBitmap& bitmap, ChkdPalette* palette, s32 x, s32 y, const Sc::Sprite::Grp *grp, u16 frame, RECT *grpRect, ColoringData colorData);
+		void imageRenderFxn6_1(ChkdBitmap& bitmap, ChkdPalette* palette, s32 x, s32 y, const Sc::Sprite::Grp *grp, u16 frame, RECT *grpRect, ColoringData colorData);
+		void imageRenderFxn8_1(ChkdBitmap& bitmap, ChkdPalette* palette, s32 x, s32 y, const Sc::Sprite::Grp *grp, u16 frame, RECT *grpRect, ColoringData colorData);
+		void imageRenderFxn9_1(ChkdBitmap& bitmap, ChkdPalette* palette, s32 x, s32 y, const Sc::Sprite::Grp *grp, u16 frame, RECT *grpRect, ColoringData colorData);
+		void imageRenderFxn10_1(ChkdBitmap& bitmap, ChkdPalette* palette, s32 x, s32 y, const Sc::Sprite::Grp *grp, u16 frame, RECT *grpRect, ColoringData colorData);
+		void imageRenderFxn11_0(ChkdBitmap& bitmap, ChkdPalette* palette, s32 x, s32 y, const Sc::Sprite::Grp *grp, u16 frame, RECT *grpRect, ColoringData colorData);
+		void imageRenderFxn12_0(ChkdBitmap& bitmap, ChkdPalette* palette, s32 x, s32 y, const Sc::Sprite::Grp *grp, u16 frame, RECT *grpRect, ColoringData colorData);
+		void imageRenderFxn12_1(ChkdBitmap& bitmap, ChkdPalette* palette, s32 x, s32 y, const Sc::Sprite::Grp *grp, u16 frame, RECT *grpRect, ColoringData colorData);
+		void imageRenderFxn13_0(ChkdBitmap& bitmap, ChkdPalette* palette, s32 x, s32 y, const Sc::Sprite::Grp *grp, u16 frame, RECT *grpRect, ColoringData colorData);
+		void imageRenderFxn14_0(ChkdBitmap& bitmap, ChkdPalette* palette, s32 x, s32 y, const Sc::Sprite::Grp *grp, u16 frame, RECT *grpRect, ColoringData colorData);
+		void imageRenderFxn14_1(ChkdBitmap& bitmap, ChkdPalette* palette, s32 x, s32 y, const Sc::Sprite::Grp *grp, u16 frame, RECT *grpRect, ColoringData colorData);
+		void imageRenderFxn15_0(ChkdBitmap& bitmap, ChkdPalette* palette, s32 x, s32 y, const Sc::Sprite::Grp *grp, u16 frame, RECT *grpRect, ColoringData colorData);
+		void imageRenderFxn16_0(ChkdBitmap& bitmap, ChkdPalette* palette, s32 x, s32 y, const Sc::Sprite::Grp *grp, u16 frame, RECT *grpRect, ColoringData colorData);
+		void imageRenderFxn16_1(ChkdBitmap& bitmap, ChkdPalette* palette, s32 x, s32 y, const Sc::Sprite::Grp *grp, u16 frame, RECT *grpRect, ColoringData colorData);
+		void imageRenderFxn17_0(ChkdBitmap& bitmap, ChkdPalette* palette, s32 x, s32 y, const Sc::Sprite::Grp *grp, u16 frame, RECT *grpRect, ColoringData colorData);
+		void imageRenderFxn17_1(ChkdBitmap& bitmap, ChkdPalette* palette, s32 x, s32 y, const Sc::Sprite::Grp *grp, u16 frame, RECT *grpRect, ColoringData colorData);
 
 
 
@@ -560,6 +556,7 @@ class Graphics
 
         GuiMap & map; // Reference to the map this instance of graphics renders
         Selections & selections; // Reference to the selections belonging to the corresponding map
+        ChkdPalette remap;
         ChkdPalette palette;
         ChkdPalette staticPalette;
         
@@ -573,7 +570,7 @@ class Graphics
 			};
 		};
 
-		bool initSprite(THG2Ref& thing, ChkSprite* thg2);
+		bool initSprite(THG2Ref& thing, Chk::Sprite* thg2);
 		std::vector<UnitNode*> UNITGraphics; // List of unit nodes, corresponding 1:1 (hopefully) to each UNIT entry
 		std::vector<THG2Ref> THG2Graphics; // List of sprite or unit nodes, corresponding 1:! (hopefully) to each THG2 entry
 
@@ -772,7 +769,7 @@ class Graphics
 		void setAllOverlayDirectionsGeneric(SpriteNode* thingy, int direction); // CThingy
 		void image_Insert(ImageNode* image, ImageNode* newImage, ImageNode** pImageHead);
 		void somePlayImageCrapThatCrashes(ImageNode* image, SpriteNode* sprite, int x, int y, int imageid);
-		void editUnitFlags(UnitNode* unit, ChkUnit* chkUnit);
+		void editUnitFlags(UnitNode* unit, Chk::Unit* chkUnit);
 		void setResourceCount(UnitNode* unit);
 		void CHK_UNIT_ApplyBurrowFlag(UnitNode* unit, int validFlags, int applyFlags);
 		void AI_CloakUnit(UnitNode* unit);
@@ -787,8 +784,17 @@ class Graphics
 		void drawImage(ChkdBitmap& bitmap, ImageNode* image);
 		u16 getRand();
 
-		void Graphics::imageRenderFxn5_2__0_common(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData);
-		void Graphics::imageRenderFxn5_2__1_common(ChkdBitmap& bitmap, buffer* palette, s32 x, s32 y, GRP *grp, u16 frame, RECT *grpRect, ColoringData colorData);
+		void imageRenderFxn5_2__1_common(ChkdBitmap& bitmap, ChkdPalette* palette, s32 x, s32 y, const Sc::Sprite::Grp* grp, u16 frame, RECT *grpRect, ColoringData colorData);
+
+	public:
+
+		void drawGrp(ChkdBitmap& bitmap, ChkdPalette* palette, s32 x, s32 y, const Sc::Sprite::Grp* grp, u16 frame, RECT *grpRect, ColoringData colorData);
+		void drawCloakedGrp(ChkdBitmap& bitmap, ChkdPalette* palette, s32 x, s32 y, const Sc::Sprite::Grp* grp, u16 frame, RECT *grpRect, ColoringData colorData);
+		void drawEmpGrp(ChkdBitmap& bitmap, ChkdPalette* palette, s32 x, s32 y, const Sc::Sprite::Grp* grp, u16 frame, RECT *grpRect, ColoringData colorData);
+		void drawRemappedGrp(ChkdBitmap& bitmap, ChkdPalette* palette, s32 x, s32 y, const Sc::Sprite::Grp* grp, u16 frame, RECT *grpRect, ColoringData colorData);
+		void drawShadowGrp(ChkdBitmap& bitmap, ChkdPalette* palette, s32 x, s32 y, const Sc::Sprite::Grp* grp, u16 frame, RECT *grpRect, ColoringData colorData);
+		void drawRevealedGrp(ChkdBitmap& bitmap, ChkdPalette* palette, s32 x, s32 y, const Sc::Sprite::Grp* grp, u16 frame, RECT *grpRect, ColoringData colorData);
+
 };
 
 BITMAPINFO GetBMI(s32 width, s32 height);

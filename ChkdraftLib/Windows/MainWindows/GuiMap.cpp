@@ -2598,83 +2598,85 @@ void GuiMap::Scroll(bool scrollX, bool scrollY, bool validateBorder, s32 newLeft
     Redraw(true);
 }
 
-bool GuiMap::addUnit(u16 unitID, u8 owner, u16 xc, u16 yc, u16 stateFlags) {
-	if (Scenario::addUnit(unitID, owner, xc, yc, stateFlags))
+bool GuiMap::addUnit(Sc::Unit::Type unitType, u8 owner, u16 xc, u16 yc, u16 stateFlags) {
+
+    Chk::Unit toInsert {};
+    toInsert.type = unitType;
+    toInsert.owner = owner;
+    toInsert.xc = xc;
+    toInsert.yc = yc;
+    toInsert.stateFlags = stateFlags;
+	Scenario::addUnit(toInsert);
+
+	Chk::Unit & unit = Scenario::getUnit(Scenario::numUnits() - 1);
+	const Sc::Unit::DatEntry & unitdat = chkd.scData.units.getUnit(unit.type);
+
+	unit.validStateFlags = Chk::Unit::State::Invincible;
+	unit.validFieldFlags = Chk::Unit::ValidField::Hitpoints;
+	unit.hitpointPercent = 100;
+
+	// Make everything ownable !
+	//if (unitdat->StarEditAvailabilityFlags & 0x0001) // Non-Neutral
+	unit.validFieldFlags |= Chk::Unit::ValidField::Owner;
+
+	if (unitdat.shieldEnable)
 	{
-		ChkUnit* unit = NULL;
-		if (Scenario::getUnit(unit, Scenario::numUnits() - 1)) // Last unit ?
+		unit.validFieldFlags |= Chk::Unit::ValidField::Shields;
+		unit.shieldPercent = 100;
+	}
+
+	if (unitdat.flags & 0x00200000) // Spellcaser
+	{
+		unit.validFieldFlags |= Chk::Unit::ValidField::Energy;
+		unit.energyPercent = 100;
+	}
+
+	if (unitdat.flags & 0x00002000) // Resource container
+	{
+		unit.validFieldFlags |= Chk::Unit::ValidField::Resources;
+		switch (unitType)
 		{
-			UNITDAT* unitdat = chkd.scData.UnitDat(unitID);
+		case 110: // Refiner
+		case 149: // Extractor
+		case 157: // Assimilator
+		case 188: // Vespene Geyser
+			unit.resourceAmount = 5000;
+			break;
 
-			unit->special = UNIT_STATE_INVINCIBLE;
-			unit->validFlags = UNIT_VALID_HP;
-			unit->hitpoints = 100;
-
-			// Make everything ownable !
-			//if (unitdat->StarEditAvailabilityFlags & 0x0001) // Non-Neutral
-			unit->validFlags |= UNIT_VALID_OWNER;
-
-			if (unitdat->ShieldEnable)
-			{
-				unit->validFlags |= UNIT_VALID_SP;
-				unit->shields = 100;
-			}
-
-			if (unitdat->SpecialAbilityFlags & 0x00200000) // Spellcaser
-			{
-				unit->validFlags |= UNIT_VALID_ENERGY;
-				unit->energy = 100;
-			}
-
-			if (unitdat->SpecialAbilityFlags & 0x00002000) // Resource container
-			{
-				unit->validFlags |= UNIT_VALID_RESOURCE;
-				switch (unitID)
-				{
-				case 110: // Refiner
-				case 149: // Extractor
-				case 157: // Assimilator
-				case 188: // Vespene Geyser
-					unit->resources = 5000;
-					break;
-
-				case 176: // Mineral Field Type 1
-				case 177: // Type 2
-				case 178: // Type 3
-					unit->resources = 1500;
-					break;
-				}
-			}
-
-			if (unitID == 72 || // Carrier
-				unitID == 81 || // Warbringer
-				unitID == 82 || // Reaver
-				unitID == 83) // Gantrithor
-				unit->validFlags |= UNIT_VALID_HANGAR;
-
-			if (unitdat->SpecialAbilityFlags & 0x00000200) // Cloakable
-				unit->special |= UNIT_STATE_CLOAKED;
-
-			if (unitdat->SpecialAbilityFlags & 0x00100000) // Burrowable
-				unit->special |= UNIT_STATE_BURROWED;
-
-			if (unitdat->SpecialAbilityFlags & 0x00000020) // Flying Building
-				unit->special |= UNIT_STATE_LIFTED;
-
-			// Make everything able to be hallucination !
-			//if ((unitdat->SpecialAbilityFlags & 0x00000001) == 0) // Building
-			unit->special |= UNIT_STATE_HALLUCINATED;
-
-			graphics.addUnit(unit);
-			return true;
+		case 176: // Mineral Field Type 1
+		case 177: // Type 2
+		case 178: // Type 3
+			unit.resourceAmount = 1500;
+			break;
 		}
 	}
-	return false;
+
+	if (unitType == 72 || // Carrier
+		unitType == 81 || // Warbringer
+		unitType == 82 || // Reaver
+		unitType == 83) // Gantrithor
+		unit.validFieldFlags |= Chk::Unit::ValidField::Hanger;
+
+	if (unitdat.flags & 0x00000200) // Cloakable
+		unit.validStateFlags |= Chk::Unit::State::Cloak;
+
+	if (unitdat.flags & 0x00100000) // Burrowable
+		unit.validStateFlags |= Chk::Unit::State::Burrow;
+
+	if (unitdat.flags & 0x00000020) // Flying Building
+		unit.validStateFlags |= Chk::Unit::State::InTransit;
+
+	// Make everything able to be hallucination !
+	//if ((unitdat.flags & 0x00000001) == 0) // Building
+	unit.validStateFlags |= Chk::Unit::State::Hallucinated;
+
+	graphics.addUnit(&unit);
+	return true;
 }
 
 bool GuiMap::doAnimation()
 {
-	return ColorCycler::CycleColors(chkd.maps.curr->getTileset()) || graphics.doAnimation();
+	return ColorCycler::CycleColors(CM->getTileset(), CM->getPalette()) || graphics.doAnimation();
 }
 
 void GuiMap::setMapId(u16 mapId)

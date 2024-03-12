@@ -45,6 +45,7 @@
     <ClInclude Include="Mapping\ChkdPlugins.h" />
     <ClInclude Include="Mapping\Clipboard.h" />
     <ClInclude Include="Mapping\DataFileBrowsers.h" />
+    <ClInclude Include="Mapping\Defines.h" />
     <ClInclude Include="Mapping\Graphics.h" />
     <ClInclude Include="Mapping\Selections.h" />
     <ClInclude Include="Mapping\Settings.h" />
@@ -147,6 +148,7 @@
     <ClCompile Include="Mapping\Clipboard.cpp" />
     <ClCompile Include="Mapping\DataFileBrowsers.cpp" />
     <ClCompile Include="Mapping\Graphics.cpp" />
+    <ClCompile Include="Mapping\Graphics2.cpp" />
     <ClCompile Include="Mapping\Selections.cpp" />
     <ClCompile Include="Mapping\Settings.cpp" />
     <ClCompile Include="Mapping\Undos\ChkdUndos\CutCopyPasteChange.cpp" />

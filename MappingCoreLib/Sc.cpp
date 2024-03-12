@@ -1812,6 +1812,26 @@ bool Sc::Terrain::Tiles::load(size_t tilesetIndex, const std::vector<ArchiveFile
     const std::string vx4exFilePath = makeExtMpqFilePath(mpqFilePath, "vx4ex");
     const std::string wpeFilePath = makeExtMpqFilePath(mpqFilePath, "wpe");
     const std::string ddDataFilePath = makeExtMpqFilePath(makeMpqFilePath(mpqFilePath, "dddata"), "bin");
+
+    const std::string ofireFilePath = makeExtMpqFilePath(makeMpqFilePath(mpqFilePath, "ofire"), "pcx");
+    const std::string gfireFilePath = makeExtMpqFilePath(makeMpqFilePath(mpqFilePath, "gfire"), "pcx");
+    const std::string bfireFilePath = makeExtMpqFilePath(makeMpqFilePath(mpqFilePath, "bfire"), "pcx");
+    const std::string bexplFilePath = makeExtMpqFilePath(makeMpqFilePath(mpqFilePath, "bexpl"), "pcx");
+    const std::string trans50FilePath = makeExtMpqFilePath(makeMpqFilePath(mpqFilePath, "trans50"), "pcx");
+    const std::string redFilePath = makeExtMpqFilePath(makeMpqFilePath(mpqFilePath, "red"), "pcx");
+    const std::string greenFilePath = makeExtMpqFilePath(makeMpqFilePath(mpqFilePath, "green"), "pcx");
+    const std::string darkFilePath = makeExtMpqFilePath(makeMpqFilePath(mpqFilePath, "dark"), "pcx");
+    const std::string shiftFilePath = makeExtMpqFilePath(makeMpqFilePath(mpqFilePath, "shift"), "pcx");
+    
+    remap[0].load(orderedSourceFiles, ofireFilePath);
+    remap[1].load(orderedSourceFiles, gfireFilePath);
+    remap[2].load(orderedSourceFiles, bfireFilePath);
+    remap[3].load(orderedSourceFiles, bexplFilePath);
+    remap[4].load(orderedSourceFiles, trans50FilePath);
+    remap[5].load(orderedSourceFiles, redFilePath);
+    remap[6].load(orderedSourceFiles, greenFilePath);
+    dark.load(orderedSourceFiles, darkFilePath);
+    shift.load(orderedSourceFiles, shiftFilePath);
     
     auto cv5Data = Sc::Data::GetAsset(orderedSourceFiles, cv5FilePath);
     auto vf4Data = Sc::Data::GetAsset(orderedSourceFiles, vf4FilePath);
@@ -1883,9 +1903,8 @@ bool Sc::Terrain::Tiles::load(size_t tilesetIndex, const std::vector<ArchiveFile
                 offsetof(WpeColor, green) == offsetof(SystemColor, green) &&
                 offsetof(WpeColor, blue) == offsetof(SystemColor, red) )
             {
-                // Red-blue swap
                 for ( size_t i=0; i<NumColors; i++ )
-                    std::swap(systemColorPalette[i].red, systemColorPalette[i].blue);
+                    std::swap(systemColorPalette[i].red, systemColorPalette[i].blue); // Red-blue swap
             }
             else if ( offsetof(WpeColor, red) != offsetof(SystemColor, red) ||
                 offsetof(WpeColor, green) != offsetof(SystemColor, green) ||
@@ -1893,6 +1912,9 @@ bool Sc::Terrain::Tiles::load(size_t tilesetIndex, const std::vector<ArchiveFile
             {
                 throw std::logic_error("Unrecognized color swap required to load system colors, please update the code!");
             }
+            for ( size_t i=0; i<NumColors; i++ )
+                systemColorPalette[i].null = u8(i); // Store palette index in the unused/alpha byte
+
             staticSystemColorPalette = systemColorPalette;
 
             if ( totalDoodadDats > 0 )
@@ -2063,6 +2085,17 @@ const Sc::Weapon::DatEntry & Sc::Weapon::get(Type weaponType) const
         throw std::out_of_range(std::string("WeaponType: ") + std::to_string(weaponType) + " is out of range for weapons vector of size " + std::to_string(weapons.size()));
 }
 
+u8* Sc::Sprite::GrpFile::data(u32 frame, u32 line) const
+{
+    if ( frame < numFrames && line < frameHeaders[frame].frameHeight )
+    {
+        u8* grpFrame = ((u8*)this)+size_t(frameHeaders[frame].frameOffset);
+        return grpFrame+size_t(((GrpFrame*)grpFrame)->rowOffsets[line]);
+    }
+    else
+        throw std::out_of_range(std::string("GrpLine: ") + std::to_string(line) + " on frame " + std::to_string(frame) + " is out of bounds for GRP!");
+}
+
 bool Sc::Sprite::Grp::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, const std::string & assetArchivePath)
 {
     auto grpAsset = Sc::Data::GetAsset(orderedSourceFiles, assetArchivePath);
@@ -2085,6 +2118,17 @@ void Sc::Sprite::Grp::makeBlank()
 const Sc::Sprite::GrpFile & Sc::Sprite::Grp::get() const
 {
     return (const GrpFile &)grpData[0];
+}
+
+Sc::Sprite::LODATA* Sc::Sprite::Grp::LoGetOffset(u32 frame, u32 graphicOffset) const {
+    if (frame < get().numFrames && graphicOffset < LoOverlayCount())
+    {
+        return (LODATA*)&grpData[8 + frame * sizeof(u32) + graphicOffset * sizeof(LODATA)];
+    }
+    else
+    {
+        return nullptr;
+    }
 }
 
 bool Sc::Sprite::Grp::isValid(const std::string & assetArchivePath) const
@@ -2602,6 +2646,57 @@ size_t Sc::Sprite::numSprites() const
 bool Sc::Sprite::imageFlipped(u16 imageId) const
 {
     return this->iscriptIdFlipsGrp.find(this->images[imageId].iScriptId) != this->iscriptIdFlipsGrp.end();
+}
+
+bool Sc::IScripts::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles)
+{
+    auto iscriptBin = Sc::Data::GetAsset(orderedSourceFiles, "scripts\\iscript.bin");
+    if ( !iscriptBin )
+    {
+        logger.error() << "Failed to load scripts\\iscript.bin" << std::endl;
+        return false;
+    }
+    this->iscriptBin.swap(*iscriptBin);
+    return true;
+}
+
+u16 Sc::IScripts::getHeaderOffset(u16 isid) {
+    u16 offset = *((u16 *)&iscriptBin[0]);
+    IScriptEntry defaultEntry { 0xFFFF, 0 };
+    IScriptEntry* search = &defaultEntry;
+    do
+    {
+        if ( offset + sizeof(IScriptEntry) <= iscriptBin.size() )
+            search = (IScriptEntry*)&iscriptBin[offset];
+        else // An erorr occurred
+            search = &defaultEntry;
+
+        offset += sizeof(IScriptEntry);
+        if ( search->id == 0xFFFF )
+            return 0; // I guess ... SC does FatalError("script %d does not exist", isid);
+
+    } while ( search->id != isid );
+
+    return search->offset;
+}
+
+u16 Sc::IScripts::getAnimOffset(u16 headerOffset, u16 animID, bool allowInvalid)
+{
+    u32 num = *((u32*)&iscriptBin[headerOffset]);
+    if ( num == 0x45504353 ) // valid !
+    {
+        u16 type = (u16)*((u32*)&iscriptBin[headerOffset+4]);
+        if (animID < ((type & ~1) + 2) || allowInvalid) // animID < count for type
+        {
+            u16 animOffset = (u16)*((u32*)&iscriptBin[headerOffset+8 /* ishdr size */ + animID * sizeof(u16)]);
+            if (animOffset != 0 || allowInvalid) // animation != [NONE]
+            {
+                return animOffset;
+            }
+        }
+    }
+    // Error! Invalid script
+    return 0; // Or something
 }
 
 bool Sc::Upgrade::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles)
@@ -3906,13 +4001,15 @@ bool Sc::Pcx::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, const
 
         u8* paletteData = &pcxData.value()[pcxData->size()-PcxFile::PaletteSize];
         size_t dataOffset = 0;
-        size_t pixelCount = size_t(pcxFile.ncp)*size_t(pcxFile.nbs);
+        //size_t pixelCount = size_t(pcxFile.ncp)*size_t(pcxFile.nbs);
+        size_t pixelCount = (size_t(pcxFile.rightMargin)+1)*(size_t(pcxFile.lowerMargin)+1);
         for ( size_t pixel = 0; pixel < pixelCount; )
         {
             u8 compSect = pcxFile.data[dataOffset++];
             if ( compSect < PcxFile::MaxOffset ) // Single RGB from palette starting at compSect*3
             {
                 palette.push_back(Sc::SystemColor(paletteData[compSect*3], paletteData[compSect*3+1], paletteData[compSect*3+2]));
+                paletteIndex.push_back(compSect);
                 pixel++;
             }
             else // Repeat color at palette starting at colorIndex*3, compSect-MaxOffset times
@@ -3920,6 +4017,7 @@ bool Sc::Pcx::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, const
                 u8 colorIndex = pcxFile.data[dataOffset++];
                 Sc::SystemColor color(paletteData[colorIndex*3], paletteData[colorIndex*3+1], paletteData[colorIndex*3+2]);
                 palette.insert(palette.end(), compSect-PcxFile::MaxOffset, color);
+                paletteIndex.insert(paletteIndex.end(), compSect-PcxFile::MaxOffset, colorIndex);
                 pixel += (compSect-PcxFile::MaxOffset);
             }
         }
@@ -4345,6 +4443,9 @@ bool Sc::Data::load(Sc::DataFile::BrowserPtr dataFileBrowser, const std::vector<
     if ( !ai.load(orderedSourceFiles, statTxt) )
         CHKD_ERR("Failed to load AiScripts");
 
+    if ( !iScripts.load(orderedSourceFiles) )
+        CHKD_ERR("Failed to load iScripts");
+
     if ( !upgrades.load(orderedSourceFiles) )
         CHKD_ERR("Failed to load upgrades");
 
@@ -4374,6 +4475,9 @@ bool Sc::Data::load(Sc::DataFile::BrowserPtr dataFileBrowser, const std::vector<
 
     if ( !tselect.load(orderedSourceFiles, "game\\tselect.pcx") )
         CHKD_ERR("Failed to load tselect.pcx");
+
+    if ( !iScripts.load(orderedSourceFiles) )
+        CHKD_ERR("Failed to load iScripts");
 
     if ( !loadSpriteGroups(imagesTbl) )
         CHKD_ERR("Failed to load sprite groups");

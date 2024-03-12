@@ -136,22 +136,22 @@ Graphics::Graphics(GuiMap & map, Selections & selections) : map(map), selections
     clipLocationNames(true),
     imageLastCreated(NULL), spriteLastCreated(NULL), unitLastCreated(NULL),
 	gticks(0),
-	randSeed(0), unk_6CEFB5(0), unk_unit_6D11F4(NULL), activeIscriptUnit(NULL), activePlayerColor(0)
+	randSeed(0), unk_6CEFB5(0), unk_unit_6D11F4(NULL), activeIscriptUnit(NULL), activePlayerColor(0),
     mapWidth(0), mapHeight(0), screenWidth(0), screenHeight(0), screenLeft(0), screenTop(0)
 {
     if ( !map.empty() )
         updatePalette();
     
 	u32 r, g, b;
-	buffer* palette = &chkd.scData.tilesets.set[chk.getTileset()].wpe;
+    const ChkdPalette & palette = chkd.scData.terrain.get(map.getTileset()).systemColorPalette;
 
 	// Initialize reindexing and cloak tables
 	for (int i = 0; i < 256; i++) {
 		grpReindexing[i] = i;
 
-		r = palette->get<u8>(i * 4 + 2) * 77;
-		g = palette->get<u8>(i * 4 + 1) * 151;
-		b = palette->get<u8>(i * 4 + 0) * 28;
+		r = palette[i].red * 77;
+		g = palette[i].green * 151;
+		b = palette[i].blue * 28;
 		cloakingTable[i] = u8((r + g + b + 0x1000) >> 13);
 	}
 }
@@ -518,14 +518,12 @@ void Graphics::DrawUnits(ChkdBitmap & bitmap)
                 else
                 {
                     u16 frame = 0;
-                    u8 color = 0;
-                    if ( !map.getPlayerColor(unit.owner, color) )
-                        color = unit.owner;
+                    u8 color = map.getPlayerColor(unit.owner % Sc::Player::TotalSlots);
 
                     bool isSelected = selections.unitIsSelected(unitNum);
 
                     UnitToBits(bitmap, palette, color, u16(screenWidth), u16(screenHeight),
-                        screenLeft, screenTop, unit.id, unit.xc, unit.yc,
+                        screenLeft, screenTop, unit.type, unit.xc, unit.yc,
                         u16(frame), isSelected);
                 }
             }
@@ -912,9 +910,9 @@ BITMAPINFO GetBMI(s32 width, s32 height)
     return bmi;
 }
 
-bool Graphics::addUnit(ChkUnit* unit)
+bool Graphics::addUnit(Chk::Unit* unit)
 {
-	UnitNode* newUnit = CreateUnitXY(unit->owner, unit->id, unit->xc, unit->yc);
+	UnitNode* newUnit = CreateUnitXY(unit->owner, unit->type, unit->xc, unit->yc);
 	if (newUnit == NULL)
 		return false; // Something bad happened !
 	editUnitFlags(newUnit, unit);
@@ -922,9 +920,9 @@ bool Graphics::addUnit(ChkUnit* unit)
 	return true;
 }
 
-bool Graphics::insertUnit(u16 index, ChkUnit* unit)
+bool Graphics::insertUnit(u16 index, Chk::Unit* unit)
 {
-	UnitNode* newUnit = CreateUnitXY(unit->owner, unit->id, unit->xc, unit->yc);
+	UnitNode* newUnit = CreateUnitXY(unit->owner, unit->type, unit->xc, unit->yc);
 	if (newUnit == NULL)
 		return false; // Something bad happened !
 	editUnitFlags(newUnit, unit);
@@ -939,11 +937,11 @@ void Graphics::removeUnit(int index)
 	UNITGraphics.erase(UNITGraphics.begin() + index);
 }
 
-bool Graphics::recreateUnit(int index, ChkUnit* unit)
+bool Graphics::recreateUnit(int index, Chk::Unit* unit)
 {
 	UnitNode* newUnit = UNITGraphics[index];
 	UnitDestructor(newUnit);
-	newUnit = CreateUnitXY(unit->owner, unit->id, unit->xc, unit->yc);
+	newUnit = CreateUnitXY(unit->owner, unit->type, unit->xc, unit->yc);
 	if (newUnit == NULL)
 		return false; // Something bad happened !
 	editUnitFlags(newUnit, unit);
@@ -951,12 +949,12 @@ bool Graphics::recreateUnit(int index, ChkUnit* unit)
 	return true;
 }
 
-void Graphics::updateUnit(int index, ChkUnit* chkUnit)
+void Graphics::updateUnit(int index, Chk::Unit* chkUnit)
 {
 	UnitNode* unitNode = UNITGraphics[index];
 
 	// Update unit type
-	if (unitNode->unitType != chkUnit->id)
+	if (unitNode->unitType != chkUnit->type)
 	{
 		if (recreateUnit(index, chkUnit) == false)
 		{
@@ -982,12 +980,12 @@ void Graphics::updateUnit(int index, ChkUnit* chkUnit)
 	}
 
 	// Update resources
-	if (unitNode->resource.resourceCount != chkUnit->resources)
+	if (unitNode->resource.resourceCount != chkUnit->resourceAmount)
 	{
-		if ((chkUnit->validFlags & 0x100000) && // Has Resources
-			(chkd.scData.UnitDat(unitNode->unitType)->SpecialAbilityFlags & 0x2000)) // Resource Container
+		if ((chkUnit->validFieldFlags & 0x100000) && // Has Resources
+			(chkd.scData.units.getUnit(Sc::Unit::Type(unitNode->unitType)).flags & 0x2000)) // Resource Container
 		{
-			unitNode->resource.resourceCount = chkUnit->resources;
+			unitNode->resource.resourceCount = chkUnit->resourceAmount;
 			if (unitNode->unitType >= 176 && unitNode->unitType <= 178) // Mineral Field 1, 2, 3
 			{
 				setResourceCount(unitNode);
@@ -1002,7 +1000,7 @@ void Graphics::updateUnit(int index, ChkUnit* chkUnit)
 	// To do: UNIT_STATE_LIFTED
 
 	//UNIT_STATE_HALLUCINATED
-	bool halluc = (chkUnit->validFlags & chkUnit->stateFlags & UNIT_STATE_HALLUCINATED) != 0;
+	bool halluc = (chkUnit->validFieldFlags & chkUnit->stateFlags & BIT_3) != 0;
 	if (((unitNode->statusFlags & 0x40000000) != 0) != halluc)
 	{
 		setSpriteColoringData(unitNode->sprite, 0, halluc);
@@ -1013,7 +1011,7 @@ void Graphics::updateUnit(int index, ChkUnit* chkUnit)
 	}
 }
 
-bool Graphics::addSprite(ChkSprite* thg2)
+bool Graphics::addSprite(Chk::Sprite* thg2)
 {
 	THG2Ref newSprite;
 	if (initSprite(newSprite, thg2) == false)
@@ -1036,7 +1034,7 @@ void Graphics::removeSprite(int index)
 	THG2Graphics.erase(THG2Graphics.begin() + index);
 }
 
-bool Graphics::recreateSprite(int index, ChkSprite* thg2)
+bool Graphics::recreateSprite(int index, Chk::Sprite* thg2)
 {
 	THG2Ref& sprite = THG2Graphics[index];
 	if (sprite.isUnit == false)
@@ -1052,29 +1050,29 @@ bool Graphics::recreateSprite(int index, ChkSprite* thg2)
 	return true;
 }
 
-bool Graphics::initSprite(THG2Ref& thing, ChkSprite* thg2)
+bool Graphics::initSprite(THG2Ref& thing, Chk::Sprite* thg2)
 {
-	if (thg2->flags & FLAG_DRAW_AS_SPRITE)
+	if (thg2->isDrawnAsSprite())
 	{ // Pure Sprite
 		thing.isUnit = false;
-		thing.sprite = CreateThingy(thg2->id, thg2->xc, thg2->yc, thg2->owner);
+		thing.sprite = CreateThingy(thg2->type, thg2->xc, thg2->yc, thg2->owner);
 		if (thing.sprite == NULL)
 			return false; // Something bad happened
 	}
 	else
 	{ // Unit Sprite
-		if (thg2->id == 205 || // Left Upper Level Door
-			thg2->id == 206 || // Right Upper Level Door
-			thg2->id == 207 || // Left Pit Door
-			thg2->id == 208)   // Right Pit Door
+		if (thg2->type == 205 || // Left Upper Level Door
+			thg2->type == 206 || // Right Upper Level Door
+			thg2->type == 207 || // Left Pit Door
+			thg2->type == 208)   // Right Pit Door
 		{
 			thg2->owner = 11; // Neutral
 		}
 		thing.isUnit = true;
-		thing.unit = CreateUnitXY(thg2->owner, thg2->id, thg2->xc, thg2->yc);
+		thing.unit = CreateUnitXY(thg2->owner, thg2->type, thg2->xc, thg2->yc);
 		if (thing.unit == NULL)
 			return false; // Something bad happened
-		if (thg2->flags & FLAG_SPRITE_DISABLED)
+		if (thg2->flags & Chk::Sprite::SpriteFlags::SpriteUnitDiabled)
 		{
 			thg2SpecialDIsableUnit(thing.unit);
 		}
@@ -1203,12 +1201,12 @@ void GrpToBits(ChkdBitmap & bitmap, ChkdPalette & palette, s64 bitWidth, s64 bit
                             if ( pixelLine.isSpeckled() )
                             {
                                 for ( s64 linePixel = lineLength-inBoundLength; linePixel<lineLength; linePixel++, --currPixel )
-                                    *currPixel = palette->get<u32>(chkd.scData.tselect.pcxDat.get<u8>((lineDat[pos] + 16)) * 4); // Place color from palette index specified in the array at current pixel
+                                    *currPixel = palette[pixelLine.paletteIndex[linePixel]]; // Place color from palette index specified in the array at current pixel
                             }
                             else // Solid or transparent
                             {
                                 if ( pixelLine.isSolidLine() )
-                                    std::fill_n(currPixel-inBoundLength, inBoundLength, palette->get<u32>(chkd.scData.tunit.pcxDat.get<u8>((color * 8 + lineDat[pos] - 8)) * 4)); // Place single color across the entire line
+                                    std::fill_n(currPixel-inBoundLength, inBoundLength, palette[pixelLine.paletteIndex[0]]); // Place single color across the entire line
                             
                                 currPixel -= size_t(inBoundLength);
                             }
@@ -1227,12 +1225,12 @@ void GrpToBits(ChkdBitmap & bitmap, ChkdPalette & palette, s64 bitWidth, s64 bit
                         if ( pixelLine.isSpeckled() )
                         {
                             for ( s64 linePixel=0; linePixel<lineLength; linePixel++, --currPixel ) // For every pixel in the line
-                                *currPixel = palette->get<u32>(chkd.scData.tselect.pcxDat.get<u8>((lineDat[pos] + 16)) * 4); // Place color from palette index specified in the array at current pixel
+                                *currPixel = palette[pixelLine.paletteIndex[linePixel]]; // Place color from palette index specified in the array at current pixel
                         }
                         else // Solid or transparent
                         {
                             if ( pixelLine.isSolidLine() )
-                                std::fill_n(currPixel-lineLength, lineLength, palette->get<u32>(chkd.scData.tunit.pcxDat.get<u8>((color * 8 + lineDat[pos] - 8)) * 4)); // Place single color across the entire line
+                                std::fill_n(currPixel-lineLength, lineLength, palette[pixelLine.paletteIndex[0]]); // Place single color across the entire line
 
                             currPixel -= size_t(lineLength);
                         }

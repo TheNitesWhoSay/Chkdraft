@@ -842,6 +842,7 @@ namespace Sc {
             u8 frameHeight;
             u32 frameOffset;
         };
+
         __declspec(align(1)) struct GrpFile {
             u16 numFrames;
             u16 grpWidth;
@@ -849,9 +850,16 @@ namespace Sc {
             GrpFrameHeader frameHeaders[1]; // GrpFrameHeader frameHeaders[numFrames]
             // GrpFrame frames[numFrames]; // The size of a GrpFrame may vary
 
+            u8* data(u32 frame, u32 line) const;
             static constexpr size_t FileHeaderSize = sizeof(numFrames)+sizeof(grpWidth)+sizeof(grpHeight);
         };
 #pragma pack(pop)
+
+        struct LODATA
+        {
+	        s8 xOffset;
+	        s8 yOffset;
+        };
 
         class Grp
         {
@@ -860,6 +868,9 @@ namespace Sc {
             bool load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, const std::string & archiveFileName);
             void makeBlank();
             const GrpFile & get() const;
+
+		    u32 LoOverlayCount() const { return *((u32*)&grpData[4]); }
+		    LODATA* LoGetOffset(u32 frame, u32 graphicOffset) const;
 
         private:
             std::vector<u8> grpData;
@@ -904,6 +915,21 @@ namespace Sc {
         std::vector<SpriteGroup> spriteGroups;
         std::vector<std::string> spriteNames;
         Sc::TblFilePtr imagesTbl;
+    };
+
+    struct IScriptEntry
+    {
+        u16 id;
+        u16 offset;
+    };
+
+    class IScripts // TODO: Legacy code
+    {
+    public:
+        bool load(const std::vector<ArchiveFilePtr> & orderedSourceFiles);
+        u16 getHeaderOffset(u16 isid);
+        u16 getAnimOffset(u16 headerOffset, u16 animID, bool allowInvalid);
+        std::vector<u8> iscriptBin;
     };
 
     class Upgrade {
@@ -1805,6 +1831,8 @@ namespace Sc {
             green = green/10*7;
             blue = blue/10*7;
         }
+
+        operator u32() const { return *((u32*)this); }
     };
 #pragma pack(pop)
 
@@ -2058,6 +2086,7 @@ namespace Sc {
         bool load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, const std::string & archiveFileName);
         
         std::vector<Sc::SystemColor> palette;
+        std::vector<u8> paletteIndex;
     };
 
     struct BoundingBox
@@ -3255,6 +3284,9 @@ namespace Sc {
             std::vector<MiniTilePixels> miniTilePixels;
             std::array<SystemColor, NumColors> staticSystemColorPalette;
             std::array<SystemColor, NumColors> systemColorPalette;
+	        Pcx remap[7]; // REMAP_* -1 -- 1-based values, 0-based array (e.g. REMAP_CLOAK - 1)
+	        Pcx dark;
+	        Pcx shift;
 
             std::vector<DoodadGroup> doodadGroups {};
             std::vector<DoodadPlacibility> doodadPlacibility {};
@@ -3315,6 +3347,7 @@ namespace Sc {
         Pcx tunit;
         Pcx tselect;
         Pcx tminimap;
+        IScripts iScripts;
 
         bool load(Sc::DataFile::BrowserPtr dataFileBrowser = Sc::DataFile::BrowserPtr(new Sc::DataFile::Browser()),
             const std::vector<Sc::DataFile::Descriptor> & dataFiles = Sc::DataFile::getDefaultDataFiles(),
