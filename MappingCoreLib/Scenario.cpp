@@ -361,7 +361,7 @@ void read(std::istream & is, Value & value, std::streamsize sectionSize)
 
 void Scenario::read(std::istream & is, Chk::SectionName sectionName, Chk::SectionSize sectionSize)
 {
-    auto & section = addSection(Section{sectionName});
+    auto & section = addSaveSection(Section{sectionName});
     switch ( sectionName )
     {
         case SectionName::MRGN: // Manual deserialization to account for zeroth location being unused
@@ -507,24 +507,6 @@ bool Scenario::read(std::istream & is)
     return true;
 }
 
-Scenario::Section & Scenario::addSection(Section section)
-{
-    if ( hasSection(section.sectionName) )
-    {
-        for ( auto & existing : saveSections )
-        {
-            if ( section.sectionName == existing.sectionName )
-                return existing;
-        }
-        throw std::logic_error("An internal error occured");
-    }
-    else
-    {
-        saveSections.push_back(section);
-        return saveSections.back();
-    }
-}
-
 bool Scenario::hasSection(SectionName sectionName) const
 {
     for ( auto & section : saveSections )
@@ -533,15 +515,6 @@ bool Scenario::hasSection(SectionName sectionName) const
             return true;
     }
     return false;
-}
-
-void Scenario::removeSection(const SectionName & sectionName)
-{
-    if ( hasSection(sectionName) )
-    {
-        auto toRemove = std::remove_if(saveSections.begin(), saveSections.end(), [&](auto & section){ return section.sectionName == sectionName; });
-        saveSections.erase(toRemove);
-    }
 }
 
 bool Scenario::parsingFailed(const std::string & error)
@@ -698,19 +671,52 @@ bool Scenario::deserialize(Chk::SerializedChk* data)
     return false;
 }
 
+Scenario::Section & Scenario::addSaveSection(Section section)
+{
+    if ( hasSection(section.sectionName) )
+    {
+        for ( auto & existing : saveSections )
+        {
+            if ( section.sectionName == existing.sectionName )
+                return existing;
+        }
+        throw std::logic_error("An internal error occured");
+    }
+    else
+    {
+        saveSections.push_back(section);
+        return saveSections.back();
+    }
+}
+
+void Scenario::addSaveSection(Chk::SectionName sectionName)
+{
+    if ( !hasSection(sectionName) )
+        Scenario::addSaveSection(Scenario::Section{sectionName, std::nullopt});
+}
+
+void Scenario::removeSaveSection(Chk::SectionName sectionName)
+{
+    if ( hasSection(sectionName) )
+    {
+        auto toRemove = std::remove_if(saveSections.begin(), saveSections.end(), [&](auto & section){ return section.sectionName == sectionName; });
+        saveSections.erase(toRemove);
+    }
+}
+
 void Scenario::updateSaveSections()
 {
     if ( this->hasExtendedStrings() )
     {
-        addSection(Section{SectionName::OSTR});
-        addSection(Section{SectionName::KSTR});
+        addSaveSection(Section{SectionName::OSTR});
+        addSaveSection(Section{SectionName::KSTR});
     }
 
     if ( !this->triggerExtensions.empty() )
-        addSection(Section{SectionName::KTRG});
+        addSaveSection(Section{SectionName::KTRG});
 
     if ( !this->triggerGroupings.empty() )
-        addSection(Section{SectionName::KTGP});
+        addSaveSection(Section{SectionName::KTGP});
 }
 
 bool Scenario::changeVersionTo(Chk::Version version, bool lockAnywhere, bool autoDefragmentLocations)
@@ -728,12 +734,12 @@ bool Scenario::changeVersionTo(Chk::Version version, bool lockAnywhere, bool aut
             }
             this->type = Chk::Type::RAWS;
             this->iVersion = Chk::IVersion::Current;
-            removeSection(SectionName::TYPE);
-            removeSection(SectionName::PUPx);
-            removeSection(SectionName::PTEx);
-            removeSection(SectionName::UNIx);
-            removeSection(SectionName::TECx);
-            removeSection(SectionName::COLR);
+            removeSaveSection(SectionName::TYPE);
+            removeSaveSection(SectionName::PUPx);
+            removeSaveSection(SectionName::PTEx);
+            removeSaveSection(SectionName::UNIx);
+            removeSaveSection(SectionName::TECx);
+            removeSaveSection(SectionName::COLR);
         }
         else
         {
@@ -742,12 +748,12 @@ bool Scenario::changeVersionTo(Chk::Version version, bool lockAnywhere, bool aut
             this->i2Version = Chk::I2Version::StarCraft_1_04;
             this->expandToScHybridOrExpansion();
         }
-        addSection(Section{SectionName::IVER});
-        addSection(Section{SectionName::UPGR});
-        addSection(Section{SectionName::PTEC});
-        addSection(Section{SectionName::UNIS});
-        addSection(Section{SectionName::UPGS});
-        addSection(Section{SectionName::TECS});
+        addSaveSection(Section{SectionName::IVER});
+        addSaveSection(Section{SectionName::UPGR});
+        addSaveSection(Section{SectionName::PTEC});
+        addSaveSection(Section{SectionName::UNIS});
+        addSaveSection(Section{SectionName::UPGS});
+        addSaveSection(Section{SectionName::TECS});
     }
     else // if ( version >= Chk::Version::StarCraft_BroodWar ) // Broodwar: No IVER or original properties
     {
@@ -756,27 +762,27 @@ bool Scenario::changeVersionTo(Chk::Version version, bool lockAnywhere, bool aut
         this->i2Version = Chk::I2Version::StarCraft_1_04;
         this->expandToScHybridOrExpansion();
 
-        removeSection(SectionName::IVER);
-        removeSection(SectionName::UPGR);
-        removeSection(SectionName::PTEC);
-        removeSection(SectionName::UNIS);
-        removeSection(SectionName::UPGS);
-        removeSection(SectionName::TECS);
+        removeSaveSection(SectionName::IVER);
+        removeSaveSection(SectionName::UPGR);
+        removeSaveSection(SectionName::PTEC);
+        removeSaveSection(SectionName::UNIS);
+        removeSaveSection(SectionName::UPGS);
+        removeSaveSection(SectionName::TECS);
     }
         
     if ( version >= Chk::Version::StarCraft_Hybrid ) // Hybrid or BroodWar: Include TYPE, IVE2, COLR, and all expansion properties
     {
         this->type = version >= Chk::Version::StarCraft_BroodWar ? Chk::Type::RAWB : Chk::Type::RAWS;
-        addSection(Section{SectionName::TYPE});
-        addSection(Section{SectionName::PUPx});
-        addSection(Section{SectionName::PTEx});
-        addSection(Section{SectionName::UNIx});
-        addSection(Section{SectionName::UPGx});
-        addSection(Section{SectionName::TECx});
+        addSaveSection(Section{SectionName::TYPE});
+        addSaveSection(Section{SectionName::PUPx});
+        addSaveSection(Section{SectionName::PTEx});
+        addSaveSection(Section{SectionName::UNIx});
+        addSaveSection(Section{SectionName::UPGx});
+        addSaveSection(Section{SectionName::TECx});
 
         if ( !hasSection(SectionName::COLR) )
         {
-            addSection(Section{SectionName::COLR});
+            addSaveSection(Section{SectionName::COLR});
             for ( size_t i=size_t(Chk::PlayerColor::Red); i<=Chk::PlayerColor::Yellow; ++i )
                 this->setPlayerColor(i, Chk::PlayerColor(i));
         }
@@ -3301,7 +3307,7 @@ void Scenario::upgradeToRemasteredColors()
 {
     if ( !hasSection(SectionName::CRGB) )
     {
-        addSection(Section{SectionName::CRGB});
+        addSaveSection(Section{SectionName::CRGB});
         for ( size_t i=0; i<Sc::Player::TotalSlots; ++i )
         {
             this->customColors.playerColor[i][0] = u8(0); // R
