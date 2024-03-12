@@ -175,6 +175,9 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     void UpdateCutCopyPasteMenuItems();
 
                     void Scroll(bool scrollX, bool scrollY, bool validateBorder, s32 newLeft = -1, s32 newTop = -1);
+                    
+                    bool addUnit(Sc::Unit::Type unitType, u8 owner, u16 xc, u16 yc, u16 stateFlags);
+                    bool doAnimation();
 
 
 /*     Misc     */  void setMapId(u16 mapId);

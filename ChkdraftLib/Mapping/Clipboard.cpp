@@ -848,7 +848,7 @@ void Clipboard::pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & u
                 else
                     lastPasteNydus = std::nullopt;
             }
-            map.addUnit(pasteUnit.unit);
+            map.addUnit(pasteUnit.unit.type, pasteUnit.unit.owner, pasteUnit.unit.xc, pasteUnit.unit.yc, pasteUnit.unit.stateFlags);
             unitCreates->Insert(UnitCreateDel::Make((u16)numUnits));
             if ( chkd.unitWindow.getHandle() != nullptr )
                 chkd.unitWindow.AddUnitItem((u16)numUnits, pasteUnit.unit);

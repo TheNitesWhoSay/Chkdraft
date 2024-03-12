@@ -26,7 +26,10 @@ void UnitCreateDel::Reverse(void *guiMap)
     }
     else // Do create
     {
-        ((GuiMap*)guiMap)->insertUnit(index, *unit);
+        //((GuiMap*)guiMap)->insertUnit(index, *unit);
+        
+        // This doesn't belong here, it's the only place this function will work for testing
+        ((GuiMap*)guiMap)->addUnit(unit->type, unit->owner, unit->xc, unit->yc, unit->stateFlags);
         unit = nullptr;
     }
 }

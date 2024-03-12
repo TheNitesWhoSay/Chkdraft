@@ -517,20 +517,20 @@ struct Scenario
     std::vector<u8> serialize(); /** Writes all sections to a buffer in memory as it would to a .chk file
                                      includes a 4 byte "CHK " tag followed by a 4-byte size, followed by data */
     bool deserialize(Chk::SerializedChk* data); // "Opens" a serialized Scenario.chk file, data must be 8+ bytes
-    
+
+    void updateSaveSections();
+    bool changeVersionTo(Chk::Version version, bool lockAnywhere = true, bool autoDefragmentLocations = true);
+
     struct Section {
         Chk::SectionName sectionName;
         std::optional<std::vector<u8>> sectionData {}; // If not present, section data is found in the fields of Scenario
     };
 
-    bool hasSection(SectionName sectionName) const;
-    Section & addSaveSection(Section section); // Adds a section to save sections if not already present
-    void addSaveSection(Chk::SectionName sectionName); // Adds a section to save sections if not already present
-    void removeSaveSection(Chk::SectionName sectionName); // Removes a section from save sections if present
-    void updateSaveSections();
-    bool changeVersionTo(Chk::Version version, bool lockAnywhere = true, bool autoDefragmentLocations = true);
-
 protected:
+    bool hasSection(SectionName sectionName) const;
+    Section & addSection(Section section);
+    void removeSection(const SectionName & sectionName);
+
     bool parsingFailed(const std::string & error);
     void clear();
 

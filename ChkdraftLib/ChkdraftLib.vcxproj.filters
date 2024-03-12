@@ -443,6 +443,9 @@
     <ClInclude Include="Mapping\Undos\ChkdUndos\DimensionChange.h">
       <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
     </ClInclude>
+    <ClInclude Include="Mapping\Defines.h">
+      <Filter>Header Files\Mapping\%2a</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Chkdraft.cpp">
@@ -735,6 +738,9 @@
     </ClCompile>
     <ClCompile Include="Mapping\Undos\ChkdUndos\DimensionChange.cpp">
       <Filter>Source Files\Mapping\Undos\ChkdUndos</Filter>
+    </ClCompile>
+    <ClCompile Include="Mapping\Graphics2.cpp">
+      <Filter>Source Files\Mapping\%2a</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

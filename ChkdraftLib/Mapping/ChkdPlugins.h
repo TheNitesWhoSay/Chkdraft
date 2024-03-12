@@ -69,6 +69,5 @@
 LRESULT CALLBACK PluginProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 bool runMpqRecompiler();
-void repairSounds();
 
 #endif

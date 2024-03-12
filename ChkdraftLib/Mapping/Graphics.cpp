@@ -133,10 +133,27 @@ Sc::SystemColor black = Sc::SystemColor();
 
 Graphics::Graphics(GuiMap & map, Selections & selections) : map(map), selections(selections),
     displayingIsomTypes(false), displayingTileNums(false), tileNumsFromMTXM(false), displayingBuildability(false), displayingElevations(false),
-    clipLocationNames(true), mapWidth(0), mapHeight(0), screenWidth(0), screenHeight(0), screenLeft(0), screenTop(0)
+    clipLocationNames(true),
+    imageLastCreated(NULL), spriteLastCreated(NULL), unitLastCreated(NULL),
+	gticks(0),
+	randSeed(0), unk_6CEFB5(0), unk_unit_6D11F4(NULL), activeIscriptUnit(NULL), activePlayerColor(0),
+    mapWidth(0), mapHeight(0), screenWidth(0), screenHeight(0), screenLeft(0), screenTop(0)
 {
     if ( !map.empty() )
         updatePalette();
+    
+	u32 r, g, b;
+    const ChkdPalette & palette = chkd.scData.terrain.get(map.getTileset()).systemColorPalette;
+
+	// Initialize reindexing and cloak tables
+	for (int i = 0; i < 256; i++) {
+		grpReindexing[i] = i;
+
+		r = palette[i].red * 77;
+		g = palette[i].green * 151;
+		b = palette[i].blue * 28;
+		cloakingTable[i] = u8((r + g + b + 0x1000) >> 13);
+	}
 }
 
 Graphics::~Graphics()
@@ -490,15 +507,25 @@ void Graphics::DrawUnits(ChkdBitmap & bitmap)
                 (s32)unit.yc - MaxUnitBounds::Up < screenBottom )
                 // If within screen y-bounds
             {
-                u16 frame = 0;
-                Chk::PlayerColor color = (unit.owner < Sc::Player::TotalSlots ?
-                    map.getPlayerColor(unit.owner) : (Chk::PlayerColor)unit.owner);
+                if ( unitNum < UNITGraphics.size() )
+                {
+                    updateAndDrawThingy(bitmap, UNITGraphics[unitNum]->sprite);
+                    if ( UNITGraphics[unitNum]->subUnit != NULL ) // I dunno how subunits are supposed to be handled
+                    {
+                        updateAndDrawThingy(bitmap, UNITGraphics[unitNum]->subUnit->sprite);
+                    }
+                }
+                else
+                {
+                    u16 frame = 0;
+                    u8 color = map.getPlayerColor(unit.owner % Sc::Player::TotalSlots);
 
-                bool isSelected = selections.unitIsSelected(unitNum);
+                    bool isSelected = selections.unitIsSelected(unitNum);
 
-                UnitToBits(bitmap, palette, color, u16(screenWidth), u16(screenHeight),
-                    screenLeft, screenTop, (u16)unit.type, unit.xc, unit.yc,
-                    u16(frame), isSelected, unit.isLifted(), unit.isAttached());
+                    UnitToBits(bitmap, palette, color, u16(screenWidth), u16(screenHeight),
+                        screenLeft, screenTop, unit.type, unit.xc, unit.yc,
+                        u16(frame), isSelected);
+                }
             }
         }
     }
@@ -881,6 +908,176 @@ BITMAPINFO GetBMI(s32 width, s32 height)
     BITMAPINFO bmi = {};
     bmi.bmiHeader = bmiH;
     return bmi;
+}
+
+bool Graphics::addUnit(Chk::Unit* unit)
+{
+	UnitNode* newUnit = CreateUnitXY(unit->owner, unit->type, unit->xc, unit->yc);
+	if (newUnit == NULL)
+		return false; // Something bad happened !
+	editUnitFlags(newUnit, unit);
+	UNITGraphics.push_back(newUnit);
+	return true;
+}
+
+bool Graphics::insertUnit(u16 index, Chk::Unit* unit)
+{
+	UnitNode* newUnit = CreateUnitXY(unit->owner, unit->type, unit->xc, unit->yc);
+	if (newUnit == NULL)
+		return false; // Something bad happened !
+	editUnitFlags(newUnit, unit);
+	UNITGraphics.insert(UNITGraphics.begin() + index, newUnit);
+	return true;
+}
+
+void Graphics::removeUnit(int index)
+{
+	UnitNode* unit = UNITGraphics[index];
+	UnitDestructor(unit);
+	UNITGraphics.erase(UNITGraphics.begin() + index);
+}
+
+bool Graphics::recreateUnit(int index, Chk::Unit* unit)
+{
+	UnitNode* newUnit = UNITGraphics[index];
+	UnitDestructor(newUnit);
+	newUnit = CreateUnitXY(unit->owner, unit->type, unit->xc, unit->yc);
+	if (newUnit == NULL)
+		return false; // Something bad happened !
+	editUnitFlags(newUnit, unit);
+	UNITGraphics[index] = newUnit;
+	return true;
+}
+
+void Graphics::updateUnit(int index, Chk::Unit* chkUnit)
+{
+	UnitNode* unitNode = UNITGraphics[index];
+
+	// Update unit type
+	if (unitNode->unitType != chkUnit->type)
+	{
+		if (recreateUnit(index, chkUnit) == false)
+		{
+			// Something went wrong
+		}
+		return; // Recreated unit, the rest is now necessarily correct !
+	}
+
+	// Update coords
+	if (unitNode->position.x != chkUnit->xc || unitNode->position.y != chkUnit->yc)
+	{
+		unitNode->position.x = chkUnit->xc;
+		unitNode->position.y = chkUnit->yc;
+		unitNode->halt.x = chkUnit->xc << 8;
+		unitNode->halt.y = chkUnit->yc << 8;
+		unitNode->sprite->position.x = chkUnit->xc;
+		unitNode->sprite->position.y = chkUnit->yc;
+		for (ImageNode* image = unitNode->sprite->pImageHead; image != NULL; image = image->next)
+		{
+			image->flags |= 1; // Redraw
+		}
+		// Dunno if needs more
+	}
+
+	// Update resources
+	if (unitNode->resource.resourceCount != chkUnit->resourceAmount)
+	{
+		if ((chkUnit->validFieldFlags & 0x100000) && // Has Resources
+			(chkd.scData.units.getUnit(Sc::Unit::Type(unitNode->unitType)).flags & 0x2000)) // Resource Container
+		{
+			unitNode->resource.resourceCount = chkUnit->resourceAmount;
+			if (unitNode->unitType >= 176 && unitNode->unitType <= 178) // Mineral Field 1, 2, 3
+			{
+				setResourceCount(unitNode);
+			}
+		}
+	}
+
+	// Update state flags
+
+	// To do: UNIT_STATE_CLOAKED
+	// To do: UNIT_STATE_BURROWED
+	// To do: UNIT_STATE_LIFTED
+
+	//UNIT_STATE_HALLUCINATED
+	bool halluc = (chkUnit->validFieldFlags & chkUnit->stateFlags & BIT_3) != 0;
+	if (((unitNode->statusFlags & 0x40000000) != 0) != halluc)
+	{
+		setSpriteColoringData(unitNode->sprite, 0, halluc);
+		if (unitNode->subUnit != NULL)
+		{
+			setSpriteColoringData(unitNode->subUnit->sprite, 0, halluc);
+		}
+	}
+}
+
+bool Graphics::addSprite(Chk::Sprite* thg2)
+{
+	THG2Ref newSprite;
+	if (initSprite(newSprite, thg2) == false)
+		return false; // Something bad happened !
+	THG2Graphics.push_back(newSprite);
+	return true;
+}
+
+void Graphics::removeSprite(int index)
+{
+	THG2Ref& sprite = THG2Graphics[index];
+	if (sprite.isUnit == false)
+	{ // Pure sprite
+		SpriteDestructor(sprite.sprite);
+	}
+	else
+	{ // Unit sprite
+		UnitDestructor(sprite.unit);
+	}
+	THG2Graphics.erase(THG2Graphics.begin() + index);
+}
+
+bool Graphics::recreateSprite(int index, Chk::Sprite* thg2)
+{
+	THG2Ref& sprite = THG2Graphics[index];
+	if (sprite.isUnit == false)
+	{ // Pure sprite
+		SpriteDestructor(sprite.sprite);
+	}
+	else
+	{ // Unit sprite
+		UnitDestructor(sprite.unit);
+	}
+	if (initSprite(sprite, thg2) == false)
+		return false; // Something bad happened !
+	return true;
+}
+
+bool Graphics::initSprite(THG2Ref& thing, Chk::Sprite* thg2)
+{
+	if (thg2->isDrawnAsSprite())
+	{ // Pure Sprite
+		thing.isUnit = false;
+		thing.sprite = CreateThingy(thg2->type, thg2->xc, thg2->yc, thg2->owner);
+		if (thing.sprite == NULL)
+			return false; // Something bad happened
+	}
+	else
+	{ // Unit Sprite
+		if (thg2->type == 205 || // Left Upper Level Door
+			thg2->type == 206 || // Right Upper Level Door
+			thg2->type == 207 || // Left Pit Door
+			thg2->type == 208)   // Right Pit Door
+		{
+			thg2->owner = 11; // Neutral
+		}
+		thing.isUnit = true;
+		thing.unit = CreateUnitXY(thg2->owner, thg2->type, thg2->xc, thg2->yc);
+		if (thing.unit == NULL)
+			return false; // Something bad happened
+		if (thg2->flags & Chk::Sprite::SpriteFlags::SpriteUnitDiabled)
+		{
+			thg2SpecialDIsableUnit(thing.unit);
+		}
+	}
+    return true;
 }
 
 void TileElevationsToBits(ChkdBitmap & bitmap, s64 bitWidth, s64 bitHeight, const Sc::Terrain::Tiles & tiles,

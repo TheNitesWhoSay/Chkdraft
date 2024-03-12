@@ -102,7 +102,7 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
             }
         }
 
-        if ( CM != nullptr && ColorCycler::CycleColors(CM->getTileset(), CM->getPalette()) )
+        if ( CM != nullptr && CM->doAnimation() )
             CM->Redraw(false);
 
         std::this_thread::sleep_for(std::chrono::milliseconds(1)); // Avoid consuming a core
@@ -650,7 +650,6 @@ LRESULT Chkdraft::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     case ID_TRIGGERS_MISSIONBRIEFINGEDITOR: briefingTextTrigWindow.CreateThis(getHandle()); break;
     case ID_TOOLS_PASSWORD: ifmapopen(changePasswordWindow.CreateThis(getHandle())) break;
     case ID_TOOLS_MPQRECOMPILER: runMpqRecompiler(); break;
-    case ID_SCRIPTS_REPAIRSOUNDS: repairSounds(); break;
 
         // Windows
     case ID_WINDOWS_CASCADE: maps.cascade(); break;
