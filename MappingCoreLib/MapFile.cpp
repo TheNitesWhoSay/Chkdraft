@@ -1,5 +1,5 @@
 #include "../CrossCutLib/Logger.h"
-#include <SimpleIcu.h>
+#include "../CrossCutLib/SimpleIcu.h"
 #include "MapFile.h"
 #include "SystemIO.h"
 #include "EscapeStrings.h"

@@ -1,7 +1,7 @@
 #include "MpqFile.h"
+#include "../CrossCutLib/SimpleIcu.h"
 #include "../StormLib/src/StormLib.h"
 #include "SystemIO.h"
-#include <SimpleIcu.h>
 #include <iterator>
 #include <vector>
 

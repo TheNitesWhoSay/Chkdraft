@@ -552,87 +552,129 @@ void write(std::ostream & os, const Value & value)
 }
 
 template <typename Member, typename Value>
-void writeSection(std::ostream & os, const Value & value)
+void writeData(std::ostream & os, const Value & value)
 {
     s32 size = ::size<typename Member::type>(value);
     os.write(reinterpret_cast<const char*>(&size), sizeof(size));
     write<typename Member::type>(os, value);
 }
 
+void Scenario::writeSection(std::ostream & os, const Section & section, bool includeHeader)
+{
+    SectionName sectionName = section.sectionName;
+    if ( includeHeader )
+        os.write(reinterpret_cast<const char*>(&sectionName), sizeof(std::underlying_type_t<SectionName>)); // Write section name
+
+    switch ( sectionName )
+    {
+        case SectionName::MRGN: // Manual serialization to account for zeroth location being unused
+        {
+            if ( includeHeader )
+            {
+                s32 size = s32((locations.size()-1) * ::size<Chk::Location>());
+                os.write(reinterpret_cast<const char*>(&size), std::streamsize(sizeof(size)));
+            }
+
+            for ( size_t i=1; i<locations.size(); ++i )
+                ::write<Chk::Location>(os, locations[i]);
+        }
+        break;
+        case SectionName::STR:
+        {
+            std::vector<u8> bytes;
+            syncStringsToBytes(bytes);
+            s32 size = s32(bytes.size());
+            if ( includeHeader )
+                os.write(reinterpret_cast<const char*>(&size), std::streamsize(sizeof(size)));
+
+            os.write(reinterpret_cast<const char*>(&bytes[0]), std::streamsize(size));
+        }
+        break;
+        case SectionName::STRx:
+        {
+            std::vector<u8> bytes;
+            syncRemasteredStringsToBytes(bytes);
+            s32 size = s32(bytes.size());
+            if ( includeHeader )
+                os.write(reinterpret_cast<const char*>(&size), std::streamsize(sizeof(size)));
+
+            os.write(reinterpret_cast<const char*>(&bytes[0]), std::streamsize(size));
+        }
+        break;
+        case SectionName::KSTR:
+        {
+            std::vector<u8> bytes;
+            syncKstringsToBytes(bytes);
+            s32 size = s32(bytes.size());
+            if ( includeHeader )
+                os.write(reinterpret_cast<const char*>(&size), std::streamsize(sizeof(size)));
+
+            os.write(reinterpret_cast<const char*>(&bytes[0]), std::streamsize(size));
+        }
+        break;
+        default:
+        {
+            auto memberIndex = sectionMemberIndex.find(sectionName);
+            if ( memberIndex != sectionMemberIndex.end() ) // This is a section that can be auto-serialized using reflection
+            {
+                RareTs::Members<Scenario>::at(memberIndex->second, *this, [&](auto member, auto & value) {
+                    ::writeData<decltype(member)>(os, value);
+                });
+            }
+            else // This is an unknown/custom section
+            {
+                logger.info() << "[" << Chk::getNameString(sectionName) << "] unknown/custom" << std::endl;
+                if ( section.sectionData )
+                {
+                    s32 size = s32(section.sectionData->size());
+                    os.write(reinterpret_cast<const char*>(&size), std::streamsize(sizeof(size)));
+                    if ( size > 0 )
+                        os.write(reinterpret_cast<const char*>(&section.sectionData.value()[0]), std::streamsize(size));
+                }
+                else
+                {
+                    s32 size = 0;
+                    os.write(reinterpret_cast<const char*>(&size), std::streamsize(sizeof(size)));
+                }
+            }
+        }
+        break;
+    }
+}
+
+void Scenario::writeSection(std::ostream & os, Chk::SectionName sectionName, bool includeHeader)
+{
+    auto memberIndex = sectionMemberIndex.find(sectionName);
+    if ( memberIndex != sectionMemberIndex.end() ) // This is a section that can be auto-serialized using reflection
+    {
+        RareTs::Members<Scenario>::at(memberIndex->second, *this, [&](auto member, auto & value) {
+            ::writeData<decltype(member)>(os, value);
+        });
+    }
+    else // This may be a section with special serialization, a custom, or an unknown section
+    {
+        bool found = false;
+        for ( const auto & section : saveSections )
+        {
+            if ( sectionName == section.sectionName )
+            {
+                found = true;
+                writeSection(os, section, includeHeader);
+                break;
+            }
+        }
+        if ( !found )
+            throw std::invalid_argument("The given section was not present in the scenario file!");
+    }
+}
+
 void Scenario::write(std::ostream & os)
 {
     try
     {
-        for ( auto & section : saveSections )
-        {
-            SectionName sectionName = section.sectionName;
-            os.write(reinterpret_cast<const char*>(&sectionName), sizeof(std::underlying_type_t<SectionName>));
-            switch ( sectionName )
-            {
-                case SectionName::MRGN: // Manual serialization to account for zeroth location being unused
-                {
-                    s32 size = s32((locations.size()-1) * ::size<Chk::Location>());
-                    os.write(reinterpret_cast<const char*>(&size), std::streamsize(sizeof(size)));
-                    for ( size_t i=1; i<locations.size(); ++i )
-                        ::write<Chk::Location>(os, locations[i]);
-                }
-                break;
-                case SectionName::STR:
-                {
-                    std::vector<u8> bytes;
-                    syncStringsToBytes(bytes);
-                    s32 size = s32(bytes.size());
-                    os.write(reinterpret_cast<const char*>(&size), std::streamsize(sizeof(size)));
-                    os.write(reinterpret_cast<const char*>(&bytes[0]), std::streamsize(size));
-                }
-                break;
-                case SectionName::STRx:
-                {
-                    std::vector<u8> bytes;
-                    syncRemasteredStringsToBytes(bytes);
-                    s32 size = s32(bytes.size());
-                    os.write(reinterpret_cast<const char*>(&size), std::streamsize(sizeof(size)));
-                    os.write(reinterpret_cast<const char*>(&bytes[0]), std::streamsize(size));
-                }
-                break;
-                case SectionName::KSTR:
-                {
-                    std::vector<u8> bytes;
-                    syncKstringsToBytes(bytes);
-                    s32 size = s32(bytes.size());
-                    os.write(reinterpret_cast<const char*>(&size), std::streamsize(sizeof(size)));
-                    os.write(reinterpret_cast<const char*>(&bytes[0]), std::streamsize(bytes.size()));
-                }
-                break;
-                default:
-                {
-                    auto memberIndex = sectionMemberIndex.find(sectionName);
-                    if ( memberIndex != sectionMemberIndex.end() ) // This is a section that can be auto-serialized using reflection
-                    {
-                        RareTs::Members<Scenario>::at(memberIndex->second, *this, [&](auto member, auto & value) {
-                            ::writeSection<decltype(member)>(os, value);
-                        });
-                    }
-                    else // This is an unknown/custom section
-                    {
-                        logger.info() << "[" << Chk::getNameString(sectionName) << "] unknown/custom" << std::endl;
-                        if ( section.sectionData )
-                        {
-                            s32 size = s32(section.sectionData->size());
-                            os.write(reinterpret_cast<const char*>(&size), std::streamsize(sizeof(size)));
-                            if ( size > 0 )
-                                os.write(reinterpret_cast<const char*>(&section.sectionData.value()[0]), std::streamsize(size));
-                        }
-                        else
-                        {
-                            s32 size = 0;
-                            os.write(reinterpret_cast<const char*>(&size), std::streamsize(sizeof(size)));
-                        }
-                    }
-                }
-                break;
-            }
-        }
+        for ( const auto & section : saveSections )
+            writeSection(os, section, true);
+
         if ( tailLength > 0 )
             os.write(reinterpret_cast<const char*>(&tailData[0]), std::streamsize(tailLength));
     }
