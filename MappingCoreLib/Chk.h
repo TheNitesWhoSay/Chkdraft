@@ -701,6 +701,7 @@ namespace Chk {
 
         void toggleDisabled();
         bool isDisabled() const;
+        inline bool switchUsed(size_t switchId) const;
         inline bool locationUsed(size_t locationId) const;
         inline void markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed) const;
         void remapLocationIds(const std::map<u32, u32> & locationIdRemappings);
@@ -984,7 +985,7 @@ namespace Chk {
         u32 soundStringId;
         u32 time;
         u32 group; // Group/ZeroBasedBriefingSlot
-        u32 number; // Amount/Group2/LocDest/UnitPropNum/ScriptNum
+        u32 number; // Amount/Group2/LocDest/UnitPropNum/ScriptNum/SwitchIndex
         u16 type; // Unit/score/resource type/alliance status
         Type actionType; // u8
         u8 type2; // Num units/switch action/unit order/modify type
@@ -1020,6 +1021,7 @@ namespace Chk {
         bool hasSoundArgument() const;
         bool hasBriefingStringArgument() const;
         bool hasBriefingSoundArgument() const;
+        inline bool switchUsed(size_t switchId) const;
         inline bool locationUsed(size_t locationId) const;
         inline bool stringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyTrigger) const;
         inline bool gameStringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyTrigger) const;
@@ -1134,6 +1136,7 @@ namespace Chk {
         size_t numUsedConditions() const;
         size_t numUsedActions() const;
         size_t getComment() const;
+        bool switchUsed(size_t switchId) const;
         bool locationUsed(size_t locationId) const;
         bool stringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyTrigger) const;
         bool gameStringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyTrigger) const;
@@ -1244,7 +1247,7 @@ namespace Chk {
         bool isBlank() const;
     };
 
-    __declspec(align(1)) struct TriggerGroupHeader
+    __declspec(align(1)) struct TriggerGroupHeader // TODO: Unused? or at least, it doesn't yet figure into serialization
     {
         enum_t(Flags, u32, {
             groupExpanded = BIT_27,

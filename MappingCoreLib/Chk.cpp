@@ -723,6 +723,11 @@ bool Chk::Action::hasBriefingSoundArgument() const
     return false;
 }
 
+inline bool Chk::Action::switchUsed(size_t switchId) const
+{
+    return actionType < NumActionTypes && actionType == Chk::Action::Type::SetSwitch && size_t(this->number) == switchId;
+}
+
 inline bool Chk::Action::locationUsed(size_t locationId) const
 {
     return actionType < NumActionTypes &&
@@ -1133,6 +1138,11 @@ bool Chk::Condition::isDisabled() const
     return (flags & Flags::Disabled) == Flags::Disabled;
 }
 
+inline bool Chk::Condition::switchUsed(size_t switchId) const
+{
+    return conditionType < NumConditionTypes && conditionType == Chk::Condition::Type::Switch && size_t(this->typeIndex) == switchId;
+}
+
 inline bool Chk::Condition::locationUsed(size_t locationId) const
 {
     return conditionType < NumConditionTypes && conditionUsesLocationArg[conditionType] && this->locationId == locationId;
@@ -1388,6 +1398,21 @@ size_t Chk::Trigger::numUsedActions() const
             total ++;
     }
     return total;
+}
+
+bool Chk::Trigger::switchUsed(size_t switchId) const
+{
+    for ( size_t i=0; i<MaxConditions; i++ )
+    {
+        if ( conditions[i].switchUsed(switchId) )
+            return true;
+    }
+    for ( size_t i=0; i<MaxActions; i++ )
+    {
+        if ( actions[i].switchUsed(switchId) )
+            return true;
+    }
+    return false;
 }
 
 bool Chk::Trigger::locationUsed(size_t locationId) const

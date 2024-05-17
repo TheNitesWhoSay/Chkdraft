@@ -3007,18 +3007,29 @@ const std::vector<u32> Scenario::compressionFlagsProgression = {
         | StrCompressFlag::SizeBytesRecycling
 };
 
-std::vector<std::optional<ScStr>> Scenario::copyStrings() const
+std::vector<std::optional<ScStr>> Scenario::copyStrings(Chk::Scope storageScope) const
 {
     std::vector<std::optional<ScStr>> copy;
-    for ( auto & str : strings )
-        copy.push_back(str);
+    if ( storageScope == Chk::Scope::Editor )
+    {
+        for ( auto & str : editorStrings )
+            copy.push_back(str);
+    }
+    else
+    {
+        for ( auto & str : strings )
+            copy.push_back(str);
+    }
 
     return copy;
 }
 
-void Scenario::swapStrings(std::vector<std::optional<ScStr>> & strings)
+void Scenario::swapStrings(std::vector<std::optional<ScStr>> & strings, Chk::Scope storageScope)
 {
-    this->strings.swap(strings);
+    if ( storageScope == Chk::Scope::Editor )
+        this->editorStrings.swap(strings);
+    else
+        this->strings.swap(strings);
 }
 
 bool Scenario::defragment(Chk::Scope storageScope, bool matchCapacityToUsage)
@@ -6984,6 +6995,16 @@ void Scenario::setSoundStringId(size_t soundIndex, size_t soundStringId)
 {
     if ( soundIndex < Chk::TotalSounds )
         this->soundPaths[soundIndex] = (u32)soundStringId;
+}
+
+bool Scenario::triggerSwitchUsed(size_t switchId) const
+{
+    for ( const auto & trigger : this->triggers )
+    {
+        if ( trigger.switchUsed(switchId) )
+            return true;
+    }
+    return false;
 }
 
 bool Scenario::triggerLocationUsed(size_t locationId) const

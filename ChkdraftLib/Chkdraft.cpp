@@ -651,6 +651,8 @@ LRESULT Chkdraft::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     case ID_TOOLS_PASSWORD: ifmapopen(changePasswordWindow.CreateThis(getHandle())) break;
     case ID_TOOLS_MPQRECOMPILER: runMpqRecompiler(); break;
     case ID_SCRIPTS_REPAIRSOUNDS: repairSounds(); break;
+    case ID_SCRIPTS_REPAIRSTRINGS_MIN: repairStrings(false); break;
+    case ID_SCRIPTS_REPAIRSTRINGS_MAX: repairStrings(true); break;
 
         // Windows
     case ID_WINDOWS_CASCADE: maps.cascade(); break;
