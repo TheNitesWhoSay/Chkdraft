@@ -70,5 +70,6 @@ LRESULT CALLBACK PluginProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 bool runMpqRecompiler();
 void repairSounds();
+void repairStrings(bool compatibilityMode);
 
 #endif

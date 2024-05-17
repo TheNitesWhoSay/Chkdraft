@@ -210,8 +210,8 @@ struct Scenario
     void loadKstring(const std::vector<u8> & stringBytes, const size_t & stringOffset, const size_t & sectionSize);
     void upgradeKstrToCurrent();
 
-    std::vector<std::optional<ScStr>> copyStrings() const;
-    void swapStrings(std::vector<std::optional<ScStr>> & strings);
+    std::vector<std::optional<ScStr>> copyStrings(Chk::Scope storageScope = Chk::Scope::Game) const;
+    void swapStrings(std::vector<std::optional<ScStr>> & strings, Chk::Scope storageScope = Chk::Scope::Game);
 
     bool defragment(Chk::Scope storageScope = Chk::Scope::Both, bool matchCapacityToUsage = true);
     void remapStringIds(const std::map<u32, u32> & stringIdRemappings, Chk::Scope storageScope);
@@ -487,6 +487,7 @@ struct Scenario
     size_t getSoundStringId(size_t soundIndex) const;
     void setSoundStringId(size_t soundIndex, size_t soundStringId);
 
+    bool triggerSwitchUsed(size_t switchId) const;
     bool triggerLocationUsed(size_t locationId) const;
     void appendTriggerStrUsage(size_t stringId, std::vector<Chk::StringUser> & stringUsers, Chk::Scope storageScope = Chk::Scope::Game, u32 userMask = Chk::StringUserFlag::All) const;
     bool triggerStringUsed(size_t stringId, Chk::Scope storageScope, u32 userMask = Chk::StringUserFlag::All) const;
