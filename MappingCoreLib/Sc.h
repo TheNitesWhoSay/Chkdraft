@@ -75,6 +75,12 @@ namespace Sc {
         {
         public:
             virtual std::vector<ArchiveFilePtr> openScDataFiles(
+                bool & includesRemastered,
+                const std::vector<Descriptor> & dataFileDescriptors = getDefaultDataFiles(),
+                const std::string & expectedStarCraftDirectory = ::getDefaultScPath(),
+                FileBrowserPtr<u32> starCraftBrowser = getDefaultStarCraftBrowser());
+
+            virtual std::vector<ArchiveFilePtr> openScDataFiles(
                 const std::vector<Descriptor> & dataFileDescriptors = getDefaultDataFiles(),
                 const std::string & expectedStarCraftDirectory = ::getDefaultScPath(),
                 FileBrowserPtr<u32> starCraftBrowser = getDefaultStarCraftBrowser());
@@ -904,6 +910,47 @@ namespace Sc {
         std::vector<SpriteGroup> spriteGroups;
         std::vector<std::string> spriteNames;
         Sc::TblFilePtr imagesTbl;
+    };
+
+    struct Spk
+    {
+        struct SpkFile
+        {
+            struct StarPosition
+            {
+                u16 xc = 0;
+                u16 yc = 0;
+                u32 bitmapOffset = 0;
+            };
+
+            struct StarBitmap
+            {
+                u16 width = 0;
+                u16 height = 0;
+                u8 data[1] {}; // u8 data[width][height] {};
+            };
+
+            u16 totalLayers = 0;
+            u16 totalImagesInLayer[1] {};
+            //StarPosition layerStars[totalImagesInLayer][totalLayers] {}; // Stored highest layer to lowest layer
+            //StarBitmap starBitmap[...] {};
+        };
+
+        struct Star
+        {
+            u16 xc = 0;
+            u16 yc = 0;
+            const SpkFile::StarBitmap* bitmap = nullptr;
+        };
+
+        std::vector<u8> spkData {};
+        std::vector<std::vector<Star>> layerStars {};
+
+        static constexpr s32 parallaxWidth = 648;
+        static constexpr s32 parllaxHeight = 488;
+        static constexpr s32 scrollFactors[] {36, 31, 26, 21, 16};
+
+        bool load(const std::vector<ArchiveFilePtr> & orderedSourcdeFiles, bool remastered);
     };
 
     class Upgrade {
@@ -3309,6 +3356,7 @@ namespace Sc {
         Unit units;
         Weapon weapons;
         Sprite sprites;
+        Spk spk;
         Upgrade upgrades;
         Tech techs;
         Ai ai;

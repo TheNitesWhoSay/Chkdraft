@@ -202,6 +202,87 @@ void Graphics::DrawMap(const WinLib::DeviceContext & dc, u16 bitWidth, u16 bitHe
         DrawIsomNumbers(dc);
 }
 
+void Graphics::DrawStars(ChkdBitmap & bitmap)
+{
+    size_t bitmapLimit = bitmap.size();
+    for ( s32 starOriginTop = 0; starOriginTop < this->screenHeight; starOriginTop += Sc::Spk::parllaxHeight ) // The same stars repeat in 648x488 tiles
+    {
+        for ( s32 starOriginLeft = 0; starOriginLeft < this->screenWidth; starOriginLeft += Sc::Spk::parallaxWidth )
+        {
+            for ( int layerIndex = int(chkd.scData.spk.layerStars.size())-1; layerIndex >= 0; --layerIndex ) // There are five separate layers of stars
+            {
+                s32 xOffset = (-1 * Sc::Spk::scrollFactors[layerIndex] * (this->screenLeft)) % (Sc::Spk::parallaxWidth*256);
+                s32 yOffset = (-1 * Sc::Spk::scrollFactors[layerIndex] * (this->screenTop)) % (Sc::Spk::parllaxHeight*256);
+                auto & layer = chkd.scData.spk.layerStars[layerIndex];
+                for ( auto & star : layer )
+                {
+                    s32 width = (s32)star.bitmap->width;
+                    s32 height = (s32)star.bitmap->height;
+                    size_t starGraphicsPos = 0;
+                    const u8* starGraphics = &star.bitmap->data[0];
+            
+                    s32 xc = s32(star.xc) + (xOffset >> 8);
+                    if ( xc > Sc::Spk::parallaxWidth )
+                        xc -= Sc::Spk::parallaxWidth;
+                    else if ( xc < 0 )
+                        xc += Sc::Spk::parallaxWidth;
+
+                    xc -= 8;
+
+                    if ( xc < 640 && xc + width + 8 > 0 )
+                    {
+                        s32 yc = s32(star.yc) + (yOffset >> 8);
+                        if ( yc > Sc::Spk::parllaxHeight )
+                            yc -= Sc::Spk::parllaxHeight;
+                        else if ( yc < 0 )
+                            yc += Sc::Spk::parllaxHeight;
+
+                        yc -= 8;
+
+                        if ( yc < 480 && yc + height + 8 > 0 )
+                        {
+                            if ( starOriginLeft + xc < 0 ) // Near left-edge
+                            {
+                                width += xc;
+                                starGraphicsPos += size_t(-xc); // Read from an x-offset starting futher forward
+                                xc = 0;
+                            }
+                            else if ( starOriginLeft + xc + width >= this->screenWidth ) // Near right-edge
+                                width = this->screenWidth - starOriginLeft - xc;
+
+                            if ( starOriginTop + yc < 0 ) // Near top-edge
+                            {
+                                height += yc;
+                                starGraphicsPos += size_t(-yc)*size_t(width); // Read form a y-offset starting futher forward
+                                yc = 0;
+                            }
+                            else if ( starOriginTop + yc + height >= this->screenHeight ) // Near bottom-edge
+                                height = this->screenHeight - starOriginTop - yc;
+
+                            size_t bitmapPos = size_t(s64(yc)+s64(starOriginTop))*size_t(this->screenWidth)+size_t(s64(xc)+s64(starOriginLeft));
+                            s32 lineWidth = this->screenWidth - width;
+                            s32 starWidth = star.bitmap->width - width;
+                            for( ; height > 0; --height )
+                            {
+                                for ( int i=width; i>0; --i )
+                                {
+                                    if ( bitmapPos < bitmapLimit && (u32 &)bitmap[bitmapPos] == 0 ) // SC checks pal[i]==0, only space pal[0] is RGBA0
+                                        bitmap[bitmapPos] = palette[starGraphics[starGraphicsPos]];
+
+                                    bitmapPos++;
+                                    starGraphicsPos++;
+                                }
+                                bitmapPos += lineWidth;
+                                starGraphicsPos += starWidth;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 void Graphics::DrawTerrain(ChkdBitmap & bitmap)
 {
     Sc::Terrain::Tileset tileset = map.getTileset();
@@ -217,6 +298,9 @@ void Graphics::DrawTerrain(ChkdBitmap & bitmap)
                 u16(screenWidth), u16(screenHeight), map.getTile(xTile, yTile));
         }
     }
+
+    if ( tileset % Sc::Terrain::NumTilesets == Sc::Terrain::Tileset::SpacePlatform )
+        DrawStars(bitmap);
 }
 
 void Graphics::DrawTileElevations(ChkdBitmap & bitmap)
