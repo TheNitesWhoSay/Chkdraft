@@ -2617,14 +2617,17 @@ bool Sc::Sprite::imageFlipped(u16 imageId) const
     return this->iscriptIdFlipsGrp.find(this->images[imageId].iScriptId) != this->iscriptIdFlipsGrp.end();
 }
 
-bool Sc::Spk::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, bool remastered)
+bool Sc::Spk::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles)
 {
     try
     {
-        auto starSpkFile = Sc::Data::GetAsset(orderedSourceFiles, "parallax\\star.spk");
+        auto starSpkFile = Sc::Data::GetAsset(orderedSourceFiles, "SD\\TileSet\\platform.spk", true);
+        if ( !starSpkFile )
+            starSpkFile = Sc::Data::GetAsset(orderedSourceFiles, "parallax\\star.spk");
+
         if ( !starSpkFile )
         {
-            logger.error() << "Failed to load parallax\\star.spk";
+            logger.error() << "Failed to load either \"parallax\\star.spk\" or \"SD\\TileSet\\platform.spk\"";
             return false;
         }
     
@@ -2685,13 +2688,8 @@ bool Sc::Spk::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, bool 
     }
     catch ( std::exception & e )
     {
-        if ( !remastered )
-        {
-            logger.error("Error loading classic star.spk file ", e);
-            return false;
-        }
-        else // TODO : loading ideally would support loading from SC:R and loading star.spk from a 1.16.1 installation if also present
-            ;//logger.debug() << "StarCraft remastered does not include a classic star.spk file, a 1.16.1 installation must be used to load classic stars\n";
+        logger.error("Error loading classic star.spk file ", e);
+        return false;
     }
 
     return true;
@@ -4421,8 +4419,7 @@ bool Sc::Data::load(Sc::DataFile::BrowserPtr dataFileBrowser, const std::vector<
         return false;
     }
 
-    bool includesRemastered = false;
-    const std::vector<ArchiveFilePtr> orderedSourceFiles = dataFileBrowser->openScDataFiles(includesRemastered, dataFiles, expectedStarCraftDirectory, starCraftBrowser);
+    const std::vector<ArchiveFilePtr> orderedSourceFiles = dataFileBrowser->openScDataFiles(dataFiles, expectedStarCraftDirectory, starCraftBrowser);
     if ( orderedSourceFiles.empty() )
     {
         logger.error("No archives selected, many features will not work without the game files.\n\nInstall or locate StarCraft for the best experience.");
@@ -4460,7 +4457,7 @@ bool Sc::Data::load(Sc::DataFile::BrowserPtr dataFileBrowser, const std::vector<
     if ( !sprites.load(orderedSourceFiles, imagesTbl) )
         CHKD_ERR("Failed to load sprites!");
 
-    if ( !spk.load(orderedSourceFiles, includesRemastered) )
+    if ( !spk.load(orderedSourceFiles) )
         CHKD_ERR("Failed to load star.spk!");
 
     if ( !tunit.load(orderedSourceFiles, "game\\tunit.pcx") )
@@ -4509,7 +4506,7 @@ std::optional<std::vector<u8>> Sc::Data::GetAsset(const std::vector<ArchiveFileP
     return std::nullopt;
 }
 
-std::optional<std::vector<u8>> Sc::Data::GetAsset(const std::vector<ArchiveFilePtr> & orderedSourceFiles, const std::string & assetArchivePath)
+std::optional<std::vector<u8>> Sc::Data::GetAsset(const std::vector<ArchiveFilePtr> & orderedSourceFiles, const std::string & assetArchivePath, bool silent)
 {
     for ( auto archiveFile : orderedSourceFiles )
     {
@@ -4519,7 +4516,9 @@ std::optional<std::vector<u8>> Sc::Data::GetAsset(const std::vector<ArchiveFileP
                 return asset;
         }
     }
-    logger.error() << "Failed to get StarCraft asset: " << assetArchivePath << std::endl;
+    if ( !silent )
+        logger.error() << "Failed to get StarCraft asset: " << assetArchivePath << std::endl;
+
     return std::nullopt;
 }
 

@@ -950,7 +950,7 @@ namespace Sc {
         static constexpr s32 parllaxHeight = 488;
         static constexpr s32 scrollFactors[] {36, 31, 26, 21, 16};
 
-        bool load(const std::vector<ArchiveFilePtr> & orderedSourcdeFiles, bool remastered);
+        bool load(const std::vector<ArchiveFilePtr> & orderedSourcdeFiles);
     };
 
     class Upgrade {
@@ -3371,7 +3371,8 @@ namespace Sc {
         
         static std::optional<std::vector<u8>> GetAsset(const std::vector<ArchiveFilePtr> & orderedSourceFiles, bool & isFirst,
             const std::string & firstAssetArchivePathOption, const std::string & secondAssetArchivePathOption);
-        static std::optional<std::vector<u8>> GetAsset(const std::vector<ArchiveFilePtr> & orderedSourceFiles, const std::string & assetArchivePath);
+        static std::optional<std::vector<u8>> GetAsset(const std::vector<ArchiveFilePtr> & orderedSourceFiles, const std::string & assetArchivePath,
+            bool silent = false);
         static std::optional<std::vector<u8>> GetAsset(const std::string & assetArchivePath,
             Sc::DataFile::BrowserPtr dataFileBrowser = Sc::DataFile::BrowserPtr(new Sc::DataFile::Browser()),
             const std::vector<Sc::DataFile::Descriptor> & dataFiles = Sc::DataFile::getDefaultDataFiles(),
