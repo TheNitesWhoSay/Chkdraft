@@ -9,6 +9,7 @@ class ChkdDataFileBrowser : public Sc::DataFile::Browser
         ChkdDataFileBrowser();
 
         virtual std::vector<ArchiveFilePtr> openScDataFiles(
+            bool & includesRemastered,
             const std::vector<Sc::DataFile::Descriptor> & dataFiles = getDataFileDescriptors(),
             const std::string & expectedStarCraftDirectory = Settings::starCraftPath,
             FileBrowserPtr<> starCraftBrowser = Sc::DataFile::Browser::getDefaultStarCraftBrowser()) override;

@@ -81,6 +81,7 @@ class Graphics
 
         void DrawMap(const WinLib::DeviceContext & dc, u16 bitWidth, u16 bitHeight, s32 screenLeft, s32 screenTop, ChkdBitmap & bitmap, bool showAnywhere);
 
+        void DrawStars(ChkdBitmap & bitmap);
         void DrawTerrain(ChkdBitmap & bitmap);
         void DrawTileElevations(ChkdBitmap & bitmap);
         void DrawGrid(ChkdBitmap & bitmap);

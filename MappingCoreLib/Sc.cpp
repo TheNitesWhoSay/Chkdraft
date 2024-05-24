@@ -87,6 +87,7 @@ std::vector<Sc::DataFile::Descriptor> Sc::DataFile::getDefaultDataFiles()
 }
 
 std::vector<ArchiveFilePtr> Sc::DataFile::Browser::openScDataFiles(
+    bool & includesRemastered,
     const std::vector<Descriptor> & constDataFileDescriptors,
     const std::string & expectedStarCraftDirectory,
     FileBrowserPtr<u32> starCraftBrowser)
@@ -128,6 +129,9 @@ std::vector<ArchiveFilePtr> Sc::DataFile::Browser::openScDataFiles(
             (foundStarCraftDirectory || (foundStarCraftDirectory = findStarCraftDirectory(scDirectory, foundRemastered, declinedScBrowser, expectedStarCraftDirectory, starCraftBrowser)))
             && (foundRemastered || findFile(makeSystemFilePath(scDirectory, fileName))) )
         {
+            if ( foundRemastered )
+                includesRemastered = true;
+
             foundStarCraftDirectory = true;
             dataFile = openDataFile(makeSystemFilePath(scDirectory, fileName), dataFileDescriptor);
         }
@@ -153,6 +157,15 @@ std::vector<ArchiveFilePtr> Sc::DataFile::Browser::openScDataFiles(
         orderedDataFiles.push_back(openedDataFiles.find(*dataFilePriority)->second);
 
     return orderedDataFiles;
+}
+
+std::vector<ArchiveFilePtr> Sc::DataFile::Browser::openScDataFiles(
+    const std::vector<Descriptor> & constDataFileDescriptors,
+    const std::string & expectedStarCraftDirectory,
+    FileBrowserPtr<u32> starCraftBrowser)
+{
+    bool discarded = false;
+    return openScDataFiles(discarded, constDataFileDescriptors, expectedStarCraftDirectory, starCraftBrowser);
 }
 
 bool Sc::DataFile::Browser::findStarCraftDirectory(std::string & starCraftDirectory, bool & isRemastered, bool & declinedStarCraftBrowse,
@@ -2604,6 +2617,86 @@ bool Sc::Sprite::imageFlipped(u16 imageId) const
     return this->iscriptIdFlipsGrp.find(this->images[imageId].iScriptId) != this->iscriptIdFlipsGrp.end();
 }
 
+bool Sc::Spk::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, bool remastered)
+{
+    try
+    {
+        auto starSpkFile = Sc::Data::GetAsset(orderedSourceFiles, "parallax\\star.spk");
+        if ( !starSpkFile )
+        {
+            logger.error() << "Failed to load parallax\\star.spk";
+            return false;
+        }
+    
+        if ( starSpkFile->size() < sizeof(u16) )
+            throw std::runtime_error("star.spk must be 2-bytes at minimum");
+
+        const Sc::Spk::SpkFile* starSpk = reinterpret_cast<Sc::Spk::SpkFile*>(starSpkFile->data());
+
+        auto totalLayers = starSpk->totalLayers;
+        if ( starSpkFile->size() < sizeof(u16) + totalLayers*sizeof(u16) )
+        {
+            throw std::runtime_error("A star.spk with " + std::to_string(totalLayers) +
+                " must be at least " + std::to_string(sizeof(u16)+totalLayers*sizeof(u16)) + " bytes");
+        }
+
+        const Sc::Spk::SpkFile::StarPosition* baseStarPositions = reinterpret_cast<Sc::Spk::SpkFile::StarPosition*>(
+            starSpkFile->data() + sizeof(u16) + totalLayers*sizeof(u16));
+
+        size_t starPositionsVisited = 0;
+        for ( size_t layer=0; layer<size_t(totalLayers); ++layer )
+        {
+            auto & stars = layerStars.emplace_back();
+            auto totalLayerImages = starSpk->totalImagesInLayer[layer];
+            if ( totalLayerImages > 0 )
+            {
+                stars.reserve(totalLayerImages);
+                const Sc::Spk::SpkFile::StarPosition* layerStarPositions = &baseStarPositions[starPositionsVisited];
+                for ( size_t i=0; i<totalLayerImages; ++i )
+                {
+                    if ( starSpkFile->size() < sizeof(u16) + totalLayers*sizeof(u16) + (starPositionsVisited+i)*sizeof(Sc::Spk::SpkFile::StarPosition) )
+                        throw std::runtime_error("star.spk was not large enough to hold all of its star positions!");
+
+                    const Sc::Spk::SpkFile::StarPosition & layerStarPosition = layerStarPositions[i];
+                    auto xc = layerStarPosition.xc;
+                    auto yc = layerStarPosition.yc;
+                    size_t bitmapOffset = static_cast<size_t>(layerStarPosition.bitmapOffset);
+                    if ( starSpkFile->size() < bitmapOffset+2*sizeof(u16) )
+                        throw std::runtime_error("One or more bitmap positions in star.spk were invalid");
+
+                    const Sc::Spk::SpkFile::StarBitmap* starBitmap = reinterpret_cast<Sc::Spk::SpkFile::StarBitmap*>(starSpkFile->data() + bitmapOffset);
+                    auto width = starBitmap->width;
+                    auto height = starBitmap->height;
+                    if ( width > 0 && height > 0 )
+                    {
+                        if ( starSpkFile->size() < bitmapOffset+2*sizeof(u16) + size_t(width)*size_t(height) )
+                            throw std::runtime_error("One or more bitmaps in star.spk were invalid");
+                        
+                        stars.emplace_back(xc, yc, starBitmap);
+                    }
+                    else
+                        throw std::runtime_error("A star.spk bitmap had an invalid size");
+                
+                }
+                starPositionsVisited += totalLayerImages;
+            }
+        }
+        spkData.swap(*starSpkFile);
+    }
+    catch ( std::exception & e )
+    {
+        if ( !remastered )
+        {
+            logger.error("Error loading classic star.spk file ", e);
+            return false;
+        }
+        else // TODO : loading ideally would support loading from SC:R and loading star.spk from a 1.16.1 installation if also present
+            ;//logger.debug() << "StarCraft remastered does not include a classic star.spk file, a 1.16.1 installation must be used to load classic stars\n";
+    }
+
+    return true;
+}
+
 bool Sc::Upgrade::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles)
 {
     auto start = std::chrono::high_resolution_clock::now();
@@ -4328,7 +4421,8 @@ bool Sc::Data::load(Sc::DataFile::BrowserPtr dataFileBrowser, const std::vector<
         return false;
     }
 
-    const std::vector<ArchiveFilePtr> orderedSourceFiles = dataFileBrowser->openScDataFiles(dataFiles, expectedStarCraftDirectory, starCraftBrowser);
+    bool includesRemastered = false;
+    const std::vector<ArchiveFilePtr> orderedSourceFiles = dataFileBrowser->openScDataFiles(includesRemastered, dataFiles, expectedStarCraftDirectory, starCraftBrowser);
     if ( orderedSourceFiles.empty() )
     {
         logger.error("No archives selected, many features will not work without the game files.\n\nInstall or locate StarCraft for the best experience.");
@@ -4365,6 +4459,9 @@ bool Sc::Data::load(Sc::DataFile::BrowserPtr dataFileBrowser, const std::vector<
 
     if ( !sprites.load(orderedSourceFiles, imagesTbl) )
         CHKD_ERR("Failed to load sprites!");
+
+    if ( !spk.load(orderedSourceFiles, includesRemastered) )
+        CHKD_ERR("Failed to load star.spk!");
 
     if ( !tunit.load(orderedSourceFiles, "game\\tunit.pcx") )
         CHKD_ERR("Failed to load tunit.pcx");
