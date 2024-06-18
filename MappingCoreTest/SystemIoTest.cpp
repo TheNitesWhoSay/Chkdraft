@@ -363,195 +363,195 @@ TEST(SystemIoTest, MakeExtSystemFilePath)
 
 TEST(SystemIoTest, FixMpqPathSeparators)
 {
-    const std::string pathSeparator = getMpqPathSeparator();
+    const std::string pathSeparator = getArchivePathSeparator();
     const std::string regularPath = "C:" + pathSeparator + "dir" + pathSeparator + "file.txt";
     const std::string mixedRegularPath = "C:" + pathSeparator + "dir" + pathSeparator + "file.txt";
-    std::string fixedRegularPath = fixMpqPathSeparators(regularPath);
-    std::string fixedMixedRegularPath = fixMpqPathSeparators(regularPath);
+    std::string fixedRegularPath = fixArchivePathSeparators(regularPath);
+    std::string fixedMixedRegularPath = fixArchivePathSeparators(regularPath);
     EXPECT_STREQ(fixedRegularPath.c_str(), regularPath.c_str());
     EXPECT_STREQ(fixedMixedRegularPath.c_str(), regularPath.c_str());
 }
 
 TEST(SystemIoTest, GetMpqPathSeparator)
 {
-    EXPECT_STREQ("\\", getMpqPathSeparator().c_str());
+    EXPECT_STREQ("\\", getArchivePathSeparator().c_str());
 }
 
 TEST(SystemIoTest, GetMpqFileName)
 {
-    const std::string pathSeparator = getMpqPathSeparator();
-    EXPECT_STREQ("file.txt", getMpqFileName(pathSeparator + "dir" + pathSeparator + "file.txt").c_str());
-    EXPECT_STREQ("file.txt", getMpqFileName("dir" + pathSeparator + "file.txt").c_str());
-    EXPECT_STREQ("file.txt", getMpqFileName(pathSeparator + "file.txt").c_str());
-    EXPECT_STREQ("file.txt", getMpqFileName("file.txt").c_str());
-    EXPECT_STREQ("file.txt", getMpqFileName("some" + pathSeparator + "longer"
+    const std::string pathSeparator = getArchivePathSeparator();
+    EXPECT_STREQ("file.txt", getArchiveFileName(pathSeparator + "dir" + pathSeparator + "file.txt").c_str());
+    EXPECT_STREQ("file.txt", getArchiveFileName("dir" + pathSeparator + "file.txt").c_str());
+    EXPECT_STREQ("file.txt", getArchiveFileName(pathSeparator + "file.txt").c_str());
+    EXPECT_STREQ("file.txt", getArchiveFileName("file.txt").c_str());
+    EXPECT_STREQ("file.txt", getArchiveFileName("some" + pathSeparator + "longer"
         + pathSeparator + " directory" + pathSeparator + "file.txt").c_str());
     
-    EXPECT_STREQ("file", getMpqFileName(pathSeparator + "dir" + pathSeparator + "file").c_str());
-    EXPECT_STREQ("file", getMpqFileName("dir" + pathSeparator + "file").c_str());
-    EXPECT_STREQ("file", getMpqFileName(pathSeparator + "file").c_str());
-    EXPECT_STREQ("file", getMpqFileName("file").c_str());
-    EXPECT_STREQ("file", getMpqFileName("some" + pathSeparator + "longer"
+    EXPECT_STREQ("file", getArchiveFileName(pathSeparator + "dir" + pathSeparator + "file").c_str());
+    EXPECT_STREQ("file", getArchiveFileName("dir" + pathSeparator + "file").c_str());
+    EXPECT_STREQ("file", getArchiveFileName(pathSeparator + "file").c_str());
+    EXPECT_STREQ("file", getArchiveFileName("file").c_str());
+    EXPECT_STREQ("file", getArchiveFileName("some" + pathSeparator + "longer"
         + pathSeparator + " directory" + pathSeparator + "file").c_str());
     
-    EXPECT_TRUE(getMpqFileName("").empty());
-    EXPECT_TRUE(getMpqFileName(pathSeparator).empty());
-    EXPECT_TRUE(getMpqFileName(pathSeparator + "dir" + pathSeparator).empty());
-    EXPECT_TRUE(getMpqFileName("dir" + pathSeparator).empty());
-    EXPECT_TRUE(getMpqFileName(pathSeparator).empty());
-    EXPECT_TRUE(getMpqFileName("some" + pathSeparator + "longer"
+    EXPECT_TRUE(getArchiveFileName("").empty());
+    EXPECT_TRUE(getArchiveFileName(pathSeparator).empty());
+    EXPECT_TRUE(getArchiveFileName(pathSeparator + "dir" + pathSeparator).empty());
+    EXPECT_TRUE(getArchiveFileName("dir" + pathSeparator).empty());
+    EXPECT_TRUE(getArchiveFileName(pathSeparator).empty());
+    EXPECT_TRUE(getArchiveFileName("some" + pathSeparator + "longer"
         + pathSeparator + " directory" + pathSeparator).empty());
 }
 
 TEST(SystemIoTest, GetMpqFileExtension)
 {
-    const std::string pathSeparator = getMpqPathSeparator();
+    const std::string pathSeparator = getArchivePathSeparator();
     
-    EXPECT_STREQ(".txt", getMpqFileExtension("a.txt", true).c_str());
-    EXPECT_STREQ(".txt", getMpqFileExtension("a.b.txt", true).c_str());
-    EXPECT_TRUE(getMpqFileExtension("atxt", true).empty());
-    EXPECT_STREQ(".pdf", getMpqFileExtension("a.pdf", true).c_str());
-    EXPECT_STREQ(".pdf", getMpqFileExtension("a.b.pdf", true).c_str());
+    EXPECT_STREQ(".txt", getArchiveFileExtension("a.txt", true).c_str());
+    EXPECT_STREQ(".txt", getArchiveFileExtension("a.b.txt", true).c_str());
+    EXPECT_TRUE(getArchiveFileExtension("atxt", true).empty());
+    EXPECT_STREQ(".pdf", getArchiveFileExtension("a.pdf", true).c_str());
+    EXPECT_STREQ(".pdf", getArchiveFileExtension("a.b.pdf", true).c_str());
     
-    EXPECT_STREQ(".txt", getMpqFileExtension("something.txt", true).c_str());
-    EXPECT_STREQ(".txt", getMpqFileExtension("something.else.txt", true).c_str());
-    EXPECT_STREQ(".txt", getMpqFileExtension("something.b.txt", true).c_str());
-    EXPECT_TRUE(getMpqFileExtension("somethingtxt", true).empty());
-    EXPECT_STREQ(".pdf", getMpqFileExtension("something.pdf", true).c_str());
-    EXPECT_STREQ(".pdf", getMpqFileExtension("something.else.pdf", true).c_str());
+    EXPECT_STREQ(".txt", getArchiveFileExtension("something.txt", true).c_str());
+    EXPECT_STREQ(".txt", getArchiveFileExtension("something.else.txt", true).c_str());
+    EXPECT_STREQ(".txt", getArchiveFileExtension("something.b.txt", true).c_str());
+    EXPECT_TRUE(getArchiveFileExtension("somethingtxt", true).empty());
+    EXPECT_STREQ(".pdf", getArchiveFileExtension("something.pdf", true).c_str());
+    EXPECT_STREQ(".pdf", getArchiveFileExtension("something.else.pdf", true).c_str());
     
-    EXPECT_TRUE(getMpqFileExtension("txt", true).empty());
-    EXPECT_STREQ(".txt", getMpqFileExtension(".txt", true).c_str());
+    EXPECT_TRUE(getArchiveFileExtension("txt", true).empty());
+    EXPECT_STREQ(".txt", getArchiveFileExtension(".txt", true).c_str());
 
-    EXPECT_STREQ(".exe", getMpqFileExtension("one/two/three.exe", true).c_str());
-    EXPECT_STREQ(".exe", getMpqFileExtension("one\\two\\three.exe", true).c_str());
-    EXPECT_STREQ(".png", getMpqFileExtension("one/two/three.png", true).c_str());
-    EXPECT_STREQ(".png", getMpqFileExtension("one\\two\\three.png", true).c_str());
+    EXPECT_STREQ(".exe", getArchiveFileExtension("one/two/three.exe", true).c_str());
+    EXPECT_STREQ(".exe", getArchiveFileExtension("one\\two\\three.exe", true).c_str());
+    EXPECT_STREQ(".png", getArchiveFileExtension("one/two/three.png", true).c_str());
+    EXPECT_STREQ(".png", getArchiveFileExtension("one\\two\\three.png", true).c_str());
     
-    EXPECT_TRUE(getMpqFileExtension("asdf", true).empty());
-    EXPECT_TRUE(getMpqFileExtension("", true).empty());
+    EXPECT_TRUE(getArchiveFileExtension("asdf", true).empty());
+    EXPECT_TRUE(getArchiveFileExtension("", true).empty());
 
-    EXPECT_STREQ(".txt", getMpqFileExtension(pathSeparator + "dir" + pathSeparator + "file.txt", true).c_str());
-    EXPECT_STREQ(".txt", getMpqFileExtension("dir" + pathSeparator + "file.txt", true).c_str());
-    EXPECT_STREQ(".txt", getMpqFileExtension(pathSeparator + "file.txt", true).c_str());
-    EXPECT_STREQ(".txt", getMpqFileExtension("file.txt", true).c_str());
-    EXPECT_STREQ(".txt", getMpqFileExtension("some" + pathSeparator + "longer"
+    EXPECT_STREQ(".txt", getArchiveFileExtension(pathSeparator + "dir" + pathSeparator + "file.txt", true).c_str());
+    EXPECT_STREQ(".txt", getArchiveFileExtension("dir" + pathSeparator + "file.txt", true).c_str());
+    EXPECT_STREQ(".txt", getArchiveFileExtension(pathSeparator + "file.txt", true).c_str());
+    EXPECT_STREQ(".txt", getArchiveFileExtension("file.txt", true).c_str());
+    EXPECT_STREQ(".txt", getArchiveFileExtension("some" + pathSeparator + "longer"
         + pathSeparator + " directory" + pathSeparator + "file.txt", true).c_str());
     
-    EXPECT_TRUE(getMpqFileExtension(pathSeparator + "dir" + pathSeparator + "file", true).empty());
-    EXPECT_TRUE(getMpqFileExtension("dir" + pathSeparator + "file", true).empty());
-    EXPECT_TRUE(getMpqFileExtension(pathSeparator + "file", true).empty());
-    EXPECT_TRUE(getMpqFileExtension("file", true).empty());
-    EXPECT_TRUE(getMpqFileExtension("some" + pathSeparator + "longer"
+    EXPECT_TRUE(getArchiveFileExtension(pathSeparator + "dir" + pathSeparator + "file", true).empty());
+    EXPECT_TRUE(getArchiveFileExtension("dir" + pathSeparator + "file", true).empty());
+    EXPECT_TRUE(getArchiveFileExtension(pathSeparator + "file", true).empty());
+    EXPECT_TRUE(getArchiveFileExtension("file", true).empty());
+    EXPECT_TRUE(getArchiveFileExtension("some" + pathSeparator + "longer"
         + pathSeparator + " directory" + pathSeparator + "file", true).empty());
     
-    EXPECT_TRUE(getMpqFileExtension("", true).empty());
-    EXPECT_TRUE(getMpqFileExtension(pathSeparator, true).empty());\
-    EXPECT_TRUE(getMpqFileExtension(pathSeparator + "dir" + pathSeparator, true).empty());
-    EXPECT_TRUE(getMpqFileExtension("dir" + pathSeparator, true).empty());
-    EXPECT_TRUE(getMpqFileExtension(pathSeparator, true).empty());
-    EXPECT_TRUE(getMpqFileExtension("some" + pathSeparator + "longer"
+    EXPECT_TRUE(getArchiveFileExtension("", true).empty());
+    EXPECT_TRUE(getArchiveFileExtension(pathSeparator, true).empty());\
+    EXPECT_TRUE(getArchiveFileExtension(pathSeparator + "dir" + pathSeparator, true).empty());
+    EXPECT_TRUE(getArchiveFileExtension("dir" + pathSeparator, true).empty());
+    EXPECT_TRUE(getArchiveFileExtension(pathSeparator, true).empty());
+    EXPECT_TRUE(getArchiveFileExtension("some" + pathSeparator + "longer"
         + pathSeparator + " directory" + pathSeparator, true).empty());
 
-    EXPECT_STREQ(".txt", getMpqFileExtension(pathSeparator + "d.ir" + pathSeparator + "file.txt", true).c_str());
-    EXPECT_STREQ(".txt", getMpqFileExtension("d.ir" + pathSeparator + "file.txt", true).c_str());
-    EXPECT_STREQ(".txt", getMpqFileExtension("some" + pathSeparator + "longer"
+    EXPECT_STREQ(".txt", getArchiveFileExtension(pathSeparator + "d.ir" + pathSeparator + "file.txt", true).c_str());
+    EXPECT_STREQ(".txt", getArchiveFileExtension("d.ir" + pathSeparator + "file.txt", true).c_str());
+    EXPECT_STREQ(".txt", getArchiveFileExtension("some" + pathSeparator + "longer"
         + pathSeparator + " di.rectory" + pathSeparator + "file.txt", true).c_str());
     
-    EXPECT_TRUE(getMpqFileExtension(pathSeparator + "d.ir" + pathSeparator + "file", true).empty());
-    EXPECT_TRUE(getMpqFileExtension("d.ir" + pathSeparator + "file", true).empty());
-    EXPECT_TRUE(getMpqFileExtension("some" + pathSeparator + "longer"
+    EXPECT_TRUE(getArchiveFileExtension(pathSeparator + "d.ir" + pathSeparator + "file", true).empty());
+    EXPECT_TRUE(getArchiveFileExtension("d.ir" + pathSeparator + "file", true).empty());
+    EXPECT_TRUE(getArchiveFileExtension("some" + pathSeparator + "longer"
         + pathSeparator + " directory" + pathSeparator + "file", true).empty());
     
-    EXPECT_TRUE(getMpqFileExtension("", true).empty());
-    EXPECT_TRUE(getMpqFileExtension(pathSeparator, true).empty());
-    EXPECT_TRUE(getMpqFileExtension(pathSeparator + "d.ir" + pathSeparator, true).empty());
-    EXPECT_TRUE(getMpqFileExtension("d.ir" + pathSeparator, true).empty());
-    EXPECT_TRUE(getMpqFileExtension(pathSeparator, true).empty());
-    EXPECT_TRUE(getMpqFileExtension("some" + pathSeparator + "longer"
+    EXPECT_TRUE(getArchiveFileExtension("", true).empty());
+    EXPECT_TRUE(getArchiveFileExtension(pathSeparator, true).empty());
+    EXPECT_TRUE(getArchiveFileExtension(pathSeparator + "d.ir" + pathSeparator, true).empty());
+    EXPECT_TRUE(getArchiveFileExtension("d.ir" + pathSeparator, true).empty());
+    EXPECT_TRUE(getArchiveFileExtension(pathSeparator, true).empty());
+    EXPECT_TRUE(getArchiveFileExtension("some" + pathSeparator + "longer"
         + pathSeparator + " dir.ectory" + pathSeparator, true).empty());
     
     // Same tests, but do not include trailing separator
-    EXPECT_STREQ("txt", getMpqFileExtension("a.txt", false).c_str());
-    EXPECT_STREQ("txt", getMpqFileExtension("a.b.txt", false).c_str());
-    EXPECT_TRUE(getMpqFileExtension("atxt", false).empty());
-    EXPECT_STREQ("pdf", getMpqFileExtension("a.pdf", false).c_str());
-    EXPECT_STREQ("pdf", getMpqFileExtension("a.b.pdf", false).c_str());
+    EXPECT_STREQ("txt", getArchiveFileExtension("a.txt", false).c_str());
+    EXPECT_STREQ("txt", getArchiveFileExtension("a.b.txt", false).c_str());
+    EXPECT_TRUE(getArchiveFileExtension("atxt", false).empty());
+    EXPECT_STREQ("pdf", getArchiveFileExtension("a.pdf", false).c_str());
+    EXPECT_STREQ("pdf", getArchiveFileExtension("a.b.pdf", false).c_str());
     
-    EXPECT_STREQ("txt", getMpqFileExtension("something.txt", false).c_str());
-    EXPECT_STREQ("txt", getMpqFileExtension("something.else.txt", false).c_str());
-    EXPECT_STREQ("txt", getMpqFileExtension("something.b.txt", false).c_str());
-    EXPECT_TRUE(getMpqFileExtension("somethingtxt", false).empty());
-    EXPECT_STREQ("pdf", getMpqFileExtension("something.pdf", false).c_str());
-    EXPECT_STREQ("pdf", getMpqFileExtension("something.else.pdf", false).c_str());
+    EXPECT_STREQ("txt", getArchiveFileExtension("something.txt", false).c_str());
+    EXPECT_STREQ("txt", getArchiveFileExtension("something.else.txt", false).c_str());
+    EXPECT_STREQ("txt", getArchiveFileExtension("something.b.txt", false).c_str());
+    EXPECT_TRUE(getArchiveFileExtension("somethingtxt", false).empty());
+    EXPECT_STREQ("pdf", getArchiveFileExtension("something.pdf", false).c_str());
+    EXPECT_STREQ("pdf", getArchiveFileExtension("something.else.pdf", false).c_str());
     
-    EXPECT_TRUE(getMpqFileExtension("txt", false).empty());
-    EXPECT_STREQ("txt", getMpqFileExtension(".txt", false).c_str());
+    EXPECT_TRUE(getArchiveFileExtension("txt", false).empty());
+    EXPECT_STREQ("txt", getArchiveFileExtension(".txt", false).c_str());
 
-    EXPECT_STREQ("exe", getMpqFileExtension("one/two/three.exe", false).c_str());
-    EXPECT_STREQ("exe", getMpqFileExtension("one\\two\\three.exe", false).c_str());
-    EXPECT_STREQ("png", getMpqFileExtension("one/two/three.png", false).c_str());
-    EXPECT_STREQ("png", getMpqFileExtension("one\\two\\three.png", false).c_str());
+    EXPECT_STREQ("exe", getArchiveFileExtension("one/two/three.exe", false).c_str());
+    EXPECT_STREQ("exe", getArchiveFileExtension("one\\two\\three.exe", false).c_str());
+    EXPECT_STREQ("png", getArchiveFileExtension("one/two/three.png", false).c_str());
+    EXPECT_STREQ("png", getArchiveFileExtension("one\\two\\three.png", false).c_str());
     
-    EXPECT_TRUE(getMpqFileExtension("asdf", false).empty());
-    EXPECT_TRUE(getMpqFileExtension("", false).empty());
+    EXPECT_TRUE(getArchiveFileExtension("asdf", false).empty());
+    EXPECT_TRUE(getArchiveFileExtension("", false).empty());
 
-    EXPECT_STREQ("txt", getMpqFileExtension(pathSeparator + "dir" + pathSeparator + "file.txt", false).c_str());
-    EXPECT_STREQ("txt", getMpqFileExtension("dir" + pathSeparator + "file.txt", false).c_str());
-    EXPECT_STREQ("txt", getMpqFileExtension(pathSeparator + "file.txt", false).c_str());
-    EXPECT_STREQ("txt", getMpqFileExtension("file.txt", false).c_str());
-    EXPECT_STREQ("txt", getMpqFileExtension("some" + pathSeparator + "longer"
+    EXPECT_STREQ("txt", getArchiveFileExtension(pathSeparator + "dir" + pathSeparator + "file.txt", false).c_str());
+    EXPECT_STREQ("txt", getArchiveFileExtension("dir" + pathSeparator + "file.txt", false).c_str());
+    EXPECT_STREQ("txt", getArchiveFileExtension(pathSeparator + "file.txt", false).c_str());
+    EXPECT_STREQ("txt", getArchiveFileExtension("file.txt", false).c_str());
+    EXPECT_STREQ("txt", getArchiveFileExtension("some" + pathSeparator + "longer"
         + pathSeparator + " directory" + pathSeparator + "file.txt", false).c_str());
     
-    EXPECT_TRUE(getMpqFileExtension(pathSeparator + "dir" + pathSeparator + "file", false).empty());
-    EXPECT_TRUE(getMpqFileExtension("dir" + pathSeparator + "file", false).empty());
-    EXPECT_TRUE(getMpqFileExtension(pathSeparator + "file", false).empty());
-    EXPECT_TRUE(getMpqFileExtension("file", false).empty());
-    EXPECT_TRUE(getMpqFileExtension("some" + pathSeparator + "longer"
+    EXPECT_TRUE(getArchiveFileExtension(pathSeparator + "dir" + pathSeparator + "file", false).empty());
+    EXPECT_TRUE(getArchiveFileExtension("dir" + pathSeparator + "file", false).empty());
+    EXPECT_TRUE(getArchiveFileExtension(pathSeparator + "file", false).empty());
+    EXPECT_TRUE(getArchiveFileExtension("file", false).empty());
+    EXPECT_TRUE(getArchiveFileExtension("some" + pathSeparator + "longer"
         + pathSeparator + " directory" + pathSeparator + "file", false).empty());
     
-    EXPECT_TRUE(getMpqFileExtension("", false).empty());
-    EXPECT_TRUE(getMpqFileExtension(pathSeparator, false).empty());
-    EXPECT_TRUE(getMpqFileExtension(pathSeparator + "dir" + pathSeparator, false).empty());
-    EXPECT_TRUE(getMpqFileExtension("dir" + pathSeparator, false).empty());
-    EXPECT_TRUE(getMpqFileExtension(pathSeparator, false).empty());
-    EXPECT_TRUE(getMpqFileExtension("some" + pathSeparator + "longer"
+    EXPECT_TRUE(getArchiveFileExtension("", false).empty());
+    EXPECT_TRUE(getArchiveFileExtension(pathSeparator, false).empty());
+    EXPECT_TRUE(getArchiveFileExtension(pathSeparator + "dir" + pathSeparator, false).empty());
+    EXPECT_TRUE(getArchiveFileExtension("dir" + pathSeparator, false).empty());
+    EXPECT_TRUE(getArchiveFileExtension(pathSeparator, false).empty());
+    EXPECT_TRUE(getArchiveFileExtension("some" + pathSeparator + "longer"
         + pathSeparator + " directory" + pathSeparator, false).empty());
 
-    EXPECT_STREQ("txt", getMpqFileExtension(pathSeparator + "d.ir" + pathSeparator + "file.txt", false).c_str());
-    EXPECT_STREQ("txt", getMpqFileExtension("d.ir" + pathSeparator + "file.txt", false).c_str());
-    EXPECT_STREQ("txt", getMpqFileExtension("some" + pathSeparator + "longer"
+    EXPECT_STREQ("txt", getArchiveFileExtension(pathSeparator + "d.ir" + pathSeparator + "file.txt", false).c_str());
+    EXPECT_STREQ("txt", getArchiveFileExtension("d.ir" + pathSeparator + "file.txt", false).c_str());
+    EXPECT_STREQ("txt", getArchiveFileExtension("some" + pathSeparator + "longer"
         + pathSeparator + " di.rectory" + pathSeparator + "file.txt", false).c_str());
     
-    EXPECT_TRUE(getMpqFileExtension(pathSeparator + "d.ir" + pathSeparator + "file", false).empty());
-    EXPECT_TRUE(getMpqFileExtension("d.ir" + pathSeparator + "file", false).empty());
-    EXPECT_TRUE(getMpqFileExtension("some" + pathSeparator + "longer"
+    EXPECT_TRUE(getArchiveFileExtension(pathSeparator + "d.ir" + pathSeparator + "file", false).empty());
+    EXPECT_TRUE(getArchiveFileExtension("d.ir" + pathSeparator + "file", false).empty());
+    EXPECT_TRUE(getArchiveFileExtension("some" + pathSeparator + "longer"
         + pathSeparator + " directory" + pathSeparator + "file", false).empty());
     
-    EXPECT_TRUE(getMpqFileExtension("", false).empty());
-    EXPECT_TRUE(getMpqFileExtension(pathSeparator, false).empty());
-    EXPECT_TRUE(getMpqFileExtension(pathSeparator + "d.ir" + pathSeparator, false).empty());
-    EXPECT_TRUE(getMpqFileExtension("d.ir" + pathSeparator, false).empty());
-    EXPECT_TRUE(getMpqFileExtension(pathSeparator, false).empty());
-    EXPECT_TRUE(getMpqFileExtension("some" + pathSeparator + "longer"
+    EXPECT_TRUE(getArchiveFileExtension("", false).empty());
+    EXPECT_TRUE(getArchiveFileExtension(pathSeparator, false).empty());
+    EXPECT_TRUE(getArchiveFileExtension(pathSeparator + "d.ir" + pathSeparator, false).empty());
+    EXPECT_TRUE(getArchiveFileExtension("d.ir" + pathSeparator, false).empty());
+    EXPECT_TRUE(getArchiveFileExtension(pathSeparator, false).empty());
+    EXPECT_TRUE(getArchiveFileExtension("some" + pathSeparator + "longer"
         + pathSeparator + " dir.ectory" + pathSeparator, false).empty());
 }
 
 TEST(SystemIoTest, MakeMpqFilePath)
 {
-    const std::string pathSeparator = getMpqPathSeparator();
+    const std::string pathSeparator = getArchivePathSeparator();
     EXPECT_STREQ(std::string("dir" + pathSeparator + "name").c_str(),
-        makeMpqFilePath("dir" + pathSeparator, "name").c_str());
+        makeArchiveFilePath("dir" + pathSeparator, "name").c_str());
     
     EXPECT_STREQ(std::string("dir" + pathSeparator + "name").c_str(),
-        makeMpqFilePath("dir", "name").c_str());
+        makeArchiveFilePath("dir", "name").c_str());
 }
 
 TEST(SystemIoTest, MakeExtMpqFilePath)
 {
-    const std::string pathSeparator = getMpqPathSeparator();
+    const std::string pathSeparator = getArchivePathSeparator();
     EXPECT_STREQ(std::string("dir" + pathSeparator + "name.txt").c_str(),
-        makeExtMpqFilePath("dir" + pathSeparator + "name", ".txt").c_str());
+        makeExtArchiveFilePath("dir" + pathSeparator + "name", ".txt").c_str());
 }
 
 TEST(SystemIoTest, FindFile)

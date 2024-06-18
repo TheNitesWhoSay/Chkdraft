@@ -260,7 +260,7 @@ void SoundEditorWindow::ExtractSoundButtonPressed()
         if ( auto soundArchivePath = CM->getString<RawString>(size_t(soundStringId)) )
         {
             u32 filterIndex = 0;
-            std::string saveFilePath = getMpqFileName(*soundArchivePath);
+            std::string saveFilePath = getArchiveFileName(*soundArchivePath);
             FileBrowserPtr<u32> fileBrowser = getDefaultSoundSaver();
             if ( fileBrowser->browseForSavePath(saveFilePath, filterIndex) )
             {
@@ -346,9 +346,9 @@ void SoundEditorWindow::AddFileButtonPressed()
                 addedSound = CM->addSound(customMpqPath, *soundData, wavQuality);
             else
             {
-                std::string mpqFileName = getMpqFileName(*filePath);
+                std::string mpqFileName = getArchiveFileName(*filePath);
                 std::string standardSoundDir = MapFile::GetStandardSoundDir();
-                std::string mpqFilePath = makeMpqFilePath(standardSoundDir, mpqFileName);
+                std::string mpqFilePath = makeArchiveFilePath(standardSoundDir, mpqFileName);
                 addedSound = CM->addSound(mpqFilePath, *soundData, wavQuality);
             }
         }
