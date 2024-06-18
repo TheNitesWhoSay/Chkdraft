@@ -47,6 +47,11 @@ MapFile::MapFile(Sc::Terrain::Tileset tileset, u16 width, u16 height)
     initializeVirtualSoundTable();
 }
 
+MapFile::MapFile() : Scenario(), saveType(SaveType::HybridScm), mapFilePath(""), temporaryMpqPath(""), temporaryMpq(true, true)
+{
+
+}
+
 MapFile::~MapFile()
 {
 
@@ -560,7 +565,7 @@ bool MapFile::addSound(size_t stringId)
 bool MapFile::addSound(const std::string & srcFilePath, WavQuality wavQuality, bool virtualFile)
 {
     std::string mpqSoundDirectory = GetStandardSoundDir();
-    std::string mpqFilePath = makeMpqFilePath(mpqSoundDirectory, getSystemFileName(srcFilePath));
+    std::string mpqFilePath = makeArchiveFilePath(mpqSoundDirectory, getSystemFileName(srcFilePath));
     return addSound(srcFilePath, mpqFilePath, wavQuality, virtualFile);
 }
 

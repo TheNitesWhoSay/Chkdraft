@@ -26,7 +26,8 @@ class MapFile : public Scenario, public MpqFile // MapFile is a scenario file an
     public:
         MapFile(const std::string & filePath); // Load map at filePath
         MapFile(FileBrowserPtr<SaveType> fileBrowser); // Load map selected from browser, can use getDefaultOpenMapBrowser()
-        MapFile(Sc::Terrain::Tileset tileset = Sc::Terrain::Tileset::Badlands, u16 width = 64, u16 height = 64); // Create new map
+        MapFile(Sc::Terrain::Tileset tileset, u16 width = 64, u16 height = 64); // Create new map
+        MapFile();
 
         virtual ~MapFile();
         
@@ -83,8 +84,6 @@ class MapFile : public Scenario, public MpqFile // MapFile is a scenario file an
         bool openTemporaryMpq();
         bool processModifiedAssets(bool updateListfile);
         void initializeVirtualSoundTable();
-        
-        MapFile();
 };
 
 /** The types of files a map can be saved as, one

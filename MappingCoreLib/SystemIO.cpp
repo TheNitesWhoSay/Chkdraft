@@ -149,81 +149,81 @@ std::string makeExtSystemFilePath(const std::string & systemDirectory, const std
     }
 }
 
-std::string fixMpqPathSeparators(const std::string & mpqFilePath)
+std::string fixArchivePathSeparators(const std::string & archiveFilePath)
 {
-    const std::string defaultMpqPathSeparator = getMpqPathSeparator();
-    const std::string doubleSeparator = defaultMpqPathSeparator + defaultMpqPathSeparator;
-    const std::regex altSeparatorRegex = std::regex(defaultMpqPathSeparator.compare("\\") == 0 ? "\\/" : "\\\\");
-    std::string fixedPath = std::regex_replace(mpqFilePath, altSeparatorRegex, defaultMpqPathSeparator);
+    const std::string defaultArchivePathSeparator = getArchivePathSeparator();
+    const std::string doubleSeparator = defaultArchivePathSeparator + defaultArchivePathSeparator;
+    const std::regex altSeparatorRegex = std::regex(defaultArchivePathSeparator.compare("\\") == 0 ? "\\/" : "\\\\");
+    std::string fixedPath = std::regex_replace(archiveFilePath, altSeparatorRegex, defaultArchivePathSeparator);
     size_t found = fixedPath.find(doubleSeparator);
     while ( found != std::string::npos )
     {
-        fixedPath.replace(found, doubleSeparator.size(), defaultMpqPathSeparator);
+        fixedPath.replace(found, doubleSeparator.size(), defaultArchivePathSeparator);
         found = fixedPath.find(doubleSeparator);
     }
     return fixedPath;
 }
 
-std::string getMpqPathSeparator()
+std::string getArchivePathSeparator()
 {
     return "\\";
 }
 
-std::string getMpqFileName(const std::string & mpqFilePath)
+std::string getArchiveFileName(const std::string & archiveFilePath)
 {
-    const std::string fixedMpqFilePath = fixMpqPathSeparators(mpqFilePath);
-    const std::string mpqPathSeparator = getMpqPathSeparator();
-    size_t lastSeparator = fixedMpqFilePath.rfind(mpqPathSeparator);
+    const std::string fixedArchiveFilePath = fixArchivePathSeparators(archiveFilePath);
+    const std::string archivePathSeparator = getArchivePathSeparator();
+    size_t lastSeparator = fixedArchiveFilePath.rfind(archivePathSeparator);
     if ( lastSeparator == std::string::npos )
-        return fixedMpqFilePath;
-    else if ( !fixedMpqFilePath.empty() && lastSeparator == fixedMpqFilePath.length()-mpqPathSeparator.length() )
+        return fixedArchiveFilePath;
+    else if ( !fixedArchiveFilePath.empty() && lastSeparator == fixedArchiveFilePath.length()-archivePathSeparator.length() )
         return "";
-    else if ( lastSeparator >= 0 && lastSeparator < fixedMpqFilePath.length()-mpqPathSeparator.length() )
-        return fixedMpqFilePath.substr(lastSeparator+mpqPathSeparator.length(), fixedMpqFilePath.length());
+    else if ( lastSeparator >= 0 && lastSeparator < fixedArchiveFilePath.length()-archivePathSeparator.length() )
+        return fixedArchiveFilePath.substr(lastSeparator+archivePathSeparator.length(), fixedArchiveFilePath.length());
     else
-        return fixedMpqFilePath;
+        return fixedArchiveFilePath;
 }
 
-std::string getMpqFileExtension(const std::string & mpqFilePath, bool includeExtensionSeparator)
+std::string getArchiveFileExtension(const std::string & archiveFilePath, bool includeExtensionSeparator)
 {
-    const std::string fixedMpqFilePath = fixMpqPathSeparators(mpqFilePath);
-    const std::string mpqExtensionSeparator = ".";
-    size_t lastExtensionSeparator = fixedMpqFilePath.rfind(mpqExtensionSeparator);
+    const std::string fixedArchiveFilePath = fixArchivePathSeparators(archiveFilePath);
+    const std::string archiveExtensionSeparator = ".";
+    size_t lastExtensionSeparator = fixedArchiveFilePath.rfind(archiveExtensionSeparator);
     if ( lastExtensionSeparator != std::string::npos && lastExtensionSeparator >= 0 &&
-        lastExtensionSeparator <= fixedMpqFilePath.length()-mpqExtensionSeparator.length() )
+        lastExtensionSeparator <= fixedArchiveFilePath.length()-archiveExtensionSeparator.length() )
     {
-        size_t lastPathSeparator = fixedMpqFilePath.rfind(getMpqPathSeparator());
+        size_t lastPathSeparator = fixedArchiveFilePath.rfind(getArchivePathSeparator());
         if ( lastPathSeparator == std::string::npos || lastExtensionSeparator > lastPathSeparator )
         {
             if ( includeExtensionSeparator )
-                return fixedMpqFilePath.substr(lastExtensionSeparator, fixedMpqFilePath.length() - lastExtensionSeparator);
+                return fixedArchiveFilePath.substr(lastExtensionSeparator, fixedArchiveFilePath.length() - lastExtensionSeparator);
             else
-                return fixedMpqFilePath.substr(lastExtensionSeparator + mpqExtensionSeparator.length(), fixedMpqFilePath.length() - lastExtensionSeparator - mpqExtensionSeparator.length());
+                return fixedArchiveFilePath.substr(lastExtensionSeparator + archiveExtensionSeparator.length(), fixedArchiveFilePath.length() - lastExtensionSeparator - archiveExtensionSeparator.length());
         }
     }
     return "";
 }
 
-std::string makeMpqFilePath(const std::string & mpqDirectory, const std::string & fileName)
+std::string makeArchiveFilePath(const std::string & archiveDirectory, const std::string & fileName)
 {
-    const std::string fixedMpqDirectory = fixMpqPathSeparators(mpqDirectory);
-    const std::string mpqPathSeparator = getMpqPathSeparator();
-    size_t lastSeparator = fixedMpqDirectory.rfind(mpqPathSeparator);
-    if ( lastSeparator != std::string::npos && lastSeparator == fixedMpqDirectory.length() - mpqPathSeparator.length() )
-        return fixedMpqDirectory + fileName;
+    const std::string fixedArchiveDirectory = fixArchivePathSeparators(archiveDirectory);
+    const std::string archivePathSeparator = getArchivePathSeparator();
+    size_t lastSeparator = fixedArchiveDirectory.rfind(archivePathSeparator);
+    if ( lastSeparator != std::string::npos && lastSeparator == fixedArchiveDirectory.length() - archivePathSeparator.length() )
+        return fixedArchiveDirectory + fileName;
     else
-        return fixedMpqDirectory + mpqPathSeparator + fileName;
+        return fixedArchiveDirectory + archivePathSeparator + fileName;
 }
 
-std::string makeExtMpqFilePath(const std::string & mpqFilePath, const std::string & extension)
+std::string makeExtArchiveFilePath(const std::string & archiveFilePath, const std::string & extension)
 {
-    const std::string fixedMpqFilePath = fixMpqPathSeparators(mpqFilePath);
-    const std::string mpqExtensionSeparator = ".";
-    const bool extensionIncludesSeparator = extension.find(mpqExtensionSeparator) == 0;
+    const std::string fixedArchiveFilePath = fixArchivePathSeparators(archiveFilePath);
+    const std::string archiveExtensionSeparator = ".";
+    const bool extensionIncludesSeparator = extension.find(archiveExtensionSeparator) == 0;
     if ( extensionIncludesSeparator )
-        return fixedMpqFilePath + extension;
+        return fixedArchiveFilePath + extension;
     else
-        return fixedMpqFilePath + mpqExtensionSeparator + extension;
+        return fixedArchiveFilePath + archiveExtensionSeparator + extension;
 }
 
 bool isDirectory(const std::string & directory)

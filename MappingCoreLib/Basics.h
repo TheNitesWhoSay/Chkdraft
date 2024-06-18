@@ -2,6 +2,7 @@
 #define BASICS_H
 #include <cmath>
 #include <cstdint>
+#include <memory>
 #include <stdexcept>
 #include <string>
 
@@ -216,6 +217,8 @@ inline std::string to_hex_string(const T & t, bool prefix = true)
     return std::string(buf);
 }
 
+std::string to_zero_padded_str(int width, int number);
+
 /**
     enum_t "enum type (scoped)" assumes the property of enum classes that encloses the enum values within a particular scope
     e.g. MyClass::MyEnum::Value cannot be accessed via MyClass::Value (as it could with regular enums) and potentially cause redefinition errors
@@ -233,6 +236,39 @@ inline std::string to_hex_string(const T & t, bool prefix = true)
 /** enum_t "enum type (scoped)" documentation minimized for expansion visibility, see definition for description and usage */
 #define enum_t(name, type, ...) struct name ## _ { enum type ## _ : type __VA_ARGS__; }; using name = name ## _::type ## _;
 
+class ByteBuffer {
+    std::unique_ptr<uint8_t[]> storage = nullptr;
+    size_t length = 0;
+
+public:
+    ByteBuffer() = default;
+    ByteBuffer(size_t length) : storage(std::make_unique<uint8_t[]>(length)), length(length) {}
+    size_t size() const { return length; }
+    const uint8_t* begin() const { return storage.get(); }
+    const uint8_t* end() const { return storage.get() + length; }
+    uint8_t & operator[](size_t index) const {
+        #ifdef _DEBUG
+        if ( index < length )
+            return storage[index];
+        else
+            throw std::out_of_range("ByteBuffer index out of bounds");
+        #else
+        return storage[index];
+        #endif
+    }
+    uint8_t* data() const { return storage.get(); }
+    void expand(size_t length) // Expands buffer to at least the given length, if expansion occurs existing data is invalidated
+    {
+        if ( this->length < length )
+        {
+            storage = nullptr;
+            this->length = 0;
+            storage = std::make_unique<uint8_t[]>(length);
+            this->length = length;
+        }
+    }
+};
+
 template <typename T>
 class Span {
     const T* data = nullptr;
@@ -242,7 +278,7 @@ public:
     constexpr Span() {}
     template <size_t N> constexpr Span(T const (&data)[N]) : data(&data[0]), length(N) {}
     constexpr Span(const T* data, size_t length) : data(data), length(length) {}
-    constexpr const size_t size() const { return length; }
+    constexpr size_t size() const { return length; }
     constexpr const T* begin() const { return data; }
     constexpr const T* end() const { return data + length; }
     constexpr const T & operator[](size_t index) const {

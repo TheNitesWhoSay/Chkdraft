@@ -1853,6 +1853,29 @@ namespace Sc {
             blue = blue/10*7;
         }
     };
+    
+    template <typename T>
+    struct Color
+    {
+        u8 red;
+        u8 green;
+        u8 blue;
+        u8 null;
+
+        Color() : red(0), green(0), blue(0), null(0) {}
+        Color(u8 red, u8 green, u8 blue) : red(red), green(green), blue(blue), null(0) {}
+        Color(const Color & other, u8 redOffset, u8 greenOffset, u8 blueOffset) :
+            red(redOffset > 127 ? (u8(other.red+redOffset) <= other.red ? other.red+redOffset : 0) : (u8(other.red+redOffset) >= other.red ? other.red+redOffset : 255)),
+            green(greenOffset > 127 ? (u8(other.green+greenOffset) <= other.green ? other.green+greenOffset : 0) : (u8(other.green+greenOffset) >= other.green ? other.green+greenOffset : 255)),
+            blue(blueOffset > 127 ? (u8(other.blue+blueOffset) <= other.blue ? other.blue+blueOffset : 0) : (u8(other.blue+blueOffset) >= other.blue ? other.blue+blueOffset : 255)),
+            null(0) {}
+        
+        inline void darken() {
+            red = red/10*7;;
+            green = green/10*7;
+            blue = blue/10*7;
+        }
+    };
 #pragma pack(pop)
 
     class Weapon {
@@ -2104,7 +2127,8 @@ namespace Sc {
 
         bool load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, const std::string & archiveFileName);
         
-        std::vector<Sc::SystemColor> palette;
+        std::vector<Sc::Color<float>> rgbaPalette; // More standard (OpenGL-friendly) color format { red, green, blue, alpha }
+        std::vector<Sc::SystemColor> bgraPalette; // Win32 RGBQUAD format { blue, green, red, alpha/reserved }
     };
 
     struct BoundingBox

@@ -106,6 +106,40 @@ bool CascArchive::findFile(const std::string & filePath, const std::string & cas
     return success;
 }
 
+size_t CascArchive::getFileSize(const std::string & cascPath) const
+{
+    if ( isOpen() )
+    {
+        u32 bytesRead = 0;
+        HANDLE openFile = NULL;
+        if ( CascOpenFile(hCasc, cascPath.c_str(), 0, CASC_OPEN_BY_NAME, &openFile) )
+        {
+            size_t fileSize = (size_t)CascGetFileSize(openFile, NULL);
+            CascCloseFile(openFile);
+            return fileSize;
+        }
+    }
+    return 0;
+}
+
+bool CascArchive::getFile(const std::string & cascPath, ByteBuffer & fileData) const
+{
+    if ( isOpen() )
+    {
+        u32 bytesRead = 0;
+        HANDLE openFile = NULL;
+        if ( CascOpenFile(hCasc, cascPath.c_str(), 0, CASC_OPEN_BY_NAME, &openFile) )
+        {
+            size_t fileSize = (size_t)CascGetFileSize(openFile, NULL);
+            fileData.expand(fileSize);
+            bool success = CascReadFile(openFile, (void*)fileData.data(), (DWORD)fileSize, (LPDWORD)(&bytesRead));
+            CascCloseFile(openFile);
+            return true;
+        }
+    }
+    return false;
+}
+
 std::optional<std::vector<u8>> CascArchive::getFile(const std::string & cascPath) const
 {
     if ( isOpen() )
