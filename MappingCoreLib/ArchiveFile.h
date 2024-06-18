@@ -82,6 +82,14 @@ public:
     // If an archive is already open with a filePath matching the provided filePath, the already opened archive is searched
     // Else attempts to find and search an archive at filePath
     virtual bool findFile(const std::string & filePath, const std::string & archivedFilePath) const = 0;
+    
+    // Attempts to get the file size from this archive at archivedFilePath
+    // Cannot be used unless the archive is already open
+    virtual size_t getFileSize(const std::string & archivedFilePath) const = 0;
+
+    // Attempts to get a file from this archive at archivedFilePath and place the data within the fileData buffer
+    // Cannot be used unless the archive is already open
+    virtual bool getFile(const std::string & archivedFilePath, ByteBuffer & fileData) const = 0;
 
     // Attempts to get a file from this archive at archivedFilePath and place the data within the fileData buffer
     // Cannot be used unless the archive is already open

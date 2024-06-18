@@ -1283,7 +1283,7 @@ void UnitToBits(ChkdBitmap & bitmap, ChkdPalette & palette, u8 color, u16 bitWid
                 const Sc::Sprite::GrpFile & selCirc = chkd.scData.sprites.getGrp(selectionGrpId).get();
                 u16 offsetY = unitYC + chkd.scData.sprites.getSprite(chkd.scData.units.getFlingy(chkd.scData.units.getUnit(drawnUnitId).graphics).sprite).selectionCircleOffset;
                 std::memcpy(remapped, &palette[0], sizeof(remapped));
-                std::memcpy(&palette[0], &chkd.scData.tselect.palette[0], sizeof(remapped));
+                std::memcpy(&palette[0], &chkd.scData.tselect.bgraPalette[0], sizeof(remapped));
                 GrpToBits(bitmap, palette, bitWidth, bitHeight, xStart, yStart, selCirc, unitXC, offsetY, frame, 0, false);
                 std::memcpy(&palette[0], remapped, sizeof(remapped));
             }
@@ -1291,7 +1291,7 @@ void UnitToBits(ChkdBitmap & bitmap, ChkdPalette & palette, u8 color, u16 bitWid
         
         const Sc::Sprite::GrpFile & curr = chkd.scData.sprites.getGrp(grpId).get();
         std::memcpy(remapped, &palette[8], sizeof(remapped));
-        std::memcpy(&palette[8], &chkd.scData.tunit.palette[color < 16 ? 8*color : 8*(color%16)], sizeof(remapped));
+        std::memcpy(&palette[8], &chkd.scData.tunit.bgraPalette[color < 16 ? 8*color : 8*(color%16)], sizeof(remapped));
         GrpToBits(bitmap, palette, bitWidth, bitHeight, xStart, yStart, curr, unitXC, unitYC, lifted ? getLiftedFrame(drawnUnitId) : getPreferredFrame(drawnUnitId), color, chkd.scData.sprites.imageFlipped(imageId));
         if ( (size_t)subUnitGrpId < chkd.scData.sprites.numGrps() )
         {
@@ -1338,14 +1338,14 @@ void SpriteToBits(ChkdBitmap & bitmap, ChkdPalette & palette, u8 color, u16 bitW
             const Sc::Sprite::GrpFile & selCirc = chkd.scData.sprites.getGrp(selectionGrpId).get();
             u16 offsetY = spriteYC + chkd.scData.sprites.getSprite(spriteID).selectionCircleOffset;
             std::memcpy(remapped, &palette[0], sizeof(remapped));
-            std::memcpy(&palette[0], &chkd.scData.tselect.palette[0], sizeof(remapped));
+            std::memcpy(&palette[0], &chkd.scData.tselect.bgraPalette[0], sizeof(remapped));
             GrpToBits(bitmap, palette, bitWidth, bitHeight, xStart, yStart, selCirc, spriteXC, offsetY, 0, 0, false);
             std::memcpy(&palette[0], remapped, sizeof(remapped));
         }
     }
 
     std::memcpy(remapped, &palette[8], sizeof(remapped));
-    std::memcpy(&palette[8], &chkd.scData.tunit.palette[color < 16 ? 8*color : 8*(color%16)], sizeof(remapped));
+    std::memcpy(&palette[8], &chkd.scData.tunit.bgraPalette[color < 16 ? 8*color : 8*(color%16)], sizeof(remapped));
     GrpToBits(bitmap, palette, bitWidth, bitHeight, xStart, yStart, curr, spriteXC, spriteYC, 0, color, flipped);
     std::memcpy(&palette[8], remapped, sizeof(remapped));
 }
@@ -2356,7 +2356,7 @@ void DrawMiniMapUnits(ChkdBitmap & bitmap, u16 bitWidth, u16 bitHeight, u16 xSiz
             );
 
         if ( bitIndex < MINI_MAP_MAXBIT )
-            bitmap[bitIndex] = chkd.scData.tminimap.palette[color];
+            bitmap[bitIndex] = chkd.scData.tminimap.bgraPalette[color];
     }
     
     for ( const auto & sprite : map.sprites )
@@ -2373,7 +2373,7 @@ void DrawMiniMapUnits(ChkdBitmap & bitmap, u16 bitWidth, u16 bitHeight, u16 xSiz
                 + (u32)((sprite.xc / 32)*scale) + xOffset);
 
             if ( bitIndex < MINI_MAP_MAXBIT )
-                bitmap[bitIndex] = chkd.scData.tminimap.palette[color];
+                bitmap[bitIndex] = chkd.scData.tminimap.bgraPalette[color];
         }
     }
 }

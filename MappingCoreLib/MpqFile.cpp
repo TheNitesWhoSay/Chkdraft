@@ -190,6 +190,40 @@ bool MpqFile::findFile(const std::string & filePath, const std::string & mpqPath
     return success;
 }
 
+size_t MpqFile::getFileSize(const std::string & mpqPath) const
+{
+    if ( isOpen() )
+    {
+        u32 bytesRead = 0;
+        HANDLE openFile = NULL;
+        if ( SFileOpenFileEx(hMpq, mpqPath.c_str(), SFILE_OPEN_FROM_MPQ, &openFile) )
+        {
+            size_t fileSize = (size_t)SFileGetFileSize(openFile, NULL);
+            SFileCloseFile(openFile);
+            return fileSize;
+        }
+    }
+    return 0;
+}
+
+bool MpqFile::getFile(const std::string & mpqPath, ByteBuffer & fileData) const
+{
+    if ( isOpen() )
+    {
+        u32 bytesRead = 0;
+        HANDLE openFile = NULL;
+        if ( SFileOpenFileEx(hMpq, mpqPath.c_str(), SFILE_OPEN_FROM_MPQ, &openFile) )
+        {
+            size_t fileSize = (size_t)SFileGetFileSize(openFile, NULL);
+            fileData.expand(fileSize);
+            bool success = SFileReadFile(openFile, (LPVOID)fileData.data(), (DWORD)fileSize, (LPDWORD)(&bytesRead), NULL);
+            SFileCloseFile(openFile);
+            return success;
+        }
+    }
+    return false;
+}
+
 std::optional<std::vector<u8>> MpqFile::getFile(const std::string & mpqPath) const
 {
     if ( isOpen() )

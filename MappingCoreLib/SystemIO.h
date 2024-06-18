@@ -29,12 +29,12 @@ std::string makeSystemFilePath(const std::string & systemDirectory, const std::s
 std::string makeExtSystemFilePath(const std::string & systemFilePath, const std::string & extension); // Creates a file path ensuring the appropriate extension is used
 std::string makeExtSystemFilePath(const std::string & systemDirectory, const std::string & fileName, const std::string & extension); // Creates a file path ensuring the appropriate separator and extension is used
 
-std::string fixMpqPathSeparators(const std::string & mpqFilePath); // Replace all supported path separator chars with default separator chars, replace all sequential separators with a single separator
-std::string getMpqPathSeparator(); // Gets the file separator used inside MPQ files (always \)
-std::string getMpqFileName(const std::string & mpqFilePath); // Extracts the file name from a MPQ file path
-std::string getMpqFileExtension(const std::string & mpqFilePath, bool includeExtensionSeparator = true); // Extracts the file extension from a mpq file path, this will include the dot
-std::string makeMpqFilePath(const std::string & mpqDirectory, const std::string & fileName); // Creates a mpq file path ensuring the appropriate separator is used
-std::string makeExtMpqFilePath(const std::string & mpqFilePath, const std::string & extension); // Creates a mpq file path ensuring the appropriate separator and extension is used
+std::string fixArchivePathSeparators(const std::string & archiveFilePath); // Replace all supported path separator chars with default separator chars, replace all sequential separators with a single separator
+std::string getArchivePathSeparator(); // Gets the file separator used inside MPQ/CASC files (always \)
+std::string getArchiveFileName(const std::string & mpqFilePath); // Extracts the file name from a MPQ/CASC file path
+std::string getArchiveFileExtension(const std::string & archiveFilePath, bool includeExtensionSeparator = true); // Extracts the file extension from a mpq/casc file path, this will include the dot
+std::string makeArchiveFilePath(const std::string & archiveDirectory, const std::string & fileName); // Creates a mpq/casc file path ensuring the appropriate separator is used
+std::string makeExtArchiveFilePath(const std::string & archiveFilePath, const std::string & extension); // Creates a mpq/casc file path ensuring the appropriate separator and extension is used
 
 bool isDirectory(const std::string & directory);
 bool findFile(const std::string & filePath);

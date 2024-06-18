@@ -86,6 +86,14 @@ public:
     // Else attempts to find and search an MPQ at filePath
     virtual bool findFile(const std::string & filePath, const std::string & mpqPath) const override;
 
+    // Attempts to get the file size from this MPQ at mpqPath
+    // Cannot be used unless the MPQ is already open
+    virtual size_t getFileSize(const std::string & mpqPath) const override;
+
+    // Attempts to get a file from this MPQ at mpqPath and place the data within the fileData buffer
+    // Cannot be used unless the MPQ is already open
+    virtual bool getFile(const std::string & mpqPath, ByteBuffer & fileData) const override;
+
     // Attempts to get a file from this MPQ at mpqPath and place the data within the fileData buffer
     // Cannot be used unless the MPQ is already open
     virtual std::optional<std::vector<u8>> getFile(const std::string & mpqPath) const override;

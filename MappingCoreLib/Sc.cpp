@@ -1518,7 +1518,7 @@ const std::vector<std::string> Sc::Tech::names = {
     "Unused Tech (43)",
 };
 
-const std::string Sc::Ai::aiScriptBinPath = makeExtMpqFilePath(makeMpqFilePath("scripts", "AISCRIPT"), "BIN");
+const std::string Sc::Ai::aiScriptBinPath = makeExtArchiveFilePath(makeArchiveFilePath("scripts", "AISCRIPT"), "BIN");
 
 const std::string & Sc::Ai::Entry::getName(const TblFile & tblFile) const
 {
@@ -1817,14 +1817,14 @@ bool Sc::Terrain::Tiles::load(size_t tilesetIndex, const std::vector<ArchiveFile
     std::array<u16, Sprite::TotalSprites> & doodadSpriteFlags, std::array<u16, Unit::TotalTypes> & doodadUnitFlags)
 {
     const std::string tilesetMpqDirectory = "tileset";
-    const std::string mpqFilePath = makeMpqFilePath(tilesetMpqDirectory, tilesetName);
-    const std::string cv5FilePath = makeExtMpqFilePath(mpqFilePath, "cv5");
-    const std::string vf4FilePath = makeExtMpqFilePath(mpqFilePath, "vf4");
-    const std::string vr4FilePath = makeExtMpqFilePath(mpqFilePath, "vr4");
-    const std::string vx4FilePath = makeExtMpqFilePath(mpqFilePath, "vx4");
-    const std::string vx4exFilePath = makeExtMpqFilePath(mpqFilePath, "vx4ex");
-    const std::string wpeFilePath = makeExtMpqFilePath(mpqFilePath, "wpe");
-    const std::string ddDataFilePath = makeExtMpqFilePath(makeMpqFilePath(mpqFilePath, "dddata"), "bin");
+    const std::string mpqFilePath = makeArchiveFilePath(tilesetMpqDirectory, tilesetName);
+    const std::string cv5FilePath = makeExtArchiveFilePath(mpqFilePath, "cv5");
+    const std::string vf4FilePath = makeExtArchiveFilePath(mpqFilePath, "vf4");
+    const std::string vr4FilePath = makeExtArchiveFilePath(mpqFilePath, "vr4");
+    const std::string vx4FilePath = makeExtArchiveFilePath(mpqFilePath, "vx4");
+    const std::string vx4exFilePath = makeExtArchiveFilePath(mpqFilePath, "vx4ex");
+    const std::string wpeFilePath = makeExtArchiveFilePath(mpqFilePath, "wpe");
+    const std::string ddDataFilePath = makeExtArchiveFilePath(makeArchiveFilePath(mpqFilePath, "dddata"), "bin");
     
     auto cv5Data = Sc::Data::GetAsset(orderedSourceFiles, cv5FilePath);
     auto vf4Data = Sc::Data::GetAsset(orderedSourceFiles, vf4FilePath);
@@ -2397,7 +2397,7 @@ bool Sc::Sprite::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, Sc
     {
         const std::string & imageFilePath = imagesTbl->getString(i);
         Sc::Sprite::Grp grp;
-        if ( getMpqFileExtension(imageFilePath).compare(".grp") == 0 )
+        if ( getArchiveFileExtension(imageFilePath).compare(".grp") == 0 )
         {
             if ( grp.load(orderedSourceFiles, "unit\\" + imageFilePath) )
                 grps.push_back(grp);
@@ -4003,14 +4003,17 @@ bool Sc::Pcx::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, const
             u8 compSect = pcxFile.data[dataOffset++];
             if ( compSect < PcxFile::MaxOffset ) // Single RGB from palette starting at compSect*3
             {
-                palette.push_back(Sc::SystemColor(paletteData[compSect*3], paletteData[compSect*3+1], paletteData[compSect*3+2]));
+                rgbaPalette.push_back(Sc::Color<float>(paletteData[compSect*3], paletteData[compSect*3+1], paletteData[compSect*3+2]));
+                bgraPalette.push_back(Sc::SystemColor(paletteData[compSect*3], paletteData[compSect*3+1], paletteData[compSect*3+2]));
                 pixel++;
             }
             else // Repeat color at palette starting at colorIndex*3, compSect-MaxOffset times
             {
                 u8 colorIndex = pcxFile.data[dataOffset++];
-                Sc::SystemColor color(paletteData[colorIndex*3], paletteData[colorIndex*3+1], paletteData[colorIndex*3+2]);
-                palette.insert(palette.end(), compSect-PcxFile::MaxOffset, color);
+                Sc::Color<float> rgbaColor(paletteData[colorIndex*3], paletteData[colorIndex*3+1], paletteData[colorIndex*3+2]);
+                Sc::SystemColor bgraColor(paletteData[colorIndex*3], paletteData[colorIndex*3+1], paletteData[colorIndex*3+2]);
+                rgbaPalette.insert(rgbaPalette.end(), compSect-PcxFile::MaxOffset, rgbaColor);
+                bgraPalette.insert(bgraPalette.end(), compSect-PcxFile::MaxOffset, bgraColor);
                 pixel += (compSect-PcxFile::MaxOffset);
             }
         }

@@ -53,6 +53,14 @@ public:
     // Else attempts to find and search a Casc at filePath
     virtual bool findFile(const std::string & filePath, const std::string & cascPath) const override;
 
+    // Attempts to get the file size from this Casc at cascPath
+    // Cannot be used unless the Casc is already open
+    virtual size_t getFileSize(const std::string & cascPath) const override;
+
+    // Attempts to get a file from this Casc at cascPath and place the data within the fileData buffer
+    // Cannot be used unless the Casc is already open
+    virtual bool getFile(const std::string & cascPath, ByteBuffer & fileData) const override;
+
     // Attempts to get a file from this Casc at cascPath and place the data within the fileData buffer
     // Cannot be used unless the Casc is already open
     virtual std::optional<std::vector<u8>> getFile(const std::string & cascPath) const override;
