@@ -3,7 +3,8 @@
 #include "../../CommonFiles/CommonFiles.h"
 #include "../../../WindowsLib/WindowsUI.h"
 #include "../../Mapping/Clipboard.h"
-#include "../../Mapping/Graphics.h"
+#include "../../Mapping/ScGraphics.h"
+#include "../../Mapping/ScrGraphics.h"
 #include "../../Mapping/Undos/Undos.h"
 
 class GuiMap;
@@ -192,6 +193,19 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     
                     ChkdPalette & getPalette();
                     ChkdPalette & getStaticPalette();
+                    std::shared_ptr<WinLib::DeviceContext> getOpenGlBuffer() { return openGlBuffer; }
+
+                    enum class Skin
+                    {
+                        ClassicGDI,
+                        ClassicGL,
+                        ScrSD,
+                        ScrHD2,
+                        ScrHD,
+                        CarbotHD2,
+                        CarbotHD
+                    };
+                    void SetSkin(GuiMap::Skin skin);
 
 
     protected:
@@ -235,8 +249,12 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
 
 /*     Data     */  Clipboard & clipboard;
                     Selections selections {*this};
-                    Graphics graphics {*this, selections};
                     Undos undos {*this};
+                    Graphics scGraphics {*this, selections};
+                    Scr::MapGraphics scrGraphics {*this};
+                    GuiMap::Skin skin = Skin::ClassicGDI;
+                    std::shared_ptr<WinLib::DeviceContext> openGlBuffer;
+                    u32 prevTickCount = GetTickCount();
 
                     u16 mapId = 0;
                     bool changeLock = false;

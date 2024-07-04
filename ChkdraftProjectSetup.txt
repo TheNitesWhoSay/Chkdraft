@@ -20,7 +20,7 @@ Chkdraft
 		Code Generation
 			Runtime Library: /MTd (debug) or /MT (release)
 	Linker
-		Input: StormLib.lib;IcuLib.lib;winmm.lib;comctl32.lib
+		Input: StormLib.lib;IcuLib.lib;opengl32.lib;winmm.lib;comctl32.lib
 		
 ChkdraftLib
 	Project Dependencies: CommanderLib, MappingCoreLib, WindowsLib

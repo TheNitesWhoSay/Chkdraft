@@ -24,6 +24,7 @@
 #include "TextTrigCompiler.h" // Provides the means to compile text triggers into a scenario file
 #include "TextTrigGenerator.h" // Provides the means to turn triggers into text 
 
+#include "ArchiveCluster.h" // An ArchiveCluster is a special type of ArchiveFile which reads from and prioritized set of ArchiveFiles (e.g. patch_rt.mpq, BrooDat.mpq, StarDat.mpq)
 #include "ArchiveFile.h" // Defines a standard interface for archive files, implemented by MpqFile and CascArchive
 #include "FileBrowser.h" // This file defines a standard, extensible interface for browsing for file paths, be they a location to save files at or open files from, as well as a default implementation
 #include "SystemIO.h" // This file contains any functions that require use of system specific code, and does so in a guarded manner to stay cross-platform safe

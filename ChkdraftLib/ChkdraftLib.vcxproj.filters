@@ -138,6 +138,18 @@
     <Filter Include="Source Files\Windows\Dialog Windows\%2a">
       <UniqueIdentifier>{340402f0-66ff-4f6f-9df7-9151948b116f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Mapping\%2a\OpenGL">
+      <UniqueIdentifier>{b8ca04c2-c1f8-404a-9fc6-64299ccb0607}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Mapping\%2a\OpenGL\Glad">
+      <UniqueIdentifier>{10958fb1-fc77-4a67-9994-807ccfdaf254}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Mapping\%2a\OpenGL">
+      <UniqueIdentifier>{315bcd61-7190-4cd0-8fc3-a15fb5bb1e67}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Mapping\%2a\OpenGL\Glad">
+      <UniqueIdentifier>{c3d24473-ebe2-46d0-9289-5c091ca93c59}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Chkdraft.h">
@@ -167,7 +179,7 @@
     <ClInclude Include="Mapping\Clipboard.h">
       <Filter>Header Files\Mapping\%2a</Filter>
     </ClInclude>
-    <ClInclude Include="Mapping\Graphics.h">
+    <ClInclude Include="Mapping\ScGraphics.h">
       <Filter>Header Files\Mapping\%2a</Filter>
     </ClInclude>
     <ClInclude Include="Mapping\Selections.h">
@@ -443,6 +455,51 @@
     <ClInclude Include="Mapping\Undos\ChkdUndos\DimensionChange.h">
       <Filter>Header Files\Mapping\Undos\ChkdUndos\%2a</Filter>
     </ClInclude>
+    <ClInclude Include="Mapping\MemoryTieredTasks.h">
+      <Filter>Header Files\Mapping\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="Mapping\OpenGL\gl\base.h">
+      <Filter>Header Files\Mapping\%2a\OpenGL</Filter>
+    </ClInclude>
+    <ClInclude Include="Mapping\OpenGL\gl\context_semaphore.h">
+      <Filter>Header Files\Mapping\%2a\OpenGL</Filter>
+    </ClInclude>
+    <ClInclude Include="Mapping\OpenGL\gl\palette.h">
+      <Filter>Header Files\Mapping\%2a\OpenGL</Filter>
+    </ClInclude>
+    <ClInclude Include="Mapping\OpenGL\gl\program.h">
+      <Filter>Header Files\Mapping\%2a\OpenGL</Filter>
+    </ClInclude>
+    <ClInclude Include="Mapping\OpenGL\gl\shader.h">
+      <Filter>Header Files\Mapping\%2a\OpenGL</Filter>
+    </ClInclude>
+    <ClInclude Include="Mapping\OpenGL\gl\texture.h">
+      <Filter>Header Files\Mapping\%2a\OpenGL</Filter>
+    </ClInclude>
+    <ClInclude Include="Mapping\OpenGL\gl\uniform.h">
+      <Filter>Header Files\Mapping\%2a\OpenGL</Filter>
+    </ClInclude>
+    <ClInclude Include="Mapping\OpenGL\gl\unique_resource.h">
+      <Filter>Header Files\Mapping\%2a\OpenGL</Filter>
+    </ClInclude>
+    <ClInclude Include="Mapping\OpenGL\gl\vertices.h">
+      <Filter>Header Files\Mapping\%2a\OpenGL</Filter>
+    </ClInclude>
+    <ClInclude Include="Mapping\OpenGL\glad\glad\gl.h">
+      <Filter>Header Files\Mapping\%2a\OpenGL\Glad</Filter>
+    </ClInclude>
+    <ClInclude Include="Mapping\OpenGL\glad\KHR\khrplatform.h">
+      <Filter>Header Files\Mapping\%2a\OpenGL\Glad</Filter>
+    </ClInclude>
+    <ClInclude Include="Mapping\ScrGraphics.h">
+      <Filter>Header Files\Mapping\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="Mapping\WglRenderContext.h">
+      <Filter>Header Files\Mapping\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="Mapping\ColorCycler.h">
+      <Filter>Header Files\Mapping\%2a</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Chkdraft.cpp">
@@ -466,7 +523,7 @@
     <ClCompile Include="Mapping\Clipboard.cpp">
       <Filter>Source Files\Mapping\%2a</Filter>
     </ClCompile>
-    <ClCompile Include="Mapping\Graphics.cpp">
+    <ClCompile Include="Mapping\ScGraphics.cpp">
       <Filter>Source Files\Mapping\%2a</Filter>
     </ClCompile>
     <ClCompile Include="Mapping\Selections.cpp">
@@ -735,6 +792,12 @@
     </ClCompile>
     <ClCompile Include="Mapping\Undos\ChkdUndos\DimensionChange.cpp">
       <Filter>Source Files\Mapping\Undos\ChkdUndos</Filter>
+    </ClCompile>
+    <ClCompile Include="Mapping\OpenGL\glad\glad\gl.c">
+      <Filter>Source Files\Mapping\%2a\OpenGL\Glad</Filter>
+    </ClCompile>
+    <ClCompile Include="Mapping\ScrGraphics.cpp">
+      <Filter>Source Files\Mapping\%2a</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

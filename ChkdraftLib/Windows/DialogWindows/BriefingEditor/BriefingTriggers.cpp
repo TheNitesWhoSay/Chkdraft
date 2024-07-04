@@ -2,7 +2,7 @@
 #include "../../../Chkdraft.h"
 #include "../../ChkdControls/MoveTo.h"
 #include "../../../Mapping/Settings.h"
-#include "../../../Mapping/Graphics.h"
+#include "../../../Mapping/ScGraphics.h"
 #include <string>
 
 #undef PlaySound

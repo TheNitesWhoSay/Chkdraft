@@ -1,5 +1,5 @@
-#ifndef GRAPHICS_H
-#define GRAPHICS_H
+#ifndef SCGRAPHICS_H
+#define SCGRAPHICS_H
 #include "../CommonFiles/CommonFiles.h"
 #include "../../WindowsLib/WindowsUi.h"
 #include "Clipboard.h"
@@ -17,56 +17,6 @@ using ChkdBitmap = std::vector<Sc::SystemColor>;
 using ChkdPalette = std::array<Sc::SystemColor, Sc::NumColors>;
 
 extern Sc::SystemColor black;
-
-class Graphics;
-
-struct colorcycle
-{
-    char enabled; // This record is used
-    char steps; // How many frames to pause between cycling
-    char timer; // Frame counter
-    short start; // WPE index to cycle from
-    short stop; // WPE index to cycle to
-};
-
-class ColorCycler
-{
-    public:
-        /**
-            A tileset has a set of between zero and eight rotators, after every tick (one change in GetTickCount: ~16ms), each rotator's ticksRemaining is decremented
-
-            If a rotator's ticksRemaining reaches zero, palette colors from min to max are each rotated one index to the right "palette[index+1] = palette[index]",
-            the rightmost entry "palette[paletteIndexMax]" wraps around to become the leftmost entry "palette[paletteIndexMin]"
-            following this, ticksRemaining gets set to ticksBetweenRotations, and anything using the palette should be redrawn
-        */
-        class Rotator
-        {
-        public:
-            enum class Enabled {
-                No,
-                Yes
-            };
-
-            Enabled enabled;
-            u8 ticksBetweenRotations; // 
-            u8 ticksRemaining; // When this reaches 0, palette colors from min to max are each rotated one index to the right, with the rightmost 
-            u16 paletteIndexMin;
-            u16 paletteIndexMax;
-        };
-
-        virtual ~ColorCycler();
-        static bool CycleColors(const u16 tileset, ChkdPalette & palette); // Returns true if the map should be redrawn
-
-    private:
-        static constexpr size_t TotalRotatorSets = 4;
-        static constexpr size_t MaxRotatersPerSet = 8;
-
-        static DWORD nextTickCount; // Value from prev updates GetTickCount()+42
-
-        static const size_t TilesetRotationSet[Sc::Terrain::NumTilesets]; // Index of the rotater to use for a given tileset, all values must be less than TotalRotaterSets
-        static Rotator NoRotators[MaxRotatersPerSet]; // An empty rotator set
-        static Rotator RotatorSets[TotalRotatorSets][MaxRotatersPerSet]; // All rotator sets
-};
 
 class Graphics
 {

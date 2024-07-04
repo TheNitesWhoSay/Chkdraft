@@ -1,82 +1,12 @@
-#include "Graphics.h"
+#include "ScGraphics.h"
 #include "../CommonFiles/CommonFiles.h"
 #include "../Chkdraft.h"
 #include <algorithm>
 #include <string>
 
-DWORD ColorCycler::nextTickCount = 0;
-
 enum_t(MaxUnitBounds, s32, {
     Left = 128, Right = 127, Up = 80, Down = 79
 });
-
-const size_t ColorCycler::TilesetRotationSet[Sc::Terrain::NumTilesets] = {
-    0, // badlands uses set 0
-    1, // platform uses set 1
-    1, // installation uses set 1
-    2, // ashworld uses set 2
-    0, // jungle uses set 0
-    3, // desert uses set 3
-    3, // iceworld uses set 3
-    3  // twilight uses set 3
-};
-
-ColorCycler::Rotator ColorCycler::NoRotators[MaxRotatersPerSet] = {};
-
-ColorCycler::Rotator ColorCycler::RotatorSets[TotalRotatorSets][MaxRotatersPerSet] = {
-    { // Rotator set 0: Three rotators act on badlands and jungle
-        { Rotator::Enabled::Yes, 8, 0, 1, 6 }, // Every eight ticks rotate palette colors from indexes 1 to 6 (inclusive) rightwards
-        { Rotator::Enabled::Yes, 8, 0, 7, 13 }, // Every eight ticks rotate palette colors from indexes 7 to 13 (inclusive) rightwards
-        { Rotator::Enabled::Yes, 8, 0, 248, 254 } // Every eight ticks rotate palette colors from indexes 248 to 254 (inclusive) rightwards
-    },
-    {}, // Rotator set 1: No rotators act on platform or installation
-    { // Rotator set 2: Three rotators act on ashworld
-        { Rotator::Enabled::Yes, 8, 0, 1, 4 }, // Every eight ticks rotate palette colors from indexes 1 to 4 (inclusive) rightwards
-        { Rotator::Enabled::Yes, 8, 0, 5, 8 }, // Every eight ticks rotate palette colors from indexes 5 to 8 (inclusive) rightwards
-        { Rotator::Enabled::Yes, 8, 0, 9, 13 } // Every eight ticks rotate palette colors from indexes 9 to 13 (inclusive) rightwards
-    },
-    { // Rotator set 3: Two rotators act on desert, iceworld, and twilight
-        { Rotator::Enabled::Yes, 8, 0, 1, 13 }, // Every eight ticks rotate palette colors from indexes 1 to 13 (inclusive) rightwards
-        { Rotator::Enabled::Yes, 8, 0, 248, 254 } // Every eight ticks rotate palette colors from indexes 248 to 254 (inclusive) rightwards
-    }
-};
-
-ColorCycler::~ColorCycler()
-{
-
-}
-
-bool ColorCycler::CycleColors(const u16 tileset, ChkdPalette & palette)
-{
-    bool redraw = false;
-    auto tickCount = GetTickCount();
-    if ( tickCount >= nextTickCount )
-    {
-        size_t currentRotationSet = TilesetRotationSet[tileset];
-        Rotator* rotatorSet = currentRotationSet < TotalRotatorSets ? RotatorSets[currentRotationSet] : NoRotators;
-        for ( size_t rotatorIndex=0; rotatorIndex<8; rotatorIndex++ )
-        {
-            Rotator & rotator = rotatorSet[rotatorIndex];
-            if ( rotator.enabled != Rotator::Enabled::No ) // Ensure this rotator is enabled/exists
-            {
-                if ( rotator.ticksRemaining == 0 )
-                {
-                    for ( u16 paletteIndex = rotator.paletteIndexMax; paletteIndex > rotator.paletteIndexMin; paletteIndex-- )
-                        std::swap(palette[paletteIndex], palette[paletteIndex-1]); // Swap adjacent colors starting from max and ending at min, net effect is each rotates one to the right
-
-                    rotator.ticksRemaining = rotator.ticksBetweenRotations; // Reset the timer
-                    redraw = true; // Flag that anything using the palette should be redrawn
-                }
-                else
-                    rotator.ticksRemaining --; // Decrement the timer
-            }
-        }
-
-        nextTickCount = tickCount + 10;
-    }
-
-    return redraw;
-}
 
 inline void BoundedAdjustPx(Sc::SystemColor & pixel, s16 redOffset, s16 greenOffset, s16 blueOffset)
 {

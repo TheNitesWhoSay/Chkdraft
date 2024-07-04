@@ -1,6 +1,7 @@
 #include "GuiMap.h"
 #include "../../Chkdraft.h"
 #include "../../Windows/ChkdControls/MoveTo.h"
+#include "../../Mapping/DataFileBrowsers.h"
 #include "../../Mapping/Undos/ChkdUndos/CutCopyPasteChange.h"
 #include "../../Mapping/Undos/ChkdUndos/IsomChange.h"
 #include "../../Mapping/Undos/ChkdUndos/TileChange.h"
@@ -51,7 +52,7 @@ GuiMap::GuiMap(Clipboard & clipboard, Sc::Terrain::Tileset tileset, u16 width, u
     refreshTileOccupationCache();
     Scenario::updateTilesFromIsom(*this);
 
-    graphics.updatePalette();
+    scGraphics.updatePalette();
     int layerSel = chkd.mainToolbar.layerBox.GetSel();
     if ( layerSel != CB_ERR )
         currLayer = (Layer)layerSel;
@@ -397,7 +398,7 @@ void GuiMap::validateTileOccupiers(size_t tileX, size_t tileY, uint16_t tileValu
 void GuiMap::setTileset(Sc::Terrain::Tileset tileset)
 {
     Scenario::setTileset(tileset);
-    graphics.updatePalette();
+    scGraphics.updatePalette();
     (Chk::IsomCache &)(*this) = {Scenario::tileset, Scenario::getTileWidth(), Scenario::getTileHeight(), chkd.scData.terrain.get(Scenario::tileset)};
 }
 
@@ -1176,7 +1177,7 @@ void GuiMap::refreshScenario()
     chkd.trigEditorWindow.RefreshWindow();
     chkd.briefingTrigEditorWindow.RefreshWindow();
     
-    graphics.updatePalette();
+    scGraphics.updatePalette();
     Redraw(true);
 }
 
@@ -1773,7 +1774,7 @@ void GuiMap::SnapSelEndDrag()
 {
     auto snapToGrid = [&]() {
         u16 gridWidth = 32, gridHeight = 32;
-        if ( graphics.GetGridSize(0, gridWidth, gridHeight) )
+        if ( scGraphics.GetGridSize(0, gridWidth, gridHeight) )
             selections.snapEndDrag(gridWidth, gridHeight);
     };
     switch ( currLayer )
@@ -1811,6 +1812,31 @@ void GuiMap::SnapSelEndDrag()
 
 void GuiMap::PaintMap(GuiMapPtr currMap, bool pasting)
 {
+    if ( CM.get() == this && this->skin != GuiMap::Skin::ClassicGDI )
+    {
+        RECT cliRect {};
+        if ( getClientRect(cliRect) )
+        {
+            auto currTickCount = GetTickCount();
+            if ( currTickCount > prevTickCount )
+                scrGraphics.updateGraphics(currTickCount-prevTickCount);
+
+            prevTickCount = currTickCount;
+
+            glClearColor(0.0f, 0.f, 0.f, 0.f);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            scrGraphics.render(chkd.scData, screenLeft, screenTop, cliRect.right-cliRect.left, cliRect.bottom-cliRect.top);
+            
+            SwapBuffers(openGlBuffer->getDcHandle());
+            glFlush();
+            ValidateRect(getHandle(), &cliRect);
+        }
+        // TODO: temp copy of minimap render code
+        if ( currMap == nullptr || currMap.get() == this ) // Only redraw minimap for active window
+            RedrawWindow(chkd.mainPlot.leftBar.miniMap.getHandle(), NULL, NULL, RDW_INVALIDATE | RDW_UPDATENOW);
+        return;
+    }
+
     WinLib::DeviceContext dc(WindowsItem::getHandle());
     if ( dc )
     {
@@ -1833,7 +1859,7 @@ void GuiMap::PaintMap(GuiMapPtr currMap, bool pasting)
                 RedrawWindow(chkd.mainPlot.leftBar.miniMap.getHandle(), NULL, NULL, RDW_INVALIDATE | RDW_UPDATENOW);
 
             // Terrain, Grid, Units, Sprites, Debug
-            graphics.DrawMap(mapBuffer, bitmapWidth, bitmapHeight, screenLeft, screenTop, graphicBits, !lockAnywhere);
+            scGraphics.DrawMap(mapBuffer, bitmapWidth, bitmapHeight, screenLeft, screenTop, graphicBits, !lockAnywhere);
         }
 
         if ( mapBuffer )
@@ -1843,7 +1869,7 @@ void GuiMap::PaintMap(GuiMapPtr currMap, bool pasting)
             if ( currMap == nullptr || currMap.get() == this )
             { // Drag, paste & hover graphics
                 SnapSelEndDrag();
-                graphics.DrawTools(toolsBuffer, scaledWidth, scaledHeight,
+                scGraphics.DrawTools(toolsBuffer, scaledWidth, scaledHeight,
                     screenLeft, screenTop, selections, pasting, clipboard, *this);
 
                 if ( currLayer != Layer::Locations && dragging )
@@ -1926,12 +1952,12 @@ bool GuiMap::SetGridSize(s16 xSize, s16 ySize)
 {
     bool success = false;
     u16 oldXSize = 0, oldYSize = 0;
-    if ( graphics.GetGridSize(0, oldXSize, oldYSize) )
+    if ( scGraphics.GetGridSize(0, oldXSize, oldYSize) )
     {
         if ( oldXSize == xSize && oldYSize == ySize )
-            success = graphics.SetGridSize(0, 0, 0);
+            success = scGraphics.SetGridSize(0, 0, 0);
         else
-            success = graphics.SetGridSize(0, xSize, ySize);
+            success = scGraphics.SetGridSize(0, xSize, ySize);
 
         if ( success )
         {
@@ -1945,10 +1971,10 @@ bool GuiMap::SetGridSize(s16 xSize, s16 ySize)
 bool GuiMap::SetGridColor(u8 red, u8 green, u8 blue)
 {
     bool success = false;
-    if ( graphics.SetGridColor(0, red, green, blue) )
+    if ( scGraphics.SetGridColor(0, red, green, blue) )
     {
         u16 xSize = 0, ySize = 0;
-        if ( graphics.GetGridSize(0, xSize, ySize) && (xSize == 0 || ySize == 0) )
+        if ( scGraphics.GetGridSize(0, xSize, ySize) && (xSize == 0 || ySize == 0) )
             success = SetGridSize(32, 32);
 
         UpdateGridColorMenu();
@@ -1959,7 +1985,7 @@ bool GuiMap::SetGridColor(u8 red, u8 green, u8 blue)
 
 void GuiMap::ToggleDisplayBuildability()
 {
-    graphics.ToggleDisplayBuildability();
+    scGraphics.ToggleDisplayBuildability();
     UpdateTerrainViewMenuItems();
     Redraw(false);
     if ( chkd.terrainPalWindow.getHandle() != NULL )
@@ -1968,12 +1994,12 @@ void GuiMap::ToggleDisplayBuildability()
 
 bool GuiMap::DisplayingBuildability()
 {
-    return graphics.DisplayingBuildability();
+    return scGraphics.DisplayingBuildability();
 }
 
 void GuiMap::ToggleDisplayElevations()
 {
-    graphics.ToggleDisplayElevations();
+    scGraphics.ToggleDisplayElevations();
     UpdateTerrainViewMenuItems();
     Redraw(false);
     if ( chkd.terrainPalWindow.getHandle() != NULL )
@@ -1982,19 +2008,19 @@ void GuiMap::ToggleDisplayElevations()
 
 bool GuiMap::DisplayingElevations()
 {
-    return graphics.DisplayingElevations();
+    return scGraphics.DisplayingElevations();
 }
 
 void GuiMap::ToggleDisplayIsomValues()
 {
-    graphics.ToggleDisplayIsomValues();
+    scGraphics.ToggleDisplayIsomValues();
     UpdateTerrainViewMenuItems();
     Redraw(false);
 }
 
 void GuiMap::ToggleTileNumSource(bool MTXMoverTILE)
 {
-    graphics.ToggleTileNumSource(MTXMoverTILE);
+    scGraphics.ToggleTileNumSource(MTXMoverTILE);
     UpdateTerrainViewMenuItems();
     Redraw(false);
     if ( chkd.terrainPalWindow.getHandle() != NULL )
@@ -2003,7 +2029,7 @@ void GuiMap::ToggleTileNumSource(bool MTXMoverTILE)
 
 bool GuiMap::DisplayingTileNums()
 {
-    return graphics.DisplayingTileNums();
+    return scGraphics.DisplayingTileNums();
 }
 
 u32 GuiMap::getNextClassId()
@@ -2271,8 +2297,8 @@ void GuiMap::ToggleSpriteSnap()
 
 void GuiMap::ToggleLocationNameClip()
 {
-    graphics.ToggleLocationNameClip();
-    chkd.mainMenu.SetCheck(ID_LOCATIONS_CLIPNAMES, graphics.ClippingLocationNames());
+    scGraphics.ToggleLocationNameClip();
+    chkd.mainMenu.SetCheck(ID_LOCATIONS_CLIPNAMES, scGraphics.ClippingLocationNames());
     Redraw(false);
 }
 
@@ -2343,8 +2369,8 @@ bool GuiMap::GetSnapIntervals(u32 & x, u32 & y, u32 & xOffset, u32 & yOffset)
         else
         {
             u16 gridWidth = 0, gridHeight = 0, gridXOffset = 0, gridYOffset = 0;
-            if ( graphics.GetGridSize(0, gridWidth, gridHeight) &&
-                 graphics.GetGridOffset(0, gridXOffset, gridYOffset) &&
+            if ( scGraphics.GetGridSize(0, gridWidth, gridHeight) &&
+                 scGraphics.GetGridOffset(0, gridXOffset, gridYOffset) &&
                  (gridWidth > 0 || gridHeight > 0) )
             {
                 x = gridWidth;
@@ -2426,7 +2452,7 @@ bool GuiMap::GetIncludeDoodadTiles()
 
 void GuiMap::UpdateLocationMenuItems()
 {
-    chkd.mainMenu.SetCheck(ID_LOCATIONS_CLIPNAMES, graphics.ClippingLocationNames());
+    chkd.mainMenu.SetCheck(ID_LOCATIONS_CLIPNAMES, scGraphics.ClippingLocationNames());
     chkd.mainMenu.SetCheck(ID_LOCATIONS_SNAPTOTILE, snapLocations && locSnapTileOverGrid);
     chkd.mainMenu.SetCheck(ID_LOCATIONS_SNAPTOACTIVEGRID, snapLocations && !locSnapTileOverGrid);
     chkd.mainMenu.SetCheck(ID_LOCATIONS_NOSNAP, !snapLocations);
@@ -2464,7 +2490,7 @@ void GuiMap::UpdateZoomMenuItems()
 void GuiMap::UpdateGridSizesMenu()
 {
     u16 gridWidth = 0, gridHeight = 0;
-    graphics.GetGridSize(0, gridWidth, gridHeight);
+    scGraphics.GetGridSize(0, gridWidth, gridHeight);
 
     chkd.mainMenu.SetCheck(ID_GRID_ULTRAFINE, false);
     chkd.mainMenu.SetCheck(ID_GRID_FINE, false);
@@ -2493,7 +2519,7 @@ void GuiMap::UpdateGridSizesMenu()
 void GuiMap::UpdateGridColorMenu()
 {
     u8 red = 0, green = 0, blue = 0;
-    graphics.GetGridColor(0, red, green, blue);
+    scGraphics.GetGridColor(0, red, green, blue);
 
     chkd.mainMenu.SetCheck(ID_COLOR_BLACK, false);
     chkd.mainMenu.SetCheck(ID_COLOR_GREY, false);
@@ -2521,19 +2547,19 @@ void GuiMap::UpdateGridColorMenu()
 
 void GuiMap::UpdateTerrainViewMenuItems()
 {
-    chkd.mainMenu.SetCheck(ID_TERRAIN_DISPLAYTILEBUILDABILITY, graphics.DisplayingBuildability());
-    chkd.mainMenu.SetCheck(ID_TERRAIN_DISPLAYTILEELEVATIONS, graphics.DisplayingElevations());
+    chkd.mainMenu.SetCheck(ID_TERRAIN_DISPLAYTILEBUILDABILITY, scGraphics.DisplayingBuildability());
+    chkd.mainMenu.SetCheck(ID_TERRAIN_DISPLAYTILEELEVATIONS, scGraphics.DisplayingElevations());
     
-    if ( graphics.DisplayingIsomNums() )
+    if ( scGraphics.DisplayingIsomNums() )
         chkd.mainMenu.SetCheck(ID_TERRAIN_DISPLAYISOMVALUES, true);
     else
         chkd.mainMenu.SetCheck(ID_TERRAIN_DISPLAYISOMVALUES, false);
 
     chkd.mainMenu.SetCheck(ID_TERRAIN_DISPLAYTILEVALUES, false);
     chkd.mainMenu.SetCheck(ID_TERRAIN_DISPLAYTILEVALUESMTXM, false);
-    if ( graphics.DisplayingTileNums() )
+    if ( scGraphics.DisplayingTileNums() )
     {
-        if ( graphics.mtxmOverTile() )
+        if ( scGraphics.mtxmOverTile() )
             chkd.mainMenu.SetCheck(ID_TERRAIN_DISPLAYTILEVALUESMTXM, true);
         else
             chkd.mainMenu.SetCheck(ID_TERRAIN_DISPLAYTILEVALUES, true);
@@ -2731,12 +2757,12 @@ void GuiMap::SetAutoBackup(bool doAutoBackups)
 
 ChkdPalette & GuiMap::getPalette()
 {
-    return graphics.getPalette();
+    return scGraphics.getPalette();
 }
 
 ChkdPalette & GuiMap::getStaticPalette()
 {
-    return graphics.getStaticPalette();
+    return scGraphics.getStaticPalette();
 }
 
 LRESULT GuiMap::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -2845,6 +2871,15 @@ LRESULT GuiMap::DoSize(HWND hWnd, WPARAM wParam, LPARAM lParam)
 {
     LRESULT result = ClassWindow::WndProc(hWnd, WM_SIZE, wParam, lParam);
     Scroll(true, true, true);
+    if ( skin != GuiMap::Skin::ClassicGDI )
+    {
+        RECT rcCli {};
+        ClassWindow::getClientRect(rcCli);
+        glViewport(0, 0, GLsizei(rcCli.right-rcCli.left), GLsizei(rcCli.bottom-rcCli.top));
+
+        SwapBuffers(openGlBuffer->getDcHandle());
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    }
     return result;
 }
 
@@ -2970,7 +3005,7 @@ void GuiMap::LButtonDown(int x, int y, WPARAM wParam)
                             if ( snapCutCopyPasteSel )
                             {
                                 u16 gridWidth = 32, gridHeight = 32;
-                                if ( cutCopyPasteSnapTileOverGrid || graphics.GetGridSize(0, gridWidth, gridHeight) )
+                                if ( cutCopyPasteSnapTileOverGrid || scGraphics.GetGridSize(0, gridWidth, gridHeight) )
                                     selections.snapDrags(gridWidth, gridHeight, true);
                             }
                         }
@@ -3015,7 +3050,7 @@ void GuiMap::LButtonDown(int x, int y, WPARAM wParam)
                         else if ( currLayer == Layer::CutCopyPaste )
                         {
                             u16 gridWidth = 32, gridHeight = 32;
-                            if ( cutCopyPasteSnapTileOverGrid || graphics.GetGridSize(0, gridWidth, gridHeight) )
+                            if ( cutCopyPasteSnapTileOverGrid || scGraphics.GetGridSize(0, gridWidth, gridHeight) )
                                 selections.snapDrags(gridWidth, gridHeight, false);
                         }
                         else if ( currLayer == Layer::Locations )
@@ -3101,7 +3136,7 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
                     else if ( currLayer == Layer::CutCopyPaste && snapCutCopyPasteSel )
                     {
                         u16 gridWidth = 32, gridHeight = 32;
-                        if ( cutCopyPasteSnapTileOverGrid || graphics.GetGridSize(0, gridWidth, gridHeight) )
+                        if ( cutCopyPasteSnapTileOverGrid || scGraphics.GetGridSize(0, gridWidth, gridHeight) )
                             selections.snapDrags(gridWidth, gridHeight, true);
                     }
                     else if ( currLayer == Layer::Units )
@@ -3163,7 +3198,7 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
                         else if ( currLayer == Layer::CutCopyPaste && snapCutCopyPasteSel )
                         {
                             u16 gridWidth = 32, gridHeight = 32;
-                            if ( cutCopyPasteSnapTileOverGrid || graphics.GetGridSize(0, gridWidth, gridHeight) )
+                            if ( cutCopyPasteSnapTileOverGrid || scGraphics.GetGridSize(0, gridWidth, gridHeight) )
                                 selections.snapDrags(gridWidth, gridHeight, false);
                         }
                         else if ( currLayer == Layer::Units )
@@ -3198,7 +3233,7 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
                         {
                             selections.setEndDrag(mapHoverX, mapHoverY);
                             u16 gridWidth = 32, gridHeight = 32;
-                            if ( snapCutCopyPasteSel && (cutCopyPasteSnapTileOverGrid || graphics.GetGridSize(0, gridWidth, gridHeight))
+                            if ( snapCutCopyPasteSel && (cutCopyPasteSnapTileOverGrid || scGraphics.GetGridSize(0, gridWidth, gridHeight))
                                 && gridWidth > 0 && gridHeight > 0 )
                             {
                                 selections.snapDrags(gridWidth, gridHeight, false);
@@ -3776,7 +3811,7 @@ void GuiMap::FinalizeCutCopyPasteSelection(HWND hWnd, int mapX, int mapY, WPARAM
     if ( snapCutCopyPasteSel )
     {
         u16 gridWidth = 32, gridHeight = 32;
-        if ( cutCopyPasteSnapTileOverGrid || graphics.GetGridSize(0, gridWidth, gridHeight) )
+        if ( cutCopyPasteSnapTileOverGrid || scGraphics.GetGridSize(0, gridWidth, gridHeight) )
         {
             selections.snapDrags(gridWidth, gridHeight, (wParam & MK_CONTROL) == MK_CONTROL);
             snapped = true;
@@ -3887,6 +3922,81 @@ bool GuiMap::TryBackup(bool & outCopyFailed)
         }
     }
     return false;
+}
+
+void GuiMap::SetSkin(GuiMap::Skin skin)
+{
+    // Validate the skin and if remastered, turn it into Scr::GraphicsData::RenderSettings
+    Scr::GraphicsData::RenderSettings renderSettings {
+        .visualQuality = Scr::VisualQuality::SD,
+        .skinId = Scr::Skin::Id::None,
+        .tileset = Sc::Terrain::Tileset(MapFile::getTileset() % Sc::Terrain::NumTilesets),
+        .forceShowStars = false
+    };
+    switch ( skin )
+    {
+        case Skin::ClassicGDI: break;
+        case Skin::ClassicGL: break;
+        case Skin::ScrSD: renderSettings.visualQuality = Scr::VisualQuality::SD; renderSettings.skinId = Scr::Skin::Id::None; break;
+        case Skin::ScrHD2: renderSettings.visualQuality = Scr::VisualQuality::HD2; renderSettings.skinId = Scr::Skin::Id::None; break;
+        case Skin::ScrHD: renderSettings.visualQuality = Scr::VisualQuality::HD; renderSettings.skinId = Scr::Skin::Id::None; break;
+        case Skin::CarbotHD2: renderSettings.visualQuality = Scr::VisualQuality::HD2; renderSettings.skinId = Scr::Skin::Id::Carbot; break;
+        case Skin::CarbotHD: renderSettings.visualQuality = Scr::VisualQuality::HD; renderSettings.skinId = Scr::Skin::Id::Carbot; break;
+        default: throw std::logic_error("Unrecognized skin!");
+    }
+
+    if ( skin != Skin::ClassicGDI )
+    {
+        // Create the OpenGL context
+        if ( this->openGlBuffer == nullptr )
+        {
+            this->openGlBuffer = std::make_shared<WinLib::DeviceContext>(ClassWindow::getHandle());
+            this->openGlBuffer->useOpenGlPixelFormat();
+        }
+        chkd.maps.createRenderContext(this->openGlBuffer);
+        
+        RECT rcCli {};
+        ClassWindow::getClientRect(rcCli);
+        glViewport(0, 0, GLsizei(rcCli.right-rcCli.left), GLsizei(rcCli.bottom-rcCli.top));
+
+        SwapBuffers(openGlBuffer->getDcHandle());
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    }
+
+    bool isRemastered = skin != Skin::ClassicGDI && skin != Skin::ClassicGL;
+    if ( isRemastered )
+    {
+        // Perform the data load (requires an OpenGL context)
+        if ( chkd.scrData.isLoaded(renderSettings) )
+        {
+            auto fileData = ByteBuffer(4);
+            ArchiveCluster archiveCluster {std::vector<ArchiveFilePtr>{}};
+            this->scrGraphics.load(chkd.scData, chkd.scrData, archiveCluster, renderSettings, fileData);
+        }
+        else
+        {
+            logger.info() << "Loading new skin...\n";
+            auto begin = std::chrono::high_resolution_clock::now();
+            bool includesRemastered = false;
+            auto archiveCluster = ChkdDataFileBrowser{}.openScDataFiles(
+                includesRemastered, ChkdDataFileBrowser::getDataFileDescriptors(), ChkdDataFileBrowser::getExpectedStarCraftDirectory());
+
+            if ( !includesRemastered )
+            {
+                logger.error("Could not locate remastered data files, Chkdraft may be configured against an earlier StarCraft version.");
+                return;
+            }
+
+            auto fileData = ByteBuffer(1024*1024*120); // 120MB
+            this->scrGraphics.load(chkd.scData, chkd.scrData, *archiveCluster, renderSettings, fileData);
+            auto end = std::chrono::high_resolution_clock::now();
+            logger.info() << "New skin loaded in " << std::chrono::duration_cast<std::chrono::milliseconds>(end-begin).count() << "ms\n";
+        }
+    }
+    // Set the maps skin
+    this->skin = skin;
+    
+    this->Redraw(true);
 }
 
 void GuiMap::addIsomUndo(const Chk::IsomRectUndo & isomUndo)

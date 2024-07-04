@@ -4,9 +4,11 @@
 #include "ResourceManager.h"
 #include <functional>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <Windows.h>
+#include <wingdi.h>
 
 namespace WinLib {
 
@@ -135,6 +137,17 @@ namespace WinLib {
 
         DeviceContext(const WinLib::DeviceContext &) = delete; // Full copy would most likely result in use after release
         
+        DeviceContext(DeviceContext && other)
+        {
+            std::swap(hWnd, other.hWnd);
+            std::swap(hDC, other.hDC);
+            std::swap(parentDC, other.parentDC);
+            std::swap(memBitmap, other.memBitmap);
+            std::swap(drawArea, other.drawArea);
+            std::swap(originalObject, other.originalObject);
+            std::swap(originalParentObject, other.originalParentObject);
+        }
+
         ~DeviceContext() {
             release();
         }
@@ -592,6 +605,44 @@ namespace WinLib {
         bool drawIconEx(int xLeft, int yTop, HICON hIcon, int cxWidth, int cyWidth, UINT istepIfAniCur, HBRUSH hbrFlickerFreeDraw, UINT diFlags) const
         {
             return ::DrawIconEx(getDcHandle(), xLeft, yTop, hIcon, cxWidth, cyWidth, istepIfAniCur, hbrFlickerFreeDraw, diFlags) != 0;
+        }
+
+        int choosePixelFormat(const PIXELFORMATDESCRIPTOR* ppfd)
+        {
+            return ::ChoosePixelFormat(getDcHandle(), ppfd);
+        }
+
+        bool setPixelFormat(int format, const PIXELFORMATDESCRIPTOR* ppfd)
+        {
+            return ::SetPixelFormat(getDcHandle(), format, ppfd) != FALSE;
+        }
+
+        void useOpenGlPixelFormat()
+        {
+            PIXELFORMATDESCRIPTOR pfd {
+                .nSize = sizeof(PIXELFORMATDESCRIPTOR),
+                .nVersion = 1,
+                .dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
+                .iPixelType = PFD_TYPE_RGBA,
+                .cColorBits = 32,
+                .cRedBits = 0, .cRedShift = 0, .cGreenBits = 0, .cGreenShift = 0, .cBlueBits = 0, .cBlueShift = 0, // Unused
+                .cAlphaBits = 0,
+                .cAlphaShift = 0, // Unused
+                .cAccumBits = 0,
+                .cAccumRedBits = 0, .cAccumGreenBits = 0, .cAccumBlueBits = 0, .cAccumAlphaBits = 0, // Unused
+                .cDepthBits = 16,
+                .cStencilBits = 0,
+                .cAuxBuffers = 0,
+                .iLayerType = PFD_MAIN_PLANE,
+                .bReserved = 0, .dwLayerMask = 0, .dwVisibleMask = 0, .dwDamageMask = 0 // Unused
+            };
+
+            int pf = choosePixelFormat(&pfd);
+            if ( pf == 0 )
+                throw std::runtime_error("Could not find a suitable pixel format with which to use OpenGL!");
+        
+            if ( !setPixelFormat(pf, &pfd) )
+                throw std::runtime_error("Failed to set pixel format!");
         }
     };
 

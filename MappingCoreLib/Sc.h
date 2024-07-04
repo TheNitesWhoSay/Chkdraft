@@ -2,6 +2,7 @@
 #define SC_H
 #include "Basics.h"
 #include "ArchiveFile.h"
+#include "ArchiveCluster.h"
 #include "FileBrowser.h"
 #include <algorithm>
 #include <array>
@@ -74,13 +75,13 @@ namespace Sc {
         class Browser // An extensible, system independent browser for retrieving a set of StarCraft data files given their descriptors and possibly a specialized browser for the StarCraft directory
         {
         public:
-            virtual std::vector<ArchiveFilePtr> openScDataFiles(
+            virtual ArchiveClusterPtr openScDataFiles(
                 bool & includesRemastered,
                 const std::vector<Descriptor> & dataFileDescriptors = getDefaultDataFiles(),
                 const std::string & expectedStarCraftDirectory = ::getDefaultScPath(),
                 FileBrowserPtr<u32> starCraftBrowser = getDefaultStarCraftBrowser());
 
-            virtual std::vector<ArchiveFilePtr> openScDataFiles(
+            virtual ArchiveClusterPtr openScDataFiles(
                 const std::vector<Descriptor> & dataFileDescriptors = getDefaultDataFiles(),
                 const std::string & expectedStarCraftDirectory = ::getDefaultScPath(),
                 FileBrowserPtr<u32> starCraftBrowser = getDefaultStarCraftBrowser());
@@ -587,7 +588,7 @@ namespace Sc {
         };
 #pragma pack(pop)
 
-        bool load(const std::vector<ArchiveFilePtr> & orderedSourceFiles);
+        bool load(ArchiveCluster & archiveCluster);
         const DatEntry & getUnit(Type unitType) const;
         const FlingyDatEntry & getFlingy(size_t flingyIndex) const;
 
@@ -863,7 +864,7 @@ namespace Sc {
         {
         public:
             virtual ~Grp() {}
-            bool load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, const std::string & archiveFileName);
+            bool load(ArchiveCluster & archiveCluster, const std::string & archiveFileName);
             void makeBlank();
             const GrpFile & get() const;
 
@@ -876,7 +877,7 @@ namespace Sc {
             inline bool framesAreValid(const std::string & archiveFileName) const;
         };
 
-        bool load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, Sc::TblFilePtr imagesTbl);
+        bool load(ArchiveCluster & archiveCluster, Sc::TblFilePtr imagesTbl);
         bool loadAnimation(IScriptAnimation* animation, size_t currOffset, bool & idIncludesFlip, bool & idIncludesUnflip, std::set<size_t> & visitedOffsets);
         const Grp & getGrp(size_t grpIndex);
         const ImageDatEntry & getImage(size_t imageIndex) const;
@@ -950,7 +951,7 @@ namespace Sc {
         static constexpr s32 parllaxHeight = 488;
         static constexpr s32 scrollFactors[] {36, 31, 26, 21, 16};
 
-        bool load(const std::vector<ArchiveFilePtr> & orderedSourcdeFiles);
+        bool load(ArchiveCluster & archiveCluster);
     };
 
     class Upgrade {
@@ -1071,7 +1072,7 @@ namespace Sc {
         };
 #pragma pack(pop)
 
-        bool load(const std::vector<ArchiveFilePtr> & orderedSourceFiles);
+        bool load(ArchiveCluster & archiveCluster);
         const DatEntry & getUpgrade(Type upgradeType) const;
 
     private:
@@ -1173,7 +1174,7 @@ namespace Sc {
         };
 #pragma pack(pop)
 
-        bool load(const std::vector<ArchiveFilePtr> & orderedSourceFiles);
+        bool load(ArchiveCluster & archiveCluster);
         const DatEntry & getTech(Type techType) const;
 
     private:
@@ -1183,7 +1184,7 @@ namespace Sc {
     class TblFile
     {
     public:
-        bool load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, const std::string & archiveFileName);
+        bool load(ArchiveCluster & archiveClusters, const std::string & archiveFileName);
         size_t numStrings() const;
         const std::string & getString(size_t stringIndex) const;
         bool getString(size_t stringIndex, std::string & outString) const;
@@ -1812,7 +1813,7 @@ namespace Sc {
 #pragma pack(pop)
 
         virtual ~Ai();
-        bool load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, TblFilePtr statTxt = nullptr);
+        bool load(ArchiveCluster & archiveCluster, TblFilePtr statTxt = nullptr);
         const Entry & getEntry(size_t aiIndex) const;
         const std::string & getName(size_t aiIndex) const;
         bool getName(size_t aiIndex, std::string & outAiName) const;
@@ -2074,7 +2075,7 @@ namespace Sc {
         };
 #pragma pack(pop)
 
-        bool load(const std::vector<ArchiveFilePtr> & orderedSourceFiles);
+        bool load(ArchiveCluster & archiveCluster);
         const DatEntry & get(Type weaponType) const;
 
     private:
@@ -2125,7 +2126,7 @@ namespace Sc {
         };
 #pragma pack(pop)
 
-        bool load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, const std::string & archiveFileName);
+        bool load(ArchiveCluster & archiveCluster, const std::string & archiveFileName);
         
         std::vector<Sc::Color<float>> rgbaPalette; // More standard (OpenGL-friendly) color format { red, green, blue, alpha }
         std::vector<Sc::SystemColor> bgraPalette; // Win32 RGBQUAD format { blue, green, red, alpha/reserved }
@@ -3125,6 +3126,20 @@ namespace Sc {
             Arctic = 6,
             Twilight = 7
         });
+
+        static constexpr bool hasWater(Tileset tileset)
+        {
+            switch ( Sc::Terrain::Tileset(u16(tileset) % u16(NumTilesets)) )
+            {
+                case Tileset::Badlands:
+                case Tileset::Jungle:
+                case Tileset::Arctic:
+                case Tileset::Twilight:
+                    return true;
+                default:
+                    return false;
+            }
+        }
         
         enum class TileElevation {
             Low,
@@ -3344,7 +3359,7 @@ namespace Sc {
 
             void loadIsom(size_t tilesetIndex);
 
-            bool load(size_t tilesetIndex, const std::vector<ArchiveFilePtr> & orderedSourceFiles, const std::string & tilesetName, Sc::TblFilePtr statTxt,
+            bool load(size_t tilesetIndex, ArchiveCluster & archiveCluster, const std::string & tilesetName, Sc::TblFilePtr statTxt,
                 std::array<u16, Sprite::TotalSprites> & doodadSpriteFlags, std::array<u16, Unit::TotalTypes> & doodadUnitFlags);
 
             static inline size_t getGroupIndex(const u16 & tileIndex) { return size_t(tileIndex / 16); }
@@ -3355,7 +3370,7 @@ namespace Sc {
         };
 
         const Tiles & get(const Tileset & tileset) const;
-        bool load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, Sc::TblFilePtr statTxt);
+        bool load(ArchiveCluster & archiveCluster, Sc::TblFilePtr statTxt);
         const std::array<SystemColor, NumColors> & getColorPalette(Tileset tileset) const;
         const std::array<SystemColor, NumColors> & getStaticColorPalette(Tileset tileset) const;
         void mergeSpriteFlags(const Sc::Unit & unitData);
@@ -3393,9 +3408,9 @@ namespace Sc {
             const std::string & expectedStarCraftDirectory = getDefaultScPath(),
             FileBrowserPtr<u32> starCraftBrowser = Sc::DataFile::Browser::getDefaultStarCraftBrowser());
         
-        static std::optional<std::vector<u8>> GetAsset(const std::vector<ArchiveFilePtr> & orderedSourceFiles, bool & isFirst,
+        static std::optional<std::vector<u8>> GetAsset(ArchiveCluster & archiveCluster, bool & isFirst,
             const std::string & firstAssetArchivePathOption, const std::string & secondAssetArchivePathOption);
-        static std::optional<std::vector<u8>> GetAsset(const std::vector<ArchiveFilePtr> & orderedSourceFiles, const std::string & assetArchivePath,
+        static std::optional<std::vector<u8>> GetAsset(ArchiveCluster & archiveCluster, const std::string & assetArchivePath,
             bool silent = false);
         static std::optional<std::vector<u8>> GetAsset(const std::string & assetArchivePath,
             Sc::DataFile::BrowserPtr dataFileBrowser = Sc::DataFile::BrowserPtr(new Sc::DataFile::Browser()),
@@ -3403,7 +3418,7 @@ namespace Sc {
             const std::string & expectedStarCraftDirectory = getDefaultScPath(),
             FileBrowserPtr<u32> starCraftBrowser = Sc::DataFile::Browser::getDefaultStarCraftBrowser());
 
-        static bool ExtractAsset(const std::vector<ArchiveFilePtr> & orderedSourceFiles, const std::string & assetArchivePath, const std::string & systemFilePath);
+        static bool ExtractAsset(ArchiveCluster & archiveCluster, const std::string & assetArchivePath, const std::string & systemFilePath);
         static bool ExtractAsset(const std::string & assetArchivePath, const std::string & systemFilePath,
             Sc::DataFile::BrowserPtr dataFileBrowser = Sc::DataFile::BrowserPtr(new Sc::DataFile::Browser()),
             const std::vector<Sc::DataFile::Descriptor> & dataFiles = Sc::DataFile::getDefaultDataFiles(),

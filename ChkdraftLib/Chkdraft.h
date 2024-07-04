@@ -4,6 +4,8 @@
 #include "CommonFiles/CommonFiles.h"
 #include "Windows/DialogWindows/DialogWindows.h"
 #include "Mapping/ChkdPlugins.h"
+#include "Mapping/ColorCycler.h"
+#include "Mapping/ScrGraphics.h" // TODO: Shouldn't need all of this, just data-portions
 #include "Windows/MainWindows/MainToolbar.h"
 #include "Windows/MainWindows/MainPlot.h"
 #include "Windows/DialogWindows/NewMap/NewMap.h"
@@ -16,6 +18,8 @@ class Chkdraft : public WinLib::ClassWindow
                     void OnLoadTest(); // Write testing code here
 
 /*  Main Items  */  Sc::Data scData; // Data from StarCraft files
+                    Scr::GraphicsData scrData; // Remastered graphics data from StarCraft files
+                    ColorCycler colorCycler {}; // Graphics palette color cycler
                     Maps maps; // Main map container
                     Commander mainCommander; // Main commander used for mapping-data and mapping-data-related UI changes
 

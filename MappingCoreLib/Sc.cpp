@@ -86,7 +86,7 @@ std::vector<Sc::DataFile::Descriptor> Sc::DataFile::getDefaultDataFiles()
     };
 }
 
-std::vector<ArchiveFilePtr> Sc::DataFile::Browser::openScDataFiles(
+ArchiveClusterPtr Sc::DataFile::Browser::openScDataFiles(
     bool & includesRemastered,
     const std::vector<Descriptor> & constDataFileDescriptors,
     const std::string & expectedStarCraftDirectory,
@@ -156,10 +156,10 @@ std::vector<ArchiveFilePtr> Sc::DataFile::Browser::openScDataFiles(
     for ( auto dataFilePriority = dataFilePriorities.begin(); dataFilePriority != dataFilePriorities.end(); ++dataFilePriority )
         orderedDataFiles.push_back(openedDataFiles.find(*dataFilePriority)->second);
 
-    return orderedDataFiles;
+    return std::make_shared<ArchiveCluster>(orderedDataFiles);
 }
 
-std::vector<ArchiveFilePtr> Sc::DataFile::Browser::openScDataFiles(
+ArchiveClusterPtr Sc::DataFile::Browser::openScDataFiles(
     const std::vector<Descriptor> & constDataFileDescriptors,
     const std::string & expectedStarCraftDirectory,
     FileBrowserPtr<u32> starCraftBrowser)
@@ -233,10 +233,10 @@ FileBrowserPtr<u32> Sc::DataFile::Browser::getDefaultStarCraftBrowser()
     return FileBrowserPtr<u32>(new FileBrowser<u32>(getStarCraftExeFilter(), getDefaultScPath()));
 }
 
-bool Sc::Unit::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles)
+bool Sc::Unit::load(ArchiveCluster & archiveCluster)
 {
     auto start = std::chrono::high_resolution_clock::now();
-    auto unitData = Sc::Data::GetAsset(orderedSourceFiles, "arr\\units.dat");
+    auto unitData = Sc::Data::GetAsset(archiveCluster, "arr\\units.dat");
     if ( !unitData )
     {
         logger.error() << "Failed to load arr\\units.dat" << std::endl;
@@ -302,7 +302,7 @@ bool Sc::Unit::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles)
         });
     }
 
-    auto flingyData = Sc::Data::GetAsset(orderedSourceFiles, "arr\\flingy.dat");
+    auto flingyData = Sc::Data::GetAsset(archiveCluster, "arr\\flingy.dat");
     if ( !flingyData )
     {
         logger.error() << "Failed to load arr\\flingy.dat" << std::endl;
@@ -1535,10 +1535,10 @@ Sc::Ai::~Ai()
 
 }
 
-bool Sc::Ai::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, TblFilePtr statTxt)
+bool Sc::Ai::load(ArchiveCluster & archiveCluster, TblFilePtr statTxt)
 {
     this->statTxt = statTxt;
-    if ( auto rawData = Sc::Data::GetAsset(orderedSourceFiles, aiScriptBinPath) )
+    if ( auto rawData = Sc::Data::GetAsset(archiveCluster, aiScriptBinPath) )
     {
         if ( rawData->size() >= 4 )
         {
@@ -1813,7 +1813,7 @@ void Sc::Terrain::Tiles::loadIsom(size_t tilesetIndex)
     defaultBrush = terrainTypeInfo[Isom::defaultBrushIndex[tilesetIndex]];
 }
 
-bool Sc::Terrain::Tiles::load(size_t tilesetIndex, const std::vector<ArchiveFilePtr> & orderedSourceFiles, const std::string & tilesetName, Sc::TblFilePtr statTxt,
+bool Sc::Terrain::Tiles::load(size_t tilesetIndex, ArchiveCluster & archiveCluster, const std::string & tilesetName, Sc::TblFilePtr statTxt,
     std::array<u16, Sprite::TotalSprites> & doodadSpriteFlags, std::array<u16, Unit::TotalTypes> & doodadUnitFlags)
 {
     const std::string tilesetMpqDirectory = "tileset";
@@ -1826,13 +1826,13 @@ bool Sc::Terrain::Tiles::load(size_t tilesetIndex, const std::vector<ArchiveFile
     const std::string wpeFilePath = makeExtArchiveFilePath(mpqFilePath, "wpe");
     const std::string ddDataFilePath = makeExtArchiveFilePath(makeArchiveFilePath(mpqFilePath, "dddata"), "bin");
     
-    auto cv5Data = Sc::Data::GetAsset(orderedSourceFiles, cv5FilePath);
-    auto vf4Data = Sc::Data::GetAsset(orderedSourceFiles, vf4FilePath);
-    auto vr4Data = Sc::Data::GetAsset(orderedSourceFiles, vr4FilePath);
+    auto cv5Data = Sc::Data::GetAsset(archiveCluster, cv5FilePath);
+    auto vf4Data = Sc::Data::GetAsset(archiveCluster, vf4FilePath);
+    auto vr4Data = Sc::Data::GetAsset(archiveCluster, vr4FilePath);
     bool isVx4ex = false;
-    auto vx4Data = Sc::Data::GetAsset(orderedSourceFiles, isVx4ex, vx4exFilePath, vx4FilePath);
-    auto wpeData = Sc::Data::GetAsset(orderedSourceFiles, wpeFilePath);
-    auto ddData = Sc::Data::GetAsset(orderedSourceFiles, ddDataFilePath);
+    auto vx4Data = Sc::Data::GetAsset(archiveCluster, isVx4ex, vx4exFilePath, vx4FilePath);
+    auto wpeData = Sc::Data::GetAsset(archiveCluster, wpeFilePath);
+    auto ddData = Sc::Data::GetAsset(archiveCluster, ddDataFilePath);
 
     if ( cv5Data && vf4Data && vr4Data && vx4Data && wpeData && ddData )
     {
@@ -1986,14 +1986,14 @@ const Sc::Terrain::Tiles & Sc::Terrain::get(const Tileset & tileset) const
         return tilesets[tileset % NumTilesets];
 }
 
-bool Sc::Terrain::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, Sc::TblFilePtr statTxt)
+bool Sc::Terrain::load(ArchiveCluster & archiveCluster, Sc::TblFilePtr statTxt)
 {
     auto start = std::chrono::high_resolution_clock::now();
     bool success = true;
     this->doodadSpriteFlags.fill(0);
     this->doodadUnitFlags.fill(0);
     for ( size_t i=0; i<NumTilesets; i++ )
-        success &= tilesets[i].load(i, orderedSourceFiles, TilesetNames[i], statTxt, doodadSpriteFlags, doodadUnitFlags);
+        success &= tilesets[i].load(i, archiveCluster, TilesetNames[i], statTxt, doodadSpriteFlags, doodadUnitFlags);
     
     auto finish = std::chrono::high_resolution_clock::now();
     logger.debug() << "Terrain loading completed in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
@@ -2022,10 +2022,10 @@ void Sc::Terrain::mergeSpriteFlags(const Sc::Unit & unitData)
         doodadSpriteFlags[unitData.getFlingy(unitData.getUnit(Sc::Unit::Type(i)).graphics).sprite] = doodadUnitFlags[i];
 }
 
-bool Sc::Weapon::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles)
+bool Sc::Weapon::load(ArchiveCluster & archiveCluster)
 {
     auto start = std::chrono::high_resolution_clock::now();
-    auto weaponData = Sc::Data::GetAsset(orderedSourceFiles, "arr\\weapons.dat");
+    auto weaponData = Sc::Data::GetAsset(archiveCluster, "arr\\weapons.dat");
     if ( !weaponData )
     {
         logger.error() << "Failed to load arr\\weapons.dat" << std::endl;
@@ -2076,9 +2076,9 @@ const Sc::Weapon::DatEntry & Sc::Weapon::get(Type weaponType) const
         throw std::out_of_range(std::string("WeaponType: ") + std::to_string(weaponType) + " is out of range for weapons vector of size " + std::to_string(weapons.size()));
 }
 
-bool Sc::Sprite::Grp::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, const std::string & assetArchivePath)
+bool Sc::Sprite::Grp::load(ArchiveCluster & archiveCluster, const std::string & assetArchivePath)
 {
-    auto grpAsset = Sc::Data::GetAsset(orderedSourceFiles, assetArchivePath);
+    auto grpAsset = Sc::Data::GetAsset(archiveCluster, assetArchivePath);
     if ( grpAsset )
     {
         this->grpData.swap(*grpAsset);
@@ -2381,7 +2381,7 @@ std::vector<size_t> Sc::Sprite::ParamSize {
     /* short_ */ 2
 };
 
-bool Sc::Sprite::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, Sc::TblFilePtr imagesTbl)
+bool Sc::Sprite::load(ArchiveCluster & archiveCluster, Sc::TblFilePtr imagesTbl)
 {
     logger.debug("Loading Sprites...");
     auto start = std::chrono::high_resolution_clock::now();
@@ -2399,7 +2399,7 @@ bool Sc::Sprite::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, Sc
         Sc::Sprite::Grp grp;
         if ( getArchiveFileExtension(imageFilePath).compare(".grp") == 0 )
         {
-            if ( grp.load(orderedSourceFiles, "unit\\" + imageFilePath) )
+            if ( grp.load(archiveCluster, "unit\\" + imageFilePath) )
                 grps.push_back(grp);
             else
             {
@@ -2414,7 +2414,7 @@ bool Sc::Sprite::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, Sc
     if ( numStrings == 0 )
         logger.warn() << "images.tbl was empty, no grps were loaded!" << std::endl;
 
-    auto imageData = Sc::Data::GetAsset(orderedSourceFiles, "arr\\images.dat");
+    auto imageData = Sc::Data::GetAsset(archiveCluster, "arr\\images.dat");
     if ( !imageData )
     {
         logger.error() << "Failed to load arr\\images.dat" << std::endl;
@@ -2434,7 +2434,7 @@ bool Sc::Sprite::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, Sc
             datFile.specialOverlay[i], datFile.landingDustOverlay[i], datFile.liftOffOverlay[i] });
     }
 
-    auto spriteData = Sc::Data::GetAsset(orderedSourceFiles, "arr\\sprites.dat");
+    auto spriteData = Sc::Data::GetAsset(archiveCluster, "arr\\sprites.dat");
     if ( !spriteData )
     {
         logger.error() << "Failed to load arr\\sprites.dat" << std::endl;
@@ -2460,7 +2460,7 @@ bool Sc::Sprite::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, Sc
     
     auto finish = std::chrono::high_resolution_clock::now();
 
-    auto iscriptFile = Sc::Data::GetAsset(orderedSourceFiles, "scripts\\ISCRIPT.BIN");
+    auto iscriptFile = Sc::Data::GetAsset(archiveCluster, "scripts\\ISCRIPT.BIN");
     if ( !iscriptFile )
     {
         logger.error() << "Failed to load scripts\\ISCRIPT.BIN" << std::endl;
@@ -2617,13 +2617,13 @@ bool Sc::Sprite::imageFlipped(u16 imageId) const
     return this->iscriptIdFlipsGrp.find(this->images[imageId].iScriptId) != this->iscriptIdFlipsGrp.end();
 }
 
-bool Sc::Spk::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles)
+bool Sc::Spk::load(ArchiveCluster & archiveCluster)
 {
     try
     {
-        auto starSpkFile = Sc::Data::GetAsset(orderedSourceFiles, "SD\\TileSet\\platform.spk", true);
+        auto starSpkFile = Sc::Data::GetAsset(archiveCluster, "SD\\TileSet\\platform.spk", true);
         if ( !starSpkFile )
-            starSpkFile = Sc::Data::GetAsset(orderedSourceFiles, "parallax\\star.spk");
+            starSpkFile = Sc::Data::GetAsset(archiveCluster, "parallax\\star.spk");
 
         if ( !starSpkFile )
         {
@@ -2695,10 +2695,10 @@ bool Sc::Spk::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles)
     return true;
 }
 
-bool Sc::Upgrade::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles)
+bool Sc::Upgrade::load(ArchiveCluster & archiveCluster)
 {
     auto start = std::chrono::high_resolution_clock::now();
-    auto upgradeData = Sc::Data::GetAsset(orderedSourceFiles, "arr\\upgrades.dat");
+    auto upgradeData = Sc::Data::GetAsset(archiveCluster, "arr\\upgrades.dat");
     if ( !upgradeData )
     {
         logger.error() << "Failed to load arr\\upgrades.dat" << std::endl;
@@ -2745,10 +2745,10 @@ const Sc::Upgrade::DatEntry & Sc::Upgrade::getUpgrade(Type upgradeType) const
         throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for upgrades vector of size " + std::to_string(upgrades.size()));
 }
 
-bool Sc::Tech::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles)
+bool Sc::Tech::load(ArchiveCluster & archiveCluster)
 {
     auto start = std::chrono::high_resolution_clock::now();
-    auto techData = Sc::Data::GetAsset(orderedSourceFiles, "arr\\techdata.dat");
+    auto techData = Sc::Data::GetAsset(archiveCluster, "arr\\techdata.dat");
     if ( !techData )
     {
         logger.error() << "Failed to load arr\\techdata.dat" << std::endl;
@@ -3920,11 +3920,11 @@ const std::vector<std::string> Sc::Sound::virtualSoundPaths = {
     "sound\\Protoss\\Artanis\\PAtYes03.wav"
 };
 
-bool Sc::TblFile::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, const std::string & assetArchivePath)
+bool Sc::TblFile::load(ArchiveCluster & archiveCluster, const std::string & assetArchivePath)
 {
     strings.clear();
 
-    if ( auto rawData = Sc::Data::GetAsset(orderedSourceFiles, assetArchivePath) )
+    if ( auto rawData = Sc::Data::GetAsset(archiveCluster, assetArchivePath) )
     {
         s64 numStrings = rawData->size() >= 2 ? s64((u16 &)rawData.value()[0]) : 0;
         if ( numStrings > 0 )
@@ -3978,9 +3978,9 @@ bool Sc::TblFile::getString(size_t stringIndex, std::string & outString) const
     return false;
 }
 
-bool Sc::Pcx::load(const std::vector<ArchiveFilePtr> & orderedSourceFiles, const std::string & assetArchivePath)
+bool Sc::Pcx::load(ArchiveCluster & archiveCluster, const std::string & assetArchivePath)
 {
-    if ( auto pcxData = Sc::Data::GetAsset(orderedSourceFiles, assetArchivePath) )
+    if ( auto pcxData = Sc::Data::GetAsset(archiveCluster, assetArchivePath) )
     {
         if ( pcxData->size() < PcxFile::PcxHeaderSize )
         {
@@ -4422,54 +4422,54 @@ bool Sc::Data::load(Sc::DataFile::BrowserPtr dataFileBrowser, const std::vector<
         return false;
     }
 
-    const std::vector<ArchiveFilePtr> orderedSourceFiles = dataFileBrowser->openScDataFiles(dataFiles, expectedStarCraftDirectory, starCraftBrowser);
-    if ( orderedSourceFiles.empty() )
+    auto archiveCluster = dataFileBrowser->openScDataFiles(dataFiles, expectedStarCraftDirectory, starCraftBrowser);
+    if ( archiveCluster == nullptr || !archiveCluster->isOpen() )
     {
         logger.error("No archives selected, many features will not work without the game files.\n\nInstall or locate StarCraft for the best experience.");
         return false;
     }
 
     Sc::TblFilePtr statTxt = Sc::TblFilePtr(new Sc::TblFile());
-    if ( !statTxt->load(orderedSourceFiles, "Rez\\stat_txt.tbl") )
+    if ( !statTxt->load(*archiveCluster, "Rez\\stat_txt.tbl") )
         CHKD_ERR("Failed to load stat_txt.tbl");
     
-    if ( !terrain.load(orderedSourceFiles, statTxt) )
+    if ( !terrain.load(*archiveCluster, statTxt) )
         CHKD_ERR("Failed to load terrain");
 
-    if ( !ai.load(orderedSourceFiles, statTxt) )
+    if ( !ai.load(*archiveCluster, statTxt) )
         CHKD_ERR("Failed to load AiScripts");
 
-    if ( !upgrades.load(orderedSourceFiles) )
+    if ( !upgrades.load(*archiveCluster) )
         CHKD_ERR("Failed to load upgrades");
 
-    if ( !techs.load(orderedSourceFiles) )
+    if ( !techs.load(*archiveCluster) )
         CHKD_ERR("Failed to load techs");
 
-    if ( !units.load(orderedSourceFiles) )
+    if ( !units.load(*archiveCluster) )
         CHKD_ERR("Failed to load unit dat");
     else
         terrain.mergeSpriteFlags(units);
 
-    if ( !weapons.load(orderedSourceFiles) )
+    if ( !weapons.load(*archiveCluster) )
         CHKD_ERR("Failed to load Weapons.dat");
     
     Sc::TblFilePtr imagesTbl = Sc::TblFilePtr(new Sc::TblFile());
-    if ( !imagesTbl->load(orderedSourceFiles, "arr\\images.tbl") )
+    if ( !imagesTbl->load(*archiveCluster, "arr\\images.tbl") )
         CHKD_ERR("Failed to load arr\\images.tbl");
 
-    if ( !sprites.load(orderedSourceFiles, imagesTbl) )
+    if ( !sprites.load(*archiveCluster, imagesTbl) )
         CHKD_ERR("Failed to load sprites!");
 
-    if ( !spk.load(orderedSourceFiles) )
+    if ( !spk.load(*archiveCluster) )
         CHKD_ERR("Failed to load star.spk!");
 
-    if ( !tunit.load(orderedSourceFiles, "game\\tunit.pcx") )
+    if ( !tunit.load(*archiveCluster, "game\\tunit.pcx") )
         CHKD_ERR("Failed to load tunit.pcx");
 
-    if ( !tminimap.load(orderedSourceFiles, "game\\tminimap.pcx") )
+    if ( !tminimap.load(*archiveCluster, "game\\tminimap.pcx") )
         CHKD_ERR("Failed to load tminimap.pcx");
 
-    if ( !tselect.load(orderedSourceFiles, "game\\tselect.pcx") )
+    if ( !tselect.load(*archiveCluster, "game\\tselect.pcx") )
         CHKD_ERR("Failed to load tselect.pcx");
 
     if ( !loadSpriteGroups(imagesTbl) )
@@ -4480,46 +4480,29 @@ bool Sc::Data::load(Sc::DataFile::BrowserPtr dataFileBrowser, const std::vector<
     return true;
 }
 
-std::optional<std::vector<u8>> Sc::Data::GetAsset(const std::vector<ArchiveFilePtr> & orderedSourceFiles, bool & isFirst,
+std::optional<std::vector<u8>> Sc::Data::GetAsset(ArchiveCluster & archiveCluster, bool & isFirst,
     const std::string & firstAssetArchivePathOption, const std::string & secondAssetArchivePathOption)
 {
-    for ( auto archiveFile : orderedSourceFiles )
+    if ( auto result = archiveCluster.getFile(firstAssetArchivePathOption) )
     {
-        if ( archiveFile != nullptr )
-        {
-            if ( auto asset = archiveFile->getFile(firstAssetArchivePathOption) )
-            {
-                isFirst = true;
-                return asset;
-            }
-        }
+        isFirst = true;
+        return result;
     }
-    for ( auto archiveFile : orderedSourceFiles )
+    else if ( auto result = archiveCluster.getFile(firstAssetArchivePathOption) )
     {
-        if ( archiveFile != nullptr )
-        {
-            if ( auto asset = archiveFile->getFile(secondAssetArchivePathOption) )
-            {
-                isFirst = false;
-                return asset;
-            }
-        }
+        isFirst = false;
+        return result;
     }
     logger.error() << "Failed to get StarCraft asset: \"" << firstAssetArchivePathOption << "\" or \"" << secondAssetArchivePathOption << "\"" << std::endl;
     return std::nullopt;
 }
 
-std::optional<std::vector<u8>> Sc::Data::GetAsset(const std::vector<ArchiveFilePtr> & orderedSourceFiles, const std::string & assetArchivePath, bool silent)
+std::optional<std::vector<u8>> Sc::Data::GetAsset(ArchiveCluster & archiveCluster, const std::string & assetArchivePath, bool silent)
 {
-    for ( auto archiveFile : orderedSourceFiles )
-    {
-        if ( archiveFile != nullptr )
-        {
-            if ( auto asset = archiveFile->getFile(assetArchivePath) )
-                return asset;
-        }
-    }
-    if ( !silent )
+    auto result = archiveCluster.getFile(assetArchivePath);
+    if ( result )
+        return result;
+    else if ( !silent )
         logger.error() << "Failed to get StarCraft asset: " << assetArchivePath << std::endl;
 
     return std::nullopt;
@@ -4531,18 +4514,13 @@ std::optional<std::vector<u8>> Sc::Data::GetAsset(const std::string & assetArchi
     const std::string & expectedStarCraftDirectory,
     FileBrowserPtr<u32> starCraftBrowser)
 {
-    std::vector<ArchiveFilePtr> orderedSourceFiles = dataFileBrowser->openScDataFiles(dataFiles, expectedStarCraftDirectory, starCraftBrowser);
-    return Sc::Data::GetAsset(orderedSourceFiles, assetArchivePath);
+    auto archiveCluster = dataFileBrowser->openScDataFiles(dataFiles, expectedStarCraftDirectory, starCraftBrowser);
+    return Sc::Data::GetAsset(*archiveCluster, assetArchivePath);
 }
 
-bool Sc::Data::ExtractAsset(const std::vector<ArchiveFilePtr> & orderedSourceFiles, const std::string & assetArchivePath, const std::string & systemFilePath)
+bool Sc::Data::ExtractAsset(ArchiveCluster & archiveCluster, const std::string & assetArchivePath, const std::string & systemFilePath)
 {
-    for ( auto archiveFile : orderedSourceFiles )
-    {
-        if ( archiveFile != nullptr && archiveFile->findFile(assetArchivePath) )
-            return archiveFile->extractFile(assetArchivePath, systemFilePath);
-    }
-    return false;
+    return archiveCluster.extractFile(assetArchivePath, systemFilePath);
 }
 
 bool Sc::Data::ExtractAsset(const std::string & assetArchivePath, const std::string & systemFilePath,
@@ -4551,6 +4529,6 @@ bool Sc::Data::ExtractAsset(const std::string & assetArchivePath, const std::str
     const std::string & expectedStarCraftDirectory,
     FileBrowserPtr<u32> starCraftBrowser)
 {
-    std::vector<ArchiveFilePtr> orderedSourceFiles = dataFileBrowser->openScDataFiles(dataFiles, expectedStarCraftDirectory, starCraftBrowser);
-    return Sc::Data::ExtractAsset(orderedSourceFiles, assetArchivePath, systemFilePath);
+    auto archiveCluster = dataFileBrowser->openScDataFiles(dataFiles, expectedStarCraftDirectory, starCraftBrowser);
+    return Sc::Data::ExtractAsset(*archiveCluster, assetArchivePath, systemFilePath);
 }

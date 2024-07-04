@@ -308,6 +308,7 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="ArchiveCluster.h" />
     <ClInclude Include="Basics.h" />
     <ClInclude Include="CascArchive.h" />
     <ClInclude Include="Chk.h" />
@@ -325,6 +326,7 @@
     <ClInclude Include="TextTrigGenerator.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ArchiveCluster.cpp" />
     <ClCompile Include="Basics.cpp" />
     <ClCompile Include="CascArchive.cpp" />
     <ClCompile Include="Chk.cpp" />

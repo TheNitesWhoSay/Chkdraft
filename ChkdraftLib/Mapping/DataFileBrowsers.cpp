@@ -6,11 +6,11 @@ ChkdDataFileBrowser::ChkdDataFileBrowser() : updatedPaths(false)
 }
 
 
-std::vector<ArchiveFilePtr> ChkdDataFileBrowser::openScDataFiles(bool & includesRemastered,
+ArchiveClusterPtr ChkdDataFileBrowser::openScDataFiles(bool & includesRemastered,
     const std::vector<Sc::DataFile::Descriptor> & dataFiles, const std::string & expectedStarCraftDirectory, FileBrowserPtr<> starCraftBrowser)
 {
     updatedPaths = false;
-    const std::vector<ArchiveFilePtr> & scDataFiles = Sc::DataFile::Browser::openScDataFiles(
+    auto scDataFiles = Sc::DataFile::Browser::openScDataFiles(
         includesRemastered, dataFiles, expectedStarCraftDirectory, starCraftBrowser);
 
     if ( updatedPaths )

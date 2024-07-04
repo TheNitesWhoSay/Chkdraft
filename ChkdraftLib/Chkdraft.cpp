@@ -102,7 +102,7 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
             }
         }
 
-        if ( CM != nullptr && ColorCycler::CycleColors(CM->getTileset(), CM->getPalette()) )
+        if ( CM != nullptr && colorCycler.cycleColors(GetTickCount(), CM->getTileset(), CM->getPalette()) )
             CM->Redraw(false);
 
         std::this_thread::sleep_for(std::chrono::milliseconds(1)); // Avoid consuming a core
@@ -456,6 +456,13 @@ void Chkdraft::KeyListener(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
             {
                 switch ( wParam )
                 {
+                    case '1': if ( CM != nullptr ) CM->SetSkin(GuiMap::Skin::ClassicGDI); return; break;
+                    case '2': if ( CM != nullptr ) /*CM->SetSkin(GuiMap::Skin::ClassicGL);*/ return; break;
+                    case '3': if ( CM != nullptr ) CM->SetSkin(GuiMap::Skin::ScrSD); return; break;
+                    case '4': if ( CM != nullptr ) CM->SetSkin(GuiMap::Skin::ScrHD2); return; break;
+                    case '5': if ( CM != nullptr ) CM->SetSkin(GuiMap::Skin::ScrHD); return; break;
+                    case '6': if ( CM != nullptr ) CM->SetSkin(GuiMap::Skin::CarbotHD2); return; break;
+                    case '7': if ( CM != nullptr ) CM->SetSkin(GuiMap::Skin::CarbotHD); return; break;
                     case 'U': if ( CM != nullptr ) maps.SetGrid(8, 8); return; break;
                     case 'F': if ( CM != nullptr ) maps.SetGrid(16, 16); return; break;
                     case 'G': if ( CM != nullptr ) maps.SetGrid(32, 32); return; break;
@@ -585,6 +592,14 @@ LRESULT Chkdraft::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     case ID_ZOOM_33:  CM->setZoom(defaultZooms[7]); break;
     case ID_ZOOM_25:  CM->setZoom(defaultZooms[8]); break;
     case ID_ZOOM_10:  CM->setZoom(defaultZooms[9]); break;
+        // Skin
+    case ID_SKIN_CLASSICGDI: CM->SetSkin(GuiMap::Skin::ClassicGDI); break;
+    case ID_SKIN_CLASSICOPENGL: CM->SetSkin(GuiMap::Skin::ClassicGL); break;
+    case ID_SKIN_REMASTEREDSD: CM->SetSkin(GuiMap::Skin::ScrSD); break;
+    case ID_SKIN_REMASTEREDHD2: CM->SetSkin(GuiMap::Skin::ScrHD2); break;
+    case ID_SKIN_REMASTEREDHD: CM->SetSkin(GuiMap::Skin::ScrHD); break;
+    case ID_SKIN_CARBOTHD2: CM->SetSkin(GuiMap::Skin::CarbotHD2); break;
+    case ID_SKIN_CARBOTHD: CM->SetSkin(GuiMap::Skin::CarbotHD); break;
         // Terrain
     case ID_TERRAIN_DISPLAYTILEBUILDABILITY: CM->ToggleDisplayBuildability(); break;
     case ID_TERRAIN_DISPLAYTILEELEVATIONS: CM->ToggleDisplayElevations(); break;

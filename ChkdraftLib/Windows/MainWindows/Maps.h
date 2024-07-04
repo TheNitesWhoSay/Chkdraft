@@ -1,6 +1,7 @@
 #ifndef MAPS_H
 #define MAPS_H
 #include "../../CommonFiles/CommonFiles.h"
+#include "../../Mapping/WglRenderContext.h"
 #include "GuiMap.h"
 #include <map>
 #include <exception>
@@ -56,6 +57,9 @@ class Maps : public WinLib::MdiClient
         void stickCursor(); // Ensures that the cursor does revert during click & drags
         void updateCursor(s32 xc, s32 yc);
 
+        // Creates the OpenGL rendering context with the given context if it doesn't exist or associates it with this new device context if it does
+        void createRenderContext(std::shared_ptr<WinLib::DeviceContext> deviceContext);
+
     protected:
         u16 NextId();
         void EnableMapping();
@@ -67,6 +71,7 @@ class Maps : public WinLib::MdiClient
     private:
         bool mappingEnabled;
         std::multimap<u16, GuiMapPtr> openMaps; // <mapId, map>
+        std::optional<WglRenderContext> openGlContext; // Context is created by the first map to need it, owned by the currently active map (if any)
         int UntitledNumber;
         u16 lastUsedMapID;
 
