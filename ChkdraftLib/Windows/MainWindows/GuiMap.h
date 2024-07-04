@@ -193,7 +193,6 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     
                     ChkdPalette & getPalette();
                     ChkdPalette & getStaticPalette();
-                    std::shared_ptr<WinLib::DeviceContext> getOpenGlBuffer() { return openGlBuffer; }
 
                     enum class Skin
                     {
@@ -205,6 +204,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                         CarbotHD2,
                         CarbotHD
                     };
+                    GuiMap::Skin GetSkin();
                     void SetSkin(GuiMap::Skin skin);
 
 
@@ -253,7 +253,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     Graphics scGraphics {*this, selections};
                     Scr::MapGraphics scrGraphics {*this};
                     GuiMap::Skin skin = Skin::ClassicGDI;
-                    std::shared_ptr<WinLib::DeviceContext> openGlBuffer;
+                    std::shared_ptr<WinLib::DeviceContext> openGlDc;
                     u32 prevTickCount = GetTickCount();
 
                     u16 mapId = 0;

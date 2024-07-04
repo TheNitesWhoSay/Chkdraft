@@ -37,7 +37,7 @@ protected:
     }
 
 public:
-    WglRenderContext(std::shared_ptr<WinLib::DeviceContext> deviceContext) // Creates an OpenGL renderingContext with deviceContext as the current rendering target
+    WglRenderContext(std::shared_ptr<WinLib::DeviceContext> & deviceContext) // Creates an OpenGL renderingContext with deviceContext as the current rendering target
         : gl::RenderContext{}, gl::ContextSemaphore{(gl::RenderContext*)this}, deviceContext(deviceContext)
     {
         if ( deviceContext == nullptr )
@@ -73,14 +73,19 @@ public:
         }
     }
 
-    void setDeviceContext(std::shared_ptr<WinLib::DeviceContext> deviceContext)
+    void setDeviceContext(std::shared_ptr<WinLib::DeviceContext> & deviceContext)
     {
-        if ( deviceContextUsed )
-            gl::ContextSemaphore::releaseContext();
+        if ( deviceContext.get() != this->deviceContext.get() )
+        {
+            if ( deviceContextUsed )
+                gl::ContextSemaphore::releaseContext();
 
-        this->deviceContext = deviceContext;
+            this->deviceContext = deviceContext;
 
-        gl::ContextSemaphore::claimContext();
+            gl::ContextSemaphore::claimContext();
+        }
+        else if ( !deviceContextUsed )
+            gl::ContextSemaphore::claimContext();
     }
 
 };

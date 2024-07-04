@@ -48,14 +48,6 @@ bool Maps::Focus(std::shared_ptr<GuiMap> guiMap)
 {
     if ( guiMap != nullptr && isInOpenMaps(guiMap) )
     {
-        if ( currentlyActiveMap != nullptr && openGlContext )
-        {
-            openGlContext->releaseContext();
-            auto deviceContext = guiMap->getOpenGlBuffer();
-            if ( deviceContext != nullptr )
-                openGlContext->setDeviceContext(deviceContext);
-        }
-        
         currentlyActiveMap = guiMap;
         chkd.mainPlot.leftBar.mainTree.isomTree.UpdateIsomTree();
         chkd.mainPlot.leftBar.mainTree.doodadTree.UpdateDoodadTree();
@@ -65,9 +57,6 @@ bool Maps::Focus(std::shared_ptr<GuiMap> guiMap)
     }
     else
     {
-        if ( currentlyActiveMap != nullptr && openGlContext )
-            openGlContext->releaseContext();
-
         currentlyActiveMap = nullptr;
         return false;
     }
@@ -818,12 +807,18 @@ void Maps::updateCursor(s32 xc, s32 yc)
         SetCursor(standardCursor);
 }
 
-void Maps::createRenderContext(std::shared_ptr<WinLib::DeviceContext> deviceContext)
+void Maps::setGlRenderTarget(std::shared_ptr<WinLib::DeviceContext> & deviceContext, WinLib::WindowsItem & windowsItem)
 {
-    if ( this->openGlContext == std::nullopt )
-        this->openGlContext.emplace(deviceContext);
+    if ( !deviceContext )
+    {
+        deviceContext = std::make_shared<WinLib::DeviceContext>(windowsItem.getHandle());
+        deviceContext->useOpenGlPixelFormat();
+    }
+
+    if ( openGlRenderContext )
+        openGlRenderContext->setDeviceContext(deviceContext);
     else
-        this->openGlContext->setDeviceContext(deviceContext);
+        openGlRenderContext.emplace(deviceContext);
 }
 
 u16 Maps::NextId()
@@ -968,12 +963,7 @@ bool Maps::RemoveMap(std::shared_ptr<GuiMap> guiMap)
     if ( toDelete != u16_max )
     {
         if ( guiMap == currentlyActiveMap )
-        {
-            if ( openGlContext )
-                openGlContext->releaseContext();
-
             currentlyActiveMap = nullptr;
-        }
 
         std::string mapFilePath = guiMap->getFilePath();
         openMaps.erase(toDelete);

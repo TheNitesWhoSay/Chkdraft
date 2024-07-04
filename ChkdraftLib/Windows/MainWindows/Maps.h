@@ -57,8 +57,8 @@ class Maps : public WinLib::MdiClient
         void stickCursor(); // Ensures that the cursor does revert during click & drags
         void updateCursor(s32 xc, s32 yc);
 
-        // Creates the OpenGL rendering context with the given context if it doesn't exist or associates it with this new device context if it does
-        void createRenderContext(std::shared_ptr<WinLib::DeviceContext> deviceContext);
+        // If not created, creates the rendering context with the given device context (which is also created if null); targets the given/new device context
+        void setGlRenderTarget(std::shared_ptr<WinLib::DeviceContext> & deviceContext, WinLib::WindowsItem & windowsItem);
 
     protected:
         u16 NextId();
@@ -71,7 +71,7 @@ class Maps : public WinLib::MdiClient
     private:
         bool mappingEnabled;
         std::multimap<u16, GuiMapPtr> openMaps; // <mapId, map>
-        std::optional<WglRenderContext> openGlContext; // Context is created by the first map to need it, owned by the currently active map (if any)
+        std::optional<WglRenderContext> openGlRenderContext; // Single OpenGL rendering context for all map-related OpenGL rendering
         int UntitledNumber;
         u16 lastUsedMapID;
 

@@ -1817,6 +1817,7 @@ void GuiMap::PaintMap(GuiMapPtr currMap, bool pasting)
         RECT cliRect {};
         if ( getClientRect(cliRect) )
         {
+            chkd.maps.setGlRenderTarget(this->openGlDc, *this);
             auto currTickCount = GetTickCount();
             if ( currTickCount > prevTickCount )
                 scrGraphics.updateGraphics(currTickCount-prevTickCount);
@@ -1827,7 +1828,7 @@ void GuiMap::PaintMap(GuiMapPtr currMap, bool pasting)
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             scrGraphics.render(chkd.scData, screenLeft, screenTop, cliRect.right-cliRect.left, cliRect.bottom-cliRect.top);
             
-            SwapBuffers(openGlBuffer->getDcHandle());
+            SwapBuffers(openGlDc->getDcHandle());
             glFlush();
             ValidateRect(getHandle(), &cliRect);
         }
@@ -2877,7 +2878,7 @@ LRESULT GuiMap::DoSize(HWND hWnd, WPARAM wParam, LPARAM lParam)
         ClassWindow::getClientRect(rcCli);
         glViewport(0, 0, GLsizei(rcCli.right-rcCli.left), GLsizei(rcCli.bottom-rcCli.top));
 
-        SwapBuffers(openGlBuffer->getDcHandle());
+        SwapBuffers(openGlDc->getDcHandle());
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
     return result;
@@ -3924,6 +3925,11 @@ bool GuiMap::TryBackup(bool & outCopyFailed)
     return false;
 }
 
+GuiMap::Skin GuiMap::GetSkin()
+{
+    return this->skin;
+}
+
 void GuiMap::SetSkin(GuiMap::Skin skin)
 {
     // Validate the skin and if remastered, turn it into Scr::GraphicsData::RenderSettings
@@ -3947,19 +3953,13 @@ void GuiMap::SetSkin(GuiMap::Skin skin)
 
     if ( skin != Skin::ClassicGDI )
     {
-        // Create the OpenGL context
-        if ( this->openGlBuffer == nullptr )
-        {
-            this->openGlBuffer = std::make_shared<WinLib::DeviceContext>(ClassWindow::getHandle());
-            this->openGlBuffer->useOpenGlPixelFormat();
-        }
-        chkd.maps.createRenderContext(this->openGlBuffer);
+        chkd.maps.setGlRenderTarget(this->openGlDc, *this);
         
         RECT rcCli {};
         ClassWindow::getClientRect(rcCli);
         glViewport(0, 0, GLsizei(rcCli.right-rcCli.left), GLsizei(rcCli.bottom-rcCli.top));
 
-        SwapBuffers(openGlBuffer->getDcHandle());
+        SwapBuffers(openGlDc->getDcHandle());
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
 
