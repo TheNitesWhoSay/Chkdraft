@@ -26,6 +26,7 @@ bool TerrainPaletteWindow::CreateThis(HWND hParent)
 
 bool TerrainPaletteWindow::DestroyThis()
 {
+    this->openGlDc = nullptr;
     return ClassDialog::DestroyDialog();
 }
 
