@@ -79,6 +79,12 @@ namespace gl
                 glUniformMatrix4fv(uniformLocation, 1, GL_FALSE, mat4);
             }
 
+            void setMat4(GLfloat (&mat4)[4][4])
+            {
+                WRAP_GL_VALIDATE_CURRENT_PROGRAM();
+                glUniformMatrix4fv(uniformLocation, 1, GL_FALSE, &mat4[0][0]);
+            }
+
             void loadIdentity()
             {
                 WRAP_GL_VALIDATE_CURRENT_PROGRAM();

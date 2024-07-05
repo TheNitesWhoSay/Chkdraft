@@ -51,67 +51,91 @@ void TerrainPaletteWindow::DoPaint()
 {
     if ( CM != nullptr )
     {
-        WinLib::DeviceContext dc(WindowsItem::getHandle(), cliWidth(), cliHeight());
-        dc.setFont(4, 14, "Microsoft Sans Serif");
-        dc.setBkMode(TRANSPARENT);
-        dc.setTextColor(RGB(255, 255, 0));
-        BITMAPINFO bmi = GetBMI(32, 32);
-
-        const Sc::Terrain::Tiles & tiles = chkd.scData.terrain.get(CM->getTileset());
-
-        u16 tileValue = u16(tilesetIndexedYC / PIXELS_PER_TILE*TILES_PER_ROW);
-        int yOffset = tilesetIndexedYC%PIXELS_PER_TILE;
-        int numRows = (WindowsItem::cliHeight()-START_TILES_YC) / PIXELS_PER_TILE + 2;
-        bool tileHighlighted = chkd.maps.clipboard.hasQuickTiles();
-        std::vector<PasteTileNode> & pasteTiles = chkd.maps.clipboard.getTiles();
-        u16 numHighlighted = 0;
-        if ( pasteTiles.size() > 0 )
-            numHighlighted = pasteTiles[0].value;
-
-        for ( s32 row = 0; row < numRows; row++ )
+        if ( CM->GetSkin() == GuiMap::Skin::ClassicGDI )
         {
-            for ( s32 column = 0; column < TILES_PER_ROW; column++ )
+            WinLib::DeviceContext dc(WindowsItem::getHandle(), cliWidth(), cliHeight());
+            dc.setFont(4, 14, "Microsoft Sans Serif");
+            dc.setBkMode(TRANSPARENT);
+            dc.setTextColor(RGB(255, 255, 0));
+            BITMAPINFO bmi = GetBMI(32, 32);
+
+            const Sc::Terrain::Tiles & tiles = chkd.scData.terrain.get(CM->getTileset());
+
+            u16 tileValue = u16(tilesetIndexedYC / PIXELS_PER_TILE*TILES_PER_ROW);
+            int yOffset = tilesetIndexedYC%PIXELS_PER_TILE;
+            int numRows = (WindowsItem::cliHeight()-START_TILES_YC) / PIXELS_PER_TILE + 2;
+            bool tileHighlighted = chkd.maps.clipboard.hasQuickTiles();
+            std::vector<PasteTileNode> & pasteTiles = chkd.maps.clipboard.getTiles();
+            u16 numHighlighted = 0;
+            if ( pasteTiles.size() > 0 )
+                numHighlighted = pasteTiles[0].value;
+
+            for ( s32 row = 0; row < numRows; row++ )
             {
-                if ( tileHighlighted && tileValue == numHighlighted )
+                for ( s32 column = 0; column < TILES_PER_ROW; column++ )
                 {
-                    DrawTile(dc, CM->getPalette(), tiles, s16(column*PIXELS_PER_TILE), s16(row*PIXELS_PER_TILE - yOffset),
-                        tileValue, bmi, 0, 0, 0);
-
-                    COLORREF selClr = RGB(255, 255, 255);
-                    int rectLeft = column*PIXELS_PER_TILE - 1,
-                        rectTop = row*PIXELS_PER_TILE - yOffset - 1,
-                        rectRight = rectLeft + PIXELS_PER_TILE,
-                        rectBottom = rectTop + PIXELS_PER_TILE;
-
-                    for ( int i = rectLeft; i<rectRight; i += 2 )
-                        dc.setPixel(i, rectTop, selClr);
-                    for ( int i = rectLeft + 1; i<rectRight; i += 2 )
-                        dc.setPixel(i, rectBottom, selClr);
-                    for ( int i = rectTop; i<rectBottom; i += 2 )
-                        dc.setPixel(rectLeft, i, selClr);
-                    for ( int i = rectTop + 1; i <= rectBottom; i += 2 )
-                        dc.setPixel(rectRight, i, selClr);
-                }
-                else
-                {
-                    if ( CM->DisplayingElevations() )
-                        DrawTileElevation(dc, tiles, s16(column*PIXELS_PER_TILE), s16(row*PIXELS_PER_TILE - yOffset), tileValue, bmi);
-                    else
-                        DrawTile(dc, CM->getPalette(), tiles, s16(column*PIXELS_PER_TILE), s16(row*PIXELS_PER_TILE - yOffset), tileValue, bmi, 0, 0, 0);
-
-                    if ( CM->DisplayingTileNums() )
+                    if ( tileHighlighted && tileValue == numHighlighted )
                     {
-                        char TileHex[8];
-                        RECT nullRect {};
-                        std::snprintf(TileHex, 8, "%hu", tileValue);
-                        dc.drawText(TileHex, column*PIXELS_PER_TILE + 3, row*PIXELS_PER_TILE - yOffset + 2, nullRect, false, true);
-                    }
-                }
+                        DrawTile(dc, CM->getPalette(), tiles, s16(column*PIXELS_PER_TILE), s16(row*PIXELS_PER_TILE - yOffset),
+                            tileValue, bmi, 0, 0, 0);
 
-                tileValue++;
+                        COLORREF selClr = RGB(255, 255, 255);
+                        int rectLeft = column*PIXELS_PER_TILE - 1,
+                            rectTop = row*PIXELS_PER_TILE - yOffset - 1,
+                            rectRight = rectLeft + PIXELS_PER_TILE,
+                            rectBottom = rectTop + PIXELS_PER_TILE;
+
+                        for ( int i = rectLeft; i<rectRight; i += 2 )
+                            dc.setPixel(i, rectTop, selClr);
+                        for ( int i = rectLeft + 1; i<rectRight; i += 2 )
+                            dc.setPixel(i, rectBottom, selClr);
+                        for ( int i = rectTop; i<rectBottom; i += 2 )
+                            dc.setPixel(rectLeft, i, selClr);
+                        for ( int i = rectTop + 1; i <= rectBottom; i += 2 )
+                            dc.setPixel(rectRight, i, selClr);
+                    }
+                    else
+                    {
+                        if ( CM->DisplayingElevations() )
+                            DrawTileElevation(dc, tiles, s16(column*PIXELS_PER_TILE), s16(row*PIXELS_PER_TILE - yOffset), tileValue, bmi);
+                        else
+                            DrawTile(dc, CM->getPalette(), tiles, s16(column*PIXELS_PER_TILE), s16(row*PIXELS_PER_TILE - yOffset), tileValue, bmi, 0, 0, 0);
+
+                        if ( CM->DisplayingTileNums() )
+                        {
+                            char TileHex[8];
+                            RECT nullRect {};
+                            std::snprintf(TileHex, 8, "%hu", tileValue);
+                            dc.drawText(TileHex, column*PIXELS_PER_TILE + 3, row*PIXELS_PER_TILE - yOffset + 2, nullRect, false, true);
+                        }
+                    }
+
+                    tileValue++;
+                }
             }
+            dc.flushBuffer();
         }
-        dc.flushBuffer();
+        else // OpenGL rendering
+        {
+            RECT cliRect {};
+            getClientRect(cliRect);
+            GLint savedViewport[4] {};
+            glGetIntegerv(GL_VIEWPORT, savedViewport);
+            chkd.maps.setGlRenderTarget(this->openGlDc, *this);
+            glViewport(cliRect.left, cliRect.top, cliRect.right-cliRect.left, cliRect.bottom-cliRect.top);
+            
+            glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+            CM->scrGraphics.drawTilesetIndexed(chkd.scData, CM->scrGraphics.renderSettings.visualQuality, CM->scrGraphics.scrDat->tiles->tilesetGrp,
+                cliRect.left, cliRect.top, cliRect.right-cliRect.left, cliRect.bottom-cliRect.top, tilesetIndexedYC);
+            
+            glFlush();
+            SwapBuffers(openGlDc->getDcHandle());
+            ValidateRect(getHandle(), &cliRect);
+            
+            glViewport(savedViewport[0], savedViewport[1], savedViewport[2], savedViewport[3]);
+        }
     }
 }
 

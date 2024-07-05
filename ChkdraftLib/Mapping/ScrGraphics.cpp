@@ -1075,7 +1075,7 @@ void Scr::MapGraphics::drawTestTex(gl::Texture & tex)
     testVerts.drawTriangles();
 }
 
-void Scr::MapGraphics::drawStars(u32 x, u32 y, u32 scaledWidth, u32 scaledHeight, u32 multiplyColor, GLfloat* posToNdc)
+void Scr::MapGraphics::drawStars(u32 x, u32 y, u32 scaledWidth, u32 scaledHeight, u32 multiplyColor)
 {
     if ( scrDat->spk == nullptr )
         return;
@@ -1143,63 +1143,14 @@ void Scr::MapGraphics::drawStars(u32 x, u32 y, u32 scaledWidth, u32 scaledHeight
         starVertices.drawTriangles();
     }
 }
-        
-void Scr::MapGraphics::drawTerrain(Sc::Data & scData, VisualQuality visualQuality, s32 left, s32 top, u32 width, u32 height, GLfloat* posToNdc)
-{
-    float time = (GetTickCount() - initialTickCount)/4000.0f;
-    
-    auto tilesetIndex = Sc::Terrain::Tileset(mapFile.getTileset() % Sc::Terrain::NumTilesets);
-    auto & tilesetGrp = scrDat->tiles->tilesetGrp;
 
+void Scr::MapGraphics::drawTileVertices(VisualQuality visualQuality, Scr::Grp & tilesetGrp, s32 left, s32 top, u32 width, u32 height)
+{
+    auto tilesetIndex = Sc::Terrain::Tileset(mapFile.getTileset() % Sc::Terrain::NumTilesets);
     bool drawHdWater = visualQuality > VisualQuality::SD &&
         (tilesetIndex == Sc::Terrain::Tileset::Badlands || tilesetIndex == Sc::Terrain::Tileset::Jungle ||
             tilesetIndex == Sc::Terrain::Tileset::Arctic || tilesetIndex == Sc::Terrain::Tileset::Twilight);
-            
-    // Prepare tile vertices
-    tileVertices.clear();
-    auto tiles = scData.terrain.get(Sc::Terrain::Tileset(mapFile.tileset));
-                
-    GLfloat texWidth = GLfloat(tilesetGrp.width) / 2.0f;
-    GLfloat texHeight = GLfloat(tilesetGrp.height) / 2.0f;
-    Rect2D<GLfloat> vertexRect {-texWidth, -texHeight, texWidth, texHeight};
-    u32 xStart = std::max(0, left/32-2);
-    u32 yStart = std::max(0, top/32-2);
-    u32 xLimit = std::min((left+width)/32, u32(mapFile.dimensions.tileWidth-1));
-    u32 yLimit = std::min((top+height)/32, u32(mapFile.dimensions.tileHeight-1));
 
-    for ( u32 y = yStart; y <= yLimit; y++ )
-    {
-        for ( u32 x = xStart; x <= xLimit; x++ )
-        {
-            u32 megaTileIndex = 0;
-            u16 tileIndex = mapFile.tiles[size_t(y) * size_t(mapFile.dimensions.tileWidth) + size_t(x)];
-            size_t groupIndex = Sc::Terrain::Tiles::getGroupIndex(tileIndex);
-            if ( groupIndex < tiles.tileGroups.size() )
-            {
-                const Sc::Terrain::TileGroup & tileGroup = tiles.tileGroups[groupIndex];
-                megaTileIndex = tileGroup.megaTileIndex[tiles.getGroupMemberIndex(tileIndex)];
-            }
-
-            Point2D<GLfloat> position {
-                GLfloat((s32(x)*32-left)*s32(visualQuality.scale)+32*s32(visualQuality.scale)/2),
-                GLfloat((s32(y)*32-top)*s32(visualQuality.scale)+32*s32(visualQuality.scale)/2)
-            };
-            auto left = float(megaTileIndex%128)/float(128);
-            auto top = float(megaTileIndex/128)/float(128);
-            auto right = left+1.f/128.f;
-            auto bottom = top+1.f/128.f;
-            Rect2D<GLfloat> texRect {left, top, right, bottom};
-            tileVertices.vertices.insert(tileVertices.vertices.end(), {
-                position.x+vertexRect.left, position.y+vertexRect.top, texRect.left, texRect.top,
-                position.x+vertexRect.right, position.y+vertexRect.top, texRect.right, texRect.top,
-                position.x+vertexRect.left, position.y+vertexRect.bottom, texRect.left, texRect.bottom,
-                position.x+vertexRect.left, position.y+vertexRect.bottom, texRect.left, texRect.bottom,
-                position.x+vertexRect.right, position.y+vertexRect.bottom, texRect.right, texRect.bottom,
-                position.x+vertexRect.right, position.y+vertexRect.top, texRect.right, texRect.top,
-            });
-        }
-    }
-            
     if ( drawHdWater )
     {
         // Draw tiles without effects to a screenTex
@@ -1230,7 +1181,7 @@ void Scr::MapGraphics::drawTerrain(Sc::Data & scData, VisualQuality visualQualit
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, screenTex.getId(), 0);
         glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
-        glClearColor(1.0f, 0.f, 1.f, 0.f);
+        glClearColor(0.f, 0.f, 0.f, 0.f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         scrDat->shaders->simpleShader.use();
@@ -1261,7 +1212,7 @@ void Scr::MapGraphics::drawTerrain(Sc::Data & scData, VisualQuality visualQualit
         scrDat->shaders->waterShader.sampleTex2.setSlot(2);
         scrDat->shaders->waterShader.sampleTex3.setSlot(3);
         scrDat->shaders->waterShader.sampleTex4.setSlot(4);
-        scrDat->shaders->waterShader.data.set(0.0f, 0.0f, time);
+        scrDat->shaders->waterShader.data.set(0.0f, 0.0f, (GetTickCount() - initialTickCount)/4000.0f);
 
         screenTex.bindToSlot(GL_TEXTURE0);
         scrDat->waterNormal[0]->texture[n1Frame].bindToSlot(GL_TEXTURE1);
@@ -1269,7 +1220,7 @@ void Scr::MapGraphics::drawTerrain(Sc::Data & scData, VisualQuality visualQualit
         scrDat->waterNormal[1]->texture[n2Frame].bindToSlot(GL_TEXTURE3);
         scrDat->waterNormal[1]->texture[n2Frame+1 >= scrDat->waterNormal[1]->frames ? 0 : n2Frame+1].bindToSlot(GL_TEXTURE4);
 
-        waterVertices.vertices = { // TODO: MapCoords should be dynamic
+        waterVertices.vertices = { // {pos.xy, tex.xy, map.xy, map2.xy} TODO: MapCoords should be dynamic
             -1.f, -1.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f,
              1.f, -1.f, 1.f, 0.f, 1.f, 0.f, 1.f, 0.f,
             -1.f,  1.f, 0.f, 1.f, 0.f, 1.f, 0.f, 1.f,
@@ -1317,7 +1268,108 @@ void Scr::MapGraphics::drawTerrain(Sc::Data & scData, VisualQuality visualQualit
     }
 }
 
-void Scr::MapGraphics::drawAnim(Scr::Animation & animation, u32 x, u32 y, u32 frame, u32 playerColor, u32 multiplyColor, bool hallucinate, GLfloat* posToNdc, bool halfAnims)
+void Scr::MapGraphics::drawTerrain(Sc::Data & scData, VisualQuality visualQuality, Scr::Grp & tilesetGrp, s32 left, s32 top, u32 width, u32 height)
+{
+    tileVertices.clear();
+    auto tiles = scData.terrain.get(Sc::Terrain::Tileset(mapFile.tileset));
+
+    GLfloat texWidth = GLfloat(tilesetGrp.width) / 2.0f;
+    GLfloat texHeight = GLfloat(tilesetGrp.height) / 2.0f;
+    Rect2D<GLfloat> vertexRect {-texWidth, -texHeight, texWidth, texHeight};
+    u32 xStart = std::max(0, left/32-2);
+    u32 yStart = std::max(0, top/32-2);
+    u32 xLimit = std::min((left+width)/32, u32(mapFile.dimensions.tileWidth-1));
+    u32 yLimit = std::min((top+height)/32, u32(mapFile.dimensions.tileHeight-1));
+
+    for ( u32 y = yStart; y <= yLimit; y++ )
+    {
+        for ( u32 x = xStart; x <= xLimit; x++ )
+        {
+            u32 megaTileIndex = 0;
+            u16 tileIndex = mapFile.tiles[size_t(y) * size_t(mapFile.dimensions.tileWidth) + size_t(x)];
+            size_t groupIndex = Sc::Terrain::Tiles::getGroupIndex(tileIndex);
+            if ( groupIndex < tiles.tileGroups.size() )
+            {
+                const Sc::Terrain::TileGroup & tileGroup = tiles.tileGroups[groupIndex];
+                megaTileIndex = tileGroup.megaTileIndex[tiles.getGroupMemberIndex(tileIndex)];
+            }
+
+            Point2D<GLfloat> position {
+                GLfloat((s32(x)*32-left)*s32(visualQuality.scale)+32*s32(visualQuality.scale)/2),
+                GLfloat((s32(y)*32-top)*s32(visualQuality.scale)+32*s32(visualQuality.scale)/2)
+            };
+            auto left = float(megaTileIndex%128)/float(128);
+            auto top = float(megaTileIndex/128)/float(128);
+            auto right = left+1.f/128.f;
+            auto bottom = top+1.f/128.f;
+            Rect2D<GLfloat> texRect {left, top, right, bottom};
+            tileVertices.vertices.insert(tileVertices.vertices.end(), {
+                position.x+vertexRect.left, position.y+vertexRect.top, texRect.left, texRect.top,
+                position.x+vertexRect.right, position.y+vertexRect.top, texRect.right, texRect.top,
+                position.x+vertexRect.left, position.y+vertexRect.bottom, texRect.left, texRect.bottom,
+                position.x+vertexRect.left, position.y+vertexRect.bottom, texRect.left, texRect.bottom,
+                position.x+vertexRect.right, position.y+vertexRect.bottom, texRect.right, texRect.bottom,
+                position.x+vertexRect.right, position.y+vertexRect.top, texRect.right, texRect.top,
+            });
+        }
+    }
+
+    drawTileVertices(visualQuality, tilesetGrp, left, top, width, height);
+}
+
+void Scr::MapGraphics::drawTilesetIndexed(Sc::Data & scData, VisualQuality visualQuality, Scr::Grp & tilesetGrp, s32 left, s32 top, u32 width, u32 height, s32 scrollY)
+{
+    tileVertices.clear();
+    posToNdc[0][0] = 2.0f/(width*visualQuality.scale);
+    posToNdc[1][1] = -2.0f/(height*visualQuality.scale);
+    auto tiles = scData.terrain.get(Sc::Terrain::Tileset(mapFile.tileset));
+
+    GLfloat texWidth = GLfloat(tilesetGrp.width) / 2.0f;
+    GLfloat texHeight = GLfloat(tilesetGrp.height) / 2.0f;
+    Rect2D<GLfloat> vertexRect {-texWidth, -texHeight, texWidth, texHeight};
+    s32 topRow = scrollY/33;
+    s32 bottomRow = (scrollY + height)/33;
+    s32 totalRows = height/32;
+    s32 totalColumns = width/32;
+
+    for ( s32 row=topRow; row<=bottomRow; ++row )
+    {
+        GLfloat tileTop = GLfloat(row*33-scrollY)*s32(visualQuality.scale)+32*s32(visualQuality.scale)/2;
+        for ( s32 column=0; column<totalColumns; ++column )
+        {
+            u32 megaTileIndex = 0;
+            u16 tileIndex = u16(16*row+column);
+            size_t groupIndex = Sc::Terrain::Tiles::getGroupIndex(tileIndex);
+            if ( groupIndex < tiles.tileGroups.size() )
+            {
+                const Sc::Terrain::TileGroup & tileGroup = tiles.tileGroups[groupIndex];
+                megaTileIndex = tileGroup.megaTileIndex[tiles.getGroupMemberIndex(tileIndex)];
+            }
+
+            Point2D<GLfloat> position {
+                GLfloat(column*33)*s32(visualQuality.scale)+32*s32(visualQuality.scale)/2,
+                tileTop
+            };
+            auto left = float(megaTileIndex%128)/float(128);
+            auto top = float(megaTileIndex/128)/float(128);
+            auto right = left+1.f/128.f;
+            auto bottom = top+1.f/128.f;
+            Rect2D<GLfloat> texRect {left, top, right, bottom};
+            tileVertices.vertices.insert(tileVertices.vertices.end(), {
+                position.x+vertexRect.left, position.y+vertexRect.top, texRect.left, texRect.top,
+                position.x+vertexRect.right, position.y+vertexRect.top, texRect.right, texRect.top,
+                position.x+vertexRect.left, position.y+vertexRect.bottom, texRect.left, texRect.bottom,
+                position.x+vertexRect.left, position.y+vertexRect.bottom, texRect.left, texRect.bottom,
+                position.x+vertexRect.right, position.y+vertexRect.bottom, texRect.right, texRect.bottom,
+                position.x+vertexRect.right, position.y+vertexRect.top, texRect.right, texRect.top,
+            });
+        }
+    }
+
+    drawTileVertices(visualQuality, tilesetGrp, left, top, width, height);
+}
+
+void Scr::MapGraphics::drawAnim(Scr::Animation & animation, u32 x, u32 y, u32 frame, u32 playerColor, u32 multiplyColor, bool hallucinate, bool halfAnims)
 {
     if ( frame >= animation.totalFrames )
         frame = 0;
@@ -1384,7 +1436,7 @@ void Scr::MapGraphics::drawAnim(Scr::Animation & animation, u32 x, u32 y, u32 fr
     animVertices.drawTriangles();
 }
 
-void Scr::MapGraphics::drawSprites(Sc::Data & scData, VisualQuality visualQuality, s32 left, s32 top, GLfloat* posToNdc)
+void Scr::MapGraphics::drawSprites(Sc::Data & scData, VisualQuality visualQuality, s32 left, s32 top)
 {
     for ( auto & unit : mapFile.units )
     {
@@ -1392,32 +1444,28 @@ void Scr::MapGraphics::drawSprites(Sc::Data & scData, VisualQuality visualQualit
         u32 spriteId = u32(scData.units.getFlingy(flingyId >= 209 ? 0 : flingyId).sprite);
         u32 imageId = scData.sprites.getSprite(spriteId >= 517 ? 0 : spriteId).imageFile;
         drawAnim(*((*scrDat->images)[imageId]), (unit.xc-left)*visualQuality.scale, (unit.yc-top)*visualQuality.scale, 0,
-            (u32 &)(scData.tunit.rgbaPalette[8*size_t(unit.owner)]), 0xFFFFFFFF, false, posToNdc, visualQuality.halfAnims);
+            (u32 &)(scData.tunit.rgbaPalette[8*size_t(unit.owner)]), 0xFFFFFFFF, false, visualQuality.halfAnims);
     }
 
     for ( auto & sprite : mapFile.sprites )
     {
         u32 imageId = scData.sprites.getSprite(sprite.type >= 517 ? 0 : sprite.type).imageFile;
         drawAnim(*((*scrDat->images)[imageId]), (sprite.xc-left)*visualQuality.scale, (sprite.yc-top)*visualQuality.scale, 0,
-            (u32 &)(scData.tunit.rgbaPalette[8*size_t(sprite.owner)]), 0xFFFFFFFF, false, posToNdc, visualQuality.halfAnims);
+            (u32 &)(scData.tunit.rgbaPalette[8*size_t(sprite.owner)]), 0xFFFFFFFF, false, visualQuality.halfAnims);
     }
 }
 
 void Scr::MapGraphics::render(Sc::Data & scData, s32 left, s32 top, u32 width, u32 height)
 {
     auto visualQuality = renderSettings.visualQuality;
-    GLfloat posToNdc[4][4] { // Converts 2D game coordinates (0 to screen width/height) to NDCs which range (-1 to 1) with y-axis flipped
-        { 2.0f/(width*visualQuality.scale),    0, 0, 0 }, // x = 2x/width
-        {  0, -2.0f/(height*visualQuality.scale), 0, 0 }, // y = -2y/height
-        {  0, 0,                                  1, 0 },
-        { -1, 1,                                  0, 1 }  // x = x-1, y = y+1
-    };
+    posToNdc[0][0] = 2.0f/(width*visualQuality.scale);
+    posToNdc[1][1] = -2.0f/(height*visualQuality.scale);
             
-    drawStars(left, top, width*visualQuality.scale, height*visualQuality.scale, 0xFFFFFFFF, &posToNdc[0][0]);
+    drawStars(left, top, width*visualQuality.scale, height*visualQuality.scale, 0xFFFFFFFF);
 
-    drawTerrain(scData, visualQuality, left, top, width, height, &posToNdc[0][0]);
+    drawTerrain(scData, visualQuality, scrDat->tiles->tilesetGrp, left, top, width, height);
 
-    drawSprites(scData, visualQuality, left, top, &posToNdc[0][0]);
+    drawSprites(scData, visualQuality, left, top);
 }
 
 void Scr::MapGraphics::updateGraphics(u32 ticks)

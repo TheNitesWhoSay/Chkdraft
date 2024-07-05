@@ -206,6 +206,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     };
                     GuiMap::Skin GetSkin();
                     void SetSkin(GuiMap::Skin skin);
+                    Scr::MapGraphics scrGraphics {*this};
 
 
     protected:
@@ -251,7 +252,6 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     Selections selections {*this};
                     Undos undos {*this};
                     Graphics scGraphics {*this, selections};
-                    Scr::MapGraphics scrGraphics {*this};
                     GuiMap::Skin skin = Skin::ClassicGDI;
                     std::shared_ptr<WinLib::DeviceContext> openGlDc;
                     u32 prevTickCount = GetTickCount();

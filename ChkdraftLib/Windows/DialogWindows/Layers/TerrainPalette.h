@@ -31,6 +31,7 @@ class TerrainPaletteWindow : public WinLib::ClassDialog
 
     private:
         u32 tilesetIndexedYC;
+        std::shared_ptr<WinLib::DeviceContext> openGlDc;
 };
 
 #endif

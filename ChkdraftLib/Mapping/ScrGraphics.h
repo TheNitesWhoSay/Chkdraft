@@ -642,6 +642,12 @@ namespace Scr {
         gl::VertexVector<> tileVertices {};
         gl::VertexArray<6*8> waterVertices {}; // 6 verticies forming the two triangles for a quad, 8 elements per vertex (pos.xy, tex.xy, map.xy, map2.xy)
         gl::VertexArray<6*4> animVertices {}; // 6 verticies forming the two triangles for a quad, 4 elements per vertex (posX, posY, texX, texY)
+        GLfloat posToNdc[4][4] { // Converts 2D game coordinates (0 to screen width/height) to NDCs which range (-1 to 1) with y-axis flipped
+            {  1.f, 0.f, 0.f, 0.f }, // x = 2x/width
+            {  0.f, 1.f, 0.f, 0.f }, // y = -2y/height
+            {  0.f, 0.f, 1.f, 0.f },
+            { -1.f, 1.f, 0.f, 1.f }  // x = x-1, y = y+1
+        };
 
         MapGraphics(MapFile & mapFile);
 
@@ -665,13 +671,17 @@ namespace Scr {
         
         void drawTestTex(gl::Texture & tex);
 
-        void drawStars(u32 x, u32 y, u32 scaledWidth, u32 scaledHeight, u32 multiplyColor, GLfloat* posToNdc);
+        void drawStars(u32 x, u32 y, u32 scaledWidth, u32 scaledHeight, u32 multiplyColor);
+
+        void drawTileVertices(VisualQuality visualQuality, Scr::Grp & tilesetGrp, s32 left, s32 top, u32 width, u32 height);
         
-        void drawTerrain(Sc::Data & scData, VisualQuality visualQuality, s32 left, s32 top, u32 width, u32 height, GLfloat* posToNdc);
+        void drawTerrain(Sc::Data & scData, VisualQuality visualQuality, Scr::Grp & tilesetGrp, s32 left, s32 top, u32 width, u32 height);
 
-        void drawAnim(Scr::Animation & animation, u32 x, u32 y, u32 frame, u32 playerColor, u32 multiplyColor, bool hallucinate, GLfloat* posToNdc, bool halfAnims);
+        void drawTilesetIndexed(Sc::Data & scData, VisualQuality visualQuality, Scr::Grp & tilesetGrp, s32 left, s32 top, u32 width, u32 height, s32 scrollY);
 
-        void drawSprites(Sc::Data & scData, VisualQuality visualQuality, s32 left, s32 top, GLfloat* posToNdc);
+        void drawAnim(Scr::Animation & animation, u32 x, u32 y, u32 frame, u32 playerColor, u32 multiplyColor, bool hallucinate, bool halfAnims);
+
+        void drawSprites(Sc::Data & scData, VisualQuality visualQuality, s32 left, s32 top);
 
         void render(Sc::Data & scData, s32 left, s32 top, u32 width, u32 height);
 

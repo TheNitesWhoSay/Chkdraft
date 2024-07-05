@@ -1828,8 +1828,8 @@ void GuiMap::PaintMap(GuiMapPtr currMap, bool pasting)
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             scrGraphics.render(chkd.scData, screenLeft, screenTop, cliRect.right-cliRect.left, cliRect.bottom-cliRect.top);
             
-            SwapBuffers(openGlDc->getDcHandle());
             glFlush();
+            SwapBuffers(openGlDc->getDcHandle());
             ValidateRect(getHandle(), &cliRect);
         }
         // TODO: temp copy of minimap render code
@@ -3954,7 +3954,7 @@ void GuiMap::SetSkin(GuiMap::Skin skin)
     if ( skin != Skin::ClassicGDI )
     {
         chkd.maps.setGlRenderTarget(this->openGlDc, *this);
-        
+
         RECT rcCli {};
         ClassWindow::getClientRect(rcCli);
         glViewport(0, 0, GLsizei(rcCli.right-rcCli.left), GLsizei(rcCli.bottom-rcCli.top));
@@ -3997,6 +3997,8 @@ void GuiMap::SetSkin(GuiMap::Skin skin)
     this->skin = skin;
     
     this->Redraw(true);
+    if ( chkd.terrainPalWindow.getHandle() != NULL )
+        chkd.terrainPalWindow.RedrawThis();
 }
 
 void GuiMap::addIsomUndo(const Chk::IsomRectUndo & isomUndo)
