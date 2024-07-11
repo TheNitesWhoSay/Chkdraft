@@ -118,22 +118,21 @@ void TerrainPaletteWindow::DoPaint()
         }
         else // OpenGL rendering
         {
-            RECT cliRect {};
-            getClientRect(cliRect);
+            RECT rcCli {};
+            getClientRect(rcCli);
             GLint savedViewport[4] {};
             glGetIntegerv(GL_VIEWPORT, savedViewport);
             chkd.maps.setGlRenderTarget(this->openGlDc, *this);
-            glViewport(cliRect.left, cliRect.top, cliRect.right-cliRect.left, cliRect.bottom-cliRect.top);
+            glViewport(rcCli.left, rcCli.top, rcCli.right-rcCli.left, rcCli.bottom-rcCli.top);
             
             glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            CM->scrGraphics.drawTilesetIndexed(chkd.scData, CM->scrGraphics.renderSettings.visualQuality, CM->scrGraphics.scrDat->tiles->tilesetGrp,
-                cliRect.left, cliRect.top, cliRect.right-cliRect.left, cliRect.bottom-cliRect.top, tilesetIndexedYC);
+            CM->scrGraphics.drawTilesetIndexed(chkd.scData, rcCli.left, rcCli.top, rcCli.right-rcCli.left, rcCli.bottom-rcCli.top, tilesetIndexedYC);
             
             glFlush();
             SwapBuffers(openGlDc->getDcHandle());
-            ValidateRect(getHandle(), &cliRect);
+            ValidateRect(getHandle(), &rcCli);
             
             glViewport(savedViewport[0], savedViewport[1], savedViewport[2], savedViewport[3]);
         }

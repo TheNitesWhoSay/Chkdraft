@@ -1855,7 +1855,7 @@ namespace Sc {
         }
     };
     
-    template <typename T>
+    template <typename T> // TODO: Template not actually used
     struct Color
     {
         u8 red;

@@ -55,6 +55,24 @@ namespace Scr {
             gl::Texture mergedTexture {};
         };
 
+        struct ClassicGrp
+        {
+            struct Frame
+            {
+                u32 frameWidth = 0;
+                u32 frameHeight = 0;
+                u32 texWidth = 0; // frameWidth padded to 4-bytes
+                u32 texHeight = 0; // frameHeight padded to 4-bytes
+                s16 xOffset = 0;
+                s16 yOffset = 0;
+                gl::Texture tex {};
+            };
+
+            std::vector<Frame> frames;
+            u16 grpWidth;
+            u16 grpHeight;
+        };
+
         struct TileMask
         {
             struct Entry
@@ -221,10 +239,10 @@ namespace Scr {
 
         struct Skin
         {
-            enum class Id { None = 0, Carbot = 1, Total };
+            enum class Id { Classic = 0, Remastered = 1, Carbot = 2, Total };
             static constexpr size_t total = size_t(Id::Total);
 
-            static constexpr std::string_view skinNames[] { "", "carbot" };
+            static constexpr std::string_view skinNames[] { "", "", "carbot" };
 
             std::string skinName {};
             u8 imageUsesSkinTexture[999] {}; // 0 = use default, 1 = use skin
@@ -317,6 +335,38 @@ namespace Scr {
                     gl::Program::link();
                     gl::Program::use();
                     gl::Program::findUniforms(posToNdc, texScale, tex);
+                    posToNdc.loadIdentity();
+                    texScale.loadIdentity();
+                }
+            };
+
+            class SimplePaletteShader : public SimpleVertexShader
+            {
+                static constexpr std::string_view fragmentCode =
+                    "#version 330 core\n"
+
+                    "in vec2 texCoord;"
+                    "out vec4 fragColor;"
+                    "uniform usampler2D tex;"
+                    "uniform sampler2D pal;"
+
+                    "void main() {"
+                    "    uint palIndex = texture(tex, texCoord).r;"
+                    "    if ( palIndex == uint(0) ) discard;"
+                    "    fragColor = vec4(texture(pal, vec2(palIndex/256., 0.)).rgb, 1.0);"
+                    "};";
+
+            public:
+                gl::uniform::Sampler2D tex { "tex" };
+                gl::uniform::Sampler2D pal { "pal" };
+
+                void load() {
+                    gl::Program::create();
+                    SimpleVertexShader::attach();
+                    gl::Program::attachShader(gl::Shader(gl::Shader::Type::fragment, fragmentCode));
+                    gl::Program::link();
+                    gl::Program::use();
+                    gl::Program::findUniforms(posToNdc, texScale, tex, pal);
                     posToNdc.loadIdentity();
                     texScale.loadIdentity();
                 }
@@ -572,7 +622,7 @@ namespace Scr {
         struct RenderSettings
         {
             VisualQuality visualQuality = VisualQuality::SD;
-            Scr::Skin::Id skinId = Scr::Skin::Id::None;
+            Scr::Skin::Id skinId = Scr::Skin::Id::Classic;
             Sc::Terrain::Tileset tileset = Sc::Terrain::Tileset::Badlands;
             bool forceShowStars = false;
 
@@ -609,6 +659,14 @@ namespace Scr {
         gl::ContextSemaphore* openGlContextSemaphore = nullptr;
         std::shared_ptr<Shaders> shaders {};
         std::shared_ptr<Data> visualQualityData[Scr::VisualQuality::total] {};
+        struct ClassicData // Data for rendering classic graphics using OpenGL
+        {
+            Scr::GraphicsData::Shaders::SimplePaletteShader paletteShader {};
+            // TODO: Stars?
+            Grp tilesetGrp[8] {};
+            std::vector<std::shared_ptr<Scr::ClassicGrp>> images {}; // 999 images
+        };
+        std::shared_ptr<ClassicData> classicData = nullptr;
 
         struct RenderData // Data required for rendering a given map with a given visual quality, skin, and tileset
         {
@@ -624,10 +682,12 @@ namespace Scr {
         // Checks whether load requires potential disk accesses, does not perform exaustive validation
         bool isLoaded(const RenderSettings & renderSettings);
 
+        std::shared_ptr<ClassicData> loadClassic(Sc::Data & scData, const RenderSettings & renderSettings);
+
         std::shared_ptr<Scr::GraphicsData::RenderData> load(Sc::Data & scData, ArchiveCluster & archiveCluster, const RenderSettings & renderSettings, ByteBuffer & fileData);
     };
 
-    struct MapGraphics
+    class MapGraphics
     {
         u32 n1Frame = 0;
         u32 n2Frame = 0;
@@ -637,6 +697,7 @@ namespace Scr {
         MapFile & mapFile;
         Scr::GraphicsData::RenderSettings renderSettings {};
         std::shared_ptr<Scr::GraphicsData::RenderData> scrDat = nullptr;
+        std::shared_ptr<Scr::GraphicsData::ClassicData> classicDat = nullptr;
         ColorCycler colorCycler {};
         gl::VertexVector<> starVertices {};
         gl::VertexVector<> tileVertices {};
@@ -649,10 +710,7 @@ namespace Scr {
             { -1.f, 1.f, 0.f, 1.f }  // x = x-1, y = y+1
         };
 
-        MapGraphics(MapFile & mapFile);
-
-        void load(Sc::Data & scData, Scr::GraphicsData & scrDat, ArchiveCluster & archiveCluster, const Scr::GraphicsData::RenderSettings & renderSettings, ByteBuffer & fileData);
-
+    public:
         template <typename T>
         struct Point2D
         {
@@ -668,20 +726,34 @@ namespace Scr {
             T right {};
             T bottom {};
         };
+
+        MapGraphics(MapFile & mapFile);
+        
+        bool isClassicLoaded(Scr::GraphicsData & scrDat);
+
+        void initVertices();
+
+        void loadClassic(Sc::Data & scData, Scr::GraphicsData & scrDat, const Scr::GraphicsData::RenderSettings & renderSettings);
+
+        void load(Sc::Data & scData, Scr::GraphicsData & scrDat, ArchiveCluster & archiveCluster, const Scr::GraphicsData::RenderSettings & renderSettings, ByteBuffer & fileData);
+
+        void setupNdcTransformation(u32 width, u32 height);
         
         void drawTestTex(gl::Texture & tex);
 
         void drawStars(u32 x, u32 y, u32 scaledWidth, u32 scaledHeight, u32 multiplyColor);
 
-        void drawTileVertices(VisualQuality visualQuality, Scr::Grp & tilesetGrp, s32 left, s32 top, u32 width, u32 height);
+        void drawTileVertices(Scr::Grp & tilesetGrp, s32 left, s32 top, u32 width, u32 height);
         
-        void drawTerrain(Sc::Data & scData, VisualQuality visualQuality, Scr::Grp & tilesetGrp, s32 left, s32 top, u32 width, u32 height);
+        void drawTerrain(Sc::Data & scData, s32 left, s32 top, u32 width, u32 height);
 
-        void drawTilesetIndexed(Sc::Data & scData, VisualQuality visualQuality, Scr::Grp & tilesetGrp, s32 left, s32 top, u32 width, u32 height, s32 scrollY);
+        void drawTilesetIndexed(Sc::Data & scData, s32 left, s32 top, u32 width, u32 height, s32 scrollY);
 
         void drawAnim(Scr::Animation & animation, u32 x, u32 y, u32 frame, u32 playerColor, u32 multiplyColor, bool hallucinate, bool halfAnims);
 
-        void drawSprites(Sc::Data & scData, VisualQuality visualQuality, s32 left, s32 top);
+        void drawClassicImage(Sc::Data & scData, gl::Palette & palette, u32 x, u32 y, u32 imageId, Chk::PlayerColor color);
+
+        void drawSprites(Sc::Data & scData, s32 left, s32 top);
 
         void render(Sc::Data & scData, s32 left, s32 top, u32 width, u32 height);
 

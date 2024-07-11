@@ -3935,23 +3935,23 @@ void GuiMap::SetSkin(GuiMap::Skin skin)
     // Validate the skin and if remastered, turn it into Scr::GraphicsData::RenderSettings
     Scr::GraphicsData::RenderSettings renderSettings {
         .visualQuality = Scr::VisualQuality::SD,
-        .skinId = Scr::Skin::Id::None,
+        .skinId = Scr::Skin::Id::Classic,
         .tileset = Sc::Terrain::Tileset(MapFile::getTileset() % Sc::Terrain::NumTilesets),
         .forceShowStars = false
     };
     switch ( skin )
     {
-        case Skin::ClassicGDI: break;
-        case Skin::ClassicGL: break;
-        case Skin::ScrSD: renderSettings.visualQuality = Scr::VisualQuality::SD; renderSettings.skinId = Scr::Skin::Id::None; break;
-        case Skin::ScrHD2: renderSettings.visualQuality = Scr::VisualQuality::HD2; renderSettings.skinId = Scr::Skin::Id::None; break;
-        case Skin::ScrHD: renderSettings.visualQuality = Scr::VisualQuality::HD; renderSettings.skinId = Scr::Skin::Id::None; break;
+        case Skin::ClassicGDI: renderSettings.visualQuality = Scr::VisualQuality::SD; renderSettings.skinId = Scr::Skin::Id::Classic; break;
+        case Skin::ClassicGL: renderSettings.visualQuality = Scr::VisualQuality::SD; renderSettings.skinId = Scr::Skin::Id::Classic; break;
+        case Skin::ScrSD: renderSettings.visualQuality = Scr::VisualQuality::SD; renderSettings.skinId = Scr::Skin::Id::Remastered; break;
+        case Skin::ScrHD2: renderSettings.visualQuality = Scr::VisualQuality::HD2; renderSettings.skinId = Scr::Skin::Id::Remastered; break;
+        case Skin::ScrHD: renderSettings.visualQuality = Scr::VisualQuality::HD; renderSettings.skinId = Scr::Skin::Id::Remastered; break;
         case Skin::CarbotHD2: renderSettings.visualQuality = Scr::VisualQuality::HD2; renderSettings.skinId = Scr::Skin::Id::Carbot; break;
         case Skin::CarbotHD: renderSettings.visualQuality = Scr::VisualQuality::HD; renderSettings.skinId = Scr::Skin::Id::Carbot; break;
         default: throw std::logic_error("Unrecognized skin!");
     }
 
-    if ( skin != Skin::ClassicGDI )
+    if ( skin != Skin::ClassicGDI ) // Prepare OpenGL
     {
         chkd.maps.setGlRenderTarget(this->openGlDc, *this);
 
@@ -3989,6 +3989,19 @@ void GuiMap::SetSkin(GuiMap::Skin skin)
 
             auto fileData = ByteBuffer(1024*1024*120); // 120MB
             this->scrGraphics.load(chkd.scData, chkd.scrData, *archiveCluster, renderSettings, fileData);
+            auto end = std::chrono::high_resolution_clock::now();
+            logger.info() << "New skin loaded in " << std::chrono::duration_cast<std::chrono::milliseconds>(end-begin).count() << "ms\n";
+        }
+    }
+    else if ( skin == Skin::ClassicGL )
+    {
+        if ( this->scrGraphics.isClassicLoaded(chkd.scrData) )
+            this->scrGraphics.loadClassic(chkd.scData, chkd.scrData, renderSettings);
+        else
+        {
+            logger.info() << "Loading classic skin...\n";
+            auto begin = std::chrono::high_resolution_clock::now();
+            this->scrGraphics.loadClassic(chkd.scData, chkd.scrData, renderSettings);
             auto end = std::chrono::high_resolution_clock::now();
             logger.info() << "New skin loaded in " << std::chrono::duration_cast<std::chrono::milliseconds>(end-begin).count() << "ms\n";
         }

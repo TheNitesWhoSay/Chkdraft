@@ -171,10 +171,10 @@ namespace gl
             {
                 WRAP_GL_VALIDATE_CURRENT_PROGRAM();
                 glUniform4f(uniformLocation,
-                    (rgbaColor&0xFF) / 255.f, // R
-                    ((rgbaColor&0xFF00) >> 8) / 255.f, // G
-                    ((rgbaColor&0xFF0000) >> 16) / 255.f, // B
-                    ((rgbaColor&0xFF000000) >> 24) / 255.f // A
+                    (rgbaColor&0xFF) / 256.f, // R
+                    ((rgbaColor&0xFF00) >> 8) / 256.f, // G
+                    ((rgbaColor&0xFF0000) >> 16) / 256.f, // B
+                    ((rgbaColor&0xFF000000) >> 24) / 256.f // A
                 );
             }
         };

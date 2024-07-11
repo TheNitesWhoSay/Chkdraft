@@ -457,7 +457,7 @@ void Chkdraft::KeyListener(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 switch ( wParam )
                 {
                     case '1': if ( CM != nullptr ) CM->SetSkin(GuiMap::Skin::ClassicGDI); return; break;
-                    case '2': if ( CM != nullptr ) /*CM->SetSkin(GuiMap::Skin::ClassicGL);*/ return; break;
+                    case '2': if ( CM != nullptr ) CM->SetSkin(GuiMap::Skin::ClassicGL); return; break;
                     case '3': if ( CM != nullptr ) CM->SetSkin(GuiMap::Skin::ScrSD); return; break;
                     case '4': if ( CM != nullptr ) CM->SetSkin(GuiMap::Skin::ScrHD2); return; break;
                     case '5': if ( CM != nullptr ) CM->SetSkin(GuiMap::Skin::ScrHD); return; break;
