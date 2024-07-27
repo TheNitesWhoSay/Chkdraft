@@ -1,7 +1,7 @@
 #ifndef CUWPINPUT_H
 #define CUWPINPUT_H
-#include "../../../WindowsLib/WindowsUi.h"
-#include "../../../MappingCoreLib/MappingCore.h"
+#include <windows/windows_ui.h>
+#include <mapping_core/mapping_core.h>
 
 class CuwpInputDialog : public WinLib::ClassDialog
 {

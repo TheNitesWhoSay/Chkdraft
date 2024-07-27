@@ -1,8 +1,8 @@
 #ifndef LEFTBAR_H
 #define LEFTBAR_H
-#include "../../../WindowsLib/WindowsUI.h"
-#include "../ChkdControls/MainTree.h"
-#include "MiniMap.h"
+#include <windows/windows_ui.h>
+#include "ui/chkd_controls/main_tree.h"
+#include "mini_map.h"
 
 class LeftBar : public WinLib::ClassWindow
 {

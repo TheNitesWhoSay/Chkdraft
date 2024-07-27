@@ -5,11 +5,11 @@
     Common Links, should be included in most files
 */
 
-#include "Debug.h"
-#include "Constants.h"
-#include "Resource.h"
-#include "Structs.h"
-#include "Version.h"
+#include "debug.h"
+#include "constants.h"
+#include "resource.h"
+#include "structs.h"
+#include "version.h"
 
 #include <Windows.h>
 #include <algorithm>

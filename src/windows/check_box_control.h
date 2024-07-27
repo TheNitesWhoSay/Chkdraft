@@ -1,6 +1,6 @@
 #ifndef CHECKBOXCONTROL_H
 #define CHECKBOXCONTROL_H
-#include "WindowControl.h"
+#include "window_control.h"
 
 namespace WinLib {
 

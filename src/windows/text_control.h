@@ -1,6 +1,6 @@
 #ifndef TEXTCONTROL_H
 #define TEXTCONTROL_H
-#include "WindowControl.h"
+#include "window_control.h"
 
 namespace WinLib {
 

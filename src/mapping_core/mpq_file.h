@@ -1,8 +1,8 @@
 #ifndef MPQFILE_H
 #define MPQFILE_H
-#include "Basics.h"
-#include "FileBrowser.h"
-#include "ArchiveFile.h"
+#include "basics.h"
+#include "file_browser.h"
+#include "archive_file.h"
 #include <memory>
 #include <optional>
 #include <sstream>

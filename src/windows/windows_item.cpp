@@ -1,6 +1,6 @@
-#include "WindowsItem.h"
-#include "ResourceManager.h"
-#include <SimpleIcu.h>
+#include "windows_item.h"
+#include "resource_manager.h"
+#include <cross_cut/simple_icu.h>
 #include <memory>
 #include <CommCtrl.h>
 #include <iostream>

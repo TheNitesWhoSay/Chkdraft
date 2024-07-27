@@ -1,4 +1,4 @@
-#include "ToolbarControl.h"
+#include "toolbar_control.h"
 
 namespace WinLib {
 

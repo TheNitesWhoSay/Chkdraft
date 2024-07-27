@@ -1,5 +1,5 @@
-#include "LoggerWindow.h"
-#include "../../Chkdraft.h"
+#include "logger_window.h"
+#include "chkdraft/chkdraft.h"
 #include <WindowsX.h>
 
 extern Logger logger;

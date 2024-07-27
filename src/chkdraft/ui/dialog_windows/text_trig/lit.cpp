@@ -1,6 +1,6 @@
-#include "LIT.h"
-#include "../../../Chkdraft.h"
-#include "../../../Mapping/Settings.h"
+#include "lit.h"
+#include "chkdraft/chkdraft.h"
+#include "mapping/settings.h"
 #include <fstream>
 #include <string>
 

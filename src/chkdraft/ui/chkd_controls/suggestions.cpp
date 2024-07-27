@@ -1,10 +1,10 @@
-#include "Suggestions.h"
-#include "../../CommonFiles/CommonFiles.h"
-#include "../../../WindowsLib/WindowsUi.h"
+#include "suggestions.h"
+#include <common_files/common_files.h>
+#include <windows/windows_ui.h>
 #include <string>
 #include <vector>
-#include "../../../CrossCutLib/Logger.h"
-#include "../../Chkdraft.h"
+#include <cross_cut/logger.h>
+#include "chkdraft/chkdraft.h"
 
 extern Logger logger;
 

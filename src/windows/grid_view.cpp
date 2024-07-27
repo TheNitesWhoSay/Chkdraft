@@ -1,8 +1,8 @@
-#include "GridView.h"
-#include "../CrossCutLib/Logger.h"
+#include "grid_view.h"
+#include <cross_cut/logger.h>
 #include <iostream>
 #include <string>
-#include <SimpleIcu.h>
+#include <cross_cut/simple_icu.h>
 #include <CommCtrl.h>
 #include <WindowsX.h>
 

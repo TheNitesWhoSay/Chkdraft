@@ -1,7 +1,7 @@
 #ifndef SETTINGS_H
 #define SETTINGS_H
-#include "../CommonFiles/CommonFiles.h"
-#include "../../MappingCoreLib/MappingCore.h"
+#include <common_files/common_files.h>
+#include <mapping_core/mapping_core.h>
 
 std::optional<std::string> getPreSavePath(); // Gets path holding assets to be written to the map file on save
 

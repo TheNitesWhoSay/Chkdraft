@@ -1,4 +1,4 @@
-#include "Version.h"
+#include "version.h"
 
 u16 GetDateShort()
 {

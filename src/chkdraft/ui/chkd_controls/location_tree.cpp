@@ -1,5 +1,5 @@
-#include "LocationTree.h"
-#include "../../Chkdraft.h"
+#include "location_tree.h"
+#include "chkdraft/chkdraft.h"
 
 LocationTree::~LocationTree()
 {

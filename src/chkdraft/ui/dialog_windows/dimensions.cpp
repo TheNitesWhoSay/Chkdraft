@@ -1,7 +1,7 @@
-#include "Dimensions.h"
-#include "../../Chkdraft.h"
-#include "../../../ChkdraftLib/CommonFiles/CommonFiles.h"
-#include "../../Mapping/Undos/ChkdUndos/DimensionChange.h"
+#include "dimensions.h"
+#include "chkdraft/chkdraft.h"
+#include <common_files/common_files.h>
+#include "mapping/undos/chkd_undos/dimension_change.h"
 
 DimensionsWindow::DimensionsWindow()
 {

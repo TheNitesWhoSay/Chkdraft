@@ -1,13 +1,13 @@
 #ifndef TRIGEDITOR_H
 #define TRIGEDITOR_H
-#include "../../../CommonFiles/CommonFiles.h"
-#include "../../../../WindowsLib/WindowsUi.h"
-#include "../../../../MappingCoreLib/MappingCore.h"
-#include "Triggers.h"
-#include "Templates.h"
-#include "Counters.h"
-#include "CUWPs.h"
-#include "Switches.h"
+#include <common_files/common_files.h>
+#include <windows/windows_ui.h>
+#include <mapping_core/mapping_core.h>
+#include "triggers.h"
+#include "templates.h"
+#include "counters.h"
+#include "cuwps.h"
+#include "switches.h"
 
 class TrigEditorWindow : public WinLib::ClassDialog
 {

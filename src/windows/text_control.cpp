@@ -1,6 +1,6 @@
-#include "TextControl.h"
+#include "text_control.h"
 #include <CommCtrl.h>
-#include <SimpleIcu.h>
+#include <cross_cut/simple_icu.h>
 #include <WindowsX.h>
 
 namespace WinLib {

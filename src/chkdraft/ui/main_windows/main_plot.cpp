@@ -1,5 +1,5 @@
-#include "MainPlot.h"
-#include "../../Chkdraft.h"
+#include "main_plot.h"
+#include "chkdraft/chkdraft.h"
 
 enum_t(Id, u32, {
     Logger = ID_FIRST

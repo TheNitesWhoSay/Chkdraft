@@ -1,12 +1,12 @@
 #ifndef MAINTREE_H
 #define MAINTREE_H
-#include "../../../WindowsLib/WindowsUi.h"
-#include "../../../MappingCoreLib/MappingCore.h"
-#include "LocationTree.h"
-#include "UnitTree.h"
-#include "IsomTree.h"
-#include "DoodadTree.h"
-#include "SpriteTree.h"
+#include <windows/windows_ui.h>
+#include <mapping_core/mapping_core.h>
+#include "location_tree.h"
+#include "unit_tree.h"
+#include "isom_tree.h"
+#include "doodad_tree.h"
+#include "sprite_tree.h"
 
 class MainTree : public WinLib::TreeViewControl
 {

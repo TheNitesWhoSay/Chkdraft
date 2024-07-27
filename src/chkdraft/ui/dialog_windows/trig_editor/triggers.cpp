@@ -1,8 +1,8 @@
-#include "Triggers.h"
-#include "../../../Chkdraft.h"
-#include "../../ChkdControls/MoveTo.h"
-#include "../../../Mapping/Settings.h"
-#include "../../../Mapping/ScGraphics.h"
+#include "triggers.h"
+#include "chkdraft/chkdraft.h"
+#include "ui/chkd_controls/move_to.h"
+#include "mapping/settings.h"
+#include "mapping/sc_graphics.h"
 #include <string>
 
 #undef PlaySound

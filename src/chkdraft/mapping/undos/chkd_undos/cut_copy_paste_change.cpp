@@ -1,6 +1,6 @@
-#include "CutCopyPasteChange.h"
-#include "../../../Chkdraft.h"
-#include "../../../Windows/MainWindows/GuiMap.h"
+#include "cut_copy_paste_change.h"
+#include "chkdraft/chkdraft.h"
+#include "ui/main_windows/gui_map.h"
 
 CutCopyPasteChange::~CutCopyPasteChange()
 {

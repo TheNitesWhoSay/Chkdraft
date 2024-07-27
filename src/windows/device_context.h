@@ -1,7 +1,7 @@
 #ifndef DEVICECONTEXT_H
 #define DEVICECONTEXT_H
-#include "../CrossCutLib/SimpleIcu.h"
-#include "ResourceManager.h"
+#include <cross_cut/simple_icu.h>
+#include "resource_manager.h"
 #include <functional>
 #include <optional>
 #include <stdexcept>

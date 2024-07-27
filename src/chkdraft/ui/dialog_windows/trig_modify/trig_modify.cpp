@@ -1,5 +1,5 @@
-#include "TrigModify.h"
-#include "../../../Chkdraft.h"
+#include "trig_modify.h"
+#include "chkdraft/chkdraft.h"
 #include <string>
 
 enum_t(Id, u32, {

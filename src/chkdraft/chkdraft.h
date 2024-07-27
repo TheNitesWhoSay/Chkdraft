@@ -1,16 +1,16 @@
 #ifndef CHKDRAFT_H
 #define CHKDRAFT_H
-#include "../WindowsLib/WindowsUi.h"
-#include "CommonFiles/CommonFiles.h"
-#include "Windows/DialogWindows/DialogWindows.h"
-#include "Mapping/ChkdPlugins.h"
-#include "Mapping/ColorCycler.h"
-#include "Mapping/ScrGraphics.h" // TODO: Shouldn't need all of this, just data-portions
-#include "Windows/MainWindows/MainToolbar.h"
-#include "Windows/MainWindows/MainPlot.h"
-#include "Windows/DialogWindows/NewMap/NewMap.h"
-#include "Windows/MainWindows/Maps.h"
-#include "../CrossCutLib/Commander.h"
+#include <windows/windows_ui.h>
+#include <common_files/common_files.h>
+#include "ui/dialog_windows/dialog_windows.h"
+#include "mapping/chkd_plugins.h"
+#include "mapping/color_cycler.h"
+#include "mapping/scr_graphics.h" // TODO: Shouldn't need all of this, just data-portions
+#include "ui/main_windows/main_toolbar.h"
+#include "ui/main_windows/main_plot.h"
+#include "ui/dialog_windows/new_map/new_map.h"
+#include "ui/main_windows/maps.h"
+#include <cross_cut/commander.h>
 
 class Chkdraft : public WinLib::ClassWindow
 {

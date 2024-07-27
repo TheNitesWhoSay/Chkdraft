@@ -1,7 +1,7 @@
 #ifndef ISOMCHANGE_H
 #define ISOMCHANGE_H
-#include "../Reversibles.h"
-#include "UndoTypes.h"
+#include "mapping/undos/reversibles.h"
+#include "undo_types.h"
 
 class IsomChange : public ReversibleAction
 {

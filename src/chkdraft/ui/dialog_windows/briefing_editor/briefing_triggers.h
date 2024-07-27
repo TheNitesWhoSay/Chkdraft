@@ -1,10 +1,10 @@
 #ifndef BRIEFINGTRIGGERS_H
 #define BRIEFINGTRIGGERS_H
-#include "../../../CommonFiles/CommonFiles.h"
-#include "../../../../WindowsLib/WindowsUi.h"
-#include "../../../../MappingCoreLib/MappingCore.h"
-#include "../../ChkdControls/PeerListBox.h"
-#include "BriefingTrigModify.h"
+#include <common_files/common_files.h>
+#include <windows/windows_ui.h>
+#include <mapping_core/mapping_core.h>
+#include "ui/chkd_controls/peer_list_box.h"
+#include "briefing_trig_modify.h"
 #include <unordered_map>
 #include <string>
 

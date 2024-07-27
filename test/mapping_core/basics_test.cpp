@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
-#include "../CrossCutLib/Logger.h"
-#include "../MappingCoreLib/MappingCore.h"
+#include <cross_cut/logger.h>
+#include <mapping_core/mapping_core.h>
 #include <regex>
 
 void IgnoreErr(const std::string & file, unsigned int line, const std::string msg, ...)

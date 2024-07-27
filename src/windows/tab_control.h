@@ -1,6 +1,6 @@
 #ifndef TABCONTROL_H
 #define TABCONTROL_H
-#include "WindowControl.h"
+#include "window_control.h"
 #include <CommCtrl.h>
 
 namespace WinLib {

@@ -1,5 +1,5 @@
-#include "Forces.h"
-#include "../../../Chkdraft.h"
+#include "forces.h"
+#include "chkdraft/chkdraft.h"
 #include <CommCtrl.h>
 #include <string>
 

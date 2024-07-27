@@ -1,8 +1,8 @@
 #ifndef MAPFILE_H
 #define MAPFILE_H
-#include "Scenario.h"
-#include "FileBrowser.h"
-#include "MpqFile.h"
+#include "scenario.h"
+#include "file_browser.h"
+#include "mpq_file.h"
 #include <utility>
 #include <map>
 

@@ -1,8 +1,8 @@
-#include "../CrossCutLib/Logger.h"
-#include "../CrossCutLib/SimpleIcu.h"
-#include "MapFile.h"
-#include "SystemIO.h"
-#include "EscapeStrings.h"
+#include <cross_cut/logger.h>
+#include <cross_cut/simple_icu.h>
+#include "map_file.h"
+#include "system_io.h"
+#include "escape_strings.h"
 #include <cstdio>
 #include <cstdarg>
 #include <fstream>

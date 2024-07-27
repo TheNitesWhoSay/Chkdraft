@@ -1,6 +1,6 @@
-#include "NewMap.h"
-#include "../../../Chkdraft.h"
-#include "../../../../MappingCoreLib/MappingCore.h"
+#include "new_map.h"
+#include "chkdraft/chkdraft.h"
+#include <mapping_core/mapping_core.h>
 
 enum_t(Id, u32, {
     COMBO_TRIGS = ID_FIRST

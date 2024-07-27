@@ -1,6 +1,6 @@
 #ifndef RADIOBUTTONCONTROL_H
 #define RADIOBUTTONCONTROL_H
-#include "WindowControl.h"
+#include "window_control.h"
 
 namespace WinLib {
 

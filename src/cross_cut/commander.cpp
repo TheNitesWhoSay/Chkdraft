@@ -1,4 +1,4 @@
-#include "Commander.h"
+#include "commander.h"
 #include <memory>
 
 class GenericUndoCommand : public GenericCommand

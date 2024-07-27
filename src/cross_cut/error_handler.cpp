@@ -1,4 +1,4 @@
-#include "ErrorHandler.h"
+#include "error_handler.h"
 
 std::atomic<u32> KnownError::nextErrorId(1);
 

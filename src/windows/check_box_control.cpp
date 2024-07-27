@@ -1,4 +1,4 @@
-#include "CheckBoxControl.h"
+#include "check_box_control.h"
 #include "CommCtrl.h"
 
 namespace WinLib {

@@ -1,7 +1,7 @@
-#include "ChkdPlugins.h"
-#include "../Chkdraft.h"
-#include "../../MappingCoreLib/TextTrigCompiler.h"
-#include "Settings.h"
+#include "chkd_plugins.h"
+#include "chkdraft/chkdraft.h"
+#include <mapping_core/text_trig_compiler.h>
+#include "settings.h"
 
 LRESULT CALLBACK PluginProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {

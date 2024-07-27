@@ -1,9 +1,9 @@
 #ifndef BRIEFINGTRIGMODIFY_H
 #define BRIEFINGTRIGMODIFY_H
-#include "../../../../WindowsLib/WindowsUi.h"
-#include "BriefingTrigPlayers.h"
-#include "BriefingTrigActions.h"
-#include "BriefingTrigModifyText.h"
+#include <windows/windows_ui.h>
+#include "briefing_trig_players.h"
+#include "briefing_trig_actions.h"
+#include "briefing_trig_modify_text.h"
 
 class BriefingTrigModifyWindow : public WinLib::ClassDialog
 {

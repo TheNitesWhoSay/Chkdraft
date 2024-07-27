@@ -1,8 +1,8 @@
 #ifndef TEXTTRIGCOMPILER_H
 #define TEXTTRIGCOMPILER_H
-#include "Basics.h"
-#include "Sc.h"
-#include "Scenario.h"
+#include "basics.h"
+#include "sc.h"
+#include "scenario.h"
 #include <unordered_map>
 #include <sstream>
 #include <string>

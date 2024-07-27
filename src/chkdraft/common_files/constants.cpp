@@ -1,5 +1,5 @@
-#include "Constants.h"
-#include "CommonFiles.h"
+#include "constants.h"
+#include "common_files.h"
 
 #include <Windows.h>
 

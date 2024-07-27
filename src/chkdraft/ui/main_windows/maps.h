@@ -1,8 +1,8 @@
 #ifndef MAPS_H
 #define MAPS_H
-#include "../../CommonFiles/CommonFiles.h"
-#include "../../Mapping/WglRenderContext.h"
-#include "GuiMap.h"
+#include <common_files/common_files.h>
+#include "mapping/wgl_render_context.h"
+#include "gui_map.h"
 #include <map>
 #include <exception>
 

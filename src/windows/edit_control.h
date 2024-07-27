@@ -1,6 +1,6 @@
 #ifndef EDITCONTROL_H
 #define EDITCONTROL_H
-#include "WindowControl.h"
+#include "window_control.h"
 
 namespace WinLib {
 

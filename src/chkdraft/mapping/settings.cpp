@@ -1,5 +1,5 @@
-#include "Settings.h"
-#include "../../CrossCutLib/Logger.h"
+#include "settings.h"
+#include <cross_cut/logger.h>
 #include <fstream>
 
 std::string Settings::starCraftPath("");

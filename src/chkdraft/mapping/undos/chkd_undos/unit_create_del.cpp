@@ -1,5 +1,5 @@
-#include "UnitCreateDel.h"
-#include "../../../Windows/MainWindows/GuiMap.h"
+#include "unit_create_del.h"
+#include "ui/main_windows/gui_map.h"
 
 UnitCreateDel::~UnitCreateDel()
 {

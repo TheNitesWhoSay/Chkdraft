@@ -1,5 +1,5 @@
-#include "MiniMap.h"
-#include "../../Chkdraft.h"
+#include "mini_map.h"
+#include "chkdraft/chkdraft.h"
 
 MiniMap::~MiniMap()
 {

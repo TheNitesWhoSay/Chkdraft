@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
-#include "../MappingCoreLib/MappingCore.h"
-#include "../CrossCutLib/SimpleIcu.h"
-#include "TestAssets.h"
+#include <mapping_core/mapping_core.h>
+#include <cross_cut/simple_icu.h>
+#include "test_assets.h"
 #include <filesystem>
 #include <regex>
 

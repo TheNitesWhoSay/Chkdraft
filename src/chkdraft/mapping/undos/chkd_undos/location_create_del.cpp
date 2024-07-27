@@ -1,5 +1,5 @@
-#include "LocationCreateDel.h"
-#include "../../../Windows/MainWindows/GuiMap.h"
+#include "location_create_del.h"
+#include "ui/main_windows/gui_map.h"
 
 LocationCreateDel::~LocationCreateDel()
 {

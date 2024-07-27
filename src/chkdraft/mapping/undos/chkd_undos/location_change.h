@@ -1,7 +1,7 @@
 #ifndef LOCATIONCHANGE_H
 #define LOCATIONCHANGE_H
-#include "../Reversibles.h"
-#include "UndoTypes.h"
+#include "mapping/undos/reversibles.h"
+#include "undo_types.h"
 
 class LocationChange : public ReversibleAction
 {

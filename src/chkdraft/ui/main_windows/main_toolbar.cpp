@@ -1,4 +1,4 @@
-#include "MainToolbar.h"
+#include "main_toolbar.h"
 #include <CommCtrl.h>
 
 enum_t(Id, u32, {

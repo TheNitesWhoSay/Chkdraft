@@ -1,7 +1,7 @@
 #ifndef UNDOTYPES_H
 #define UNDOTYPES_H
-#include "../../../CommonFiles/CommonFiles.h"
-#include "../../../../MappingCoreLib/MappingCore.h"
+#include <common_files/common_files.h>
+#include <mapping_core/mapping_core.h>
 
 enum_t(UndoTypes, int32_t, {
     None = 0,

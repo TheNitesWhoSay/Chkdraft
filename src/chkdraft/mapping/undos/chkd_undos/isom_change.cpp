@@ -1,5 +1,5 @@
-#include "IsomChange.h"
-#include "../../../Windows/MainWindows/GuiMap.h"
+#include "isom_change.h"
+#include "ui/main_windows/gui_map.h"
 
 IsomChange::~IsomChange()
 {

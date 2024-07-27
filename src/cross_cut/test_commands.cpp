@@ -1,5 +1,5 @@
-#include "TestCommands.h"
-#include "CommandTypes.h"
+#include "test_commands.h"
+#include "command_types.h"
 #include <iostream>
 #include <string>
 

@@ -1,6 +1,6 @@
 #ifndef CLASSDIALOG_H
 #define CLASSDIALOG_H
-#include "WindowsItem.h"
+#include "windows_item.h"
 
 namespace WinLib {
 

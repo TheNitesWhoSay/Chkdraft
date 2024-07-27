@@ -1,9 +1,9 @@
 #ifndef BRIEFINGTRIGACTIONS_H
 #define BRIEFINGTRIGACTIONS_H
-#include "../../../CommonFiles/CommonFiles.h"
-#include "../../../../WindowsLib/WindowsUi.h"
-#include "../../../../MappingCoreLib/MappingCore.h"
-#include "../../ChkdControls/CndActGrid.h"
+#include <common_files/common_files.h>
+#include <windows/windows_ui.h>
+#include <mapping_core/mapping_core.h>
+#include "ui/chkd_controls/cnd_act_grid.h"
 #include <string>
 #include <vector>
 

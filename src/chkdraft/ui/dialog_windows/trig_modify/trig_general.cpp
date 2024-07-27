@@ -1,6 +1,6 @@
-#include "TrigGeneral.h"
-#include "../../../Chkdraft.h"
-#include "../../ChkdControls/ChkdStringInput.h"
+#include "trig_general.h"
+#include "chkdraft/chkdraft.h"
+#include "ui/chkd_controls/chkd_string_input.h"
 
 enum_t(Id, u32, {
     GROUP_COMMENT = ID_FIRST,

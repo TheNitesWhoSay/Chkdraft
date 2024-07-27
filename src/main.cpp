@@ -1,5 +1,5 @@
-#include "../ChkdraftLib/Chkdraft.h"
-#include "../ChkdraftLib/Mapping/Settings.h"
+#include <chkdraft/chkdraft.h>
+#include <chkdraft/mapping/settings.h>
 
 #ifdef _DEBUG
 Logger logger(LogLevel::All); // The primary logger

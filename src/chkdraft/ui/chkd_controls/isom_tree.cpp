@@ -1,5 +1,5 @@
-#include "IsomTree.h"
-#include "../../Chkdraft.h"
+#include "isom_tree.h"
+#include "chkdraft/chkdraft.h"
 
 IsomTree::~IsomTree()
 {

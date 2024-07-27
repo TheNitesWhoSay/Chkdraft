@@ -1,5 +1,5 @@
-#include "CuwpInput.h"
-#include "../../CommonFiles/CommonFiles.h"
+#include "cuwp_input.h"
+#include <common_files/common_files.h>
 
 CuwpInputDialog::~CuwpInputDialog()
 {

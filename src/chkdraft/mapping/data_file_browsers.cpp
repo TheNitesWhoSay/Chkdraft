@@ -1,4 +1,4 @@
-#include "DataFileBrowsers.h"
+#include "data_file_browsers.h"
 
 ChkdDataFileBrowser::ChkdDataFileBrowser() : updatedPaths(false)
 {

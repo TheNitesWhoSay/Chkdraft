@@ -1,6 +1,6 @@
 #ifndef RICHEDITCONTROL_H
 #define RICHEDITCONTROL_H
-#include "WindowControl.h"
+#include "window_control.h"
 #include <richedit.h>
 #include <string>
 

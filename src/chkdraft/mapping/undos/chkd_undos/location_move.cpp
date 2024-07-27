@@ -1,5 +1,5 @@
-#include "LocationMove.h"
-#include "../../../Windows/MainWindows/GuiMap.h"
+#include "location_move.h"
+#include "ui/main_windows/gui_map.h"
 
 LocationMove::~LocationMove()
 {

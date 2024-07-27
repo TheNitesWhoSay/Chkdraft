@@ -1,5 +1,5 @@
-#include "UpgradeSettings.h"
-#include "../../../Chkdraft.h"
+#include "upgrade_settings.h"
+#include "chkdraft/chkdraft.h"
 #include <sstream>
 #include <string>
 

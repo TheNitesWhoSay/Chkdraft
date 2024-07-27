@@ -1,8 +1,8 @@
 #ifndef UNDOS_H
 #define UNDOS_H
-#include "../../CommonFiles/CommonFiles.h"
-#include "../../../MappingCoreLib/MappingCore.h"
-#include "../Selections.h"
+#include <common_files/common_files.h>
+#include <mapping_core/mapping_core.h>
+#include "mapping/selections.h"
 #include "Reversibles.h"
 #include <map>
 

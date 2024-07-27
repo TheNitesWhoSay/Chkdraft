@@ -1,4 +1,4 @@
-#include "Counters.h"
+#include "counters.h"
 
 CountersWindow::~CountersWindow()
 {

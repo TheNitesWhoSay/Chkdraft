@@ -1,5 +1,5 @@
-#include "TileChange.h"
-#include "../../../Windows/MainWindows/GuiMap.h"
+#include "tile_change.h"
+#include "ui/main_windows/gui_map.h"
 
 TileChange::~TileChange()
 {

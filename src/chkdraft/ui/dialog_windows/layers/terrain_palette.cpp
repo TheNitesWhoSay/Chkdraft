@@ -1,5 +1,5 @@
-#include "TerrainPalette.h"
-#include "../../../Chkdraft.h"
+#include "terrain_palette.h"
+#include "chkdraft/chkdraft.h"
 #include <WindowsX.h>
 
 #define START_TILES_YC 0

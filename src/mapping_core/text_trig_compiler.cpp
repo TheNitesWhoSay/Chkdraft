@@ -1,8 +1,8 @@
-#include "TextTrigCompiler.h"
-#include "../RareCpp/include/rarecpp/string_buffer.h"
-#include "../CrossCutLib/Logger.h"
-#include "EscapeStrings.h"
-#include "Math.h"
+#include "text_trig_compiler.h"
+#include <rarecpp/string_buffer.h>
+#include <cross_cut/logger.h>
+#include "escape_strings.h"
+#include "math.h"
 #include <cstdio>
 #include <cstring>
 #include <exception>

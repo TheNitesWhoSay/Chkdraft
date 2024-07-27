@@ -1,4 +1,4 @@
-#include "StringPreview.h"
+#include "string_preview.h"
 
 StringPreviewWindow::~StringPreviewWindow()
 {

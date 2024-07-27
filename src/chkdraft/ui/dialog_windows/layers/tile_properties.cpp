@@ -1,5 +1,5 @@
-#include "TileProperties.h"
-#include "../../../Chkdraft.h"
+#include "tile_properties.h"
+#include "chkdraft/chkdraft.h"
 
 TilePropWindow::~TilePropWindow()
 {

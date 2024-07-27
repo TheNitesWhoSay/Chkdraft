@@ -1,4 +1,4 @@
-#include "StatusControl.h"
+#include "status_control.h"
 #include <CommCtrl.h>
 
 namespace WinLib {

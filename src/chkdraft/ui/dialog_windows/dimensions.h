@@ -1,6 +1,6 @@
 #ifndef DIMENSIONS_H
 #define DIMENSIONS_H
-#include "../../../WindowsLib/WindowsUi.h"
+#include <windows/windows_ui.h>
 
 class DimensionsWindow : public WinLib::ClassDialog
 {

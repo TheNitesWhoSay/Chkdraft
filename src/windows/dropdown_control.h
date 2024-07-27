@@ -1,6 +1,6 @@
 #ifndef DROPDOWNCONTROL_H
 #define DROPDOWNCONTROL_H
-#include "WindowControl.h"
+#include "window_control.h"
 #include <vector>
 
 namespace WinLib {

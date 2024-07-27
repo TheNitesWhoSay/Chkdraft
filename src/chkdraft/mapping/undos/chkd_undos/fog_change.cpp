@@ -1,5 +1,5 @@
-#include "FogChange.h"
-#include "../../../Windows/MainWindows/GuiMap.h"
+#include "fog_change.h"
+#include "ui/main_windows/gui_map.h"
 
 FogChange::~FogChange()
 {

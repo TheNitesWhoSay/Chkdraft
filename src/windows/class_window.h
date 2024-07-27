@@ -1,9 +1,9 @@
 #ifndef WINDOWCLASS_H
 #define WINDOWCLASS_H
-#include "DataTypes.h"
-#include "WindowsItem.h"
-#include "WinUIEnums.h"
-#include "MdiClient.h"
+#include "data_types.h"
+#include "windows_item.h"
+#include "win_ui_enums.h"
+#include "mdi_client.h"
 #include <Windows.h>
 #include <string>
 #include <list>

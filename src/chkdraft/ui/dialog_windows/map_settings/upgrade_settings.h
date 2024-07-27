@@ -1,9 +1,9 @@
 #ifndef UPGRADESETTINGS_H
 #define UPGRADESETTINGS_H
-#include "../../../CommonFiles/CommonFiles.h"
-#include "../../../../WindowsLib/WindowsUi.h"
-#include "../../../../MappingCoreLib/MappingCore.h"
-#include "../../ChkdControls/UpgradeTree.h"
+#include <common_files/common_files.h>
+#include <windows/windows_ui.h>
+#include <mapping_core/mapping_core.h>
+#include "ui/chkd_controls/upgrade_tree.h"
 
 /*
     UPGS/UPGx - upgrade uses deafult costs & all costs

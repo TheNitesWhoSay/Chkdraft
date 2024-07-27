@@ -1,5 +1,5 @@
-#include "MapSettings.h"
-#include "../../../Chkdraft.h"
+#include "map_settings.h"
+#include "chkdraft/chkdraft.h"
 
 enum_t(Id, u32, {
     WIN_MAPPROPERTIES = ID_FIRST,

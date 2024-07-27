@@ -1,9 +1,9 @@
 #ifndef UNITSETTINGS_H
 #define UNITSETTINGS_H
-#include "../../../CommonFiles/CommonFiles.h"
-#include "../../../../WindowsLib/WindowsUi.h"
-#include "../../../../MappingCoreLib/MappingCore.h"
-#include "../../ChkdControls/UnitTree.h"
+#include <common_files/common_files.h>
+#include <windows/windows_ui.h>
+#include <mapping_core/mapping_core.h>
+#include "ui/chkd_controls/unit_tree.h"
 
 class UnitSettingsWindow : public WinLib::ClassWindow
 {

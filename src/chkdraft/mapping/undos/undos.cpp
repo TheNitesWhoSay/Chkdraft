@@ -1,5 +1,5 @@
-#include "Undos.h"
-#include "../../Windows/MainWindows/GuiMap.h"
+#include "undos.h"
+#include "ui/main_windows/gui_map.h"
 
 IObserveUndos::~IObserveUndos()
 {

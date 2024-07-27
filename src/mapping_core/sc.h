@@ -1,9 +1,9 @@
 #ifndef SC_H
 #define SC_H
-#include "Basics.h"
-#include "ArchiveFile.h"
-#include "ArchiveCluster.h"
-#include "FileBrowser.h"
+#include "basics.h"
+#include "archive_file.h"
+#include "archive_cluster.h"
+#include "file_browser.h"
 #include <algorithm>
 #include <array>
 #include <cstdint>

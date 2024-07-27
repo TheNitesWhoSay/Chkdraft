@@ -1,4 +1,4 @@
-#include "Templates.h"
+#include "templates.h"
 
 TemplatesWindow::~TemplatesWindow()
 {

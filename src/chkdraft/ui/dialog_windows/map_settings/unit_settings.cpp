@@ -1,5 +1,5 @@
-#include "UnitSettings.h"
-#include "../../../Chkdraft.h"
+#include "unit_settings.h"
+#include "chkdraft/chkdraft.h"
 #include <sstream>
 #include <string>
 

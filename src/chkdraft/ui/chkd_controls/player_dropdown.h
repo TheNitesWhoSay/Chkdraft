@@ -1,7 +1,7 @@
 #ifndef PLAYERDROPDOWN_H
 #define PLAYERDROPDOWN_H
-#include "../../CommonFiles/CommonFiles.h"
-#include "../../../WindowsLib/WindowsUi.h"
+#include <common_files/common_files.h>
+#include <windows/windows_ui.h>
 
 class PlayerDropdown : public WinLib::DropdownControl
 {

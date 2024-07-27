@@ -1,5 +1,5 @@
-#include "DoodadTree.h"
-#include "../../Chkdraft.h"
+#include "doodad_tree.h"
+#include "chkdraft/chkdraft.h"
 
 DoodadTree::~DoodadTree()
 {

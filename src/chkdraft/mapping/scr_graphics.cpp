@@ -1,11 +1,11 @@
-#include "ScrGraphics.h"
-#include "../CrossCutLib/Logger.h"
-#include "../RareCpp/include/rarecpp/json.h"
+#include "scr_graphics.h"
+#include <cross_cut/logger.h>
+#include <rarecpp/json.h>
 #include <chrono>
 #include <cstring>
 #include <Windows.h>
-#include "MemoryTieredTasks.h"
-#include "OpenGL/glad/glad/gl.h"
+#include "memory_tiered_tasks.h"
+#include <glad/gl.h>
 
 extern Logger logger;
 

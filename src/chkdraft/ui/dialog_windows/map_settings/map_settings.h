@@ -1,15 +1,15 @@
 #ifndef MAPSETTINGS_H
 #define MAPSETTINGS_H
-#include "../../../CommonFiles/CommonFiles.h"
-#include "../../../../WindowsLib/WindowsUi.h"
-#include "../../../../MappingCoreLib/MappingCore.h"
-#include "MapProperties.h"
-#include "Forces.h"
-#include "UnitSettings.h"
-#include "UpgradeSettings.h"
-#include "TechSettings.h"
-#include "StringEditor/StringEditor.h"
-#include "SoundEditor.h"
+#include <common_files/common_files.h>
+#include <windows/windows_ui.h>
+#include <mapping_core/mapping_core.h>
+#include "map_properties.h"
+#include "forces.h"
+#include "unit_settings.h"
+#include "upgrade_settings.h"
+#include "tech_settings.h"
+#include "string_editor/string_editor.h"
+#include "sound_editor.h"
 
 class MapSettingsWindow : public WinLib::ClassDialog
 {

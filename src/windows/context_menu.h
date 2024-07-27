@@ -5,7 +5,7 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "../CrossCutLib/SimpleIcu.h"
+#include <cross_cut/simple_icu.h>
 
 namespace WinLib
 {

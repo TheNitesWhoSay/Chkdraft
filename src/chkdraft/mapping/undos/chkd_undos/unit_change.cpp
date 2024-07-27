@@ -1,5 +1,5 @@
-#include "UnitChange.h"
-#include "../../../Windows/MainWindows/GuiMap.h"
+#include "unit_change.h"
+#include "ui/main_windows/gui_map.h"
 
 UnitChange::~UnitChange()
 {

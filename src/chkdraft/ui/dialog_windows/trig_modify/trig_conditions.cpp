@@ -1,7 +1,7 @@
-#include "TrigConditions.h"
-#include "../../../Mapping/Clipboard.h"
-#include "../../../Chkdraft.h"
-#include "../../../Mapping/Settings.h"
+#include "trig_conditions.h"
+#include "mapping/clipboard.h"
+#include "chkdraft/chkdraft.h"
+#include "mapping/settings.h"
 #include <string>
 #include <map>
 #include <numeric>

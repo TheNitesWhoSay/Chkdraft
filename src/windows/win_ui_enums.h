@@ -1,6 +1,6 @@
 #ifndef WINUIENUMERATIONS_H
 #define WINUIENUMERATIONS_H
-#include "DataTypes.h"
+#include "data_types.h"
 #include <Windows.h>
 
 namespace WinLib {

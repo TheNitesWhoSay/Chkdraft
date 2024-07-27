@@ -1,5 +1,5 @@
-#include "UnitTree.h"
-#include "../../Chkdraft.h"
+#include "unit_tree.h"
+#include "chkdraft/chkdraft.h"
 
 UnitTree::~UnitTree()
 {

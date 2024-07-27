@@ -1,5 +1,5 @@
-#include "SpriteCreateDel.h"
-#include "../../../Windows/MainWindows/GuiMap.h"
+#include "sprite_create_del.h"
+#include "ui/main_windows/gui_map.h"
 
 SpriteCreateDel::~SpriteCreateDel()
 {

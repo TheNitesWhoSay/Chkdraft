@@ -1,6 +1,6 @@
-#include "PreservedUnitStats.h"
-#include "../../../../Chkdraft.h"
-#include "../../../../Mapping/Undos/ChkdUndos/UnitChange.h"
+#include "preserved_unit_stats.h"
+#include "chkdraft/chkdraft.h"
+#include "mapping/undos/chkd_undos/unit_change.h"
 
 PreservedUnitStats::PreservedUnitStats() : field(Chk::Unit::Field::ClassId)
 {

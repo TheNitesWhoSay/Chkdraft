@@ -1,8 +1,8 @@
 #ifndef GRIDVIEW_H
 #define GRIDVIEW_H
-#include "ListViewControl.h"
-#include "GridItem.h"
-#include "EditControl.h"
+#include "list_view_control.h"
+#include "grid_item.h"
+#include "edit_control.h"
 #include <string>
 
 namespace WinLib {

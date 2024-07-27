@@ -1,6 +1,6 @@
 #ifndef ABOUT_H
 #define ABOUT_H
-#include "../../../WindowsLib/WindowsUi.h"
+#include <windows/windows_ui.h>
 
 class AboutWindow : public WinLib::ClassDialog
 {

@@ -1,21 +1,21 @@
 #ifndef SCRGRAPHICS_H
 #define SCRGRAPHICS_H
-#include "../Mapping/ColorCycler.h"
-#include "../MappingCoreLib/MappingCore.h"
-#include "../RareCpp/include/rarecpp/reflect.h"
+#include "mapping/color_cycler.h"
+#include <mapping_core/mapping_core.h>
+#include <rarecpp/reflect.h>
 #include <cstdint>
 #include <filesystem>
 #include <memory>
 #include <string>
 #include <string_view>
 #include <vector>
-#include "OpenGL/gl/context_semaphore.h"
-#include "OpenGL/gl/palette.h"
-#include "OpenGL/gl/program.h"
-#include "OpenGL/gl/shader.h"
-#include "OpenGL/gl/texture.h"
-#include "OpenGL/gl/uniform.h"
-#include "OpenGL/gl/vertices.h"
+#include "gl/context_semaphore.h"
+#include "gl/palette.h"
+#include "gl/program.h"
+#include "gl/shader.h"
+#include "gl/texture.h"
+#include "gl/uniform.h"
+#include "gl/vertices.h"
 
 namespace Scr {
 

@@ -1,6 +1,6 @@
 #ifndef ARCHIVECLUSTER_H
 #define ARCHIVECLUSTER_H
-#include "ArchiveFile.h"
+#include "archive_file.h"
 
 class ArchiveCluster;
 using ArchiveClusterPtr = std::shared_ptr<ArchiveCluster>;

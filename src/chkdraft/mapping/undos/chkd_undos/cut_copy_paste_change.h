@@ -1,7 +1,7 @@
 #ifndef CUTCOPYPASTECHANGE_H
 #define CUTCOPYPASTECHANGE_H
-#include "../Reversibles.h"
-#include "UndoTypes.h"
+#include "mapping/undos/reversibles.h"
+#include "undo_types.h"
 
 class CutCopyPasteChange : public ReversibleAction
 {

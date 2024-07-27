@@ -1,7 +1,7 @@
 #ifndef WINDOWSITEM_H
 #define WINDOWSITEM_H
-#include "DataTypes.h"
-#include "DeviceContext.h"
+#include "data_types.h"
+#include "device_context.h"
 #include <list>
 #include <optional>
 #include <string>

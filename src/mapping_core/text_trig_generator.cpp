@@ -1,6 +1,6 @@
-#include "TextTrigGenerator.h"
-#include "../CrossCutLib/Logger.h"
-#include "Math.h"
+#include "text_trig_generator.h"
+#include <cross_cut/logger.h>
+#include "math.h"
 #include <string>
 #include <chrono>
 

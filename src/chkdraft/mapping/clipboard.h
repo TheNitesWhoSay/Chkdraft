@@ -1,9 +1,9 @@
 #ifndef CLIPBOARD_H
 #define CLIPBOARD_H
-#include "../CommonFiles/CommonFiles.h"
-#include "../../MappingCoreLib/MappingCore.h"
-#include "Selections.h"
-#include "Undos/Undos.h"
+#include <common_files/common_files.h>
+#include <mapping_core/mapping_core.h>
+#include "selections.h"
+#include "undos/undos.h"
 #include <chrono>
 class GuiMap;
 

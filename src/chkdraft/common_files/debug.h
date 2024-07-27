@@ -1,6 +1,6 @@
 #ifndef DEBUG_H
 #define DEBUG_H
-#include "Constants.h"
+#include "constants.h"
 
 // If defined, a standard output window will be shown
 #define SHOW_CLI

@@ -1,6 +1,6 @@
 #ifndef BUTTONCONTROL_H
 #define BUTTONCONTROL_H
-#include "WindowControl.h"
+#include "window_control.h"
 
 namespace WinLib {
 

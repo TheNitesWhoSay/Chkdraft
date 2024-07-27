@@ -1,5 +1,5 @@
-#include "TechSettings.h"
-#include "../../../Chkdraft.h"
+#include "tech_settings.h"
+#include "chkdraft/chkdraft.h"
 #include <string>
 
 enum_t(Id, u32, {

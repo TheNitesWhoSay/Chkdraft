@@ -1,5 +1,5 @@
 #pragma once
-#include "../glad/glad/gl.h"
+#include <glad/gl.h>
 #include "texture.h"
 #include <cstdint>
 #include <stdexcept>

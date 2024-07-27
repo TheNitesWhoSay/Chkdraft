@@ -1,11 +1,11 @@
 #ifndef GUIMAP_H
 #define GUIMAP_H
-#include "../../CommonFiles/CommonFiles.h"
-#include "../../../WindowsLib/WindowsUI.h"
-#include "../../Mapping/Clipboard.h"
-#include "../../Mapping/ScGraphics.h"
-#include "../../Mapping/ScrGraphics.h"
-#include "../../Mapping/Undos/Undos.h"
+#include <common_files/common_files.h>
+#include <windows/windows_ui.h>
+#include "mapping/clipboard.h"
+#include "mapping/sc_graphics.h"
+#include "mapping/scr_graphics.h"
+#include "mapping/undos/undos.h"
 
 class GuiMap;
 typedef std::shared_ptr<GuiMap> GuiMapPtr;

@@ -1,7 +1,7 @@
-#include "Sc.h"
-#include "../CrossCutLib/Logger.h"
-#include "MpqFile.h"
-#include "CascArchive.h"
+#include "sc.h"
+#include <cross_cut/logger.h>
+#include "mpq_file.h"
+#include "casc_archive.h"
 #include <algorithm>
 #include <chrono>
 #include <set>

@@ -1,8 +1,8 @@
 #ifndef TRIG_MODIFY_TEXT
 #define TRIG_MODIFY_TEXT
-#include "../../../CommonFiles/CommonFiles.h"
-#include "../../../../WindowsLib/WindowsUi.h"
-#include "../../../../MappingCoreLib/MappingCore.h"
+#include <common_files/common_files.h>
+#include <windows/windows_ui.h>
+#include <mapping_core/mapping_core.h>
 
 class TrigModifyTextWindow : public WinLib::ClassWindow
 {

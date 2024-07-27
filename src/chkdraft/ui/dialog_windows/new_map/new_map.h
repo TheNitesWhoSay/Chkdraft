@@ -1,6 +1,6 @@
 #ifndef NEWMAP_H
 #define NEWMAP_H
-#include "../../../../WindowsLib/WindowsUi.h"
+#include <windows/windows_ui.h>
 
 class NewMap : public WinLib::ClassDialog
 {

@@ -1,7 +1,7 @@
 #ifndef WINDOWMENU_H
 #define WINDOWMENU_H
-#include "DataTypes.h"
-#include "WinUIEnums.h"
+#include "data_types.h"
+#include "win_ui_enums.h"
 #include <Windows.h>
 #include <string>
 

@@ -1,8 +1,8 @@
 #ifndef PRESERVEDSPRITESTATS_H
 #define PRESERVEDSPRITESTATS_H
-#include "../../../../CommonFiles/CommonFiles.h"
-#include "../../../../../MappingCoreLib/MappingCore.h"
-#include "../../../../Mapping/Selections.h"
+#include <common_files/common_files.h>
+#include <mapping_core/mapping_core.h>
+#include "mapping/selections.h"
 
 class PreservedSpriteStats
 {

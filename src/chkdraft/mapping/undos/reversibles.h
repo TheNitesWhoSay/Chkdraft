@@ -1,6 +1,6 @@
 #ifndef REVERSIBLES_H
 #define REVERSIBLES_H
-#include "../../CommonFiles/CommonFiles.h"
+#include <common_files/common_files.h>
 #include <vector>
 
 class Reversible

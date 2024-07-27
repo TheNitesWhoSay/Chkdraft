@@ -1,6 +1,6 @@
 #ifndef RESOURCEMANAGER_H
 #define RESOURCEMANAGER_H
-#include "../CrossCutLib/SimpleIcu.h"
+#include <cross_cut/simple_icu.h>
 #include <unordered_map>
 #include <Windows.h>
 

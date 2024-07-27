@@ -1,8 +1,8 @@
-#include "MapProperties.h"
-#include "ColorProperties.h"
-#include "../../../CommonFiles/CommonFiles.h"
-#include "../../../Chkdraft.h"
-#include "../../../Mapping/Undos/ChkdUndos/DimensionChange.h"
+#include "map_properties.h"
+#include "color_properties.h"
+#include <common_files/common_files.h>
+#include "chkdraft/chkdraft.h"
+#include "mapping/undos/chkd_undos/dimension_change.h"
 #include <string>
 
 extern Logger logger;

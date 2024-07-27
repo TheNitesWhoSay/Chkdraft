@@ -1,5 +1,5 @@
-#include "About.h"
-#include "../../../ChkdraftLib/CommonFiles/Resource.h"
+#include "about.h"
+#include <common_files/resource.h>
 
 AboutWindow::AboutWindow()
 {

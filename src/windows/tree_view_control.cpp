@@ -1,6 +1,6 @@
-#include "TreeViewControl.h"
-#include "WinUiEnums.h"
-#include <SimpleIcu.h>
+#include "tree_view_control.h"
+#include "win_ui_enums.h"
+#include <cross_cut/simple_icu.h>
 #include <CommCtrl.h>
 #include <windowsx.h>
 

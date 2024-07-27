@@ -1,10 +1,10 @@
 #ifndef BRIEFINGEDITOR_H
 #define BRIEFINGEDITOR_H
-#include "../../../CommonFiles/CommonFiles.h"
-#include "../../../../WindowsLib/WindowsUi.h"
-#include "../../../../MappingCoreLib/MappingCore.h"
-#include "BriefingTriggers.h"
-#include "BriefingTemplates.h"
+#include <common_files/common_files.h>
+#include <windows/windows_ui.h>
+#include <mapping_core/mapping_core.h>
+#include "briefing_triggers.h"
+#include "briefing_templates.h"
 
 class BriefingTrigEditorWindow : public WinLib::ClassDialog
 {

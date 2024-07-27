@@ -1,9 +1,9 @@
 #ifndef CNDACTGRID_H
 #define CNDACTGRID_H
-#include "../../../WindowsLib/WindowsUi.h"
-#include "../../../MappingCoreLib/MappingCore.h"
-#include "../../CommonFiles/CommonFiles.h"
-#include "Suggestions.h"
+#include <windows/windows_ui.h>
+#include <mapping_core/mapping_core.h>
+#include <common_files/common_files.h>
+#include "suggestions.h"
 #include <string>
 
 class ICndActGridUser // ~Interface

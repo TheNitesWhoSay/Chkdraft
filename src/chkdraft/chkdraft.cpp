@@ -1,15 +1,15 @@
-#include "Chkdraft.h"
-#include "../CrossCutLib/Logger.h"
-#include "../CrossCutLib/TestCommands.h"
-#include "Mapping/DataFileBrowsers.h"
-#include "Mapping/Settings.h"
+#include "chkdraft.h"
+#include <cross_cut/logger.h>
+#include <cross_cut/test_commands.h>
+#include "mapping/data_file_browsers.h"
+#include "mapping/settings.h"
 #include <shellapi.h>
 #include <fstream>
 #include <iostream>
 #include <thread>
 #include <chrono>
 #include <regex>
-#include "Windows/ChkdControls/ChkdStringInput.h"
+#include "ui/chkd_controls/chkd_string_input.h"
 #include <CommCtrl.h>
 
 void Chkdraft::OnLoadTest()

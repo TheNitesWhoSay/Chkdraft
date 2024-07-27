@@ -1,8 +1,8 @@
 #ifndef MAINPLOT_H
 #define MAINPLOT_H
-#include "../../../WindowsLib/WindowsUI.h"
-#include "../MainWindows/LoggerWindow.h"
-#include "LeftBar.h"
+#include <windows/windows_ui.h>
+#include "ui/main_windows/logger_window.h"
+#include "left_bar.h"
 
 class MainPlot : public WinLib::ClassWindow
 {

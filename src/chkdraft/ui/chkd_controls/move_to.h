@@ -1,8 +1,8 @@
 #ifndef MOVETODIALOG_H
 #define MOVETODIALOG_H
-#include "../../CommonFiles/CommonFiles.h"
-#include "../../../WindowsLib/WindowsUi.h"
-#include "../../../MappingCoreLib/MappingCore.h"
+#include <common_files/common_files.h>
+#include <windows/windows_ui.h>
+#include <mapping_core/mapping_core.h>
 
 template <typename indexType>
 class MoveToDialog : public WinLib::ClassDialog

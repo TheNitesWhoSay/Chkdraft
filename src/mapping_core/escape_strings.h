@@ -1,6 +1,6 @@
 #ifndef ESCAPESTRINGS_H
 #define ESCAPESTRINGS_H
-#include "Basics.h"
+#include "basics.h"
 #include <string>
 #include <vector>
 

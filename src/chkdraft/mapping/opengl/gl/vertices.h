@@ -1,6 +1,6 @@
 #pragma once
-#include "../glad/glad/gl.h"
-#include "../../../../RareCpp/include/rarecpp/reflect.h"
+#include <glad/gl.h>
+#include <rarecpp/reflect.h>
 #include <array>
 #include <stdexcept>
 #include <type_traits>

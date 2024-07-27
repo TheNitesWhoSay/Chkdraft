@@ -1,7 +1,7 @@
 #ifndef CHKDSTRINGINPUT_H
 #define CHKDSTRINGINPUT_H
-#include "../../../MappingCoreLib/MappingCore.h"
-#include "../../../WindowsLib/WindowsUi.h"
+#include <mapping_core/mapping_core.h>
+#include <windows/windows_ui.h>
 
 class ChkdStringInputDialog : public WinLib::ClassDialog
 {

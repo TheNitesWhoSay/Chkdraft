@@ -1,5 +1,5 @@
-#include "SystemIO.h"
-#include "../CrossCutLib/SimpleIcu.h"
+#include "system_io.h"
+#include <cross_cut/simple_icu.h>
 #include <algorithm>
 #include <cstdio>
 #include <fstream>

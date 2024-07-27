@@ -1,7 +1,7 @@
 #ifndef LOCATIONTREE_H
 #define LOCATIONTREE_H
-#include "../../../WindowsLib/WindowsUi.h"
-#include "../../CommonFiles/CommonFiles.h"
+#include <windows/windows_ui.h>
+#include <common_files/common_files.h>
 
 class LocationTree : public WinLib::TreeViewControl
 {

@@ -1,6 +1,6 @@
-#include "BriefingTrigModifyText.h"
-#include "../../../Chkdraft.h"
-#include "../../../Mapping/Settings.h"
+#include "briefing_trig_modify_text.h"
+#include "chkdraft/chkdraft.h"
+#include "mapping/settings.h"
 
 enum_t(Id, u32, {
     TAB_PLAYERS = 0,

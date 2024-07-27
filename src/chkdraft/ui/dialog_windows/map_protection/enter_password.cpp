@@ -1,5 +1,5 @@
-#include "EnterPassword.h"
-#include "../../../Chkdraft.h"
+#include "enter_password.h"
+#include "chkdraft/chkdraft.h"
 
 EnterPasswordDialog::~EnterPasswordDialog()
 {

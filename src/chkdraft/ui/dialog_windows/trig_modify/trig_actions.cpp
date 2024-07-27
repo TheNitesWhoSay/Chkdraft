@@ -1,8 +1,8 @@
-#include "TrigActions.h"
-#include "../../../Chkdraft.h"
-#include "../../ChkdControls/ChkdStringInput.h"
-#include "../../ChkdControls/CuwpInput.h"
-#include "../../../Mapping/Settings.h"
+#include "trig_actions.h"
+#include "chkdraft/chkdraft.h"
+#include "ui/chkd_controls/chkd_string_input.h"
+#include "ui/chkd_controls/cuwp_input.h"
+#include "mapping/settings.h"
 #include <CommCtrl.h>
 
 #define TOP_ACTION_PADDING 50

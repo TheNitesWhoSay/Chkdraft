@@ -1,7 +1,7 @@
 #ifndef MINIMAP_H
 #define MINIMAP_H
-#include "../../../WindowsLib/WindowsUI.h"
-#include "../../CommonFiles/CommonFiles.h"
+#include <windows/windows_ui.h>
+#include <common_files/common_files.h>
 
 class MiniMap : public WinLib::ClassWindow
 {

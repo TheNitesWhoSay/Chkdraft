@@ -1,5 +1,5 @@
-#include "WindowControl.h"
-#include <SimpleIcu.h>
+#include "window_control.h"
+#include <cross_cut/simple_icu.h>
 
 namespace WinLib {
 

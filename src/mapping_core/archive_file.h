@@ -1,7 +1,7 @@
 #ifndef ARCHIVEFILE_H
 #define ARCHIVEFILE_H
-#include "Basics.h"
-#include "FileBrowser.h"
+#include "basics.h"
+#include "file_browser.h"
 #include <memory>
 #include <optional>
 #include <sstream>

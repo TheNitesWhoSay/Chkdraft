@@ -1,6 +1,6 @@
-#include "PreservedSpriteStats.h"
-#include "../../../../Chkdraft.h"
-#include "../../../../Mapping/Undos/ChkdUndos/SpriteChange.h"
+#include "preserved_sprite_stats.h"
+#include "chkdraft/chkdraft.h"
+#include "mapping/undos/chkd_undos/sprite_change.h"
 
 PreservedSpriteStats::PreservedSpriteStats() : field(Chk::Sprite::Field::Type)
 {

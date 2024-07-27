@@ -1,7 +1,7 @@
 #ifndef ERRORHANDLER_H
 #define ERRORHANDLER_H
-#include "GenericCommand.h"
-#include "Logger.h"
+#include "generic_command.h"
+#include "logger.h"
 #include <exception>
 #include <atomic>
 #include <map>

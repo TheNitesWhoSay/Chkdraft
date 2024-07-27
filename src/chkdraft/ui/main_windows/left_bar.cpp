@@ -1,5 +1,5 @@
-#include "LeftBar.h"
-#include "../../Chkdraft.h"
+#include "left_bar.h"
+#include "chkdraft/chkdraft.h"
 #include <CommCtrl.h>
 
 enum_t(Id, u32, {

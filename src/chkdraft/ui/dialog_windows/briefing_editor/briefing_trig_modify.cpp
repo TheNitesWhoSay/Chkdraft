@@ -1,5 +1,5 @@
-#include "BriefingTrigModify.h"
-#include "../../../Chkdraft.h"
+#include "briefing_trig_modify.h"
+#include "chkdraft/chkdraft.h"
 #include <string>
 
 enum_t(Id, u32, {

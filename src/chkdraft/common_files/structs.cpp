@@ -1,4 +1,4 @@
-#include "Structs.h"
+#include "structs.h"
 
 points::~points()
 {

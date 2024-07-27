@@ -1,8 +1,8 @@
-#include "ListBoxControl.h"
-#include <SimpleIcu.h>
+#include "list_box_control.h"
+#include <cross_cut/simple_icu.h>
 #include <CommCtrl.h>
 #include <iostream>
-#include "../CrossCutLib/Logger.h"
+#include <cross_cut/logger.h>
 
 extern Logger logger;
 

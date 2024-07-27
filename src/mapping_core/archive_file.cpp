@@ -1,4 +1,4 @@
-#include "ArchiveFile.h"
+#include "archive_file.h"
 
 ArchiveFile::ArchiveFile(bool deleteOnClose) : deleteOnClose(deleteOnClose)
 {

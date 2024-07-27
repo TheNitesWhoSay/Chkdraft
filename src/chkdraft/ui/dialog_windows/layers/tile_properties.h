@@ -1,7 +1,7 @@
 #ifndef TILEPROPERTIES_H
 #define TILEPROPERTIES_H
-#include "../../../CommonFiles/CommonFiles.h"
-#include "../../../../WindowsLib/WindowsUi.h"
+#include <common_files/common_files.h>
+#include <windows/windows_ui.h>
 
 class TilePropWindow : public WinLib::ClassDialog
 {

@@ -1,6 +1,6 @@
 #ifndef COMMANDTYPES_H
 #define COMMANDTYPES_H
-#include "GenericCommand.h"
+#include "generic_command.h"
 
 using u32 = std::uint32_t;
 

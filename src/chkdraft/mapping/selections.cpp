@@ -1,5 +1,5 @@
-#include "Selections.h"
-#include "../Windows/MainWindows/GuiMap.h"
+#include "selections.h"
+#include "ui/main_windows/gui_map.h"
 
 Selections::Selections(GuiMap & map) : map(map), moved(false), numRecentLocations(0), locationFlags(0), locSelFlags(LocSelFlags::None), selectedLocation(0)
 {

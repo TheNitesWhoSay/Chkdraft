@@ -1,6 +1,6 @@
-#include "MdiClient.h"
+#include "mdi_client.h"
 #include <iostream>
-#include <SimpleIcu.h>
+#include <cross_cut/simple_icu.h>
 
 namespace WinLib {
 

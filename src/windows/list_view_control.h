@@ -1,6 +1,6 @@
 #ifndef LISTVIEWCONTROL_H
 #define LISTVIEWCONTROL_H
-#include "WindowControl.h"
+#include "window_control.h"
 
 namespace WinLib {
 

@@ -1,6 +1,6 @@
-#include "ClassWindow.h"
+#include "class_window.h"
 #include <CommCtrl.h>
-#include <SimpleIcu.h>
+#include <cross_cut/simple_icu.h>
 #include <sstream>
 #include <iostream>
 

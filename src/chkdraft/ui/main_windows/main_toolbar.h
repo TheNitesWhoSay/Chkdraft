@@ -1,8 +1,8 @@
 #ifndef MAINTOOLBAR_H
 #define MAINTOOLBAR_H
-#include "../../CommonFiles/CommonFiles.h"
-#include "../../../WindowsLib/WindowsUI.h"
-#include "../ChkdControls/PlayerDropdown.h"
+#include <common_files/common_files.h>
+#include <windows/windows_ui.h>
+#include "ui/chkd_controls/player_dropdown.h"
 
 class MainToolbar : public WinLib::ToolbarControl
 {

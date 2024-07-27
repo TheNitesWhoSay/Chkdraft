@@ -1,6 +1,6 @@
 #ifndef SUGGESTIONS_H
 #define SUGGESTIONS_H
-#include "../../../WindowsLib/WindowsUi.h"
+#include <windows/windows_ui.h>
 #include <string>
 #include <vector>
 

@@ -1,10 +1,10 @@
 #ifndef STRINGEDITOR_H
 #define STRINGEDITOR_H
-#include "../../../../CommonFiles/CommonFiles.h"
-#include "../../../../../WindowsLib/WindowsUi.h"
-#include "../../../../../MappingCoreLib/MappingCore.h"
-#include "StringGuide.h"
-#include "StringPreview.h"
+#include <common_files/common_files.h>
+#include <windows/windows_ui.h>
+#include <mapping_core/mapping_core.h>
+#include "string_guide.h"
+#include "string_preview.h"
 
 class StringEditorWindow : public WinLib::ClassWindow
 {

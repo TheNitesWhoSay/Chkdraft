@@ -1,6 +1,6 @@
-#include "Switches.h"
-#include "../../../Chkdraft.h"
-#include "../../ChkdControls/ChkdStringInput.h"
+#include "switches.h"
+#include "chkdraft/chkdraft.h"
+#include "ui/chkd_controls/chkd_string_input.h"
 #include <CommCtrl.h>
 
 enum_t(Id, u32, {

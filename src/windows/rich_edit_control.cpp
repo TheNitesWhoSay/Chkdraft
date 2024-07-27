@@ -1,4 +1,4 @@
-#include "RichEditControl.h"
+#include "rich_edit_control.h"
 #include <Richedit.h>
 #include <iostream>
 

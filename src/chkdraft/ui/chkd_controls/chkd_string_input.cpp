@@ -1,5 +1,5 @@
-#include "ChkdStringInput.h"
-#include "../../CommonFiles/CommonFiles.h"
+#include "chkd_string_input.h"
+#include <common_files/common_files.h>
 
 enum_t(Id, u32, {
     TAB_GAME_STRING = ID_FIRST,

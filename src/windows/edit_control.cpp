@@ -1,5 +1,5 @@
-#include "EditControl.h"
-#include <SimpleIcu.h>
+#include "edit_control.h"
+#include <cross_cut/simple_icu.h>
 #include <CommCtrl.h>
 #include <windowsx.h>
 #include <type_traits>

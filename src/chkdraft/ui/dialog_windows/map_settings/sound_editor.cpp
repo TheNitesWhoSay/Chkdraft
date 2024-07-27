@@ -1,7 +1,7 @@
-#include "SoundEditor.h"
-#include "../../../Chkdraft.h"
-#include "../../../Mapping/DataFileBrowsers.h"
-#include "../../../../MappingCoreLib/MappingCore.h"
+#include "sound_editor.h"
+#include "chkdraft/chkdraft.h"
+#include "mapping/data_file_browsers.h"
+#include <mapping_core/mapping_core.h>
 
 enum_t(Id, u32, {
     TEXT_MAPSOUNDFILES = ID_FIRST,

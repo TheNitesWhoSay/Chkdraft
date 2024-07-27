@@ -1,8 +1,8 @@
 #ifndef SCGRAPHICS_H
 #define SCGRAPHICS_H
-#include "../CommonFiles/CommonFiles.h"
-#include "../../WindowsLib/WindowsUi.h"
-#include "Clipboard.h"
+#include <common_files/common_files.h>
+#include <windows/windows_ui.h>
+#include "clipboard.h"
 #include <unordered_map>
 #include <string>
 #include <vector>

@@ -1,7 +1,7 @@
 #ifndef SPRITECREATEDEL_H
 #define SPRITECREATEDEL_H
-#include "../Reversibles.h"
-#include "UndoTypes.h"
+#include "mapping/undos/reversibles.h"
+#include "undo_types.h"
 
 class SpriteCreateDel : public ReversibleAction
 {

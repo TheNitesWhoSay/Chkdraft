@@ -1,8 +1,8 @@
 #ifndef SCENARIO_H
 #define SCENARIO_H
-#include "Basics.h"
-#include "EscapeStrings.h"
-#include "Chk.h"
+#include "basics.h"
+#include "escape_strings.h"
+#include "chk.h"
 #include <optional>
 #include <string>
 #include <array>

@@ -1,6 +1,6 @@
 #ifndef GENERICCOMMAND_H
 #define GENERICCOMMAND_H
-#include "Logger.h"
+#include "logger.h"
 #include <vector>
 
 using u32 = std::uint32_t;

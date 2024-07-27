@@ -1,7 +1,7 @@
 #ifndef SELECTIONS_H
 #define SELECTIONS_H
-#include "../CommonFiles/CommonFiles.h"
-#include "../../MappingCoreLib/MappingCore.h"
+#include <common_files/common_files.h>
+#include <mapping_core/mapping_core.h>
 class GuiMap;
 
 enum_t(LocSelFlags, u8, { North = BIT_0, South = BIT_1, East = BIT_2, West = BIT_3,

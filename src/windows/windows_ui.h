@@ -8,38 +8,38 @@
 */
 
 // Controls
-#include "ButtonControl.h"
-#include "CheckBoxControl.h"
-#include "ContextMenu.h"
-#include "DropdownControl.h"
-#include "DragListControl.h"
-#include "EditControl.h"
-#include "GridView.h"
-#include "GroupBoxControl.h"
-#include "ListBoxControl.h"
-#include "ListViewControl.h"
-#include "RadioButtonControl.h"
-#include "RichEditControl.h"
-#include "StatusControl.h"
-#include "TabControl.h"
-#include "TextControl.h"
-#include "ToolbarControl.h"
-#include "TreeViewControl.h"
-#include "WindowControl.h"
+#include "button_control.h"
+#include "check_box_control.h"
+#include "context_menu.h"
+#include "dropdown_control.h"
+#include "drag_list_control.h"
+#include "edit_control.h"
+#include "grid_view.h"
+#include "group_box_control.h"
+#include "list_box_control.h"
+#include "list_view_control.h"
+#include "radio_button_control.h"
+#include "rich_edit_control.h"
+#include "status_control.h"
+#include "tab_control.h"
+#include "text_control.h"
+#include "toolbar_control.h"
+#include "tree_view_control.h"
+#include "window_control.h"
 
 
 // Menus
-#include "WindowMenu.h"
+#include "window_menu.h"
 
 // Windows
-#include "ClassWindow.h"
-#include "ClassDialog.h"
-#include "MdiClient.h"
+#include "class_window.h"
+#include "class_dialog.h"
+#include "mdi_client.h"
 
 // Misc
-#include "Popup.h"
-#include "FileSystem.h"
-#include "DeviceContext.h"
-#include "ResourceManager.h"
+#include "popup.h"
+#include "file_system.h"
+#include "device_context.h"
+#include "resource_manager.h"
 
 #endif

@@ -1,6 +1,6 @@
 #ifndef LISTBOXCONTROL_H
 #define LISTBOXCONTROL_H
-#include "WindowControl.h"
+#include "window_control.h"
 #include <queue>
 
 namespace WinLib {

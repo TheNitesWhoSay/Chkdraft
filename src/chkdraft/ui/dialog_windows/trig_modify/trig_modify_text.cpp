@@ -1,6 +1,6 @@
-#include "TrigModifyText.h"
-#include "../../../Chkdraft.h"
-#include "../../../Mapping/Settings.h"
+#include "trig_modify_text.h"
+#include "chkdraft/chkdraft.h"
+#include "mapping/settings.h"
 
 enum_t(Id, u32, {
     TAB_META = 0,

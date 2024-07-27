@@ -1,4 +1,4 @@
-#include "Chk.h"
+#include "chk.h"
 
 Chk::Condition::Argument Chk::Condition::noArg = { Chk::Condition::ArgType::NoType, Chk::Condition::ArgField::NoField };
 Chk::Condition::Argument amountCndArg = { Chk::Condition::ArgType::Amount, Chk::Condition::ArgField::Amount };

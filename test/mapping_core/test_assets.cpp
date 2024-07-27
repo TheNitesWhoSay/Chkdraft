@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include <fstream>
-#include "TestAssets.h"
+#include "test_assets.h"
 
 std::optional<std::string> getPreSavePath()
 {

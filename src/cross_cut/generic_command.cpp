@@ -1,5 +1,5 @@
-#include "GenericCommand.h"
-#include "ErrorHandler.h"
+#include "generic_command.h"
+#include "error_handler.h"
 
 GenericCommand::GenericCommand(bool isSynchronous, u32 commandClassId, u32 undoRedoTypeId)
     : isSynchronous(isSynchronous), subCommandsAreAcid(false), commandClassId(commandClassId), undoRedoTypeId(undoRedoTypeId)

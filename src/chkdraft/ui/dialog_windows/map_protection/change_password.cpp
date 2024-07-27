@@ -1,5 +1,5 @@
-#include "ChangePassword.h"
-#include "../../../Chkdraft.h"
+#include "change_password.h"
+#include "chkdraft/chkdraft.h"
 #include <string>
 
 ChangePasswordDialog::~ChangePasswordDialog()

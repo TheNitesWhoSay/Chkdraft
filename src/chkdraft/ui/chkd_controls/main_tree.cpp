@@ -1,5 +1,5 @@
-#include "MainTree.h"
-#include "../../Chkdraft.h"
+#include "main_tree.h"
+#include "chkdraft/chkdraft.h"
 
 MainTree::~MainTree()
 {

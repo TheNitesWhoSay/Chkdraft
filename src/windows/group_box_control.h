@@ -1,6 +1,6 @@
 #ifndef GROUPBOXCONTROL_H
 #define GROUPBOXCONTROL_H
-#include "WindowControl.h"
+#include "window_control.h"
 
 namespace WinLib {
 

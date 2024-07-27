@@ -1,8 +1,8 @@
 #ifndef LOGGERWINDOW_H
 #define LOGGERWINDOW_H
-#include "../../CommonFiles/CommonFiles.h"
-#include "../WindowsLib/WindowsUi.h"
-#include "../CrossCutLib/SimpleIcu.h"
+#include <common_files/common_files.h>
+#include <windows/windows_ui.h>
+#include <cross_cut/simple_icu.h>
 #include <deque>
 #include <ostream>
 #include <streambuf>

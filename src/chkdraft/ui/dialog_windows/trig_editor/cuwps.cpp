@@ -1,5 +1,5 @@
-#include "CUWPs.h"
-#include "../../../Chkdraft.h"
+#include "cuwps.h"
+#include "chkdraft/chkdraft.h"
 
 enum_t(Id, u32, {
     CuwpTree = ID_FIRST,

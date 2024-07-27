@@ -1,6 +1,6 @@
 #ifndef TOOLBARCONTROL_H
 #define TOOLBARCONTROL_H
-#include "WindowControl.h"
+#include "window_control.h"
 
 namespace WinLib {
 

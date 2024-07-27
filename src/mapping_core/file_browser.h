@@ -1,7 +1,7 @@
 #ifndef FILEBROWSER_H
 #define FILEBROWSER_H
-#include "SystemIO.h"
-#include "Basics.h"
+#include "system_io.h"
+#include "basics.h"
 #include <memory>
 #include <string>
 #include <vector>

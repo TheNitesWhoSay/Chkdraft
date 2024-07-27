@@ -1,7 +1,7 @@
 #ifndef COLORPROPERTIES_H
 #define COLORPROPERTIES_H
-#include "../../../../MappingCoreLib/MappingCore.h"
-#include "../../../../WindowsLib/WindowsUi.h"
+#include <mapping_core/mapping_core.h>
+#include <windows/windows_ui.h>
 
 class ColorPropertiesDialog
 {

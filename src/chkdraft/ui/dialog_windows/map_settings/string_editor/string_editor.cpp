@@ -1,6 +1,6 @@
-#include "StringEditor.h"
-#include "../../../../../MappingCoreLib/FileBrowser.h"
-#include "../../../../Chkdraft.h"
+#include "string_editor.h"
+#include <mapping_core/file_browser.h>
+#include "chkdraft/chkdraft.h"
 #include <fstream>
 #include <string>
 

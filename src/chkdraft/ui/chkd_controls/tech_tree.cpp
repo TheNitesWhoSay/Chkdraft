@@ -1,5 +1,5 @@
-#include "TechTree.h"
-#include "../../Chkdraft.h"
+#include "tech_tree.h"
+#include "chkdraft/chkdraft.h"
 
 TechTree::~TechTree()
 {

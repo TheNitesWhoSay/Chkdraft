@@ -1,10 +1,10 @@
 #ifndef UNITPROPERTIES_H
 #define UNITPROPERTIES_H
-#include "../../../../CommonFiles/CommonFiles.h"
-#include "../../../../../WindowsLib/WindowsUi.h"
-#include "../../../../../MappingCoreLib/MappingCore.h"
-#include "PreservedUnitStats.h"
-#include "../../../ChkdControls/PlayerDropdown.h"
+#include <common_files/common_files.h>
+#include <windows/windows_ui.h>
+#include <mapping_core/mapping_core.h>
+#include "preserved_unit_stats.h"
+#include "ui/chkd_controls/player_dropdown.h"
 
 enum class UnitListColumn;
 

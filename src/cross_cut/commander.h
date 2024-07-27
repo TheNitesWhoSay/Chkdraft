@@ -1,7 +1,7 @@
 #ifndef COMMANDER_H
 #define COMMANDER_H
-#include "GenericCommand.h"
-#include "ErrorHandler.h"
+#include "generic_command.h"
+#include "error_handler.h"
 #include <condition_variable>
 #include <atomic>
 #include <vector>

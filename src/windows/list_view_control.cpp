@@ -1,5 +1,5 @@
-#include "ListViewControl.h"
-#include <SimpleIcu.h>
+#include "list_view_control.h"
+#include <cross_cut/simple_icu.h>
 #include <CommCtrl.h>
 #include <iostream>
 

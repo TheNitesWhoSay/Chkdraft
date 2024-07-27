@@ -1,6 +1,6 @@
 #ifndef STATUSCONTROL_H
 #define STATUSCONTROL_H
-#include "WindowControl.h"
+#include "window_control.h"
 
 namespace WinLib {
 

@@ -1,6 +1,6 @@
-#include "CascArchive.h"
-#include "../CascLib/src/CascLib.h"
-#include "../CrossCutLib/SimpleIcu.h"
+#include "casc_archive.h"
+#include <CascLib.h>
+#include <cross_cut/simple_icu.h>
 #include <fstream>
 
 CascArchive::CascArchive() : ArchiveFile(false), filePath(""), hCasc(NULL)

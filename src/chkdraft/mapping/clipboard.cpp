@@ -1,12 +1,12 @@
-#include "ClipBoard.h"
-#include "../Chkdraft.h"
-#include "../Mapping/Undos/ChkdUndos/TileChange.h"
-#include "../Mapping/Undos/ChkdUndos/MtxmChange.h"
-#include "../Mapping/Undos/ChkdUndos/UnitCreateDel.h"
-#include "../Mapping/Undos/ChkdUndos/UnitChange.h"
-#include "../Mapping/Undos/ChkdUndos/DoodadCreateDel.h"
-#include "../Mapping/Undos/ChkdUndos/SpriteCreateDel.h"
-#include "../Mapping/Undos/ChkdUndos/FogChange.h"
+#include "clipboard.h"
+#include "chkdraft/chkdraft.h"
+#include "mapping/undos/chkd_undos/tile_change.h"
+#include "mapping/undos/chkd_undos/mtxm_change.h"
+#include "mapping/undos/chkd_undos/unit_create_del.h"
+#include "mapping/undos/chkd_undos/unit_change.h"
+#include "mapping/undos/chkd_undos/doodad_create_del.h"
+#include "mapping/undos/chkd_undos/sprite_create_del.h"
+#include "mapping/undos/chkd_undos/fog_change.h"
 #include <set>
 
 extern Logger logger;

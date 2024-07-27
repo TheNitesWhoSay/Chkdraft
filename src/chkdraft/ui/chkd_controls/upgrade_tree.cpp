@@ -1,5 +1,5 @@
-#include "UpgradeTree.h"
-#include "../../Chkdraft.h"
+#include "upgrade_tree.h"
+#include "chkdraft/chkdraft.h"
 
 UpgradeTree::~UpgradeTree()
 {

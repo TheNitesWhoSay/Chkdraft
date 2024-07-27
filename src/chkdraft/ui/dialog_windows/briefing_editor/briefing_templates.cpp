@@ -1,4 +1,4 @@
-#include "BriefingTemplates.h"
+#include "briefing_templates.h"
 
 BriefingTemplatesWindow::~BriefingTemplatesWindow()
 {

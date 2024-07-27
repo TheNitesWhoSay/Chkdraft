@@ -1,4 +1,4 @@
-#include "PeerListBox.h"
+#include "peer_list_box.h"
 
 PeerListBox::PeerListBox() : hPeer(NULL)
 {

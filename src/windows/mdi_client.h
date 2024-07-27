@@ -1,6 +1,6 @@
 #ifndef MDICLIENT_H
 #define MDICLIENT_H
-#include "WindowsItem.h"
+#include "windows_item.h"
 
 namespace WinLib {
 

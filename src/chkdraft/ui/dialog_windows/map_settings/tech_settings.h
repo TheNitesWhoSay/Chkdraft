@@ -1,9 +1,9 @@
 #ifndef TECHSETTINGS_H
 #define TECHSETTINGS_H
-#include "../../../CommonFiles/CommonFiles.h"
-#include "../../../../WindowsLib/WindowsUi.h"
-#include "../../../../MappingCoreLib/MappingCore.h"
-#include "../../ChkdControls/TechTree.h"
+#include <common_files/common_files.h>
+#include <windows/windows_ui.h>
+#include <mapping_core/mapping_core.h>
+#include "ui/chkd_controls/tech_tree.h"
 
 /**
     TECS/TECx - tech uses default costs & all costs

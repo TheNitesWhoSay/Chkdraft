@@ -1,6 +1,6 @@
-#include "TrigEditor.h"
-#include "../../../Chkdraft.h"
-#include "../../../../WindowsLib/WindowsUi.h"
+#include "trig_editor.h"
+#include "chkdraft/chkdraft.h"
+#include <windows/windows_ui.h>
 
 enum_t(Id, u32, {
     WIN_NETTABTAB = ID_FIRST,

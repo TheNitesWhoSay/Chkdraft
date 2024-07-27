@@ -1,6 +1,6 @@
-#include "ScGraphics.h"
-#include "../CommonFiles/CommonFiles.h"
-#include "../Chkdraft.h"
+#include "sc_graphics.h"
+#include <common_files/common_files.h>
+#include "chkdraft/chkdraft.h"
 #include <algorithm>
 #include <string>
 

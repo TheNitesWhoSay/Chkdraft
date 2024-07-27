@@ -1,6 +1,6 @@
-#include "SpriteChange.h"
-#include "../../../Chkdraft.h"
-#include "../../../Windows/MainWindows/GuiMap.h"
+#include "sprite_change.h"
+#include <chkdraft/chkdraft.h>
+#include <ui/main_windows/gui_map.h>
 
 SpriteChange::~SpriteChange()
 {

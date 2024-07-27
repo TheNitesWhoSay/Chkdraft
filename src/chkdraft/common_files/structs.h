@@ -1,7 +1,7 @@
 #ifndef STRUCTS_H
 #define STRUCTS_H
-#include "Constants.h"
-#include "../../MappingCoreLib/Sc.h"
+#include "constants.h"
+#include <mapping_core/sc.h>
 
 class points // Mirrors win32 POINTS
 {

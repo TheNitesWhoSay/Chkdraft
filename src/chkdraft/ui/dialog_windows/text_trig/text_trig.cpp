@@ -1,6 +1,6 @@
-#include "TextTrig.h"
-#include "../../../Chkdraft.h"
-#include "../../../Mapping/Settings.h"
+#include "text_trig.h"
+#include "chkdraft/chkdraft.h"
+#include "mapping/settings.h"
 #include <string>
 
 TextTrigWindow::~TextTrigWindow()

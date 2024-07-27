@@ -1,11 +1,11 @@
 #ifndef TRIGMODIFY_H
 #define TRIGMODIFY_H
-#include "../../../../WindowsLib/WindowsUi.h"
-#include "TrigGeneral.h"
-#include "TrigPlayers.h"
-#include "TrigConditions.h"
-#include "TrigActions.h"
-#include "TrigModifyText.h"
+#include <windows/windows_ui.h>
+#include "trig_general.h"
+#include "trig_players.h"
+#include "trig_conditions.h"
+#include "trig_actions.h"
+#include "trig_modify_text.h"
 
 class TrigModifyWindow : public WinLib::ClassDialog
 {

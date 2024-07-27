@@ -1,10 +1,10 @@
 #ifndef TRIGGERS_H
 #define TRIGGERS_H
-#include "../../../CommonFiles/CommonFiles.h"
-#include "../../../../WindowsLib/WindowsUi.h"
-#include "../../../../MappingCoreLib/MappingCore.h"
-#include "../../ChkdControls/PeerListBox.h"
-#include "../TrigModify/TrigModify.h"
+#include <common_files/common_files.h>
+#include <windows/windows_ui.h>
+#include <mapping_core/mapping_core.h>
+#include "ui/chkd_controls/peer_list_box.h"
+#include "ui/dialog_windows/trig_modify/trig_modify.h"
 #include <unordered_map>
 #include <string>
 

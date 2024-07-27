@@ -1,9 +1,9 @@
 #ifndef CHK_H
 #define CHK_H
-#include "../RareCpp/include/rarecpp/reflect.h"
-#include "Basics.h"
-#include "EscapeStrings.h"
-#include "Sc.h"
+#include <rarecpp/reflect.h>
+#include "basics.h"
+#include "escape_strings.h"
+#include "sc.h"
 #include <bitset>
 #include <map>
 

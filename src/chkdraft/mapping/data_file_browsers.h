@@ -1,7 +1,7 @@
 #ifndef DATAFILEBROWSERS_H
 #define DATAFILEBROWSERS_H
-#include "../../MappingCoreLib/MappingCore.h"
-#include "Settings.h"
+#include <mapping_core/mapping_core.h>
+#include "settings.h"
 
 class ChkdDataFileBrowser : public Sc::DataFile::Browser
 {

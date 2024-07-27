@@ -1,5 +1,5 @@
 #pragma once
-#include "../glad/glad/gl.h"
+#include <glad/gl.h>
 
 #ifdef _DEBUG
 // Enables debugging for the OpenGL wrapper library

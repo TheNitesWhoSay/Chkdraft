@@ -1,5 +1,5 @@
-#include "BriefingTrigPlayers.h"
-#include "../../../Chkdraft.h"
+#include "briefing_trig_players.h"
+#include "chkdraft/chkdraft.h"
 #include <sstream>
 
 enum_t(Id, u32, {

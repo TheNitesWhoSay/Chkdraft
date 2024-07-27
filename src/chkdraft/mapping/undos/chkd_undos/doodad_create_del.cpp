@@ -1,5 +1,5 @@
-#include "DoodadCreateDel.h"
-#include "../../../Chkdraft.h"
+#include "doodad_create_del.h"
+#include "chkdraft/chkdraft.h"
 
 DoodadCreateDel::~DoodadCreateDel()
 {

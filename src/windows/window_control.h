@@ -1,12 +1,12 @@
 #ifndef WINDOWCONTROL_H
 #define WINDOWCONTROL_H
-#include "DataTypes.h"
-#include "WinUIEnums.h"
-#include "WindowsItem.h"
+#include "data_types.h"
+#include "win_ui_enums.h"
+#include "windows_item.h"
 #include <Windows.h>
 #include <string>
 #include <algorithm>
-#include <SimpleIcu.h>
+#include <cross_cut/simple_icu.h>
 
 namespace WinLib {
 

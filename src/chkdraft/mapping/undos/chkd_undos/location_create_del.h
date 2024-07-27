@@ -1,7 +1,7 @@
 #ifndef LOCATIONCREATEDEL_H
 #define LOCATIONCREATEDEL_H
-#include "../Reversibles.h"
-#include "UndoTypes.h"
+#include "mapping/undos/reversibles.h"
+#include "undo_types.h"
 
 class LocationCreateDel : public ReversibleAction
 {

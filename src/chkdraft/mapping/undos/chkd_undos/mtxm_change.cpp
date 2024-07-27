@@ -1,5 +1,5 @@
-#include "MtxmChange.h"
-#include "../../../Windows/MainWindows/GuiMap.h"
+#include "mtxm_change.h"
+#include "ui/main_windows/gui_map.h"
 
 MtxmChange::~MtxmChange()
 {

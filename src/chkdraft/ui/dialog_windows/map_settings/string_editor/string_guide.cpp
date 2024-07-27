@@ -1,4 +1,4 @@
-#include "StringGuide.h"
+#include "string_guide.h"
 
 enum_t(Id, u32, {
     TEXT_COLOR_FIRST = ID_FIRST,

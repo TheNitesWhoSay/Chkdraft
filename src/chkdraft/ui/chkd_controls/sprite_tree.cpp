@@ -1,5 +1,5 @@
-#include "SpriteTree.h"
-#include "../../Chkdraft.h"
+#include "sprite_tree.h"
+#include "chkdraft/chkdraft.h"
 
 SpriteTree::~SpriteTree()
 {

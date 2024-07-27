@@ -1,6 +1,6 @@
-#include "DimensionChange.h"
-#include "../../../Chkdraft.h"
-#include "../../../Windows/MainWindows/GuiMap.h"
+#include "dimension_change.h"
+#include "chkdraft/chkdraft.h"
+#include "ui/main_windows/gui_map.h"
 
 DimensionChange::~DimensionChange()
 {

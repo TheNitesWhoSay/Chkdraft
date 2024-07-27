@@ -1,5 +1,5 @@
-#include "ColorProperties.h"
-#include "../../../CommonFiles/CommonFiles.h"
+#include "color_properties.h"
+#include <common_files/common_files.h>
 
 COLORREF ColorPropertiesDialog::customColors[16]{};
 

@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
-#include "../MappingCoreLib/MappingCore.h"
-#include "TestAssets.h"
+#include <mapping_core/mapping_core.h>
+#include "test_assets.h"
 #include <regex>
 
 TEST(TextTrigCompilerTest, Basic)

@@ -1,5 +1,5 @@
 #pragma once
-#include "../glad/glad/gl.h"
+#include <glad/gl.h>
 #include "uniform.h"
 #include "unique_resource.h"
 #include "shader.h"
