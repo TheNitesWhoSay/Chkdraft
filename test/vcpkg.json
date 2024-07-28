@@ -1,0 +1,19 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg/master/scripts/vcpkg.schema.json",
+  "name": "chkdraft-test",
+  "version": "0.1.0",
+  "dependencies": [
+    "gtest",
+    "icu",
+    "bzip2",
+    {
+      "name": "casclib",
+      "version>=": "2024-06-05"
+    },
+    {
+      "name": "stormlib",
+      "version>=": "9.26"
+    }
+  ],
+  "builtin-baseline": "198d68dbcc6c907cb3d0b9b1d93c3df6ecf93c62"
+}
