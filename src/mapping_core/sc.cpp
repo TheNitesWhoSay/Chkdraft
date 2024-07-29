@@ -4488,7 +4488,7 @@ std::optional<std::vector<u8>> Sc::Data::GetAsset(ArchiveCluster & archiveCluste
         isFirst = true;
         return result;
     }
-    else if ( auto result = archiveCluster.getFile(firstAssetArchivePathOption) )
+    else if ( auto result = archiveCluster.getFile(secondAssetArchivePathOption) )
     {
         isFirst = false;
         return result;

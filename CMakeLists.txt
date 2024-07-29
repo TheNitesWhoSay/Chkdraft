@@ -27,7 +27,5 @@ include_directories(${rarecpp_SOURCE_DIR}/include)
 
 enable_testing()
 
-#find_package(GTest CONFIG REQUIRED)
-
 add_subdirectory(src) # Compiles the Chkdraft executable & static libraries
 add_subdirectory(test) # Compiles the Chkdraft test executables
