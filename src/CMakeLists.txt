@@ -22,9 +22,6 @@ set(CMAKE_CXX_STANDARD 20)
 add_compile_options(/permissive-)
 add_compile_definitions(_UNICODE UNICODE)
 
-find_package(glad CONFIG REQUIRED)
-find_package(glm CONFIG REQUIRED)
-
 include(FetchContent)
 FetchContent_Declare(
   rarecpp
@@ -57,4 +54,4 @@ add_subdirectory(chkdraft)
 
 add_executable(${This} WIN32 ${Sources} ${Headers})
 target_sources(${This} PRIVATE ../res/resource.rc)
-target_link_libraries(Chkdraft glad::glad glm::glm CrossCut MappingCore WindowsLib ChkdraftLib opengl32.lib Comctl32.lib Winmm.lib Msimg32.lib)
+target_link_libraries(Chkdraft CrossCut MappingCore WindowsLib ChkdraftLib opengl32.lib Comctl32.lib Winmm.lib Msimg32.lib)

@@ -3,11 +3,6 @@
   "name": "chkdraft",
   "version": "0.1.0",
   "dependencies": [
-    {
-      "name": "glad",
-      "platform": "windows"
-    },
-    "glm",
     "gtest",
     "icu",
     "bzip2",
