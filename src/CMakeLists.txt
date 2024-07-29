@@ -20,7 +20,7 @@ set(CMAKE_BUILD_PARALLEL_LEVEL)
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_CXX_STANDARD 20)
 add_compile_options(/permissive-)
-add_compile_definitions(_UNICODE UNICODE)
+add_compile_definitions(_UNICODE UNICODE NOMINMAX CHKDRAFT)
 
 include(FetchContent)
 FetchContent_Declare(
@@ -30,14 +30,6 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(rarecpp)
 include_directories(${rarecpp_SOURCE_DIR}/include)
-
-if ( PROJECT_IS_TOP_LEVEL )
-  set(CMAKE_BUILD_PARALLEL_LEVEL)
-  set(CMAKE_C_STANDARD 99)
-  set(CMAKE_CXX_STANDARD 20)
-  add_compile_options(/permissive-)
-  add_compile_definitions(_UNICODE UNICODE NOMINMAX CHKDRAFT)
-endif()
 
 set(Headers
   
