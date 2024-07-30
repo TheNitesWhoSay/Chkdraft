@@ -1,0 +1,10 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg/master/scripts/vcpkg.schema.json",
+  "name": "cross-cut-test",
+  "version": "0.1.0",
+  "dependencies": [
+    "gtest",
+    "icu"
+  ],
+  "builtin-baseline": "198d68dbcc6c907cb3d0b9b1d93c3df6ecf93c62"
+}
