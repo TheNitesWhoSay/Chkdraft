@@ -6,6 +6,7 @@
 #include <Windows.h>
 #include "memory_tiered_tasks.h"
 #include <glad/gl.h>
+#include "gl/base.h"
 
 extern Logger logger;
 
@@ -1221,6 +1222,11 @@ void Scr::MapGraphics::initVertices()
     });
 }
 
+void Scr::MapGraphics::setFont(gl::Font* textFont)
+{
+    this->textFont = textFont;
+}
+
 void Scr::MapGraphics::loadClassic(Sc::Data & scData, Scr::GraphicsData & scrDat, const Scr::GraphicsData::RenderSettings & renderSettings)
 {
     this->renderSettings = renderSettings;
@@ -1243,6 +1249,8 @@ void Scr::MapGraphics::setupNdcTransformation(u32 width, u32 height)
 {
     posToNdc[0][0] = 2.0f/(width*renderSettings.visualQuality.scale);
     posToNdc[1][1] = -2.0f/(height*renderSettings.visualQuality.scale);
+    unscaledPosToNdc[0][0] = 2.0f/width;
+    unscaledPosToNdc[1][1] = -2.0f/height;
 }
 
 void Scr::MapGraphics::drawTestTex(gl::Texture & tex)
@@ -1316,9 +1324,9 @@ void Scr::MapGraphics::drawStars(u32 x, u32 y, u32 scaledWidth, u32 scaledHeight
                     Scr::StarPosition & currStarPos = starPosition[starIndex];
                     GLfloat left = -(currStarPos.width/2.0f);
                     GLfloat top = -(currStarPos.height/2.0f);
-                    Point2D<GLfloat> position { GLfloat(x + xc)+currStarPos.xOffset, GLfloat(y + yStart)+currStarPos.yOffset };
-                    Rect2D<GLfloat> vertexRect { left, top, left+currStarPos.width, top+currStarPos.height };
-                    Rect2D<GLfloat> texRect {
+                    gl::Point2D<GLfloat> position { GLfloat(x + xc)+currStarPos.xOffset, GLfloat(y + yStart)+currStarPos.yOffset };
+                    gl::Rect2D<GLfloat> vertexRect { left, top, left+currStarPos.width, top+currStarPos.height };
+                    gl::Rect2D<GLfloat> texRect {
                         GLfloat(currStarPos.xTextureOffset),
                         GLfloat(currStarPos.yTextureOffset),
                         GLfloat(currStarPos.xTextureOffset)+GLfloat(currStarPos.width),
@@ -1488,7 +1496,7 @@ void Scr::MapGraphics::drawTerrain(Sc::Data & scData, s32 left, s32 top, u32 wid
 
     GLfloat texWidth = GLfloat(tilesetGrp.width) / 2.0f;
     GLfloat texHeight = GLfloat(tilesetGrp.height) / 2.0f;
-    Rect2D<GLfloat> vertexRect {-texWidth, -texHeight, texWidth, texHeight};
+    gl::Rect2D<GLfloat> vertexRect {-texWidth, -texHeight, texWidth, texHeight};
     u32 xStart = std::max(0, left/32-2);
     u32 yStart = std::max(0, top/32-2);
     u32 xLimit = std::min((left+width)/32, u32(mapFile.dimensions.tileWidth-1));
@@ -1507,7 +1515,7 @@ void Scr::MapGraphics::drawTerrain(Sc::Data & scData, s32 left, s32 top, u32 wid
                 megaTileIndex = tileGroup.megaTileIndex[tiles.getGroupMemberIndex(tileIndex)];
             }
 
-            Point2D<GLfloat> position {
+            gl::Point2D<GLfloat> position {
                 GLfloat((s32(x)*32-left)*s32(renderSettings.visualQuality.scale)+32*s32(renderSettings.visualQuality.scale)/2),
                 GLfloat((s32(y)*32-top)*s32(renderSettings.visualQuality.scale)+32*s32(renderSettings.visualQuality.scale)/2)
             };
@@ -1515,7 +1523,7 @@ void Scr::MapGraphics::drawTerrain(Sc::Data & scData, s32 left, s32 top, u32 wid
             auto top = float(megaTileIndex/128)/float(128);
             auto right = left+1.f/128.f;
             auto bottom = top+1.f/128.f;
-            Rect2D<GLfloat> texRect {left, top, right, bottom};
+            gl::Rect2D<GLfloat> texRect {left, top, right, bottom};
             tileVertices.vertices.insert(tileVertices.vertices.end(), {
                 position.x+vertexRect.left, position.y+vertexRect.top, texRect.left, texRect.top,
                 position.x+vertexRect.right, position.y+vertexRect.top, texRect.right, texRect.top,
@@ -1540,7 +1548,7 @@ void Scr::MapGraphics::drawTilesetIndexed(Sc::Data & scData, s32 left, s32 top, 
 
     GLfloat texWidth = GLfloat(tilesetGrp.width) / 2.0f;
     GLfloat texHeight = GLfloat(tilesetGrp.height) / 2.0f;
-    Rect2D<GLfloat> vertexRect {-texWidth, -texHeight, texWidth, texHeight};
+    gl::Rect2D<GLfloat> vertexRect {-texWidth, -texHeight, texWidth, texHeight};
     s32 topRow = scrollY/33;
     s32 bottomRow = (scrollY + height)/33;
     s32 totalRows = height/32;
@@ -1560,7 +1568,7 @@ void Scr::MapGraphics::drawTilesetIndexed(Sc::Data & scData, s32 left, s32 top, 
                 megaTileIndex = tileGroup.megaTileIndex[tiles.getGroupMemberIndex(tileIndex)];
             }
 
-            Point2D<GLfloat> position {
+            gl::Point2D<GLfloat> position {
                 GLfloat(column*33)*s32(renderSettings.visualQuality.scale)+32*s32(renderSettings.visualQuality.scale)/2,
                 tileTop
             };
@@ -1568,7 +1576,7 @@ void Scr::MapGraphics::drawTilesetIndexed(Sc::Data & scData, s32 left, s32 top, 
             auto top = float(megaTileIndex/128)/float(128);
             auto right = left+1.f/128.f;
             auto bottom = top+1.f/128.f;
-            Rect2D<GLfloat> texRect {left, top, right, bottom};
+            gl::Rect2D<GLfloat> texRect {left, top, right, bottom};
             tileVertices.vertices.insert(tileVertices.vertices.end(), {
                 position.x+vertexRect.left, position.y+vertexRect.top, texRect.left, texRect.top,
                 position.x+vertexRect.right, position.y+vertexRect.top, texRect.right, texRect.top,
@@ -1613,9 +1621,9 @@ void Scr::MapGraphics::drawAnim(Scr::Animation & animation, u32 x, u32 y, u32 fr
         GLint height = animation.frames[frame].height/2;
         GLint texLeft = animation.frames[frame].xTextureOffset/2;
         GLint texTop = animation.frames[frame].yTextureOffset/2;
-        Point2D<GLfloat> position { GLfloat(x), GLfloat(y) };
-        Rect2D<GLfloat> vertexRect { left, top, left + width, top + height };
-        Rect2D<GLfloat> texRect { GLfloat(texLeft), GLfloat(texTop), GLfloat(texLeft)+GLfloat(width), GLfloat(texTop)+GLfloat(height) };
+        gl::Point2D<GLfloat> position { GLfloat(x), GLfloat(y) };
+        gl::Rect2D<GLfloat> vertexRect { left, top, left + width, top + height };
+        gl::Rect2D<GLfloat> texRect { GLfloat(texLeft), GLfloat(texTop), GLfloat(texLeft)+GLfloat(width), GLfloat(texTop)+GLfloat(height) };
         animVertices.vertices = {
             position.x+vertexRect.left, position.y+vertexRect.top, texRect.left, texRect.top,
             position.x+vertexRect.right, position.y+vertexRect.top, texRect.right, texRect.top,
@@ -1633,9 +1641,9 @@ void Scr::MapGraphics::drawAnim(Scr::Animation & animation, u32 x, u32 y, u32 fr
         GLint height = animation.frames[frame].height;
         GLint texLeft = animation.frames[frame].xTextureOffset;
         GLint texTop = animation.frames[frame].yTextureOffset;
-        Point2D<GLfloat> position { GLfloat(x), GLfloat(y) };
-        Rect2D<GLfloat> vertexRect { left, top, left + width, top + height };
-        Rect2D<GLfloat> texRect { GLfloat(texLeft), GLfloat(texTop), GLfloat(texLeft)+GLfloat(width), GLfloat(texTop)+GLfloat(height) };
+        gl::Point2D<GLfloat> position { GLfloat(x), GLfloat(y) };
+        gl::Rect2D<GLfloat> vertexRect { left, top, left + width, top + height };
+        gl::Rect2D<GLfloat> texRect { GLfloat(texLeft), GLfloat(texTop), GLfloat(texLeft)+GLfloat(width), GLfloat(texTop)+GLfloat(height) };
         animVertices.vertices = {
             position.x+vertexRect.left, position.y+vertexRect.top, texRect.left, texRect.top,
             position.x+vertexRect.right, position.y+vertexRect.top, texRect.right, texRect.top,
@@ -1673,9 +1681,9 @@ void Scr::MapGraphics::drawClassicImage(Sc::Data & scData, gl::Palette & palette
 
     GLfloat vertexLeft = GLfloat(-imageInfo->grpWidth/2 + frameInfo.xOffset);
     GLfloat vertexTop = GLfloat(-imageInfo->grpHeight/2 + frameInfo.yOffset);
-    Point2D<GLfloat> position { GLfloat(x), GLfloat(y) };
-    Rect2D<GLfloat> vertexRect { vertexLeft, vertexTop, vertexLeft + frameInfo.texWidth, vertexTop + frameInfo.texHeight };
-    Rect2D<GLfloat> texRect { GLfloat(0.f), GLfloat(0.f), GLfloat(1.f), GLfloat(1.f) };
+    gl::Point2D<GLfloat> position { GLfloat(x), GLfloat(y) };
+    gl::Rect2D<GLfloat> vertexRect { vertexLeft, vertexTop, vertexLeft + frameInfo.texWidth, vertexTop + frameInfo.texHeight };
+    gl::Rect2D<GLfloat> texRect { GLfloat(0.f), GLfloat(0.f), GLfloat(1.f), GLfloat(1.f) };
     animVertices.vertices = {
         position.x+vertexRect.left, position.y+vertexRect.top, texRect.left, texRect.top,
         position.x+vertexRect.right, position.y+vertexRect.top, texRect.right, texRect.top,
@@ -1749,6 +1757,12 @@ void Scr::MapGraphics::render(Sc::Data & scData, s32 left, s32 top, u32 width, u
     drawStars(left, top, width*renderSettings.visualQuality.scale, height*renderSettings.visualQuality.scale, 0xFFFFFFFF);
     drawTerrain(scData, left, top, width, height);
     drawSprites(scData, left, top);
+
+    textFont->textShader.use();
+    textFont->textShader.projection.setMat4(unscaledPosToNdc);
+
+    textFont->drawText(10.f, 10.f, "THE QUICK BROWN FOX JUMPED OVER THE LAZY DOG");
+    textFont->drawText(10.f, 50.f, "the quick brown fox jumped over the lazy dog");
 }
 
 void Scr::MapGraphics::updateGraphics(u32 ticks)

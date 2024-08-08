@@ -40,6 +40,7 @@ namespace gl
         std::conditional_t<(ArraySize > 0), std::array<ElementType, ArraySize>, std::vector<ElementType>> vertices;
 
     private:
+        bool buffered = false;
         GLuint vao = 0;
         GLuint vbo = 0;
         GLsizei elementsPerVertex = 0;
@@ -114,6 +115,15 @@ namespace gl
         void bufferData(UsageHint usageHint)
         {
             glBufferData(GL_ARRAY_BUFFER, std::size(vertices)*sizeof(ElementType), &vertices[0], GLenum(usageHint));
+            buffered = true;
+        }
+
+        void bufferSubData(UsageHint usageHint)
+        {
+            if ( !buffered )
+                bufferData(usageHint);
+
+            glBufferSubData(GL_ARRAY_BUFFER, 0, std::size(vertices)*sizeof(ElementType), &vertices[0]);
         }
 
         void drawTriangles()

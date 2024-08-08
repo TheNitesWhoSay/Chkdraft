@@ -37,6 +37,14 @@ if ( PROJECT_IS_TOP_LEVEL )
   add_compile_definitions(_UNICODE UNICODE NOMINMAX)
 endif()
 
+find_package(Freetype REQUIRED)
+get_target_property(FREETYPE_INCLUDE_DIRS freetype INTERFACE_INCLUDE_DIRECTORIES)
+include_directories(${FREETYPE_INCLUDE_DIRS})
+
+find_package(harfbuzz CONFIG REQUIRED)
+get_target_property(HARFBUZZ_INCLUDE_DIRS harfbuzz::harfbuzz INTERFACE_INCLUDE_DIRECTORIES)
+include_directories(${HARFBUZZ_INCLUDE_DIRS})
+
 set(Headers
   chkdraft.h
   common_files/common_files.h
@@ -57,6 +65,8 @@ set(Headers
   mapping/wgl_render_context.h
   mapping/opengl/gl/base.h
   mapping/opengl/gl/context_semaphore.h
+  mapping/opengl/gl/font.h
+  mapping/opengl/gl/fps.h
   mapping/opengl/gl/palette.h
   mapping/opengl/gl/program.h
   mapping/opengl/gl/shader.h

@@ -69,6 +69,28 @@ namespace gl
             }
         };
 
+        struct Int : Base // Singular int
+        {
+            using Base::Base;
+
+            void setValue(GLint value)
+            {
+                WRAP_GL_VALIDATE_CURRENT_PROGRAM();
+                glUniform1i(uniformLocation, value);
+            }
+        };
+
+        struct Float : Base // Singular float
+        {
+            using Base::Base;
+
+            void setValue(GLfloat value)
+            {
+                WRAP_GL_VALIDATE_CURRENT_PROGRAM();
+                glUniform1f(uniformLocation, value);
+            }
+        };
+
         struct Mat4 : Base // mat4 - 4x4 float matrix
         {
             using Base::Base;

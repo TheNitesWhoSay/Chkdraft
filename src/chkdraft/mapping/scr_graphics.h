@@ -10,6 +10,7 @@
 #include <string_view>
 #include <vector>
 #include "gl/context_semaphore.h"
+#include "gl/font.h"
 #include "gl/palette.h"
 #include "gl/program.h"
 #include "gl/shader.h"
@@ -69,8 +70,8 @@ namespace Scr {
             };
 
             std::vector<Frame> frames;
-            u16 grpWidth;
-            u16 grpHeight;
+            u16 grpWidth = 0;
+            u16 grpHeight = 0;
         };
 
         struct TileMask
@@ -657,6 +658,7 @@ namespace Scr {
             void loadWaterNormals(ArchiveCluster & archiveCluster, std::filesystem::path texPrefix, ByteBuffer & fileData);
         };
         gl::ContextSemaphore* openGlContextSemaphore = nullptr;
+        std::unique_ptr<gl::Font> defaultFont = nullptr;
         std::shared_ptr<Shaders> shaders {};
         std::shared_ptr<Data> visualQualityData[Scr::VisualQuality::total] {};
         struct ClassicData // Data for rendering classic graphics using OpenGL
@@ -695,6 +697,7 @@ namespace Scr {
         u32 initialTickCount = 0;
 
         MapFile & mapFile;
+        gl::Font* textFont = nullptr;
         Scr::GraphicsData::RenderSettings renderSettings {};
         std::shared_ptr<Scr::GraphicsData::RenderData> scrDat = nullptr;
         std::shared_ptr<Scr::GraphicsData::ClassicData> classicDat = nullptr;
@@ -703,7 +706,13 @@ namespace Scr {
         gl::VertexVector<> tileVertices {};
         gl::VertexArray<6*8> waterVertices {}; // 6 verticies forming the two triangles for a quad, 8 elements per vertex (pos.xy, tex.xy, map.xy, map2.xy)
         gl::VertexArray<6*4> animVertices {}; // 6 verticies forming the two triangles for a quad, 4 elements per vertex (posX, posY, texX, texY)
-        GLfloat posToNdc[4][4] { // Converts 2D game coordinates (0 to screen width/height) to NDCs which range (-1 to 1) with y-axis flipped
+        GLfloat posToNdc[4][4] { // Converts scaled 2D game coordinates (0 to screen width/height) to NDCs which range (-1 to 1) with y-axis flipped
+            {  1.f, 0.f, 0.f, 0.f }, // x = 2x/width
+            {  0.f, 1.f, 0.f, 0.f }, // y = -2y/height
+            {  0.f, 0.f, 1.f, 0.f },
+            { -1.f, 1.f, 0.f, 1.f }  // x = x-1, y = y+1
+        };
+        GLfloat unscaledPosToNdc[4][4] { // Converts unscaled 2D game coordinates (0 to screen width/height) to NDCs which range (-1 to 1) with y-axis flipped
             {  1.f, 0.f, 0.f, 0.f }, // x = 2x/width
             {  0.f, 1.f, 0.f, 0.f }, // y = -2y/height
             {  0.f, 0.f, 1.f, 0.f },
@@ -711,27 +720,13 @@ namespace Scr {
         };
 
     public:
-        template <typename T>
-        struct Point2D
-        {
-            T x {};
-            T y {};
-        };
-
-        template <typename T>
-        struct Rect2D
-        {
-            T left {};
-            T top {};
-            T right {};
-            T bottom {};
-        };
-
         MapGraphics(MapFile & mapFile);
         
         bool isClassicLoaded(Scr::GraphicsData & scrDat);
 
         void initVertices();
+
+        void setFont(gl::Font* textFont);
 
         void loadClassic(Sc::Data & scData, Scr::GraphicsData & scrDat, const Scr::GraphicsData::RenderSettings & renderSettings);
 

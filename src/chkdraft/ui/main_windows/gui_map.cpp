@@ -3961,6 +3961,19 @@ void GuiMap::SetSkin(GuiMap::Skin skin)
 
         SwapBuffers(openGlDc->getDcHandle());
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        
+        if ( chkd.scrData.defaultFont == nullptr )
+        {
+            setDefaultFont(false);
+            auto dc = this->getDeviceContext();
+            dc.setDefaultFont();
+            DWORD bufferSize = GetFontData(dc.getDcHandle(), 0, 0, NULL, 0);
+            auto fontMemory = std::make_shared<gl::Font::Memory>(size_t(bufferSize));
+            GetFontData(dc.getDcHandle(), 0, 0, &fontMemory->data[0], bufferSize);
+            chkd.scrData.defaultFont = gl::Font::load(fontMemory, 0, 14);
+            chkd.scrData.defaultFont->setColor(0.f, 1.f, 1.f);
+        }
+        this->scrGraphics.setFont(chkd.scrData.defaultFont.get());
     }
 
     bool isRemastered = skin != Skin::ClassicGDI && skin != Skin::ClassicGL;

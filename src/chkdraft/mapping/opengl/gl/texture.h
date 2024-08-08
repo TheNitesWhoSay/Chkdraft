@@ -134,6 +134,12 @@ namespace gl
             setMinMagFilters(filter, filter);
         }
 
+        void setTextureWrap(GLint value)
+        {
+            setParam(GL_TEXTURE_WRAP_S, value);
+            setParam(GL_TEXTURE_WRAP_T, value);
+        }
+
         struct Image2D // See glTexImage2D documentation for details
         {
             const void* data;

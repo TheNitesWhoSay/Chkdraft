@@ -25,6 +25,14 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(rarecpp)
 include_directories(${rarecpp_SOURCE_DIR}/include)
 
+find_package(Freetype REQUIRED)
+get_target_property(FREETYPE_INCLUDE_DIRS freetype INTERFACE_INCLUDE_DIRECTORIES)
+include_directories(${FREETYPE_INCLUDE_DIRS})
+
+find_package(harfbuzz CONFIG REQUIRED)
+get_target_property(HARFBUZZ_INCLUDE_DIRS harfbuzz::harfbuzz INTERFACE_INCLUDE_DIRECTORIES)
+include_directories(${HARFBUZZ_INCLUDE_DIRS})
+
 enable_testing()
 
 add_subdirectory(src) # Compiles the Chkdraft executable & static libraries
