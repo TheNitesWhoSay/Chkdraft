@@ -35,6 +35,7 @@ namespace gl
             {
                 context.contextAvailableCv.wait(lock, [&]{ return context.contextAvailable; });
                 context.contextAvailable = false;
+                #pragma warning(suppress: 26115)
                 context.renderContext->claim();
             }
 
@@ -93,6 +94,7 @@ namespace gl
 
                 renderContext->release();
                 contextAvailable = true;
+                #pragma warning(suppress: 26110)
                 primaryOpenGlThreadLock.unlock();
                 contextAvailableCv.notify_one();
             }

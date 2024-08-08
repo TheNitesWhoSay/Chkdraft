@@ -137,7 +137,7 @@ namespace WinLib {
 
         DeviceContext(const WinLib::DeviceContext &) = delete; // Full copy would most likely result in use after release
         
-        DeviceContext(DeviceContext && other)
+        DeviceContext(DeviceContext && other) noexcept
         {
             std::swap(hWnd, other.hWnd);
             std::swap(hDC, other.hDC);

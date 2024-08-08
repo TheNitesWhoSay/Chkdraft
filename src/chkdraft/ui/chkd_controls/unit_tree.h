@@ -22,8 +22,8 @@ class UnitTree : public WinLib::TreeViewControl
         void InsertUndefinedItems(HTREEITEM hParent);
 
     private:
-        HTREEITEM UnitItems[228];
-        std::vector<std::string> unitDisplayNames;
+        HTREEITEM UnitItems[228] {};
+        std::vector<std::string> unitDisplayNames {};
         void AddUnitItems(HTREEITEM hParent, const std::vector<u16> & unitIds);
 };
 
