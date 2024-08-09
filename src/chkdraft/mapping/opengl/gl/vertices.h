@@ -131,6 +131,11 @@ namespace gl
             glDrawArrays(GL_TRIANGLES, 0, GLsizei(std::size(vertices))/elementsPerVertex);
         }
 
+        void drawLines()
+        {
+            glDrawArrays(GL_LINES, 0, GLsizei(std::size(vertices))/elementsPerVertex);
+        }
+
         void clear()
         {
             if constexpr ( RareTs::has_clear_v<std::remove_cv_t<decltype(vertices)>> )

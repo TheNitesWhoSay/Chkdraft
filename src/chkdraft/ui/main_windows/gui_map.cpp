@@ -1951,14 +1951,21 @@ void GuiMap::ValidateBorder(s32 screenWidth, s32 screenHeight, s32 newLeft, s32 
 
 bool GuiMap::SetGridSize(s16 xSize, s16 ySize)
 {
+
     bool success = false;
     u16 oldXSize = 0, oldYSize = 0;
     if ( scGraphics.GetGridSize(0, oldXSize, oldYSize) )
     {
         if ( oldXSize == xSize && oldYSize == ySize )
+        {
             success = scGraphics.SetGridSize(0, 0, 0);
+            scrGraphics.setGridSize(0); // TODO: interface shouldn't have varying sizes if it's not used
+        }
         else
+        {
             success = scGraphics.SetGridSize(0, xSize, ySize);
+            scrGraphics.setGridSize(xSize); // TODO: interface shouldn't have varying sizes if it's not used
+        }
 
         if ( success )
         {
@@ -1971,6 +1978,8 @@ bool GuiMap::SetGridSize(s16 xSize, s16 ySize)
 
 bool GuiMap::SetGridColor(u8 red, u8 green, u8 blue)
 {
+    scrGraphics.setGridColor(u32(red) | (u32(green) << 8) | (u32(blue) << 16));
+
     bool success = false;
     if ( scGraphics.SetGridColor(0, red, green, blue) )
     {
@@ -2031,6 +2040,12 @@ void GuiMap::ToggleTileNumSource(bool MTXMoverTILE)
 bool GuiMap::DisplayingTileNums()
 {
     return scGraphics.DisplayingTileNums();
+}
+
+void GuiMap::ToggleDisplayFps()
+{
+    scrGraphics.toggleDisplayFps();
+    UpdateBaseViewMenuItems();
 }
 
 u32 GuiMap::getNextClassId()
@@ -2567,6 +2582,11 @@ void GuiMap::UpdateTerrainViewMenuItems()
     }
 }
 
+void GuiMap::UpdateBaseViewMenuItems()
+{
+    chkd.mainMenu.SetCheck(ID_VIEW_DISPLAYFPS, scrGraphics.displayingFps());
+}
+
 void GuiMap::UpdateUnitMenuItems()
 {
     chkd.mainMenu.SetCheck(ID_UNITS_BUILDINGSSNAPTOTILE, buildingsSnapToTile);
@@ -2689,6 +2709,7 @@ void GuiMap::updateMenu()
     UpdateGridSizesMenu();
     UpdateGridColorMenu();
     UpdateTerrainViewMenuItems();
+    UpdateBaseViewMenuItems();
     UpdateUnitMenuItems();
     UpdateSpriteMenuItems();
     UpdateCutCopyPasteMenuItems();

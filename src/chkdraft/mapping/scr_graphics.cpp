@@ -87,6 +87,8 @@ void Scr::GraphicsData::Shaders::load(ArchiveCluster & archiveCluster)
     tileShader.load(archiveCluster, preprocessor);
 
     simpleShader.load();
+
+    solidColorShader.load();
 }
 
 void Scr::GraphicsData::loadSkin(Skin & skin, ArchiveCluster & archiveCluster, VisualQuality visualQuality, ByteBuffer & fileData)
@@ -981,6 +983,7 @@ std::shared_ptr<Scr::GraphicsData::ClassicData> Scr::GraphicsData::loadClassic(S
     else if ( this->classicData->tilesetGrp[renderSettings.tileset % Sc::Terrain::NumTilesets].frames > 0 )
         return this->classicData; // Already loaded
 
+    this->classicData->solidColorShader.load();
     this->classicData->paletteShader.load();
 
     // Populate tileTextureData
@@ -1220,11 +1223,34 @@ void Scr::MapGraphics::initVertices()
         gl::VertexAttribute{.size = 2}, // Position.xy
         gl::VertexAttribute{.size = 2}  // TexCoord.xy
     });
+    lineVertices.initialize({
+        gl::VertexAttribute{.size = 2} // Position.xy
+    });
 }
 
 void Scr::MapGraphics::setFont(gl::Font* textFont)
 {
     this->textFont = textFont;
+}
+
+void Scr::MapGraphics::setGridColor(uint32_t gridColor)
+{
+    this->gridColor = gridColor;
+}
+
+void Scr::MapGraphics::setGridSize(s32 gridSize)
+{
+    this->gridSize = gridSize;
+}
+
+void Scr::MapGraphics::toggleDisplayFps()
+{
+    this->fpsEnabled = !this->fpsEnabled;
+}
+
+bool Scr::MapGraphics::displayingFps()
+{
+    return this->fpsEnabled;
 }
 
 void Scr::MapGraphics::loadClassic(Sc::Data & scData, Scr::GraphicsData & scrDat, const Scr::GraphicsData::RenderSettings & renderSettings)
@@ -1280,6 +1306,44 @@ void Scr::MapGraphics::drawTestTex(gl::Texture & tex)
             
     testVerts->bind();
     testVerts->drawTriangles();
+}
+
+void Scr::MapGraphics::drawGrid(s32 left, s32 top, s32 width, s32 height)
+{
+    if ( this->gridSize != 0 )
+    {
+        GLfloat pixel = 1.f * renderSettings.visualQuality.scale;
+        GLfloat topAdjust = GLfloat(-top%this->gridSize);
+        GLfloat leftAdjust = GLfloat(-left%this->gridSize)+pixel;
+        GLfloat gridSize = GLfloat(this->gridSize);
+        GLfloat gridSpacing = gridSize * renderSettings.visualQuality.scale;
+        size_t hozLineCount = height/this->gridSize+1;
+        size_t vertLineCount = width/this->gridSize+1;
+        lineVertices.clear();
+        lineVertices.vertices.reserve(size_t(hozLineCount*4+vertLineCount*4));
+        for ( size_t y=(top % this->gridSize == 0 ? 1 : 0); y<=hozLineCount; ++y )
+        {
+            lineVertices.vertices.insert(lineVertices.vertices.end(), {
+                0.f, y*gridSpacing+topAdjust,
+                GLfloat(width)*renderSettings.visualQuality.scale, y*gridSpacing+topAdjust
+            });
+        }
+        for ( size_t x=(left % this->gridSize == 0 ? 1 : 0); x<=vertLineCount; ++x )
+        {
+            lineVertices.vertices.insert(lineVertices.vertices.end(), {
+                x*gridSpacing+leftAdjust, 0.f,
+                x*gridSpacing+leftAdjust, GLfloat(height)*renderSettings.visualQuality.scale
+            });
+        }
+    
+        auto & solidColorShader = scrDat != nullptr ? scrDat->shaders->solidColorShader : classicDat->solidColorShader;
+        solidColorShader.use();
+        solidColorShader.posToNdc.setMat4(posToNdc);
+        solidColorShader.solidColor.setColor(this->gridColor);
+        lineVertices.bind();
+        lineVertices.bufferData(gl::UsageHint::DynamicDraw);
+        lineVertices.drawLines();
+    }
 }
 
 void Scr::MapGraphics::drawStars(u32 x, u32 y, u32 scaledWidth, u32 scaledHeight, u32 multiplyColor)
@@ -1756,13 +1820,22 @@ void Scr::MapGraphics::render(Sc::Data & scData, s32 left, s32 top, u32 width, u
     setupNdcTransformation(width, height);
     drawStars(left, top, width*renderSettings.visualQuality.scale, height*renderSettings.visualQuality.scale, 0xFFFFFFFF);
     drawTerrain(scData, left, top, width, height);
+    drawGrid(left, top, width, height);
     drawSprites(scData, left, top);
 
-    textFont->textShader.use();
-    textFont->textShader.projection.setMat4(unscaledPosToNdc);
+    if ( fpsEnabled )
+    {
+        fps.update(std::chrono::system_clock::now());
+        textFont->textShader.use();
+        textFont->textShader.projection.setMat4(unscaledPosToNdc);
+        textFont->drawAffixedText<gl::Align::Center>(width/2, 10.f, fps.displayNumber, " fps", "");
+    }
 
-    textFont->drawText(10.f, 10.f, "THE QUICK BROWN FOX JUMPED OVER THE LAZY DOG");
-    textFont->drawText(10.f, 50.f, "the quick brown fox jumped over the lazy dog");
+    //textFont->textShader.use();
+    //textFont->textShader.projection.setMat4(unscaledPosToNdc);
+
+    //textFont->drawText(10.f, 10.f, "THE QUICK BROWN FOX JUMPED OVER THE LAZY DOG");
+    //textFont->drawText(10.f, 50.f, "the quick brown fox jumped over the lazy dog");
 }
 
 void Scr::MapGraphics::updateGraphics(u32 ticks)

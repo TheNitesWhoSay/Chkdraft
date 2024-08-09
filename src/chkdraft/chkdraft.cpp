@@ -606,6 +606,8 @@ LRESULT Chkdraft::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     case ID_TERRAIN_DISPLAYTILEVALUES: CM->ToggleTileNumSource(false); break;
     case ID_TERRAIN_DISPLAYTILEVALUESMTXM: CM->ToggleTileNumSource(true); break;
     case ID_TERRAIN_DISPLAYISOMVALUES: CM->ToggleDisplayIsomValues(); break;
+        // View
+    case ID_VIEW_DISPLAYFPS: CM->ToggleDisplayFps(); break;
 
         // Editor
         // Units

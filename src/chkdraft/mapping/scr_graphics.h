@@ -11,6 +11,7 @@
 #include <vector>
 #include "gl/context_semaphore.h"
 #include "gl/font.h"
+#include "gl/fps.h"
 #include "gl/palette.h"
 #include "gl/program.h"
 #include "gl/shader.h"
@@ -341,6 +342,45 @@ namespace Scr {
                 }
             };
 
+            class SolidColorShader : public SimpleVertexShader
+            {
+                static constexpr std::string_view vertexCode =
+                    "#version 330 core\n"
+
+                    "layout (location = 0) in vec2 pos;"
+                    
+                    "uniform mat4 posToNdc;"
+
+                    "void main() {"
+                    "    gl_Position = posToNdc * vec4(pos, 0.0, 1.0);"
+                    "};";
+
+                static constexpr std::string_view fragmentCode =
+                    "#version 330 core\n"
+
+                    "out vec4 fragColorOut;"
+                    "uniform vec4 solidColor;"
+
+                    "void main() {"
+                    "    fragColorOut = vec4(solidColor.rgb, 1.0);"
+                    "};";
+            public:
+
+                gl::uniform::Mat4 posToNdc { "posToNdc" };
+                gl::uniform::Color solidColor { "solidColor" };
+
+                void load() {
+                    gl::Program::create();
+                    gl::Program::attachShader(gl::Shader(gl::Shader::Type::vertex, vertexCode));
+                    gl::Program::attachShader(gl::Shader(gl::Shader::Type::fragment, fragmentCode));
+                    gl::Program::link();
+                    gl::Program::use();
+                    gl::Program::findUniforms(posToNdc, solidColor);
+                    posToNdc.loadIdentity();
+                    solidColor.setColor(0xFFFFFFFF);
+                }
+            };
+
             class SimplePaletteShader : public SimpleVertexShader
             {
                 static constexpr std::string_view fragmentCode =
@@ -542,6 +582,7 @@ namespace Scr {
             WaterShader waterShader {};
             HeatShader heatShader {};
             SimpleShader simpleShader {};
+            SolidColorShader solidColorShader {};
 
             void load(ArchiveCluster & archiveCluster);
         };
@@ -663,6 +704,7 @@ namespace Scr {
         std::shared_ptr<Data> visualQualityData[Scr::VisualQuality::total] {};
         struct ClassicData // Data for rendering classic graphics using OpenGL
         {
+            Scr::GraphicsData::Shaders::SolidColorShader solidColorShader {};
             Scr::GraphicsData::Shaders::SimplePaletteShader paletteShader {};
             // TODO: Stars?
             Grp tilesetGrp[8] {};
@@ -702,10 +744,15 @@ namespace Scr {
         std::shared_ptr<Scr::GraphicsData::RenderData> scrDat = nullptr;
         std::shared_ptr<Scr::GraphicsData::ClassicData> classicDat = nullptr;
         ColorCycler colorCycler {};
+        uint32_t gridColor = 0x00000000;
+        s32 gridSize = 0;
+        bool fpsEnabled = true;
+        gl::Fps fps {};
         gl::VertexVector<> starVertices {};
         gl::VertexVector<> tileVertices {};
         gl::VertexArray<6*8> waterVertices {}; // 6 verticies forming the two triangles for a quad, 8 elements per vertex (pos.xy, tex.xy, map.xy, map2.xy)
         gl::VertexArray<6*4> animVertices {}; // 6 verticies forming the two triangles for a quad, 4 elements per vertex (posX, posY, texX, texY)
+        gl::VertexVector<> lineVertices {};
         GLfloat posToNdc[4][4] { // Converts scaled 2D game coordinates (0 to screen width/height) to NDCs which range (-1 to 1) with y-axis flipped
             {  1.f, 0.f, 0.f, 0.f }, // x = 2x/width
             {  0.f, 1.f, 0.f, 0.f }, // y = -2y/height
@@ -728,26 +775,26 @@ namespace Scr {
 
         void setFont(gl::Font* textFont);
 
-        void loadClassic(Sc::Data & scData, Scr::GraphicsData & scrDat, const Scr::GraphicsData::RenderSettings & renderSettings);
+        void setGridColor(uint32_t gridColor);
+        void setGridSize(s32 gridSize);
 
+        void toggleDisplayFps();
+        bool displayingFps();
+
+        void loadClassic(Sc::Data & scData, Scr::GraphicsData & scrDat, const Scr::GraphicsData::RenderSettings & renderSettings);
         void load(Sc::Data & scData, Scr::GraphicsData & scrDat, ArchiveCluster & archiveCluster, const Scr::GraphicsData::RenderSettings & renderSettings, ByteBuffer & fileData);
 
         void setupNdcTransformation(u32 width, u32 height);
         
         void drawTestTex(gl::Texture & tex);
 
+        void drawGrid(s32 left, s32 top, s32 width, s32 height);
         void drawStars(u32 x, u32 y, u32 scaledWidth, u32 scaledHeight, u32 multiplyColor);
-
         void drawTileVertices(Scr::Grp & tilesetGrp, s32 left, s32 top, u32 width, u32 height);
-        
         void drawTerrain(Sc::Data & scData, s32 left, s32 top, u32 width, u32 height);
-
         void drawTilesetIndexed(Sc::Data & scData, s32 left, s32 top, u32 width, u32 height, s32 scrollY);
-
         void drawAnim(Scr::Animation & animation, u32 x, u32 y, u32 frame, u32 playerColor, u32 multiplyColor, bool hallucinate, bool halfAnims);
-
         void drawClassicImage(Sc::Data & scData, gl::Palette & palette, u32 x, u32 y, u32 imageId, Chk::PlayerColor color);
-
         void drawSprites(Sc::Data & scData, s32 left, s32 top);
 
         void render(Sc::Data & scData, s32 left, s32 top, u32 width, u32 height);

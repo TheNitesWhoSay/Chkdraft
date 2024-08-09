@@ -142,6 +142,8 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     void ToggleTileNumSource(bool MTXMoverTILE);
                     bool DisplayingTileNums();
 
+                    void ToggleDisplayFps();
+
                     void ToggleSpriteSnap();
 
                     void ToggleLocationNameClip();
@@ -171,6 +173,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     void UpdateGridSizesMenu();
                     void UpdateGridColorMenu();
                     void UpdateTerrainViewMenuItems();
+                    void UpdateBaseViewMenuItems();
                     void UpdateUnitMenuItems();
                     void UpdateSpriteMenuItems();
                     void UpdateCutCopyPasteMenuItems();
