@@ -37,7 +37,7 @@ namespace gl
     template <typename ElementType = GLfloat, std::size_t ArraySize = 0>
     struct VerticesBase 
     {
-        std::conditional_t<(ArraySize > 0), std::array<ElementType, ArraySize>, std::vector<ElementType>> vertices;
+        std::conditional_t<(ArraySize > 0), std::array<ElementType, ArraySize>, std::vector<ElementType>> vertices {};
 
     private:
         bool buffered = false;

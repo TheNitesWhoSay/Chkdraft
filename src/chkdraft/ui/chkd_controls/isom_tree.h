@@ -11,7 +11,7 @@ class IsomTree : public WinLib::TreeViewControl
         void UpdateIsomTree();
 
     private:
-        HTREEITEM hIsomRoot;
+        HTREEITEM hIsomRoot = NULL;
 };
 
 #endif

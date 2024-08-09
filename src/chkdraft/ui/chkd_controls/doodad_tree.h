@@ -11,7 +11,7 @@ class DoodadTree : public WinLib::TreeViewControl
         void UpdateDoodadTree();
 
     private:
-        HTREEITEM hDoodadRoot;
+        HTREEITEM hDoodadRoot = NULL;
 };
 
 #endif

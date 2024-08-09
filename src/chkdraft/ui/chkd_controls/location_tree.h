@@ -12,7 +12,7 @@ class LocationTree : public WinLib::TreeViewControl
         void RebuildLocationTree(bool updateSelection = false);
 
     private:
-        HTREEITEM hLocationRoot;
+        HTREEITEM hLocationRoot = NULL;
 };
 
 #endif

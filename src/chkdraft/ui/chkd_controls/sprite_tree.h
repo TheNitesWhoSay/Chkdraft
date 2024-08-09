@@ -13,7 +13,7 @@ class SpriteTree : public WinLib::TreeViewControl
     private:
         void addToTree(HTREEITEM parent, const Sc::Sprite::SpriteGroup & spriteGroup);
         
-        HTREEITEM hSpriteRoot;
+        HTREEITEM hSpriteRoot = NULL;
 };
 
 #endif

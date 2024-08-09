@@ -1791,8 +1791,18 @@ void Scr::MapGraphics::drawSprites(Sc::Data & scData, s32 left, s32 top)
 
         for ( auto & sprite : mapFile.sprites )
         {
-            u32 imageId = scData.sprites.getSprite(sprite.type >= 517 ? 0 : sprite.type).imageFile;
-            drawClassicImage(scData, palette, sprite.xc-left, sprite.yc-top, imageId, (Chk::PlayerColor)sprite.owner);
+            if ( sprite.isDrawnAsSprite() )
+            {
+                u32 imageId = scData.sprites.getSprite(sprite.type >= 517 ? 0 : sprite.type).imageFile;
+                drawClassicImage(scData, palette, sprite.xc-left, sprite.yc-top, imageId, (Chk::PlayerColor)sprite.owner);
+            }
+            else
+            {
+                u32 flingyId = u32(scData.units.getUnit(Sc::Unit::Type(sprite.type >= 228 ? 0 : sprite.type)).graphics);
+                u32 spriteId = u32(scData.units.getFlingy(flingyId >= 209 ? 0 : flingyId).sprite);
+                u32 imageId = scData.sprites.getSprite(spriteId >= 517 ? 0 : spriteId).imageFile;
+                drawClassicImage(scData, palette, sprite.xc-left, sprite.yc-top, imageId, (Chk::PlayerColor)sprite.owner);
+            }
         }
     }
     else
@@ -1808,9 +1818,20 @@ void Scr::MapGraphics::drawSprites(Sc::Data & scData, s32 left, s32 top)
 
         for ( auto & sprite : mapFile.sprites )
         {
-            u32 imageId = scData.sprites.getSprite(sprite.type >= 517 ? 0 : sprite.type).imageFile;
-            drawAnim(*((*scrDat->images)[imageId]), (sprite.xc-left)*renderSettings.visualQuality.scale, (sprite.yc-top)*renderSettings.visualQuality.scale, 0,
-                (u32 &)(scData.tunit.rgbaPalette[8*size_t(sprite.owner)]), 0xFFFFFFFF, false, renderSettings.visualQuality.halfAnims);
+            if ( sprite.isDrawnAsSprite() )
+            {
+                u32 imageId = scData.sprites.getSprite(sprite.type >= 517 ? 0 : sprite.type).imageFile;
+                drawAnim(*((*scrDat->images)[imageId]), (sprite.xc-left)*renderSettings.visualQuality.scale, (sprite.yc-top)*renderSettings.visualQuality.scale, 0,
+                    (u32 &)(scData.tunit.rgbaPalette[8*size_t(sprite.owner)]), 0xFFFFFFFF, false, renderSettings.visualQuality.halfAnims);
+            }
+            else
+            {
+                u32 flingyId = u32(scData.units.getUnit(Sc::Unit::Type(sprite.type >= 228 ? 0 : sprite.type)).graphics);
+                u32 spriteId = u32(scData.units.getFlingy(flingyId >= 209 ? 0 : flingyId).sprite);
+                u32 imageId = scData.sprites.getSprite(spriteId >= 517 ? 0 : spriteId).imageFile;
+                drawAnim(*((*scrDat->images)[imageId]), (sprite.xc-left)*renderSettings.visualQuality.scale, (sprite.yc-top)*renderSettings.visualQuality.scale, 0,
+                    (u32 &)(scData.tunit.rgbaPalette[8*size_t(sprite.owner)]), 0xFFFFFFFF, false, renderSettings.visualQuality.halfAnims);
+            }
         }
     }
 }
