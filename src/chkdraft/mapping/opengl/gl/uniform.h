@@ -196,7 +196,7 @@ namespace gl
                     (rgbaColor&0xFF) / 256.f, // R
                     ((rgbaColor&0xFF00) >> 8) / 256.f, // G
                     ((rgbaColor&0xFF0000) >> 16) / 256.f, // B
-                    ((rgbaColor&0xFF000000) >> 24) / 256.f // A
+                    ((rgbaColor&0xFF000000) >> 24) / 255.f // A
                 );
             }
         };

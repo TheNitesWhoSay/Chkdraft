@@ -362,7 +362,7 @@ namespace Scr {
                     "uniform vec4 solidColor;"
 
                     "void main() {"
-                    "    fragColorOut = vec4(solidColor.rgb, 1.0);"
+                    "    fragColorOut = solidColor;"
                     "};";
             public:
 
@@ -744,7 +744,7 @@ namespace Scr {
         std::shared_ptr<Scr::GraphicsData::RenderData> scrDat = nullptr;
         std::shared_ptr<Scr::GraphicsData::ClassicData> classicDat = nullptr;
         ColorCycler colorCycler {};
-        uint32_t gridColor = 0x00000000;
+        uint32_t gridColor = 0xFF000000; // 0xAABBGGRR
         s32 gridSize = 0;
         bool fpsEnabled = true;
         gl::Fps fps {};
@@ -754,6 +754,7 @@ namespace Scr {
         gl::VertexArray<6*8> waterVertices {}; // 6 verticies forming the two triangles for a quad, 8 elements per vertex (pos.xy, tex.xy, map.xy, map2.xy)
         gl::VertexArray<6*4> animVertices {}; // 6 verticies forming the two triangles for a quad, 4 elements per vertex (posX, posY, texX, texY)
         gl::VertexVector<> lineVertices {};
+        gl::VertexVector<> triangleVertices {};
         GLfloat posToNdc[4][4] { // Converts scaled 2D game coordinates (0 to screen width/height) to NDCs which range (-1 to 1) with y-axis flipped
             {  1.f, 0.f, 0.f, 0.f }, // x = 2x/width
             {  0.f, 1.f, 0.f, 0.f }, // y = -2y/height
@@ -793,6 +794,7 @@ namespace Scr {
         void drawTestTex(gl::Texture & tex);
 
         void drawGrid(s32 left, s32 top, s32 width, s32 height);
+        void drawLocations(s32 left, s32 top, s32 width, s32 height);
         void drawStars(u32 x, u32 y, u32 scaledWidth, u32 scaledHeight, u32 multiplyColor);
         void drawTileVertices(Scr::Grp & tilesetGrp, s32 left, s32 top, u32 width, u32 height);
         void drawTerrain(Sc::Data & scData, s32 left, s32 top, u32 width, u32 height);
@@ -801,7 +803,7 @@ namespace Scr {
         void drawClassicImage(Sc::Data & scData, gl::Palette & palette, u32 x, u32 y, u32 imageId, Chk::PlayerColor color);
         void drawSprites(Sc::Data & scData, s32 left, s32 top);
 
-        void render(Sc::Data & scData, s32 left, s32 top, u32 width, u32 height);
+        void render(Sc::Data & scData, s32 left, s32 top, u32 width, u32 height, bool renderLocations);
 
         void updateGraphics(u32 ticks); // Runs every few ms, with ticks being the ms since the last frame
     };

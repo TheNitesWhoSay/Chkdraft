@@ -1827,7 +1827,7 @@ void GuiMap::PaintMap(GuiMapPtr currMap, bool pasting)
 
             glClearColor(0.0f, 0.f, 0.f, 0.f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            scrGraphics.render(chkd.scData, screenLeft, screenTop, cliRect.right-cliRect.left, cliRect.bottom-cliRect.top);
+            scrGraphics.render(chkd.scData, screenLeft, screenTop, cliRect.right-cliRect.left, cliRect.bottom-cliRect.top, currLayer == Layer::Locations);
             
             glFlush();
             SwapBuffers(openGlDc->getDcHandle());
@@ -3977,6 +3977,7 @@ std::string_view getSkinName(GuiMap::Skin skin)
         case GuiMap::Skin::ScrHD: return "Remastered HD";
         case GuiMap::Skin::CarbotHD2: return "Carbot HD2";
         case GuiMap::Skin::CarbotHD: return "Carbot HD";
+        default: throw std::logic_error("Invalid skin passed to getSkinName");
     }
 }
 
@@ -4020,7 +4021,7 @@ void GuiMap::SetSkin(GuiMap::Skin skin)
             DWORD bufferSize = GetFontData(dc.getDcHandle(), 0, 0, NULL, 0);
             auto fontMemory = std::make_shared<gl::Font::Memory>(size_t(bufferSize));
             GetFontData(dc.getDcHandle(), 0, 0, &fontMemory->data[0], bufferSize);
-            chkd.scrData.defaultFont = gl::Font::load(fontMemory, 0, 14);
+            chkd.scrData.defaultFont = gl::Font::load(fontMemory, 0, 12);
             chkd.scrData.defaultFont->setColor(0.f, 1.f, 1.f);
         }
         this->scrGraphics.setFont(chkd.scrData.defaultFont.get());

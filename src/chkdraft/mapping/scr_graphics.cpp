@@ -1226,6 +1226,9 @@ void Scr::MapGraphics::initVertices()
     lineVertices.initialize({
         gl::VertexAttribute{.size = 2} // Position.xy
     });
+    triangleVertices.initialize({
+        gl::VertexAttribute{.size = 2} // Position.xy
+    });
 }
 
 void Scr::MapGraphics::setFont(gl::Font* textFont)
@@ -1235,7 +1238,7 @@ void Scr::MapGraphics::setFont(gl::Font* textFont)
 
 void Scr::MapGraphics::setGridColor(uint32_t gridColor)
 {
-    this->gridColor = gridColor;
+    this->gridColor = gridColor | 0xFF000000;
 }
 
 void Scr::MapGraphics::setGridSize(s32 gridSize)
@@ -1355,6 +1358,66 @@ void Scr::MapGraphics::drawGrid(s32 left, s32 top, s32 width, s32 height)
         lineVertices.bind();
         lineVertices.bufferData(gl::UsageHint::DynamicDraw);
         lineVertices.drawLines();
+    }
+}
+
+void Scr::MapGraphics::drawLocations(s32 left, s32 top, s32 width, s32 height)
+{
+    auto leftAdjust = left*renderSettings.visualQuality.scale;
+    auto topAdjust = top*renderSettings.visualQuality.scale;
+
+    lineVertices.clear();
+    triangleVertices.clear();
+    for ( size_t i=0; i<mapFile.locations.size(); ++i )
+    {
+        const auto & location = mapFile.locations[i];
+        gl::Rect2D<GLfloat> rect {
+            location.left*renderSettings.visualQuality.scale,
+            location.top*renderSettings.visualQuality.scale,
+            location.right*renderSettings.visualQuality.scale,
+            location.bottom*renderSettings.visualQuality.scale
+        };
+        triangleVertices.vertices.insert(triangleVertices.vertices.end(), {
+            rect.left-leftAdjust, rect.top-topAdjust,
+            rect.right-leftAdjust, rect.top-topAdjust,
+            rect.left-leftAdjust, rect.bottom-topAdjust,
+            rect.left-leftAdjust, rect.bottom-topAdjust,
+            rect.right-leftAdjust, rect.bottom-topAdjust,
+            rect.right-leftAdjust, rect.top-topAdjust
+        });
+        lineVertices.vertices.insert(lineVertices.vertices.end(), {
+            .5f+rect.left-leftAdjust, .5f+rect.top-topAdjust,
+            .5f+rect.left-leftAdjust, .5f+rect.bottom-topAdjust,
+            .5f+rect.left-leftAdjust, .5f+rect.top-topAdjust,
+            .5f+rect.right-leftAdjust, .5f+rect.top-topAdjust,
+            .5f+rect.right-leftAdjust, .5f+rect.top-topAdjust,
+            .5f+rect.right-leftAdjust, .5f+rect.bottom-topAdjust,
+            .5f+rect.left-leftAdjust, .5f+rect.bottom-topAdjust,
+            .5f+rect.right-leftAdjust, .5f+rect.bottom-topAdjust
+        });
+    }
+    
+    auto & solidColorShader = scrDat != nullptr ? scrDat->shaders->solidColorShader : classicDat->solidColorShader;
+    solidColorShader.use();
+    solidColorShader.posToNdc.setMat4(posToNdc);
+    solidColorShader.solidColor.setColor(0x3092B809); // Location color: 0xAABBGGRR
+    triangleVertices.bind();
+    triangleVertices.bufferData(gl::UsageHint::DynamicDraw);
+    triangleVertices.drawTriangles();
+    solidColorShader.solidColor.setColor(0xFF000000); // Line color: 0xAABBGGRR
+    lineVertices.bind();
+    lineVertices.bufferData(gl::UsageHint::DynamicDraw);
+    lineVertices.drawLines();
+
+    textFont->textShader.use();
+    textFont->textShader.projection.setMat4(unscaledPosToNdc);
+    textFont->setColor(255, 255, 0);
+    for ( size_t i=0; i<mapFile.locations.size(); ++i )
+    {
+        const auto & location = mapFile.locations[i];
+        auto locationName = mapFile.getLocationName<RawString>(i);
+        if ( locationName )
+            textFont->drawText((location.left-left)*scaleFactor+2.0f, (location.top-top)*scaleFactor+2.0f, locationName->c_str());
     }
 }
 
@@ -1852,13 +1915,15 @@ void Scr::MapGraphics::drawSprites(Sc::Data & scData, s32 left, s32 top)
     }
 }
 
-void Scr::MapGraphics::render(Sc::Data & scData, s32 left, s32 top, u32 width, u32 height)
+void Scr::MapGraphics::render(Sc::Data & scData, s32 left, s32 top, u32 width, u32 height, bool renderLocations)
 {
     setupNdcTransformation(width, height);
     drawStars(left, top, width*renderSettings.visualQuality.scale, height*renderSettings.visualQuality.scale, 0xFFFFFFFF);
     drawTerrain(scData, left, top, width, height);
     drawGrid(left, top, width, height);
     drawSprites(scData, left, top);
+    if ( renderLocations )
+        drawLocations(left, top, width, height);
 
     if ( fpsEnabled )
     {
