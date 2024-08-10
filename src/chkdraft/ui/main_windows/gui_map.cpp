@@ -2562,6 +2562,19 @@ void GuiMap::UpdateGridColorMenu()
         chkd.mainMenu.SetCheck(ID_COLOR_OTHER, true);
 }
 
+void GuiMap::UpdateSkinMenuItems()
+{
+    chkd.mainMenu.SetCheck(ID_SKIN_CLASSICGDI, skin == GuiMap::Skin::ClassicGDI);
+    chkd.mainMenu.SetCheck(ID_SKIN_CLASSICOPENGL, skin == GuiMap::Skin::ClassicGL);
+    
+    chkd.mainMenu.SetCheck(ID_SKIN_REMASTEREDSD, skin == GuiMap::Skin::ScrSD);
+    chkd.mainMenu.SetCheck(ID_SKIN_REMASTEREDHD2, skin == GuiMap::Skin::ScrHD2);
+    chkd.mainMenu.SetCheck(ID_SKIN_REMASTEREDHD, skin == GuiMap::Skin::ScrHD);
+    
+    chkd.mainMenu.SetCheck(ID_SKIN_CARBOTHD2, skin == GuiMap::Skin::CarbotHD2);
+    chkd.mainMenu.SetCheck(ID_SKIN_CARBOTHD, skin == GuiMap::Skin::CarbotHD);
+}
+
 void GuiMap::UpdateTerrainViewMenuItems()
 {
     chkd.mainMenu.SetCheck(ID_TERRAIN_DISPLAYTILEBUILDABILITY, scGraphics.DisplayingBuildability());
@@ -2709,6 +2722,7 @@ void GuiMap::updateMenu()
     chkd.mainToolbar.playerBox.SetSel(currPlayer);
     UpdateGridSizesMenu();
     UpdateGridColorMenu();
+    UpdateSkinMenuItems();
     UpdateTerrainViewMenuItems();
     UpdateBaseViewMenuItems();
     UpdateUnitMenuItems();
@@ -3952,6 +3966,20 @@ GuiMap::Skin GuiMap::GetSkin()
     return this->skin;
 }
 
+std::string_view getSkinName(GuiMap::Skin skin)
+{
+    switch ( skin )
+    {
+        case GuiMap::Skin::ClassicGDI: return "Classic GDI";
+        case GuiMap::Skin::ClassicGL: return "Classic OpenGL";
+        case GuiMap::Skin::ScrSD: return "Remastered SD";
+        case GuiMap::Skin::ScrHD2: return "Remastered HD2";
+        case GuiMap::Skin::ScrHD: return "Remastered HD";
+        case GuiMap::Skin::CarbotHD2: return "Carbot HD2";
+        case GuiMap::Skin::CarbotHD: return "Carbot HD";
+    }
+}
+
 void GuiMap::SetSkin(GuiMap::Skin skin)
 {
     // Validate the skin and if remastered, turn it into Scr::GraphicsData::RenderSettings
@@ -4007,10 +4035,11 @@ void GuiMap::SetSkin(GuiMap::Skin skin)
             auto fileData = ByteBuffer(4);
             ArchiveCluster archiveCluster {std::vector<ArchiveFilePtr>{}};
             this->scrGraphics.load(chkd.scData, chkd.scrData, archiveCluster, renderSettings, fileData);
+            logger.info() << "Switched to skin: " << getSkinName(skin) << '\n';
         }
         else
         {
-            logger.info() << "Loading new skin...\n";
+            logger.info() << "Loading " + std::string(getSkinName(skin)) + " skin...\n";
             auto begin = std::chrono::high_resolution_clock::now();
             bool includesRemastered = false;
             auto archiveCluster = ChkdDataFileBrowser{}.openScDataFiles(
@@ -4031,7 +4060,10 @@ void GuiMap::SetSkin(GuiMap::Skin skin)
     else if ( skin == Skin::ClassicGL )
     {
         if ( this->scrGraphics.isClassicLoaded(chkd.scrData) )
+        {
             this->scrGraphics.loadClassic(chkd.scData, chkd.scrData, renderSettings);
+            logger.info() << "Switched to skin: " << getSkinName(skin) << '\n';
+        }
         else
         {
             logger.info() << "Loading classic skin...\n";
@@ -4041,9 +4073,13 @@ void GuiMap::SetSkin(GuiMap::Skin skin)
             logger.info() << "New skin loaded in " << std::chrono::duration_cast<std::chrono::milliseconds>(end-begin).count() << "ms\n";
         }
     }
+    else
+        logger.info() << "Switched to skin: " << getSkinName(skin) << '\n';
+
     // Set the maps skin
     this->skin = skin;
     
+    UpdateSkinMenuItems();
     this->Redraw(true);
     if ( chkd.terrainPalWindow.getHandle() != NULL )
         chkd.terrainPalWindow.RedrawThis();

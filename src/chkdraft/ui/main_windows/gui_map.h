@@ -172,6 +172,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     void UpdateZoomMenuItems();
                     void UpdateGridSizesMenu();
                     void UpdateGridColorMenu();
+                    void UpdateSkinMenuItems();
                     void UpdateTerrainViewMenuItems();
                     void UpdateBaseViewMenuItems();
                     void UpdateUnitMenuItems();
