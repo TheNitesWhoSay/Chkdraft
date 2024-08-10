@@ -407,7 +407,7 @@ void Scr::GraphicsData::loadImages(Sc::Data & scData, ArchiveCluster & archiveCl
         }
     }
 }
-        
+
 bool Scr::GraphicsData::loadGrp(ArchiveCluster & archiveCluster, const std::filesystem::path & path, Grp & grp, ByteBuffer & fileData, bool framedTex, bool mergedTex)
 {
     if ( archiveCluster.getFile(path.string(), fileData) )
@@ -441,7 +441,7 @@ bool Scr::GraphicsData::loadGrp(ArchiveCluster & archiveCluster, const std::file
                         auto format = header->getFormat();
                         grp.mergedTexture.genTexture();
                         grp.mergedTexture.bind();
-                        grp.mergedTexture.setMinMagFilters(GL_LINEAR);
+                        grp.mergedTexture.setMinMagFilters(GL_NEAREST);
                         GLsizei size = GLsizei(128 * 128 * ((header->width+3)/4) * ((header->height+3)/4) * format.blockSize);
                         grp.mergedTexture.loadCompressedImage2D({
                             .data = NULL,
@@ -490,7 +490,7 @@ bool Scr::GraphicsData::loadGrp(ArchiveCluster & archiveCluster, const std::file
             {
                 grp.mergedTexture.genTexture();
                 grp.mergedTexture.bind();
-                grp.mergedTexture.setMinMagFilters(GL_LINEAR);
+                grp.mergedTexture.setMinMagFilters(GL_NEAREST);
                 grp.mergedTexture.loadImage2D({
                     .data = NULL,
                     .width = GLsizei(bmp->width)*128,
@@ -1253,6 +1253,16 @@ bool Scr::MapGraphics::displayingFps()
     return this->fpsEnabled;
 }
 
+GLfloat Scr::MapGraphics::getScaleFactor()
+{
+    return this->scaleFactor;
+}
+
+void Scr::MapGraphics::setScaleFactor(GLfloat scaleFactor)
+{
+    this->scaleFactor = scaleFactor;
+}
+
 void Scr::MapGraphics::loadClassic(Sc::Data & scData, Scr::GraphicsData & scrDat, const Scr::GraphicsData::RenderSettings & renderSettings)
 {
     this->renderSettings = renderSettings;
@@ -1273,8 +1283,8 @@ void Scr::MapGraphics::load(Sc::Data & scData, Scr::GraphicsData & scrDat, Archi
 
 void Scr::MapGraphics::setupNdcTransformation(u32 width, u32 height)
 {
-    posToNdc[0][0] = 2.0f/(width*renderSettings.visualQuality.scale);
-    posToNdc[1][1] = -2.0f/(height*renderSettings.visualQuality.scale);
+    posToNdc[0][0] = 2.0f/(width*renderSettings.visualQuality.scale/scaleFactor);
+    posToNdc[1][1] = -2.0f/(height*renderSettings.visualQuality.scale/scaleFactor);
     unscaledPosToNdc[0][0] = 2.0f/width;
     unscaledPosToNdc[1][1] = -2.0f/height;
 }
@@ -1310,6 +1320,8 @@ void Scr::MapGraphics::drawTestTex(gl::Texture & tex)
 
 void Scr::MapGraphics::drawGrid(s32 left, s32 top, s32 width, s32 height)
 {
+    s32 scaledWidth = s32(width/scaleFactor);
+    s32 scaledHeight = s32(height/scaleFactor);
     if ( this->gridSize != 0 )
     {
         GLfloat pixel = 1.f * renderSettings.visualQuality.scale;
@@ -1317,22 +1329,22 @@ void Scr::MapGraphics::drawGrid(s32 left, s32 top, s32 width, s32 height)
         GLfloat leftAdjust = GLfloat(-left%this->gridSize)+pixel;
         GLfloat gridSize = GLfloat(this->gridSize);
         GLfloat gridSpacing = gridSize * renderSettings.visualQuality.scale;
-        size_t hozLineCount = height/this->gridSize+1;
-        size_t vertLineCount = width/this->gridSize+1;
+        size_t hozLineCount = scaledHeight/this->gridSize+1;
+        size_t vertLineCount = scaledWidth/this->gridSize+1;
         lineVertices.clear();
         lineVertices.vertices.reserve(size_t(hozLineCount*4+vertLineCount*4));
         for ( size_t y=(top % this->gridSize == 0 ? 1 : 0); y<=hozLineCount; ++y )
         {
             lineVertices.vertices.insert(lineVertices.vertices.end(), {
                 0.f, y*gridSpacing+topAdjust,
-                GLfloat(width)*renderSettings.visualQuality.scale, y*gridSpacing+topAdjust
+                GLfloat(scaledWidth)*renderSettings.visualQuality.scale, y*gridSpacing+topAdjust
             });
         }
         for ( size_t x=(left % this->gridSize == 0 ? 1 : 0); x<=vertLineCount; ++x )
         {
             lineVertices.vertices.insert(lineVertices.vertices.end(), {
                 x*gridSpacing+leftAdjust, 0.f,
-                x*gridSpacing+leftAdjust, GLfloat(height)*renderSettings.visualQuality.scale
+                x*gridSpacing+leftAdjust, GLfloat(scaledHeight)*renderSettings.visualQuality.scale
             });
         }
     
@@ -1554,6 +1566,8 @@ void Scr::MapGraphics::drawTileVertices(Scr::Grp & tilesetGrp, s32 left, s32 top
 
 void Scr::MapGraphics::drawTerrain(Sc::Data & scData, s32 left, s32 top, u32 width, u32 height)
 {
+    u32 scaledWidth = s32(width)/scaleFactor;
+    u32 scaledHeight = s32(height)/scaleFactor;
     auto & tilesetGrp = renderSettings.skinId == Scr::Skin::Id::Classic ? classicDat->tilesetGrp[renderSettings.tileset] : scrDat->tiles->tilesetGrp;
     tileVertices.clear();
     auto tiles = scData.terrain.get(Sc::Terrain::Tileset(mapFile.tileset));
@@ -1563,8 +1577,10 @@ void Scr::MapGraphics::drawTerrain(Sc::Data & scData, s32 left, s32 top, u32 wid
     gl::Rect2D<GLfloat> vertexRect {-texWidth, -texHeight, texWidth, texHeight};
     u32 xStart = std::max(0, left/32-2);
     u32 yStart = std::max(0, top/32-2);
-    u32 xLimit = std::min((left+width)/32, u32(mapFile.dimensions.tileWidth-1));
-    u32 yLimit = std::min((top+height)/32, u32(mapFile.dimensions.tileHeight-1));
+    u32 xLimit = std::min((left+scaledWidth)/32, u32(mapFile.dimensions.tileWidth-1));
+    u32 yLimit = std::min((top+scaledHeight)/32, u32(mapFile.dimensions.tileHeight-1));
+
+    GLfloat texelOffset = scaleFactor != 1.f ? 0.5f/32.f/128.f : 0;
 
     for ( u32 y = yStart; y <= yLimit; y++ )
     {
@@ -1585,8 +1601,8 @@ void Scr::MapGraphics::drawTerrain(Sc::Data & scData, s32 left, s32 top, u32 wid
             };
             auto left = float(megaTileIndex%128)/float(128);
             auto top = float(megaTileIndex/128)/float(128);
-            auto right = left+1.f/128.f;
-            auto bottom = top+1.f/128.f;
+            auto right = left+1.f/128.f-texelOffset;
+            auto bottom = top+1.f/128.f-texelOffset;
             gl::Rect2D<GLfloat> texRect {left, top, right, bottom};
             tileVertices.vertices.insert(tileVertices.vertices.end(), {
                 position.x+vertexRect.left, position.y+vertexRect.top, texRect.left, texRect.top,

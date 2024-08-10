@@ -748,6 +748,7 @@ namespace Scr {
         s32 gridSize = 0;
         bool fpsEnabled = true;
         gl::Fps fps {};
+        GLfloat scaleFactor = 1.0f;
         gl::VertexVector<> starVertices {};
         gl::VertexVector<> tileVertices {};
         gl::VertexArray<6*8> waterVertices {}; // 6 verticies forming the two triangles for a quad, 8 elements per vertex (pos.xy, tex.xy, map.xy, map2.xy)
@@ -780,6 +781,9 @@ namespace Scr {
 
         void toggleDisplayFps();
         bool displayingFps();
+
+        GLfloat getScaleFactor();
+        void setScaleFactor(GLfloat scaleFactor);
 
         void loadClassic(Sc::Data & scData, Scr::GraphicsData & scrDat, const Scr::GraphicsData::RenderSettings & renderSettings);
         void load(Sc::Data & scData, Scr::GraphicsData & scrDat, ArchiveCluster & archiveCluster, const Scr::GraphicsData::RenderSettings & renderSettings, ByteBuffer & fileData);

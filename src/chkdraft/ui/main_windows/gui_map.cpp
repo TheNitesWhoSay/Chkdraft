@@ -652,6 +652,7 @@ double GuiMap::getZoom()
 
 void GuiMap::setZoom(double newScale)
 {
+    scrGraphics.setScaleFactor(newScale);
     for ( u32 i=0; i<defaultZooms.size(); i++ )
     {
         if ( newScale == defaultZooms[i] )
