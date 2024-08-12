@@ -258,7 +258,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     Graphics scGraphics {*this, selections};
                     GuiMap::Skin skin = Skin::ClassicGDI;
                     std::shared_ptr<WinLib::DeviceContext> openGlDc;
-                    u32 prevTickCount = GetTickCount();
+                    u64 prevTickCount = GetTickCount64();
 
                     u16 mapId = 0;
                     bool changeLock = false;

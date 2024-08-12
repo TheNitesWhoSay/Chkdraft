@@ -1196,7 +1196,7 @@ std::shared_ptr<Scr::GraphicsData::RenderData> Scr::GraphicsData::load(Sc::Data 
     return renderData;
 }
 
-Scr::MapGraphics::MapGraphics(MapFile & mapFile) : mapFile(mapFile), initialTickCount(GetTickCount()) {}
+Scr::MapGraphics::MapGraphics(MapFile & mapFile) : mapFile(mapFile), initialTickCount(GetTickCount64()) {}
 
 bool Scr::MapGraphics::isClassicLoaded(Scr::GraphicsData & scrDat)
 {
@@ -1372,10 +1372,10 @@ void Scr::MapGraphics::drawLocations(s32 left, s32 top, s32 width, s32 height)
     {
         const auto & location = mapFile.locations[i];
         gl::Rect2D<GLfloat> rect {
-            location.left*renderSettings.visualQuality.scale,
-            location.top*renderSettings.visualQuality.scale,
-            location.right*renderSettings.visualQuality.scale,
-            location.bottom*renderSettings.visualQuality.scale
+            GLfloat(location.left*renderSettings.visualQuality.scale),
+            GLfloat(location.top*renderSettings.visualQuality.scale),
+            GLfloat(location.right*renderSettings.visualQuality.scale),
+            GLfloat(location.bottom*renderSettings.visualQuality.scale)
         };
         triangleVertices.vertices.insert(triangleVertices.vertices.end(), {
             rect.left-leftAdjust, rect.top-topAdjust,
@@ -1561,7 +1561,7 @@ void Scr::MapGraphics::drawTileVertices(Scr::Grp & tilesetGrp, s32 left, s32 top
         scrDat->shaders->waterShader.sampleTex2.setSlot(2);
         scrDat->shaders->waterShader.sampleTex3.setSlot(3);
         scrDat->shaders->waterShader.sampleTex4.setSlot(4);
-        scrDat->shaders->waterShader.data.set(0.0f, 0.0f, (GetTickCount() - initialTickCount)/4000.0f);
+        scrDat->shaders->waterShader.data.set(0.0f, 0.0f, (GetTickCount64() - initialTickCount)/4000.0f);
 
         screenTex.bindToSlot(GL_TEXTURE0);
         scrDat->waterNormal[0]->texture[n1Frame].bindToSlot(GL_TEXTURE1);
@@ -1940,13 +1940,13 @@ void Scr::MapGraphics::render(Sc::Data & scData, s32 left, s32 top, u32 width, u
     //textFont->drawText(10.f, 50.f, "the quick brown fox jumped over the lazy dog");
 }
 
-void Scr::MapGraphics::updateGraphics(u32 ticks)
+void Scr::MapGraphics::updateGraphics(u64 ticks)
 {
     // update classic/SD color cycling
     auto & tilesetGrp = renderSettings.skinId == Scr::Skin::Id::Classic ? classicDat->tilesetGrp[renderSettings.tileset] : scrDat->tiles->tilesetGrp;
     if ( tilesetGrp.palette )
     {
-        if ( colorCycler.cycleColors(GetTickCount(), mapFile.getTileset(), tilesetGrp.palette.value()) )
+        if ( colorCycler.cycleColors(GetTickCount64(), mapFile.getTileset(), tilesetGrp.palette.value()) )
             tilesetGrp.palette->update();
     }
 

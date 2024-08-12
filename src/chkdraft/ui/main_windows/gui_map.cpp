@@ -1819,7 +1819,7 @@ void GuiMap::PaintMap(GuiMapPtr currMap, bool pasting)
         if ( getClientRect(cliRect) )
         {
             chkd.maps.setGlRenderTarget(this->openGlDc, *this);
-            auto currTickCount = GetTickCount();
+            auto currTickCount = GetTickCount64();
             if ( currTickCount > prevTickCount )
                 scrGraphics.updateGraphics(currTickCount-prevTickCount);
 

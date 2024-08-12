@@ -736,7 +736,7 @@ namespace Scr {
         u32 n1Frame = 0;
         u32 n2Frame = 0;
         u32 nIncrement = 0;
-        u32 initialTickCount = 0;
+        u64 initialTickCount = 0;
 
         MapFile & mapFile;
         gl::Font* textFont = nullptr;
@@ -805,7 +805,7 @@ namespace Scr {
 
         void render(Sc::Data & scData, s32 left, s32 top, u32 width, u32 height, bool renderLocations);
 
-        void updateGraphics(u32 ticks); // Runs every few ms, with ticks being the ms since the last frame
+        void updateGraphics(u64 ticks); // Runs every few ms, with ticks being the ms since the last frame
     };
 }
 

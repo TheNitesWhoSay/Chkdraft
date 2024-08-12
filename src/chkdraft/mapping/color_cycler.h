@@ -30,7 +30,7 @@ class ColorCycler
     static constexpr size_t TotalRotatorSets = 4;
     static constexpr size_t MaxRotatersPerSet = 8;
 
-    std::uint32_t nextTickCount = 0; // Value from prev updates GetTickCount()+42
+    std::uint64_t nextTickCount = 0; // Value from prev updates GetTickCount()+42
 
     static constexpr size_t TilesetRotationSet[8] {
         0, // badlands uses set 0
@@ -62,7 +62,7 @@ class ColorCycler
     }; // All rotator sets
 
 public:
-    inline bool cycleColors(std::uint32_t currTickCount, size_t tileset, auto & palette) // Returns true if the map should be redrawn
+    inline bool cycleColors(std::uint64_t currTickCount, size_t tileset, auto & palette) // Returns true if the map should be redrawn
     {
         bool redraw = false;
         if ( currTickCount >= nextTickCount )
