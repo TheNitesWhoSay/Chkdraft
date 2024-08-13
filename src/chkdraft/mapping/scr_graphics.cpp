@@ -1246,14 +1246,24 @@ void Scr::MapGraphics::setGridSize(s32 gridSize)
     this->gridSize = gridSize;
 }
 
+bool Scr::MapGraphics::displayingFps()
+{
+    return this->fpsEnabled;
+}
+
 void Scr::MapGraphics::toggleDisplayFps()
 {
     this->fpsEnabled = !this->fpsEnabled;
 }
 
-bool Scr::MapGraphics::displayingFps()
+void Scr::MapGraphics::drawTileNums()
 {
-    return this->fpsEnabled;
+
+}
+
+void Scr::MapGraphics::drawTileOverlays()
+{
+
 }
 
 GLfloat Scr::MapGraphics::getScaleFactor()
@@ -1284,7 +1294,7 @@ void Scr::MapGraphics::load(Sc::Data & scData, Scr::GraphicsData & scrDat, Archi
     initVertices();
 }
 
-void Scr::MapGraphics::setupNdcTransformation(u32 width, u32 height)
+void Scr::MapGraphics::setupNdcTransformation(s32 width, s32 height)
 {
     posToNdc[0][0] = 2.0f/(width*renderSettings.visualQuality.scale/scaleFactor);
     posToNdc[1][1] = -2.0f/(height*renderSettings.visualQuality.scale/scaleFactor);
@@ -1421,7 +1431,7 @@ void Scr::MapGraphics::drawLocations(s32 left, s32 top, s32 width, s32 height)
     }
 }
 
-void Scr::MapGraphics::drawStars(u32 x, u32 y, u32 scaledWidth, u32 scaledHeight, u32 multiplyColor)
+void Scr::MapGraphics::drawStars(s32 x, s32 y, s32 scaledWidth, s32 scaledHeight, u32 multiplyColor)
 {
     if ( renderSettings.skinId == Scr::Skin::Id::Classic )
         return; // TODO: OpenGL classic star rendering
@@ -1493,7 +1503,7 @@ void Scr::MapGraphics::drawStars(u32 x, u32 y, u32 scaledWidth, u32 scaledHeight
     }
 }
 
-void Scr::MapGraphics::drawTileVertices(Scr::Grp & tilesetGrp, s32 left, s32 top, u32 width, u32 height)
+void Scr::MapGraphics::drawTileVertices(Scr::Grp & tilesetGrp, s32 left, s32 top, s32 width, s32 height)
 {
     auto tilesetIndex = Sc::Terrain::Tileset(mapFile.getTileset() % Sc::Terrain::NumTilesets);
     bool drawHdWater = renderSettings.visualQuality > VisualQuality::SD &&
@@ -1627,10 +1637,10 @@ void Scr::MapGraphics::drawTileVertices(Scr::Grp & tilesetGrp, s32 left, s32 top
     }
 }
 
-void Scr::MapGraphics::drawTerrain(Sc::Data & scData, s32 left, s32 top, u32 width, u32 height)
+void Scr::MapGraphics::drawTerrain(Sc::Data & scData, s32 left, s32 top, s32 width, s32 height)
 {
-    u32 scaledWidth = s32(width)/scaleFactor;
-    u32 scaledHeight = s32(height)/scaleFactor;
+    s32 scaledWidth = width/scaleFactor;
+    s32 scaledHeight = height/scaleFactor;
     auto & tilesetGrp = renderSettings.skinId == Scr::Skin::Id::Classic ? classicDat->tilesetGrp[renderSettings.tileset] : scrDat->tiles->tilesetGrp;
     tileVertices.clear();
     auto tiles = scData.terrain.get(Sc::Terrain::Tileset(mapFile.tileset));
@@ -1638,16 +1648,16 @@ void Scr::MapGraphics::drawTerrain(Sc::Data & scData, s32 left, s32 top, u32 wid
     GLfloat texWidth = GLfloat(tilesetGrp.width) / 2.0f;
     GLfloat texHeight = GLfloat(tilesetGrp.height) / 2.0f;
     gl::Rect2D<GLfloat> vertexRect {-texWidth, -texHeight, texWidth, texHeight};
-    u32 xStart = std::max(0, left/32-2);
-    u32 yStart = std::max(0, top/32-2);
-    u32 xLimit = std::min((left+scaledWidth)/32, u32(mapFile.dimensions.tileWidth-1));
-    u32 yLimit = std::min((top+scaledHeight)/32, u32(mapFile.dimensions.tileHeight-1));
+    s32 xStart = std::max(0, left/32-2);
+    s32 yStart = std::max(0, top/32-2);
+    s32 xLimit = std::min((left+scaledWidth)/32, s32(mapFile.dimensions.tileWidth-1));
+    s32 yLimit = std::min((top+scaledHeight)/32, s32(mapFile.dimensions.tileHeight-1));
 
     GLfloat texelOffset = scaleFactor != 1.f ? 0.5f/32.f/128.f : 0;
 
-    for ( u32 y = yStart; y <= yLimit; y++ )
+    for ( s32 y = yStart; y <= yLimit; y++ )
     {
-        for ( u32 x = xStart; x <= xLimit; x++ )
+        for ( s32 x = xStart; x <= xLimit; x++ )
         {
             u32 megaTileIndex = 0;
             u16 tileIndex = mapFile.tiles[size_t(y) * size_t(mapFile.dimensions.tileWidth) + size_t(x)];
@@ -1659,8 +1669,8 @@ void Scr::MapGraphics::drawTerrain(Sc::Data & scData, s32 left, s32 top, u32 wid
             }
 
             gl::Point2D<GLfloat> position {
-                GLfloat((s32(x)*32-left)*s32(renderSettings.visualQuality.scale)+32*s32(renderSettings.visualQuality.scale)/2),
-                GLfloat((s32(y)*32-top)*s32(renderSettings.visualQuality.scale)+32*s32(renderSettings.visualQuality.scale)/2)
+                GLfloat((x*32-left)*s32(renderSettings.visualQuality.scale)+32*s32(renderSettings.visualQuality.scale)/2),
+                GLfloat((y*32-top)*s32(renderSettings.visualQuality.scale)+32*s32(renderSettings.visualQuality.scale)/2)
             };
             auto left = float(megaTileIndex%128)/float(128);
             auto top = float(megaTileIndex/128)/float(128);
@@ -1681,7 +1691,7 @@ void Scr::MapGraphics::drawTerrain(Sc::Data & scData, s32 left, s32 top, u32 wid
     drawTileVertices(tilesetGrp, left, top, width, height);
 }
 
-void Scr::MapGraphics::drawTilesetIndexed(Sc::Data & scData, s32 left, s32 top, u32 width, u32 height, s32 scrollY)
+void Scr::MapGraphics::drawTilesetIndexed(Sc::Data & scData, s32 left, s32 top, s32 width, s32 height, s32 scrollY)
 {
     auto & tilesetGrp = renderSettings.skinId == Scr::Skin::Id::Classic ? classicDat->tilesetGrp[renderSettings.tileset] : scrDat->tiles->tilesetGrp;
 
@@ -1734,7 +1744,7 @@ void Scr::MapGraphics::drawTilesetIndexed(Sc::Data & scData, s32 left, s32 top, 
     drawTileVertices(tilesetGrp, left, top, width, height);
 }
 
-void Scr::MapGraphics::drawAnim(Scr::Animation & animation, u32 x, u32 y, u32 frame, u32 playerColor, u32 multiplyColor, bool hallucinate, bool halfAnims)
+void Scr::MapGraphics::drawAnim(Scr::Animation & animation, s32 x, s32 y, u32 frame, u32 playerColor, u32 multiplyColor, bool hallucinate, bool halfAnims)
 {
     if ( frame >= animation.totalFrames )
         frame = 0;
@@ -1801,7 +1811,7 @@ void Scr::MapGraphics::drawAnim(Scr::Animation & animation, u32 x, u32 y, u32 fr
     animVertices.drawTriangles();
 }
 
-void Scr::MapGraphics::drawClassicImage(Sc::Data & scData, gl::Palette & palette, u32 x, u32 y, u32 imageId, Chk::PlayerColor color)
+void Scr::MapGraphics::drawClassicImage(Sc::Data & scData, gl::Palette & palette, s32 x, s32 y, u32 imageId, Chk::PlayerColor color)
 {
     // Preserve previous palette colors
     std::uint32_t remapped[8];
@@ -1915,7 +1925,7 @@ void Scr::MapGraphics::drawSprites(Sc::Data & scData, s32 left, s32 top)
     }
 }
 
-void Scr::MapGraphics::render(Sc::Data & scData, s32 left, s32 top, u32 width, u32 height, bool renderLocations)
+void Scr::MapGraphics::render(Sc::Data & scData, s32 left, s32 top, s32 width, s32 height, bool renderLocations)
 {
     setupNdcTransformation(width, height);
     drawStars(left, top, width*renderSettings.visualQuality.scale, height*renderSettings.visualQuality.scale, 0xFFFFFFFF);

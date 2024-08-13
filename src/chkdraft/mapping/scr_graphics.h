@@ -779,9 +779,12 @@ namespace Scr {
 
         void setGridColor(uint32_t gridColor);
         void setGridSize(s32 gridSize);
-
-        void toggleDisplayFps();
+        
         bool displayingFps();
+        void toggleDisplayFps();
+
+        void drawTileNums();
+        void drawTileOverlays();
 
         GLfloat getScaleFactor();
         void setScaleFactor(GLfloat scaleFactor);
@@ -789,21 +792,21 @@ namespace Scr {
         void loadClassic(Sc::Data & scData, Scr::GraphicsData & scrDat, const Scr::GraphicsData::RenderSettings & renderSettings);
         void load(Sc::Data & scData, Scr::GraphicsData & scrDat, ArchiveCluster & archiveCluster, const Scr::GraphicsData::RenderSettings & renderSettings, ByteBuffer & fileData);
 
-        void setupNdcTransformation(u32 width, u32 height);
+        void setupNdcTransformation(s32 width, s32 height);
         
         void drawTestTex(gl::Texture & tex);
 
         void drawGrid(s32 left, s32 top, s32 width, s32 height);
         void drawLocations(s32 left, s32 top, s32 width, s32 height);
-        void drawStars(u32 x, u32 y, u32 scaledWidth, u32 scaledHeight, u32 multiplyColor);
-        void drawTileVertices(Scr::Grp & tilesetGrp, s32 left, s32 top, u32 width, u32 height);
-        void drawTerrain(Sc::Data & scData, s32 left, s32 top, u32 width, u32 height);
-        void drawTilesetIndexed(Sc::Data & scData, s32 left, s32 top, u32 width, u32 height, s32 scrollY);
-        void drawAnim(Scr::Animation & animation, u32 x, u32 y, u32 frame, u32 playerColor, u32 multiplyColor, bool hallucinate, bool halfAnims);
-        void drawClassicImage(Sc::Data & scData, gl::Palette & palette, u32 x, u32 y, u32 imageId, Chk::PlayerColor color);
+        void drawStars(s32 x, s32 y, s32 scaledWidth, s32 scaledHeight, u32 multiplyColor);
+        void drawTileVertices(Scr::Grp & tilesetGrp, s32 left, s32 top, s32 width, s32 height);
+        void drawTerrain(Sc::Data & scData, s32 left, s32 top, s32 width, s32 height);
+        void drawTilesetIndexed(Sc::Data & scData, s32 left, s32 top, s32 width, s32 height, s32 scrollY);
+        void drawAnim(Scr::Animation & animation, s32 x, s32 y, u32 frame, u32 playerColor, u32 multiplyColor, bool hallucinate, bool halfAnims);
+        void drawClassicImage(Sc::Data & scData, gl::Palette & palette, s32 x, s32 y, u32 imageId, Chk::PlayerColor color);
         void drawSprites(Sc::Data & scData, s32 left, s32 top);
 
-        void render(Sc::Data & scData, s32 left, s32 top, u32 width, u32 height, bool renderLocations);
+        void render(Sc::Data & scData, s32 left, s32 top, s32 width, s32 height, bool renderLocations);
 
         void updateGraphics(u64 ticks); // Runs every few ms, with ticks being the ms since the last frame
     };
