@@ -1229,6 +1229,21 @@ void Scr::MapGraphics::initVertices()
     triangleVertices.initialize({
         gl::VertexAttribute{.size = 2} // Position.xy
     });
+    triangleVertices2.initialize({
+        gl::VertexAttribute{.size = 2} // Position.xy
+    });
+    triangleVertices3.initialize({
+        gl::VertexAttribute{.size = 2} // Position.xy
+    });
+    triangleVertices4.initialize({
+        gl::VertexAttribute{.size = 2} // Position.xy
+    });
+    triangleVertices5.initialize({
+        gl::VertexAttribute{.size = 2} // Position.xy
+    });
+    triangleVertices6.initialize({
+        gl::VertexAttribute{.size = 2} // Position.xy
+    });
 }
 
 void Scr::MapGraphics::setFont(gl::Font* textFont)
@@ -1256,13 +1271,136 @@ void Scr::MapGraphics::toggleDisplayFps()
     this->fpsEnabled = !this->fpsEnabled;
 }
 
-void Scr::MapGraphics::drawTileNums()
+void Scr::MapGraphics::drawTileNums(Sc::Data & scData, s32 left, s32 top, s32 width, s32 height)
 {
+    s32 scaledWidth = width/scaleFactor;
+    s32 scaledHeight = height/scaleFactor;
 
+    textFont->textShader.use();
+    textFont->textShader.projection.setMat4(unscaledPosToNdc);
+    textFont->setColor(255, 255, 0);
+
+    s32 xStart = std::max(0, left/32-2);
+    s32 yStart = std::max(0, top/32-2);
+    s32 xLimit = std::min((left+scaledWidth)/32, s32(mapFile.dimensions.tileWidth-1));
+    s32 yLimit = std::min((top+scaledHeight)/32, s32(mapFile.dimensions.tileHeight-1));
+    for ( s32 y=yStart; y<=yLimit; ++y )
+    {
+        for ( s32 x=xStart; x<=xLimit; ++x )
+        {
+            auto tileIndex = mapFile.getTile(x, y);
+            textFont->drawText((x*32-left)*scaleFactor+2.0f, (y*32-top)*scaleFactor+2.0f, std::to_string(tileIndex).c_str());
+        }
+    }
 }
 
-void Scr::MapGraphics::drawTileOverlays()
+void Scr::MapGraphics::drawTileOverlays(Sc::Data & scData, s32 left, s32 top, s32 width, s32 height)
 {
+    s32 scaledWidth = width/scaleFactor;
+    s32 scaledHeight = height/scaleFactor;
+
+    const Sc::Terrain::Tiles & tiles = scData.terrain.get(mapFile.getTileset());
+
+    auto & solidColorShader = scrDat != nullptr ? scrDat->shaders->solidColorShader : classicDat->solidColorShader;
+    solidColorShader.use();
+    solidColorShader.posToNdc.setMat4(posToNdc);
+    
+    triangleVertices.clear();
+    triangleVertices2.clear();
+    triangleVertices3.clear();
+    triangleVertices4.clear();
+    triangleVertices5.clear();
+    triangleVertices6.clear();
+    s32 xStart = std::max(0, left/32-2);
+    s32 yStart = std::max(0, top/32-2);
+    s32 xLimit = std::min((left+scaledWidth)/32, s32(mapFile.dimensions.tileWidth-1));
+    s32 yLimit = std::min((top+scaledHeight)/32, s32(mapFile.dimensions.tileHeight-1));
+    for ( s32 y=yStart; y<=yLimit; ++y )
+    {
+        for ( s32 x=xStart; x<=xLimit; ++x )
+        {
+            auto tileIndex = mapFile.getTile(x, y);
+            size_t groupIndex = Sc::Terrain::Tiles::getGroupIndex(tileIndex);
+            if ( groupIndex < tiles.tileGroups.size() )
+            {
+                const Sc::Terrain::TileGroup & tileGroup = tiles.tileGroups[groupIndex];
+                u16 megaTileIndex = tileGroup.megaTileIndex[tiles.getGroupMemberIndex(tileIndex)];
+                
+                for ( s32 yMiniTile = 0; yMiniTile < 4; yMiniTile++ )
+                {
+                    for ( s32 xMiniTile = 0; xMiniTile < 4; xMiniTile++ )
+                    {
+                        Sc::Terrain::TileFlags::MiniTileFlags miniTileFlags = tiles.tileFlags[megaTileIndex].miniTileFlags[yMiniTile][xMiniTile];
+                        gl::Rect2D<GLfloat> rect {
+                            GLfloat((x*32+xMiniTile*8-left)*s32(renderSettings.visualQuality.scale)),
+                            GLfloat((y*32+yMiniTile*8-top)*s32(renderSettings.visualQuality.scale)),
+                            GLfloat((x*32+xMiniTile*8+8-left)*s32(renderSettings.visualQuality.scale)),
+                            GLfloat((y*32+yMiniTile*8+8-top)*s32(renderSettings.visualQuality.scale)),
+                        };
+                        auto* targetVertices = &triangleVertices;
+                        bool walkable = miniTileFlags.isWalkable();
+                        switch ( miniTileFlags.getElevation() )
+                        {
+                            case Sc::Terrain::TileElevation::Low: if ( !walkable) targetVertices = &triangleVertices2; break;
+                            case Sc::Terrain::TileElevation::Mid: targetVertices = walkable ? &triangleVertices3 : &triangleVertices4; break;
+                            case Sc::Terrain::TileElevation::High: targetVertices = walkable ? &triangleVertices5 : &triangleVertices6; break;
+                        }
+                        targetVertices->vertices.insert(targetVertices->vertices.end(), {
+                            rect.left, rect.top,
+                            rect.right, rect.top,
+                            rect.left, rect.bottom,
+                            rect.left, rect.bottom,
+                            rect.right, rect.bottom,
+                            rect.right, rect.top
+                        });
+                    }
+                }
+            }
+        }
+    }
+    
+    if ( !triangleVertices.vertices.empty() )
+    {
+        solidColorShader.solidColor.setColor(0x30006400); // MiniTile color: 0xAABBGGRR
+        triangleVertices.bind();
+        triangleVertices.bufferData(gl::UsageHint::DynamicDraw);
+        triangleVertices.drawTriangles();
+    }
+    if ( !triangleVertices2.vertices.empty() )
+    {
+        solidColorShader.solidColor.setColor(0xE0001600); // MiniTile color: 0xAABBGGRR
+        triangleVertices2.bind();
+        triangleVertices2.bufferData(gl::UsageHint::DynamicDraw);
+        triangleVertices2.drawTriangles();
+    }
+    if ( !triangleVertices3.vertices.empty() )
+    {
+        solidColorShader.solidColor.setColor(0x30640000); // MiniTile color: 0xAABBGGRR
+        triangleVertices3.bind();
+        triangleVertices3.bufferData(gl::UsageHint::DynamicDraw);
+        triangleVertices3.drawTriangles();
+    }
+    if ( !triangleVertices4.vertices.empty() )
+    {
+        solidColorShader.solidColor.setColor(0xE0160000); // MiniTile color: 0xAABBGGRR
+        triangleVertices4.bind();
+        triangleVertices4.bufferData(gl::UsageHint::DynamicDraw);
+        triangleVertices4.drawTriangles();
+    }
+    if ( !triangleVertices5.vertices.empty() )
+    {
+        solidColorShader.solidColor.setColor(0x30000064); // MiniTile color: 0xAABBGGRR
+        triangleVertices5.bind();
+        triangleVertices5.bufferData(gl::UsageHint::DynamicDraw);
+        triangleVertices5.drawTriangles();
+    }
+    if ( !triangleVertices6.vertices.empty() )
+    {
+        solidColorShader.solidColor.setColor(0xE0000016); // MiniTile color: 0xAABBGGRR
+        triangleVertices6.bind();
+        triangleVertices6.bufferData(gl::UsageHint::DynamicDraw);
+        triangleVertices6.drawTriangles();
+    }
 
 }
 
@@ -1360,7 +1498,7 @@ void Scr::MapGraphics::drawGrid(s32 left, s32 top, s32 width, s32 height)
                 x*gridSpacing+leftAdjust, GLfloat(scaledHeight)*renderSettings.visualQuality.scale
             });
         }
-    
+
         auto & solidColorShader = scrDat != nullptr ? scrDat->shaders->solidColorShader : classicDat->solidColorShader;
         solidColorShader.use();
         solidColorShader.posToNdc.setMat4(posToNdc);
@@ -1925,15 +2063,21 @@ void Scr::MapGraphics::drawSprites(Sc::Data & scData, s32 left, s32 top)
     }
 }
 
-void Scr::MapGraphics::render(Sc::Data & scData, s32 left, s32 top, s32 width, s32 height, bool renderLocations)
+void Scr::MapGraphics::render(Sc::Data & scData, s32 left, s32 top, s32 width, s32 height, bool renderLocations, bool renderTileElevations, bool renderTileNums)
 {
     setupNdcTransformation(width, height);
     drawStars(left, top, width*renderSettings.visualQuality.scale, height*renderSettings.visualQuality.scale, 0xFFFFFFFF);
     drawTerrain(scData, left, top, width, height);
+    if ( renderTileElevations )
+        drawTileOverlays(scData, left, top, width, height);
+
     drawGrid(left, top, width, height);
     drawSprites(scData, left, top);
     if ( renderLocations )
         drawLocations(left, top, width, height);
+
+    if ( renderTileNums )
+    drawTileNums(scData, left, top, width, height);
 
     if ( fpsEnabled )
     {

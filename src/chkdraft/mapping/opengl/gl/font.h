@@ -140,6 +140,7 @@ namespace gl
         {
             std::vector<RenderGlyph> renderGlyphs {};
             gl::Size2D<GLfloat> dimensions {};
+            gl::Point2D<GLfloat> offset {};
 
             PrepareText(const std::string & utf8Text, bool renderTextures, FT_Face ftFontFace, hb_font_t* hbFont,
                 std::unordered_map<hb_codepoint_t, std::unique_ptr<gl::Texture>> & glyphCache)
@@ -160,8 +161,8 @@ namespace gl
 
                 renderGlyphs.reserve(glyphCount);
                 gl::Rect2D<GLfloat> boundingBox {
-                    .left = 0,
-                    .top = 0,
+                    .left = std::numeric_limits<GLfloat>::max(),
+                    .top = std::numeric_limits<GLfloat>::max(),
                     .right = std::numeric_limits<GLfloat>::min(),
                     .bottom = std::numeric_limits<GLfloat>::min()
                 };
@@ -177,8 +178,8 @@ namespace gl
                 
                     GLfloat width = glyph->bitmap.width;
                     GLfloat height = glyph->bitmap.rows;
-                    GLfloat left = x + (glyphPos[i].x_offset >> 6) + glyph->bitmap_left;
-                    GLfloat top = y + (glyphPos[i].y_offset >> 6) - glyph->bitmap_top + glyph->bitmap.rows;
+                    GLfloat left = x + ((glyphPos[i].x_offset >> 6) + glyph->bitmap_left);
+                    GLfloat top = y + ((glyphPos[i].y_offset >> 6) - glyph->bitmap_top);
                     GLfloat right = left + width;
                     GLfloat bottom = top + height;
                     if ( width == 0 ) // Presumed to be spacing, for which advance must be used to determine bounds
@@ -236,6 +237,8 @@ namespace gl
 
                 dimensions.width = boundingBox.right - boundingBox.left;
                 dimensions.height = boundingBox.bottom - boundingBox.top;
+                offset.x = boundingBox.left;
+                offset.y = boundingBox.top;
                 hb_buffer_destroy(buf);
             }
         };
@@ -256,7 +259,8 @@ namespace gl
 
         Font(FT_Face ftFontFace, hb_font_t* hbFont) : ftFontFace(ftFontFace), hbFont(hbFont) {}
 
-        Font(FT_Face ftFontFace, hb_font_t* hbFont, std::shared_ptr<Memory> fontMemory) : ftFontFace(ftFontFace), hbFont(hbFont), fontMemory(fontMemory) {}
+        Font(FT_Face ftFontFace, hb_font_t* hbFont, std::shared_ptr<Memory> fontMemory)
+            : ftFontFace(ftFontFace), hbFont(hbFont), fontMemory(fontMemory) {}
 
         ~Font() { FT_Done_Face(ftFontFace); }
 
@@ -301,22 +305,22 @@ namespace gl
         template <gl::Align Alignment = gl::Align::Left>
         void drawPreparedText(GLfloat x, GLfloat y, PrepareText & preparedText)
         {
-            auto & [renderGlyphs, dim] = preparedText;
+            auto & [renderGlyphs, dim, offset] = preparedText;
 
-            GLfloat xAdjust = 0;
+            GLfloat xAdjust = -offset.x;
             if constexpr ( Alignment == Align::Right)
-                xAdjust = -dim.width;
+                xAdjust -= dim.width;
             else if constexpr ( Alignment == Align::Center )
-                xAdjust = -dim.width/2.f;
+                xAdjust -= dim.width/2.f;
 
             textShader.use();
             textShader.setColor(red, green, blue);
             textShader.tex.setValue(0);
             textVertices.bind();
+            auto vertOffset = y - offset.y;
             for ( auto & glyph : renderGlyphs )
             {
                 auto glyphHeight = glyph.rc.bottom-glyph.rc.top;
-                auto vertOffset = y + dim.height - glyphHeight;
                 glyph.tex->bindToSlot(GL_TEXTURE0);
                 textVertices.vertices.assign({
                     x+glyph.rc.left  + xAdjust, glyph.rc.bottom + vertOffset, 0.0f, 1.0f,

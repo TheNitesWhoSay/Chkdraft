@@ -755,6 +755,11 @@ namespace Scr {
         gl::VertexArray<6*4> animVertices {}; // 6 verticies forming the two triangles for a quad, 4 elements per vertex (posX, posY, texX, texY)
         gl::VertexVector<> lineVertices {};
         gl::VertexVector<> triangleVertices {};
+        gl::VertexVector<> triangleVertices2 {};
+        gl::VertexVector<> triangleVertices3 {};
+        gl::VertexVector<> triangleVertices4 {};
+        gl::VertexVector<> triangleVertices5 {};
+        gl::VertexVector<> triangleVertices6 {};
         GLfloat posToNdc[4][4] { // Converts scaled 2D game coordinates (0 to screen width/height) to NDCs which range (-1 to 1) with y-axis flipped
             {  1.f, 0.f, 0.f, 0.f }, // x = 2x/width
             {  0.f, 1.f, 0.f, 0.f }, // y = -2y/height
@@ -783,8 +788,8 @@ namespace Scr {
         bool displayingFps();
         void toggleDisplayFps();
 
-        void drawTileNums();
-        void drawTileOverlays();
+        void drawTileNums(Sc::Data & scData, s32 left, s32 top, s32 width, s32 height);
+        void drawTileOverlays(Sc::Data & scData, s32 left, s32 top, s32 width, s32 height);
 
         GLfloat getScaleFactor();
         void setScaleFactor(GLfloat scaleFactor);
@@ -806,7 +811,7 @@ namespace Scr {
         void drawClassicImage(Sc::Data & scData, gl::Palette & palette, s32 x, s32 y, u32 imageId, Chk::PlayerColor color);
         void drawSprites(Sc::Data & scData, s32 left, s32 top);
 
-        void render(Sc::Data & scData, s32 left, s32 top, s32 width, s32 height, bool renderLocations);
+        void render(Sc::Data & scData, s32 left, s32 top, s32 width, s32 height, bool renderLocations, bool renderTileElevations, bool renderTileNums);
 
         void updateGraphics(u64 ticks); // Runs every few ms, with ticks being the ms since the last frame
     };

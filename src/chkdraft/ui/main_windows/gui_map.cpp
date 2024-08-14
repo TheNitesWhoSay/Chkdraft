@@ -1827,7 +1827,8 @@ void GuiMap::PaintMap(GuiMapPtr currMap, bool pasting)
 
             glClearColor(0.0f, 0.f, 0.f, 0.f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            scrGraphics.render(chkd.scData, screenLeft, screenTop, cliRect.right-cliRect.left, cliRect.bottom-cliRect.top, currLayer == Layer::Locations);
+            scrGraphics.render(chkd.scData, screenLeft, screenTop, cliRect.right-cliRect.left, cliRect.bottom-cliRect.top,
+                currLayer == Layer::Locations, DisplayingElevations(), DisplayingTileNums());
             
             glFlush();
             SwapBuffers(openGlDc->getDcHandle());
