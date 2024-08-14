@@ -1476,8 +1476,8 @@ void Scr::MapGraphics::drawGrid(s32 left, s32 top, s32 width, s32 height)
     if ( this->gridSize != 0 )
     {
         GLfloat pixel = 1.f * renderSettings.visualQuality.scale;
-        GLfloat topAdjust = GLfloat(-top%this->gridSize);
-        GLfloat leftAdjust = GLfloat(-left%this->gridSize)+pixel;
+        GLfloat topAdjust = GLfloat(-(top)%this->gridSize) * renderSettings.visualQuality.scale;
+        GLfloat leftAdjust = GLfloat(-(left)%this->gridSize) * renderSettings.visualQuality.scale + pixel;
         GLfloat gridSize = GLfloat(this->gridSize);
         GLfloat gridSpacing = gridSize * renderSettings.visualQuality.scale;
         size_t hozLineCount = scaledHeight/this->gridSize+1;
