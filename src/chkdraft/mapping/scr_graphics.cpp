@@ -763,6 +763,79 @@ void Scr::GraphicsData::Data::Skin::Tileset::load(ArchiveCluster & archiveCluste
         loadGrp(archiveCluster, tilesetPath, tilesetGrp, fileData, false, true);
 }
 
+void Scr::GraphicsData::Data::Skin::loadClassicStars(Sc::Data & scData)
+{
+    if ( spk == nullptr )
+    {
+        spk = std::make_shared<SpkData>();
+        for ( const auto & layer : scData.spk.layerStars )
+        {
+            auto & starLayer = spk->classicLayers.emplace_back();
+            for ( const auto & star : layer )
+            {
+                u16 alignedWidth = (star.bitmap->width+3)/4*4;
+                u16 alignedHeight = (star.bitmap->height+3)/4*4;
+                auto & classicStar = starLayer.emplace_back(Scr::ClassicStar {
+                    .xc = star.xc,
+                    .yc = star.yc,
+                    .width = star.bitmap->width,
+                    .height = star.bitmap->height,
+                    .texWidth = alignedWidth,
+                    .texHeight = alignedHeight
+                });
+                classicStar.tex.genTexture();
+                classicStar.tex.bind();
+                classicStar.tex.setMinMagFilters(GL_NEAREST);
+                if ( star.bitmap->width % 4 == 0 && star.bitmap->height % 4 == 0 ) // Dimensions already 4-byte aligned
+                {
+                    classicStar.tex.loadImage2D({
+                        .data = &star.bitmap->data[0],
+                        .width = int(star.bitmap->width),
+                        .height = int(star.bitmap->height),
+                        .level = 0,
+                        .internalformat = GL_R8UI,
+                        .format = GL_RED_INTEGER,
+                        .type = GL_UNSIGNED_BYTE
+                    });
+                }
+                else // Need to align the data prior to loading
+                {
+                    std::vector<u8> bitmap(size_t(alignedWidth)*size_t(alignedHeight), u8(0));
+                    if ( star.bitmap->width % 4 == 0 ) // Width already 4-byte aligned
+                    {
+                        memcpy(&bitmap[0], &star.bitmap->data[0], size_t(star.bitmap->width)*size_t(star.bitmap->height));
+                        classicStar.tex.loadImage2D({
+                            .data = &bitmap[0],
+                            .width = int(alignedWidth),
+                            .height = int(alignedHeight),
+                            .level = 0,
+                            .internalformat = GL_R8UI,
+                            .format = GL_RED_INTEGER,
+                            .type = GL_UNSIGNED_BYTE
+                        });
+                    }
+                    else // Width and height unaligned
+                    {
+                        for ( size_t y=0; y<size_t(star.bitmap->height); ++y )
+                            memcpy(&bitmap[y*size_t(alignedWidth)], &star.bitmap->data[y*size_t(star.bitmap->width)], size_t(star.bitmap->width));
+
+                        classicStar.tex.loadImage2D({
+                            .data = &bitmap[0],
+                            .width = int(alignedWidth),
+                            .height = int(alignedHeight),
+                            .level = 0,
+                            .internalformat = GL_R8UI,
+                            .format = GL_RED_INTEGER,
+                            .type = GL_UNSIGNED_BYTE
+                        });
+                    }
+                }
+                gl::Texture::bindDefault();
+            }
+        }
+    }
+}
+
 void Scr::GraphicsData::Data::Skin::loadStars(ArchiveCluster & archiveCluster, std::filesystem::path texPrefix, ByteBuffer & fileData)
 {
     if ( spk == nullptr )
@@ -871,25 +944,26 @@ void Scr::GraphicsData::Data::Skin::loadClassicImages(Sc::Data & scData)
         size_t numFrames = size_t(grpFile.numFrames);
         if ( numFrames > 0 )
         {
-            (*classicImages)[i] = std::make_shared<Scr::ClassicGrp>();
-            (*classicImages)[i]->frames.reserve(numFrames);
-            (*classicImages)[i]->grpWidth = grpFile.grpWidth;
-            (*classicImages)[i]->grpHeight = grpFile.grpHeight;
-            (*classicImages)[i]->frames.reserve(numFrames);
+            auto classicImage = std::make_shared<Scr::ClassicGrp>();
+            (*classicImages)[i] = classicImage;
+            classicImage->frames.reserve(numFrames);
+            classicImage->grpWidth = grpFile.grpWidth;
+            classicImage->grpHeight = grpFile.grpHeight;
+            classicImage->frames.reserve(numFrames);
             for ( size_t frame=0; frame<numFrames; ++frame )
             {
-                (*classicImages)[i]->frames.emplace_back();
+                classicImage->frames.emplace_back();
                 const Sc::Sprite::GrpFrameHeader & grpFrameHeader = grpFile.frameHeaders[frame];
                 s64 frameWidth = s64(grpFrameHeader.frameWidth);
                 s64 frameHeight = s64(grpFrameHeader.frameHeight);
                 s64 bitmapWidth = (frameWidth+3)/4*4;
                 s64 bitmapHeight = (frameHeight+3)/4*4;
-                (*classicImages)[i]->frames[frame].frameWidth = grpFrameHeader.frameWidth;
-                (*classicImages)[i]->frames[frame].frameHeight = grpFrameHeader.frameHeight;
-                (*classicImages)[i]->frames[frame].texWidth = u32(bitmapWidth);
-                (*classicImages)[i]->frames[frame].texHeight = u32(bitmapHeight);
-                (*classicImages)[i]->frames[frame].xOffset = grpFrameHeader.xOffset;
-                (*classicImages)[i]->frames[frame].yOffset = grpFrameHeader.yOffset;
+                classicImage->frames[frame].frameWidth = grpFrameHeader.frameWidth;
+                classicImage->frames[frame].frameHeight = grpFrameHeader.frameHeight;
+                classicImage->frames[frame].texWidth = u32(bitmapWidth);
+                classicImage->frames[frame].texHeight = u32(bitmapHeight);
+                classicImage->frames[frame].xOffset = grpFrameHeader.xOffset;
+                classicImage->frames[frame].yOffset = grpFrameHeader.yOffset;
                 
                 std::vector<u8> bitmap(bitmapWidth*bitmapHeight, u8(0));
 
@@ -939,10 +1013,10 @@ void Scr::GraphicsData::Data::Skin::loadClassicImages(Sc::Data & scData)
                     }
                 }
                 
-                (*classicImages)[i]->frames[frame].tex.genTexture();
-                (*classicImages)[i]->frames[frame].tex.bind();
-                (*classicImages)[i]->frames[frame].tex.setMinMagFilters(GL_NEAREST);
-                (*classicImages)[i]->frames[frame].tex.loadImage2D({
+                classicImage->frames[frame].tex.genTexture();
+                classicImage->frames[frame].tex.bind();
+                classicImage->frames[frame].tex.setMinMagFilters(GL_NEAREST);
+                classicImage->frames[frame].tex.loadImage2D({
                     .data = &bitmap[0],
                     .width = int(bitmapWidth),
                     .height = int(bitmapHeight),
@@ -1148,7 +1222,7 @@ bool Scr::GraphicsData::isLoaded(const RenderSettings & renderSettings)
         return false;
 
     auto & skin = *(data.skin[skinIndex]);
-    if ( isRemastered && renderSettings.showStars() && skin.spk == nullptr ) // TODO: once classic star rendering is ready, remove or change isRemastered
+    if ( renderSettings.showStars() && skin.spk == nullptr )
         return false;
 
     auto tilesetIndex = size_t(renderSettings.tileset) % Sc::Terrain::NumTilesets;
@@ -1187,9 +1261,14 @@ std::shared_ptr<Scr::GraphicsData::RenderData> Scr::GraphicsData::load(Sc::Data 
         data.skin[skinIndex] = std::make_shared<Data::Skin>();
 
     auto & skin = *(data.skin[skinIndex]);
-    if ( isRemastered && renderSettings.showStars() && skin.spk == nullptr ) // TODO: Remove or change the isRemastered check once classic stars work
-        skin.loadStars(archiveCluster, visualQualityPrefix / skinDescriptor, fileData);
-
+    if ( skin.spk == nullptr && renderSettings.showStars() )
+    {
+        if ( isRemastered )
+            skin.loadStars(archiveCluster, visualQualityPrefix / skinDescriptor, fileData);
+        else
+            skin.loadClassicStars(scData);
+    }
+    
     auto tilesetIndex = size_t(renderSettings.tileset) % Sc::Terrain::NumTilesets;
     if ( skin.tiles[tilesetIndex] == nullptr )
     {
@@ -1581,11 +1660,100 @@ void Scr::MapGraphics::drawLocations(s32 left, s32 top, s32 width, s32 height)
     }
 }
 
+void Scr::MapGraphics::drawClassicStars(Sc::Data & scData, s32 screenLeft, s32 screenTop, s32 screenWidth, s32 screenHeight)
+{
+    if ( renderDat->spk == nullptr )
+        return;
+
+    renderDat->shaders->simplePaletteShader.use();
+    renderDat->shaders->simplePaletteShader.posToNdc.setMat4(posToNdc);
+    renderDat->shaders->simplePaletteShader.texScale.loadIdentity();
+    renderDat->shaders->simplePaletteShader.tex.setSlot(0);
+    renderDat->shaders->simplePaletteShader.pal.setSlot(1);
+    
+    renderDat->tiles->tilesetGrp.palette->tex.bindToSlot(GL_TEXTURE1);
+
+    for ( s32 starOriginTop = 0; starOriginTop < screenHeight; starOriginTop += Sc::Spk::parllaxHeight ) // The same stars repeat in 648x488 tiles
+    {
+        for ( s32 starOriginLeft = 0; starOriginLeft < screenWidth; starOriginLeft += Sc::Spk::parallaxWidth )
+        {
+            for ( int layerIndex = int(scData.spk.layerStars.size())-1; layerIndex >= 0; --layerIndex ) // There are five separate layers of stars
+            {
+                s32 xOffset = (-1 * Sc::Spk::scrollFactors[layerIndex] * screenLeft) % (Sc::Spk::parallaxWidth*256);
+                s32 yOffset = (-1 * Sc::Spk::scrollFactors[layerIndex] * screenTop) % (Sc::Spk::parllaxHeight*256);
+                auto & layer = scData.spk.layerStars[layerIndex];
+                size_t starIndex = 0;
+                for ( auto & star : layer )
+                {
+                    s32 width = (s32)star.bitmap->width;
+                    s32 height = (s32)star.bitmap->height;
+            
+                    s32 xc = s32(star.xc) + (xOffset >> 8);
+                    if ( xc > Sc::Spk::parallaxWidth )
+                        xc -= Sc::Spk::parallaxWidth;
+                    else if ( xc < 0 )
+                        xc += Sc::Spk::parallaxWidth;
+
+                    xc -= 8;
+
+                    if ( xc < 640 && xc + width + 8 > 0 )
+                    {
+                        s32 yc = s32(star.yc) + (yOffset >> 8);
+                        if ( yc > Sc::Spk::parllaxHeight )
+                            yc -= Sc::Spk::parllaxHeight;
+                        else if ( yc < 0 )
+                            yc += Sc::Spk::parllaxHeight;
+
+                        yc -= 8;
+
+                        if ( yc < 480 && yc + height + 8 > 0 )
+                        {
+                            if ( starOriginLeft + xc < 0 ) // Near left-edge
+                            {
+                                width += xc;
+                                xc = 0;
+                            }
+                            else if ( starOriginLeft + xc + width >= screenWidth ) // Near right-edge
+                                width = screenWidth - starOriginLeft - xc;
+
+                            if ( starOriginTop + yc < 0 ) // Near top-edge
+                            {
+                                height += yc;
+                                yc = 0;
+                            }
+                            else if ( starOriginTop + yc + height >= screenHeight ) // Near bottom-edge
+                                height = screenHeight - starOriginTop - yc;
+
+
+                            auto & star = renderDat->spk->classicLayers[layerIndex][starIndex];
+                            ++starIndex;
+                            gl::Point2D<GLfloat> position { GLfloat(xc+starOriginLeft), GLfloat(yc+starOriginTop) };
+                            gl::Rect2D<GLfloat> vertexRect { 0.f, 0.f, GLfloat(star.texWidth), GLfloat(star.texHeight) };
+                            gl::Rect2D<GLfloat> texRect { 0.f, 0.f, 1.f, 1.f };
+                            animVertices.vertices = {
+                                position.x+vertexRect.left, position.y+vertexRect.top, texRect.left, texRect.top,
+                                position.x+vertexRect.right, position.y+vertexRect.top, texRect.right, texRect.top,
+                                position.x+vertexRect.left, position.y+vertexRect.bottom, texRect.left, texRect.bottom,
+                                position.x+vertexRect.left, position.y+vertexRect.bottom, texRect.left, texRect.bottom,
+                                position.x+vertexRect.right, position.y+vertexRect.bottom, texRect.right, texRect.bottom,
+                                position.x+vertexRect.right, position.y+vertexRect.top, texRect.right, texRect.top,
+                            };
+
+                            star.tex.bindToSlot(GL_TEXTURE0);
+
+                            animVertices.bind();
+                            animVertices.bufferData(gl::UsageHint::DynamicDraw);
+                            animVertices.drawTriangles();
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 void Scr::MapGraphics::drawStars(s32 x, s32 y, s32 scaledWidth, s32 scaledHeight, u32 multiplyColor)
 {
-    if ( renderSettings.skinId == Scr::Skin::Id::Classic )
-        return; // TODO: OpenGL classic star rendering
-
     if ( renderDat->spk == nullptr )
         return;
 
@@ -2063,7 +2231,12 @@ void Scr::MapGraphics::drawSprites(Sc::Data & scData, s32 left, s32 top)
 void Scr::MapGraphics::render(Sc::Data & scData, s32 left, s32 top, s32 width, s32 height, bool renderLocations, bool renderTileElevations, bool renderTileNums)
 {
     setupNdcTransformation(width, height);
-    drawStars(left, top, width*renderSettings.visualQuality.scale, height*renderSettings.visualQuality.scale, 0xFFFFFFFF);
+
+    if ( renderSettings.skinId == Skin::Id::Classic )
+        drawClassicStars(scData, left, top, width/scaleFactor, height/scaleFactor);
+    else
+        drawStars(left, top, width*renderSettings.visualQuality.scale, height*renderSettings.visualQuality.scale, 0xFFFFFFFF);
+
     drawTerrain(scData, left, top, width, height);
     if ( renderTileElevations )
         drawTileOverlays(scData, left, top, width, height);

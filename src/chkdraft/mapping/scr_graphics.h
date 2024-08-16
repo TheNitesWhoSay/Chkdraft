@@ -92,6 +92,17 @@ namespace Scr {
             };
         };
 
+        struct ClassicStar
+        {
+            u16 xc = 0;
+            u16 yc = 0;
+            u16 width = 0;
+            u16 height = 0;
+            u16 texWidth = 0;
+            u16 texHeight = 0;
+            gl::Texture tex {};
+        };
+
         struct StarPosition
         {
             u16 xOffset = 0;
@@ -136,6 +147,7 @@ namespace Scr {
             };
             SpkHeader* spk = nullptr;
             SpkGrp stars {};
+            std::vector<std::vector<ClassicStar>> classicLayers {};
 
             void load(std::vector<u8> && spkHeaderDat)
             {
@@ -690,6 +702,7 @@ namespace Scr {
                 std::shared_ptr<std::vector<std::shared_ptr<Animation>>> images {}; // 999 images
                 std::shared_ptr<std::vector<std::shared_ptr<Scr::ClassicGrp>>> classicImages {}; // 999 images
 
+                void loadClassicStars(Sc::Data & scData);
                 void loadStars(ArchiveCluster & archiveCluster, std::filesystem::path texPrefix, ByteBuffer & fileData);
                 
                 void loadClassicTiles(Sc::Data & scData, const RenderSettings & renderSettings);
@@ -716,7 +729,6 @@ namespace Scr {
             std::shared_ptr<std::vector<std::shared_ptr<Animation>>> images = nullptr; // 999 images
             std::shared_ptr<std::vector<std::shared_ptr<Scr::ClassicGrp>>> classicImages = nullptr; // 999 images
             std::shared_ptr<Grp> waterNormal[2] { nullptr, nullptr };
-            // TODO: classic stars?
         };
 
         void unload(const RenderSettings & renderSettings);
@@ -797,6 +809,7 @@ namespace Scr {
 
         void drawGrid(s32 left, s32 top, s32 width, s32 height);
         void drawLocations(s32 left, s32 top, s32 width, s32 height);
+        void drawClassicStars(Sc::Data & scData, s32 left, s32 top, s32 width, s32 height);
         void drawStars(s32 x, s32 y, s32 scaledWidth, s32 scaledHeight, u32 multiplyColor);
         void drawTileVertices(Scr::Grp & tilesetGrp, s32 left, s32 top, s32 width, s32 height);
         void drawTerrain(Sc::Data & scData, s32 left, s32 top, s32 width, s32 height);

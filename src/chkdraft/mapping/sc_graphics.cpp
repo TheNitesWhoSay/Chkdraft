@@ -141,8 +141,8 @@ void Graphics::DrawStars(ChkdBitmap & bitmap)
         {
             for ( int layerIndex = int(chkd.scData.spk.layerStars.size())-1; layerIndex >= 0; --layerIndex ) // There are five separate layers of stars
             {
-                s32 xOffset = (-1 * Sc::Spk::scrollFactors[layerIndex] * (this->screenLeft)) % (Sc::Spk::parallaxWidth*256);
-                s32 yOffset = (-1 * Sc::Spk::scrollFactors[layerIndex] * (this->screenTop)) % (Sc::Spk::parllaxHeight*256);
+                s32 xOffset = (-1 * Sc::Spk::scrollFactors[layerIndex] * this->screenLeft) % (Sc::Spk::parallaxWidth*256);
+                s32 yOffset = (-1 * Sc::Spk::scrollFactors[layerIndex] * this->screenTop) % (Sc::Spk::parllaxHeight*256);
                 auto & layer = chkd.scData.spk.layerStars[layerIndex];
                 for ( auto & star : layer )
                 {
