@@ -16,6 +16,7 @@
 #include "mapping/undos/chkd_undos/sprite_change.h"
 #include "mapping/undos/chkd_undos/sprite_create_del.h"
 #include "mapping/undos/chkd_undos/fog_change.h"
+#include "mapping/scr_graphics.h"
 #include <cross_cut/logger.h>
 #include <WindowsX.h>
 
@@ -23,7 +24,7 @@ bool GuiMap::doAutoBackups = false;
 
 GuiMap::GuiMap(Clipboard & clipboard, const std::string & filePath) : MapFile(filePath),
     Chk::IsomCache(Scenario::tileset, Scenario::dimensions.tileWidth, Scenario::dimensions.tileHeight, chkd.scData.terrain.get(Scenario::tileset)),
-    clipboard(clipboard)
+    clipboard(clipboard), scrGraphics{std::make_unique<Scr::MapGraphics>(*this)}
 {
     SetWinText(MapFile::getFileName());
     int layerSel = chkd.mainToolbar.layerBox.GetSel();
@@ -33,7 +34,7 @@ GuiMap::GuiMap(Clipboard & clipboard, const std::string & filePath) : MapFile(fi
 
 GuiMap::GuiMap(Clipboard & clipboard, FileBrowserPtr<SaveType> fileBrowser) : MapFile(fileBrowser),
     Chk::IsomCache(Scenario::tileset, Scenario::dimensions.tileWidth, Scenario::dimensions.tileHeight, chkd.scData.terrain.get(Scenario::tileset)),
-    clipboard(clipboard)
+    clipboard(clipboard), scrGraphics{std::make_unique<Scr::MapGraphics>(*this)}
 {
     SetWinText(MapFile::getFileName());
     int layerSel = chkd.mainToolbar.layerBox.GetSel();
@@ -44,7 +45,7 @@ GuiMap::GuiMap(Clipboard & clipboard, FileBrowserPtr<SaveType> fileBrowser) : Ma
 GuiMap::GuiMap(Clipboard & clipboard, Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex, DefaultTriggers defaultTriggers)
     : MapFile(tileset, width, height),
     Chk::IsomCache(Scenario::tileset, Scenario::dimensions.tileWidth, Scenario::dimensions.tileHeight, chkd.scData.terrain.get(Scenario::tileset)),
-    clipboard(clipboard)
+    clipboard(clipboard), scrGraphics{std::make_unique<Scr::MapGraphics>(*this)}
 {
     uint16_t val = ((Chk::IsomCache::getTerrainTypeIsomValue(terrainTypeIndex) << 4) | Chk::IsomRect::EditorFlag::Modified);
     Scenario::isomRects.assign(Scenario::getIsomWidth()*Scenario::getIsomHeight(), Chk::IsomRect{val, val, val, val});
@@ -652,7 +653,7 @@ double GuiMap::getZoom()
 
 void GuiMap::setZoom(double newScale)
 {
-    scrGraphics.setScaleFactor(newScale);
+    scrGraphics->setScaleFactor(newScale);
     for ( u32 i=0; i<defaultZooms.size(); i++ )
     {
         if ( newScale == defaultZooms[i] )
@@ -1821,13 +1822,13 @@ void GuiMap::PaintMap(GuiMapPtr currMap, bool pasting)
             chkd.maps.setGlRenderTarget(this->openGlDc, *this);
             auto currTickCount = GetTickCount64();
             if ( currTickCount > prevTickCount )
-                scrGraphics.updateGraphics(currTickCount-prevTickCount);
+                scrGraphics->updateGraphics(currTickCount-prevTickCount);
 
             prevTickCount = currTickCount;
 
             glClearColor(0.0f, 0.f, 0.f, 0.f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            scrGraphics.render(chkd.scData, screenLeft, screenTop, cliRect.right-cliRect.left, cliRect.bottom-cliRect.top,
+            scrGraphics->render(chkd.scData, screenLeft, screenTop, cliRect.right-cliRect.left, cliRect.bottom-cliRect.top,
                 currLayer == Layer::Locations, DisplayingElevations(), DisplayingTileNums());
             
             glFlush();
@@ -1961,12 +1962,12 @@ bool GuiMap::SetGridSize(s16 xSize, s16 ySize)
         if ( oldXSize == xSize && oldYSize == ySize )
         {
             success = scGraphics.SetGridSize(0, 0, 0);
-            scrGraphics.setGridSize(0); // TODO: interface shouldn't have varying sizes if it's not used
+            scrGraphics->setGridSize(0); // TODO: interface shouldn't have varying sizes if it's not used
         }
         else
         {
             success = scGraphics.SetGridSize(0, xSize, ySize);
-            scrGraphics.setGridSize(xSize); // TODO: interface shouldn't have varying sizes if it's not used
+            scrGraphics->setGridSize(xSize); // TODO: interface shouldn't have varying sizes if it's not used
         }
 
         if ( success )
@@ -1980,7 +1981,7 @@ bool GuiMap::SetGridSize(s16 xSize, s16 ySize)
 
 bool GuiMap::SetGridColor(u8 red, u8 green, u8 blue)
 {
-    scrGraphics.setGridColor(u32(red) | (u32(green) << 8) | (u32(blue) << 16));
+    scrGraphics->setGridColor(u32(red) | (u32(green) << 8) | (u32(blue) << 16));
 
     bool success = false;
     if ( scGraphics.SetGridColor(0, red, green, blue) )
@@ -2046,7 +2047,7 @@ bool GuiMap::DisplayingTileNums()
 
 void GuiMap::ToggleDisplayFps()
 {
-    scrGraphics.toggleDisplayFps();
+    scrGraphics->toggleDisplayFps();
     UpdateBaseViewMenuItems();
 }
 
@@ -2599,7 +2600,7 @@ void GuiMap::UpdateTerrainViewMenuItems()
 
 void GuiMap::UpdateBaseViewMenuItems()
 {
-    chkd.mainMenu.SetCheck(ID_VIEW_DISPLAYFPS, scrGraphics.displayingFps());
+    chkd.mainMenu.SetCheck(ID_VIEW_DISPLAYFPS, scrGraphics->displayingFps());
 }
 
 void GuiMap::UpdateUnitMenuItems()
@@ -3984,6 +3985,9 @@ std::string_view getSkinName(GuiMap::Skin skin)
 
 void GuiMap::SetSkin(GuiMap::Skin skin)
 {
+    if ( skin == this->skin )
+        return;
+
     // Validate the skin and if remastered, turn it into Scr::GraphicsData::RenderSettings
     Scr::GraphicsData::RenderSettings renderSettings {
         .visualQuality = Scr::VisualQuality::SD,
@@ -4013,8 +4017,11 @@ void GuiMap::SetSkin(GuiMap::Skin skin)
 
         SwapBuffers(openGlDc->getDcHandle());
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        if ( chkd.scrData == nullptr )
+            chkd.scrData = std::make_unique<Scr::GraphicsData>();
         
-        if ( chkd.scrData.defaultFont == nullptr )
+        if ( chkd.scrData->defaultFont == nullptr )
         {
             setDefaultFont(false);
             auto dc = this->getDeviceContext();
@@ -4022,21 +4029,21 @@ void GuiMap::SetSkin(GuiMap::Skin skin)
             DWORD bufferSize = GetFontData(dc.getDcHandle(), 0, 0, NULL, 0);
             auto fontMemory = std::make_shared<gl::Font::Memory>(size_t(bufferSize));
             GetFontData(dc.getDcHandle(), 0, 0, &fontMemory->data[0], bufferSize);
-            chkd.scrData.defaultFont = gl::Font::load(fontMemory, 0, 12);
-            chkd.scrData.defaultFont->setColor(0.f, 1.f, 1.f);
+            chkd.scrData->defaultFont = gl::Font::load(fontMemory, 0, 12);
+            chkd.scrData->defaultFont->setColor(0.f, 1.f, 1.f);
         }
-        this->scrGraphics.setFont(chkd.scrData.defaultFont.get());
+        this->scrGraphics->setFont(chkd.scrData->defaultFont.get());
     }
 
     bool isRemastered = skin != Skin::ClassicGDI && skin != Skin::ClassicGL;
-    if ( isRemastered )
+    if ( skin != Skin::ClassicGDI )
     {
         // Perform the data load (requires an OpenGL context)
-        if ( chkd.scrData.isLoaded(renderSettings) )
+        if ( chkd.scrData->isLoaded(renderSettings) )
         {
             auto fileData = ByteBuffer(4);
             ArchiveCluster archiveCluster {std::vector<ArchiveFilePtr>{}};
-            this->scrGraphics.load(chkd.scData, chkd.scrData, archiveCluster, renderSettings, fileData);
+            this->scrGraphics->load(chkd.scData, *chkd.scrData, renderSettings, archiveCluster, fileData);
             logger.info() << "Switched to skin: " << getSkinName(skin) << '\n';
         }
         else
@@ -4044,33 +4051,24 @@ void GuiMap::SetSkin(GuiMap::Skin skin)
             logger.info() << "Loading " + std::string(getSkinName(skin)) + " skin...\n";
             auto begin = std::chrono::high_resolution_clock::now();
             bool includesRemastered = false;
-            auto archiveCluster = ChkdDataFileBrowser{}.openScDataFiles(
-                includesRemastered, ChkdDataFileBrowser::getDataFileDescriptors(), ChkdDataFileBrowser::getExpectedStarCraftDirectory());
-
-            if ( !includesRemastered )
+            
+            std::shared_ptr<ArchiveCluster> archiveCluster = nullptr;
+            if ( skin == Skin::ClassicGL ) // ClassicGL relies on chkd.scData loaded earlier and does not require the dat files at this point
+                archiveCluster = std::make_shared<ArchiveCluster>(std::vector<ArchiveFilePtr>{}); // TODO: If eliminating GDI, move load of GRPs/tilesets here
+            else
             {
-                logger.error("Could not locate remastered data files, Chkdraft may be configured against an earlier StarCraft version.");
-                return;
+                archiveCluster = ChkdDataFileBrowser{}.openScDataFiles(
+                    includesRemastered, ChkdDataFileBrowser::getDataFileDescriptors(), ChkdDataFileBrowser::getExpectedStarCraftDirectory());
+
+                if ( !includesRemastered )
+                {
+                    logger.error("Could not locate remastered data files, Chkdraft may be configured against an earlier StarCraft version.");
+                    return;
+                }
             }
 
             auto fileData = ByteBuffer(1024*1024*120); // 120MB
-            this->scrGraphics.load(chkd.scData, chkd.scrData, *archiveCluster, renderSettings, fileData);
-            auto end = std::chrono::high_resolution_clock::now();
-            logger.info() << "New skin loaded in " << std::chrono::duration_cast<std::chrono::milliseconds>(end-begin).count() << "ms\n";
-        }
-    }
-    else if ( skin == Skin::ClassicGL )
-    {
-        if ( this->scrGraphics.isClassicLoaded(chkd.scrData) )
-        {
-            this->scrGraphics.loadClassic(chkd.scData, chkd.scrData, renderSettings);
-            logger.info() << "Switched to skin: " << getSkinName(skin) << '\n';
-        }
-        else
-        {
-            logger.info() << "Loading classic skin...\n";
-            auto begin = std::chrono::high_resolution_clock::now();
-            this->scrGraphics.loadClassic(chkd.scData, chkd.scrData, renderSettings);
+            this->scrGraphics->load(chkd.scData, *chkd.scrData, renderSettings, *archiveCluster, fileData);
             auto end = std::chrono::high_resolution_clock::now();
             logger.info() << "New skin loaded in " << std::chrono::duration_cast<std::chrono::milliseconds>(end-begin).count() << "ms\n";
         }

@@ -4,8 +4,9 @@
 #include <windows/windows_ui.h>
 #include "mapping/clipboard.h"
 #include "mapping/sc_graphics.h"
-#include "mapping/scr_graphics.h"
 #include "mapping/undos/undos.h"
+
+namespace Scr { class MapGraphics; }
 
 class GuiMap;
 typedef std::shared_ptr<GuiMap> GuiMapPtr;
@@ -210,7 +211,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     };
                     GuiMap::Skin GetSkin();
                     void SetSkin(GuiMap::Skin skin);
-                    Scr::MapGraphics scrGraphics {*this};
+                    std::unique_ptr<Scr::MapGraphics> scrGraphics;
 
 
     protected:

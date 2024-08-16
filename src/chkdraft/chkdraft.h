@@ -5,12 +5,13 @@
 #include "ui/dialog_windows/dialog_windows.h"
 #include "mapping/chkd_plugins.h"
 #include "mapping/color_cycler.h"
-#include "mapping/scr_graphics.h" // TODO: Shouldn't need all of this, just data-portions
 #include "ui/main_windows/main_toolbar.h"
 #include "ui/main_windows/main_plot.h"
 #include "ui/dialog_windows/new_map/new_map.h"
 #include "ui/main_windows/maps.h"
 #include <cross_cut/commander.h>
+
+namespace Scr { struct GraphicsData; }
 
 class Chkdraft : public WinLib::ClassWindow
 {
@@ -18,7 +19,7 @@ class Chkdraft : public WinLib::ClassWindow
                     void OnLoadTest(); // Write testing code here
 
 /*  Main Items  */  Sc::Data scData; // Data from StarCraft files
-                    Scr::GraphicsData scrData; // Remastered graphics data from StarCraft files
+                    std::unique_ptr<Scr::GraphicsData> scrData; // Remastered graphics data from StarCraft files
                     ColorCycler colorCycler {}; // Graphics palette color cycler
                     Maps maps; // Main map container
                     Commander mainCommander; // Main commander used for mapping-data and mapping-data-related UI changes

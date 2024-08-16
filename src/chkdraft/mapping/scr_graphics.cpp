@@ -10,8 +10,20 @@
 
 extern Logger logger;
 
+void Scr::GraphicsData::Shaders::loadClassic()
+{
+    if ( !simplePaletteShader.hasShaders() )
+        simplePaletteShader.load();
+
+    if ( !solidColorShader.hasShaders() )
+        solidColorShader.load();
+}
+
 void Scr::GraphicsData::Shaders::load(ArchiveCluster & archiveCluster)
 {
+    if ( waterShader.hasShaders() )
+        return; // Already loaded remastered
+
     std::unordered_map<std::string, std::vector<u8>> includableShaders {};
     auto loadIncludableShader = [&includableShaders](ArchiveCluster & archiveCluster, const std::string & filePath) {
         includableShaders.emplace(getSystemFileName(filePath), fragmentShaderStringFromDatFile(archiveCluster, filePath));
@@ -88,7 +100,8 @@ void Scr::GraphicsData::Shaders::load(ArchiveCluster & archiveCluster)
 
     simpleShader.load();
 
-    solidColorShader.load();
+    if ( !solidColorShader.hasShaders() )
+        solidColorShader.load();
 }
 
 void Scr::GraphicsData::loadSkin(Skin & skin, ArchiveCluster & archiveCluster, VisualQuality visualQuality, ByteBuffer & fileData)
@@ -764,6 +777,78 @@ void Scr::GraphicsData::Data::Skin::loadStars(ArchiveCluster & archiveCluster, s
     }
 }
 
+void Scr::GraphicsData::Data::Skin::loadClassicTiles(Sc::Data & scData, const RenderSettings & renderSettings)
+{
+    auto tilesetIndex = size_t(renderSettings.tileset) % size_t(Sc::Terrain::NumTilesets);
+    this->tiles[tilesetIndex] = std::make_shared<Scr::GraphicsData::Data::Skin::Tileset>();
+    // Populate tileTextureData
+    constexpr size_t width = 32*128;
+    std::vector<u8> tileTextureData(size_t(width*4096), u8(0)); // 4096x4096 palette indexes (128x128 tiles)
+    auto tiles = scData.terrain.get(renderSettings.tileset);
+    for ( u32 i=0; i<65536; ++i )
+    {
+        size_t groupIndex = Sc::Terrain::Tiles::getGroupIndex(u16(i));
+        if ( groupIndex < tiles.tileGroups.size() )
+        {
+            const Sc::Terrain::TileGroup & tileGroup = tiles.tileGroups[groupIndex];
+            const u16 megaTileIndex = tileGroup.megaTileIndex[tiles.getGroupMemberIndex(u16(i))];
+            u32 left = megaTileIndex%128 * 32;
+            u32 top = megaTileIndex/128 * 32;
+            const Sc::Terrain::TileGraphicsEx & tileGraphics = tiles.tileGraphics[megaTileIndex];
+            for ( size_t yMiniTile = 0; yMiniTile < 4; yMiniTile++ )
+            {
+                s64 yMiniOffset = top + yMiniTile*8;
+                for ( size_t xMiniTile = 0; xMiniTile < 4; xMiniTile++ )
+                {
+                    const Sc::Terrain::TileGraphicsEx::MiniTileGraphics & miniTileGraphics = tileGraphics.miniTileGraphics[yMiniTile][xMiniTile];
+                    bool flipped = miniTileGraphics.isFlipped();
+                    size_t vr4Index = size_t(miniTileGraphics.vr4Index());
+                
+                    s64 xMiniOffset = left + xMiniTile*8;
+                    for ( s64 yMiniPixel = yMiniOffset < 0 ? -yMiniOffset : 0; yMiniPixel < 8; yMiniPixel++ )
+                    {
+                        for ( s64 xMiniPixel = xMiniOffset < 0 ? -xMiniOffset : 0; xMiniPixel < 8; xMiniPixel++ )
+                        {
+                            const Sc::Terrain::MiniTilePixels & miniTilePixels = tiles.miniTilePixels[vr4Index];
+                            const u8 & wpeIndex = miniTilePixels.wpeIndex[yMiniPixel][flipped ? 7-xMiniPixel : xMiniPixel];
+                            tileTextureData[size_t((yMiniOffset+yMiniPixel)*width + (xMiniOffset+xMiniPixel))] = wpeIndex;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Load tileTextureData into a GRP
+    auto & tilesetGrp = this->tiles[tilesetIndex]->tilesetGrp;
+    tilesetGrp.width = 32;
+    tilesetGrp.height = 32;
+    tilesetGrp.frames = 1;
+    auto & texture = tilesetGrp.mergedTexture;
+    texture.genTexture();
+    texture.bind();
+    texture.setMinMagFilters(GL_NEAREST);
+    texture.loadImage2D(gl::Texture::Image2D {
+        .data = &tileTextureData[0],
+        .width = GLsizei(128*tilesetGrp.width),
+        .height = GLsizei(128*tilesetGrp.height),
+        .level = 0,
+        .internalformat = GL_R8UI,
+        .format = GL_RED_INTEGER,
+        .type = GL_UNSIGNED_BYTE
+    });
+    tileTextureData.clear();
+    gl::Texture::bindDefault();
+
+    // Load palette
+    tilesetGrp.palette.emplace();
+    std::memcpy(&(tilesetGrp.palette.value())[0], &tiles.staticSystemColorPalette[0], 4*256);
+    for ( size_t i=0; i<256; ++i )
+        std::swap(((u8*)&tilesetGrp.palette.value()[i])[0], (((u8*)&tilesetGrp.palette.value()[i])[2])); // red-blue swap
+
+    tilesetGrp.palette->update();
+}
+
 void Scr::GraphicsData::Data::Skin::loadTiles(ArchiveCluster & archiveCluster, const RenderSettings & renderSettings, ByteBuffer & fileData)
 {
     auto tilesetIndex = size_t(renderSettings.tileset) % size_t(Sc::Terrain::NumTilesets);
@@ -771,6 +856,104 @@ void Scr::GraphicsData::Data::Skin::loadTiles(ArchiveCluster & archiveCluster, c
     {
         tiles[tilesetIndex] = std::make_shared<Tileset>();
         tiles[tilesetIndex]->load(archiveCluster, renderSettings, fileData);
+    }
+}
+
+void Scr::GraphicsData::Data::Skin::loadClassicImages(Sc::Data & scData)
+{
+    classicImages = std::make_shared<std::vector<std::shared_ptr<Scr::ClassicGrp>>>();
+    classicImages->assign(999, nullptr);
+    for ( size_t i=0; i<999; ++i )
+    {
+        auto & imageDat = scData.sprites.getImage(i);
+        auto & grp = scData.sprites.getGrp(imageDat.grpFile);
+        auto & grpFile = grp.get();
+        size_t numFrames = size_t(grpFile.numFrames);
+        if ( numFrames > 0 )
+        {
+            (*classicImages)[i] = std::make_shared<Scr::ClassicGrp>();
+            (*classicImages)[i]->frames.reserve(numFrames);
+            (*classicImages)[i]->grpWidth = grpFile.grpWidth;
+            (*classicImages)[i]->grpHeight = grpFile.grpHeight;
+            (*classicImages)[i]->frames.reserve(numFrames);
+            for ( size_t frame=0; frame<numFrames; ++frame )
+            {
+                (*classicImages)[i]->frames.emplace_back();
+                const Sc::Sprite::GrpFrameHeader & grpFrameHeader = grpFile.frameHeaders[frame];
+                s64 frameWidth = s64(grpFrameHeader.frameWidth);
+                s64 frameHeight = s64(grpFrameHeader.frameHeight);
+                s64 bitmapWidth = (frameWidth+3)/4*4;
+                s64 bitmapHeight = (frameHeight+3)/4*4;
+                (*classicImages)[i]->frames[frame].frameWidth = grpFrameHeader.frameWidth;
+                (*classicImages)[i]->frames[frame].frameHeight = grpFrameHeader.frameHeight;
+                (*classicImages)[i]->frames[frame].texWidth = u32(bitmapWidth);
+                (*classicImages)[i]->frames[frame].texHeight = u32(bitmapHeight);
+                (*classicImages)[i]->frames[frame].xOffset = grpFrameHeader.xOffset;
+                (*classicImages)[i]->frames[frame].yOffset = grpFrameHeader.yOffset;
+                
+                std::vector<u8> bitmap(bitmapWidth*bitmapHeight, u8(0));
+
+                if ( frameWidth == 0 || frameHeight == 0 ) // A dimension is zero, nothing to draw
+                    continue;
+        
+                size_t frameOffset = size_t(grpFrameHeader.frameOffset);
+                const Sc::Sprite::GrpFrame & grpFrame = (const Sc::Sprite::GrpFrame &)((u8*)&grpFile)[frameOffset];
+                bool foundFirst = false;
+                auto firstLoc = bitmap.begin();
+                for ( s64 row=0; row < frameHeight; row++ )
+                {
+                    size_t rowOffset = size_t(grpFrame.rowOffsets[row]);
+                    const Sc::Sprite::PixelRow & grpPixelRow = (const Sc::Sprite::PixelRow &)((u8*)&grpFile)[frameOffset+rowOffset];
+                    const s64 rowStart = row*bitmapWidth;
+                    s64 currPixelIndex = rowStart;
+                    size_t pixelLineOffset = 0;
+                    auto addition = size_t(row*bitmapWidth);
+                    auto currPixel = bitmap.begin()+addition; // Start from the left-most pixel of this row of the frame
+                    if ( !foundFirst )
+                    {
+                        firstLoc = currPixel;
+                        foundFirst = true;
+                    }
+                    auto rowEnd = row == bitmapHeight-1 ? bitmap.end() : bitmap.begin()+size_t(currPixelIndex+frameWidth);
+
+                    while ( currPixel < rowEnd )
+                    {
+                        const Sc::Sprite::PixelLine & pixelLine = (const Sc::Sprite::PixelLine &)((u8*)&grpPixelRow)[pixelLineOffset];
+                        s64 lineLength = s64(pixelLine.lineLength());
+                        if ( std::distance(currPixel, rowEnd) < lineLength )
+                            lineLength = rowEnd - currPixel;
+                    
+                        if ( pixelLine.isSpeckled() )
+                        {
+                            for ( s64 linePixel=0; linePixel<lineLength; linePixel++, ++currPixel ) // For every pixel in the line
+                                *currPixel = pixelLine.paletteIndex[linePixel]; // Place color from palette index specified in the array at current pixel
+                        }
+                        else // Solid or transparent
+                        {
+                            if ( pixelLine.isSolidLine() )
+                                std::fill_n(currPixel, lineLength, pixelLine.paletteIndex[0]); // Place single color across the entire line
+
+                            currPixel += size_t(lineLength);
+                        }
+                        pixelLineOffset += pixelLine.sizeInBytes();
+                    }
+                }
+                
+                (*classicImages)[i]->frames[frame].tex.genTexture();
+                (*classicImages)[i]->frames[frame].tex.bind();
+                (*classicImages)[i]->frames[frame].tex.setMinMagFilters(GL_NEAREST);
+                (*classicImages)[i]->frames[frame].tex.loadImage2D({
+                    .data = &bitmap[0],
+                    .width = int(bitmapWidth),
+                    .height = int(bitmapHeight),
+                    .level = 0,
+                    .internalformat = GL_R8UI,
+                    .format = GL_RED_INTEGER,
+                    .type = GL_UNSIGNED_BYTE
+                });
+                gl::Texture::bindDefault();
+            }
+        }
     }
 }
 
@@ -942,6 +1125,8 @@ void Scr::GraphicsData::unload(const RenderSettings & renderSettings)
 
 bool Scr::GraphicsData::isLoaded(const RenderSettings & renderSettings)
 {
+    bool isRemastered = renderSettings.skinId != Scr::Skin::Id::Classic;
+
     if ( shaders == nullptr )
         return false;
 
@@ -950,7 +1135,7 @@ bool Scr::GraphicsData::isLoaded(const RenderSettings & renderSettings)
         return false;
 
     auto & data = *(visualQualityData[visualQualityIndex]);
-    if ( Sc::Terrain::hasWater(renderSettings.tileset) && renderSettings.visualQuality > VisualQuality::SD &&
+    if ( isRemastered && Sc::Terrain::hasWater(renderSettings.tileset) && renderSettings.visualQuality > VisualQuality::SD &&
         (data.waterNormal[0] == nullptr || data.waterNormal[1] == nullptr) )
     {
         return false;
@@ -963,201 +1148,27 @@ bool Scr::GraphicsData::isLoaded(const RenderSettings & renderSettings)
         return false;
 
     auto & skin = *(data.skin[skinIndex]);
-    if ( renderSettings.showStars() && skin.spk == nullptr )
+    if ( isRemastered && renderSettings.showStars() && skin.spk == nullptr ) // TODO: once classic star rendering is ready, remove or change isRemastered
         return false;
 
     auto tilesetIndex = size_t(renderSettings.tileset) % Sc::Terrain::NumTilesets;
     if ( skin.tiles[tilesetIndex] == nullptr )
         return false;
 
-    if ( skin.images == nullptr )
-        return false;
-
-    return true;
-}
-
-std::shared_ptr<Scr::GraphicsData::ClassicData> Scr::GraphicsData::loadClassic(Sc::Data & scData, const RenderSettings & renderSettings)
-{
-    if ( this->classicData == nullptr )
-        this->classicData = std::make_shared<Scr::GraphicsData::ClassicData>();
-    else if ( this->classicData->tilesetGrp[renderSettings.tileset % Sc::Terrain::NumTilesets].frames > 0 )
-        return this->classicData; // Already loaded
-
-    this->classicData->solidColorShader.load();
-    this->classicData->paletteShader.load();
-
-    // Populate tileTextureData
-    constexpr size_t width = 32*128;
-    std::vector<u8> tileTextureData(size_t(width*4096), u8(0)); // 4096x4096 palette indexes (128x128 tiles)
-    auto tiles = scData.terrain.get(renderSettings.tileset);
-    for ( u32 i=0; i<65536; ++i )
-    {
-        size_t groupIndex = Sc::Terrain::Tiles::getGroupIndex(u16(i));
-        if ( groupIndex < tiles.tileGroups.size() )
-        {
-            const Sc::Terrain::TileGroup & tileGroup = tiles.tileGroups[groupIndex];
-            const u16 megaTileIndex = tileGroup.megaTileIndex[tiles.getGroupMemberIndex(u16(i))];
-            u32 left = megaTileIndex%128 * 32;
-            u32 top = megaTileIndex/128 * 32;
-            const Sc::Terrain::TileGraphicsEx & tileGraphics = tiles.tileGraphics[megaTileIndex];
-            for ( size_t yMiniTile = 0; yMiniTile < 4; yMiniTile++ )
-            {
-                s64 yMiniOffset = top + yMiniTile*8;
-                for ( size_t xMiniTile = 0; xMiniTile < 4; xMiniTile++ )
-                {
-                    const Sc::Terrain::TileGraphicsEx::MiniTileGraphics & miniTileGraphics = tileGraphics.miniTileGraphics[yMiniTile][xMiniTile];
-                    bool flipped = miniTileGraphics.isFlipped();
-                    size_t vr4Index = size_t(miniTileGraphics.vr4Index());
-                
-                    s64 xMiniOffset = left + xMiniTile*8;
-                    for ( s64 yMiniPixel = yMiniOffset < 0 ? -yMiniOffset : 0; yMiniPixel < 8; yMiniPixel++ )
-                    {
-                        for ( s64 xMiniPixel = xMiniOffset < 0 ? -xMiniOffset : 0; xMiniPixel < 8; xMiniPixel++ )
-                        {
-                            const Sc::Terrain::MiniTilePixels & miniTilePixels = tiles.miniTilePixels[vr4Index];
-                            const u8 & wpeIndex = miniTilePixels.wpeIndex[yMiniPixel][flipped ? 7-xMiniPixel : xMiniPixel];
-                            tileTextureData[size_t((yMiniOffset+yMiniPixel)*width + (xMiniOffset+xMiniPixel))] = wpeIndex;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // Load tileTextureData into a GRP
-    auto & tilesetGrp = classicData->tilesetGrp[renderSettings.tileset % Sc::Terrain::NumTilesets];
-    tilesetGrp.width = 32;
-    tilesetGrp.height = 32;
-    tilesetGrp.frames = 1;
-    auto & texture = tilesetGrp.mergedTexture;
-    texture.genTexture();
-    texture.bind();
-    texture.setMinMagFilters(GL_NEAREST);
-    texture.loadImage2D(gl::Texture::Image2D {
-        .data = &tileTextureData[0],
-        .width = GLsizei(128*tilesetGrp.width),
-        .height = GLsizei(128*tilesetGrp.height),
-        .level = 0,
-        .internalformat = GL_R8UI,
-        .format = GL_RED_INTEGER,
-        .type = GL_UNSIGNED_BYTE
-    });
-    tileTextureData.clear();
-    gl::Texture::bindDefault();
-
-    // Load palette
-    tilesetGrp.palette.emplace();
-    std::memcpy(&(tilesetGrp.palette.value())[0], &tiles.staticSystemColorPalette[0], 4*256);
-    for ( size_t i=0; i<256; ++i )
-        std::swap(((u8*)&tilesetGrp.palette.value()[i])[0], (((u8*)&tilesetGrp.palette.value()[i])[2])); // red-blue swap
-
-    tilesetGrp.palette->update();
-
-    // Load images
-    classicData->images.assign(999, nullptr);
-    for ( size_t i=0; i<999; ++i )
-    {
-        auto & imageDat = scData.sprites.getImage(i);
-        auto & grp = scData.sprites.getGrp(imageDat.grpFile);
-        auto & grpFile = grp.get();
-        size_t numFrames = size_t(grpFile.numFrames);
-        if ( numFrames > 0 )
-        {
-            classicData->images[i] = std::make_shared<Scr::ClassicGrp>();
-            classicData->images[i]->frames.reserve(numFrames);
-            classicData->images[i]->grpWidth = grpFile.grpWidth;
-            classicData->images[i]->grpHeight = grpFile.grpHeight;
-            classicData->images[i]->frames.reserve(numFrames);
-            for ( size_t frame=0; frame<numFrames; ++frame )
-            {
-                classicData->images[i]->frames.emplace_back();
-                const Sc::Sprite::GrpFrameHeader & grpFrameHeader = grpFile.frameHeaders[frame];
-                s64 frameWidth = s64(grpFrameHeader.frameWidth);
-                s64 frameHeight = s64(grpFrameHeader.frameHeight);
-                s64 bitmapWidth = (frameWidth+3)/4*4;
-                s64 bitmapHeight = (frameHeight+3)/4*4;
-                classicData->images[i]->frames[frame].frameWidth = grpFrameHeader.frameWidth;
-                classicData->images[i]->frames[frame].frameHeight = grpFrameHeader.frameHeight;
-                classicData->images[i]->frames[frame].texWidth = u32(bitmapWidth);
-                classicData->images[i]->frames[frame].texHeight = u32(bitmapHeight);
-                classicData->images[i]->frames[frame].xOffset = grpFrameHeader.xOffset;
-                classicData->images[i]->frames[frame].yOffset = grpFrameHeader.yOffset;
-                
-                std::vector<u8> bitmap(bitmapWidth*bitmapHeight, u8(0));
-
-                if ( frameWidth == 0 || frameHeight == 0 ) // A dimension is zero, nothing to draw
-                    continue;
-        
-                size_t frameOffset = size_t(grpFrameHeader.frameOffset);
-                const Sc::Sprite::GrpFrame & grpFrame = (const Sc::Sprite::GrpFrame &)((u8*)&grpFile)[frameOffset];
-                bool foundFirst = false;
-                auto firstLoc = bitmap.begin();
-                for ( s64 row=0; row < frameHeight; row++ )
-                {
-                    size_t rowOffset = size_t(grpFrame.rowOffsets[row]);
-                    const Sc::Sprite::PixelRow & grpPixelRow = (const Sc::Sprite::PixelRow &)((u8*)&grpFile)[frameOffset+rowOffset];
-                    const s64 rowStart = row*bitmapWidth;
-                    s64 currPixelIndex = rowStart;
-                    size_t pixelLineOffset = 0;
-                    auto addition = size_t(row*bitmapWidth);
-                    auto currPixel = bitmap.begin()+addition; // Start from the left-most pixel of this row of the frame
-                    if ( !foundFirst )
-                    {
-                        firstLoc = currPixel;
-                        foundFirst = true;
-                    }
-                    auto rowEnd = row == bitmapHeight-1 ? bitmap.end() : bitmap.begin()+size_t(currPixelIndex+frameWidth);
-
-                    while ( currPixel < rowEnd )
-                    {
-                        const Sc::Sprite::PixelLine & pixelLine = (const Sc::Sprite::PixelLine &)((u8*)&grpPixelRow)[pixelLineOffset];
-                        s64 lineLength = s64(pixelLine.lineLength());
-                        if ( std::distance(currPixel, rowEnd) < lineLength )
-                            lineLength = rowEnd - currPixel;
-                    
-                        if ( pixelLine.isSpeckled() )
-                        {
-                            for ( s64 linePixel=0; linePixel<lineLength; linePixel++, ++currPixel ) // For every pixel in the line
-                                *currPixel = pixelLine.paletteIndex[linePixel]; // Place color from palette index specified in the array at current pixel
-                        }
-                        else // Solid or transparent
-                        {
-                            if ( pixelLine.isSolidLine() )
-                                std::fill_n(currPixel, lineLength, pixelLine.paletteIndex[0]); // Place single color across the entire line
-
-                            currPixel += size_t(lineLength);
-                        }
-                        pixelLineOffset += pixelLine.sizeInBytes();
-                    }
-                }
-                
-                classicData->images[i]->frames[frame].tex.genTexture();
-                classicData->images[i]->frames[frame].tex.bind();
-                classicData->images[i]->frames[frame].tex.setMinMagFilters(GL_NEAREST);
-                classicData->images[i]->frames[frame].tex.loadImage2D({
-                    .data = &bitmap[0],
-                    .width = int(bitmapWidth),
-                    .height = int(bitmapHeight),
-                    .level = 0,
-                    .internalformat = GL_R8UI,
-                    .format = GL_RED_INTEGER,
-                    .type = GL_UNSIGNED_BYTE
-                });
-                gl::Texture::bindDefault();
-            }
-        }
-    }
-
-    return classicData;
+    return isRemastered ? skin.images != nullptr : skin.classicImages != nullptr;
 }
 
 std::shared_ptr<Scr::GraphicsData::RenderData> Scr::GraphicsData::load(Sc::Data & scData, ArchiveCluster & archiveCluster, const RenderSettings & renderSettings, ByteBuffer & fileData)
 {
+    bool isRemastered = renderSettings.skinId != Scr::Skin::Id::Classic;
+
     if ( shaders == nullptr )
-    {
         shaders = std::make_shared<Shaders>();
+
+    if ( isRemastered )
         shaders->load(archiveCluster);
-    }
+    else
+        shaders->loadClassic();
 
     auto visualQualityIndex = renderSettings.visualQuality.index();
     if ( visualQualityData[visualQualityIndex] == nullptr )
@@ -1165,7 +1176,7 @@ std::shared_ptr<Scr::GraphicsData::RenderData> Scr::GraphicsData::load(Sc::Data 
 
     auto & data = *(visualQualityData[visualQualityIndex]);
     std::filesystem::path visualQualityPrefix = std::filesystem::path(renderSettings.visualQuality.prefix);
-    if ( Sc::Terrain::hasWater(renderSettings.tileset) && renderSettings.visualQuality > VisualQuality::SD )
+    if ( isRemastered && Sc::Terrain::hasWater(renderSettings.tileset) && renderSettings.visualQuality > VisualQuality::SD )
         data.loadWaterNormals(archiveCluster, visualQualityPrefix, fileData);
 
     auto skinIndex = size_t(renderSettings.skinId);
@@ -1174,23 +1185,31 @@ std::shared_ptr<Scr::GraphicsData::RenderData> Scr::GraphicsData::load(Sc::Data 
         throw std::logic_error("Invalid skinId");
     else if ( data.skin[skinIndex] == nullptr )
         data.skin[skinIndex] = std::make_shared<Data::Skin>();
-            
+
     auto & skin = *(data.skin[skinIndex]);
-    if ( renderSettings.showStars() && skin.spk == nullptr )
+    if ( isRemastered && renderSettings.showStars() && skin.spk == nullptr ) // TODO: Remove or change the isRemastered check once classic stars work
         skin.loadStars(archiveCluster, visualQualityPrefix / skinDescriptor, fileData);
 
     auto tilesetIndex = size_t(renderSettings.tileset) % Sc::Terrain::NumTilesets;
     if ( skin.tiles[tilesetIndex] == nullptr )
-        skin.loadTiles(archiveCluster, renderSettings, fileData);
+    {
+        if ( isRemastered )
+            skin.loadTiles(archiveCluster, renderSettings, fileData);
+        else
+            skin.loadClassicTiles(scData, renderSettings);
+    }
 
-    if ( skin.images == nullptr )
+    if ( isRemastered && skin.images == nullptr )
         skin.loadImages(scData, archiveCluster, visualQualityPrefix, renderSettings, fileData, openGlContextSemaphore);
+    else if ( !isRemastered && skin.classicImages == nullptr )
+        skin.loadClassicImages(scData);
 
     std::shared_ptr<RenderData> renderData = std::make_shared<RenderData>();
     renderData->shaders = this->shaders;
     renderData->spk = skin.spk;
     renderData->tiles = skin.tiles[renderSettings.tileset];
     renderData->images = skin.images;
+    renderData->classicImages = skin.classicImages;
     renderData->waterNormal[0] = data.waterNormal[0];
     renderData->waterNormal[1] = data.waterNormal[1];
     return renderData;
@@ -1200,7 +1219,8 @@ Scr::MapGraphics::MapGraphics(MapFile & mapFile) : mapFile(mapFile), initialTick
 
 bool Scr::MapGraphics::isClassicLoaded(Scr::GraphicsData & scrDat)
 {
-    return scrDat.classicData != nullptr;
+    return scrDat.visualQualityData[size_t(Scr::VisualQuality::SD.index())] != nullptr &&
+        scrDat.visualQualityData[size_t(Scr::VisualQuality::SD.index())]->skin[size_t(Scr::Skin::Id::Classic)] != nullptr;
 }
 
 void Scr::MapGraphics::initVertices()
@@ -1301,7 +1321,7 @@ void Scr::MapGraphics::drawTileOverlays(Sc::Data & scData, s32 left, s32 top, s3
 
     const Sc::Terrain::Tiles & tiles = scData.terrain.get(mapFile.getTileset());
 
-    auto & solidColorShader = scrDat != nullptr ? scrDat->shaders->solidColorShader : classicDat->solidColorShader;
+    auto & solidColorShader = renderDat->shaders->solidColorShader;
     solidColorShader.use();
     solidColorShader.posToNdc.setMat4(posToNdc);
     
@@ -1414,20 +1434,12 @@ void Scr::MapGraphics::setScaleFactor(GLfloat scaleFactor)
     this->scaleFactor = scaleFactor;
 }
 
-void Scr::MapGraphics::loadClassic(Sc::Data & scData, Scr::GraphicsData & scrDat, const Scr::GraphicsData::RenderSettings & renderSettings)
+void Scr::MapGraphics::load(Sc::Data & scData, Scr::GraphicsData & scrDat, const Scr::GraphicsData::RenderSettings & renderSettings, ArchiveCluster & archiveCluster, ByteBuffer & fileData)
 {
-    this->renderSettings = renderSettings;
-    this->classicDat = scrDat.loadClassic(scData, renderSettings);
-
-    initVertices();
-}
-
-void Scr::MapGraphics::load(Sc::Data & scData, Scr::GraphicsData & scrDat, ArchiveCluster & archiveCluster, const Scr::GraphicsData::RenderSettings & renderSettings, ByteBuffer & fileData)
-{
-    this->classicDat = nullptr;
+    this->renderDat = nullptr;
     this->renderSettings = renderSettings;
     this->renderSettings.tileset = Sc::Terrain::Tileset(mapFile.getTileset() % Sc::Terrain::NumTilesets);
-    this->scrDat = scrDat.load(scData, archiveCluster, this->renderSettings, fileData);
+    this->renderDat = scrDat.load(scData, archiveCluster, this->renderSettings, fileData);
     
     initVertices();
 }
@@ -1460,9 +1472,9 @@ void Scr::MapGraphics::drawTestTex(gl::Texture & tex)
         return verts;
     }();
 
-    scrDat->shaders->simpleShader.use();
-    scrDat->shaders->simpleShader.tex.setSlot(0);
-    scrDat->shaders->simpleShader.posToNdc.loadIdentity();
+    renderDat->shaders->simpleShader.use();
+    renderDat->shaders->simpleShader.tex.setSlot(0);
+    renderDat->shaders->simpleShader.posToNdc.loadIdentity();
     tex.bindToSlot(GL_TEXTURE0);
             
     testVerts->bind();
@@ -1499,7 +1511,7 @@ void Scr::MapGraphics::drawGrid(s32 left, s32 top, s32 width, s32 height)
             });
         }
 
-        auto & solidColorShader = scrDat != nullptr ? scrDat->shaders->solidColorShader : classicDat->solidColorShader;
+        auto & solidColorShader = renderDat->shaders->solidColorShader;
         solidColorShader.use();
         solidColorShader.posToNdc.setMat4(posToNdc);
         solidColorShader.solidColor.setColor(this->gridColor);
@@ -1545,7 +1557,7 @@ void Scr::MapGraphics::drawLocations(s32 left, s32 top, s32 width, s32 height)
         });
     }
     
-    auto & solidColorShader = scrDat != nullptr ? scrDat->shaders->solidColorShader : classicDat->solidColorShader;
+    auto & solidColorShader = renderDat->shaders->solidColorShader;
     solidColorShader.use();
     solidColorShader.posToNdc.setMat4(posToNdc);
     solidColorShader.solidColor.setColor(0x3092B809); // Location color: 0xAABBGGRR
@@ -1574,18 +1586,18 @@ void Scr::MapGraphics::drawStars(s32 x, s32 y, s32 scaledWidth, s32 scaledHeight
     if ( renderSettings.skinId == Scr::Skin::Id::Classic )
         return; // TODO: OpenGL classic star rendering
 
-    if ( scrDat->spk == nullptr )
+    if ( renderDat->spk == nullptr )
         return;
 
-    Scr::SpkData::SpkHeader* spk = scrDat->spk->spk;
-    Scr::SpkGrp & stars = scrDat->spk->stars;
+    Scr::SpkData::SpkHeader* spk = renderDat->spk->spk;
+    Scr::SpkGrp & stars = renderDat->spk->stars;
     Scr::StarPosition* starPosition = (Scr::StarPosition*)&((u8*)spk)[spk->starOffset];
     u32 starIndex = 0;
             
-    scrDat->shaders->tileShader.use();
-    scrDat->shaders->tileShader.posToNdc.setMat4(posToNdc);
-    scrDat->shaders->tileShader.spriteTex.setSlot(0);
-    scrDat->shaders->tileShader.multiplyColor.setColor(multiplyColor);
+    renderDat->shaders->tileShader.use();
+    renderDat->shaders->tileShader.posToNdc.setMat4(posToNdc);
+    renderDat->shaders->tileShader.spriteTex.setSlot(0);
+    renderDat->shaders->tileShader.multiplyColor.setColor(multiplyColor);
 
     for ( u32 layer=0; layer<spk->layerCount; ++layer )
     {
@@ -1632,7 +1644,7 @@ void Scr::MapGraphics::drawStars(s32 x, s32 y, s32 scaledWidth, s32 scaledHeight
             }
         }
                 
-        scrDat->shaders->tileShader.texScale.setMat2(&texScale[0][0]);
+        renderDat->shaders->tileShader.texScale.setMat2(&texScale[0][0]);
         stars.texture[layer].bindToSlot(GL_TEXTURE0);
                 
         starVertices.bind();
@@ -1681,10 +1693,10 @@ void Scr::MapGraphics::drawTileVertices(Scr::Grp & tilesetGrp, s32 left, s32 top
         glClearColor(0.f, 0.f, 0.f, 0.f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        scrDat->shaders->simpleShader.use();
-        scrDat->shaders->simpleShader.tex.setSlot(0);
-        scrDat->shaders->simpleShader.posToNdc.setMat4(posToNdc);
-        scrDat->tiles->tileMask.mergedTexture.bindToSlot(GL_TEXTURE0);
+        renderDat->shaders->simpleShader.use();
+        renderDat->shaders->simpleShader.tex.setSlot(0);
+        renderDat->shaders->simpleShader.posToNdc.setMat4(posToNdc);
+        renderDat->tiles->tileMask.mergedTexture.bindToSlot(GL_TEXTURE0);
 
         tileVertices.bind();
         tileVertices.bufferData(gl::UsageHint::DynamicDraw);
@@ -1701,21 +1713,21 @@ void Scr::MapGraphics::drawTileVertices(Scr::Grp & tilesetGrp, s32 left, s32 top
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         // Finished drawing to screenTex, now render screenTex to screen through the waterShader for effects
-        scrDat->shaders->waterShader.use();
-        scrDat->shaders->waterShader.posToNdc.loadIdentity();
-        scrDat->shaders->waterShader.texScale.loadIdentity();
-        scrDat->shaders->waterShader.spriteTex.setSlot(0);
-        scrDat->shaders->waterShader.sampleTex.setSlot(1);
-        scrDat->shaders->waterShader.sampleTex2.setSlot(2);
-        scrDat->shaders->waterShader.sampleTex3.setSlot(3);
-        scrDat->shaders->waterShader.sampleTex4.setSlot(4);
-        scrDat->shaders->waterShader.data.set(0.0f, 0.0f, (GetTickCount64() - initialTickCount)/4000.0f);
+        renderDat->shaders->waterShader.use();
+        renderDat->shaders->waterShader.posToNdc.loadIdentity();
+        renderDat->shaders->waterShader.texScale.loadIdentity();
+        renderDat->shaders->waterShader.spriteTex.setSlot(0);
+        renderDat->shaders->waterShader.sampleTex.setSlot(1);
+        renderDat->shaders->waterShader.sampleTex2.setSlot(2);
+        renderDat->shaders->waterShader.sampleTex3.setSlot(3);
+        renderDat->shaders->waterShader.sampleTex4.setSlot(4);
+        renderDat->shaders->waterShader.data.set(0.0f, 0.0f, (GetTickCount64() - initialTickCount)/4000.0f);
 
         screenTex.bindToSlot(GL_TEXTURE0);
-        scrDat->waterNormal[0]->texture[n1Frame].bindToSlot(GL_TEXTURE1);
-        scrDat->waterNormal[0]->texture[n1Frame+1 >= scrDat->waterNormal[0]->frames ? 0 : n1Frame+1].bindToSlot(GL_TEXTURE2);
-        scrDat->waterNormal[1]->texture[n2Frame].bindToSlot(GL_TEXTURE3);
-        scrDat->waterNormal[1]->texture[n2Frame+1 >= scrDat->waterNormal[1]->frames ? 0 : n2Frame+1].bindToSlot(GL_TEXTURE4);
+        renderDat->waterNormal[0]->texture[n1Frame].bindToSlot(GL_TEXTURE1);
+        renderDat->waterNormal[0]->texture[n1Frame+1 >= renderDat->waterNormal[0]->frames ? 0 : n1Frame+1].bindToSlot(GL_TEXTURE2);
+        renderDat->waterNormal[1]->texture[n2Frame].bindToSlot(GL_TEXTURE3);
+        renderDat->waterNormal[1]->texture[n2Frame+1 >= renderDat->waterNormal[1]->frames ? 0 : n2Frame+1].bindToSlot(GL_TEXTURE4);
 
         waterVertices.vertices = { // {pos.xy, tex.xy, map.xy, map2.xy} TODO: MapCoords should be dynamic
             -1.f, -1.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f,
@@ -1735,31 +1747,31 @@ void Scr::MapGraphics::drawTileVertices(Scr::Grp & tilesetGrp, s32 left, s32 top
     {
         if ( renderSettings.visualQuality > VisualQuality::SD )
         {
-            scrDat->shaders->tileShader.use();
-            scrDat->shaders->tileShader.posToNdc.setMat4(posToNdc);
-            scrDat->shaders->tileShader.texScale.loadIdentity();
-            scrDat->shaders->tileShader.spriteTex.setSlot(0);
-            scrDat->shaders->tileShader.multiplyColor.setColor(0xFFFFFFFF);
+            renderDat->shaders->tileShader.use();
+            renderDat->shaders->tileShader.posToNdc.setMat4(posToNdc);
+            renderDat->shaders->tileShader.texScale.loadIdentity();
+            renderDat->shaders->tileShader.spriteTex.setSlot(0);
+            renderDat->shaders->tileShader.multiplyColor.setColor(0xFFFFFFFF);
             tilesetGrp.mergedTexture.bindToSlot(GL_TEXTURE0);
         }
         else if ( renderSettings.skinId == Scr::Skin::Id::Classic ) // Classic
         {
-            classicDat->paletteShader.use();
-            classicDat->paletteShader.posToNdc.setMat4(posToNdc);
-            classicDat->paletteShader.texScale.loadIdentity();
-            classicDat->paletteShader.tex.setSlot(0);
-            classicDat->paletteShader.pal.setSlot(1);
+            renderDat->shaders->simplePaletteShader.use();
+            renderDat->shaders->simplePaletteShader.posToNdc.setMat4(posToNdc);
+            renderDat->shaders->simplePaletteShader.texScale.loadIdentity();
+            renderDat->shaders->simplePaletteShader.tex.setSlot(0);
+            renderDat->shaders->simplePaletteShader.pal.setSlot(1);
             tilesetGrp.mergedTexture.bindToSlot(GL_TEXTURE0);
             tilesetGrp.palette->tex.bindToSlot(GL_TEXTURE1);
         }
         else // Remastered SD
         {
-            scrDat->shaders->paletteShader.use();
-            scrDat->shaders->paletteShader.posToNdc.setMat4(posToNdc);
-            scrDat->shaders->paletteShader.texScale.loadIdentity();
-            scrDat->shaders->paletteShader.spriteTex.setSlot(0);
-            scrDat->shaders->paletteShader.sampleTex.setSlot(1);
-            scrDat->shaders->paletteShader.multiplyColor.setColor(0xFFFFFFFF);
+            renderDat->shaders->paletteShader.use();
+            renderDat->shaders->paletteShader.posToNdc.setMat4(posToNdc);
+            renderDat->shaders->paletteShader.texScale.loadIdentity();
+            renderDat->shaders->paletteShader.spriteTex.setSlot(0);
+            renderDat->shaders->paletteShader.sampleTex.setSlot(1);
+            renderDat->shaders->paletteShader.multiplyColor.setColor(0xFFFFFFFF);
             tilesetGrp.mergedTexture.bindToSlot(GL_TEXTURE0);
             tilesetGrp.palette->tex.bindToSlot(GL_TEXTURE1);
         }
@@ -1779,7 +1791,7 @@ void Scr::MapGraphics::drawTerrain(Sc::Data & scData, s32 left, s32 top, s32 wid
 {
     s32 scaledWidth = width/scaleFactor;
     s32 scaledHeight = height/scaleFactor;
-    auto & tilesetGrp = renderSettings.skinId == Scr::Skin::Id::Classic ? classicDat->tilesetGrp[renderSettings.tileset] : scrDat->tiles->tilesetGrp;
+    auto & tilesetGrp = renderDat->tiles->tilesetGrp;
     tileVertices.clear();
     auto tiles = scData.terrain.get(Sc::Terrain::Tileset(mapFile.tileset));
 
@@ -1831,7 +1843,7 @@ void Scr::MapGraphics::drawTerrain(Sc::Data & scData, s32 left, s32 top, s32 wid
 
 void Scr::MapGraphics::drawTilesetIndexed(Sc::Data & scData, s32 left, s32 top, s32 width, s32 height, s32 scrollY)
 {
-    auto & tilesetGrp = renderSettings.skinId == Scr::Skin::Id::Classic ? classicDat->tilesetGrp[renderSettings.tileset] : scrDat->tiles->tilesetGrp;
+    auto & tilesetGrp = renderDat->tiles->tilesetGrp;
 
     tileVertices.clear();
     setupNdcTransformation(width, height);
@@ -1892,14 +1904,14 @@ void Scr::MapGraphics::drawAnim(Scr::Animation & animation, s32 x, s32 y, u32 fr
         { 0, animation.yScale }
     };
 
-    scrDat->shaders->spriteShader.use();
-    scrDat->shaders->spriteShader.posToNdc.setMat4(posToNdc);
-    scrDat->shaders->spriteShader.texScale.setMat2(&texScale[0][0]);
-    scrDat->shaders->spriteShader.spriteTex.setSlot(0);
-    scrDat->shaders->spriteShader.teamColorTex.setSlot(1);
-    scrDat->shaders->spriteShader.hallucinate.setValue(GLfloat(hallucinate));
-    scrDat->shaders->spriteShader.multiplyColor.setColor(multiplyColor);
-    scrDat->shaders->spriteShader.teamColor.setColor(playerColor);
+    renderDat->shaders->spriteShader.use();
+    renderDat->shaders->spriteShader.posToNdc.setMat4(posToNdc);
+    renderDat->shaders->spriteShader.texScale.setMat2(&texScale[0][0]);
+    renderDat->shaders->spriteShader.spriteTex.setSlot(0);
+    renderDat->shaders->spriteShader.teamColorTex.setSlot(1);
+    renderDat->shaders->spriteShader.hallucinate.setValue(GLfloat(hallucinate));
+    renderDat->shaders->spriteShader.multiplyColor.setColor(multiplyColor);
+    renderDat->shaders->spriteShader.teamColor.setColor(playerColor);
 
     animation.diffuse.bindToSlot(GL_TEXTURE0);
     animation.teamColor.bindToSlot(GL_TEXTURE1);
@@ -1961,7 +1973,7 @@ void Scr::MapGraphics::drawClassicImage(Sc::Data & scData, gl::Palette & palette
 
     palette.update();
             
-    auto & imageInfo = classicDat->images[imageId];
+    auto & imageInfo = (*renderDat->classicImages)[imageId];
     u32 frame = 0;
     auto & frameInfo = imageInfo->frames[frame];
 
@@ -1984,14 +1996,14 @@ void Scr::MapGraphics::drawClassicImage(Sc::Data & scData, gl::Palette & palette
         position.x+vertexRect.right, position.y+vertexRect.top, texRect.right, texRect.top,
     };
 
-    classicDat->paletteShader.use();
-    classicDat->paletteShader.posToNdc.setMat4(posToNdc);
-    classicDat->paletteShader.texScale.loadIdentity();
-    classicDat->paletteShader.tex.setSlot(0);
-    classicDat->paletteShader.pal.setSlot(1);
+    renderDat->shaders->simplePaletteShader.use();
+    renderDat->shaders->simplePaletteShader.posToNdc.setMat4(posToNdc);
+    renderDat->shaders->simplePaletteShader.texScale.loadIdentity();
+    renderDat->shaders->simplePaletteShader.tex.setSlot(0);
+    renderDat->shaders->simplePaletteShader.pal.setSlot(1);
 
     frameInfo.tex.bindToSlot(GL_TEXTURE0);
-    classicDat->tilesetGrp[renderSettings.tileset].palette->tex.bindToSlot(GL_TEXTURE1);
+    renderDat->tiles->tilesetGrp.palette->tex.bindToSlot(GL_TEXTURE1);
 
     animVertices.bind();
     animVertices.bufferData(gl::UsageHint::DynamicDraw);
@@ -2005,60 +2017,45 @@ void Scr::MapGraphics::drawClassicImage(Sc::Data & scData, gl::Palette & palette
 
 void Scr::MapGraphics::drawSprites(Sc::Data & scData, s32 left, s32 top)
 {
+    auto getUnitImageId = [&scData](const Chk::Unit & unit) -> u32
+    {
+        u32 flingyId = u32(scData.units.getUnit(Sc::Unit::Type(unit.type >= 228 ? 0 : unit.type)).graphics);
+        u32 spriteId = u32(scData.units.getFlingy(flingyId >= 209 ? 0 : flingyId).sprite);
+        return scData.sprites.getSprite(spriteId >= 517 ? 0 : spriteId).imageFile;
+    };
+    auto getSpriteImageId = [&scData](const Chk::Sprite & sprite) -> u32
+    {
+        if ( sprite.isDrawnAsSprite() )
+            return scData.sprites.getSprite(sprite.type >= 517 ? 0 : sprite.type).imageFile;
+        else
+        {
+            u32 flingyId = u32(scData.units.getUnit(Sc::Unit::Type(sprite.type >= 228 ? 0 : sprite.type)).graphics);
+            u32 spriteId = u32(scData.units.getFlingy(flingyId >= 209 ? 0 : flingyId).sprite);
+            return scData.sprites.getSprite(spriteId >= 517 ? 0 : spriteId).imageFile;
+        }
+    };
+
     if ( renderSettings.skinId == Scr::Skin::Id::Classic )
     {
-        auto & palette = *classicDat->tilesetGrp[renderSettings.tileset].palette;
+        auto & palette = *renderDat->tiles->tilesetGrp.palette;
         for ( auto & unit : mapFile.units )
-        {
-            u32 flingyId = u32(scData.units.getUnit(Sc::Unit::Type(unit.type >= 228 ? 0 : unit.type)).graphics);
-            u32 spriteId = u32(scData.units.getFlingy(flingyId >= 209 ? 0 : flingyId).sprite);
-            u32 imageId = scData.sprites.getSprite(spriteId >= 517 ? 0 : spriteId).imageFile;
-            drawClassicImage(scData, palette, unit.xc-left, unit.yc-top, imageId, (Chk::PlayerColor)unit.owner);
-        }
+            drawClassicImage(scData, palette, unit.xc-left, unit.yc-top, getUnitImageId(unit), (Chk::PlayerColor)unit.owner);
 
         for ( auto & sprite : mapFile.sprites )
-        {
-            if ( sprite.isDrawnAsSprite() )
-            {
-                u32 imageId = scData.sprites.getSprite(sprite.type >= 517 ? 0 : sprite.type).imageFile;
-                drawClassicImage(scData, palette, sprite.xc-left, sprite.yc-top, imageId, (Chk::PlayerColor)sprite.owner);
-            }
-            else
-            {
-                u32 flingyId = u32(scData.units.getUnit(Sc::Unit::Type(sprite.type >= 228 ? 0 : sprite.type)).graphics);
-                u32 spriteId = u32(scData.units.getFlingy(flingyId >= 209 ? 0 : flingyId).sprite);
-                u32 imageId = scData.sprites.getSprite(spriteId >= 517 ? 0 : spriteId).imageFile;
-                drawClassicImage(scData, palette, sprite.xc-left, sprite.yc-top, imageId, (Chk::PlayerColor)sprite.owner);
-            }
-        }
+            drawClassicImage(scData, palette, sprite.xc-left, sprite.yc-top, getSpriteImageId(sprite), (Chk::PlayerColor)sprite.owner);
     }
     else
     {
-        for ( auto & unit : mapFile.units )
+        for ( const auto & unit : mapFile.units )
         {
-            u32 flingyId = u32(scData.units.getUnit(Sc::Unit::Type(unit.type >= 228 ? 0 : unit.type)).graphics);
-            u32 spriteId = u32(scData.units.getFlingy(flingyId >= 209 ? 0 : flingyId).sprite);
-            u32 imageId = scData.sprites.getSprite(spriteId >= 517 ? 0 : spriteId).imageFile;
-            drawAnim(*((*scrDat->images)[imageId]), (unit.xc-left)*renderSettings.visualQuality.scale, (unit.yc-top)*renderSettings.visualQuality.scale, 0,
+            drawAnim(*((*renderDat->images)[getUnitImageId(unit)]), (unit.xc-left)*renderSettings.visualQuality.scale, (unit.yc-top)*renderSettings.visualQuality.scale, 0,
                 (u32 &)(scData.tunit.rgbaPalette[8*size_t(unit.owner)]), 0xFFFFFFFF, false, renderSettings.visualQuality.halfAnims);
         }
 
-        for ( auto & sprite : mapFile.sprites )
+        for ( const auto & sprite : mapFile.sprites )
         {
-            if ( sprite.isDrawnAsSprite() )
-            {
-                u32 imageId = scData.sprites.getSprite(sprite.type >= 517 ? 0 : sprite.type).imageFile;
-                drawAnim(*((*scrDat->images)[imageId]), (sprite.xc-left)*renderSettings.visualQuality.scale, (sprite.yc-top)*renderSettings.visualQuality.scale, 0,
-                    (u32 &)(scData.tunit.rgbaPalette[8*size_t(sprite.owner)]), 0xFFFFFFFF, false, renderSettings.visualQuality.halfAnims);
-            }
-            else
-            {
-                u32 flingyId = u32(scData.units.getUnit(Sc::Unit::Type(sprite.type >= 228 ? 0 : sprite.type)).graphics);
-                u32 spriteId = u32(scData.units.getFlingy(flingyId >= 209 ? 0 : flingyId).sprite);
-                u32 imageId = scData.sprites.getSprite(spriteId >= 517 ? 0 : spriteId).imageFile;
-                drawAnim(*((*scrDat->images)[imageId]), (sprite.xc-left)*renderSettings.visualQuality.scale, (sprite.yc-top)*renderSettings.visualQuality.scale, 0,
-                    (u32 &)(scData.tunit.rgbaPalette[8*size_t(sprite.owner)]), 0xFFFFFFFF, false, renderSettings.visualQuality.halfAnims);
-            }
+            drawAnim(*((*renderDat->images)[getSpriteImageId(sprite)]), (sprite.xc-left)*renderSettings.visualQuality.scale, (sprite.yc-top)*renderSettings.visualQuality.scale, 0,
+                (u32 &)(scData.tunit.rgbaPalette[8*size_t(sprite.owner)]), 0xFFFFFFFF, false, renderSettings.visualQuality.halfAnims);
         }
     }
 }
@@ -2086,18 +2083,12 @@ void Scr::MapGraphics::render(Sc::Data & scData, s32 left, s32 top, s32 width, s
         textFont->textShader.projection.setMat4(unscaledPosToNdc);
         textFont->drawAffixedText<gl::Align::Center>(width/2, 10.f, fps.displayNumber, " fps", "");
     }
-
-    //textFont->textShader.use();
-    //textFont->textShader.projection.setMat4(unscaledPosToNdc);
-
-    //textFont->drawText(10.f, 10.f, "THE QUICK BROWN FOX JUMPED OVER THE LAZY DOG");
-    //textFont->drawText(10.f, 50.f, "the quick brown fox jumped over the lazy dog");
 }
 
 void Scr::MapGraphics::updateGraphics(u64 ticks)
 {
     // update classic/SD color cycling
-    auto & tilesetGrp = renderSettings.skinId == Scr::Skin::Id::Classic ? classicDat->tilesetGrp[renderSettings.tileset] : scrDat->tiles->tilesetGrp;
+    auto & tilesetGrp = renderDat->tiles->tilesetGrp;
     if ( tilesetGrp.palette )
     {
         if ( colorCycler.cycleColors(GetTickCount64(), mapFile.getTileset(), tilesetGrp.palette.value()) )
@@ -2105,7 +2096,7 @@ void Scr::MapGraphics::updateGraphics(u64 ticks)
     }
 
     // update HD water animation
-    if ( renderSettings.visualQuality > VisualQuality::SD && scrDat->waterNormal[0] && scrDat->waterNormal[0]->frames > 0 )
+    if ( renderSettings.visualQuality > VisualQuality::SD && renderDat->waterNormal[0] && renderDat->waterNormal[0]->frames > 0 )
     {
         nIncrement += ticks;
         if ( nIncrement >= 4000 )
@@ -2113,11 +2104,11 @@ void Scr::MapGraphics::updateGraphics(u64 ticks)
             nIncrement = 0;
 
             n1Frame++;
-            if ( n1Frame >= scrDat->waterNormal[0]->frames )
+            if ( n1Frame >= renderDat->waterNormal[0]->frames )
                 n1Frame = 0;
 
             n2Frame++;
-            if ( n2Frame >= scrDat->waterNormal[1]->frames )
+            if ( n2Frame >= renderDat->waterNormal[1]->frames )
                 n2Frame = 0;
         }
     }

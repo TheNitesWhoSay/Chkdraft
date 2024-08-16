@@ -3,6 +3,7 @@
 #include <cross_cut/test_commands.h>
 #include "mapping/data_file_browsers.h"
 #include "mapping/settings.h"
+#include "mapping/scr_graphics.h"
 #include <shellapi.h>
 #include <fstream>
 #include <iostream>

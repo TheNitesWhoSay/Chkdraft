@@ -576,14 +576,16 @@ namespace Scr {
                 }
             };
 
-            SpriteShader spriteShader {};
-            TileShader tileShader {};
-            PaletteShader paletteShader {};
-            WaterShader waterShader {};
-            HeatShader heatShader {};
-            SimpleShader simpleShader {};
-            SolidColorShader solidColorShader {};
-
+            SpriteShader spriteShader {}; // Remastered
+            TileShader tileShader {}; // Remastered
+            PaletteShader paletteShader {}; // Remastered
+            WaterShader waterShader {}; // Remastered
+            HeatShader heatShader {}; // Remastered
+            SimpleShader simpleShader {}; // Remastered
+            SolidColorShader solidColorShader {}; // Remastered & Classic
+            SimplePaletteShader simplePaletteShader {}; // Classic
+            
+            void loadClassic();
             void load(ArchiveCluster & archiveCluster);
         };
 
@@ -686,11 +688,14 @@ namespace Scr {
                 std::shared_ptr<SpkData> spk {};
                 std::shared_ptr<Tileset> tiles[Sc::Terrain::NumTilesets] {};
                 std::shared_ptr<std::vector<std::shared_ptr<Animation>>> images {}; // 999 images
+                std::shared_ptr<std::vector<std::shared_ptr<Scr::ClassicGrp>>> classicImages {}; // 999 images
 
                 void loadStars(ArchiveCluster & archiveCluster, std::filesystem::path texPrefix, ByteBuffer & fileData);
-
+                
+                void loadClassicTiles(Sc::Data & scData, const RenderSettings & renderSettings);
                 void loadTiles(ArchiveCluster & archiveCluster, const RenderSettings & renderSettings, ByteBuffer & fileData);
-
+                
+                void loadClassicImages(Sc::Data & scData);
                 void loadImages(Sc::Data & scData, ArchiveCluster & archiveCluster, std::filesystem::path texPrefix, const RenderSettings & renderSettings, ByteBuffer & fileData, gl::ContextSemaphore* contextSemaphore = nullptr);
             };
             std::shared_ptr<Skin> skin[Scr::Skin::total] {};
@@ -702,15 +707,6 @@ namespace Scr {
         std::unique_ptr<gl::Font> defaultFont = nullptr;
         std::shared_ptr<Shaders> shaders {};
         std::shared_ptr<Data> visualQualityData[Scr::VisualQuality::total] {};
-        struct ClassicData // Data for rendering classic graphics using OpenGL
-        {
-            Scr::GraphicsData::Shaders::SolidColorShader solidColorShader {};
-            Scr::GraphicsData::Shaders::SimplePaletteShader paletteShader {};
-            // TODO: Stars?
-            Grp tilesetGrp[8] {};
-            std::vector<std::shared_ptr<Scr::ClassicGrp>> images {}; // 999 images
-        };
-        std::shared_ptr<ClassicData> classicData = nullptr;
 
         struct RenderData // Data required for rendering a given map with a given visual quality, skin, and tileset
         {
@@ -718,15 +714,15 @@ namespace Scr {
             std::shared_ptr<SpkData> spk = nullptr;
             std::shared_ptr<Data::Skin::Tileset> tiles = nullptr;
             std::shared_ptr<std::vector<std::shared_ptr<Animation>>> images = nullptr; // 999 images
+            std::shared_ptr<std::vector<std::shared_ptr<Scr::ClassicGrp>>> classicImages = nullptr; // 999 images
             std::shared_ptr<Grp> waterNormal[2] { nullptr, nullptr };
+            // TODO: classic stars?
         };
 
         void unload(const RenderSettings & renderSettings);
 
         // Checks whether load requires potential disk accesses, does not perform exaustive validation
         bool isLoaded(const RenderSettings & renderSettings);
-
-        std::shared_ptr<ClassicData> loadClassic(Sc::Data & scData, const RenderSettings & renderSettings);
 
         std::shared_ptr<Scr::GraphicsData::RenderData> load(Sc::Data & scData, ArchiveCluster & archiveCluster, const RenderSettings & renderSettings, ByteBuffer & fileData);
     };
@@ -741,8 +737,7 @@ namespace Scr {
         MapFile & mapFile;
         gl::Font* textFont = nullptr;
         Scr::GraphicsData::RenderSettings renderSettings {};
-        std::shared_ptr<Scr::GraphicsData::RenderData> scrDat = nullptr;
-        std::shared_ptr<Scr::GraphicsData::ClassicData> classicDat = nullptr;
+        std::shared_ptr<Scr::GraphicsData::RenderData> renderDat = nullptr;
         ColorCycler colorCycler {};
         uint32_t gridColor = 0xFF000000; // 0xAABBGGRR
         s32 gridSize = 0;
@@ -794,8 +789,7 @@ namespace Scr {
         GLfloat getScaleFactor();
         void setScaleFactor(GLfloat scaleFactor);
 
-        void loadClassic(Sc::Data & scData, Scr::GraphicsData & scrDat, const Scr::GraphicsData::RenderSettings & renderSettings);
-        void load(Sc::Data & scData, Scr::GraphicsData & scrDat, ArchiveCluster & archiveCluster, const Scr::GraphicsData::RenderSettings & renderSettings, ByteBuffer & fileData);
+        void load(Sc::Data & scData, Scr::GraphicsData & scrDat, const Scr::GraphicsData::RenderSettings & renderSettings, ArchiveCluster & archiveCluster, ByteBuffer & fileData);
 
         void setupNdcTransformation(s32 width, s32 height);
         

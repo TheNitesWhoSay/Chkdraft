@@ -40,6 +40,11 @@ namespace gl
                 glDeleteProgram(*programId);
         }
 
+        bool hasShaders()
+        {
+            return !shaders.empty();
+        }
+
         void create()
         {
             if ( programId != 0 )
