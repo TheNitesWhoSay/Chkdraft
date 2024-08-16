@@ -4019,7 +4019,10 @@ void GuiMap::SetSkin(GuiMap::Skin skin)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         if ( chkd.scrData == nullptr )
+        {
             chkd.scrData = std::make_unique<Scr::GraphicsData>();
+            chkd.scrData->openGlContextSemaphore = chkd.maps.getContextSemaphore();
+        }
         
         if ( chkd.scrData->defaultFont == nullptr )
         {

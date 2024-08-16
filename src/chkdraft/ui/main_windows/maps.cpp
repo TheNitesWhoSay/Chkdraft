@@ -821,6 +821,11 @@ void Maps::setGlRenderTarget(std::shared_ptr<WinLib::DeviceContext> & deviceCont
         openGlRenderContext.emplace(deviceContext);
 }
 
+gl::ContextSemaphore* Maps::getContextSemaphore()
+{
+    return &openGlRenderContext.value();
+}
+
 u16 Maps::NextId()
 {
     if ( lastUsedMapID < 65535 )

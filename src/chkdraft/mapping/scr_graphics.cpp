@@ -735,7 +735,7 @@ void Scr::GraphicsData::loadTileMasks(ArchiveCluster & archiveCluster, std::file
 
 void Scr::GraphicsData::Data::Skin::Tileset::load(ArchiveCluster & archiveCluster, const RenderSettings & renderSettings, ByteBuffer & fileData)
 {
-    constexpr std::string_view tilesetNames[8] { "badlands", "platform", "ashworld", "install", "jungle", "desert", "ice", "twilight" };
+    constexpr std::string_view tilesetNames[8] { "badlands", "platform", "install", "ashworld", "jungle", "desert", "ice", "twilight" };
     std::string tilesetName = std::string(tilesetNames[size_t(renderSettings.tileset) % size_t(Sc::Terrain::NumTilesets)]);
     auto visualQuality = renderSettings.visualQuality;
     auto skinName = Scr::Skin::skinNames[size_t(renderSettings.skinId)];
@@ -936,6 +936,8 @@ void Scr::GraphicsData::Data::Skin::loadClassicImages(Sc::Data & scData)
 {
     classicImages = std::make_shared<std::vector<std::shared_ptr<Scr::ClassicGrp>>>();
     classicImages->assign(999, nullptr);
+    std::vector<u8> bitmap(size_t(60480), u8(0));
+
     for ( size_t i=0; i<999; ++i )
     {
         auto & imageDat = scData.sprites.getImage(i);
@@ -949,31 +951,27 @@ void Scr::GraphicsData::Data::Skin::loadClassicImages(Sc::Data & scData)
             classicImage->frames.reserve(numFrames);
             classicImage->grpWidth = grpFile.grpWidth;
             classicImage->grpHeight = grpFile.grpHeight;
-            classicImage->frames.reserve(numFrames);
-            for ( size_t frame=0; frame<numFrames; ++frame )
+            for ( size_t frameIndex=0; frameIndex<numFrames; ++frameIndex )
             {
                 classicImage->frames.emplace_back();
-                const Sc::Sprite::GrpFrameHeader & grpFrameHeader = grpFile.frameHeaders[frame];
+                const Sc::Sprite::GrpFrameHeader & grpFrameHeader = grpFile.frameHeaders[frameIndex];
+                auto & frame = classicImage->frames[frameIndex];
                 s64 frameWidth = s64(grpFrameHeader.frameWidth);
                 s64 frameHeight = s64(grpFrameHeader.frameHeight);
-                s64 bitmapWidth = (frameWidth+3)/4*4;
-                s64 bitmapHeight = (frameHeight+3)/4*4;
-                classicImage->frames[frame].frameWidth = grpFrameHeader.frameWidth;
-                classicImage->frames[frame].frameHeight = grpFrameHeader.frameHeight;
-                classicImage->frames[frame].texWidth = u32(bitmapWidth);
-                classicImage->frames[frame].texHeight = u32(bitmapHeight);
-                classicImage->frames[frame].xOffset = grpFrameHeader.xOffset;
-                classicImage->frames[frame].yOffset = grpFrameHeader.yOffset;
-                
-                std::vector<u8> bitmap(bitmapWidth*bitmapHeight, u8(0));
-
                 if ( frameWidth == 0 || frameHeight == 0 ) // A dimension is zero, nothing to draw
                     continue;
+
+                s64 bitmapWidth = (frameWidth+3)/4*4;
+                s64 bitmapHeight = (frameHeight+3)/4*4;
+                frame.frameWidth = grpFrameHeader.frameWidth;
+                frame.frameHeight = grpFrameHeader.frameHeight;
+                frame.texWidth = u32(bitmapWidth);
+                frame.texHeight = u32(bitmapHeight);
+                frame.xOffset = grpFrameHeader.xOffset;
+                frame.yOffset = grpFrameHeader.yOffset;
         
                 size_t frameOffset = size_t(grpFrameHeader.frameOffset);
                 const Sc::Sprite::GrpFrame & grpFrame = (const Sc::Sprite::GrpFrame &)((u8*)&grpFile)[frameOffset];
-                bool foundFirst = false;
-                auto firstLoc = bitmap.begin();
                 for ( s64 row=0; row < frameHeight; row++ )
                 {
                     size_t rowOffset = size_t(grpFrame.rowOffsets[row]);
@@ -982,13 +980,8 @@ void Scr::GraphicsData::Data::Skin::loadClassicImages(Sc::Data & scData)
                     s64 currPixelIndex = rowStart;
                     size_t pixelLineOffset = 0;
                     auto addition = size_t(row*bitmapWidth);
-                    auto currPixel = bitmap.begin()+addition; // Start from the left-most pixel of this row of the frame
-                    if ( !foundFirst )
-                    {
-                        firstLoc = currPixel;
-                        foundFirst = true;
-                    }
-                    auto rowEnd = row == bitmapHeight-1 ? bitmap.end() : bitmap.begin()+size_t(currPixelIndex+frameWidth);
+                    auto currPixel = &bitmap[0]+addition; // Start from the left-most pixel of this row of the frame
+                    auto rowEnd = row == bitmapHeight-1 ? &bitmap[0]+bitmapWidth*bitmapHeight : &bitmap[0]+size_t(currPixelIndex+frameWidth);
 
                     while ( currPixel < rowEnd )
                     {
@@ -1013,10 +1006,10 @@ void Scr::GraphicsData::Data::Skin::loadClassicImages(Sc::Data & scData)
                     }
                 }
                 
-                classicImage->frames[frame].tex.genTexture();
-                classicImage->frames[frame].tex.bind();
-                classicImage->frames[frame].tex.setMinMagFilters(GL_NEAREST);
-                classicImage->frames[frame].tex.loadImage2D({
+                frame.tex.genTexture();
+                frame.tex.bind();
+                frame.tex.setMinMagFilters(GL_NEAREST);
+                frame.tex.loadImage2D({
                     .data = &bitmap[0],
                     .width = int(bitmapWidth),
                     .height = int(bitmapHeight),
@@ -1026,6 +1019,8 @@ void Scr::GraphicsData::Data::Skin::loadClassicImages(Sc::Data & scData)
                     .type = GL_UNSIGNED_BYTE
                 });
                 gl::Texture::bindDefault();
+
+                std::fill(&bitmap[0], &bitmap[0] + bitmapWidth * bitmapHeight, 0);
             }
         }
     }
@@ -1277,7 +1272,7 @@ std::shared_ptr<Scr::GraphicsData::RenderData> Scr::GraphicsData::load(Sc::Data 
         else
             skin.loadClassicTiles(scData, renderSettings);
     }
-
+    
     if ( isRemastered && skin.images == nullptr )
         skin.loadImages(scData, archiveCluster, visualQualityPrefix, renderSettings, fileData, openGlContextSemaphore);
     else if ( !isRemastered && skin.classicImages == nullptr )
