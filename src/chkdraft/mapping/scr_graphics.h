@@ -795,9 +795,6 @@ namespace Scr {
         bool displayingFps();
         void toggleDisplayFps();
 
-        void drawTileNums(Sc::Data & scData, s32 left, s32 top, s32 width, s32 height);
-        void drawTileOverlays(Sc::Data & scData, s32 left, s32 top, s32 width, s32 height);
-
         GLfloat getScaleFactor();
         void setScaleFactor(GLfloat scaleFactor);
 
@@ -808,15 +805,17 @@ namespace Scr {
         void drawTestTex(gl::Texture & tex);
 
         void drawGrid(s32 left, s32 top, s32 width, s32 height);
-        void drawLocations(s32 left, s32 top, s32 width, s32 height);
         void drawClassicStars(Sc::Data & scData, s32 left, s32 top, s32 width, s32 height);
         void drawStars(s32 x, s32 y, s32 scaledWidth, s32 scaledHeight, u32 multiplyColor);
+        void drawTileNums(Sc::Data & scData, s32 left, s32 top, s32 width, s32 height);
+        void drawTileOverlays(Sc::Data & scData, s32 left, s32 top, s32 width, s32 height);
         void drawTileVertices(Scr::Grp & tilesetGrp, s32 left, s32 top, s32 width, s32 height);
         void drawTerrain(Sc::Data & scData, s32 left, s32 top, s32 width, s32 height);
         void drawTilesetIndexed(Sc::Data & scData, s32 left, s32 top, s32 width, s32 height, s32 scrollY);
         void drawAnim(Scr::Animation & animation, s32 x, s32 y, u32 frame, u32 playerColor, u32 multiplyColor, bool hallucinate, bool halfAnims);
         void drawClassicImage(Sc::Data & scData, gl::Palette & palette, s32 x, s32 y, u32 imageId, Chk::PlayerColor color);
         void drawSprites(Sc::Data & scData, s32 left, s32 top);
+        void drawLocations(s32 left, s32 top, s32 width, s32 height);
 
         void render(Sc::Data & scData, s32 left, s32 top, s32 width, s32 height, bool renderLocations, bool renderTileElevations, bool renderTileNums);
 
