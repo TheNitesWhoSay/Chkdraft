@@ -39,6 +39,8 @@ find_package(harfbuzz CONFIG REQUIRED)
 get_target_property(HARFBUZZ_INCLUDE_DIRS harfbuzz::harfbuzz INTERFACE_INCLUDE_DIRECTORIES)
 include_directories(${HARFBUZZ_INCLUDE_DIRS})
 
+find_package(glm CONFIG REQUIRED)
+
 set(Headers
   
 )
@@ -54,4 +56,4 @@ add_subdirectory(chkdraft)
 
 add_executable(${This} WIN32 ${Sources} ${Headers})
 target_sources(${This} PRIVATE ../res/resource.rc)
-target_link_libraries(Chkdraft CrossCut MappingCore WindowsLib ChkdraftLib Freetype::Freetype harfbuzz::harfbuzz harfbuzz::harfbuzz-subset opengl32.lib Comctl32.lib Winmm.lib Msimg32.lib)
+target_link_libraries(Chkdraft CrossCut MappingCore WindowsLib ChkdraftLib Freetype::Freetype harfbuzz::harfbuzz harfbuzz::harfbuzz-subset glm::glm opengl32.lib Comctl32.lib Winmm.lib Msimg32.lib)

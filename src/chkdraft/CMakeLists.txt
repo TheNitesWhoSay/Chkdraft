@@ -45,6 +45,8 @@ find_package(harfbuzz CONFIG REQUIRED)
 get_target_property(HARFBUZZ_INCLUDE_DIRS harfbuzz::harfbuzz INTERFACE_INCLUDE_DIRECTORIES)
 include_directories(${HARFBUZZ_INCLUDE_DIRS})
 
+find_package(glm CONFIG REQUIRED)
+
 set(Headers
   chkdraft.h
   common_files/common_files.h

@@ -33,6 +33,8 @@ find_package(harfbuzz CONFIG REQUIRED)
 get_target_property(HARFBUZZ_INCLUDE_DIRS harfbuzz::harfbuzz INTERFACE_INCLUDE_DIRECTORIES)
 include_directories(${HARFBUZZ_INCLUDE_DIRS})
 
+find_package(glm CONFIG REQUIRED)
+
 enable_testing()
 
 add_subdirectory(src) # Compiles the Chkdraft executable & static libraries
