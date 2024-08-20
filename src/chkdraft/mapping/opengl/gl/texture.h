@@ -3,6 +3,7 @@
 #include "unique_resource.h"
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 namespace gl
 {
@@ -92,10 +93,9 @@ namespace gl
 
         void bind()
         {
-            GL_INVALID_ENUM;
             glBindTexture(tex->type, tex->id);
             if ( auto error = glGetError(); error != GL_NO_ERROR ) // GL_INVALID_FRAMEBUFFER_OPERATION = 1286
-                int a = 0;
+                throw std::runtime_error("Error binding texture");
         }
 
         void bindToSlot(GLenum textureUnit)
@@ -210,6 +210,11 @@ namespace gl
         {
             for ( GLenum i = GL_TEXTURE0; i <= last; i++ )
                 gl::Texture::bindDefaultToSlot(i);
+        }
+
+        void generateMipmap()
+        {
+            glGenerateMipmap(tex->type);
         }
     };
 }
