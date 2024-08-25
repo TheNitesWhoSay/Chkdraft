@@ -653,7 +653,7 @@ double GuiMap::getZoom()
 
 void GuiMap::setZoom(double newScale)
 {
-    scrGraphics->setScaleFactor(newScale);
+    scrGraphics->setZoom(newScale);
     for ( u32 i=0; i<defaultZooms.size(); i++ )
     {
         if ( newScale == defaultZooms[i] )
@@ -1722,16 +1722,6 @@ void GuiMap::ChangesReversed()
     changesUndone();
 }
 
-void GuiMap::SetScreenLeft(s32 newScreenLeft)
-{
-    screenLeft = newScreenLeft;
-}
-
-void GuiMap::SetScreenTop(s32 newScreenTop)
-{
-    screenTop = newScreenTop;
-}
-
 float GuiMap::MiniMapScale(u16 xSize, u16 ySize)
 {
     if ( xSize >= ySize && xSize > 0 )
@@ -1828,8 +1818,7 @@ void GuiMap::PaintMap(GuiMapPtr currMap, bool pasting)
 
             glClearColor(0.0f, 0.f, 0.f, 0.f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            scrGraphics->render(chkd.scData, screenLeft, screenTop, cliRect.right-cliRect.left, cliRect.bottom-cliRect.top,
-                currLayer == Layer::Locations, DisplayingElevations(), DisplayingTileNums());
+            scrGraphics->render(chkd.scData, currLayer == Layer::Locations, DisplayingElevations(), DisplayingTileNums());
             
             glFlush();
             SwapBuffers(openGlDc->getDcHandle());
@@ -2658,6 +2647,13 @@ void GuiMap::Scroll(bool scrollX, bool scrollY, bool validateBorder, s32 newLeft
         scrollbars.nPage = screenHeight;
         SetScrollInfo(getHandle(), SB_VERT, &scrollbars, true);
     }
+    
+    scrGraphics->windowBoundsChanged({
+        .left = screenLeft,
+        .top = screenTop,
+        .right = screenLeft + rcMap.right-rcMap.left,
+        .bottom = screenTop + rcMap.bottom-rcMap.top
+    });
     Redraw(true);
 }
 
@@ -4098,4 +4094,16 @@ void GuiMap::refreshTileOccupationCache()
 {
     auto newTileOccupationCache = Scenario::getTileOccupationCache(chkd.scData.terrain.get(Scenario::getTileset()), chkd.scData.units);
     this->tileOccupationCache.swap(newTileOccupationCache);
+}
+
+void GuiMap::windowBoundsChanged()
+{
+    RECT cliRect {};
+    WindowsItem::getClientRect(cliRect);
+    scrGraphics->windowBoundsChanged({
+        .left = screenLeft,
+        .top = screenTop,
+        .right = screenLeft + cliRect.right-cliRect.left,
+        .bottom = screenTop + cliRect.bottom-cliRect.top
+    });
 }

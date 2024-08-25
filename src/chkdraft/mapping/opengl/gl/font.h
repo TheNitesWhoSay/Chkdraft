@@ -53,15 +53,17 @@ namespace gl
         struct TextShader : gl::Program
         {
             static constexpr std::string_view vertexCode = "#version 330 core\n"
-                "layout (location = 0) in vec2 pos;\n"
+                "layout (location = 0) in vec2 glyphPos;\n"
                 "layout (location = 1) in vec2 texPos;\n"
                 "out vec2 TexCoords;\n"
-
-                "uniform mat4 projection;\n"
+                
+                "uniform mat2 glyphScaling;\n"
+                "uniform mat4 textPosToNdc;\n"
+                "uniform vec2 textOrigin;\n"
 
                 "void main()\n"
                 "{\n"
-                    "gl_Position = projection * vec4(pos.xy, 0.0, 1.0);\n"
+                    "gl_Position = vec4(vec4(textPosToNdc * vec4(textOrigin, 0.0, 1.0)).xy + (glyphScaling * glyphPos), 0.0, 1.0);\n"
                     "TexCoords = texPos.xy;\n"
                 "}";
 
@@ -79,8 +81,10 @@ namespace gl
                     "vec4 sampled = vec4(1.0, 1.0, 1.0, texture(tex, TexCoords).r);\n"
                     "color = textColor * sampled;\n"
                 "}";
-
-            gl::uniform::Mat4 projection {"projection"};
+            
+            gl::uniform::Mat2 glyphScaling {"glyphScaling"};
+            gl::uniform::Mat4 textPosToNdc {"textPosToNdc"};
+            gl::uniform::Vec2 textPos {"textOrigin"};
             gl::uniform::Int tex {"tex"};
             gl::uniform::Vec4 textColor {"textColor"};
 
@@ -91,8 +95,10 @@ namespace gl
                 gl::Program::attachShader(gl::Shader(gl::Shader::Type::fragment, fragmentCode));
                 gl::Program::link();
                 gl::Program::use();
-                gl::Program::findUniforms(projection, tex, textColor);
-                this->projection.loadIdentity();
+                gl::Program::findUniforms(glyphScaling, textPosToNdc, textPos, tex, textColor);
+                this->glyphScaling.loadIdentity();
+                this->textPosToNdc.loadIdentity();
+                this->textPos.setVec2(0.f, 0.f);
                 this->textColor.setVec4(0.f, 0.f, 0.f, 1.f);
             }
 
@@ -315,20 +321,20 @@ namespace gl
 
             textShader.use();
             textShader.setColor(red, green, blue);
+            textShader.textPos.setVec2(x, y);
             textShader.tex.setValue(0);
             textVertices.bind();
-            auto vertOffset = y - offset.y;
             for ( auto & glyph : renderGlyphs )
             {
                 auto glyphHeight = glyph.rc.bottom-glyph.rc.top;
                 glyph.tex->bindToSlot(GL_TEXTURE0);
                 textVertices.vertices.assign({
-                    x+glyph.rc.left  + xAdjust, glyph.rc.bottom + vertOffset, 0.0f, 1.0f,
-                    x+glyph.rc.left  + xAdjust, glyph.rc.top    + vertOffset, 0.0f, 0.0f,
-                    x+glyph.rc.right + xAdjust, glyph.rc.top    + vertOffset, 1.0f, 0.0f,
-                    x+glyph.rc.left  + xAdjust, glyph.rc.bottom + vertOffset, 0.0f, 1.0f,
-                    x+glyph.rc.right + xAdjust, glyph.rc.top    + vertOffset, 1.0f, 0.0f,
-                    x+glyph.rc.right + xAdjust, glyph.rc.bottom + vertOffset, 1.0f, 1.0f
+                    glyph.rc.left  + xAdjust, glyph.rc.bottom - offset.y, 0.0f, 1.0f,
+                    glyph.rc.left  + xAdjust, glyph.rc.top    - offset.y, 0.0f, 0.0f,
+                    glyph.rc.right + xAdjust, glyph.rc.top    - offset.y, 1.0f, 0.0f,
+                    glyph.rc.left  + xAdjust, glyph.rc.bottom - offset.y, 0.0f, 1.0f,
+                    glyph.rc.right + xAdjust, glyph.rc.top    - offset.y, 1.0f, 0.0f,
+                    glyph.rc.right + xAdjust, glyph.rc.bottom - offset.y, 1.0f, 1.0f
                 });
                 textVertices.bufferSubData(gl::UsageHint::DynamicDraw);
                 textVertices.drawTriangles();

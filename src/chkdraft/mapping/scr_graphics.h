@@ -18,6 +18,7 @@
 #include "gl/texture.h"
 #include "gl/uniform.h"
 #include "gl/vertices.h"
+#include <glm/glm.hpp>
 
 namespace Scr {
 
@@ -245,6 +246,14 @@ namespace Scr {
                     default: throw std::logic_error("Unrecognized visual quality");
                 }
             }
+
+            constexpr float imageScale() const
+            {
+                if ( halfAnims )
+                    return 1.f/float(scale)/2.f;
+                else
+                    return 1.f/float(scale);
+            }
         };
         inline constexpr VisualQuality
             VisualQuality::SD { 1, false, "SD" },
@@ -298,7 +307,7 @@ namespace Scr {
                     throw std::runtime_error("Failed to get file " + filePath + " from archives");
             }
 
-            class SimpleVertexShader : public gl::Program
+            class TextureVertexShader : public gl::Program
             {
                 static constexpr std::string_view vertexShaderCode =
                     "#version 330 core\n"
@@ -309,16 +318,16 @@ namespace Scr {
                     "out vec2 texCoord;"
                     
                     "uniform mat4 posToNdc;"
-                    "uniform mat2 texScale;"
+                    "uniform mat4 texTransform;"
 
                     "void main() {"
                     "    gl_Position = posToNdc * vec4(pos, 0.0, 1.0);"
-                    "    texCoord = texScale * texCoordIn;"
+                    "    texCoord = vec4(texTransform * vec4(texCoordIn, 0.0, 1.0)).xy;"
                     "};";
 
                 public:
                     gl::uniform::Mat4 posToNdc { "posToNdc" };
-                    gl::uniform::Mat2 texScale { "texScale" };
+                    gl::uniform::Mat4 texTransform { "texTransform" };
 
                     void attach()
                     {
@@ -326,7 +335,7 @@ namespace Scr {
                     }
             };
 
-            class SimpleShader : public SimpleVertexShader
+            class SimpleShader : public TextureVertexShader
             {
                 static constexpr std::string_view fragmentCode =
                     "#version 330 core\n"
@@ -344,17 +353,17 @@ namespace Scr {
 
                 void load() {
                     gl::Program::create();
-                    SimpleVertexShader::attach();
+                    TextureVertexShader::attach();
                     gl::Program::attachShader(gl::Shader(gl::Shader::Type::fragment, fragmentCode));
                     gl::Program::link();
                     gl::Program::use();
-                    gl::Program::findUniforms(posToNdc, texScale, tex);
+                    gl::Program::findUniforms(posToNdc, texTransform, tex);
                     posToNdc.loadIdentity();
-                    texScale.loadIdentity();
+                    texTransform.loadIdentity();
                 }
             };
 
-            class SolidColorShader : public SimpleVertexShader
+            class SolidColorShader : public gl::Program
             {
                 static constexpr std::string_view vertexCode =
                     "#version 330 core\n"
@@ -393,7 +402,7 @@ namespace Scr {
                 }
             };
 
-            class SimplePaletteShader : public SimpleVertexShader
+            class SimplePaletteShader : public TextureVertexShader
             {
                 static constexpr std::string_view fragmentCode =
                     "#version 330 core\n"
@@ -415,17 +424,17 @@ namespace Scr {
 
                 void load() {
                     gl::Program::create();
-                    SimpleVertexShader::attach();
+                    TextureVertexShader::attach();
                     gl::Program::attachShader(gl::Shader(gl::Shader::Type::fragment, fragmentCode));
                     gl::Program::link();
                     gl::Program::use();
-                    gl::Program::findUniforms(posToNdc, texScale, tex, pal);
+                    gl::Program::findUniforms(posToNdc, texTransform, tex, pal);
                     posToNdc.loadIdentity();
-                    texScale.loadIdentity();
+                    texTransform.loadIdentity();
                 }
             };
 
-            class EffectMask : public SimpleVertexShader
+            class EffectMask : public TextureVertexShader
             {
                 static inline const std::string filePath = "ShadersGLSL\\effect_mask.glsl";
 
@@ -435,41 +444,68 @@ namespace Scr {
 
                 void load(ArchiveCluster & archiveCluster) {
                     gl::Program::create();
-                    SimpleVertexShader::attach();
+                    TextureVertexShader::attach();
                     gl::Program::attachShader(std::move(Shaders::fragmentShaderFromDatFile(archiveCluster, filePath, ensureVersioned)));
                     gl::Program::link();
                     gl::Program::use();
-                    gl::Program::findUniforms(posToNdc, texScale, spriteTex, sampleTex);
+                    gl::Program::findUniforms(posToNdc, texTransform, spriteTex, sampleTex);
                     posToNdc.loadIdentity();
-                    texScale.loadIdentity();
+                    texTransform.loadIdentity();
                 }
             };
 
-            class SpriteShader : public SimpleVertexShader
+            class SpriteShader : public gl::Program
             {
+                static constexpr std::string_view vertexShaderCode =
+                    "#version 330 core\n"
+
+                    "layout (location = 0) in vec2 normalPos;" // 0 or 1 if this is left/top or right/bottom respectively
+                    "layout (location = 1) in vec2 normalTex;" // 0 or 1 if this is left/top or right/bottom respectively
+
+                    "out vec2 texCoord;"
+                    
+                    "uniform mat4 posToNdc;"
+                    "uniform float imageScale;"
+                    "uniform vec2 image[6];" // centerPos, animSize, animTexScale, frameSize, framePosOffset, frameTexOffset
+
+                    "void main() {"
+                    "    vec2 centerPos = image[0];"
+                    "    vec2 animSize = image[1];"
+                    "    vec2 animTexScale = image[2];"
+                    "    vec2 frameSize = image[3];"
+                    "    vec2 framePosOffset = image[4];"
+                    "    vec2 frameTexOffset = image[5];"
+
+                    "    vec2 imageOriginOffset = -animSize/2.0 + framePosOffset;"
+                    "    gl_Position = posToNdc * vec4(centerPos + imageScale*(imageOriginOffset + normalPos*frameSize), 0.0, 1.0);"
+                    "    texCoord = animTexScale * (frameTexOffset + normalTex*frameSize);"
+                    "};";
+
                 static inline const std::string filePath = "ShadersGLSL\\sprite_frag.glsl";
 
             public:
+                gl::uniform::Mat4 posToNdc { "posToNdc" };
+                gl::uniform::Float imageScale { "imageScale" };
+                gl::uniform::Vec2Array image { "image" };
                 gl::uniform::Sampler2D spriteTex { "spriteTex" };
                 gl::uniform::Sampler2D teamColorTex { "teamcolorTex" };
-                gl::uniform::FloatV4 hallucinate { "data" };
                 gl::uniform::Color multiplyColor { "multiplyColor" };
                 gl::uniform::Color teamColor { "teamColor" };
+                gl::uniform::FloatV4 hallucinate { "data" };
 
                 template <typename Preprocessor>
                 void load(ArchiveCluster & archiveCluster, Preprocessor && preprocessor) {
                     gl::Program::create();
-                    SimpleVertexShader::attach();
+                    gl::Program::attachShader(gl::Shader(gl::Shader::Type::vertex, vertexShaderCode));
                     gl::Program::attachShader(std::move(fragmentShaderFromDatFile(archiveCluster, filePath, std::forward<Preprocessor>(preprocessor))));
                     gl::Program::link();
                     gl::Program::use();
-                    gl::Program::findUniforms(posToNdc, texScale, spriteTex, teamColorTex, hallucinate, multiplyColor, teamColor);
+                    gl::Program::findUniforms(posToNdc, imageScale, image, spriteTex, teamColorTex, hallucinate, multiplyColor, teamColor);
                     posToNdc.loadIdentity();
-                    texScale.loadIdentity();
                 }
             };
 
-            class TileShader : public SimpleVertexShader
+            class TileShader : public TextureVertexShader
             {
                 static inline const std::string filePath = "ShadersGLSL\\textured_frag.glsl";
 
@@ -480,17 +516,17 @@ namespace Scr {
                 template <typename Preprocessor>
                 void load(ArchiveCluster & archiveCluster, Preprocessor && preprocessor) {
                     gl::Program::create();
-                    SimpleVertexShader::attach();
+                    TextureVertexShader::attach();
                     gl::Program::attachShader(std::move(fragmentShaderFromDatFile(archiveCluster, filePath, std::forward<Preprocessor>(preprocessor))));
                     gl::Program::link();
                     gl::Program::use();
-                    gl::Program::findUniforms(posToNdc, texScale, spriteTex, multiplyColor);
+                    gl::Program::findUniforms(posToNdc, texTransform, spriteTex, multiplyColor);
                     posToNdc.loadIdentity();
-                    texScale.loadIdentity();
+                    texTransform.loadIdentity();
                 }
             };
 
-            class PaletteShader : public SimpleVertexShader
+            class PaletteShader : public TextureVertexShader
             {
                 static inline const std::string filePath = "ShadersGLSL\\palette_color_frag.glsl";
 
@@ -502,13 +538,13 @@ namespace Scr {
                 template <typename Preprocessor>
                 void load(ArchiveCluster & archiveCluster, Preprocessor && preprocessor) {
                     gl::Program::create();
-                    SimpleVertexShader::attach();
+                    TextureVertexShader::attach();
                     gl::Program::attachShader(std::move(fragmentShaderFromDatFile(archiveCluster, filePath, std::forward<Preprocessor>(preprocessor))));
                     gl::Program::link();
                     gl::Program::use();
-                    gl::Program::findUniforms(posToNdc, texScale, spriteTex, sampleTex, multiplyColor);
+                    gl::Program::findUniforms(posToNdc, texTransform, spriteTex, sampleTex, multiplyColor);
                     posToNdc.loadIdentity();
-                    texScale.loadIdentity();
+                    texTransform.loadIdentity();
                 }
 
             };
@@ -519,7 +555,7 @@ namespace Scr {
 
             public:
                 gl::uniform::Mat4 posToNdc { "posToNdc" };
-                gl::uniform::Mat2 texScale { "texScale" };
+                gl::uniform::Mat4 texTransform { "texTransform" };
                 gl::uniform::Sampler2D spriteTex { "spriteTex" };
                 gl::uniform::Sampler2D sampleTex { "sampleTex" };
                 gl::uniform::Sampler2D sampleTex2 { "sampleTex2" };
@@ -550,21 +586,21 @@ namespace Scr {
                         "out vec2 mapCoord2;"
                         
                         "uniform mat4 posToNdc;"
-                        "uniform mat2 texScale;"
+                        "uniform mat4 texTransform;"
 
                         "void main() {"
                         "    gl_Position = posToNdc * vec4(pos, 0.0, 1.0);"
                         "    mapCoord = mapCoordIn;"
                         "    mapCoord2 = mapCoord2In;"
-                        "    texCoord = texScale * texCoordIn;"
+                        "    texCoord = vec4(texTransform * vec4(texCoordIn, 0.0, 1.0)).xy;"
                         "};";
                     gl::Program::attachShader(gl::Shader(gl::Shader::Type::vertex, vertexShaderCode));
                     gl::Program::attachShader(std::move(fragmentShaderFromDatFile(archiveCluster, filePath, std::forward<Preprocessor>(preprocessor))));
                     gl::Program::link();
                     gl::Program::use();
-                    gl::Program::findUniforms(posToNdc, texScale, spriteTex, sampleTex, sampleTex2, sampleTex3, sampleTex4, data);
+                    gl::Program::findUniforms(posToNdc, texTransform, spriteTex, sampleTex, sampleTex2, sampleTex3, sampleTex4, data);
                     posToNdc.loadIdentity();
-                    texScale.loadIdentity();
+                    texTransform.loadIdentity();
                 }
             };
 
@@ -663,9 +699,7 @@ namespace Scr {
 
         static std::shared_ptr<Animation> loadSdAnim(Sc::Data & scData, u8* data, u32 index, gl::ContextSemaphore* contextSemaphore = nullptr);
 
-        static std::shared_ptr<Animation> loadHdAnim(ArchiveCluster & archiveCluster, const std::filesystem::path & path, ByteBuffer & fileData, gl::ContextSemaphore* contextSemaphore = nullptr);
-
-        static void loadImages(Sc::Data & scData, ArchiveCluster & archiveCluster, Skin & skin, VisualQuality visualQuality, std::filesystem::path & texPrefix, std::vector<std::shared_ptr<Animation>> & images, ByteBuffer & fileData, gl::ContextSemaphore* contextSemaphore = nullptr);
+        static std::shared_ptr<Animation> loadHdAnim(bool halfAnim, ArchiveCluster & archiveCluster, const std::filesystem::path & path, ByteBuffer & fileData, gl::ContextSemaphore* contextSemaphore = nullptr);
 
         static bool loadGrp(ArchiveCluster & archiveCluster, const std::filesystem::path & path, Grp & grp, ByteBuffer & fileData, bool framedTex, bool mergedTex);
 
@@ -741,6 +775,25 @@ namespace Scr {
 
     class MapGraphics
     {
+        gl::Size2D<s32> imageMargin {};
+        gl::Rect2D<s32> windowBounds {};
+        gl::Size2D<s32> windowDimensions {};
+        gl::Size2D<s32> mapViewDimensions {};
+        gl::Size2D<s32> starDimensions {};
+        gl::Rect2D<s32> mapViewBounds {};
+        gl::Rect2D<s32> mapTileBounds {};
+        gl::Rect2D<s32> imageClipBoundingBox {};
+        gl::VertexVector<> gridVertices {};
+        glm::mat4 unscrolledWindowToNdc {};
+        glm::mat4 gameToNdc {};
+        glm::mat4 starToNdc {};
+        glm::mat4 tileToNdc {};
+        glm::mat4 tileToTex {};
+        glm::mat4 gridToNdc {};
+        glm::mat2 glyphScaling {};
+        GLfloat zoom = 1.f;
+        Chk::PlayerColor prevMappedColor = std::numeric_limits<Chk::PlayerColor>::max();
+
         u32 n1Frame = 0;
         u32 n2Frame = 0;
         u32 nIncrement = 0;
@@ -755,7 +808,6 @@ namespace Scr {
         s32 gridSize = 0;
         bool fpsEnabled = true;
         gl::Fps fps {};
-        GLfloat scaleFactor = 1.0f;
         gl::VertexVector<> starVertices {};
         gl::VertexVector<> tileVertices {};
         gl::VertexArray<6*8> waterVertices {}; // 6 verticies forming the two triangles for a quad, 8 elements per vertex (pos.xy, tex.xy, map.xy, map2.xy)
@@ -767,21 +819,16 @@ namespace Scr {
         gl::VertexVector<> triangleVertices4 {};
         gl::VertexVector<> triangleVertices5 {};
         gl::VertexVector<> triangleVertices6 {};
-        GLfloat posToNdc[4][4] { // Converts scaled 2D game coordinates (0 to screen width/height) to NDCs which range (-1 to 1) with y-axis flipped
-            {  1.f, 0.f, 0.f, 0.f }, // x = 2x/width
-            {  0.f, 1.f, 0.f, 0.f }, // y = -2y/height
-            {  0.f, 0.f, 1.f, 0.f },
-            { -1.f, 1.f, 0.f, 1.f }  // x = x-1, y = y+1
-        };
-        GLfloat unscaledPosToNdc[4][4] { // Converts unscaled 2D game coordinates (0 to screen width/height) to NDCs which range (-1 to 1) with y-axis flipped
-            {  1.f, 0.f, 0.f, 0.f }, // x = 2x/width
-            {  0.f, 1.f, 0.f, 0.f }, // y = -2y/height
-            {  0.f, 0.f, 1.f, 0.f },
-            { -1.f, 1.f, 0.f, 1.f }  // x = x-1, y = y+1
-        };
 
     public:
         MapGraphics(MapFile & mapFile);
+
+        void updateGrid(); // Occurs when the map view, grid size or grid color changes
+        void mapViewChanged(); // Occurs when the window bounds, zoom-level or skin changes
+        void windowBoundsChanged(gl::Rect2D<s32> windowBounds);
+        void skinChanged();
+        GLfloat getZoom();
+        void setZoom(GLfloat newZoom);
         
         bool isClassicLoaded(Scr::GraphicsData & scrDat);
 
@@ -795,29 +842,26 @@ namespace Scr {
         bool displayingFps();
         void toggleDisplayFps();
 
-        GLfloat getScaleFactor();
-        void setScaleFactor(GLfloat scaleFactor);
-
         void load(Sc::Data & scData, Scr::GraphicsData & scrDat, const Scr::GraphicsData::RenderSettings & renderSettings, ArchiveCluster & archiveCluster, ByteBuffer & fileData);
 
-        void setupNdcTransformation(s32 width, s32 height);
-        
         void drawTestTex(gl::Texture & tex);
 
-        void drawGrid(s32 left, s32 top, s32 width, s32 height);
-        void drawClassicStars(Sc::Data & scData, s32 left, s32 top, s32 width, s32 height);
-        void drawStars(s32 x, s32 y, s32 scaledWidth, s32 scaledHeight, u32 multiplyColor);
-        void drawTileNums(Sc::Data & scData, s32 left, s32 top, s32 width, s32 height);
-        void drawTileOverlays(Sc::Data & scData, s32 left, s32 top, s32 width, s32 height);
-        void drawTileVertices(Scr::Grp & tilesetGrp, s32 left, s32 top, s32 width, s32 height);
-        void drawTerrain(Sc::Data & scData, s32 left, s32 top, s32 width, s32 height);
+        void drawGrid();
+        void drawClassicStars(Sc::Data & scData);
+        void drawStars(u32 multiplyColor);
+        void drawTileNums(Sc::Data & scData);
+        void drawTileOverlays(Sc::Data & scData);
+        void drawTileVertices(Scr::Grp & tilesetGrp, s32 width, s32 height, const glm::mat4x4 & positionTransformation);
+        void drawTerrain(Sc::Data & scData);
         void drawTilesetIndexed(Sc::Data & scData, s32 left, s32 top, s32 width, s32 height, s32 scrollY);
-        void drawAnim(Scr::Animation & animation, s32 x, s32 y, u32 frame, u32 playerColor, u32 multiplyColor, bool hallucinate, bool halfAnims);
+        void prepareImageRendering();
+        void drawImage(Scr::Animation & animation, s32 x, s32 y, u32 frame, u32 multiplyColor, u32 playerColor, bool hallucinate);
         void drawClassicImage(Sc::Data & scData, gl::Palette & palette, s32 x, s32 y, u32 imageId, Chk::PlayerColor color);
-        void drawSprites(Sc::Data & scData, s32 left, s32 top);
-        void drawLocations(s32 left, s32 top, s32 width, s32 height);
+        void drawSprites(Sc::Data & scData);
+        void drawLocations();
+        void drawFps();
 
-        void render(Sc::Data & scData, s32 left, s32 top, s32 width, s32 height, bool renderLocations, bool renderTileElevations, bool renderTileNums);
+        void render(Sc::Data & scData, bool renderLocations, bool renderTileElevations, bool renderTileNums);
 
         void updateGraphics(u64 ticks); // Runs every few ms, with ticks being the ms since the last frame
     };

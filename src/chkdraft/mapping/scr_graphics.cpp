@@ -7,6 +7,7 @@
 #include "memory_tiered_tasks.h"
 #include <glad/gl.h>
 #include "gl/base.h"
+#include <glm/vec3.hpp>
 
 extern Logger logger;
 
@@ -148,10 +149,10 @@ gl::Texture Scr::GraphicsData::loadDdsTexture(u8* data, gl::ContextSemaphore* co
     if ( mipMapCount > 1 )
     {
         texture.setMipmapLevelRange(0, mipMapCount-1);
-        texture.setMinMagFilters(GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
+        texture.setMinMagFilters(GL_NEAREST_MIPMAP_LINEAR, GL_LINEAR);
     }
     else // No mipMaps
-        texture.setMinMagFilters(GL_LINEAR);
+        texture.setMinMagFilters(GL_NEAREST);
 
     size_t offset = sizeof(DDS_HEADER);
     size_t width = header->width;
@@ -277,7 +278,7 @@ std::shared_ptr<Scr::Animation> Scr::GraphicsData::loadSdAnim(Sc::Data & scData,
     return animation;
 }
         
-std::shared_ptr<Scr::Animation> Scr::GraphicsData::loadHdAnim(ArchiveCluster & archiveCluster, const std::filesystem::path & path, ByteBuffer & fileData, gl::ContextSemaphore* contextSemaphore)
+std::shared_ptr<Scr::Animation> Scr::GraphicsData::loadHdAnim(bool halfAnim, ArchiveCluster & archiveCluster, const std::filesystem::path & path, ByteBuffer & fileData, gl::ContextSemaphore* contextSemaphore)
 {
     if ( archiveCluster.getFile(path.string(), fileData) )
     {
@@ -297,8 +298,8 @@ std::shared_ptr<Scr::Animation> Scr::GraphicsData::loadHdAnim(ArchiveCluster & a
         animation->height = entry->grpHeight;
         u32 textureWidth = entry->images[0].textureWidth;
         u32 textureHeight = entry->images[0].textureHeight;
-        animation->xScale = 1.0f/textureWidth;
-        animation->yScale = 1.0f/textureHeight;
+        animation->xScale = halfAnim ? .5f/textureWidth : 1.0f/textureWidth;
+        animation->yScale = halfAnim ? .5f/textureHeight : 1.0f/textureHeight;
 
         for ( size_t i = 0; i < size_t(header->layers); i++ )
         {
@@ -319,106 +320,6 @@ std::shared_ptr<Scr::Animation> Scr::GraphicsData::loadHdAnim(ArchiveCluster & a
         return animation;
     }
     return nullptr;
-}
-
-void Scr::GraphicsData::loadImages(Sc::Data & scData, ArchiveCluster & archiveCluster, Skin & skin, VisualQuality visualQuality, std::filesystem::path & texPrefix, std::vector<std::shared_ptr<Animation>> & images, ByteBuffer & fileData, gl::ContextSemaphore* contextSemaphore)
-{
-    std::filesystem::path animPrefix = texPrefix / "anim";
-    std::filesystem::path skinAnimPrefix = animPrefix / skin;
-    auto sdDataFile = archiveCluster.getFile("SD/mainSD.anim");
-    u8* sdData = sdDataFile->data();
-    if ( sdData == nullptr )
-        throw std::logic_error("Error loading mainSD.anim");
-
-    Animation::Header* header = (Animation::Header*)sdData;
-    u32* entryOffsets = (u32*)(&sdData[sizeof(Animation::Header)]);
-
-    if ( header->fileType != Animation::Header::ANIM || header->version != 0x0101 )
-        throw std::logic_error("Invalid mainSD.anim header");
-    else if ( visualQuality == VisualQuality::SD || contextSemaphore == nullptr ) // SD (not reading additional casc files) or no context semaphore
-    {
-        for ( u32 i=0; i<header->entries; i++ )
-        {
-            Animation::MainSd::Entry* entry = (Animation::MainSd::Entry*)&sdData[entryOffsets[i]];
-            if ( entry->frames == 0 )
-            {
-                Animation::MainSd::Reference* ref = (Animation::MainSd::Reference*)(entry);
-                if ( ref->referencedImage > i )
-                    throw std::logic_error("Referenced anim was not yet loaded!");
-                else
-                    images[i] = images[ref->referencedImage];
-            }
-            else if ( visualQuality == VisualQuality::SD )
-                images[i] = loadSdAnim(scData, sdData, i);
-            else if ( skin.imageUsesSkinTexture[i] != 0 )
-                images[i] = loadHdAnim(archiveCluster, skinAnimPrefix / (std::string("main_") + (to_zero_padded_str(3, i) + ".anim")), fileData);
-            else
-                images[i] = loadHdAnim(archiveCluster, animPrefix / (std::string("main_") + (to_zero_padded_str(3, i) + ".anim")), fileData);
-        }
-    }
-    else // Have a context semaphore and loading VisualQuality::HD2/HD which reads ~1000 casc files, use multithreading for up to ~70% speedup
-    {
-        struct Task
-        {
-            ArchiveCluster* archiveCluster;
-            std::filesystem::path path;
-            std::shared_ptr<Animation>* anim;
-            gl::ContextSemaphore* contextSemaphore;
-
-            size_t requiredMemory = 0;
-
-            void perform(ByteBuffer & memory) { *anim = GraphicsData::loadHdAnim(*archiveCluster, path.string(), memory, contextSemaphore); }
-        };
-
-        MemoryTieredTasks<Task> memoryTieredTasks {std::min((unsigned int)12, std::thread::hardware_concurrency()), {
-            {.range = {.min=           0, .max= 16*1024*1024}, .totalBuffers = 12}, // Twelve 16MB buffers
-            {.range = {.min=16*1024*1024, .max= 42*1024*1024}, .totalBuffers =  2}, // Two 42MB buffers
-            {.range = {.min=42*1024*1024, .max=120*1024*1024}, .totalBuffers =  1}  // One 120MB buffer
-        }};
-
-        memoryTieredTasks.run_tasks([&](){
-            contextSemaphore->releaseContext();
-            for ( u32 i=0; i<header->entries; i++ )
-            {
-                Animation::MainSd::Entry* entry = (Animation::MainSd::Entry*)&sdData[entryOffsets[i]];
-                if ( entry->frames > 0 )
-                {
-                    if ( visualQuality == VisualQuality::SD )
-                        images[i] = loadSdAnim(scData, sdData, i);
-                    else
-                    {
-                        std::filesystem::path path {};
-                        if ( skin.imageUsesSkinTexture[i] != 0 )
-                            path = skinAnimPrefix / (std::string("main_") + (to_zero_padded_str(3, i) + ".anim"));
-                        else
-                            path = animPrefix / (std::string("main_") + (to_zero_padded_str(3, i) + ".anim"));
-
-                        memoryTieredTasks.add_task({
-                            .archiveCluster = &archiveCluster,
-                            .path = path,
-                            .anim = &images[i],
-                            .contextSemaphore = contextSemaphore,
-                            .requiredMemory = archiveCluster.getFileSize(path.string())
-                        });
-                    }
-                }
-            }
-        });
-        contextSemaphore->claimContext();
-
-        for ( u32 i=0; i<header->entries; i++ )
-        {
-            Animation::MainSd::Entry* entry = (Animation::MainSd::Entry*)&sdData[entryOffsets[i]];
-            if ( entry->frames == 0 )
-            {
-                Animation::MainSd::Reference* ref = (Animation::MainSd::Reference*)(entry);
-                if ( ref->referencedImage > i )
-                    throw std::logic_error("Referenced anim was not yet loaded!");
-                else
-                    images[i] = images[ref->referencedImage];
-            }
-        }
-    }
 }
 
 bool Scr::GraphicsData::loadGrp(ArchiveCluster & archiveCluster, const std::filesystem::path & path, Grp & grp, ByteBuffer & fileData, bool framedTex, bool mergedTex)
@@ -786,6 +687,7 @@ void Scr::GraphicsData::Data::Skin::loadClassicStars(Sc::Data & scData)
                 classicStar.tex.genTexture();
                 classicStar.tex.bind();
                 classicStar.tex.setMinMagFilters(GL_NEAREST);
+                classicStar.tex.setTextureWrap(GL_CLAMP_TO_EDGE);
                 if ( star.bitmap->width % 4 == 0 && star.bitmap->height % 4 == 0 ) // Dimensions already 4-byte aligned
                 {
                     classicStar.tex.loadImage2D({
@@ -803,7 +705,7 @@ void Scr::GraphicsData::Data::Skin::loadClassicStars(Sc::Data & scData)
                     std::vector<u8> bitmap(size_t(alignedWidth)*size_t(alignedHeight), u8(0));
                     if ( star.bitmap->width % 4 == 0 ) // Width already 4-byte aligned
                     {
-                        memcpy(&bitmap[0], &star.bitmap->data[0], size_t(star.bitmap->width)*size_t(star.bitmap->height));
+                        std::memcpy(&bitmap[0], &star.bitmap->data[0], size_t(star.bitmap->width)*size_t(star.bitmap->height));
                         classicStar.tex.loadImage2D({
                             .data = &bitmap[0],
                             .width = int(alignedWidth),
@@ -817,7 +719,7 @@ void Scr::GraphicsData::Data::Skin::loadClassicStars(Sc::Data & scData)
                     else // Width and height unaligned
                     {
                         for ( size_t y=0; y<size_t(star.bitmap->height); ++y )
-                            memcpy(&bitmap[y*size_t(alignedWidth)], &star.bitmap->data[y*size_t(star.bitmap->width)], size_t(star.bitmap->width));
+                            std::memcpy(&bitmap[y*size_t(alignedWidth)], &star.bitmap->data[y*size_t(star.bitmap->width)], size_t(star.bitmap->width));
 
                         classicStar.tex.loadImage2D({
                             .data = &bitmap[0],
@@ -1028,6 +930,7 @@ void Scr::GraphicsData::Data::Skin::loadClassicImages(Sc::Data & scData)
 
 void Scr::GraphicsData::Data::Skin::loadImages(Sc::Data & scData, ArchiveCluster & archiveCluster, std::filesystem::path texPrefix, const RenderSettings & renderSettings, ByteBuffer & fileData, gl::ContextSemaphore* contextSemaphore)
 {
+    bool halfAnims = renderSettings.visualQuality.halfAnims;
     if ( this->images == nullptr )
         this->images = std::make_shared<std::vector<std::shared_ptr<Animation>>>(size_t(999), nullptr);
 
@@ -1063,15 +966,16 @@ void Scr::GraphicsData::Data::Skin::loadImages(Sc::Data & scData, ArchiveCluster
             else if ( renderSettings.visualQuality == VisualQuality::SD )
                 (*images)[i] = loadSdAnim(scData, sdData, i);
             else if ( skin.imageUsesSkinTexture[i] != 0 )
-                (*images)[i] = loadHdAnim(archiveCluster, skinAnimPrefix / (std::string("main_") + (to_zero_padded_str(3, i) + ".anim")), fileData);
+                (*images)[i] = loadHdAnim(halfAnims, archiveCluster, skinAnimPrefix / (std::string("main_") + (to_zero_padded_str(3, i) + ".anim")), fileData);
             else
-                (*images)[i] = loadHdAnim(archiveCluster, animPrefix / (std::string("main_") + (to_zero_padded_str(3, i) + ".anim")), fileData);
+                (*images)[i] = loadHdAnim(halfAnims, archiveCluster, animPrefix / (std::string("main_") + (to_zero_padded_str(3, i) + ".anim")), fileData);
         }
     }
     else // Have a context semaphore and loading VisualQuality::HD2/HD which reads ~1000 casc files, use multithreading for up to ~70% speedup
     {
         struct Task
         {
+            bool halfAnim;
             ArchiveCluster* archiveCluster;
             std::filesystem::path path;
             std::shared_ptr<Animation>* anim;
@@ -1079,7 +983,7 @@ void Scr::GraphicsData::Data::Skin::loadImages(Sc::Data & scData, ArchiveCluster
 
             size_t requiredMemory = 0;
 
-            void perform(ByteBuffer & memory) { *anim = GraphicsData::loadHdAnim(*archiveCluster, path.string(), memory, contextSemaphore); }
+            void perform(ByteBuffer & memory) { *anim = GraphicsData::loadHdAnim(halfAnim, *archiveCluster, path.string(), memory, contextSemaphore); }
         };
 
         MemoryTieredTasks<Task> memoryTieredTasks {std::min((unsigned int)12, std::thread::hardware_concurrency()), {
@@ -1106,6 +1010,7 @@ void Scr::GraphicsData::Data::Skin::loadImages(Sc::Data & scData, ArchiveCluster
                             path = animPrefix / (std::string("main_") + (to_zero_padded_str(3, i) + ".anim"));
 
                         memoryTieredTasks.add_task({
+                            .halfAnim = renderSettings.visualQuality.halfAnims,
                             .archiveCluster = &archiveCluster,
                             .path = path,
                             .anim = &(*images)[i],
@@ -1291,6 +1196,167 @@ std::shared_ptr<Scr::GraphicsData::RenderData> Scr::GraphicsData::load(Sc::Data 
 
 Scr::MapGraphics::MapGraphics(MapFile & mapFile) : mapFile(mapFile), initialTickCount(GetTickCount64()) {}
 
+void Scr::MapGraphics::updateGrid()
+{
+    if ( gridSize > 0 )
+    {
+        /* Grid lines are drawn in grid-space, which starts at (0, 0) and goes to (maxPossibleVerticalLines, maxPossibleHorizontalLines)
+           Horizontal and vertical grid lines are placed from (x, y)->(1, 1) to (maxVerticalLines, maxHorizontalLines) at every 1.0 interval
+           The gridToNdc matrix scales by gridSize and translates up and left to get from grid-coordinates to game-coordinates, then transforms to NDCs */
+        constexpr s32 largestGridSize = 64;
+        gl::Point2D<s32> gridOffset = {
+            .x = mapViewBounds.left % largestGridSize,
+            .y = mapViewBounds.top % largestGridSize
+        };
+        auto gridDimensions = gl::Size2D {
+            .width = (mapViewBounds.right + largestGridSize)/gridSize,
+            .height = (mapViewBounds.bottom + largestGridSize)/gridSize
+        };
+        auto gridScale = glm::scale(glm::mat4x4(1.f), {gridSize, gridSize, 1.f});
+        auto gridTranslation = glm::translate(glm::mat4x4(1.f), {GLfloat(-gridOffset.x), GLfloat(-gridOffset.y), 0.f});
+        auto ndcScale = glm::scale(glm::mat4x4(1.f), {2.f/mapViewDimensions.width, -2.f/mapViewDimensions.height, 1.f});
+        auto ndcTranslation = glm::translate(glm::mat4x4(1.f), {-1.f, 1.f, 0.f});
+        gridToNdc = ndcTranslation * ndcScale * gridTranslation * gridScale;
+
+        auto & solidColorShader = renderDat->shaders->solidColorShader;
+        solidColorShader.use();
+        solidColorShader.posToNdc.setMat4(gridToNdc);
+        solidColorShader.solidColor.setColor(this->gridColor);
+
+        gridVertices.clear();
+        for ( size_t x=1; x<gridDimensions.width; ++x )
+        {
+            gridVertices.vertices.insert(gridVertices.vertices.end(), {
+                GLfloat(x), -1.f,
+                GLfloat(x), GLfloat(gridDimensions.height)
+            });
+        }
+        for ( size_t y=1; y<gridDimensions.height; ++y )
+        {
+            gridVertices.vertices.insert(gridVertices.vertices.end(), {
+                -1.f, GLfloat(y),
+                GLfloat(gridDimensions.width), GLfloat(y)
+            });
+        }
+        gridVertices.bind();
+        gridVertices.bufferData(gl::UsageHint::DynamicDraw);
+    }
+}
+
+void Scr::MapGraphics::mapViewChanged()
+{
+    windowDimensions = {
+        .width = windowBounds.right - windowBounds.left,
+        .height = windowBounds.bottom - windowBounds.top
+    };
+    mapViewDimensions = {
+        .width = s32(windowDimensions.width/zoom),
+        .height = s32(windowDimensions.height/zoom)
+    };
+    starDimensions = {
+        .width = mapViewDimensions.width * s32(renderSettings.visualQuality.scale),
+        .height = mapViewDimensions.height * s32(renderSettings.visualQuality.scale)
+    };
+    mapViewBounds = {
+        .left = windowBounds.left,
+        .top = windowBounds.top,
+        .right = windowBounds.left+mapViewDimensions.width,
+        .bottom = windowBounds.top+mapViewDimensions.height
+    };
+    mapTileBounds = {
+        .left = mapViewBounds.left/32,
+        .top = mapViewBounds.top/32,
+        .right = std::min(mapViewBounds.right/32+1, s32(mapFile.getTileWidth()-1)),
+        .bottom = std::min(mapViewBounds.bottom/32+1, s32(mapFile.getTileHeight()-1))
+    };
+    imageClipBoundingBox = {
+        .left = mapViewBounds.left - imageMargin.width,
+        .top = mapViewBounds.top - imageMargin.height,
+        .right = mapViewBounds.right + imageMargin.width,
+        .bottom = mapViewBounds.bottom + imageMargin.height
+    };
+    gl::Point2D<s32> tileOffset = {
+        .x = mapViewBounds.left % 32,
+        .y = mapViewBounds.top % 32
+    };
+    gl::Size2D<s32> tileDimensions = {
+        .width = mapViewBounds.right + (32 - tileOffset.x) - (mapViewBounds.left - tileOffset.x),
+        .height = mapViewBounds.bottom + (32 - tileOffset.y) - (mapViewBounds.top - tileOffset.y)
+    };
+    auto tileScale = glm::scale(glm::mat4x4(1.f), {32.f, 32.f, 1.f});
+    auto gameTranslation = glm::translate(glm::mat4x4(1.f), {-mapViewBounds.left, -mapViewBounds.top, 0.f});
+    auto windowToNdcScale = glm::scale(glm::mat4x4(1.f), {2.f/windowDimensions.width, -2.f/windowDimensions.height, 1.f});
+    auto mapViewToNdcScale = glm::scale(glm::mat4x4(1.f), {2.f/mapViewDimensions.width, -2.f/mapViewDimensions.height, 1.f});
+    auto ndcTranslation = glm::translate(glm::mat4x4(1.f), {-1.f, 1.f, 0.f});
+    auto visualQualityScale = glm::scale(glm::mat4x4(1.f), {1.f/renderSettings.visualQuality.scale, 1.f/renderSettings.visualQuality.scale, 1.f});
+    gameToNdc = ndcTranslation * mapViewToNdcScale * gameTranslation;
+    starToNdc = ndcTranslation * mapViewToNdcScale * visualQualityScale;
+    tileToNdc = ndcTranslation * mapViewToNdcScale * gameTranslation * tileScale;
+    glyphScaling = glm::mat2x2({2.f/windowDimensions.width, 0.f}, {0.f, -2.f/windowDimensions.height});
+    unscrolledWindowToNdc = ndcTranslation * windowToNdcScale;
+
+    auto tileTexScale = glm::scale(glm::mat4x4(1.f), {1.f/128.f, 1.f/128.f, 1.f});
+    auto tileTexTranslate = glm::translate(glm::mat4x4(1.f), {.5f/32.f/128.f, -.5f/32.f/128.f, 0.f}); // Sample center of texels to reduce lines when zooming
+    tileToTex = tileTexScale * tileTexTranslate;
+
+    updateGrid();
+}
+
+void Scr::MapGraphics::windowBoundsChanged(gl::Rect2D<s32> windowBounds)
+{
+    std::swap(this->windowBounds, windowBounds);
+    mapViewChanged();
+}
+
+GLfloat Scr::MapGraphics::getZoom()
+{
+    return this->zoom;
+}
+
+void Scr::MapGraphics::setZoom(GLfloat newZoom)
+{
+    this->zoom = newZoom;
+    mapViewChanged();
+}
+
+void Scr::MapGraphics::skinChanged()
+{
+    // Recalculate imageMargin
+    imageMargin = {0, 0};
+    if ( renderSettings.skinId == Skin::Id::Classic )
+    {
+        for ( const auto & classicImage : *renderDat->classicImages )
+        {
+            if ( classicImage != nullptr )
+            {
+                if ( classicImage->grpWidth > imageMargin.width )
+                    imageMargin.width = classicImage->grpWidth;
+                if ( classicImage->grpHeight > imageMargin.height )
+                    imageMargin.height = classicImage->grpHeight;
+            }
+        }
+        imageMargin.width = imageMargin.width/2 + imageMargin.width%2;
+        imageMargin.height = imageMargin.height/2 + imageMargin.height%2;
+    }
+    else
+    {
+        for ( const auto & image : *renderDat->images )
+        {
+            if ( image != nullptr )
+            {
+                if ( image->width > imageMargin.width )
+                    imageMargin.width = image->width;
+                if ( image->height > imageMargin.height )
+                    imageMargin.height = image->height;
+            }
+        }
+        imageMargin.width = imageMargin.width/2 + imageMargin.width%2;
+        imageMargin.height = imageMargin.height/2 + imageMargin.height%2;
+    }
+
+    mapViewChanged();
+}
+
 bool Scr::MapGraphics::isClassicLoaded(Scr::GraphicsData & scrDat)
 {
     return scrDat.visualQualityData[size_t(Scr::VisualQuality::SD.index())] != nullptr &&
@@ -1299,6 +1365,7 @@ bool Scr::MapGraphics::isClassicLoaded(Scr::GraphicsData & scrDat)
 
 void Scr::MapGraphics::initVertices()
 {
+    gridVertices.initialize({ gl::VertexAttribute{.size = 2} }); // Position.xy
     starVertices.initialize({
         gl::VertexAttribute{.size = 2}, // Position.xy
         gl::VertexAttribute{.size = 2}  // TexCoord.xy
@@ -1348,11 +1415,13 @@ void Scr::MapGraphics::setFont(gl::Font* textFont)
 void Scr::MapGraphics::setGridColor(uint32_t gridColor)
 {
     this->gridColor = gridColor | 0xFF000000;
+    updateGrid();
 }
 
 void Scr::MapGraphics::setGridSize(s32 gridSize)
 {
     this->gridSize = gridSize;
+    updateGrid();
 }
 
 bool Scr::MapGraphics::displayingFps()
@@ -1365,32 +1434,20 @@ void Scr::MapGraphics::toggleDisplayFps()
     this->fpsEnabled = !this->fpsEnabled;
 }
 
-GLfloat Scr::MapGraphics::getScaleFactor()
-{
-    return this->scaleFactor;
-}
-
-void Scr::MapGraphics::setScaleFactor(GLfloat scaleFactor)
-{
-    this->scaleFactor = scaleFactor;
-}
-
 void Scr::MapGraphics::load(Sc::Data & scData, Scr::GraphicsData & scrDat, const Scr::GraphicsData::RenderSettings & renderSettings, ArchiveCluster & archiveCluster, ByteBuffer & fileData)
 {
+    bool skinChanged = this->renderDat == nullptr ||
+        this->renderSettings.skinId != renderSettings.skinId || this->renderSettings.visualQuality != renderSettings.visualQuality;
+
     this->renderDat = nullptr;
     this->renderSettings = renderSettings;
     this->renderSettings.tileset = Sc::Terrain::Tileset(mapFile.getTileset() % Sc::Terrain::NumTilesets);
     this->renderDat = scrDat.load(scData, archiveCluster, this->renderSettings, fileData);
     
-    initVertices();
-}
+    if ( skinChanged )
+        this->skinChanged();
 
-void Scr::MapGraphics::setupNdcTransformation(s32 width, s32 height)
-{
-    posToNdc[0][0] = 2.0f/(width*renderSettings.visualQuality.scale/scaleFactor);
-    posToNdc[1][1] = -2.0f/(height*renderSettings.visualQuality.scale/scaleFactor);
-    unscaledPosToNdc[0][0] = 2.0f/width;
-    unscaledPosToNdc[1][1] = -2.0f/height;
+    initVertices();
 }
 
 void Scr::MapGraphics::drawTestTex(gl::Texture & tex)
@@ -1422,67 +1479,41 @@ void Scr::MapGraphics::drawTestTex(gl::Texture & tex)
     testVerts->drawTriangles();
 }
 
-void Scr::MapGraphics::drawGrid(s32 left, s32 top, s32 width, s32 height)
+void Scr::MapGraphics::drawGrid()
 {
-    s32 scaledWidth = s32(width/scaleFactor);
-    s32 scaledHeight = s32(height/scaleFactor);
-    if ( this->gridSize != 0 )
+    // Grid lines are calculated in updateGrid()
+    if ( this->gridSize > 0 )
     {
-        GLfloat pixel = 1.f * renderSettings.visualQuality.scale;
-        GLfloat topAdjust = GLfloat(-(top)%this->gridSize) * renderSettings.visualQuality.scale;
-        GLfloat leftAdjust = GLfloat(-(left)%this->gridSize) * renderSettings.visualQuality.scale + pixel;
-        GLfloat gridSize = GLfloat(this->gridSize);
-        GLfloat gridSpacing = gridSize * renderSettings.visualQuality.scale;
-        size_t hozLineCount = scaledHeight/this->gridSize+1;
-        size_t vertLineCount = scaledWidth/this->gridSize+1;
-        lineVertices.clear();
-        lineVertices.vertices.reserve(size_t(hozLineCount*4+vertLineCount*4));
-        for ( size_t y=(top % this->gridSize == 0 ? 1 : 0); y<=hozLineCount; ++y )
-        {
-            lineVertices.vertices.insert(lineVertices.vertices.end(), {
-                0.f, y*gridSpacing+topAdjust,
-                GLfloat(scaledWidth)*renderSettings.visualQuality.scale, y*gridSpacing+topAdjust
-            });
-        }
-        for ( size_t x=(left % this->gridSize == 0 ? 1 : 0); x<=vertLineCount; ++x )
-        {
-            lineVertices.vertices.insert(lineVertices.vertices.end(), {
-                x*gridSpacing+leftAdjust, 0.f,
-                x*gridSpacing+leftAdjust, GLfloat(scaledHeight)*renderSettings.visualQuality.scale
-            });
-        }
-
-        auto & solidColorShader = renderDat->shaders->solidColorShader;
-        solidColorShader.use();
-        solidColorShader.posToNdc.setMat4(posToNdc);
-        solidColorShader.solidColor.setColor(this->gridColor);
-        lineVertices.bind();
-        lineVertices.bufferData(gl::UsageHint::DynamicDraw);
-        lineVertices.drawLines();
+        renderDat->shaders->solidColorShader.use();
+        renderDat->shaders->solidColorShader.solidColor.setColor(gridColor);
+        renderDat->shaders->solidColorShader.posToNdc.setMat4(gridToNdc);
+        gridVertices.bind();
+        gridVertices.drawLines();
     }
 }
 
-void Scr::MapGraphics::drawClassicStars(Sc::Data & scData, s32 screenLeft, s32 screenTop, s32 screenWidth, s32 screenHeight)
+void Scr::MapGraphics::drawClassicStars(Sc::Data & scData)
 {
     if ( renderDat->spk == nullptr )
         return;
 
     renderDat->shaders->simplePaletteShader.use();
-    renderDat->shaders->simplePaletteShader.posToNdc.setMat4(posToNdc);
-    renderDat->shaders->simplePaletteShader.texScale.loadIdentity();
+    renderDat->shaders->simplePaletteShader.posToNdc.setMat4(starToNdc);
+    renderDat->shaders->simplePaletteShader.texTransform.loadIdentity();
     renderDat->shaders->simplePaletteShader.tex.setSlot(0);
     renderDat->shaders->simplePaletteShader.pal.setSlot(1);
     
     renderDat->tiles->tilesetGrp.palette->tex.bindToSlot(GL_TEXTURE1);
+    animVertices.bind();
 
-    for ( s32 starOriginTop = 0; starOriginTop < screenHeight; starOriginTop += Sc::Spk::parllaxHeight ) // The same stars repeat in 648x488 tiles
+    for ( s32 starOriginTop = 0; starOriginTop < mapViewDimensions.height; starOriginTop += Sc::Spk::parllaxHeight ) // The same stars repeat in 648x488 tiles
     {
-        for ( s32 starOriginLeft = 0; starOriginLeft < screenWidth; starOriginLeft += Sc::Spk::parallaxWidth )
+        for ( s32 starOriginLeft = 0; starOriginLeft < mapViewDimensions.width; starOriginLeft += Sc::Spk::parallaxWidth )
         {
             for ( int layerIndex = int(scData.spk.layerStars.size())-1; layerIndex >= 0; --layerIndex ) // There are five separate layers of stars
             {
-                s32 xOffset = (-1 * Sc::Spk::scrollFactors[layerIndex] * screenLeft) % (Sc::Spk::parallaxWidth*256);
-                s32 yOffset = (-1 * Sc::Spk::scrollFactors[layerIndex] * screenTop) % (Sc::Spk::parllaxHeight*256);
+                s32 xOffset = (-1 * Sc::Spk::scrollFactors[layerIndex] * mapViewBounds.left) % (Sc::Spk::parallaxWidth*256);
+                s32 yOffset = (-1 * Sc::Spk::scrollFactors[layerIndex] * mapViewBounds.top) % (Sc::Spk::parllaxHeight*256);
                 auto & layer = scData.spk.layerStars[layerIndex];
                 size_t starIndex = 0;
                 for ( auto & star : layer )
@@ -1515,36 +1546,33 @@ void Scr::MapGraphics::drawClassicStars(Sc::Data & scData, s32 screenLeft, s32 s
                                 width += xc;
                                 xc = 0;
                             }
-                            else if ( starOriginLeft + xc + width >= screenWidth ) // Near right-edge
-                                width = screenWidth - starOriginLeft - xc;
+                            else if ( starOriginLeft + xc + width >= mapViewDimensions.width ) // Near right-edge
+                                width = mapViewDimensions.width - starOriginLeft - xc;
 
                             if ( starOriginTop + yc < 0 ) // Near top-edge
                             {
                                 height += yc;
                                 yc = 0;
                             }
-                            else if ( starOriginTop + yc + height >= screenHeight ) // Near bottom-edge
-                                height = screenHeight - starOriginTop - yc;
+                            else if ( starOriginTop + yc + height >= mapViewDimensions.height ) // Near bottom-edge
+                                height = mapViewDimensions.height - starOriginTop - yc;
 
 
                             auto & star = renderDat->spk->classicLayers[layerIndex][starIndex];
                             ++starIndex;
                             gl::Point2D<GLfloat> position { GLfloat(xc+starOriginLeft), GLfloat(yc+starOriginTop) };
-                            gl::Rect2D<GLfloat> vertexRect { 0.f, 0.f, GLfloat(star.texWidth), GLfloat(star.texHeight) };
-                            gl::Rect2D<GLfloat> texRect { 0.f, 0.f, 1.f, 1.f };
                             animVertices.vertices = {
-                                position.x+vertexRect.left, position.y+vertexRect.top, texRect.left, texRect.top,
-                                position.x+vertexRect.right, position.y+vertexRect.top, texRect.right, texRect.top,
-                                position.x+vertexRect.left, position.y+vertexRect.bottom, texRect.left, texRect.bottom,
-                                position.x+vertexRect.left, position.y+vertexRect.bottom, texRect.left, texRect.bottom,
-                                position.x+vertexRect.right, position.y+vertexRect.bottom, texRect.right, texRect.bottom,
-                                position.x+vertexRect.right, position.y+vertexRect.top, texRect.right, texRect.top,
+                                position.x                       , position.y                        , 0.f, 0.f,
+                                position.x+GLfloat(star.texWidth), position.y                        , 1.f, 0.f,
+                                position.x                       , position.y+GLfloat(star.texHeight), 0.f, 1.f,
+                                position.x                       , position.y+GLfloat(star.texHeight), 0.f, 1.f,
+                                position.x+GLfloat(star.texWidth), position.y+GLfloat(star.texHeight), 1.f, 1.f,
+                                position.x+GLfloat(star.texWidth), position.y                        , 1.f, 0.f
                             };
 
                             star.tex.bindToSlot(GL_TEXTURE0);
 
-                            animVertices.bind();
-                            animVertices.bufferData(gl::UsageHint::DynamicDraw);
+                            animVertices.bufferSubData(gl::UsageHint::DynamicDraw);
                             animVertices.drawTriangles();
                         }
                     }
@@ -1554,7 +1582,7 @@ void Scr::MapGraphics::drawClassicStars(Sc::Data & scData, s32 screenLeft, s32 s
     }
 }
 
-void Scr::MapGraphics::drawStars(s32 x, s32 y, s32 scaledWidth, s32 scaledHeight, u32 multiplyColor)
+void Scr::MapGraphics::drawStars(u32 multiplyColor)
 {
     if ( renderDat->spk == nullptr )
         return;
@@ -1565,7 +1593,7 @@ void Scr::MapGraphics::drawStars(s32 x, s32 y, s32 scaledWidth, s32 scaledHeight
     u32 starIndex = 0;
             
     renderDat->shaders->tileShader.use();
-    renderDat->shaders->tileShader.posToNdc.setMat4(posToNdc);
+    renderDat->shaders->tileShader.posToNdc.setMat4(starToNdc);
     renderDat->shaders->tileShader.spriteTex.setSlot(0);
     renderDat->shaders->tileShader.multiplyColor.setColor(multiplyColor);
 
@@ -1573,15 +1601,19 @@ void Scr::MapGraphics::drawStars(s32 x, s32 y, s32 scaledWidth, s32 scaledHeight
     {
         u32 firstLayerStarIndex = starIndex;
         starVertices.clear();
-        GLfloat texScale[2][2] { // Coverts logical texture coordinates to samplable texture coordinates
-            { stars.texture[layer].xScale, 0 },
-            { 0, stars.texture[layer].yScale }
+        GLfloat texTransform[4][4] { // Coverts logical texture coordinates to samplable texture coordinates
+            { stars.texture[layer].xScale, 0, 0, 0 },
+            { 0, stars.texture[layer].yScale, 0, 0 },
+            { 0, 0, 1, 0 },
+            { 0, 0, 0, 1 }
         };
 
-        u32 xStart = (x / spk->layers[layer].layerWidth) * spk->layers[layer].layerWidth;
-        u32 xLimit = ((x + scaledWidth) / spk->layers[layer].layerWidth + 1) * spk->layers[layer].layerWidth;
-        u32 yStart = (y / spk->layers[layer].layerHeight) * spk->layers[layer].layerHeight;
-        u32 yLimit = ((y + scaledHeight) / spk->layers[layer].layerHeight + 1) * spk->layers[layer].layerHeight;
+        auto layerWidth = spk->layers[layer].layerWidth;
+        auto layerHeight = spk->layers[layer].layerHeight;
+        u32 xStart = 0;
+        u32 xLimit = (starDimensions.width/layerWidth + 2) * layerWidth;
+        u32 yStart = 0;
+        u32 yLimit = (starDimensions.height/layerHeight + 2) * layerHeight;
 
         for ( ; yStart < yLimit; yStart += spk->layers[layer].layerHeight )
         {
@@ -1590,10 +1622,12 @@ void Scr::MapGraphics::drawStars(s32 x, s32 y, s32 scaledWidth, s32 scaledHeight
                 starIndex = firstLayerStarIndex;
                 for ( u32 j = 0; j < spk->layers[layer].count; j++ )
                 {
+                    s32 xOffset = (-1 * Sc::Spk::scrollFactors[layer] * mapViewBounds.left) % (Sc::Spk::parallaxWidth*256);
+                    s32 yOffset = (-1 * Sc::Spk::scrollFactors[layer] * mapViewBounds.top) % (Sc::Spk::parllaxHeight*256);
                     Scr::StarPosition & currStarPos = starPosition[starIndex];
-                    GLfloat left = -(currStarPos.width/2.0f);
-                    GLfloat top = -(currStarPos.height/2.0f);
-                    gl::Point2D<GLfloat> position { GLfloat(x + xc)+currStarPos.xOffset, GLfloat(y + yStart)+currStarPos.yOffset };
+                    GLfloat left = currStarPos.width/-2.0f;
+                    GLfloat top = currStarPos.height/-2.0f;
+                    gl::Point2D<GLfloat> position { GLfloat(xc)+currStarPos.xOffset + (xOffset >> 8), GLfloat(yStart)+currStarPos.yOffset + (yOffset >> 8) };
                     gl::Rect2D<GLfloat> vertexRect { left, top, left+currStarPos.width, top+currStarPos.height };
                     gl::Rect2D<GLfloat> texRect {
                         GLfloat(currStarPos.xTextureOffset),
@@ -1602,19 +1636,19 @@ void Scr::MapGraphics::drawStars(s32 x, s32 y, s32 scaledWidth, s32 scaledHeight
                         GLfloat(currStarPos.yTextureOffset)+GLfloat(currStarPos.height)
                     };
                     starVertices.vertices.insert(starVertices.vertices.end(), {
-                        position.x+vertexRect.left, position.y+vertexRect.top, texRect.left, texRect.top,
-                        position.x+vertexRect.right, position.y+vertexRect.top, texRect.right, texRect.top,
-                        position.x+vertexRect.left, position.y+vertexRect.bottom, texRect.left, texRect.bottom,
-                        position.x+vertexRect.left, position.y+vertexRect.bottom, texRect.left, texRect.bottom,
+                        position.x+vertexRect.left , position.y+vertexRect.top   , texRect.left , texRect.top,
+                        position.x+vertexRect.right, position.y+vertexRect.top   , texRect.right, texRect.top,
+                        position.x+vertexRect.left , position.y+vertexRect.bottom, texRect.left , texRect.bottom,
+                        position.x+vertexRect.left , position.y+vertexRect.bottom, texRect.left , texRect.bottom,
                         position.x+vertexRect.right, position.y+vertexRect.bottom, texRect.right, texRect.bottom,
-                        position.x+vertexRect.right, position.y+vertexRect.top, texRect.right, texRect.top,
+                        position.x+vertexRect.right, position.y+vertexRect.top   , texRect.right, texRect.top
                     });
                     ++starIndex;
                 }
             }
         }
                 
-        renderDat->shaders->tileShader.texScale.setMat2(&texScale[0][0]);
+        renderDat->shaders->tileShader.texTransform.setMat4(&texTransform[0][0]);
         stars.texture[layer].bindToSlot(GL_TEXTURE0);
                 
         starVertices.bind();
@@ -1623,39 +1657,27 @@ void Scr::MapGraphics::drawStars(s32 x, s32 y, s32 scaledWidth, s32 scaledHeight
     }
 }
 
-void Scr::MapGraphics::drawTileNums(Sc::Data & scData, s32 left, s32 top, s32 width, s32 height)
+void Scr::MapGraphics::drawTileNums(Sc::Data & scData)
 {
-    s32 scaledWidth = width/scaleFactor;
-    s32 scaledHeight = height/scaleFactor;
-
     textFont->textShader.use();
-    textFont->textShader.projection.setMat4(unscaledPosToNdc);
+    textFont->textShader.glyphScaling.setMat2(glyphScaling);
+    textFont->textShader.textPosToNdc.setMat4(gameToNdc);
     textFont->setColor(255, 255, 0);
 
-    s32 xStart = std::max(0, left/32-2);
-    s32 yStart = std::max(0, top/32-2);
-    s32 xLimit = std::min((left+scaledWidth)/32, s32(mapFile.dimensions.tileWidth-1));
-    s32 yLimit = std::min((top+scaledHeight)/32, s32(mapFile.dimensions.tileHeight-1));
-    for ( s32 y=yStart; y<=yLimit; ++y )
+    for ( s32 y=mapTileBounds.top; y<=mapTileBounds.bottom; ++y )
     {
-        for ( s32 x=xStart; x<=xLimit; ++x )
-        {
-            auto tileIndex = mapFile.getTile(x, y);
-            textFont->drawText((x*32-left)*scaleFactor+2.0f, (y*32-top)*scaleFactor+2.0f, std::to_string(tileIndex).c_str());
-        }
+        for ( s32 x=mapTileBounds.left; x<=mapTileBounds.right; ++x )
+            textFont->drawText(x*32+2.0f, y*32+2.0f, std::to_string(mapFile.getTile(x, y)).c_str());
     }
 }
 
-void Scr::MapGraphics::drawTileOverlays(Sc::Data & scData, s32 left, s32 top, s32 width, s32 height)
+void Scr::MapGraphics::drawTileOverlays(Sc::Data & scData)
 {
-    s32 scaledWidth = width/scaleFactor;
-    s32 scaledHeight = height/scaleFactor;
-
     const Sc::Terrain::Tiles & tiles = scData.terrain.get(mapFile.getTileset());
 
     auto & solidColorShader = renderDat->shaders->solidColorShader;
     solidColorShader.use();
-    solidColorShader.posToNdc.setMat4(posToNdc);
+    solidColorShader.posToNdc.setMat4(gameToNdc);
     
     triangleVertices.clear();
     triangleVertices2.clear();
@@ -1663,13 +1685,10 @@ void Scr::MapGraphics::drawTileOverlays(Sc::Data & scData, s32 left, s32 top, s3
     triangleVertices4.clear();
     triangleVertices5.clear();
     triangleVertices6.clear();
-    s32 xStart = std::max(0, left/32-2);
-    s32 yStart = std::max(0, top/32-2);
-    s32 xLimit = std::min((left+scaledWidth)/32, s32(mapFile.dimensions.tileWidth-1));
-    s32 yLimit = std::min((top+scaledHeight)/32, s32(mapFile.dimensions.tileHeight-1));
-    for ( s32 y=yStart; y<=yLimit; ++y )
+    
+    for ( s32 y=mapTileBounds.top; y<=mapTileBounds.bottom; ++y )
     {
-        for ( s32 x=xStart; x<=xLimit; ++x )
+        for ( s32 x=mapTileBounds.left; x<=mapTileBounds.right; ++x )
         {
             auto tileIndex = mapFile.getTile(x, y);
             size_t groupIndex = Sc::Terrain::Tiles::getGroupIndex(tileIndex);
@@ -1684,10 +1703,10 @@ void Scr::MapGraphics::drawTileOverlays(Sc::Data & scData, s32 left, s32 top, s3
                     {
                         Sc::Terrain::TileFlags::MiniTileFlags miniTileFlags = tiles.tileFlags[megaTileIndex].miniTileFlags[yMiniTile][xMiniTile];
                         gl::Rect2D<GLfloat> rect {
-                            GLfloat((x*32+xMiniTile*8-left)*s32(renderSettings.visualQuality.scale)),
-                            GLfloat((y*32+yMiniTile*8-top)*s32(renderSettings.visualQuality.scale)),
-                            GLfloat((x*32+xMiniTile*8+8-left)*s32(renderSettings.visualQuality.scale)),
-                            GLfloat((y*32+yMiniTile*8+8-top)*s32(renderSettings.visualQuality.scale)),
+                            GLfloat(x*32+xMiniTile*8),
+                            GLfloat(y*32+yMiniTile*8),
+                            GLfloat(x*32+xMiniTile*8+8),
+                            GLfloat(y*32+yMiniTile*8+8),
                         };
                         auto* targetVertices = &triangleVertices;
                         bool walkable = miniTileFlags.isWalkable();
@@ -1756,7 +1775,7 @@ void Scr::MapGraphics::drawTileOverlays(Sc::Data & scData, s32 left, s32 top, s3
 
 }
 
-void Scr::MapGraphics::drawTileVertices(Scr::Grp & tilesetGrp, s32 left, s32 top, s32 width, s32 height)
+void Scr::MapGraphics::drawTileVertices(Scr::Grp & tilesetGrp, s32 width, s32 height, const glm::mat4x4 & positionTransformation)
 {
     auto tilesetIndex = Sc::Terrain::Tileset(mapFile.getTileset() % Sc::Terrain::NumTilesets);
     bool drawHdWater = renderSettings.visualQuality > VisualQuality::SD &&
@@ -1798,7 +1817,8 @@ void Scr::MapGraphics::drawTileVertices(Scr::Grp & tilesetGrp, s32 left, s32 top
 
         renderDat->shaders->simpleShader.use();
         renderDat->shaders->simpleShader.tex.setSlot(0);
-        renderDat->shaders->simpleShader.posToNdc.setMat4(posToNdc);
+        renderDat->shaders->simpleShader.posToNdc.setMat4(positionTransformation);
+        renderDat->shaders->simpleShader.texTransform.setMat4(tileToTex);
         renderDat->tiles->tileMask.mergedTexture.bindToSlot(GL_TEXTURE0);
 
         tileVertices.bind();
@@ -1818,7 +1838,7 @@ void Scr::MapGraphics::drawTileVertices(Scr::Grp & tilesetGrp, s32 left, s32 top
         // Finished drawing to screenTex, now render screenTex to screen through the waterShader for effects
         renderDat->shaders->waterShader.use();
         renderDat->shaders->waterShader.posToNdc.loadIdentity();
-        renderDat->shaders->waterShader.texScale.loadIdentity();
+        renderDat->shaders->waterShader.texTransform.loadIdentity();
         renderDat->shaders->waterShader.spriteTex.setSlot(0);
         renderDat->shaders->waterShader.sampleTex.setSlot(1);
         renderDat->shaders->waterShader.sampleTex2.setSlot(2);
@@ -1851,8 +1871,8 @@ void Scr::MapGraphics::drawTileVertices(Scr::Grp & tilesetGrp, s32 left, s32 top
         if ( renderSettings.visualQuality > VisualQuality::SD )
         {
             renderDat->shaders->tileShader.use();
-            renderDat->shaders->tileShader.posToNdc.setMat4(posToNdc);
-            renderDat->shaders->tileShader.texScale.loadIdentity();
+            renderDat->shaders->tileShader.posToNdc.setMat4(positionTransformation);
+            renderDat->shaders->tileShader.texTransform.setMat4(tileToTex);
             renderDat->shaders->tileShader.spriteTex.setSlot(0);
             renderDat->shaders->tileShader.multiplyColor.setColor(0xFFFFFFFF);
             tilesetGrp.mergedTexture.bindToSlot(GL_TEXTURE0);
@@ -1860,8 +1880,8 @@ void Scr::MapGraphics::drawTileVertices(Scr::Grp & tilesetGrp, s32 left, s32 top
         else if ( renderSettings.skinId == Scr::Skin::Id::Classic ) // Classic
         {
             renderDat->shaders->simplePaletteShader.use();
-            renderDat->shaders->simplePaletteShader.posToNdc.setMat4(posToNdc);
-            renderDat->shaders->simplePaletteShader.texScale.loadIdentity();
+            renderDat->shaders->simplePaletteShader.posToNdc.setMat4(positionTransformation);
+            renderDat->shaders->simplePaletteShader.texTransform.setMat4(tileToTex);
             renderDat->shaders->simplePaletteShader.tex.setSlot(0);
             renderDat->shaders->simplePaletteShader.pal.setSlot(1);
             tilesetGrp.mergedTexture.bindToSlot(GL_TEXTURE0);
@@ -1870,8 +1890,8 @@ void Scr::MapGraphics::drawTileVertices(Scr::Grp & tilesetGrp, s32 left, s32 top
         else // Remastered SD
         {
             renderDat->shaders->paletteShader.use();
-            renderDat->shaders->paletteShader.posToNdc.setMat4(posToNdc);
-            renderDat->shaders->paletteShader.texScale.loadIdentity();
+            renderDat->shaders->paletteShader.posToNdc.setMat4(positionTransformation);
+            renderDat->shaders->paletteShader.texTransform.setMat4(tileToTex);
             renderDat->shaders->paletteShader.spriteTex.setSlot(0);
             renderDat->shaders->paletteShader.sampleTex.setSlot(1);
             renderDat->shaders->paletteShader.multiplyColor.setColor(0xFFFFFFFF);
@@ -1890,27 +1910,13 @@ void Scr::MapGraphics::drawTileVertices(Scr::Grp & tilesetGrp, s32 left, s32 top
     }
 }
 
-void Scr::MapGraphics::drawTerrain(Sc::Data & scData, s32 left, s32 top, s32 width, s32 height)
+void Scr::MapGraphics::drawTerrain(Sc::Data & scData)
 {
-    s32 scaledWidth = width/scaleFactor;
-    s32 scaledHeight = height/scaleFactor;
-    auto & tilesetGrp = renderDat->tiles->tilesetGrp;
     tileVertices.clear();
     auto tiles = scData.terrain.get(Sc::Terrain::Tileset(mapFile.tileset));
-
-    GLfloat texWidth = GLfloat(tilesetGrp.width) / 2.0f;
-    GLfloat texHeight = GLfloat(tilesetGrp.height) / 2.0f;
-    gl::Rect2D<GLfloat> vertexRect {-texWidth, -texHeight, texWidth, texHeight};
-    s32 xStart = std::max(0, left/32-2);
-    s32 yStart = std::max(0, top/32-2);
-    s32 xLimit = std::min((left+scaledWidth)/32, s32(mapFile.dimensions.tileWidth-1));
-    s32 yLimit = std::min((top+scaledHeight)/32, s32(mapFile.dimensions.tileHeight-1));
-
-    GLfloat texelOffset = scaleFactor != 1.f ? 0.5f/32.f/128.f : 0;
-
-    for ( s32 y = yStart; y <= yLimit; y++ )
+    for ( s32 y=mapTileBounds.top; y<=mapTileBounds.bottom; ++y )
     {
-        for ( s32 x = xStart; x <= xLimit; x++ )
+        for ( s32 x=mapTileBounds.left; x<=mapTileBounds.right; ++x )
         {
             u32 megaTileIndex = 0;
             u16 tileIndex = mapFile.tiles[size_t(y) * size_t(mapFile.dimensions.tileWidth) + size_t(x)];
@@ -1919,29 +1925,22 @@ void Scr::MapGraphics::drawTerrain(Sc::Data & scData, s32 left, s32 top, s32 wid
             {
                 const Sc::Terrain::TileGroup & tileGroup = tiles.tileGroups[groupIndex];
                 megaTileIndex = tileGroup.megaTileIndex[tiles.getGroupMemberIndex(tileIndex)];
+                auto texX = GLfloat(megaTileIndex%128);
+                auto texY = GLfloat(megaTileIndex/128);
+                tileVertices.vertices.insert(tileVertices.vertices.end(), {
+                    GLfloat(x  ), GLfloat(y  ), texX    , texY,
+                    GLfloat(x+1), GLfloat(y  ), texX+1.f, texY,
+                    GLfloat(x  ), GLfloat(y+1), texX    , texY+1.f,
+                    GLfloat(x  ), GLfloat(y+1), texX    , texY+1.f,
+                    GLfloat(x+1), GLfloat(y+1), texX+1.f, texY+1.f,
+                    GLfloat(x+1), GLfloat(y  ), texX+1.f, texY
+                });
             }
-
-            gl::Point2D<GLfloat> position {
-                GLfloat((x*32-left)*s32(renderSettings.visualQuality.scale)+32*s32(renderSettings.visualQuality.scale)/2),
-                GLfloat((y*32-top)*s32(renderSettings.visualQuality.scale)+32*s32(renderSettings.visualQuality.scale)/2)
-            };
-            auto left = float(megaTileIndex%128)/float(128);
-            auto top = float(megaTileIndex/128)/float(128);
-            auto right = left+1.f/128.f-texelOffset;
-            auto bottom = top+1.f/128.f-texelOffset;
-            gl::Rect2D<GLfloat> texRect {left, top, right, bottom};
-            tileVertices.vertices.insert(tileVertices.vertices.end(), {
-                position.x+vertexRect.left, position.y+vertexRect.top, texRect.left, texRect.top,
-                position.x+vertexRect.right, position.y+vertexRect.top, texRect.right, texRect.top,
-                position.x+vertexRect.left, position.y+vertexRect.bottom, texRect.left, texRect.bottom,
-                position.x+vertexRect.left, position.y+vertexRect.bottom, texRect.left, texRect.bottom,
-                position.x+vertexRect.right, position.y+vertexRect.bottom, texRect.right, texRect.bottom,
-                position.x+vertexRect.right, position.y+vertexRect.top, texRect.right, texRect.top,
-            });
         }
     }
-
-    drawTileVertices(tilesetGrp, left, top, width, height);
+    
+    if ( !tileVertices.vertices.empty() )
+        drawTileVertices(renderDat->tiles->tilesetGrp, windowDimensions.width, windowDimensions.height, tileToNdc);
 }
 
 void Scr::MapGraphics::drawTilesetIndexed(Sc::Data & scData, s32 left, s32 top, s32 width, s32 height, s32 scrollY)
@@ -1949,12 +1948,8 @@ void Scr::MapGraphics::drawTilesetIndexed(Sc::Data & scData, s32 left, s32 top, 
     auto & tilesetGrp = renderDat->tiles->tilesetGrp;
 
     tileVertices.clear();
-    setupNdcTransformation(width, height);
     auto & tiles = scData.terrain.get(Sc::Terrain::Tileset(mapFile.tileset));
 
-    GLfloat texWidth = GLfloat(tilesetGrp.width) / 2.0f;
-    GLfloat texHeight = GLfloat(tilesetGrp.height) / 2.0f;
-    gl::Rect2D<GLfloat> vertexRect {-texWidth, -texHeight, texWidth, texHeight};
     s32 topRow = scrollY/33;
     s32 bottomRow = (scrollY + height)/33;
     s32 totalRows = height/32;
@@ -1962,7 +1957,7 @@ void Scr::MapGraphics::drawTilesetIndexed(Sc::Data & scData, s32 left, s32 top, 
 
     for ( s32 row=topRow; row<=bottomRow; ++row )
     {
-        GLfloat tileTop = GLfloat(row*33-scrollY)*s32(renderSettings.visualQuality.scale)+32*s32(renderSettings.visualQuality.scale)/2;
+        GLfloat tileTop = GLfloat(row*33-scrollY);
         for ( s32 column=0; column<totalColumns; ++column )
         {
             u32 megaTileIndex = 0;
@@ -1975,135 +1970,122 @@ void Scr::MapGraphics::drawTilesetIndexed(Sc::Data & scData, s32 left, s32 top, 
             }
 
             gl::Point2D<GLfloat> position {
-                GLfloat(column*33)*s32(renderSettings.visualQuality.scale)+32*s32(renderSettings.visualQuality.scale)/2,
+                GLfloat(column*33),
                 tileTop
             };
-            auto left = float(megaTileIndex%128)/float(128);
-            auto top = float(megaTileIndex/128)/float(128);
-            auto right = left+1.f/128.f;
-            auto bottom = top+1.f/128.f;
+            auto left = float(megaTileIndex%128);
+            auto top = float(megaTileIndex/128);
+            auto right = left+1.f;
+            auto bottom = top+1.f;
             gl::Rect2D<GLfloat> texRect {left, top, right, bottom};
             tileVertices.vertices.insert(tileVertices.vertices.end(), {
-                position.x+vertexRect.left, position.y+vertexRect.top, texRect.left, texRect.top,
-                position.x+vertexRect.right, position.y+vertexRect.top, texRect.right, texRect.top,
-                position.x+vertexRect.left, position.y+vertexRect.bottom, texRect.left, texRect.bottom,
-                position.x+vertexRect.left, position.y+vertexRect.bottom, texRect.left, texRect.bottom,
-                position.x+vertexRect.right, position.y+vertexRect.bottom, texRect.right, texRect.bottom,
-                position.x+vertexRect.right, position.y+vertexRect.top, texRect.right, texRect.top,
+                position.x   , position.y   , texRect.left , texRect.top,
+                position.x+32, position.y   , texRect.right, texRect.top,
+                position.x   , position.y+32, texRect.left , texRect.bottom,
+                position.x   , position.y+32, texRect.left , texRect.bottom,
+                position.x+32, position.y+32, texRect.right, texRect.bottom,
+                position.x+32, position.y   , texRect.right, texRect.top,
             });
         }
     }
-
-    drawTileVertices(tilesetGrp, left, top, width, height);
+    
+    auto tileTranslation = glm::translate(glm::mat4x4(1.f), {left, top, 0.f});
+    auto ndcScale = glm::scale(glm::mat4x4(1.f), {2.f/width, -2.f/height, 1.f});
+    auto ndcTranslation = glm::translate(glm::mat4x4(1.f), {-1.f, 1.f, 0.f});
+    auto posToNdc = ndcTranslation * ndcScale * tileTranslation;
+    drawTileVertices(tilesetGrp, width, height, posToNdc);
 }
 
-void Scr::MapGraphics::drawAnim(Scr::Animation & animation, s32 x, s32 y, u32 frame, u32 playerColor, u32 multiplyColor, bool hallucinate, bool halfAnims)
+void Scr::MapGraphics::prepareImageRendering()
 {
-    if ( frame >= animation.totalFrames )
-        frame = 0;
+    auto imageTranslation = glm::translate(glm::mat4x4(1.f), {-mapViewBounds.left, -mapViewBounds.top, 0.f});
+    auto ndcScale = glm::scale(glm::mat4x4(1.f), {2.f/mapViewDimensions.width, -2.f/mapViewDimensions.height, 1.f});
+    auto ndcTranslation = glm::translate(glm::mat4x4(1.f), {-1.f, 1.f, 0.f});
+    auto imageToNdc = ndcTranslation * ndcScale * imageTranslation;
+    if ( renderSettings.skinId == Scr::Skin::Id::Classic )
+    {
+        renderDat->shaders->simplePaletteShader.use();
+        renderDat->shaders->simplePaletteShader.posToNdc.setMat4(imageToNdc);
+        renderDat->shaders->simplePaletteShader.texTransform.loadIdentity();
+        renderDat->shaders->simplePaletteShader.tex.setSlot(0);
+        renderDat->shaders->simplePaletteShader.pal.setSlot(1);
+    }
+    else
+    {
+        renderDat->shaders->spriteShader.use();
+        renderDat->shaders->spriteShader.posToNdc.setMat4(imageToNdc);
+        renderDat->shaders->spriteShader.imageScale.setValue(renderSettings.visualQuality.imageScale());
 
-    GLfloat texScale[2][2] { // Coverts logical texture coordinates to samplable texture coordinates
-        { animation.xScale, 0 },
-        { 0, animation.yScale }
-    };
+        renderDat->shaders->spriteShader.spriteTex.setSlot(0);
+        renderDat->shaders->spriteShader.teamColorTex.setSlot(1);
 
-    renderDat->shaders->spriteShader.use();
-    renderDat->shaders->spriteShader.posToNdc.setMat4(posToNdc);
-    renderDat->shaders->spriteShader.texScale.setMat2(&texScale[0][0]);
-    renderDat->shaders->spriteShader.spriteTex.setSlot(0);
-    renderDat->shaders->spriteShader.teamColorTex.setSlot(1);
-    renderDat->shaders->spriteShader.hallucinate.setValue(GLfloat(hallucinate));
+        animVertices.vertices = {
+            0.f, 0.f, 0.f, 0.f,
+            1.f, 0.f, 1.f, 0.f,
+            0.f, 1.f, 0.f, 1.f,
+            0.f, 1.f, 0.f, 1.f,
+            1.f, 1.f, 1.f, 1.f,
+            1.f, 0.f, 1.f, 0.f
+        };
+
+        animVertices.bind();
+        animVertices.bufferData(gl::UsageHint::DynamicDraw);
+    }
+}
+
+void Scr::MapGraphics::drawImage(Scr::Animation & animation, s32 x, s32 y, u32 frameIndex, u32 multiplyColor, u32 playerColor, bool hallucinate)
+{
+    auto & frame = animation.frames[frameIndex >= animation.totalFrames ? 0 : frameIndex];
+    
+    // To use StarCraft's sprite shader means binding a particular texture per sprite then performing a draw, capping optimization potential
+    // Below is passing data related to the image frame in one uniform and performing ~all math on the GPU
+    // This approach should be highly performant given the cap, but there's also the potential to frontload/cache more math & move data to UBOs
+
+    renderDat->shaders->spriteShader.image.setVec2Array({
+        { GLfloat(x)                   , GLfloat(y)                }, // centerPos
+        { GLfloat(animation.width)     , GLfloat(animation.height) }, // animSize
+        { GLfloat(animation.xScale)    , GLfloat(animation.yScale) }, // animTexScale
+        { GLfloat(frame.width)         , GLfloat(frame.height) }, // frameSize
+        { GLfloat(frame.xOffset)       , GLfloat(frame.yOffset) }, // framePosOffset
+        { GLfloat(frame.xTextureOffset), GLfloat(frame.yTextureOffset) } // frameTexOffset
+    });
+
     renderDat->shaders->spriteShader.multiplyColor.setColor(multiplyColor);
     renderDat->shaders->spriteShader.teamColor.setColor(playerColor);
+    renderDat->shaders->spriteShader.hallucinate.setValue(GLfloat(hallucinate));
 
     animation.diffuse.bindToSlot(GL_TEXTURE0);
     animation.teamColor.bindToSlot(GL_TEXTURE1);
 
-    if ( halfAnims )
-    {
-        GLfloat left = GLfloat(animation.width/-4.0 + animation.frames[frame].xOffset/2);
-        GLfloat top = GLfloat(animation.height/-4.0 + animation.frames[frame].yOffset/2);
-        GLint width = animation.frames[frame].width/2;
-        GLint height = animation.frames[frame].height/2;
-        GLint texLeft = animation.frames[frame].xTextureOffset/2;
-        GLint texTop = animation.frames[frame].yTextureOffset/2;
-        gl::Point2D<GLfloat> position { GLfloat(x), GLfloat(y) };
-        gl::Rect2D<GLfloat> vertexRect { left, top, left + width, top + height };
-        gl::Rect2D<GLfloat> texRect { GLfloat(texLeft), GLfloat(texTop), GLfloat(texLeft)+GLfloat(width), GLfloat(texTop)+GLfloat(height) };
-        animVertices.vertices = {
-            position.x+vertexRect.left, position.y+vertexRect.top, texRect.left, texRect.top,
-            position.x+vertexRect.right, position.y+vertexRect.top, texRect.right, texRect.top,
-            position.x+vertexRect.left, position.y+vertexRect.bottom, texRect.left, texRect.bottom,
-            position.x+vertexRect.left, position.y+vertexRect.bottom, texRect.left, texRect.bottom,
-            position.x+vertexRect.right, position.y+vertexRect.bottom, texRect.right, texRect.bottom,
-            position.x+vertexRect.right, position.y+vertexRect.top, texRect.right, texRect.top,
-        };
-    }
-    else
-    {
-        GLfloat left = GLfloat(animation.width/-2.0 + animation.frames[frame].xOffset);
-        GLfloat top = GLfloat(animation.height/-2.0 + animation.frames[frame].yOffset);
-        GLint width = animation.frames[frame].width;
-        GLint height = animation.frames[frame].height;
-        GLint texLeft = animation.frames[frame].xTextureOffset;
-        GLint texTop = animation.frames[frame].yTextureOffset;
-        gl::Point2D<GLfloat> position { GLfloat(x), GLfloat(y) };
-        gl::Rect2D<GLfloat> vertexRect { left, top, left + width, top + height };
-        gl::Rect2D<GLfloat> texRect { GLfloat(texLeft), GLfloat(texTop), GLfloat(texLeft)+GLfloat(width), GLfloat(texTop)+GLfloat(height) };
-        animVertices.vertices = {
-            position.x+vertexRect.left, position.y+vertexRect.top, texRect.left, texRect.top,
-            position.x+vertexRect.right, position.y+vertexRect.top, texRect.right, texRect.top,
-            position.x+vertexRect.left, position.y+vertexRect.bottom, texRect.left, texRect.bottom,
-            position.x+vertexRect.left, position.y+vertexRect.bottom, texRect.left, texRect.bottom,
-            position.x+vertexRect.right, position.y+vertexRect.bottom, texRect.right, texRect.bottom,
-            position.x+vertexRect.right, position.y+vertexRect.top, texRect.right, texRect.top,
-        };
-    }
-    animVertices.bind();
-    animVertices.bufferData(gl::UsageHint::DynamicDraw);
     animVertices.drawTriangles();
 }
 
 void Scr::MapGraphics::drawClassicImage(Sc::Data & scData, gl::Palette & palette, s32 x, s32 y, u32 imageId, Chk::PlayerColor color)
 {
-    // Preserve previous palette colors
-    std::uint32_t remapped[8];
-    constexpr size_t sizeChanged = sizeof(remapped);
-    std::memcpy(remapped, &palette[8], sizeof(remapped));
-
     // Replace palette with player colors
-    std::memcpy(&palette[8], &scData.tunit.rgbaPalette[color < 16 ? 8*color : 8*(color%16)], sizeof(remapped));
-
-    palette.update();
+    if ( color != prevMappedColor )
+    {
+        std::memcpy(&palette[8], &scData.tunit.rgbaPalette[color < 16 ? 8*color : 8*(color%16)], sizeof(std::uint32_t[8]));
+        palette.update();
+        prevMappedColor = color;
+    }
 
     auto & imageInfo = (*renderDat->classicImages)[imageId];
     u32 frame = 0;
     auto & frameInfo = imageInfo->frames[frame];
 
-    GLfloat texScale[2][2] { // Coverts logical texture coordinates to samplable texture coordinates
-        { 1.f/frameInfo.texWidth, 0 },
-        { 0, 1.f/frameInfo.texHeight }
-    };
-
     GLfloat vertexLeft = GLfloat(-imageInfo->grpWidth/2 + frameInfo.xOffset);
     GLfloat vertexTop = GLfloat(-imageInfo->grpHeight/2 + frameInfo.yOffset);
-    gl::Point2D<GLfloat> position { GLfloat(x), GLfloat(y) };
     gl::Rect2D<GLfloat> vertexRect { vertexLeft, vertexTop, vertexLeft + frameInfo.texWidth, vertexTop + frameInfo.texHeight };
-    gl::Rect2D<GLfloat> texRect { GLfloat(0.f), GLfloat(0.f), GLfloat(1.f), GLfloat(1.f) };
     animVertices.vertices = {
-        position.x+vertexRect.left, position.y+vertexRect.top, texRect.left, texRect.top,
-        position.x+vertexRect.right, position.y+vertexRect.top, texRect.right, texRect.top,
-        position.x+vertexRect.left, position.y+vertexRect.bottom, texRect.left, texRect.bottom,
-        position.x+vertexRect.left, position.y+vertexRect.bottom, texRect.left, texRect.bottom,
-        position.x+vertexRect.right, position.y+vertexRect.bottom, texRect.right, texRect.bottom,
-        position.x+vertexRect.right, position.y+vertexRect.top, texRect.right, texRect.top,
+        x+vertexRect.left , y+vertexRect.top   , 0.f, 0.f,
+        x+vertexRect.right, y+vertexRect.top   , 1.f, 0.f,
+        x+vertexRect.left , y+vertexRect.bottom, 0.f, 1.f,
+        x+vertexRect.left , y+vertexRect.bottom, 0.f, 1.f,
+        x+vertexRect.right, y+vertexRect.bottom, 1.f, 1.f,
+        x+vertexRect.right, y+vertexRect.top   , 1.f, 0.f
     };
 
-    renderDat->shaders->simplePaletteShader.use();
-    renderDat->shaders->simplePaletteShader.posToNdc.setMat4(posToNdc);
-    renderDat->shaders->simplePaletteShader.texScale.loadIdentity();
-    renderDat->shaders->simplePaletteShader.tex.setSlot(0);
-    renderDat->shaders->simplePaletteShader.pal.setSlot(1);
 
     frameInfo.tex.bindToSlot(GL_TEXTURE0);
     renderDat->tiles->tilesetGrp.palette->tex.bindToSlot(GL_TEXTURE1);
@@ -2111,14 +2093,9 @@ void Scr::MapGraphics::drawClassicImage(Sc::Data & scData, gl::Palette & palette
     animVertices.bind();
     animVertices.bufferData(gl::UsageHint::DynamicDraw);
     animVertices.drawTriangles();
-    gl::Texture::releaseSlots(GL_TEXTURE1);
-
-    // Restore palette colors
-    std::memcpy(&palette[8], remapped, sizeof(remapped));
-    palette.update();
 }
 
-void Scr::MapGraphics::drawSprites(Sc::Data & scData, s32 left, s32 top)
+void Scr::MapGraphics::drawSprites(Sc::Data & scData)
 {
     auto getUnitImageId = [&scData](const Chk::Unit & unit) -> u32
     {
@@ -2137,71 +2114,70 @@ void Scr::MapGraphics::drawSprites(Sc::Data & scData, s32 left, s32 top)
             return scData.sprites.getSprite(spriteId >= 517 ? 0 : spriteId).imageFile;
         }
     };
-
+    auto getUnitImage = [&](const Chk::Unit & unit) -> Scr::DataStructs::Animation & { return *((*renderDat->images)[getUnitImageId(unit)]); };
+    auto getSpriteImage = [&](const Chk::Sprite & sprite) -> Scr::DataStructs::Animation & { return *((*renderDat->images)[getSpriteImageId(sprite)]); };
+    auto getPlayerColor = [&](u8 player) -> u32 { return (u32 &)(scData.tunit.rgbaPalette[8*size_t(player)]); };
+    
+    prepareImageRendering();
     if ( renderSettings.skinId == Scr::Skin::Id::Classic )
     {
         auto & palette = *renderDat->tiles->tilesetGrp.palette;
+
+        // Preserve previous palette colors
+        std::uint32_t remapped[8];
+        std::memcpy(remapped, &palette[8], sizeof(remapped));
+
         for ( auto & unit : mapFile.units )
-            drawClassicImage(scData, palette, unit.xc-left, unit.yc-top, getUnitImageId(unit), (Chk::PlayerColor)unit.owner);
+            drawClassicImage(scData, palette, unit.xc, unit.yc, getUnitImageId(unit), (Chk::PlayerColor)unit.owner);
 
         for ( auto & sprite : mapFile.sprites )
-            drawClassicImage(scData, palette, sprite.xc-left, sprite.yc-top, getSpriteImageId(sprite), (Chk::PlayerColor)sprite.owner);
+            drawClassicImage(scData, palette, sprite.xc, sprite.yc, getSpriteImageId(sprite), (Chk::PlayerColor)sprite.owner);
+
+        // Restore palette colors
+        prevMappedColor = std::numeric_limits<Chk::PlayerColor>::max();
+        std::memcpy(&palette[8], remapped, sizeof(remapped));
+        palette.update();
     }
     else
     {
         for ( const auto & unit : mapFile.units )
-        {
-            drawAnim(*((*renderDat->images)[getUnitImageId(unit)]), (unit.xc-left)*renderSettings.visualQuality.scale, (unit.yc-top)*renderSettings.visualQuality.scale, 0,
-                (u32 &)(scData.tunit.rgbaPalette[8*size_t(unit.owner)]), 0xFFFFFFFF, false, renderSettings.visualQuality.halfAnims);
-        }
+            drawImage(getUnitImage(unit), unit.xc, unit.yc, 0, 0xFFFFFFFF, getPlayerColor(unit.owner), false);
 
         for ( const auto & sprite : mapFile.sprites )
-        {
-            drawAnim(*((*renderDat->images)[getSpriteImageId(sprite)]), (sprite.xc-left)*renderSettings.visualQuality.scale, (sprite.yc-top)*renderSettings.visualQuality.scale, 0,
-                (u32 &)(scData.tunit.rgbaPalette[8*size_t(sprite.owner)]), 0xFFFFFFFF, false, renderSettings.visualQuality.halfAnims);
-        }
+            drawImage(getSpriteImage(sprite), sprite.xc, sprite.yc, 0, 0xFFFFFFFF, getPlayerColor(sprite.owner), false);
     }
 }
 
-void Scr::MapGraphics::drawLocations(s32 left, s32 top, s32 width, s32 height)
+void Scr::MapGraphics::drawLocations()
 {
-    auto leftAdjust = left*renderSettings.visualQuality.scale;
-    auto topAdjust = top*renderSettings.visualQuality.scale;
-
     lineVertices.clear();
     triangleVertices.clear();
     for ( size_t i=0; i<mapFile.locations.size(); ++i )
     {
         const auto & location = mapFile.locations[i];
-        gl::Rect2D<GLfloat> rect {
-            GLfloat(location.left*renderSettings.visualQuality.scale),
-            GLfloat(location.top*renderSettings.visualQuality.scale),
-            GLfloat(location.right*renderSettings.visualQuality.scale),
-            GLfloat(location.bottom*renderSettings.visualQuality.scale)
-        };
         triangleVertices.vertices.insert(triangleVertices.vertices.end(), {
-            rect.left-leftAdjust, rect.top-topAdjust,
-            rect.right-leftAdjust, rect.top-topAdjust,
-            rect.left-leftAdjust, rect.bottom-topAdjust,
-            rect.left-leftAdjust, rect.bottom-topAdjust,
-            rect.right-leftAdjust, rect.bottom-topAdjust,
-            rect.right-leftAdjust, rect.top-topAdjust
+            GLfloat(location.left), GLfloat(location.top),
+            GLfloat(location.right), GLfloat(location.top),
+            GLfloat(location.left), GLfloat(location.bottom),
+            GLfloat(location.left), GLfloat(location.bottom),
+            GLfloat(location.right), GLfloat(location.bottom),
+            GLfloat(location.right), GLfloat(location.top)
         });
         lineVertices.vertices.insert(lineVertices.vertices.end(), {
-            .5f+rect.left-leftAdjust, .5f+rect.top-topAdjust,
-            .5f+rect.left-leftAdjust, .5f+rect.bottom-topAdjust,
-            .5f+rect.left-leftAdjust, .5f+rect.top-topAdjust,
-            .5f+rect.right-leftAdjust, .5f+rect.top-topAdjust,
-            .5f+rect.right-leftAdjust, .5f+rect.top-topAdjust,
-            .5f+rect.right-leftAdjust, .5f+rect.bottom-topAdjust,
-            .5f+rect.left-leftAdjust, .5f+rect.bottom-topAdjust,
-            .5f+rect.right-leftAdjust, .5f+rect.bottom-topAdjust
+            GLfloat(location.left), GLfloat(location.top),
+            GLfloat(location.left), GLfloat(location.bottom),
+            GLfloat(location.left), GLfloat(location.top),
+            GLfloat(location.right), GLfloat(location.top),
+            GLfloat(location.right), GLfloat(location.top),
+            GLfloat(location.right), GLfloat(location.bottom),
+            GLfloat(location.left), GLfloat(location.bottom),
+            GLfloat(location.right), GLfloat(location.bottom)
         });
     }
     
     auto & solidColorShader = renderDat->shaders->solidColorShader;
     solidColorShader.use();
-    solidColorShader.posToNdc.setMat4(posToNdc);
+    solidColorShader.posToNdc.setMat4(gameToNdc);
     solidColorShader.solidColor.setColor(0x3092B809); // Location color: 0xAABBGGRR
     triangleVertices.bind();
     triangleVertices.bufferData(gl::UsageHint::DynamicDraw);
@@ -2212,45 +2188,48 @@ void Scr::MapGraphics::drawLocations(s32 left, s32 top, s32 width, s32 height)
     lineVertices.drawLines();
 
     textFont->textShader.use();
-    textFont->textShader.projection.setMat4(unscaledPosToNdc);
+    textFont->textShader.glyphScaling.setMat2(glyphScaling);
+    textFont->textShader.textPosToNdc.setMat4(gameToNdc);
     textFont->setColor(255, 255, 0);
     for ( size_t i=0; i<mapFile.locations.size(); ++i )
     {
         const auto & location = mapFile.locations[i];
         auto locationName = mapFile.getLocationName<RawString>(i);
         if ( locationName )
-            textFont->drawText((location.left-left)*scaleFactor+2.0f, (location.top-top)*scaleFactor+2.0f, locationName->c_str());
+            textFont->drawText(location.left+2.f, location.top+2.f, locationName->c_str());
     }
 }
 
-void Scr::MapGraphics::render(Sc::Data & scData, s32 left, s32 top, s32 width, s32 height, bool renderLocations, bool renderTileElevations, bool renderTileNums)
+void Scr::MapGraphics::drawFps()
 {
-    setupNdcTransformation(width, height);
+    fps.update(std::chrono::system_clock::now());
+    textFont->textShader.use();
+    textFont->textShader.glyphScaling.setMat2(glyphScaling);
+    textFont->textShader.textPosToNdc.setMat4(unscrolledWindowToNdc);
+    textFont->drawAffixedText<gl::Align::Center>(windowDimensions.width/2, 10.f, fps.displayNumber, " fps", "");
+}
 
+void Scr::MapGraphics::render(Sc::Data & scData, bool renderLocations, bool renderTileElevations, bool renderTileNums)
+{
     if ( renderSettings.skinId == Skin::Id::Classic )
-        drawClassicStars(scData, left, top, width/scaleFactor, height/scaleFactor);
+        drawClassicStars(scData);
     else
-        drawStars(left, top, width*renderSettings.visualQuality.scale, height*renderSettings.visualQuality.scale, 0xFFFFFFFF);
+        drawStars(0xFFFFFFFF);
 
-    drawTerrain(scData, left, top, width, height);
+    drawTerrain(scData);
     if ( renderTileElevations )
-        drawTileOverlays(scData, left, top, width, height);
+        drawTileOverlays(scData);
 
-    drawGrid(left, top, width, height);
-    drawSprites(scData, left, top);
+    drawGrid();
+    drawSprites(scData);
     if ( renderLocations )
-        drawLocations(left, top, width, height);
+        drawLocations();
 
     if ( renderTileNums )
-    drawTileNums(scData, left, top, width, height);
-
+        drawTileNums(scData);
+    
     if ( fpsEnabled )
-    {
-        fps.update(std::chrono::system_clock::now());
-        textFont->textShader.use();
-        textFont->textShader.projection.setMat4(unscaledPosToNdc);
-        textFont->drawAffixedText<gl::Align::Center>(width/2, 10.f, fps.displayNumber, " fps", "");
-    }
+        drawFps();
 }
 
 void Scr::MapGraphics::updateGraphics(u64 ticks)

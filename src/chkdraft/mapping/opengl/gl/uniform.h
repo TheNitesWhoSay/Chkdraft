@@ -1,5 +1,7 @@
 #pragma once
 #include <glad/gl.h>
+#include <glm/mat4x4.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include "texture.h"
 #include <cstdint>
 #include <stdexcept>
@@ -107,6 +109,12 @@ namespace gl
                 glUniformMatrix4fv(uniformLocation, 1, GL_FALSE, &mat4[0][0]);
             }
 
+            void setMat4(const glm::mat4x4 & mat4)
+            {
+                WRAP_GL_VALIDATE_CURRENT_PROGRAM();
+                glUniformMatrix4fv(uniformLocation, 1, GL_FALSE, glm::value_ptr(mat4));
+            }
+
             void loadIdentity()
             {
                 WRAP_GL_VALIDATE_CURRENT_PROGRAM();
@@ -128,6 +136,18 @@ namespace gl
             {
                 WRAP_GL_VALIDATE_CURRENT_PROGRAM();
                 glUniformMatrix2fv(uniformLocation, 1, GL_FALSE, mat2);
+            }
+
+            void setMat2(GLfloat (&mat2)[2][2])
+            {
+                WRAP_GL_VALIDATE_CURRENT_PROGRAM();
+                glUniformMatrix2fv(uniformLocation, 1, GL_FALSE, &mat2[0][0]);
+            }
+
+            void setMat2(const glm::mat2x2 & mat2)
+            {
+                WRAP_GL_VALIDATE_CURRENT_PROGRAM();
+                glUniformMatrix2fv(uniformLocation, 1, GL_FALSE, glm::value_ptr(mat2));
             }
 
             void loadIdentity()
@@ -160,6 +180,18 @@ namespace gl
             {
                 WRAP_GL_VALIDATE_CURRENT_PROGRAM();
                 glUniform2f(uniformLocation, x, y);
+            }
+        };
+
+        struct Vec2Array : Base // vec2Array - array of 2 float vectors
+        {
+            using Base::Base;
+
+            template <size_t N>
+            void setVec2Array(const gl::Point2D<GLfloat> (&vec2Array)[N])
+            {
+                WRAP_GL_VALIDATE_CURRENT_PROGRAM();
+                glUniform2fv(uniformLocation, N, &vec2Array[0].x);
             }
         };
 

@@ -107,9 +107,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     virtual void ChangesReversed();
                     inline std::shared_ptr<ReversibleActions> TileChanges() { return this->tileChanges; }
 
-/*   Graphics   */  void SetScreenLeft(s32 newScreenLeft);
-                    void SetScreenTop(s32 newScreenTop);
-                    float MiniMapScale(u16 xSize, u16 ySize);
+/*   Graphics   */  float MiniMapScale(u16 xSize, u16 ySize);
 
                     bool EnsureBitmapSize(u32 desiredWidth, u32 desiredHeight);
                     void SnapSelEndDrag();
@@ -252,6 +250,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
 
                     void addIsomUndo(const Chk::IsomRectUndo & isomUndo) final;
                     void refreshTileOccupationCache();
+                    void windowBoundsChanged();
 
 /*     Data     */  Clipboard & clipboard;
                     Selections selections {*this};
