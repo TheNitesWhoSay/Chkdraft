@@ -1818,7 +1818,7 @@ void GuiMap::PaintMap(GuiMapPtr currMap, bool pasting)
 
             glClearColor(0.0f, 0.f, 0.f, 0.f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            scrGraphics->render(chkd.scData, currLayer == Layer::Locations, DisplayingElevations(), DisplayingTileNums());
+            scrGraphics->render(chkd.scData, currLayer == Layer::Locations, DisplayingElevations(), DisplayingTileNums(), scGraphics.ClippingLocationNames());
             
             glFlush();
             SwapBuffers(openGlDc->getDcHandle());

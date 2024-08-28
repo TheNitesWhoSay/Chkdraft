@@ -120,6 +120,7 @@ GuiMapPtr Maps::NewMap(Sc::Terrain::Tileset tileset, u16 width, u16 height, size
                 Focus(newMap);
                 EnableMapping();
                 currentlyActiveMap->refreshScenario();
+                currentlyActiveMap->Scroll(true, true, false);
                 currentlyActiveMap->Redraw(true);
             
                 auto finish = std::chrono::high_resolution_clock::now();

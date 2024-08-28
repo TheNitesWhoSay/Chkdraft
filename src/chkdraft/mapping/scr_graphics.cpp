@@ -2148,7 +2148,7 @@ void Scr::MapGraphics::drawSprites(Sc::Data & scData)
     }
 }
 
-void Scr::MapGraphics::drawLocations()
+void Scr::MapGraphics::drawLocations(bool clipLocationNames)
 {
     lineVertices.clear();
     triangleVertices.clear();
@@ -2187,16 +2187,48 @@ void Scr::MapGraphics::drawLocations()
     lineVertices.bufferData(gl::UsageHint::DynamicDraw);
     lineVertices.drawLines();
 
-    textFont->textShader.use();
-    textFont->textShader.glyphScaling.setMat2(glyphScaling);
-    textFont->textShader.textPosToNdc.setMat4(gameToNdc);
-    textFont->setColor(255, 255, 0);
-    for ( size_t i=0; i<mapFile.locations.size(); ++i )
+    if ( clipLocationNames )
     {
-        const auto & location = mapFile.locations[i];
-        auto locationName = mapFile.getLocationName<RawString>(i);
-        if ( locationName )
-            textFont->drawText(location.left+2.f, location.top+2.f, locationName->c_str());
+        textFont->clippedTextShader.use();
+        textFont->clippedTextShader.glyphScaling.setMat2(glyphScaling);
+        textFont->clippedTextShader.textPosToNdc.setMat4(gameToNdc);
+        textFont->setColor(255, 255, 0);
+
+        for ( size_t i=0; i<mapFile.locations.size(); ++i )
+        {
+            const auto & location = mapFile.locations[i];
+
+            auto locationName = mapFile.getLocationName<RawString>(i);
+            if ( locationName )
+            {
+                u32 locationWidth = std::max(location.left, location.right) - std::min(location.left, location.right);
+                u32 locationHeight = std::max(location.top, location.bottom) - std::min(location.top, location.bottom);
+                s32 clipWidth = s32(locationWidth)*windowDimensions.width/mapViewDimensions.width; // Convert from game to window cordinates
+                s32 clipHeight = s32(locationHeight)*windowDimensions.height/mapViewDimensions.height;
+                if ( clipWidth > 2 && clipHeight > 2 ) // There is some space in which to potentially draw text
+                {
+                    textFont->clippedTextShader.lowerRightBound.setVec2(
+                        std::max(location.left, location.right)-1.f,
+                        std::max(location.top, location.bottom)-1.f
+                    );
+                    textFont->drawClippedText(location.left+2.f, location.top+2.f, 12.f, locationName->c_str(), clipWidth-3, clipHeight);
+                }
+            }
+        }
+    }
+    else
+    {
+        textFont->textShader.use();
+        textFont->textShader.glyphScaling.setMat2(glyphScaling);
+        textFont->textShader.textPosToNdc.setMat4(gameToNdc);
+        textFont->setColor(255, 255, 0);
+        for ( size_t i=0; i<mapFile.locations.size(); ++i )
+        {
+            const auto & location = mapFile.locations[i];
+            auto locationName = mapFile.getLocationName<RawString>(i);
+            if ( locationName )
+                textFont->drawText(location.left+2.f, location.top+2.f, locationName->c_str());
+        }
     }
 }
 
@@ -2209,7 +2241,7 @@ void Scr::MapGraphics::drawFps()
     textFont->drawAffixedText<gl::Align::Center>(windowDimensions.width/2, 10.f, fps.displayNumber, " fps", "");
 }
 
-void Scr::MapGraphics::render(Sc::Data & scData, bool renderLocations, bool renderTileElevations, bool renderTileNums)
+void Scr::MapGraphics::render(Sc::Data & scData, bool renderLocations, bool renderTileElevations, bool renderTileNums, bool clipLocationNames)
 {
     if ( renderSettings.skinId == Skin::Id::Classic )
         drawClassicStars(scData);
@@ -2223,7 +2255,7 @@ void Scr::MapGraphics::render(Sc::Data & scData, bool renderLocations, bool rend
     drawGrid();
     drawSprites(scData);
     if ( renderLocations )
-        drawLocations();
+        drawLocations(clipLocationNames);
 
     if ( renderTileNums )
         drawTileNums(scData);
