@@ -858,10 +858,10 @@ namespace Scr {
         void drawImage(Scr::Animation & animation, s32 x, s32 y, u32 frame, u32 multiplyColor, u32 playerColor, bool hallucinate);
         void drawClassicImage(Sc::Data & scData, gl::Palette & palette, s32 x, s32 y, u32 imageId, Chk::PlayerColor color);
         void drawSprites(Sc::Data & scData);
-        void drawLocations(bool clipLocationNames);
+        void drawLocations(bool clipLocationNames, bool showAnywhere, size_t selectedLocation);
         void drawFps();
 
-        void render(Sc::Data & scData, bool renderLocations, bool renderTileElevations, bool renderTileNums, bool clipLocationNames);
+        void render(Sc::Data & scData, bool renderLocations, bool renderTileElevations, bool renderTileNums, bool clipLocationNames, bool showAnywhere, size_t selectedLocation);
 
         void updateGraphics(u64 ticks); // Runs every few ms, with ticks being the ms since the last frame
     };

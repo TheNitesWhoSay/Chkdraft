@@ -1818,7 +1818,7 @@ void GuiMap::PaintMap(GuiMapPtr currMap, bool pasting)
 
             glClearColor(0.0f, 0.f, 0.f, 0.f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            scrGraphics->render(chkd.scData, currLayer == Layer::Locations, DisplayingElevations(), DisplayingTileNums(), scGraphics.ClippingLocationNames());
+            scrGraphics->render(chkd.scData, currLayer == Layer::Locations, DisplayingElevations(), DisplayingTileNums(), scGraphics.ClippingLocationNames(), !lockAnywhere, selections.getSelectedLocation());
             
             glFlush();
             SwapBuffers(openGlDc->getDcHandle());
@@ -4079,6 +4079,7 @@ void GuiMap::SetSkin(GuiMap::Skin skin)
     this->skin = skin;
     
     UpdateSkinMenuItems();
+    windowBoundsChanged();
     this->Redraw(true);
     if ( chkd.terrainPalWindow.getHandle() != NULL )
         chkd.terrainPalWindow.RedrawThis();

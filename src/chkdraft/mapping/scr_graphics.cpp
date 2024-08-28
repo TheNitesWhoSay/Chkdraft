@@ -2148,14 +2148,21 @@ void Scr::MapGraphics::drawSprites(Sc::Data & scData)
     }
 }
 
-void Scr::MapGraphics::drawLocations(bool clipLocationNames)
+void Scr::MapGraphics::drawLocations(bool clipLocationNames, bool showAnywhere, size_t selectedLocation)
 {
     lineVertices.clear();
     triangleVertices.clear();
+    triangleVertices2.clear();
     for ( size_t i=0; i<mapFile.locations.size(); ++i )
     {
+        if ( i == Chk::LocationId::Anywhere && !showAnywhere )
+            continue;
+
         const auto & location = mapFile.locations[i];
-        triangleVertices.vertices.insert(triangleVertices.vertices.end(), {
+        auto & triVertices = location.right < location.left || location.bottom < location.top ?
+            triangleVertices2.vertices : triangleVertices.vertices;
+
+        triVertices.insert(triVertices.end(), {
             GLfloat(location.left), GLfloat(location.top),
             GLfloat(location.right), GLfloat(location.top),
             GLfloat(location.left), GLfloat(location.bottom),
@@ -2178,14 +2185,50 @@ void Scr::MapGraphics::drawLocations(bool clipLocationNames)
     auto & solidColorShader = renderDat->shaders->solidColorShader;
     solidColorShader.use();
     solidColorShader.posToNdc.setMat4(gameToNdc);
-    solidColorShader.solidColor.setColor(0x3092B809); // Location color: 0xAABBGGRR
-    triangleVertices.bind();
-    triangleVertices.bufferData(gl::UsageHint::DynamicDraw);
-    triangleVertices.drawTriangles();
-    solidColorShader.solidColor.setColor(0xFF000000); // Line color: 0xAABBGGRR
-    lineVertices.bind();
-    lineVertices.bufferData(gl::UsageHint::DynamicDraw);
-    lineVertices.drawLines();
+
+    if ( !triangleVertices.vertices.empty() ) // Regular shading
+    {
+        solidColorShader.solidColor.setColor(0x20D0A800); // Location color: 0xAABBGGRR
+        triangleVertices.bind();
+        triangleVertices.bufferData(gl::UsageHint::DynamicDraw);
+        triangleVertices.drawTriangles();
+    }
+
+    if ( !triangleVertices2.vertices.empty() ) // Inverted shading
+    {
+        solidColorShader.solidColor.setColor(0x200000D0); // Location color: 0xAABBGGRR
+        triangleVertices2.bind();
+        triangleVertices2.bufferData(gl::UsageHint::DynamicDraw);
+        triangleVertices2.drawTriangles();
+    }
+
+    // Location bounding box
+    if ( !lineVertices.vertices.empty() )
+    {
+        solidColorShader.solidColor.setColor(0xFF000000); // Line color: 0xAABBGGRR
+        lineVertices.bind();
+        lineVertices.bufferData(gl::UsageHint::DynamicDraw);
+        lineVertices.drawLines();
+
+        if ( selectedLocation != 0 && selectedLocation < mapFile.numLocations() )
+        {
+            lineVertices.vertices.clear();
+            auto & location = mapFile.getLocation(selectedLocation);
+            lineVertices.vertices.insert(lineVertices.vertices.end(), {
+                GLfloat(location.left), GLfloat(location.top),
+                GLfloat(location.left), GLfloat(location.bottom),
+                GLfloat(location.left), GLfloat(location.top),
+                GLfloat(location.right), GLfloat(location.top),
+                GLfloat(location.right), GLfloat(location.top),
+                GLfloat(location.right), GLfloat(location.bottom),
+                GLfloat(location.left), GLfloat(location.bottom),
+                GLfloat(location.right), GLfloat(location.bottom)
+            });
+            solidColorShader.solidColor.setColor(0xFFFFFFFF); // Line color: 0xAABBGGRR
+            lineVertices.bufferData(gl::UsageHint::DynamicDraw);
+            lineVertices.drawLines();
+        }
+    }
 
     if ( clipLocationNames )
     {
@@ -2196,22 +2239,26 @@ void Scr::MapGraphics::drawLocations(bool clipLocationNames)
 
         for ( size_t i=0; i<mapFile.locations.size(); ++i )
         {
+            if ( i == Chk::LocationId::Anywhere && !showAnywhere )
+                continue;
+
             const auto & location = mapFile.locations[i];
 
             auto locationName = mapFile.getLocationName<RawString>(i);
             if ( locationName )
             {
-                u32 locationWidth = std::max(location.left, location.right) - std::min(location.left, location.right);
-                u32 locationHeight = std::max(location.top, location.bottom) - std::min(location.top, location.bottom);
+                u32 visualLeft = std::min(location.left, location.right);
+                u32 visualTop = std::min(location.top, location.bottom);
+                u32 visualRight = std::max(location.left, location.right);
+                u32 visualBottom = std::max(location.top, location.bottom);
+                u32 locationWidth = visualRight - visualLeft;
+                u32 locationHeight = visualBottom - visualTop;
                 s32 clipWidth = s32(locationWidth)*windowDimensions.width/mapViewDimensions.width; // Convert from game to window cordinates
                 s32 clipHeight = s32(locationHeight)*windowDimensions.height/mapViewDimensions.height;
                 if ( clipWidth > 2 && clipHeight > 2 ) // There is some space in which to potentially draw text
                 {
-                    textFont->clippedTextShader.lowerRightBound.setVec2(
-                        std::max(location.left, location.right)-1.f,
-                        std::max(location.top, location.bottom)-1.f
-                    );
-                    textFont->drawClippedText(location.left+2.f, location.top+2.f, 12.f, locationName->c_str(), clipWidth-3, clipHeight);
+                    textFont->clippedTextShader.lowerRightBound.setVec2(visualRight-1.f, visualBottom-1.f);
+                    textFont->drawClippedText(visualLeft+2.f, visualTop+2.f, 12.f, locationName->c_str(), clipWidth-3, clipHeight);
                 }
             }
         }
@@ -2227,7 +2274,11 @@ void Scr::MapGraphics::drawLocations(bool clipLocationNames)
             const auto & location = mapFile.locations[i];
             auto locationName = mapFile.getLocationName<RawString>(i);
             if ( locationName )
-                textFont->drawText(location.left+2.f, location.top+2.f, locationName->c_str());
+            {
+                u32 visualLeft = std::min(location.left, location.right);
+                u32 visualTop = std::min(location.top, location.bottom);
+                textFont->drawText(visualLeft+2.f, visualTop+2.f, locationName->c_str());
+            }
         }
     }
 }
@@ -2241,7 +2292,7 @@ void Scr::MapGraphics::drawFps()
     textFont->drawAffixedText<gl::Align::Center>(windowDimensions.width/2, 10.f, fps.displayNumber, " fps", "");
 }
 
-void Scr::MapGraphics::render(Sc::Data & scData, bool renderLocations, bool renderTileElevations, bool renderTileNums, bool clipLocationNames)
+void Scr::MapGraphics::render(Sc::Data & scData, bool renderLocations, bool renderTileElevations, bool renderTileNums, bool clipLocationNames, bool showAnywhere, size_t selectedLocation)
 {
     if ( renderSettings.skinId == Skin::Id::Classic )
         drawClassicStars(scData);
@@ -2255,7 +2306,7 @@ void Scr::MapGraphics::render(Sc::Data & scData, bool renderLocations, bool rend
     drawGrid();
     drawSprites(scData);
     if ( renderLocations )
-        drawLocations(clipLocationNames);
+        drawLocations(clipLocationNames, showAnywhere, selectedLocation);
 
     if ( renderTileNums )
         drawTileNums(scData);
