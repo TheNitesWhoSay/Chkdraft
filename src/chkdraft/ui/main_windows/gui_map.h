@@ -4,6 +4,7 @@
 #include <windows/windows_ui.h>
 #include "mapping/clipboard.h"
 #include "mapping/sc_graphics.h"
+#include "mapping/selections.h"
 #include "mapping/undos/undos.h"
 
 namespace Scr { class MapGraphics; }
@@ -25,6 +26,11 @@ enum class DefaultTriggers
 class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos, private Chk::IsomCache
 {
     public:
+/* Public Data  */  Clipboard & clipboard;
+                    Selections selections {*this};
+                    Undos undos {*this};
+                    std::unique_ptr<Scr::MapGraphics> scrGraphics;
+
 /* Constructor  */  GuiMap(Clipboard & clipboard, const std::string & filePath);
                     GuiMap(Clipboard & clipboard, FileBrowserPtr<SaveType> fileBrowser = getDefaultOpenMapBrowser());
                     GuiMap(Clipboard & clipboard, Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex, DefaultTriggers defaultTriggers);
@@ -96,7 +102,6 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     void deleteSelection();
                     void paste(s32 mapClickX, s32 mapClickY);
                     void PlayerChanged(u8 newPlayer);
-                    Selections & GetSelections();
                     u16 GetSelectedLocation();
                     bool autoSwappingAddonPlayers();
 
@@ -209,7 +214,6 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     };
                     GuiMap::Skin GetSkin();
                     void SetSkin(GuiMap::Skin skin);
-                    std::unique_ptr<Scr::MapGraphics> scrGraphics;
 
 
     protected:
@@ -252,10 +256,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     void refreshTileOccupationCache();
                     void windowBoundsChanged();
 
-/*     Data     */  Clipboard & clipboard;
-                    Selections selections {*this};
-                    Undos undos {*this};
-                    Graphics scGraphics {*this, selections};
+/* Private Data */  Graphics scGraphics {*this, selections};
                     GuiMap::Skin skin = Skin::ClassicGDI;
                     std::shared_ptr<WinLib::DeviceContext> openGlDc;
                     u64 prevTickCount = GetTickCount64();

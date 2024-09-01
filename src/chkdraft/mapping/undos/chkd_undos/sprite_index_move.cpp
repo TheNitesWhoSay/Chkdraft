@@ -16,7 +16,7 @@ void SpriteIndexMove::Reverse(void *guiMap)
     Chk::Sprite preserve = ((GuiMap*)guiMap)->getSprite(newIndex);
     ((GuiMap*)guiMap)->deleteSprite(newIndex);
     ((GuiMap*)guiMap)->insertSprite(oldIndex, preserve);
-    ((GuiMap*)guiMap)->GetSelections().sendSpriteMove(oldIndex, newIndex);
+    ((GuiMap*)guiMap)->selections.sendSpriteMove(oldIndex, newIndex);
     std::swap(oldIndex, newIndex);
 }
 
@@ -43,7 +43,7 @@ std::shared_ptr<SpriteIndexMoveBoundary> SpriteIndexMoveBoundary::Make()
 
 void SpriteIndexMoveBoundary::Reverse(void *guiMap)
 {
-    ((GuiMap*)guiMap)->GetSelections().finishSpriteMove();
+    ((GuiMap*)guiMap)->selections.finishSpriteMove();
 }
 
 int32_t SpriteIndexMoveBoundary::GetType()

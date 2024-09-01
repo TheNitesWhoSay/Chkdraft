@@ -1,4 +1,5 @@
 #include "scr_graphics.h"
+#include <chkdraft/ui/main_windows/gui_map.h>
 #include <cross_cut/logger.h>
 #include <rarecpp/json.h>
 #include <chrono>
@@ -634,21 +635,21 @@ void Scr::GraphicsData::loadTileMasks(ArchiveCluster & archiveCluster, std::file
     }
 }
 
-void Scr::GraphicsData::Data::Skin::Tileset::load(ArchiveCluster & archiveCluster, const RenderSettings & renderSettings, ByteBuffer & fileData)
+void Scr::GraphicsData::Data::Skin::Tileset::load(ArchiveCluster & archiveCluster, const LoadSettings & loadSettings, ByteBuffer & fileData)
 {
     constexpr std::string_view tilesetNames[8] { "badlands", "platform", "install", "ashworld", "jungle", "desert", "ice", "twilight" };
-    std::string tilesetName = std::string(tilesetNames[size_t(renderSettings.tileset) % size_t(Sc::Terrain::NumTilesets)]);
-    auto visualQuality = renderSettings.visualQuality;
-    auto skinName = Scr::Skin::skinNames[size_t(renderSettings.skinId)];
+    std::string tilesetName = std::string(tilesetNames[size_t(loadSettings.tileset) % size_t(Sc::Terrain::NumTilesets)]);
+    auto visualQuality = loadSettings.visualQuality;
+    auto skinName = Scr::Skin::skinNames[size_t(loadSettings.skinId)];
     std::filesystem::path tilesetPath {};
-    if ( renderSettings.skinId != Scr::Skin::Id::Remastered && visualQuality > VisualQuality::SD )
+    if ( loadSettings.skinId != Scr::Skin::Id::Remastered && visualQuality > VisualQuality::SD )
         tilesetPath = std::filesystem::path(visualQuality.prefix) / skinName / "tileset" / (tilesetName + ".dds.vr4");
     else
         tilesetPath = std::filesystem::path(visualQuality.prefix) / "tileset" / (tilesetName + ".dds.vr4");
 
     if ( visualQuality > VisualQuality::SD && // HD tileset effects for badlands, ashworld, jungle, desert, ice, twilight
-        (Sc::Terrain::Tileset)renderSettings.tileset != Sc::Terrain::Tileset::SpacePlatform &&
-        (Sc::Terrain::Tileset)renderSettings.tileset != Sc::Terrain::Tileset::Installation )
+        (Sc::Terrain::Tileset)loadSettings.tileset != Sc::Terrain::Tileset::SpacePlatform &&
+        (Sc::Terrain::Tileset)loadSettings.tileset != Sc::Terrain::Tileset::Installation )
     {
         auto path = std::filesystem::path(visualQuality.prefix) / skinName / "tileset" / (tilesetName + ".tmsk");
         loadTileMasks(archiveCluster, path, maskIds);
@@ -656,7 +657,7 @@ void Scr::GraphicsData::Data::Skin::Tileset::load(ArchiveCluster & archiveCluste
         path = std::filesystem::path(visualQuality.prefix) / skinName / "tileset" / (tilesetName + "_mask.dds.grp");
         loadGrp(archiveCluster, path, tileMask, fileData, true, false);
         loadGrp(archiveCluster, tilesetPath, tilesetGrp, fileData, true, true); // Loads the merged tex and (temporarily) the individual tiles
-        loadMaskedTiles(archiveCluster, renderSettings.tileset, tilesetGrp, tileMask, maskIds);
+        loadMaskedTiles(archiveCluster, loadSettings.tileset, tilesetGrp, tileMask, maskIds);
         tileMask.texture.clear(); // Individual tiles/tile-masks only used for loading masked tiles and can be cleared after
         tilesetGrp.texture.clear();
     }
@@ -752,14 +753,14 @@ void Scr::GraphicsData::Data::Skin::loadStars(ArchiveCluster & archiveCluster, s
     }
 }
 
-void Scr::GraphicsData::Data::Skin::loadClassicTiles(Sc::Data & scData, const RenderSettings & renderSettings)
+void Scr::GraphicsData::Data::Skin::loadClassicTiles(Sc::Data & scData, const LoadSettings & loadSettings)
 {
-    auto tilesetIndex = size_t(renderSettings.tileset) % size_t(Sc::Terrain::NumTilesets);
+    auto tilesetIndex = size_t(loadSettings.tileset) % size_t(Sc::Terrain::NumTilesets);
     this->tiles[tilesetIndex] = std::make_shared<Scr::GraphicsData::Data::Skin::Tileset>();
     // Populate tileTextureData
     constexpr size_t width = 32*128;
     std::vector<u8> tileTextureData(size_t(width*4096), u8(0)); // 4096x4096 palette indexes (128x128 tiles)
-    auto tiles = scData.terrain.get(renderSettings.tileset);
+    auto tiles = scData.terrain.get(loadSettings.tileset);
     for ( u32 i=0; i<65536; ++i )
     {
         size_t groupIndex = Sc::Terrain::Tiles::getGroupIndex(u16(i));
@@ -824,13 +825,13 @@ void Scr::GraphicsData::Data::Skin::loadClassicTiles(Sc::Data & scData, const Re
     tilesetGrp.palette->update();
 }
 
-void Scr::GraphicsData::Data::Skin::loadTiles(ArchiveCluster & archiveCluster, const RenderSettings & renderSettings, ByteBuffer & fileData)
+void Scr::GraphicsData::Data::Skin::loadTiles(ArchiveCluster & archiveCluster, const LoadSettings & loadSettings, ByteBuffer & fileData)
 {
-    auto tilesetIndex = size_t(renderSettings.tileset) % size_t(Sc::Terrain::NumTilesets);
+    auto tilesetIndex = size_t(loadSettings.tileset) % size_t(Sc::Terrain::NumTilesets);
     if ( tiles[tilesetIndex] == nullptr )
     {
         tiles[tilesetIndex] = std::make_shared<Tileset>();
-        tiles[tilesetIndex]->load(archiveCluster, renderSettings, fileData);
+        tiles[tilesetIndex]->load(archiveCluster, loadSettings, fileData);
     }
 }
 
@@ -853,7 +854,7 @@ void Scr::GraphicsData::Data::Skin::loadClassicImages(Sc::Data & scData)
             classicImage->frames.reserve(numFrames);
             classicImage->grpWidth = grpFile.grpWidth;
             classicImage->grpHeight = grpFile.grpHeight;
-            for ( size_t frameIndex=0; frameIndex<numFrames; ++frameIndex )
+            for ( size_t frameIndex=0; frameIndex<1/*numFrames*/; ++frameIndex )
             {
                 classicImage->frames.emplace_back();
                 const Sc::Sprite::GrpFrameHeader & grpFrameHeader = grpFile.frameHeaders[frameIndex];
@@ -928,15 +929,15 @@ void Scr::GraphicsData::Data::Skin::loadClassicImages(Sc::Data & scData)
     }
 }
 
-void Scr::GraphicsData::Data::Skin::loadImages(Sc::Data & scData, ArchiveCluster & archiveCluster, std::filesystem::path texPrefix, const RenderSettings & renderSettings, ByteBuffer & fileData, gl::ContextSemaphore* contextSemaphore)
+void Scr::GraphicsData::Data::Skin::loadImages(Sc::Data & scData, ArchiveCluster & archiveCluster, std::filesystem::path texPrefix, const LoadSettings & loadSettings, ByteBuffer & fileData, gl::ContextSemaphore* contextSemaphore)
 {
-    bool halfAnims = renderSettings.visualQuality.halfAnims;
+    bool halfAnims = loadSettings.visualQuality.halfAnims;
     if ( this->images == nullptr )
         this->images = std::make_shared<std::vector<std::shared_ptr<Animation>>>(size_t(999), nullptr);
 
     Scr::Skin skin {};
-    skin.skinName = Scr::Skin::skinNames[size_t(renderSettings.skinId)];
-    loadSkin(skin, archiveCluster, renderSettings.visualQuality, fileData);
+    skin.skinName = Scr::Skin::skinNames[size_t(loadSettings.skinId)];
+    loadSkin(skin, archiveCluster, loadSettings.visualQuality, fileData);
 
     std::filesystem::path animPrefix = texPrefix / "anim";
     std::filesystem::path skinAnimPrefix = animPrefix / skin;
@@ -950,7 +951,7 @@ void Scr::GraphicsData::Data::Skin::loadImages(Sc::Data & scData, ArchiveCluster
 
     if ( header->fileType != Animation::Header::ANIM || header->version != 0x0101 )
         throw std::logic_error("Invalid mainSD.anim header");
-    else if ( renderSettings.visualQuality == VisualQuality::SD || contextSemaphore == nullptr ) // SD (not reading additional casc files) or no context semaphore
+    else if ( loadSettings.visualQuality == VisualQuality::SD || contextSemaphore == nullptr ) // SD (not reading additional casc files) or no context semaphore
     {
         for ( u32 i=0; i<header->entries; i++ )
         {
@@ -963,7 +964,7 @@ void Scr::GraphicsData::Data::Skin::loadImages(Sc::Data & scData, ArchiveCluster
                 else
                     (*images)[i] = (*images)[ref->referencedImage];
             }
-            else if ( renderSettings.visualQuality == VisualQuality::SD )
+            else if ( loadSettings.visualQuality == VisualQuality::SD )
                 (*images)[i] = loadSdAnim(scData, sdData, i);
             else if ( skin.imageUsesSkinTexture[i] != 0 )
                 (*images)[i] = loadHdAnim(halfAnims, archiveCluster, skinAnimPrefix / (std::string("main_") + (to_zero_padded_str(3, i) + ".anim")), fileData);
@@ -999,7 +1000,7 @@ void Scr::GraphicsData::Data::Skin::loadImages(Sc::Data & scData, ArchiveCluster
                 Animation::MainSd::Entry* entry = (Animation::MainSd::Entry*)&sdData[entryOffsets[i]];
                 if ( entry->frames > 0 )
                 {
-                    if ( renderSettings.visualQuality == VisualQuality::SD )
+                    if ( loadSettings.visualQuality == VisualQuality::SD )
                         (*images)[i] = loadSdAnim(scData, sdData, i);
                     else
                     {
@@ -1010,7 +1011,7 @@ void Scr::GraphicsData::Data::Skin::loadImages(Sc::Data & scData, ArchiveCluster
                             path = animPrefix / (std::string("main_") + (to_zero_padded_str(3, i) + ".anim"));
 
                         memoryTieredTasks.add_task({
-                            .halfAnim = renderSettings.visualQuality.halfAnims,
+                            .halfAnim = loadSettings.visualQuality.halfAnims,
                             .archiveCluster = &archiveCluster,
                             .path = path,
                             .anim = &(*images)[i],
@@ -1055,16 +1056,16 @@ void Scr::GraphicsData::Data::loadWaterNormals(ArchiveCluster & archiveCluster, 
     }
 }
 
-void Scr::GraphicsData::unload(const RenderSettings & renderSettings)
+void Scr::GraphicsData::unload(const LoadSettings & loadSettings)
 {
-    auto visualQualityIndex = renderSettings.visualQuality.index();
+    auto visualQualityIndex = loadSettings.visualQuality.index();
     if ( visualQualityData[visualQualityIndex] != nullptr )
     {
         if ( visualQualityData[visualQualityIndex].use_count() == 1 ) // Visual quality unused
             visualQualityData[visualQualityIndex] = nullptr;
         else // Visual quality still used, check individual component usage
         {
-            auto skinIndex = size_t(renderSettings.skinId);
+            auto skinIndex = size_t(loadSettings.skinId);
             Data & data = *visualQualityData[visualQualityIndex];
             if ( data.skin[skinIndex] != nullptr )
             {
@@ -1076,7 +1077,7 @@ void Scr::GraphicsData::unload(const RenderSettings & renderSettings)
                     if ( skin.spk != nullptr && skin.spk.use_count() == 1 ) // Spk unused
                         skin.spk = nullptr;
 
-                    auto tilesetIndex = size_t(renderSettings.tileset) % Sc::Terrain::NumTilesets;
+                    auto tilesetIndex = size_t(loadSettings.tileset) % Sc::Terrain::NumTilesets;
                     if ( skin.tiles[tilesetIndex] != nullptr && skin.tiles[tilesetIndex].use_count() == 1 ) // Tiles unused
                         skin.tiles[tilesetIndex] = nullptr;
 
@@ -1097,44 +1098,44 @@ void Scr::GraphicsData::unload(const RenderSettings & renderSettings)
         shaders = nullptr;
 }
 
-bool Scr::GraphicsData::isLoaded(const RenderSettings & renderSettings)
+bool Scr::GraphicsData::isLoaded(const LoadSettings & loadSettings)
 {
-    bool isRemastered = renderSettings.skinId != Scr::Skin::Id::Classic;
+    bool isRemastered = loadSettings.skinId != Scr::Skin::Id::Classic;
 
     if ( shaders == nullptr )
         return false;
 
-    auto visualQualityIndex = renderSettings.visualQuality.index();
+    auto visualQualityIndex = loadSettings.visualQuality.index();
     if ( visualQualityData[visualQualityIndex] == nullptr )
         return false;
 
     auto & data = *(visualQualityData[visualQualityIndex]);
-    if ( isRemastered && Sc::Terrain::hasWater(renderSettings.tileset) && renderSettings.visualQuality > VisualQuality::SD &&
+    if ( isRemastered && Sc::Terrain::hasWater(loadSettings.tileset) && loadSettings.visualQuality > VisualQuality::SD &&
         (data.waterNormal[0] == nullptr || data.waterNormal[1] == nullptr) )
     {
         return false;
     }
 
-    auto skinIndex = size_t(renderSettings.skinId);
+    auto skinIndex = size_t(loadSettings.skinId);
     if ( skinIndex >= Scr::Skin::total )
         throw std::logic_error("Invalid skinId");
     else if ( data.skin[skinIndex] == nullptr )
         return false;
 
     auto & skin = *(data.skin[skinIndex]);
-    if ( renderSettings.showStars() && skin.spk == nullptr )
+    if ( loadSettings.showStars() && skin.spk == nullptr )
         return false;
 
-    auto tilesetIndex = size_t(renderSettings.tileset) % Sc::Terrain::NumTilesets;
+    auto tilesetIndex = size_t(loadSettings.tileset) % Sc::Terrain::NumTilesets;
     if ( skin.tiles[tilesetIndex] == nullptr )
         return false;
 
     return isRemastered ? skin.images != nullptr : skin.classicImages != nullptr;
 }
 
-std::shared_ptr<Scr::GraphicsData::RenderData> Scr::GraphicsData::load(Sc::Data & scData, ArchiveCluster & archiveCluster, const RenderSettings & renderSettings, ByteBuffer & fileData)
+std::shared_ptr<Scr::GraphicsData::RenderData> Scr::GraphicsData::load(Sc::Data & scData, ArchiveCluster & archiveCluster, const LoadSettings & loadSettings, ByteBuffer & fileData)
 {
-    bool isRemastered = renderSettings.skinId != Scr::Skin::Id::Classic;
+    bool isRemastered = loadSettings.skinId != Scr::Skin::Id::Classic;
 
     if ( shaders == nullptr )
         shaders = std::make_shared<Shaders>();
@@ -1144,16 +1145,16 @@ std::shared_ptr<Scr::GraphicsData::RenderData> Scr::GraphicsData::load(Sc::Data 
     else
         shaders->loadClassic();
 
-    auto visualQualityIndex = renderSettings.visualQuality.index();
+    auto visualQualityIndex = loadSettings.visualQuality.index();
     if ( visualQualityData[visualQualityIndex] == nullptr )
         visualQualityData[visualQualityIndex] = std::make_shared<Data>();
 
     auto & data = *(visualQualityData[visualQualityIndex]);
-    std::filesystem::path visualQualityPrefix = std::filesystem::path(renderSettings.visualQuality.prefix);
-    if ( isRemastered && Sc::Terrain::hasWater(renderSettings.tileset) && renderSettings.visualQuality > VisualQuality::SD )
+    std::filesystem::path visualQualityPrefix = std::filesystem::path(loadSettings.visualQuality.prefix);
+    if ( isRemastered && Sc::Terrain::hasWater(loadSettings.tileset) && loadSettings.visualQuality > VisualQuality::SD )
         data.loadWaterNormals(archiveCluster, visualQualityPrefix, fileData);
 
-    auto skinIndex = size_t(renderSettings.skinId);
+    auto skinIndex = size_t(loadSettings.skinId);
     Scr::Skin skinDescriptor { .skinName = std::string(Scr::Skin::skinNames[skinIndex]) };
     if ( skinIndex >= Scr::Skin::total )
         throw std::logic_error("Invalid skinId");
@@ -1161,7 +1162,7 @@ std::shared_ptr<Scr::GraphicsData::RenderData> Scr::GraphicsData::load(Sc::Data 
         data.skin[skinIndex] = std::make_shared<Data::Skin>();
 
     auto & skin = *(data.skin[skinIndex]);
-    if ( skin.spk == nullptr && renderSettings.showStars() )
+    if ( skin.spk == nullptr && loadSettings.showStars() )
     {
         if ( isRemastered )
             skin.loadStars(archiveCluster, visualQualityPrefix / skinDescriptor, fileData);
@@ -1169,24 +1170,24 @@ std::shared_ptr<Scr::GraphicsData::RenderData> Scr::GraphicsData::load(Sc::Data 
             skin.loadClassicStars(scData);
     }
     
-    auto tilesetIndex = size_t(renderSettings.tileset) % Sc::Terrain::NumTilesets;
+    auto tilesetIndex = size_t(loadSettings.tileset) % Sc::Terrain::NumTilesets;
     if ( skin.tiles[tilesetIndex] == nullptr )
     {
         if ( isRemastered )
-            skin.loadTiles(archiveCluster, renderSettings, fileData);
+            skin.loadTiles(archiveCluster, loadSettings, fileData);
         else
-            skin.loadClassicTiles(scData, renderSettings);
+            skin.loadClassicTiles(scData, loadSettings);
     }
     
     if ( isRemastered && skin.images == nullptr )
-        skin.loadImages(scData, archiveCluster, visualQualityPrefix, renderSettings, fileData, openGlContextSemaphore);
+        skin.loadImages(scData, archiveCluster, visualQualityPrefix, loadSettings, fileData, openGlContextSemaphore);
     else if ( !isRemastered && skin.classicImages == nullptr )
         skin.loadClassicImages(scData);
 
     std::shared_ptr<RenderData> renderData = std::make_shared<RenderData>();
     renderData->shaders = this->shaders;
     renderData->spk = skin.spk;
-    renderData->tiles = skin.tiles[renderSettings.tileset];
+    renderData->tiles = skin.tiles[loadSettings.tileset];
     renderData->images = skin.images;
     renderData->classicImages = skin.classicImages;
     renderData->waterNormal[0] = data.waterNormal[0];
@@ -1194,7 +1195,7 @@ std::shared_ptr<Scr::GraphicsData::RenderData> Scr::GraphicsData::load(Sc::Data 
     return renderData;
 }
 
-Scr::MapGraphics::MapGraphics(MapFile & mapFile) : mapFile(mapFile), initialTickCount(GetTickCount64()) {}
+Scr::MapGraphics::MapGraphics(GuiMap & guiMap) : map(guiMap), initialTickCount(GetTickCount64()) {}
 
 void Scr::MapGraphics::updateGrid()
 {
@@ -1254,8 +1255,8 @@ void Scr::MapGraphics::mapViewChanged()
         .height = s32(windowDimensions.height/zoom)
     };
     starDimensions = {
-        .width = mapViewDimensions.width * s32(renderSettings.visualQuality.scale),
-        .height = mapViewDimensions.height * s32(renderSettings.visualQuality.scale)
+        .width = mapViewDimensions.width * s32(loadSettings.visualQuality.scale),
+        .height = mapViewDimensions.height * s32(loadSettings.visualQuality.scale)
     };
     mapViewBounds = {
         .left = windowBounds.left,
@@ -1266,8 +1267,8 @@ void Scr::MapGraphics::mapViewChanged()
     mapTileBounds = {
         .left = mapViewBounds.left/32,
         .top = mapViewBounds.top/32,
-        .right = std::min(mapViewBounds.right/32+1, s32(mapFile.getTileWidth()-1)),
-        .bottom = std::min(mapViewBounds.bottom/32+1, s32(mapFile.getTileHeight()-1))
+        .right = std::min(mapViewBounds.right/32+1, s32(map.getTileWidth()-1)),
+        .bottom = std::min(mapViewBounds.bottom/32+1, s32(map.getTileHeight()-1))
     };
     imageClipBoundingBox = {
         .left = mapViewBounds.left - imageMargin.width,
@@ -1288,7 +1289,7 @@ void Scr::MapGraphics::mapViewChanged()
     auto windowToNdcScale = glm::scale(glm::mat4x4(1.f), {2.f/windowDimensions.width, -2.f/windowDimensions.height, 1.f});
     auto mapViewToNdcScale = glm::scale(glm::mat4x4(1.f), {2.f/mapViewDimensions.width, -2.f/mapViewDimensions.height, 1.f});
     auto ndcTranslation = glm::translate(glm::mat4x4(1.f), {-1.f, 1.f, 0.f});
-    auto visualQualityScale = glm::scale(glm::mat4x4(1.f), {1.f/renderSettings.visualQuality.scale, 1.f/renderSettings.visualQuality.scale, 1.f});
+    auto visualQualityScale = glm::scale(glm::mat4x4(1.f), {1.f/loadSettings.visualQuality.scale, 1.f/loadSettings.visualQuality.scale, 1.f});
     gameToNdc = ndcTranslation * mapViewToNdcScale * gameTranslation;
     starToNdc = ndcTranslation * mapViewToNdcScale * visualQualityScale;
     tileToNdc = ndcTranslation * mapViewToNdcScale * gameTranslation * tileScale;
@@ -1323,7 +1324,7 @@ void Scr::MapGraphics::skinChanged()
 {
     // Recalculate imageMargin
     imageMargin = {0, 0};
-    if ( renderSettings.skinId == Skin::Id::Classic )
+    if ( loadSettings.skinId == Skin::Id::Classic )
     {
         for ( const auto & classicImage : *renderDat->classicImages )
         {
@@ -1424,25 +1425,15 @@ void Scr::MapGraphics::setGridSize(s32 gridSize)
     updateGrid();
 }
 
-bool Scr::MapGraphics::displayingFps()
-{
-    return this->fpsEnabled;
-}
-
-void Scr::MapGraphics::toggleDisplayFps()
-{
-    this->fpsEnabled = !this->fpsEnabled;
-}
-
-void Scr::MapGraphics::load(Sc::Data & scData, Scr::GraphicsData & scrDat, const Scr::GraphicsData::RenderSettings & renderSettings, ArchiveCluster & archiveCluster, ByteBuffer & fileData)
+void Scr::MapGraphics::load(Sc::Data & scData, Scr::GraphicsData & scrDat, const Scr::GraphicsData::LoadSettings & loadSettings, ArchiveCluster & archiveCluster, ByteBuffer & fileData)
 {
     bool skinChanged = this->renderDat == nullptr ||
-        this->renderSettings.skinId != renderSettings.skinId || this->renderSettings.visualQuality != renderSettings.visualQuality;
+        this->loadSettings.skinId != loadSettings.skinId || this->loadSettings.visualQuality != loadSettings.visualQuality;
 
     this->renderDat = nullptr;
-    this->renderSettings = renderSettings;
-    this->renderSettings.tileset = Sc::Terrain::Tileset(mapFile.getTileset() % Sc::Terrain::NumTilesets);
-    this->renderDat = scrDat.load(scData, archiveCluster, this->renderSettings, fileData);
+    this->loadSettings = loadSettings;
+    this->loadSettings.tileset = Sc::Terrain::Tileset(map.getTileset() % Sc::Terrain::NumTilesets);
+    this->renderDat = scrDat.load(scData, archiveCluster, this->loadSettings, fileData);
     
     if ( skinChanged )
         this->skinChanged();
@@ -1664,121 +1655,173 @@ void Scr::MapGraphics::drawTileNums(Sc::Data & scData)
     textFont->textShader.textPosToNdc.setMat4(gameToNdc);
     textFont->setColor(255, 255, 0);
 
+    Chk::Scope scope = useGameTileNums ? Chk::Scope::Game : Chk::Scope::Editor;
     for ( s32 y=mapTileBounds.top; y<=mapTileBounds.bottom; ++y )
     {
         for ( s32 x=mapTileBounds.left; x<=mapTileBounds.right; ++x )
-            textFont->drawText(x*32+2.0f, y*32+2.0f, std::to_string(mapFile.getTile(x, y)).c_str());
+            textFont->drawText(x*32+2.0f, y*32+2.0f, std::to_string(map.getTile(x, y, scope)).c_str());
     }
 }
 
 void Scr::MapGraphics::drawTileOverlays(Sc::Data & scData)
 {
-    const Sc::Terrain::Tiles & tiles = scData.terrain.get(mapFile.getTileset());
+    const Sc::Terrain::Tiles & tiles = scData.terrain.get(map.getTileset());
 
     auto & solidColorShader = renderDat->shaders->solidColorShader;
     solidColorShader.use();
     solidColorShader.posToNdc.setMat4(gameToNdc);
     
-    triangleVertices.clear();
-    triangleVertices2.clear();
-    triangleVertices3.clear();
-    triangleVertices4.clear();
-    triangleVertices5.clear();
-    triangleVertices6.clear();
     
-    for ( s32 y=mapTileBounds.top; y<=mapTileBounds.bottom; ++y )
+    if ( displayBuildability )
     {
-        for ( s32 x=mapTileBounds.left; x<=mapTileBounds.right; ++x )
+        triangleVertices.clear();
+        triangleVertices2.clear();
+
+        for ( s32 y=mapTileBounds.top; y<=mapTileBounds.bottom; ++y )
         {
-            auto tileIndex = mapFile.getTile(x, y);
-            size_t groupIndex = Sc::Terrain::Tiles::getGroupIndex(tileIndex);
-            if ( groupIndex < tiles.tileGroups.size() )
+            for ( s32 x=mapTileBounds.left; x<=mapTileBounds.right; ++x )
             {
-                const Sc::Terrain::TileGroup & tileGroup = tiles.tileGroups[groupIndex];
-                u16 megaTileIndex = tileGroup.megaTileIndex[tiles.getGroupMemberIndex(tileIndex)];
-                
-                for ( s32 yMiniTile = 0; yMiniTile < 4; yMiniTile++ )
+                auto tileIndex = map.getTile(x, y);
+                size_t groupIndex = Sc::Terrain::Tiles::getGroupIndex(tileIndex);
+                if ( groupIndex < tiles.tileGroups.size() )
                 {
-                    for ( s32 xMiniTile = 0; xMiniTile < 4; xMiniTile++ )
+                    const Sc::Terrain::TileGroup & tileGroup = tiles.tileGroups[groupIndex];
+                    gl::Rect2D<GLfloat> rect {
+                        GLfloat(x*32),
+                        GLfloat(y*32),
+                        GLfloat(x*32+32),
+                        GLfloat(y*32+32),
+                    };
+                    auto & vertices = tileGroup.isBuildable() ? triangleVertices : triangleVertices2;
+                    vertices.vertices.insert(vertices.vertices.end(), {
+                        rect.left, rect.top,
+                        rect.right, rect.top,
+                        rect.left, rect.bottom,
+                        rect.left, rect.bottom,
+                        rect.right, rect.bottom,
+                        rect.right, rect.top
+                    });
+                }
+            }
+        }
+
+        if ( !triangleVertices.vertices.empty() )
+        {
+            solidColorShader.solidColor.setColor(0x30006400); // Tile color: 0xAABBGGRR
+            triangleVertices.bind();
+            triangleVertices.bufferData(gl::UsageHint::DynamicDraw);
+            triangleVertices.drawTriangles();
+        }
+        if ( !triangleVertices2.vertices.empty() )
+        {
+            solidColorShader.solidColor.setColor(0x30000064); // Tile color: 0xAABBGGRR
+            triangleVertices2.bind();
+            triangleVertices2.bufferData(gl::UsageHint::DynamicDraw);
+            triangleVertices2.drawTriangles();
+        }
+    }
+    else if ( displayElevations )
+    {
+        triangleVertices.clear();
+        triangleVertices2.clear();
+        triangleVertices3.clear();
+        triangleVertices4.clear();
+        triangleVertices5.clear();
+        triangleVertices6.clear();
+
+        for ( s32 y=mapTileBounds.top; y<=mapTileBounds.bottom; ++y )
+        {
+            for ( s32 x=mapTileBounds.left; x<=mapTileBounds.right; ++x )
+            {
+                auto tileIndex = map.getTile(x, y);
+                size_t groupIndex = Sc::Terrain::Tiles::getGroupIndex(tileIndex);
+                if ( groupIndex < tiles.tileGroups.size() )
+                {
+                    const Sc::Terrain::TileGroup & tileGroup = tiles.tileGroups[groupIndex];
+                    u16 megaTileIndex = tileGroup.megaTileIndex[tiles.getGroupMemberIndex(tileIndex)];
+                
+                    for ( s32 yMiniTile = 0; yMiniTile < 4; yMiniTile++ )
                     {
-                        Sc::Terrain::TileFlags::MiniTileFlags miniTileFlags = tiles.tileFlags[megaTileIndex].miniTileFlags[yMiniTile][xMiniTile];
-                        gl::Rect2D<GLfloat> rect {
-                            GLfloat(x*32+xMiniTile*8),
-                            GLfloat(y*32+yMiniTile*8),
-                            GLfloat(x*32+xMiniTile*8+8),
-                            GLfloat(y*32+yMiniTile*8+8),
-                        };
-                        auto* targetVertices = &triangleVertices;
-                        bool walkable = miniTileFlags.isWalkable();
-                        switch ( miniTileFlags.getElevation() )
+                        for ( s32 xMiniTile = 0; xMiniTile < 4; xMiniTile++ )
                         {
-                            case Sc::Terrain::TileElevation::Low: if ( !walkable) targetVertices = &triangleVertices2; break;
-                            case Sc::Terrain::TileElevation::Mid: targetVertices = walkable ? &triangleVertices3 : &triangleVertices4; break;
-                            case Sc::Terrain::TileElevation::High: targetVertices = walkable ? &triangleVertices5 : &triangleVertices6; break;
+                            Sc::Terrain::TileFlags::MiniTileFlags miniTileFlags = tiles.tileFlags[megaTileIndex].miniTileFlags[yMiniTile][xMiniTile];
+                            gl::Rect2D<GLfloat> rect {
+                                GLfloat(x*32+xMiniTile*8),
+                                GLfloat(y*32+yMiniTile*8),
+                                GLfloat(x*32+xMiniTile*8+8),
+                                GLfloat(y*32+yMiniTile*8+8),
+                            };
+                            auto* targetVertices = &triangleVertices;
+                            bool walkable = miniTileFlags.isWalkable();
+                            switch ( miniTileFlags.getElevation() )
+                            {
+                                case Sc::Terrain::TileElevation::Low: if ( !walkable) targetVertices = &triangleVertices2; break;
+                                case Sc::Terrain::TileElevation::Mid: targetVertices = walkable ? &triangleVertices3 : &triangleVertices4; break;
+                                case Sc::Terrain::TileElevation::High: targetVertices = walkable ? &triangleVertices5 : &triangleVertices6; break;
+                            }
+                            targetVertices->vertices.insert(targetVertices->vertices.end(), {
+                                rect.left, rect.top,
+                                rect.right, rect.top,
+                                rect.left, rect.bottom,
+                                rect.left, rect.bottom,
+                                rect.right, rect.bottom,
+                                rect.right, rect.top
+                            });
                         }
-                        targetVertices->vertices.insert(targetVertices->vertices.end(), {
-                            rect.left, rect.top,
-                            rect.right, rect.top,
-                            rect.left, rect.bottom,
-                            rect.left, rect.bottom,
-                            rect.right, rect.bottom,
-                            rect.right, rect.top
-                        });
                     }
                 }
             }
         }
-    }
-    
-    if ( !triangleVertices.vertices.empty() )
-    {
-        solidColorShader.solidColor.setColor(0x30006400); // MiniTile color: 0xAABBGGRR
-        triangleVertices.bind();
-        triangleVertices.bufferData(gl::UsageHint::DynamicDraw);
-        triangleVertices.drawTriangles();
-    }
-    if ( !triangleVertices2.vertices.empty() )
-    {
-        solidColorShader.solidColor.setColor(0xE0001600); // MiniTile color: 0xAABBGGRR
-        triangleVertices2.bind();
-        triangleVertices2.bufferData(gl::UsageHint::DynamicDraw);
-        triangleVertices2.drawTriangles();
-    }
-    if ( !triangleVertices3.vertices.empty() )
-    {
-        solidColorShader.solidColor.setColor(0x30640000); // MiniTile color: 0xAABBGGRR
-        triangleVertices3.bind();
-        triangleVertices3.bufferData(gl::UsageHint::DynamicDraw);
-        triangleVertices3.drawTriangles();
-    }
-    if ( !triangleVertices4.vertices.empty() )
-    {
-        solidColorShader.solidColor.setColor(0xE0160000); // MiniTile color: 0xAABBGGRR
-        triangleVertices4.bind();
-        triangleVertices4.bufferData(gl::UsageHint::DynamicDraw);
-        triangleVertices4.drawTriangles();
-    }
-    if ( !triangleVertices5.vertices.empty() )
-    {
-        solidColorShader.solidColor.setColor(0x30000064); // MiniTile color: 0xAABBGGRR
-        triangleVertices5.bind();
-        triangleVertices5.bufferData(gl::UsageHint::DynamicDraw);
-        triangleVertices5.drawTriangles();
-    }
-    if ( !triangleVertices6.vertices.empty() )
-    {
-        solidColorShader.solidColor.setColor(0xE0000016); // MiniTile color: 0xAABBGGRR
-        triangleVertices6.bind();
-        triangleVertices6.bufferData(gl::UsageHint::DynamicDraw);
-        triangleVertices6.drawTriangles();
-    }
 
+        if ( !triangleVertices.vertices.empty() )
+        {
+            solidColorShader.solidColor.setColor(0x30006400); // MiniTile color: 0xAABBGGRR
+            triangleVertices.bind();
+            triangleVertices.bufferData(gl::UsageHint::DynamicDraw);
+            triangleVertices.drawTriangles();
+        }
+        if ( !triangleVertices2.vertices.empty() )
+        {
+            solidColorShader.solidColor.setColor(0xE0001600); // MiniTile color: 0xAABBGGRR
+            triangleVertices2.bind();
+            triangleVertices2.bufferData(gl::UsageHint::DynamicDraw);
+            triangleVertices2.drawTriangles();
+        }
+        if ( !triangleVertices3.vertices.empty() )
+        {
+            solidColorShader.solidColor.setColor(0x30640000); // MiniTile color: 0xAABBGGRR
+            triangleVertices3.bind();
+            triangleVertices3.bufferData(gl::UsageHint::DynamicDraw);
+            triangleVertices3.drawTriangles();
+        }
+        if ( !triangleVertices4.vertices.empty() )
+        {
+            solidColorShader.solidColor.setColor(0xE0160000); // MiniTile color: 0xAABBGGRR
+            triangleVertices4.bind();
+            triangleVertices4.bufferData(gl::UsageHint::DynamicDraw);
+            triangleVertices4.drawTriangles();
+        }
+        if ( !triangleVertices5.vertices.empty() )
+        {
+            solidColorShader.solidColor.setColor(0x30000064); // MiniTile color: 0xAABBGGRR
+            triangleVertices5.bind();
+            triangleVertices5.bufferData(gl::UsageHint::DynamicDraw);
+            triangleVertices5.drawTriangles();
+        }
+        if ( !triangleVertices6.vertices.empty() )
+        {
+            solidColorShader.solidColor.setColor(0xE0000016); // MiniTile color: 0xAABBGGRR
+            triangleVertices6.bind();
+            triangleVertices6.bufferData(gl::UsageHint::DynamicDraw);
+            triangleVertices6.drawTriangles();
+        }
+    }
 }
 
 void Scr::MapGraphics::drawTileVertices(Scr::Grp & tilesetGrp, s32 width, s32 height, const glm::mat4x4 & positionTransformation)
 {
-    auto tilesetIndex = Sc::Terrain::Tileset(mapFile.getTileset() % Sc::Terrain::NumTilesets);
-    bool drawHdWater = renderSettings.visualQuality > VisualQuality::SD &&
+    auto tilesetIndex = Sc::Terrain::Tileset(map.getTileset() % Sc::Terrain::NumTilesets);
+    bool drawHdWater = loadSettings.visualQuality > VisualQuality::SD &&
         (tilesetIndex == Sc::Terrain::Tileset::Badlands || tilesetIndex == Sc::Terrain::Tileset::Jungle ||
             tilesetIndex == Sc::Terrain::Tileset::Arctic || tilesetIndex == Sc::Terrain::Tileset::Twilight);
 
@@ -1868,7 +1911,7 @@ void Scr::MapGraphics::drawTileVertices(Scr::Grp & tilesetGrp, s32 width, s32 he
     }
     else // Draw regular tiles
     {
-        if ( renderSettings.visualQuality > VisualQuality::SD )
+        if ( loadSettings.visualQuality > VisualQuality::SD )
         {
             renderDat->shaders->tileShader.use();
             renderDat->shaders->tileShader.posToNdc.setMat4(positionTransformation);
@@ -1877,7 +1920,7 @@ void Scr::MapGraphics::drawTileVertices(Scr::Grp & tilesetGrp, s32 width, s32 he
             renderDat->shaders->tileShader.multiplyColor.setColor(0xFFFFFFFF);
             tilesetGrp.mergedTexture.bindToSlot(GL_TEXTURE0);
         }
-        else if ( renderSettings.skinId == Scr::Skin::Id::Classic ) // Classic
+        else if ( loadSettings.skinId == Scr::Skin::Id::Classic ) // Classic
         {
             renderDat->shaders->simplePaletteShader.use();
             renderDat->shaders->simplePaletteShader.posToNdc.setMat4(positionTransformation);
@@ -1903,7 +1946,7 @@ void Scr::MapGraphics::drawTileVertices(Scr::Grp & tilesetGrp, s32 width, s32 he
         tileVertices.bufferData(gl::UsageHint::DynamicDraw);
         tileVertices.drawTriangles();
 
-        if ( renderSettings.visualQuality == VisualQuality::SD )
+        if ( loadSettings.visualQuality == VisualQuality::SD )
             gl::Texture::releaseSlots(GL_TEXTURE1);
         else
             gl::Texture::releaseSlots(GL_TEXTURE0);
@@ -1913,13 +1956,13 @@ void Scr::MapGraphics::drawTileVertices(Scr::Grp & tilesetGrp, s32 width, s32 he
 void Scr::MapGraphics::drawTerrain(Sc::Data & scData)
 {
     tileVertices.clear();
-    auto tiles = scData.terrain.get(Sc::Terrain::Tileset(mapFile.tileset));
+    auto tiles = scData.terrain.get(Sc::Terrain::Tileset(map.tileset));
     for ( s32 y=mapTileBounds.top; y<=mapTileBounds.bottom; ++y )
     {
         for ( s32 x=mapTileBounds.left; x<=mapTileBounds.right; ++x )
         {
             u32 megaTileIndex = 0;
-            u16 tileIndex = mapFile.tiles[size_t(y) * size_t(mapFile.dimensions.tileWidth) + size_t(x)];
+            u16 tileIndex = map.tiles[size_t(y) * size_t(map.dimensions.tileWidth) + size_t(x)];
             size_t groupIndex = Sc::Terrain::Tiles::getGroupIndex(tileIndex);
             if ( groupIndex < tiles.tileGroups.size() )
             {
@@ -1948,7 +1991,7 @@ void Scr::MapGraphics::drawTilesetIndexed(Sc::Data & scData, s32 left, s32 top, 
     auto & tilesetGrp = renderDat->tiles->tilesetGrp;
 
     tileVertices.clear();
-    auto & tiles = scData.terrain.get(Sc::Terrain::Tileset(mapFile.tileset));
+    auto & tiles = scData.terrain.get(Sc::Terrain::Tileset(map.tileset));
 
     s32 topRow = scrollY/33;
     s32 bottomRow = (scrollY + height)/33;
@@ -2002,7 +2045,7 @@ void Scr::MapGraphics::prepareImageRendering()
     auto ndcScale = glm::scale(glm::mat4x4(1.f), {2.f/mapViewDimensions.width, -2.f/mapViewDimensions.height, 1.f});
     auto ndcTranslation = glm::translate(glm::mat4x4(1.f), {-1.f, 1.f, 0.f});
     auto imageToNdc = ndcTranslation * ndcScale * imageTranslation;
-    if ( renderSettings.skinId == Scr::Skin::Id::Classic )
+    if ( loadSettings.skinId == Scr::Skin::Id::Classic )
     {
         renderDat->shaders->simplePaletteShader.use();
         renderDat->shaders->simplePaletteShader.posToNdc.setMat4(imageToNdc);
@@ -2014,7 +2057,7 @@ void Scr::MapGraphics::prepareImageRendering()
     {
         renderDat->shaders->spriteShader.use();
         renderDat->shaders->spriteShader.posToNdc.setMat4(imageToNdc);
-        renderDat->shaders->spriteShader.imageScale.setValue(renderSettings.visualQuality.imageScale());
+        renderDat->shaders->spriteShader.imageScale.setValue(loadSettings.visualQuality.imageScale());
 
         renderDat->shaders->spriteShader.spriteTex.setSlot(0);
         renderDat->shaders->spriteShader.teamColorTex.setSlot(1);
@@ -2095,7 +2138,7 @@ void Scr::MapGraphics::drawClassicImage(Sc::Data & scData, gl::Palette & palette
     animVertices.drawTriangles();
 }
 
-void Scr::MapGraphics::drawSprites(Sc::Data & scData)
+void Scr::MapGraphics::drawImages(Sc::Data & scData)
 {
     auto getUnitImageId = [&scData](const Chk::Unit & unit) -> u32
     {
@@ -2119,7 +2162,7 @@ void Scr::MapGraphics::drawSprites(Sc::Data & scData)
     auto getPlayerColor = [&](u8 player) -> u32 { return (u32 &)(scData.tunit.rgbaPalette[8*size_t(player)]); };
     
     prepareImageRendering();
-    if ( renderSettings.skinId == Scr::Skin::Id::Classic )
+    if ( loadSettings.skinId == Scr::Skin::Id::Classic )
     {
         auto & palette = *renderDat->tiles->tilesetGrp.palette;
 
@@ -2127,10 +2170,10 @@ void Scr::MapGraphics::drawSprites(Sc::Data & scData)
         std::uint32_t remapped[8];
         std::memcpy(remapped, &palette[8], sizeof(remapped));
 
-        for ( auto & unit : mapFile.units )
+        for ( auto & unit : map.units )
             drawClassicImage(scData, palette, unit.xc, unit.yc, getUnitImageId(unit), (Chk::PlayerColor)unit.owner);
 
-        for ( auto & sprite : mapFile.sprites )
+        for ( auto & sprite : map.sprites )
             drawClassicImage(scData, palette, sprite.xc, sprite.yc, getSpriteImageId(sprite), (Chk::PlayerColor)sprite.owner);
 
         // Restore palette colors
@@ -2140,25 +2183,26 @@ void Scr::MapGraphics::drawSprites(Sc::Data & scData)
     }
     else
     {
-        for ( const auto & unit : mapFile.units )
+        for ( const auto & unit : map.units )
             drawImage(getUnitImage(unit), unit.xc, unit.yc, 0, 0xFFFFFFFF, getPlayerColor(unit.owner), false);
 
-        for ( const auto & sprite : mapFile.sprites )
+        for ( const auto & sprite : map.sprites )
             drawImage(getSpriteImage(sprite), sprite.xc, sprite.yc, 0, 0xFFFFFFFF, getPlayerColor(sprite.owner), false);
     }
 }
 
-void Scr::MapGraphics::drawLocations(bool clipLocationNames, bool showAnywhere, size_t selectedLocation)
+void Scr::MapGraphics::drawLocations()
 {
+    auto selectedLocation = map.selections.getSelectedLocation();
     lineVertices.clear();
     triangleVertices.clear();
     triangleVertices2.clear();
-    for ( size_t i=0; i<mapFile.locations.size(); ++i )
+    for ( size_t i=0; i<map.locations.size(); ++i )
     {
-        if ( i == Chk::LocationId::Anywhere && !showAnywhere )
+        if ( i == Chk::LocationId::Anywhere && map.LockAnywhere() )
             continue;
 
-        const auto & location = mapFile.locations[i];
+        const auto & location = map.locations[i];
         auto & triVertices = location.right < location.left || location.bottom < location.top ?
             triangleVertices2.vertices : triangleVertices.vertices;
 
@@ -2210,10 +2254,10 @@ void Scr::MapGraphics::drawLocations(bool clipLocationNames, bool showAnywhere, 
         lineVertices.bufferData(gl::UsageHint::DynamicDraw);
         lineVertices.drawLines();
 
-        if ( selectedLocation != 0 && selectedLocation < mapFile.numLocations() )
+        if ( selectedLocation != 0 && selectedLocation < map.numLocations() )
         {
             lineVertices.vertices.clear();
-            auto & location = mapFile.getLocation(selectedLocation);
+            auto & location = map.getLocation(selectedLocation);
             lineVertices.vertices.insert(lineVertices.vertices.end(), {
                 GLfloat(location.left), GLfloat(location.top),
                 GLfloat(location.left), GLfloat(location.bottom),
@@ -2237,14 +2281,14 @@ void Scr::MapGraphics::drawLocations(bool clipLocationNames, bool showAnywhere, 
         textFont->clippedTextShader.textPosToNdc.setMat4(gameToNdc);
         textFont->setColor(255, 255, 0);
 
-        for ( size_t i=0; i<mapFile.locations.size(); ++i )
+        for ( size_t i=0; i<map.locations.size(); ++i )
         {
-            if ( i == Chk::LocationId::Anywhere && !showAnywhere )
+            if ( i == Chk::LocationId::Anywhere && map.LockAnywhere() )
                 continue;
 
-            const auto & location = mapFile.locations[i];
+            const auto & location = map.locations[i];
 
-            auto locationName = mapFile.getLocationName<RawString>(i);
+            auto locationName = map.getLocationName<RawString>(i);
             if ( locationName )
             {
                 u32 visualLeft = std::min(location.left, location.right);
@@ -2269,10 +2313,10 @@ void Scr::MapGraphics::drawLocations(bool clipLocationNames, bool showAnywhere, 
         textFont->textShader.glyphScaling.setMat2(glyphScaling);
         textFont->textShader.textPosToNdc.setMat4(gameToNdc);
         textFont->setColor(255, 255, 0);
-        for ( size_t i=0; i<mapFile.locations.size(); ++i )
+        for ( size_t i=0; i<map.locations.size(); ++i )
         {
-            const auto & location = mapFile.locations[i];
-            auto locationName = mapFile.getLocationName<RawString>(i);
+            const auto & location = map.locations[i];
+            auto locationName = map.getLocationName<RawString>(i);
             if ( locationName )
             {
                 u32 visualLeft = std::min(location.left, location.right);
@@ -2292,25 +2336,34 @@ void Scr::MapGraphics::drawFps()
     textFont->drawAffixedText<gl::Align::Center>(windowDimensions.width/2, 10.f, fps.displayNumber, " fps", "");
 }
 
-void Scr::MapGraphics::render(Sc::Data & scData, bool renderLocations, bool renderTileElevations, bool renderTileNums, bool clipLocationNames, bool showAnywhere, size_t selectedLocation)
+void Scr::MapGraphics::render(Sc::Data & scData)
 {
-    if ( renderSettings.skinId == Skin::Id::Classic )
+    if ( loadSettings.skinId == Skin::Id::Classic )
         drawClassicStars(scData);
     else
         drawStars(0xFFFFFFFF);
 
     drawTerrain(scData);
-    if ( renderTileElevations )
+    if ( displayElevations || displayBuildability )
         drawTileOverlays(scData);
 
     drawGrid();
-    drawSprites(scData);
-    if ( renderLocations )
-        drawLocations(clipLocationNames, showAnywhere, selectedLocation);
+    drawImages(scData);
+    auto layer = map.getLayer();
+    switch ( layer ) {
+        case Layer::Locations: drawLocations(); break;
+        ;//case Layer::FogEdit: case Layer::CutCopyPaste: drawFog(); break;
+    }
 
-    if ( renderTileNums )
+    if ( map.getLayer() == Layer::Locations )
+        drawLocations();
+
+    if ( displayTileNums )
         drawTileNums(scData);
     
+    if ( displayIsomNums )
+        ;//drawIsomTileNums();
+
     if ( fpsEnabled )
         drawFps();
 }
@@ -2321,12 +2374,12 @@ void Scr::MapGraphics::updateGraphics(u64 ticks)
     auto & tilesetGrp = renderDat->tiles->tilesetGrp;
     if ( tilesetGrp.palette )
     {
-        if ( colorCycler.cycleColors(GetTickCount64(), mapFile.getTileset(), tilesetGrp.palette.value()) )
+        if ( colorCycler.cycleColors(GetTickCount64(), map.getTileset(), tilesetGrp.palette.value()) )
             tilesetGrp.palette->update();
     }
 
     // update HD water animation
-    if ( renderSettings.visualQuality > VisualQuality::SD && renderDat->waterNormal[0] && renderDat->waterNormal[0]->frames > 0 )
+    if ( loadSettings.visualQuality > VisualQuality::SD && renderDat->waterNormal[0] && renderDat->waterNormal[0]->frames > 0 )
     {
         nIncrement += ticks;
         if ( nIncrement >= 4000 )

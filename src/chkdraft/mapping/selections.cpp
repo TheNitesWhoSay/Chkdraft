@@ -1,32 +1,6 @@
 #include "selections.h"
 #include "ui/main_windows/gui_map.h"
 
-Selections::Selections(GuiMap & map) : map(map), moved(false), numRecentLocations(0), locationFlags(0), locSelFlags(LocSelFlags::None), selectedLocation(0)
-{
-    memset((void*)&recentLocations[0], 0, sizeof(recentLocations)/sizeof(u8));
-    startDrag.x = -1;
-    startDrag.y = -1;
-    endDrag.x = -1;
-    endDrag.y = -1;
-}
-
-Selections::~Selections()
-{
-
-}
-
-void Selections::setStartDrag(s32 x, s32 y)
-{
-    startDrag.x = x;
-    startDrag.y = y;
-}
-
-void Selections::setEndDrag(s32 x, s32 y)
-{
-    endDrag.x = x;
-    endDrag.y = y;
-}
-
 void Selections::setDrags(s32 x, s32 y)
 {
     startDrag.x = x;
@@ -85,8 +59,8 @@ void Selections::removeTile(TileNode* & tile)
 
 void Selections::removeTile(u16 xc, u16 yc)
 {
-    auto toRemove = selTiles.end();
-    for ( auto it = selTiles.begin(); it != selTiles.end(); ++it )
+    auto toRemove = tiles.end();
+    for ( auto it = tiles.begin(); it != tiles.end(); ++it )
     {
         // If an edge is matched to the tile being removed, un-match the edge
         if ( it->yc == yc ) // Tile is in the same row
@@ -104,8 +78,8 @@ void Selections::removeTile(u16 xc, u16 yc)
             toRemove = it;
     }
     
-    if ( toRemove != selTiles.end() )
-        selTiles.erase(toRemove);
+    if ( toRemove != tiles.end() )
+        tiles.erase(toRemove);
 }
 
 void Selections::clear()
@@ -126,7 +100,7 @@ void Selections::addTile(u16 value, u16 xc, u16 yc)
     tile.neighbors = TileNeighbor::All;
     tile.value = value;
 
-    for ( auto & selTile : selTiles )
+    for ( auto & selTile : tiles )
     {
         // If tile edges are touching, remove that border
         if ( selTile.yc == yc ) // Tile is in the same row
@@ -162,7 +136,7 @@ void Selections::addTile(u16 value, u16 xc, u16 yc)
         }
     }
 
-    selTiles.insert(selTiles.end(), tile);
+    tiles.insert(tiles.end(), tile);
 }
 
 void Selections::addTile(u16 value, u16 xc, u16 yc, TileNeighbor neighbors)
@@ -173,12 +147,12 @@ void Selections::addTile(u16 value, u16 xc, u16 yc, TileNeighbor neighbors)
     tile.yc = yc;
     tile.neighbors = neighbors;
 
-    selTiles.push_back(tile);
+    tiles.push_back(tile);
 }
 
 void Selections::removeTiles()
 {
-    selTiles.clear();
+    tiles.clear();
 }
 
 u16 Selections::getSelectedLocation()
@@ -285,37 +259,37 @@ bool Selections::selFlagsIndicateInside() const
 void Selections::addUnit(u16 index)
 {
     if ( !unitIsSelected(index) )
-        selUnits.insert(selUnits.begin(), index);
+        units.insert(units.begin(), index);
 }
 
 void Selections::removeUnit(u16 index)
 {
-    auto toErase = std::find(selUnits.begin(), selUnits.end(), index);
-    if ( toErase != selUnits.end() )
-        selUnits.erase(toErase);
+    auto toErase = std::find(units.begin(), units.end(), index);
+    if ( toErase != units.end() )
+        units.erase(toErase);
 }
 
 void Selections::removeUnits()
 {
-    selUnits.clear();
+    units.clear();
 }
 
 void Selections::ensureUnitFirst(u16 index)
 {
-    if ( selUnits.size() > 0 && selUnits[0] != index )
+    if ( units.size() > 0 && units[0] != index )
     {
-        auto toErase = std::find(selUnits.begin(), selUnits.end(), index);
-        if ( toErase != selUnits.end() )
+        auto toErase = std::find(units.begin(), units.end(), index);
+        if ( toErase != units.end() )
         {
-            selUnits.erase(toErase);
-            selUnits.insert(selUnits.begin(), index);
+            units.erase(toErase);
+            units.insert(units.begin(), index);
         }
     }
 }
 
 void Selections::sendUnitSwap(u16 oldIndex, u16 newIndex)
 {
-    for ( u16 & unitIndex : selUnits )
+    for ( u16 & unitIndex : units )
     {
         if ( unitIndex == newIndex )
             unitIndex = oldIndex | SelSortFlags::Swapped;
@@ -326,7 +300,7 @@ void Selections::sendUnitSwap(u16 oldIndex, u16 newIndex)
 
 void Selections::sendUnitMove(u16 oldIndex, u16 newIndex) // The item is being moved back to its oldIndex from its newIndex
 {
-    for ( u16 & unitIndex : selUnits )
+    for ( u16 & unitIndex : units )
     {
         if ( unitIndex == newIndex )
             unitIndex = oldIndex | SelSortFlags::Moved;
@@ -339,7 +313,7 @@ void Selections::sendUnitMove(u16 oldIndex, u16 newIndex) // The item is being m
 
 void Selections::finishUnitSwap()
 {
-    for ( u16 & unitIndex : selUnits )
+    for ( u16 & unitIndex : units )
     {
         if ( unitIndex & SelSortFlags::Swapped )
             unitIndex &= SelSortFlags::Unswap;
@@ -348,7 +322,7 @@ void Selections::finishUnitSwap()
 
 void Selections::finishUnitMove()
 {
-    for ( u16 & unitIndex : selUnits )
+    for ( u16 & unitIndex : units )
     {
         if ( unitIndex & SelSortFlags::Moved )
             unitIndex &= SelSortFlags::Unmove;
@@ -358,55 +332,55 @@ void Selections::finishUnitMove()
 void Selections::addDoodad(size_t index)
 {
     if ( !doodadIsSelected(index) )
-        selDoodads.insert(selDoodads.begin(), index);
+        doodads.insert(doodads.begin(), index);
 }
 
 void Selections::removeDoodad(size_t index)
 {
-    auto toErase = std::find(selDoodads.begin(), selDoodads.end(), index);
-    if ( toErase != selDoodads.end() )
-        selDoodads.erase(toErase);
+    auto toErase = std::find(doodads.begin(), doodads.end(), index);
+    if ( toErase != doodads.end() )
+        doodads.erase(toErase);
 }
 
 void Selections::removeDoodads()
 {
-    selDoodads.clear();
+    doodads.clear();
 }
 
 void Selections::addSprite(size_t index)
 {
     if ( !spriteIsSelected(index) )
-        selSprites.insert(selSprites.begin(), index);
+        sprites.insert(sprites.begin(), index);
 }
 
 void Selections::removeSprite(size_t index)
 {
-    auto toErase = std::find(selSprites.begin(), selSprites.end(), index);
-    if ( toErase != selSprites.end() )
-        selSprites.erase(toErase);
+    auto toErase = std::find(sprites.begin(), sprites.end(), index);
+    if ( toErase != sprites.end() )
+        sprites.erase(toErase);
 }
 
 void Selections::removeSprites()
 {
-    selSprites.clear();
+    sprites.clear();
 }
 
 void Selections::ensureSpriteFirst(u16 index)
 {
-    if ( selSprites.size() > 0 && selSprites[0] != size_t(index) )
+    if ( sprites.size() > 0 && sprites[0] != size_t(index) )
     {
-        auto toErase = std::find(selSprites.begin(), selSprites.end(), size_t(index));
-        if ( toErase != selSprites.end() )
+        auto toErase = std::find(sprites.begin(), sprites.end(), size_t(index));
+        if ( toErase != sprites.end() )
         {
-            selSprites.erase(toErase);
-            selSprites.insert(selSprites.begin(), size_t(index));
+            sprites.erase(toErase);
+            sprites.insert(sprites.begin(), size_t(index));
         }
     }
 }
 
 void Selections::sendSpriteMove(u16 oldIndex, u16 newIndex)
 {
-    for ( size_t & spriteIndex : selSprites )
+    for ( size_t & spriteIndex : sprites )
     {
         if ( spriteIndex == size_t(newIndex) )
             spriteIndex = oldIndex | SelSortFlags::Moved;
@@ -419,7 +393,7 @@ void Selections::sendSpriteMove(u16 oldIndex, u16 newIndex)
 
 void Selections::finishSpriteMove()
 {
-    for ( size_t & spriteIndex : selSprites )
+    for ( size_t & spriteIndex : sprites )
     {
         if ( spriteIndex & SelSortFlags::Moved )
             spriteIndex &= SelSortFlags::Unmove;
@@ -433,7 +407,7 @@ void Selections::addFogTile(u16 xc, u16 yc)
     fogTile.yc = yc;
     fogTile.neighbors = TileNeighbor::All;
 
-    for ( auto & selFogTile : selFogTiles )
+    for ( auto & selFogTile : fogTiles )
     {
         // If tile edges are touching, remove that border
         if ( selFogTile.yc == yc ) // Tile is in the same row
@@ -469,7 +443,7 @@ void Selections::addFogTile(u16 xc, u16 yc)
         }
     }
 
-    selFogTiles.push_back(fogTile);
+    fogTiles.push_back(fogTile);
 }
 
 void Selections::addFogTile(u16 xc, u16 yc, TileNeighbor neighbors)
@@ -479,13 +453,13 @@ void Selections::addFogTile(u16 xc, u16 yc, TileNeighbor neighbors)
     fogTile.yc = yc;
     fogTile.neighbors = neighbors;
 
-    selFogTiles.push_back(fogTile);
+    fogTiles.push_back(fogTile);
 }
 
 void Selections::removeFogTile(u16 xc, u16 yc)
 {
-    auto toRemove = selFogTiles.end();
-    for ( auto it = selFogTiles.begin(); it != selFogTiles.end(); ++it )
+    auto toRemove = fogTiles.end();
+    for ( auto it = fogTiles.begin(); it != fogTiles.end(); ++it )
     {
         // If an edge is matched to the tile being removed, un-match the edge
         if ( it->yc == yc ) // Tile is in the same row
@@ -503,18 +477,18 @@ void Selections::removeFogTile(u16 xc, u16 yc)
             toRemove = it;
     }
     
-    if ( toRemove != selFogTiles.end() )
-        selFogTiles.erase(toRemove);
+    if ( toRemove != fogTiles.end() )
+        fogTiles.erase(toRemove);
 }
 
 void Selections::removeFog()
 {
-    selFogTiles.clear();
+    fogTiles.clear();
 }
 
 bool Selections::unitIsSelected(u16 index)
 {
-    for ( u16 & unitIndex : selUnits )
+    for ( u16 & unitIndex : units )
     {
         if ( unitIndex == index )
             return true;
@@ -524,7 +498,7 @@ bool Selections::unitIsSelected(u16 index)
 
 bool Selections::doodadIsSelected(size_t index)
 {
-    for ( size_t doodadIndex : selDoodads )
+    for ( size_t doodadIndex : doodads )
     {
         if ( doodadIndex == index )
             return true;
@@ -534,7 +508,7 @@ bool Selections::doodadIsSelected(size_t index)
 
 bool Selections::spriteIsSelected(size_t index)
 {
-    for ( size_t spriteIndex : selSprites )
+    for ( size_t spriteIndex : sprites )
     {
         if ( spriteIndex == index )
             return true;
@@ -544,16 +518,16 @@ bool Selections::spriteIsSelected(size_t index)
 
 u16 Selections::numUnits()
 {
-    if ( selUnits.size() < u16_max )
-        return (u16)selUnits.size();
+    if ( units.size() < u16_max )
+        return (u16)units.size();
     else
         return u16_max;
 }
 
 u16 Selections::numSprites()
 {
-    if ( selSprites.size() < u16_max )
-        return (u16)selSprites.size();
+    if ( sprites.size() < u16_max )
+        return (u16)sprites.size();
     else
         return u16_max;
 }
@@ -561,17 +535,12 @@ u16 Selections::numSprites()
 u16 Selections::numUnitsUnder(u16 index)
 {
     u16 numUnitsBefore = 0;
-    for ( u16 & unitIndex : selUnits )
+    for ( u16 & unitIndex : units )
     {
         if ( unitIndex < index )
             numUnitsBefore++;
     }
     return numUnitsBefore;
-}
-
-std::vector<TileNode> & Selections::getTiles()
-{
-    return selTiles;
 }
 
 TileNode Selections::getFirstTile()
@@ -582,57 +551,37 @@ TileNode Selections::getFirstTile()
     tile.neighbors = TileNeighbor::None;
     tile.value = 0;
 
-    if ( selTiles.size() > 0 )
+    if ( tiles.size() > 0 )
     {
-        tile.xc = selTiles[0].xc;
-        tile.yc = selTiles[0].yc;
-        tile.neighbors = selTiles[0].neighbors;
-        tile.value = selTiles[0].value;
+        tile.xc = tiles[0].xc;
+        tile.yc = tiles[0].yc;
+        tile.neighbors = tiles[0].neighbors;
+        tile.value = tiles[0].value;
     }
 
     return tile;
 }
 
-std::vector<u16> & Selections::getUnits()
-{
-    return selUnits;
-}
-
-std::vector<size_t> & Selections::getDoodads()
-{
-    return selDoodads;
-}
-
-std::vector<size_t> & Selections::getSprites()
-{
-    return selSprites;
-}
-
-std::vector<FogTile> & Selections::getFogTiles()
-{
-    return selFogTiles;
-}
-
 u16 Selections::getFirstUnit()
 {
-    if ( selUnits.size() > 0 )
-        return selUnits[0];
+    if ( units.size() > 0 )
+        return units[0];
     else
         return 0;
 }
 
 u16 Selections::getFirstDoodad()
 {
-    if ( selDoodads.size() > 0 )
-        return u16(selDoodads[0]);
+    if ( doodads.size() > 0 )
+        return u16(doodads[0]);
     else
         return 0;
 }
 
 size_t Selections::getFirstSprite()
 {
-    if ( selSprites.size() > 0 )
-        return selSprites[0];
+    if ( sprites.size() > 0 )
+        return sprites[0];
     else
         return 0;
 }
@@ -640,7 +589,7 @@ size_t Selections::getFirstSprite()
 u16 Selections::getHighestUnitIndex()
 {
     int highestIndex = -1;
-    for ( u16 & unitIndex : selUnits )
+    for ( u16 & unitIndex : units )
     {
         if ( (int)unitIndex > highestIndex )
             highestIndex = (int)unitIndex;
@@ -655,7 +604,7 @@ u16 Selections::getHighestUnitIndex()
 u16 Selections::getLowestUnitIndex()
 {
     u16 lowestIndex = u16_max;
-    for ( u16 & unitIndex : selUnits )
+    for ( u16 & unitIndex : units )
     {
         if ( unitIndex < lowestIndex )
             lowestIndex = unitIndex;
@@ -666,7 +615,7 @@ u16 Selections::getLowestUnitIndex()
 size_t Selections::getHighestSpriteIndex()
 {
     int highestIndex = -1;
-    for ( size_t spriteIndex : selSprites )
+    for ( size_t spriteIndex : sprites )
     {
         if ( (int)spriteIndex > highestIndex )
             highestIndex = (int)spriteIndex;
@@ -677,7 +626,7 @@ size_t Selections::getHighestSpriteIndex()
 size_t Selections::getLowestSpriteIndex()
 {
     size_t lowestIndex = std::numeric_limits<size_t>::max();
-    for ( size_t spriteIndex : selSprites )
+    for ( size_t spriteIndex : sprites )
     {
         if ( spriteIndex < lowestIndex )
             lowestIndex = spriteIndex;
@@ -688,15 +637,15 @@ size_t Selections::getLowestSpriteIndex()
 void Selections::sortUnits(bool ascending)
 {
     if ( ascending )
-        std::sort(selUnits.begin(), selUnits.end());
+        std::sort(units.begin(), units.end());
     else // Sort descending
-        std::sort(selUnits.begin(), selUnits.end(), std::greater<u16>());
+        std::sort(units.begin(), units.end(), std::greater<u16>());
 }
 
 void Selections::sortSprites(bool ascending)
 {
     if ( ascending )
-        std::sort(selSprites.begin(), selSprites.end());
+        std::sort(sprites.begin(), sprites.end());
     else // Sort descending
-        std::sort(selSprites.begin(), selSprites.end(), std::greater<size_t>());
+        std::sort(sprites.begin(), sprites.end(), std::greater<size_t>());
 }

@@ -376,13 +376,14 @@
 #define ID_SKIN_CARBOTHD2               40675
 #define ID_SKIN_CARBOTHD                40676
 #define ID_VIEW_DISPLAYFPS              40677
+#define ID_VIEW_LOCATIONS               40678
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        165
-#define _APS_NEXT_COMMAND_VALUE         40678
+#define _APS_NEXT_COMMAND_VALUE         40679
 #define _APS_NEXT_CONTROL_VALUE         1143
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

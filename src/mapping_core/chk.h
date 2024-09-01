@@ -2076,7 +2076,6 @@ namespace Chk {
     // IsomCache is invalidated & must be re-created whenever tileset, map width, or map height changes
     struct IsomCache
     {
-        Sc::Terrain::Tileset tileset; // If tileset changes the cache should be recreated with the new tileset
         size_t isomWidth; // This is a sort of isometric width, not tileWidth
         size_t isomHeight; // This is a sort of isometric height, not tileHeight
         Sc::BoundingBox changedArea {};
@@ -2090,7 +2089,6 @@ namespace Chk {
         const std::unordered_map<uint32_t, std::vector<uint16_t>>* hashToTileGroup;
 
         inline IsomCache(Sc::Terrain::Tileset tileset, size_t tileWidth, size_t tileHeight, const Sc::Terrain::Tiles & tilesetData) :
-            tileset(tileset),
             isomWidth(tileWidth/2 + 1),
             isomHeight(tileHeight + 1),
             tileGroups(&tilesetData.tileGroups[0], tilesetData.tileGroups.size()),

@@ -20,8 +20,6 @@
 #define enum_t(name, type, ...) struct name ## _ { enum type ## _ : type __VA_ARGS__; }; using name = name ## _::type ## _;
 #endif
 
-#include <Windows.h>
-
 #include <cstdint>
 #include <string>
 #include <tuple>
@@ -48,7 +46,7 @@ using s8 = std::int8_t;
 // "CHKD" = 67|72|75|68 = 0x43484B44 = 1128811332
 constexpr int ascii_chkd = 1128811332;
 
-constexpr DWORD defaultHoverTime = 50;
+constexpr u32 defaultHoverTime = 50;
 
 constexpr u16 NO_LOCATION = 0xFFFF;
 
@@ -82,9 +80,6 @@ extern const std::vector<std::string> briefingTriggerActions;
 
 extern const std::vector<std::string> triggerScores;
 
-extern const std::vector<std::tuple<COLORREF, std::string, std::string>> strColors;
-constexpr int numScStringColors = 28; // Could make StringGuide dynamic with respect to the size of strColors
-
 extern const std::vector<std::string> tilesetNames;
 
 
@@ -109,18 +104,18 @@ enum class TerrainSubLayer {
 //  - LPARAM First 4 bits: defines the item type
 //  - LPARAM Last 28 bits: defines data specific to the type of item
 // 'AND' with the following to retrieve either from the LPARAM
-constexpr DWORD TreeDataPortion = 0x0FFFFFFF;
-constexpr DWORD TreeTypePortion = 0xF0000000;
+constexpr u32 TreeDataPortion = 0x0FFFFFFF;
+constexpr u32 TreeTypePortion = 0xF0000000;
 
-constexpr DWORD TreeTypeRoot = (0x00000000); // Roots are AND'd with an associated layer (found in TREE_ITEM_DATA), must be 0
-constexpr DWORD TreeTypeCategory = (0x10000000); // Categories are AND'd with an associated layer (found in TREE_ITEM_DATA)
-constexpr DWORD TreeTypeIsom = (0x20000000);
-constexpr DWORD TreeTypeUnit = (0x30000000);
-constexpr DWORD TreeTypeLocation = (0x40000000);
-constexpr DWORD TreeTypeSprite = (0x50000000);
-constexpr DWORD TreeTypeDoodad = (0x60000000);
-constexpr DWORD TreeTypeUpgrade = (0x70000000);
-constexpr DWORD TreeTypeTech = (0x80000000);
+constexpr u32 TreeTypeRoot = (0x00000000); // Roots are AND'd with an associated layer (found in TREE_ITEM_DATA), must be 0
+constexpr u32 TreeTypeCategory = (0x10000000); // Categories are AND'd with an associated layer (found in TREE_ITEM_DATA)
+constexpr u32 TreeTypeIsom = (0x20000000);
+constexpr u32 TreeTypeUnit = (0x30000000);
+constexpr u32 TreeTypeLocation = (0x40000000);
+constexpr u32 TreeTypeSprite = (0x50000000);
+constexpr u32 TreeTypeDoodad = (0x60000000);
+constexpr u32 TreeTypeUpgrade = (0x70000000);
+constexpr u32 TreeTypeTech = (0x80000000);
 
 
 /*###############################*\
@@ -132,8 +127,5 @@ constexpr DWORD TreeTypeTech = (0x80000000);
 ## Application specific messages ##
 ## WM_APP through 0xBFFF         ##
 \*###############################*/
-
-
-#define CHKDE_FIRST WINUI_LAST
 
 #endif

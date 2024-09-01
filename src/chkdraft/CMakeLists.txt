@@ -171,7 +171,6 @@ set(Sources
   chkdraft.cpp
   common_files/constants.cpp
   common_files/debug.cpp
-  common_files/structs.cpp
   common_files/version.cpp
   mapping/chkd_plugins.cpp
   mapping/clipboard.cpp

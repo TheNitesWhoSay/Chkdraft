@@ -1,5 +1,7 @@
 #ifndef SCRGRAPHICS_H
 #define SCRGRAPHICS_H
+#include "common_files/constants.h"
+#include "common_files/structs.h"
 #include "mapping/color_cycler.h"
 #include <mapping_core/mapping_core.h>
 #include <rarecpp/reflect.h>
@@ -19,6 +21,8 @@
 #include "gl/uniform.h"
 #include "gl/vertices.h"
 #include <glm/glm.hpp>
+
+class GuiMap;
 
 namespace Scr {
 
@@ -709,7 +713,7 @@ namespace Scr {
 
         static void loadTileMasks(ArchiveCluster & archiveCluster, std::filesystem::path path, std::vector<u16> & maskIds);
 
-        struct RenderSettings
+        struct LoadSettings
         {
             VisualQuality visualQuality = VisualQuality::SD;
             Scr::Skin::Id skinId = Scr::Skin::Id::Classic;
@@ -729,7 +733,7 @@ namespace Scr {
                     Grp tilesetGrp {};
                     std::vector<u16> maskIds {};
 
-                    void load(ArchiveCluster & archiveCluster, const RenderSettings & renderSettings, ByteBuffer & fileData);
+                    void load(ArchiveCluster & archiveCluster, const LoadSettings & loadSettings, ByteBuffer & fileData);
                 };
                 std::shared_ptr<SpkData> spk {};
                 std::shared_ptr<Tileset> tiles[Sc::Terrain::NumTilesets] {};
@@ -739,11 +743,11 @@ namespace Scr {
                 void loadClassicStars(Sc::Data & scData);
                 void loadStars(ArchiveCluster & archiveCluster, std::filesystem::path texPrefix, ByteBuffer & fileData);
                 
-                void loadClassicTiles(Sc::Data & scData, const RenderSettings & renderSettings);
-                void loadTiles(ArchiveCluster & archiveCluster, const RenderSettings & renderSettings, ByteBuffer & fileData);
+                void loadClassicTiles(Sc::Data & scData, const LoadSettings & loadSettings);
+                void loadTiles(ArchiveCluster & archiveCluster, const LoadSettings & loadSettings, ByteBuffer & fileData);
                 
                 void loadClassicImages(Sc::Data & scData);
-                void loadImages(Sc::Data & scData, ArchiveCluster & archiveCluster, std::filesystem::path texPrefix, const RenderSettings & renderSettings, ByteBuffer & fileData, gl::ContextSemaphore* contextSemaphore = nullptr);
+                void loadImages(Sc::Data & scData, ArchiveCluster & archiveCluster, std::filesystem::path texPrefix, const LoadSettings & loadSettings, ByteBuffer & fileData, gl::ContextSemaphore* contextSemaphore = nullptr);
             };
             std::shared_ptr<Skin> skin[Scr::Skin::total] {};
             std::shared_ptr<Grp> waterNormal[2] {};
@@ -765,12 +769,12 @@ namespace Scr {
             std::shared_ptr<Grp> waterNormal[2] { nullptr, nullptr };
         };
 
-        void unload(const RenderSettings & renderSettings);
+        void unload(const LoadSettings & loadSettings);
 
         // Checks whether load requires potential disk accesses, does not perform exaustive validation
-        bool isLoaded(const RenderSettings & renderSettings);
+        bool isLoaded(const LoadSettings & loadSettings);
 
-        std::shared_ptr<Scr::GraphicsData::RenderData> load(Sc::Data & scData, ArchiveCluster & archiveCluster, const RenderSettings & renderSettings, ByteBuffer & fileData);
+        std::shared_ptr<Scr::GraphicsData::RenderData> load(Sc::Data & scData, ArchiveCluster & archiveCluster, const LoadSettings & loadSettings, ByteBuffer & fileData);
     };
 
     class MapGraphics
@@ -792,21 +796,21 @@ namespace Scr {
         glm::mat4 gridToNdc {};
         glm::mat2 glyphScaling {};
         GLfloat zoom = 1.f;
-        Chk::PlayerColor prevMappedColor = std::numeric_limits<Chk::PlayerColor>::max();
+        Chk::PlayerColor prevMappedColor = std::numeric_limits<Chk::PlayerColor>::max(); // Update palette only when the drawn units/sprites use a new player
 
         u32 n1Frame = 0;
         u32 n2Frame = 0;
         u32 nIncrement = 0;
         u64 initialTickCount = 0;
 
-        MapFile & mapFile;
+        GuiMap & map; // Reference to the map this instance of graphics renders
         gl::Font* textFont = nullptr;
-        Scr::GraphicsData::RenderSettings renderSettings {};
+        Scr::GraphicsData::LoadSettings loadSettings {};
         std::shared_ptr<Scr::GraphicsData::RenderData> renderDat = nullptr;
         ColorCycler colorCycler {};
         uint32_t gridColor = 0xFF000000; // 0xAABBGGRR
         s32 gridSize = 0;
-        bool fpsEnabled = true;
+
         gl::Fps fps {};
         gl::VertexVector<> starVertices {};
         gl::VertexVector<> tileVertices {};
@@ -821,7 +825,16 @@ namespace Scr {
         gl::VertexVector<> triangleVertices6 {};
 
     public:
-        MapGraphics(MapFile & mapFile);
+        MapGrid<Sc::SystemColor> grids[2] {};
+        bool fpsEnabled = true;
+        bool useGameTileNums = false; // MTXM versus TILE
+        bool displayIsomNums = false;
+        bool displayTileNums = false;
+        bool displayBuildability = false;
+        bool displayElevations = false;
+        bool clipLocationNames = true; // If true, text is wrapped and restricted to location bounds
+
+        MapGraphics(GuiMap & guiMap);
 
         void updateGrid(); // Occurs when the map view, grid size or grid color changes
         void mapViewChanged(); // Occurs when the window bounds, zoom-level or skin changes
@@ -838,11 +851,8 @@ namespace Scr {
 
         void setGridColor(uint32_t gridColor);
         void setGridSize(s32 gridSize);
-        
-        bool displayingFps();
-        void toggleDisplayFps();
 
-        void load(Sc::Data & scData, Scr::GraphicsData & scrDat, const Scr::GraphicsData::RenderSettings & renderSettings, ArchiveCluster & archiveCluster, ByteBuffer & fileData);
+        void load(Sc::Data & scData, Scr::GraphicsData & scrDat, const Scr::GraphicsData::LoadSettings & loadSettings, ArchiveCluster & archiveCluster, ByteBuffer & fileData);
 
         void drawTestTex(gl::Texture & tex);
 
@@ -850,6 +860,7 @@ namespace Scr {
         void drawClassicStars(Sc::Data & scData);
         void drawStars(u32 multiplyColor);
         void drawTileNums(Sc::Data & scData);
+        void drawIsomTileNums();
         void drawTileOverlays(Sc::Data & scData);
         void drawTileVertices(Scr::Grp & tilesetGrp, s32 width, s32 height, const glm::mat4x4 & positionTransformation);
         void drawTerrain(Sc::Data & scData);
@@ -857,11 +868,12 @@ namespace Scr {
         void prepareImageRendering();
         void drawImage(Scr::Animation & animation, s32 x, s32 y, u32 frame, u32 multiplyColor, u32 playerColor, bool hallucinate);
         void drawClassicImage(Sc::Data & scData, gl::Palette & palette, s32 x, s32 y, u32 imageId, Chk::PlayerColor color);
-        void drawSprites(Sc::Data & scData);
-        void drawLocations(bool clipLocationNames, bool showAnywhere, size_t selectedLocation);
+        void drawImages(Sc::Data & scData);
+        void drawLocations();
+        void drawFog();
         void drawFps();
 
-        void render(Sc::Data & scData, bool renderLocations, bool renderTileElevations, bool renderTileNums, bool clipLocationNames, bool showAnywhere, size_t selectedLocation);
+        void render(Sc::Data & scData);
 
         void updateGraphics(u64 ticks); // Runs every few ms, with ticks being the ms since the last frame
     };

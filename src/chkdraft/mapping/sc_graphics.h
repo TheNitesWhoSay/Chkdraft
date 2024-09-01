@@ -8,6 +8,7 @@
 #include <vector>
 #include <array>
 class GuiMap;
+class Selections;
 
 /* Default Draw Order:
     - Final Tile Data (what MTXM will be)
@@ -90,7 +91,7 @@ class Graphics
         u16 mapWidth; // In tiles
         u16 mapHeight; // In tiles
 
-        MapGrid grids[2]; // The grids drawn over the map
+        MapGrid<Sc::SystemColor> grids[2]; // The grids drawn over the map
         bool tileNumsFromMTXM; // When false, tile nums are from TILE
         bool displayingIsomTypes; // Determine whether ISOM terrain types are showing
         bool displayingTileNums; // Determines whether tile numbers are showing

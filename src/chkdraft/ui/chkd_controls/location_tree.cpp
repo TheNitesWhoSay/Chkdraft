@@ -22,7 +22,7 @@ HTREEITEM LocationTree::InsertLocationItem(const std::string & text, u32 index)
 
 void LocationTree::RebuildLocationTree(bool updateSelection)
 {
-    size_t selectedLocation = CM->GetSelections().getSelectedLocation();
+    size_t selectedLocation = CM->selections.getSelectedLocation();
     EmptySubTree(hLocationRoot);
 
     HTREEITEM selected = NULL;

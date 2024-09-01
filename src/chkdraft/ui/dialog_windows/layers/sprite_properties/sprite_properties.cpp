@@ -134,7 +134,7 @@ void SpritePropertiesWindow::SetChangeHighlightOnly(bool changeHighlightOnly)
 void SpritePropertiesWindow::ChangeCurrOwner(u8 newOwner)
 {
     auto undoableChanges = ReversibleActions::Make();
-    auto & selSprites = CM->GetSelections().getSprites();
+    auto & selSprites = CM->selections.sprites;
     for ( size_t spriteIndex : selSprites )
     {
         Chk::Sprite & sprite = CM->getSprite(spriteIndex);
@@ -231,11 +231,10 @@ void SpritePropertiesWindow::DeselectIndex(u16 spriteIndex)
 
 void SpritePropertiesWindow::UpdateEnabledState()
 {
-    Selections & selections = CM->GetSelections();
-    if ( selections.hasSprites() )
+    if ( CM->selections.hasSprites() )
     {
         EnableSpriteEditing();
-        const Chk::Sprite & sprite = CM->getSprite(selections.getFirstSprite());
+        const Chk::Sprite & sprite = CM->getSprite(CM->selections.getFirstSprite());
         SetSpriteFieldText(sprite);
     }
     else
@@ -250,7 +249,7 @@ void SpritePropertiesWindow::RepopulateList()
     listSprites.DeleteAllItems();
     if ( CM != nullptr )
     {
-        Selections & selections = CM->GetSelections();
+        Selections & selections = CM->selections;
 
         size_t numSprites = CM->numSprites();
         for ( size_t i = 0; i < numSprites; i++ )
@@ -264,7 +263,7 @@ void SpritePropertiesWindow::RepopulateList()
             auto selectedIndex = selections.getFirstSprite();
             listSprites.FocusItem(int(selectedIndex));
 
-            auto & selSprites = selections.getSprites();
+            auto & selSprites = selections.sprites;
             for ( auto & spriteIndex : selSprites )
                 listSprites.SelectRow(int(spriteIndex));
 
@@ -320,7 +319,7 @@ void SpritePropertiesWindow::EnableSpriteEditing()
         checkControls[i]->SetCheck(false);
     }
 
-    const Chk::Sprite & sprite = CM->getSprite(CM->GetSelections().getFirstSprite());
+    const Chk::Sprite & sprite = CM->getSprite(CM->selections.getFirstSprite());
     SetSpriteFieldText(sprite);
 }
 
@@ -496,7 +495,7 @@ void SpritePropertiesWindow::LvColumnClicked(NMHDR* nmhdr)
 
 void SpritePropertiesWindow::LvItemChanged(NMHDR* nmhdr)
 {
-    Selections & selections = CM->GetSelections();
+    Selections & selections = CM->selections;
     preservedStats.convertToUndo();
     if ( !changeHighlightOnly )
     {
@@ -547,7 +546,7 @@ void SpritePropertiesWindow::NotifyClosePressed()
 
 void SpritePropertiesWindow::NotifyMoveTopPressed()
 {
-    Selections & selections = CM->GetSelections();
+    Selections & selections = CM->selections;
 
     u16 spriteStackTopIndex = u16(selections.getFirstSprite());
     selections.sortSprites(true); // sort with lowest indexes first
@@ -557,7 +556,7 @@ void SpritePropertiesWindow::NotifyMoveTopPressed()
     auto spriteChanges = ReversibleActions::Make();
     spriteChanges->Insert(SpriteIndexMoveBoundary::Make());
     u16 i = 0;
-    auto & selSprites = selections.getSprites();
+    auto & selSprites = selections.sprites;
     for ( size_t & spriteIndex : selSprites )
     {
         if ( spriteIndex != 0 ) // If sprite is not at the destination index and spriteptr can be retrieved
@@ -584,7 +583,7 @@ void SpritePropertiesWindow::NotifyMoveTopPressed()
 
 void SpritePropertiesWindow::NotifyMoveEndPressed()
 {
-    Selections & selections = CM->GetSelections();
+    Selections & selections = CM->selections;
 
     u16 spriteStackTopIndex = u16(selections.getFirstSprite());
     selections.sortSprites(false); // Highest First
@@ -596,7 +595,7 @@ void SpritePropertiesWindow::NotifyMoveEndPressed()
     u16 i = 1;
     auto spriteChanges = ReversibleActions::Make();
     spriteChanges->Insert(SpriteIndexMoveBoundary::Make());
-    auto & selSprites = selections.getSprites();
+    auto & selSprites = selections.sprites;
     for ( size_t & spriteIndex : selSprites )
     {
         if ( spriteIndex != numSprites - 1 )
@@ -624,7 +623,7 @@ void SpritePropertiesWindow::NotifyMoveEndPressed()
 
 void SpritePropertiesWindow::NotifyMoveUpPressed()
 {
-    Selections & selections = CM->GetSelections();
+    Selections & selections = CM->selections;
     HWND hSpriteList = listSprites.getHandle();
 
     selections.sortSprites(true);
@@ -632,7 +631,7 @@ void SpritePropertiesWindow::NotifyMoveUpPressed()
 
     auto spriteChanges = ReversibleActions::Make();
     spriteChanges->Insert(SpriteIndexMoveBoundary::Make());
-    auto & selSprites = selections.getSprites();
+    auto & selSprites = selections.sprites;
     for ( size_t & spriteIndex : selSprites )
     {
         if ( spriteIndex > 0 && !selections.spriteIsSelected(spriteIndex - 1) )
@@ -659,7 +658,7 @@ void SpritePropertiesWindow::NotifyMoveUpPressed()
 
 void SpritePropertiesWindow::NotifyMoveDownPressed()
 {
-    Selections & selections = CM->GetSelections();
+    Selections & selections = CM->selections;
     HWND hSpriteList = listSprites.getHandle();
 
     selections.sortSprites(false);
@@ -667,7 +666,7 @@ void SpritePropertiesWindow::NotifyMoveDownPressed()
 
     auto spriteChanges = ReversibleActions::Make();
     spriteChanges->Insert(SpriteIndexMoveBoundary::Make());
-    auto & selSprites = selections.getSprites();
+    auto & selSprites = selections.sprites;
     for ( size_t & spriteIndex : selSprites )
     {
         if ( size_t(spriteIndex+1) < CM->numSprites() && !selections.spriteIsSelected(spriteIndex + 1) )
@@ -700,13 +699,13 @@ void SpritePropertiesWindow::NotifyMoveToPressed()
         {
             NotifyMoveTopPressed();
         }
-        else if ( spriteMoveTo + CM->GetSelections().numSprites() >= CM->numSprites() )
+        else if ( spriteMoveTo + CM->selections.numSprites() >= CM->numSprites() )
         {
             NotifyMoveEndPressed();
         }
         else if ( spriteMoveTo > 0 )
         {
-            Selections & selections = CM->GetSelections();
+            Selections & selections = CM->selections;
             u16 numSpritesSelected = selections.numSprites();
             size_t limit = CM->numSprites() - 1;
 
@@ -720,7 +719,7 @@ void SpritePropertiesWindow::NotifyMoveToPressed()
             std::vector<Chk::Sprite> selectedSprites{size_t(numSpritesSelected)};
             auto spriteCreateDels = ReversibleActions::Make();
             u16 i = 0;
-            auto & selSprites = selections.getSprites();
+            auto & selSprites = selections.sprites;
             for ( size_t & spriteIndex : selSprites )
             { // Remove each selected sprite from the map, store in selectedSprites
                 u32 loc = ((u32)spriteIndex)*sizeof(Chk::Sprite);
@@ -747,7 +746,7 @@ void SpritePropertiesWindow::NotifyMoveToPressed()
 
 void SpritePropertiesWindow::NotifyDeletePressed()
 {
-    Selections & selections = CM->GetSelections();
+    Selections & selections = CM->selections;
     HWND hSpriteList = listSprites.getHandle();
     listSprites.SetRedraw(false);
     auto spriteDeletes = ReversibleActions::Make();
@@ -775,7 +774,7 @@ void SpritePropertiesWindow::NotifyDeletePressed()
 void SpritePropertiesWindow::NotifyCheckClicked(u32 idFrom)
 {
     auto spriteChanges = ReversibleActions::Make();
-    auto & selSprites = CM->GetSelections().getSprites();
+    auto & selSprites = CM->selections.sprites;
     for ( size_t & spriteIndex : selSprites )
     {
         Chk::Sprite & sprite = CM->getSprite(spriteIndex);
@@ -816,7 +815,7 @@ void SpritePropertiesWindow::NotifyIdEditUpdated()
     u16 spriteID = 0;
     if ( editSpriteId.GetEditNum<u16>(spriteID) )
     {
-        auto & selSprites = CM->GetSelections().getSprites();
+        auto & selSprites = CM->selections.sprites;
         for ( size_t & spriteIndex : selSprites )
         {
             CM->getSprite(spriteIndex).type = (Sc::Sprite::Type)spriteID;
@@ -825,7 +824,7 @@ void SpritePropertiesWindow::NotifyIdEditUpdated()
             auto spriteName = GetSpriteName(Sc::Sprite::Type(spriteID), CM->getSprite(spriteIndex).isUnit());
             listSprites.SetItemText(row, (int)SpriteListColumn::Name, spriteName);
 
-            if ( spriteIndex == CM->GetSelections().getFirstSprite() )
+            if ( spriteIndex == CM->selections.getFirstSprite() )
                 WindowsItem::SetWinText(spriteName);
         }
         CM->Redraw(true);
@@ -838,7 +837,7 @@ void SpritePropertiesWindow::NotifyUnusedEditUpdated()
     u8 unused = 0;
     if ( editUnused.GetEditNum<u8>(unused) )
     {
-        auto & selSprites = CM->GetSelections().getSprites();
+        auto & selSprites = CM->selections.sprites;
         for ( size_t & spriteIndex : selSprites )
             CM->getSprite(spriteIndex).unused = unused;
 
@@ -851,7 +850,7 @@ void SpritePropertiesWindow::NotifyXcEditUpdated()
     u16 spriteXC = 0;
     if ( editXc.GetEditNum<u16>(spriteXC) )
     {
-        auto & selSprites = CM->GetSelections().getSprites();
+        auto & selSprites = CM->selections.sprites;
         for ( size_t & spriteIndex : selSprites )
         {
             CM->getSprite(spriteIndex).xc = spriteXC;
@@ -868,7 +867,7 @@ void SpritePropertiesWindow::NotifyYcEditUpdated()
     u16 spriteYC = 0;
     if ( editYc.GetEditNum<u16>(spriteYC) )
     {
-        auto & selSprites = CM->GetSelections().getSprites();
+        auto & selSprites = CM->selections.sprites;
         for ( size_t & spriteIndex : selSprites )
         {
             CM->getSprite(spriteIndex).yc = spriteYC;
@@ -918,10 +917,10 @@ void SpritePropertiesWindow::NotifyEditFocused(int idFrom, HWND hWndFrom)
 {
     switch ( idFrom )
     {
-    case Id::EditSpriteId: preservedStats.AddStats(CM->GetSelections(), Chk::Sprite::Field::Type); break;
-    case Id::EditUnused: preservedStats.AddStats(CM->GetSelections(), Chk::Sprite::Field::Unused); break;
-    case Id::EditXc: preservedStats.AddStats(CM->GetSelections(), Chk::Sprite::Field::Xc); break;
-    case Id::EditYc: preservedStats.AddStats(CM->GetSelections(), Chk::Sprite::Field::Yc); break;
+    case Id::EditSpriteId: preservedStats.AddStats(CM->selections, Chk::Sprite::Field::Type); break;
+    case Id::EditUnused: preservedStats.AddStats(CM->selections, Chk::Sprite::Field::Unused); break;
+    case Id::EditXc: preservedStats.AddStats(CM->selections, Chk::Sprite::Field::Xc); break;
+    case Id::EditYc: preservedStats.AddStats(CM->selections, Chk::Sprite::Field::Yc); break;
     }
 }
 

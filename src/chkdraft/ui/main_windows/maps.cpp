@@ -413,11 +413,11 @@ void Maps::ChangePlayer(u8 newPlayer, bool updateMapPlayers)
                 for ( auto & pasteDoodad : doodads )
                     pasteDoodad.owner = newPlayer;
             }
-            else if ( currentlyActiveMap->GetSelections().hasDoodads() )
+            else if ( currentlyActiveMap->selections.hasDoodads() )
             {
                 auto doodadPlayerChangeUndo = ReversibleActions::Make();
                 const auto & tileset = chkd.scData.terrain.get(currentlyActiveMap->getTileset());
-                auto & selDoodads = currentlyActiveMap->GetSelections().getDoodads();
+                auto & selDoodads = currentlyActiveMap->selections.doodads;
                 for ( auto doodadIndex : selDoodads )
                 {
                     auto & selDoodad = currentlyActiveMap->getDoodad(doodadIndex);
@@ -442,7 +442,7 @@ void Maps::ChangePlayer(u8 newPlayer, bool updateMapPlayers)
                 }
                 currentlyActiveMap->AddUndo(doodadPlayerChangeUndo);
             }
-            else if ( currentlyActiveMap->GetSelections().hasSprites() )
+            else if ( currentlyActiveMap->selections.hasSprites() )
             {
                 if ( clipboard.isPasting() )
                 {
@@ -712,7 +712,7 @@ void Maps::properties()
 {
     if ( currentlyActiveMap->getLayer() == Layer::Terrain )
     {
-        Selections & selections = currentlyActiveMap->GetSelections();
+        Selections & selections = currentlyActiveMap->selections;
         if ( selections.hasTiles() )
         {
             TileNode tile = selections.getFirstTile();
@@ -739,7 +739,7 @@ void Maps::stickCursor()
 
 void Maps::updateCursor(s32 xc, s32 yc)
 {
-    Selections & selections = currentlyActiveMap->GetSelections();
+    Selections & selections = currentlyActiveMap->selections;
     if ( currentlyActiveMap->getLayer() == Layer::Locations )
     {
         u16 selectedLocation = selections.getSelectedLocation();

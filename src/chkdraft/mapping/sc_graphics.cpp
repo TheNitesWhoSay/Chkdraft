@@ -4,6 +4,8 @@
 #include <algorithm>
 #include <string>
 
+using TileNeighbor = Sc::Terrain::TileNeighbor;
+
 enum_t(MaxUnitBounds, s32, {
     Left = 128, Right = 127, Up = 80, Down = 79
 });
@@ -1556,7 +1558,7 @@ void DrawTileSel(const WinLib::DeviceContext & dc, ChkdPalette & palette, u16 wi
     rcBorder.top    = (0      + screenTop)/32 - 1;
     rcBorder.bottom = (height + screenTop)/32 + 1;
 
-    std::vector<TileNode> & selectedTiles = selections.getTiles();
+    std::vector<TileNode> & selectedTiles = selections.tiles;
     for ( auto & tile : selectedTiles )
     {
         if ( tile.xc > rcBorder.left &&
@@ -1630,7 +1632,7 @@ void DrawFogTileSel(const WinLib::DeviceContext & dc, ChkdPalette & palette, u16
     rcBorder.top    = (0      + screenTop)/32 - 1;
     rcBorder.bottom = (height + screenTop)/32 + 1;
 
-    auto & selFogTiles = selections.getFogTiles();
+    auto & selFogTiles = selections.fogTiles;
     for ( auto & tile : selFogTiles )
     {
         if ( tile.xc > rcBorder.left &&
@@ -1683,7 +1685,7 @@ void DrawFogTileSel(const WinLib::DeviceContext & dc, ChkdPalette & palette, u16
 void DrawDoodadSel(const WinLib::DeviceContext & dc, u16 width, u16 height, u32 screenLeft, u32 screenTop, Selections & selections, GuiMap & map)
 {
     dc.setPen(PS_SOLID, 0, RGB(255, 0, 0));
-    const auto & selDoodads = selections.getDoodads();
+    const auto & selDoodads = selections.doodads;
     for ( auto index : selDoodads )
     {
         const auto & selDoodad = map.getDoodad(index);
@@ -1720,7 +1722,7 @@ void DrawDoodadSel(const WinLib::DeviceContext & dc, u16 width, u16 height, u32 
 void DrawPasteGraphics(const WinLib::DeviceContext & dc, ChkdPalette & palette, ChkdPalette & staticPalette, u16 width, u16 height, u32 screenLeft, u32 screenTop,
                         Selections & selections, Clipboard & clipboard, GuiMap & map, Layer layer, TerrainSubLayer subLayer)
 {
-    auto drawPasteTerrain = [&](POINT paste) {
+    auto drawPasteTerrain = [&](point paste) {
         if ( subLayer == TerrainSubLayer::Isom && layer != Layer::CutCopyPaste )
         {
             dc.setPen(PS_SOLID, 0, RGB(255, 0, 0));
@@ -1799,7 +1801,7 @@ void DrawPasteGraphics(const WinLib::DeviceContext & dc, ChkdPalette & palette, 
             }
         }
     };
-    auto drawPasteFog = [&](POINT paste) {
+    auto drawPasteFog = [&](point paste) {
         auto currPlayer = Sc::Player::Id(CM->getCurrPlayer());
         if ( currPlayer > Sc::Player::Id::Player8 )
             return; // No fog to render
@@ -1876,7 +1878,7 @@ void DrawPasteGraphics(const WinLib::DeviceContext & dc, ChkdPalette & palette, 
             }
         }
     };
-    auto drawPasteDoodads = [&](POINT paste) {
+    auto drawPasteDoodads = [&](point paste) {
         bool allowIllegalDoodads = map.AllowIllegalDoodadPlacement();
         const auto & doodads = clipboard.getDoodads();
         if ( !doodads.empty() )
@@ -1946,7 +1948,7 @@ void DrawPasteGraphics(const WinLib::DeviceContext & dc, ChkdPalette & palette, 
             dc.setBitsToDevice(0, 0, width, height, 0, 0, 0, height, &graphicBits[0], &bmi);
         }
     };
-    auto drawPasteUnits = [&](POINT paste) {
+    auto drawPasteUnits = [&](point paste) {
         ChkdBitmap graphicBits;
         graphicBits.resize(((size_t)width)*((size_t)height));
 
@@ -2006,7 +2008,7 @@ void DrawPasteGraphics(const WinLib::DeviceContext & dc, ChkdPalette & palette, 
             }
         }
     };
-    auto drawPasteSprites = [&](POINT paste) {
+    auto drawPasteSprites = [&](point paste) {
         ChkdBitmap graphicBits;
         graphicBits.resize(((size_t)width)*((size_t)height));
 
@@ -2047,19 +2049,19 @@ void DrawPasteGraphics(const WinLib::DeviceContext & dc, ChkdPalette & palette, 
     };
 
     if ( layer == Layer::Terrain )
-        drawPasteTerrain(selections.getEndDrag());
+        drawPasteTerrain(selections.endDrag);
     else if ( layer == Layer::Doodads )
-        drawPasteDoodads(selections.getEndDrag());
+        drawPasteDoodads(selections.endDrag);
     else if ( layer == Layer::Units )
-        drawPasteUnits(selections.getEndDrag());
+        drawPasteUnits(selections.endDrag);
     else if ( layer == Layer::Sprites )
-        drawPasteSprites(selections.getEndDrag());
+        drawPasteSprites(selections.endDrag);
     else if ( layer == Layer::FogEdit )
     {
         const auto brushWidth = clipboard.getFogBrush().width;
         const auto brushHeight = clipboard.getFogBrush().height;
-        s32 hoverTileX = (selections.getEndDrag().x + (brushWidth % 2 == 0 ? 16 : 0))/32;
-        s32 hoverTileY = (selections.getEndDrag().y + (brushHeight % 2 == 0 ? 16 : 0))/32;
+        s32 hoverTileX = (selections.endDrag.x + (brushWidth % 2 == 0 ? 16 : 0))/32;
+        s32 hoverTileY = (selections.endDrag.y + (brushHeight % 2 == 0 ? 16 : 0))/32;
 
         const auto startX = 32*(hoverTileX - brushWidth/2) - screenLeft;
         const auto startY = 32*(hoverTileY - brushHeight/2) - screenTop;
@@ -2075,7 +2077,7 @@ void DrawPasteGraphics(const WinLib::DeviceContext & dc, ChkdPalette & palette, 
     }
     else if ( layer == Layer::CutCopyPaste )
     {
-        POINT paste = selections.getEndDrag();
+        point paste = selections.endDrag;
         bool pastingTerrain = map.getCutCopyPasteTerrain() && clipboard.hasTiles();
         bool pastingDoodads = map.getCutCopyPasteDoodads() && clipboard.hasDoodads();
         bool pastingFog = map.getCutCopyPasteFog() && clipboard.hasFogTiles();
@@ -2099,8 +2101,8 @@ void DrawPasteGraphics(const WinLib::DeviceContext & dc, ChkdPalette & palette, 
 
 void DrawTempLocs(const WinLib::DeviceContext & dc, u32 screenLeft, u32 screenTop, Selections & selections, GuiMap & map)
 {
-    POINT start = selections.getStartDrag();
-    POINT end = selections.getEndDrag();
+    point start = selections.startDrag;
+    point end = selections.endDrag;
     if ( selections.getLocationFlags() == LocSelFlags::None ) // Draw location creation preview
     {
         s32 left = start.x-screenLeft,
@@ -2164,8 +2166,8 @@ void DrawSelectingFrame(const WinLib::DeviceContext & dc, Selections & selection
 {
     if ( !selections.selectionAreaIsNull() )
     {
-        POINT startDrag = selections.getStartDrag(),
-              endDrag = selections.getEndDrag();
+        point startDrag = selections.startDrag,
+              endDrag = selections.endDrag;
 
         RECT rect;
         rect.left   = s32(((s32)startDrag.x-(s32)screenLeft)/**scale*/)  ;

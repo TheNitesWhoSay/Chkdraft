@@ -1,22 +1,17 @@
 #ifndef STRUCTS_H
 #define STRUCTS_H
 #include "constants.h"
-#include <mapping_core/sc.h>
 
-class points // Mirrors win32 POINTS
+struct points // Mirrors win32 POINTS
 {
-    public:
-        s16 x;
-        s16 y;
-        points() : x(0), y(0) {}
-        points(s16 x, s16 y) : x(x), y(y) {}
-        virtual ~points();
-        inline bool operator==(const points & rhs) const { return x == rhs.x && y == rhs.y; }
-        inline bool operator<(const points & rhs) const {
-            if ( y < rhs.y) return true;
-            else if ( y > rhs.y ) return false;
-            else return x < rhs.x;
-        }
+    s16 x = 0;
+    s16 y = 0;
+    inline bool operator==(const points & rhs) const { return x == rhs.x && y == rhs.y; }
+    inline bool operator<(const points & rhs) const {
+        if ( y < rhs.y) return true;
+        else if ( y > rhs.y ) return false;
+        else return x < rhs.x;
+    }
 };
 
 struct point // Mirrors win32 POINT
@@ -33,15 +28,12 @@ struct rect // Mirrors win32 RECT
     s32 bottom;
 };
 
-class MapGrid // A simple grid that can be displayed over a map
+template <typename Color>
+struct MapGrid // A simple grid that can be displayed over a map
 {
-    public:
-        points size;
-        point offset;
-        Sc::SystemColor color;
-
-        MapGrid(); // ctor
-        virtual ~MapGrid();
+    points size = {0, 0};
+    point offset = {0, 0};
+    Color color {};
 };
 
 #endif

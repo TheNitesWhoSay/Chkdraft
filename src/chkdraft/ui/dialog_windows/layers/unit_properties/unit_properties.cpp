@@ -124,7 +124,7 @@ void UnitPropertiesWindow::SetChangeHighlightOnly(bool changeHighlightOnly)
 void UnitPropertiesWindow::ChangeCurrOwner(u8 newOwner)
 {
     auto undoableChanges = ReversibleActions::Make();
-    auto & selUnits = CM->GetSelections().getUnits();
+    auto & selUnits = CM->selections.units;
     for ( u16 unitIndex : selUnits )
     {
         Chk::Unit & unit = CM->getUnit(unitIndex);
@@ -220,11 +220,10 @@ void UnitPropertiesWindow::DeselectIndex(u16 unitIndex)
 
 void UnitPropertiesWindow::UpdateEnabledState()
 {
-    Selections & selections = CM->GetSelections();
-    if ( selections.hasUnits() )
+    if ( CM->selections.hasUnits() )
     {
         EnableUnitEditing();
-        const Chk::Unit & unit = CM->getUnit(selections.getFirstUnit());
+        const Chk::Unit & unit = CM->getUnit(CM->selections.getFirstUnit());
         SetUnitFieldText(unit);
     }
     else
@@ -239,7 +238,7 @@ void UnitPropertiesWindow::RepopulateList()
     listUnits.DeleteAllItems();
     if ( CM != nullptr )
     {
-        Selections & selections = CM->GetSelections();
+        Selections & selections = CM->selections;
 
         size_t numUnits = CM->numUnits();
         for ( size_t i = 0; i < numUnits; i++ )
@@ -253,7 +252,7 @@ void UnitPropertiesWindow::RepopulateList()
             u16 selectedIndex = selections.getFirstUnit();
             listUnits.FocusItem(selectedIndex);
 
-            auto & selUnits = selections.getUnits();
+            auto & selUnits = selections.units;
             for ( u16 & unitIndex : selUnits )
                 listUnits.SelectRow(unitIndex);
 
@@ -298,7 +297,7 @@ void UnitPropertiesWindow::EnableUnitEditing()
         checkControls[i]->SetCheck(false);
     }
 
-    const Chk::Unit & unit = CM->getUnit(CM->GetSelections().getFirstUnit());
+    const Chk::Unit & unit = CM->getUnit(CM->selections.getFirstUnit());
     SetUnitFieldText(unit);
 }
 
@@ -467,7 +466,7 @@ void UnitPropertiesWindow::LvColumnClicked(NMHDR* nmhdr)
 
 void UnitPropertiesWindow::LvItemChanged(NMHDR* nmhdr)
 {
-    Selections & selections = CM->GetSelections();
+    Selections & selections = CM->selections;
     preservedStats.convertToUndo();
     if ( !changeHighlightOnly )
     {
@@ -518,7 +517,7 @@ void UnitPropertiesWindow::NotifyClosePressed()
 
 void UnitPropertiesWindow::NotifyMoveTopPressed()
 {
-    Selections & selections = CM->GetSelections();
+    Selections & selections = CM->selections;
 
     u16 unitStackTopIndex = selections.getFirstUnit();
     selections.sortUnits(true); // sort with lowest indexes first
@@ -528,7 +527,7 @@ void UnitPropertiesWindow::NotifyMoveTopPressed()
     auto unitChanges = ReversibleActions::Make();
     unitChanges->Insert(UnitIndexMoveBoundary::Make());
     u16 i = 0;
-    auto & selUnits = selections.getUnits();
+    auto & selUnits = selections.units;
     for ( u16 & unitIndex : selUnits )
     {
         if ( unitIndex != 0 ) // If unit is not at the destination index and unitptr can be retrieved
@@ -555,7 +554,7 @@ void UnitPropertiesWindow::NotifyMoveTopPressed()
 
 void UnitPropertiesWindow::NotifyMoveEndPressed()
 {
-    Selections & selections = CM->GetSelections();
+    Selections & selections = CM->selections;
 
     u16 unitStackTopIndex = selections.getFirstUnit();
     selections.sortUnits(false); // Highest First
@@ -567,7 +566,7 @@ void UnitPropertiesWindow::NotifyMoveEndPressed()
     u16 i = 1;
     auto unitChanges = ReversibleActions::Make();
     unitChanges->Insert(UnitIndexMoveBoundary::Make());
-    auto & selUnits = selections.getUnits();
+    auto & selUnits = selections.units;
     for ( u16 & unitIndex : selUnits )
     {
         if ( unitIndex != numUnits - 1 )
@@ -595,7 +594,7 @@ void UnitPropertiesWindow::NotifyMoveEndPressed()
 
 void UnitPropertiesWindow::NotifyMoveUpPressed()
 {
-    Selections & selections = CM->GetSelections();
+    Selections & selections = CM->selections;
     HWND hUnitList = listUnits.getHandle();
 
     selections.sortUnits(true);
@@ -603,7 +602,7 @@ void UnitPropertiesWindow::NotifyMoveUpPressed()
 
     auto unitChanges = ReversibleActions::Make();
     unitChanges->Insert(UnitIndexMoveBoundary::Make());
-    auto & selUnits = selections.getUnits();
+    auto & selUnits = selections.units;
     for ( u16 & unitIndex : selUnits )
     {
         if ( unitIndex > 0 && !selections.unitIsSelected(unitIndex - 1) )
@@ -630,7 +629,7 @@ void UnitPropertiesWindow::NotifyMoveUpPressed()
 
 void UnitPropertiesWindow::NotifyMoveDownPressed()
 {
-    Selections & selections = CM->GetSelections();
+    Selections & selections = CM->selections;
     HWND hUnitList = listUnits.getHandle();
 
     selections.sortUnits(false);
@@ -638,7 +637,7 @@ void UnitPropertiesWindow::NotifyMoveDownPressed()
 
     auto unitChanges = ReversibleActions::Make();
     unitChanges->Insert(UnitIndexMoveBoundary::Make());
-    auto & selUnits = selections.getUnits();
+    auto & selUnits = selections.units;
     for ( u16 & unitIndex : selUnits )
     {
         if ( size_t(unitIndex+1) < CM->numUnits() && !selections.unitIsSelected(unitIndex + 1) )
@@ -671,13 +670,13 @@ void UnitPropertiesWindow::NotifyMoveToPressed()
         {
             NotifyMoveTopPressed();
         }
-        else if ( unitMoveTo + CM->GetSelections().numUnits() >= CM->numUnits() )
+        else if ( unitMoveTo + CM->selections.numUnits() >= CM->numUnits() )
         {
             NotifyMoveEndPressed();
         }
         else if ( unitMoveTo > 0 )
         {
-            Selections & selections = CM->GetSelections();
+            Selections & selections = CM->selections;
             u16 numUnitsSelected = selections.numUnits();
             size_t limit = CM->numUnits() - 1;
 
@@ -691,7 +690,7 @@ void UnitPropertiesWindow::NotifyMoveToPressed()
             std::vector<Chk::Unit> selectedUnits{size_t(numUnitsSelected)};
             auto unitCreateDels = ReversibleActions::Make();
             u16 i = 0;
-            auto & selUnits = selections.getUnits();
+            auto & selUnits = selections.units;
             for ( u16 & unitIndex : selUnits )
             { // Remove each selected unit from the map, store in selectedUnits
                 u32 loc = ((u32)unitIndex)*sizeof(Chk::Unit);
@@ -718,7 +717,7 @@ void UnitPropertiesWindow::NotifyMoveToPressed()
 
 void UnitPropertiesWindow::NotifyDeletePressed()
 {
-    Selections & selections = CM->GetSelections();
+    Selections & selections = CM->selections;
     HWND hUnitList = listUnits.getHandle();
     listUnits.SetRedraw(false);
     auto unitDeletes = ReversibleActions::Make();
@@ -741,7 +740,7 @@ void UnitPropertiesWindow::NotifyDeletePressed()
 void UnitPropertiesWindow::NotifyInvincibleClicked()
 {
     auto unitChanges = ReversibleActions::Make();
-    auto & selUnits = CM->GetSelections().getUnits();
+    auto & selUnits = CM->selections.units;
     for ( u16 & unitIndex : selUnits )
     {
         Chk::Unit & unit = CM->getUnit(unitIndex);
@@ -758,7 +757,7 @@ void UnitPropertiesWindow::NotifyInvincibleClicked()
 void UnitPropertiesWindow::NotifyHallucinatedClicked()
 {
     auto unitChanges = ReversibleActions::Make();
-    auto & selUnits = CM->GetSelections().getUnits();
+    auto & selUnits = CM->selections.units;
     for ( u16 & unitIndex : selUnits )
     {
         Chk::Unit & unit = CM->getUnit(unitIndex);
@@ -775,7 +774,7 @@ void UnitPropertiesWindow::NotifyHallucinatedClicked()
 void UnitPropertiesWindow::NotifyBurrowedClicked()
 {
     auto unitChanges = ReversibleActions::Make();
-    auto & selUnits = CM->GetSelections().getUnits();
+    auto & selUnits = CM->selections.units;
     for ( u16 & unitIndex : selUnits )
     {
         Chk::Unit & unit = CM->getUnit(unitIndex);
@@ -792,7 +791,7 @@ void UnitPropertiesWindow::NotifyBurrowedClicked()
 void UnitPropertiesWindow::NotifyCloakedClicked()
 {
     auto unitChanges = ReversibleActions::Make();
-    auto & selUnits = CM->GetSelections().getUnits();
+    auto & selUnits = CM->selections.units;
     for ( u16 & unitIndex : selUnits )
     {
         Chk::Unit & unit = CM->getUnit(unitIndex);
@@ -809,7 +808,7 @@ void UnitPropertiesWindow::NotifyCloakedClicked()
 void UnitPropertiesWindow::NotifyLiftedClicked()
 {
     auto unitChanges = ReversibleActions::Make();
-    auto & selUnits = CM->GetSelections().getUnits();
+    auto & selUnits = CM->selections.units;
     for ( u16 & unitIndex : selUnits )
     {
         Chk::Unit & unit = CM->getUnit(unitIndex);
@@ -828,7 +827,7 @@ void UnitPropertiesWindow::NotifyHpEditUpdated()
     u8 hpPercent = 0;
     if ( editLife.GetEditNum<u8>(hpPercent) )
     {
-        auto & selUnits = CM->GetSelections().getUnits();
+        auto & selUnits = CM->selections.units;
         for ( u16 & unitIndex : selUnits )
             CM->getUnit(unitIndex).hitpointPercent = hpPercent;
 
@@ -841,7 +840,7 @@ void UnitPropertiesWindow::NotifyMpEditUpdated()
     u8 mpPercent = 0;
     if ( editMana.GetEditNum<u8>(mpPercent) )
     {
-        auto & selUnits = CM->GetSelections().getUnits();
+        auto & selUnits = CM->selections.units;
         for ( u16 & unitIndex : selUnits )
             CM->getUnit(unitIndex).energyPercent = mpPercent;
 
@@ -854,7 +853,7 @@ void UnitPropertiesWindow::NotifyShieldEditUpdated()
     u8 shieldPercent = 0;
     if ( editShield.GetEditNum<u8>(shieldPercent) )
     {
-        auto & selUnits = CM->GetSelections().getUnits();
+        auto & selUnits = CM->selections.units;
         for ( u16 & unitIndex : selUnits )
             CM->getUnit(unitIndex).shieldPercent = shieldPercent;
 
@@ -867,7 +866,7 @@ void UnitPropertiesWindow::NotifyResourcesEditUpdated()
     u32 resources = 0;
     if ( editResources.GetEditNum<u32>(resources) )
     {
-        auto & selUnits = CM->GetSelections().getUnits();
+        auto & selUnits = CM->selections.units;
         for ( u16 & unitIndex : selUnits )
             CM->getUnit(unitIndex).resourceAmount = resources;
 
@@ -880,7 +879,7 @@ void UnitPropertiesWindow::NotifyHangerEditUpdated()
     u16 hanger = 0;
     if ( editHanger.GetEditNum<u16>(hanger) )
     {
-        auto & selUnits = CM->GetSelections().getUnits();
+        auto & selUnits = CM->selections.units;
         for ( u16 & unitIndex : selUnits )
             CM->getUnit(unitIndex).hangerAmount = hanger;
 
@@ -893,7 +892,7 @@ void UnitPropertiesWindow::NotifyIdEditUpdated()
     u16 unitID = 0;
     if ( editUnitId.GetEditNum<u16>(unitID) )
     {
-        auto & selUnits = CM->GetSelections().getUnits();
+        auto & selUnits = CM->selections.units;
         for ( u16 & unitIndex : selUnits )
         {
             CM->getUnit(unitIndex).type = (Sc::Unit::Type)unitID;
@@ -902,7 +901,7 @@ void UnitPropertiesWindow::NotifyIdEditUpdated()
             auto unitName = CM->getUnitName<ChkdString>((Sc::Unit::Type)unitID, true);
             listUnits.SetItemText(row, (int)UnitListColumn::Name, *unitName);
 
-            if ( unitIndex == CM->GetSelections().getFirstUnit() )
+            if ( unitIndex == CM->selections.getFirstUnit() )
                 WindowsItem::SetWinText(*unitName);
         }
         CM->Redraw(true);
@@ -915,7 +914,7 @@ void UnitPropertiesWindow::NotifyXcEditUpdated()
     u16 unitXC = 0;
     if ( editXc.GetEditNum<u16>(unitXC) )
     {
-        auto & selUnits = CM->GetSelections().getUnits();
+        auto & selUnits = CM->selections.units;
         for ( u16 & unitIndex : selUnits )
         {
             CM->getUnit(unitIndex).xc = unitXC;
@@ -932,7 +931,7 @@ void UnitPropertiesWindow::NotifyYcEditUpdated()
     u16 unitYC = 0;
     if ( editYc.GetEditNum<u16>(unitYC) )
     {
-        auto & selUnits = CM->GetSelections().getUnits();
+        auto & selUnits = CM->selections.units;
         for ( u16 & unitIndex : selUnits )
         {
             CM->getUnit(unitIndex).yc = unitYC;
@@ -985,14 +984,14 @@ void UnitPropertiesWindow::NotifyEditFocused(int idFrom, HWND hWndFrom)
 {
     switch ( idFrom )
     {
-    case Id::EditHp: preservedStats.AddStats(CM->GetSelections(), Chk::Unit::Field::HitpointPercent); break;
-    case Id::EditMp: preservedStats.AddStats(CM->GetSelections(), Chk::Unit::Field::EnergyPercent); break;
-    case Id::EditShields: preservedStats.AddStats(CM->GetSelections(), Chk::Unit::Field::ShieldPercent); break;
-    case Id::EditResources: preservedStats.AddStats(CM->GetSelections(), Chk::Unit::Field::ResourceAmount); break;
-    case Id::EditHanger: preservedStats.AddStats(CM->GetSelections(), Chk::Unit::Field::HangerAmount); break;
-    case Id::EditUnitId: preservedStats.AddStats(CM->GetSelections(), Chk::Unit::Field::Type); break;
-    case Id::EditXc: preservedStats.AddStats(CM->GetSelections(), Chk::Unit::Field::Xc); break;
-    case Id::EditYc: preservedStats.AddStats(CM->GetSelections(), Chk::Unit::Field::Yc); break;
+    case Id::EditHp: preservedStats.AddStats(CM->selections, Chk::Unit::Field::HitpointPercent); break;
+    case Id::EditMp: preservedStats.AddStats(CM->selections, Chk::Unit::Field::EnergyPercent); break;
+    case Id::EditShields: preservedStats.AddStats(CM->selections, Chk::Unit::Field::ShieldPercent); break;
+    case Id::EditResources: preservedStats.AddStats(CM->selections, Chk::Unit::Field::ResourceAmount); break;
+    case Id::EditHanger: preservedStats.AddStats(CM->selections, Chk::Unit::Field::HangerAmount); break;
+    case Id::EditUnitId: preservedStats.AddStats(CM->selections, Chk::Unit::Field::Type); break;
+    case Id::EditXc: preservedStats.AddStats(CM->selections, Chk::Unit::Field::Xc); break;
+    case Id::EditYc: preservedStats.AddStats(CM->selections, Chk::Unit::Field::Yc); break;
     }
 }
 

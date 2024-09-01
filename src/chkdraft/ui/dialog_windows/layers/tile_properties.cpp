@@ -18,7 +18,7 @@ bool TilePropWindow::DestroyThis()
 
 void TilePropWindow::UpdateTile()
 {
-    TileNode tile = CM->GetSelections().getFirstTile();
+    TileNode tile = CM->selections.getFirstTile();
     SetWinText("Tile Properties (" + std::to_string(tile.xc) + ", " + std::to_string(tile.yc) +")");
     editTileValue.SetEditNum<u16>(tile.value);
 }
@@ -40,7 +40,7 @@ BOOL TilePropWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
         if ( tile > 65535 )
             tile %= 65536;
 
-        TileNode tileNode = CM->GetSelections().getFirstTile();
+        TileNode tileNode = CM->selections.getFirstTile();
         tileNode.value = tile;
         CM->beginTerrainOperation();
         CM->setTileValue(tileNode.xc, tileNode.yc, tile);

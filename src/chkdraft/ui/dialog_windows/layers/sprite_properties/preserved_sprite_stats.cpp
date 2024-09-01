@@ -22,8 +22,7 @@ void PreservedSpriteStats::AddStats(Selections & sel, Chk::Sprite::Field statFie
 {
     Clear();
     field = statField;
-    auto & spriteIndexes = sel.getSprites();
-    for ( size_t & spriteIndex : spriteIndexes )
+    for ( size_t & spriteIndex : sel.sprites )
     {
         const Chk::Sprite & sprite = CM->getSprite(spriteIndex);
         switch ( field )
@@ -45,9 +44,8 @@ void PreservedSpriteStats::convertToUndo()
         // For each selected sprite, add the corresponding undo from values
         u32 i = 0;
 
-        Selections & selections = CM->GetSelections();
         auto spriteChanges = ReversibleActions::Make();
-        auto & selectedSpriteIndexes = selections.getSprites();
+        auto & selectedSpriteIndexes = CM->selections.sprites;
         for ( size_t spriteIndex : selectedSpriteIndexes )
         {
             Chk::Sprite oldSprite = CM->getSprite(spriteIndex);

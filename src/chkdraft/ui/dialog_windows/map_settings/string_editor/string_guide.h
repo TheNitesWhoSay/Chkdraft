@@ -15,6 +15,7 @@ class StringGuideWindow : public WinLib::ClassWindow
         LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
     private:
+        static constexpr int numScStringColors = 28; // Could make StringGuide dynamic with respect to the size of strColors
         WinLib::TextControl colorPrefix[numScStringColors];
         WinLib::TextControl color[numScStringColors];
 };

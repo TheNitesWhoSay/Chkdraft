@@ -741,7 +741,7 @@ void GuiMap::setDragging(bool bDragging)
 
 void GuiMap::convertSelectionToTerrain()
 {
-    std::vector<size_t> selectedDoodads = selections.getDoodads();
+    std::vector<size_t> selectedDoodads = selections.doodads;
     selections.removeDoodads();
     
     auto undoDoodadConversion = ReversibleActions::Make();
@@ -802,7 +802,7 @@ void GuiMap::stackSelected()
     auto stackUndos = ReversibleActions::Make();
     if ( currLayer == Layer::Units && selections.hasUnits() && Scenario::numUnits() + (size_t(stackSize)*selections.numUnits()) < 4000 )
     {
-        auto & selectedUnits = selections.getUnits();
+        auto & selectedUnits = selections.units;
         for ( auto & selectedUnit : selectedUnits )
         {
             auto unit = CM->getUnit(selectedUnit);
@@ -814,7 +814,7 @@ void GuiMap::stackSelected()
     }
     else if ( currLayer == Layer::Sprites && selections.hasSprites() && Scenario::numSprites() + (size_t(stackSize)*selections.numSprites()) < 4000 )
     {
-        auto & selectedSprites = selections.getSprites();
+        auto & selectedSprites = selections.sprites;
         for ( auto & selectedSprite : selectedSprites )
         {
             auto sprite = CM->getSprite(selectedSprite);
@@ -1097,16 +1097,16 @@ void GuiMap::EdgeDrag(HWND hWnd, int x, int y)
             mapX = s32(rcMap.left/zoom) + screenLeft;
             onEdge = true;
             if ( (screenLeft+16)/32 > 0 )
-                selections.setEndDrag( ((screenLeft +16)/32-1)*32, selections.getEndDrag().y );
+                selections.endDrag = { ((screenLeft +16)/32-1)*32, selections.endDrag.y };
             if ( screenLeft > 0 )
-                screenLeft = selections.getEndDrag().x;
+                screenLeft = selections.endDrag.x;
         }
         else if ( x >= rcMap.right-2 ) // Cursor on the right
         {
             mapX = s32((double(rcMap.right)-2)/zoom) + screenLeft;
             onEdge = true;
-            selections.setEndDrag( ((screenLeft+s32(rcMap.right/zoom))/32+1)*32, selections.getEndDrag().y );
-            screenLeft = selections.getEndDrag().x - s32((double(rcMap.right)-2)/zoom);
+            selections.endDrag = { ((screenLeft+s32(rcMap.right/zoom))/32+1)*32, selections.endDrag.y };
+            screenLeft = selections.endDrag.x - s32((double(rcMap.right)-2)/zoom);
         }
 
         if ( y <= 0 ) // Cursor on the top
@@ -1114,16 +1114,16 @@ void GuiMap::EdgeDrag(HWND hWnd, int x, int y)
             mapY = s32(rcMap.top/zoom) + screenTop;
             onEdge = true;
             if ( (screenTop+16)/32 > 0 )
-                selections.setEndDrag( selections.getEndDrag().x, ((screenTop+16)/32-1)*32 );
+                selections.endDrag = { selections.endDrag.x, ((screenTop+16)/32-1)*32 };
             if ( screenTop > 0 )
-                screenTop = selections.getEndDrag().y;
+                screenTop = selections.endDrag.y;
         }
         else if ( y >= rcMap.bottom-2 ) // Cursor on the bottom
         {
             mapY = s32((double(rcMap.bottom)-2)/zoom) + screenTop;
             onEdge = true;
-            selections.setEndDrag( selections.getEndDrag().x, ((screenTop+s32(rcMap.bottom/zoom))/32+1)*32 );
-            screenTop = selections.getEndDrag().y - s32((double(rcMap.bottom)-2)/zoom);
+            selections.endDrag = { selections.endDrag.x, ((screenTop+s32(rcMap.bottom/zoom))/32+1)*32 };
+            screenTop = selections.endDrag.y - s32((double(rcMap.bottom)-2)/zoom);
         }
 
         if ( onEdge )
@@ -1361,7 +1361,7 @@ void GuiMap::deleteSelection()
     auto deleteTerrainSelection = [&]() {
         u16 xSize = (u16)Scenario::getTileWidth();
 
-        auto & selTiles = selections.getTiles();
+        auto & selTiles = selections.tiles;
         for ( auto & tile : selTiles )
             setTileValue(tile.xc, tile.yc, Scenario::getTile(tile.xc, tile.yc, Chk::Scope::Both));
 
@@ -1369,9 +1369,9 @@ void GuiMap::deleteSelection()
     };
     auto deleteDoodadSelection = [&]() {
         auto doodadsUndo = ReversibleActions::Make();
-        for ( int i=0; i<selections.getDoodads().size(); ++i )
+        for ( int i=0; i<selections.doodads.size(); ++i )
         {
-            auto selDoodad = selections.getDoodads()[i];
+            auto selDoodad = selections.doodads[i];
             const auto & doodad = doodads[selDoodad];
             doodadsUndo->Insert(DoodadCreateDel::Make(u16(selDoodad), doodad));
 
@@ -1490,7 +1490,7 @@ void GuiMap::deleteSelection()
         auto deletes = ReversibleActions::Make();
 
         u16 xSize = (u16)Scenario::getTileWidth();
-        auto & selFogTiles = selections.getFogTiles();
+        auto & selFogTiles = selections.fogTiles;
         for ( auto & fogTile : selFogTiles )
         {
             deletes->Insert(FogChange::Make(fogTile.xc, fogTile.yc, getFog(fogTile.xc, fogTile.yc)));
@@ -1549,10 +1549,10 @@ void GuiMap::paste(s32 mapClickX, s32 mapClickY)
 {
     selections.removeTiles();
     s32 xc = mapClickX, yc = mapClickY;
-    selections.setEndDrag(xc, yc);
+    selections.endDrag = {xc, yc};
     SnapSelEndDrag();
-    xc = selections.getEndDrag().x;
-    yc = selections.getEndDrag().y;
+    xc = selections.endDrag.x;
+    yc = selections.endDrag.y;
     clipboard.doPaste(currLayer, currTerrainSubLayer, xc, yc, *this, undos, stackUnits);
 
     Redraw(true);
@@ -1563,7 +1563,7 @@ void GuiMap::PlayerChanged(u8 newPlayer)
     if ( currLayer == Layer::Units )
     {
         auto unitChanges = ReversibleActions::Make();
-        auto & selUnits = selections.getUnits();
+        auto & selUnits = selections.units;
         for ( u16 unitIndex : selUnits )
         {
             Chk::Unit & unit = Scenario::getUnit(unitIndex);
@@ -1579,7 +1579,7 @@ void GuiMap::PlayerChanged(u8 newPlayer)
     else if ( currLayer == Layer::Sprites )
     {
         auto spriteChanges = ReversibleActions::Make();
-        auto & selSprites = selections.getSprites();
+        auto & selSprites = selections.sprites;
         for ( size_t spriteIndex : selSprites )
         {
             Chk::Sprite & sprite = Scenario::getSprite(spriteIndex);
@@ -1593,11 +1593,6 @@ void GuiMap::PlayerChanged(u8 newPlayer)
         undos.AddUndo(spriteChanges);
         Redraw(true);
     }
-}
-
-Selections & GuiMap::GetSelections()
-{
-    return selections;
 }
 
 u16 GuiMap::GetSelectedLocation()
@@ -1782,7 +1777,7 @@ void GuiMap::SnapSelEndDrag()
                     {
                         bool oddTileWidth = (dat.starEditPlacementBoxWidth/32)%2 > 0;
                         bool oddTileHeight = (dat.starEditPlacementBoxHeight/32)%2 > 0;
-                        POINT & endDrag = selections.getEndDrag();
+                        point & endDrag = selections.endDrag;
                         if ( (endDrag.x % 32) != (oddTileWidth ? 16 : 0) )
                             endDrag.x = (endDrag.x + (oddTileWidth ? 16 : 16))/32*32 + (oddTileWidth ? (((endDrag.x+16) % 32) < 16 ? -16 : 16) : 0);
                         if ( (endDrag.y % 32) != (oddTileHeight ? 16 : 0) )
@@ -1818,7 +1813,16 @@ void GuiMap::PaintMap(GuiMapPtr currMap, bool pasting)
 
             glClearColor(0.0f, 0.f, 0.f, 0.f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            scrGraphics->render(chkd.scData, currLayer == Layer::Locations, DisplayingElevations(), DisplayingTileNums(), scGraphics.ClippingLocationNames(), !lockAnywhere, selections.getSelectedLocation());
+            
+            // TODO: scGraphics is likely being deprecated, this section is a temporary copy-over
+            scrGraphics->useGameTileNums = scGraphics.mtxmOverTile();
+            scrGraphics->displayIsomNums = scGraphics.DisplayingIsomNums();
+            scrGraphics->displayTileNums = scGraphics.DisplayingTileNums();
+            scrGraphics->displayBuildability = scGraphics.DisplayingBuildability();
+            scrGraphics->displayElevations = scGraphics.DisplayingElevations();
+            scrGraphics->clipLocationNames = scGraphics.ClippingLocationNames();
+
+            scrGraphics->render(chkd.scData);
             
             glFlush();
             SwapBuffers(openGlDc->getDcHandle());
@@ -2036,7 +2040,7 @@ bool GuiMap::DisplayingTileNums()
 
 void GuiMap::ToggleDisplayFps()
 {
-    scrGraphics->toggleDisplayFps();
+    scrGraphics->fpsEnabled = !scrGraphics->fpsEnabled;
     UpdateBaseViewMenuItems();
 }
 
@@ -2589,7 +2593,7 @@ void GuiMap::UpdateTerrainViewMenuItems()
 
 void GuiMap::UpdateBaseViewMenuItems()
 {
-    chkd.mainMenu.SetCheck(ID_VIEW_DISPLAYFPS, scrGraphics->displayingFps());
+    chkd.mainMenu.SetCheck(ID_VIEW_DISPLAYFPS, scrGraphics->fpsEnabled);
 }
 
 void GuiMap::UpdateUnitMenuItems()
@@ -2991,7 +2995,7 @@ void GuiMap::LButtonDoubleClick(int x, int y, WPARAM wParam)
 
 void GuiMap::LButtonDown(int x, int y, WPARAM wParam)
 {
-    selections.resetMoved();
+    selections.moved = false;
     u32 mapClickX = (s32(((double)x)/getZoom()) + screenLeft),
         mapClickY = (s32(((double)y)/getZoom()) + screenTop);
 
@@ -3123,7 +3127,7 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
     if ( wParam & MK_LBUTTON ) // If click and dragging
     {
         chkd.maps.stickCursor(); // Stop cursor from reverting
-        selections.setMoved();
+        selections.moved = true;
     }
     else // If not click and dragging
         chkd.maps.updateCursor(mapHoverX, mapHoverY); // Determine proper hover cursor
@@ -3135,7 +3139,7 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
     
     if ( currLayer == Layer::FogEdit )
     {
-        selections.setEndDrag(mapHoverX, mapHoverY);
+        selections.endDrag = {mapHoverX, mapHoverY};
         if ( dragging )
             clipboard.doPaste(currLayer, currTerrainSubLayer, mapHoverX, mapHoverY, *this, undos, false);
         
@@ -3159,14 +3163,14 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
                         }
                     }
 
-                    selections.setEndDrag(mapHoverX, mapHoverY);
+                    selections.endDrag = {mapHoverX, mapHoverY};
                     if ( currLayer == Layer::Terrain )
-                        selections.setEndDrag( (mapHoverX+16)/32*32, (mapHoverY+16)/32*32 );
+                        selections.endDrag = { (mapHoverX+16)/32*32, (mapHoverY+16)/32*32 };
                     else if ( currLayer == Layer::Locations )
                     {
                         u32 x2 = mapHoverX, y2 = mapHoverY;
                         if ( SnapLocationDimensions(x2, y2, x2, y2, LocSnapFlags(LocSnapFlags::SnapX2|LocSnapFlags::SnapY2)) )
-                            selections.setEndDrag(x2, y2);
+                            selections.endDrag = {s32(x2), s32(y2)};
                     }
                     else if ( currLayer == Layer::CutCopyPaste && snapCutCopyPasteSel )
                     {
@@ -3177,7 +3181,7 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
                     else if ( currLayer == Layer::Units )
                     {
                         s32 xc = mapHoverX, yc = mapHoverY;
-                        selections.setEndDrag(xc, yc);
+                        selections.endDrag = {xc, yc};
                         SnapSelEndDrag();
                     }
                     
@@ -3206,7 +3210,7 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
                             else if ( panCurrentY > rcMap.bottom-2 )
                                 yc = s32((double(rcMap.bottom)-2)/zoom) + screenTop;
 
-                            selections.setEndDrag(xc, yc);
+                            selections.endDrag = {xc, yc};
                             SnapSelEndDrag();
                             if ( !chkd.maps.clipboard.isPreviousPasteLoc(u16(xc), u16(yc)) )
                                 paste((s16)xc, (s16)yc);
@@ -3221,14 +3225,14 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
                             }
                         }
 
-                        selections.setEndDrag( mapHoverX, mapHoverY );
+                        selections.endDrag = { mapHoverX, mapHoverY };
                         if ( currLayer == Layer::Terrain && !chkd.maps.clipboard.isPasting() )
-                            selections.setEndDrag( (mapHoverX+16)/32*32, (mapHoverY+16)/32*32 );
+                            selections.endDrag = { (mapHoverX+16)/32*32, (mapHoverY+16)/32*32 };
                         else if ( currLayer == Layer::Locations )
                         {
                             u32 x2 = mapHoverX, y2 = mapHoverY;
                             if ( SnapLocationDimensions(x2, y2, x2, y2, LocSnapFlags(LocSnapFlags::SnapX2|LocSnapFlags::SnapY2)) )
-                                selections.setEndDrag(x2, y2);
+                                selections.endDrag = {s32(x2), s32(y2)};
                         }
                         else if ( currLayer == Layer::CutCopyPaste && snapCutCopyPasteSel )
                         {
@@ -3239,7 +3243,7 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
                         else if ( currLayer == Layer::Units )
                         {
                             s32 xc = mapHoverX, yc = mapHoverY;
-                            selections.setEndDrag(xc, yc);
+                            selections.endDrag = {xc, yc};
                             SnapSelEndDrag();
                         }
                     }
@@ -3266,7 +3270,7 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
                         
                         if ( currLayer == Layer::CutCopyPaste )
                         {
-                            selections.setEndDrag(mapHoverX, mapHoverY);
+                            selections.endDrag = {mapHoverX, mapHoverY};
                             u16 gridWidth = 32, gridHeight = 32;
                             if ( snapCutCopyPasteSel && (cutCopyPasteSnapTileOverGrid || scGraphics.GetGridSize(0, gridWidth, gridHeight))
                                 && gridWidth > 0 && gridHeight > 0 )
@@ -3275,7 +3279,7 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
                             }
                         }
                         else
-                            selections.setEndDrag(mapHoverX, mapHoverY);
+                            selections.endDrag = {mapHoverX, mapHoverY};
                         
                         PaintMap(nullptr, chkd.maps.clipboard.isPasting());
                     }
@@ -3308,7 +3312,7 @@ void GuiMap::MouseHover(HWND hWnd, int x, int y, WPARAM wParam)
 
                     x = (s32(((double)x)/getZoom())) + screenLeft,
                     y = (s32(((double)y)/getZoom())) + screenTop;
-                    selections.setEndDrag(x, y);
+                    selections.endDrag = {x, y};
                     TrackMouse(100);
                 }
             }
@@ -3376,7 +3380,7 @@ void GuiMap::LButtonUp(HWND hWnd, int x, int y, WPARAM wParam)
             finalizeFogOperation();
         }
 
-        selections.setStartDrag(-1, -1);
+        selections.endDrag = {-1, -1};
         setDragging(false);
         RedrawWindow(hWnd, NULL, NULL, RDW_INVALIDATE);
     }
@@ -3415,32 +3419,32 @@ void GuiMap::PanTimerTimeout()
 
 void GuiMap::FinalizeTerrainSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 {
-    selections.setEndDrag((mapX+16)/32, (mapY+16)/32);
-    selections.setStartDrag(selections.getStartDrag().x/32, selections.getStartDrag().y/32);
+    selections.endDrag = {(mapX+16)/32, (mapY+16)/32};
+    selections.startDrag = {selections.startDrag.x/32, selections.startDrag.y/32};
     u16 width = (u16)Scenario::getTileWidth();
                     
     if ( wParam == MK_CONTROL && selections.startEqualsEndDrag() ) // Add/remove single tile to/front existing selection
     {
-        selections.setEndDrag(mapX/32, mapY/32);
+        selections.endDrag = {mapX/32, mapY/32};
                             
-        u16 tileValue = Scenario::getTile((u16)selections.getEndDrag().x, (u16)selections.getEndDrag().y);
-        selections.addTile(tileValue, (u16)selections.getEndDrag().x, (u16)selections.getEndDrag().y);
+        u16 tileValue = Scenario::getTile((u16)selections.endDrag.x, (u16)selections.endDrag.y);
+        selections.addTile(tileValue, (u16)selections.endDrag.x, (u16)selections.endDrag.y);
     }
     else // Add/remove multiple tiles from selection
     {
         selections.sortDragPoints();
     
-        if ( selections.getStartDrag().y < selections.getEndDrag().y &&
-             selections.getStartDrag().x < selections.getEndDrag().x )
+        if ( selections.startDrag.y < selections.endDrag.y &&
+             selections.startDrag.x < selections.endDrag.x )
         {
-            if ( selections.getEndDrag().x > LONG(Scenario::getTileWidth()) )
-                selections.setEndDrag((s32)Scenario::getTileWidth(), selections.getEndDrag().y);
-            if ( selections.getEndDrag().y > LONG(Scenario::getTileHeight()) )
-                selections.setEndDrag(selections.getEndDrag().x, (s32)Scenario::getTileHeight());
+            if ( selections.endDrag.x > LONG(Scenario::getTileWidth()) )
+                selections.endDrag = {(s32)Scenario::getTileWidth(), selections.endDrag.y};
+            if ( selections.endDrag.y > LONG(Scenario::getTileHeight()) )
+                selections.endDrag = {selections.endDrag.x, (s32)Scenario::getTileHeight()};
     
-            for ( int yRow = selections.getStartDrag().y; yRow < selections.getEndDrag().y; yRow++ )
+            for ( int yRow = selections.startDrag.y; yRow < selections.endDrag.y; yRow++ )
             {
-                for ( int xRow = selections.getStartDrag().x; xRow < selections.getEndDrag().x; xRow++ )
+                for ( int xRow = selections.startDrag.x; xRow < selections.endDrag.x; xRow++ )
                 {
                     u16 tileValue = Scenario::getTile(xRow, yRow);
                     selections.addTile(tileValue, xRow, yRow);
@@ -3452,10 +3456,10 @@ void GuiMap::FinalizeTerrainSelection(HWND hWnd, int mapX, int mapY, WPARAM wPar
 
 void GuiMap::FinalizeLocationDrag(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 {
-    if ( selections.hasMoved() ) // attempt to move, resize, or create location
+    if ( selections.moved ) // attempt to move, resize, or create location
     {
-        u32 startX = selections.getStartDrag().x,
-            startY = selections.getStartDrag().y,
+        u32 startX = selections.startDrag.x,
+            startY = selections.startDrag.y,
             endX = mapX,
             endY = mapY;
         s32 dragX = endX-startX;
@@ -3648,7 +3652,7 @@ void GuiMap::FinalizeLocationDrag(HWND hWnd, int mapX, int mapY, WPARAM wParam)
     }
     else // attempt to select location, if you aren't resizing
     {
-        selections.selectLocation(selections.getStartDrag().x, selections.getStartDrag().y, !LockAnywhere());
+        selections.selectLocation(selections.startDrag.x, selections.startDrag.y, !LockAnywhere());
         selections.setDrags(-1, -1);
         if ( chkd.locationWindow.getHandle() != NULL )
             chkd.locationWindow.RefreshLocationInfo();
@@ -3660,7 +3664,7 @@ void GuiMap::FinalizeLocationDrag(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 
 void GuiMap::FinalizeUnitSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 {
-    selections.setEndDrag(mapX, mapY);
+    selections.endDrag = {mapX, mapY};
     selections.sortDragPoints();
     if ( wParam != MK_CONTROL )
         // Remove selected units
@@ -3668,7 +3672,7 @@ void GuiMap::FinalizeUnitSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam)
         if ( chkd.unitWindow.getHandle() != nullptr )
         {
             chkd.unitWindow.SetChangeHighlightOnly(true);
-            auto & selUnits = selections.getUnits();
+            auto & selUnits = selections.units;
             for ( u16 unitIndex : selUnits )
                 chkd.unitWindow.DeselectIndex(unitIndex);
             
@@ -3701,8 +3705,8 @@ void GuiMap::FinalizeUnitSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam)
             unitBottom = unit.yc + chkd.scData.units.getUnit(Sc::Unit::Type::TerranMarine).unitSizeDown;
         }
     
-        if ( selections.getStartDrag().x <= unitRight && selections.getEndDrag().x >= unitLeft
-            && selections.getStartDrag().y <= unitBottom && selections.getEndDrag().y >= unitTop )
+        if ( selections.startDrag.x <= unitRight && selections.endDrag.x >= unitLeft
+            && selections.startDrag.y <= unitBottom && selections.endDrag.y >= unitTop )
         {
             bool wasSelected = selections.unitIsSelected((u16)i);
             if ( wasSelected )
@@ -3727,7 +3731,7 @@ void GuiMap::FinalizeUnitSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 
 void GuiMap::FinalizeDoodadSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 {
-    selections.setEndDrag(mapX, mapY);
+    selections.endDrag = {mapX, mapY};
     selections.sortDragPoints();
     if ( wParam != MK_CONTROL ) // Remove selected doodads
         selections.removeDoodads();
@@ -3747,10 +3751,10 @@ void GuiMap::FinalizeDoodadSelection(HWND hWnd, int mapX, int mapY, WPARAM wPara
             s32 right = s32(doodad.xc) + doodadWidth/2;
             s32 bottom = s32(doodad.yc) + doodadHeight/2;
 
-            s32 selLeft = selections.getStartDrag().x;
-            s32 selTop = selections.getStartDrag().y;
-            s32 selRight = selections.getEndDrag().x;
-            s32 selBottom = selections.getEndDrag().y;
+            s32 selLeft = selections.startDrag.x;
+            s32 selTop = selections.startDrag.y;
+            s32 selRight = selections.endDrag.x;
+            s32 selBottom = selections.endDrag.y;
             bool inBounds = left <= selRight && top <= selBottom && right >= selLeft && bottom >= selTop;
             if ( inBounds )
                 selections.addDoodad(i);
@@ -3762,14 +3766,14 @@ void GuiMap::FinalizeDoodadSelection(HWND hWnd, int mapX, int mapY, WPARAM wPara
 
 void GuiMap::FinalizeSpriteSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 {
-    selections.setEndDrag(mapX, mapY);
+    selections.endDrag = {mapX, mapY};
     selections.sortDragPoints();
     if ( wParam != MK_CONTROL )
     {
         if ( chkd.spriteWindow.getHandle() != nullptr )
         {
             chkd.spriteWindow.SetChangeHighlightOnly(true);
-            auto & selSprites = selections.getSprites();
+            auto & selSprites = selections.sprites;
             for ( auto spriteIndex : selSprites )
                 chkd.spriteWindow.DeselectIndex(u16(spriteIndex));
             
@@ -3786,8 +3790,8 @@ void GuiMap::FinalizeSpriteSelection(HWND hWnd, int mapX, int mapY, WPARAM wPara
             spriteTop = 0, spriteBottom = 0;
 
         const Chk::Sprite & sprite = Scenario::getSprite(i);
-        if ( selections.getStartDrag().x <= sprite.xc && selections.getEndDrag().x >= sprite.xc &&
-             selections.getStartDrag().y <= sprite.yc && selections.getEndDrag().y >= sprite.yc )
+        if ( selections.startDrag.x <= sprite.xc && selections.endDrag.x >= sprite.xc &&
+             selections.startDrag.y <= sprite.yc && selections.endDrag.y >= sprite.yc )
         {
             bool wasSelected = selections.spriteIsSelected(i);
             if ( wasSelected )
@@ -3812,16 +3816,16 @@ void GuiMap::FinalizeSpriteSelection(HWND hWnd, int mapX, int mapY, WPARAM wPara
 
 void GuiMap::FinalizeFogSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 {
-    s32 startTileX = (selections.getStartDrag().x+16)/32;
-    s32 startTileY =  (selections.getStartDrag().y+16)/32;
-    s32 endTileX = (selections.getEndDrag().x+16)/32;
-    s32 endTileY = (selections.getEndDrag().y+16)/32;
+    s32 startTileX = (selections.startDrag.x+16)/32;
+    s32 startTileY =  (selections.startDrag.y+16)/32;
+    s32 endTileX = (selections.endDrag.x+16)/32;
+    s32 endTileY = (selections.endDrag.y+16)/32;
 
     bool startEqualsEnd = startTileX == endTileX && startTileY == endTileY;
     if ( wParam == MK_CONTROL && startEqualsEnd ) // Add/remove single fog tile to/front existing selection
     {
-        s32 endTileX = (selections.getEndDrag().x)/32;
-        s32 endTileY =  (selections.getEndDrag().y)/32;
+        s32 endTileX = (selections.endDrag.x)/32;
+        s32 endTileY =  (selections.endDrag.y)/32;
         selections.addFogTile(endTileX, endTileY);
     }
     else if ( startTileX < endTileX && startTileY < endTileY ) // Add/remove multiple fog tiles from selection
@@ -3842,7 +3846,7 @@ void GuiMap::FinalizeFogSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 void GuiMap::FinalizeCutCopyPasteSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 {
     bool snapped = false;
-    selections.setEndDrag(mapX, mapY);
+    selections.endDrag = {mapX, mapY};
     if ( snapCutCopyPasteSel )
     {
         u16 gridWidth = 32, gridHeight = 32;
@@ -3864,10 +3868,10 @@ void GuiMap::FinalizeCutCopyPasteSelection(HWND hWnd, int mapX, int mapY, WPARAM
 
     if ( cutCopyPasteTerrain )
     {
-        s32 startTileX = (selections.getStartDrag().x+16)/32;
-        s32 startTileY =  (selections.getStartDrag().y+16)/32;
-        s32 endTileX = (selections.getEndDrag().x+16)/32;
-        s32 endTileY = (selections.getEndDrag().y+16)/32;
+        s32 startTileX = (selections.startDrag.x+16)/32;
+        s32 startTileY =  (selections.startDrag.y+16)/32;
+        s32 endTileX = (selections.endDrag.x+16)/32;
+        s32 endTileY = (selections.endDrag.y+16)/32;
 
         bool startEqualsEnd = startTileX == endTileX && startTileY == endTileY;
         if ( wParam == MK_CONTROL && startEqualsEnd ) // Add/remove single tile to/front existing selection
@@ -3894,16 +3898,16 @@ void GuiMap::FinalizeCutCopyPasteSelection(HWND hWnd, int mapX, int mapY, WPARAM
     }
 
     if ( cutCopyPasteUnits )
-        FinalizeUnitSelection(hWnd, selections.getEndDrag().x, selections.getEndDrag().y, wParam);
+        FinalizeUnitSelection(hWnd, selections.endDrag.x, selections.endDrag.y, wParam);
 
     if ( cutCopyPasteDoodads )
-        FinalizeDoodadSelection(hWnd, selections.getEndDrag().x, selections.getEndDrag().y, wParam);
+        FinalizeDoodadSelection(hWnd, selections.endDrag.x, selections.endDrag.y, wParam);
 
     if ( cutCopyPasteSprites )
-        FinalizeSpriteSelection(hWnd, selections.getEndDrag().x, selections.getEndDrag().y, wParam);
+        FinalizeSpriteSelection(hWnd, selections.endDrag.x, selections.endDrag.y, wParam);
 
     if ( cutCopyPasteFog )
-        FinalizeFogSelection(hWnd, selections.getEndDrag().x, selections.getEndDrag().y, wParam);
+        FinalizeFogSelection(hWnd, selections.endDrag.x, selections.endDrag.y, wParam);
 }
 
 LRESULT GuiMap::ConfirmWindowClose(HWND hWnd)
@@ -3984,8 +3988,8 @@ void GuiMap::SetSkin(GuiMap::Skin skin)
     if ( skin == this->skin )
         return;
 
-    // Validate the skin and if remastered, turn it into Scr::GraphicsData::RenderSettings
-    Scr::GraphicsData::RenderSettings renderSettings {
+    // Validate the skin and if remastered, turn it into Scr::GraphicsData::LoadSettings
+    Scr::GraphicsData::LoadSettings loadSettings {
         .visualQuality = Scr::VisualQuality::SD,
         .skinId = Scr::Skin::Id::Classic,
         .tileset = Sc::Terrain::Tileset(MapFile::getTileset() % Sc::Terrain::NumTilesets),
@@ -3993,13 +3997,13 @@ void GuiMap::SetSkin(GuiMap::Skin skin)
     };
     switch ( skin )
     {
-        case Skin::ClassicGDI: renderSettings.visualQuality = Scr::VisualQuality::SD; renderSettings.skinId = Scr::Skin::Id::Classic; break;
-        case Skin::ClassicGL: renderSettings.visualQuality = Scr::VisualQuality::SD; renderSettings.skinId = Scr::Skin::Id::Classic; break;
-        case Skin::ScrSD: renderSettings.visualQuality = Scr::VisualQuality::SD; renderSettings.skinId = Scr::Skin::Id::Remastered; break;
-        case Skin::ScrHD2: renderSettings.visualQuality = Scr::VisualQuality::HD2; renderSettings.skinId = Scr::Skin::Id::Remastered; break;
-        case Skin::ScrHD: renderSettings.visualQuality = Scr::VisualQuality::HD; renderSettings.skinId = Scr::Skin::Id::Remastered; break;
-        case Skin::CarbotHD2: renderSettings.visualQuality = Scr::VisualQuality::HD2; renderSettings.skinId = Scr::Skin::Id::Carbot; break;
-        case Skin::CarbotHD: renderSettings.visualQuality = Scr::VisualQuality::HD; renderSettings.skinId = Scr::Skin::Id::Carbot; break;
+        case Skin::ClassicGDI: loadSettings.visualQuality = Scr::VisualQuality::SD; loadSettings.skinId = Scr::Skin::Id::Classic; break;
+        case Skin::ClassicGL: loadSettings.visualQuality = Scr::VisualQuality::SD; loadSettings.skinId = Scr::Skin::Id::Classic; break;
+        case Skin::ScrSD: loadSettings.visualQuality = Scr::VisualQuality::SD; loadSettings.skinId = Scr::Skin::Id::Remastered; break;
+        case Skin::ScrHD2: loadSettings.visualQuality = Scr::VisualQuality::HD2; loadSettings.skinId = Scr::Skin::Id::Remastered; break;
+        case Skin::ScrHD: loadSettings.visualQuality = Scr::VisualQuality::HD; loadSettings.skinId = Scr::Skin::Id::Remastered; break;
+        case Skin::CarbotHD2: loadSettings.visualQuality = Scr::VisualQuality::HD2; loadSettings.skinId = Scr::Skin::Id::Carbot; break;
+        case Skin::CarbotHD: loadSettings.visualQuality = Scr::VisualQuality::HD; loadSettings.skinId = Scr::Skin::Id::Carbot; break;
         default: throw std::logic_error("Unrecognized skin!");
     }
 
@@ -4038,11 +4042,11 @@ void GuiMap::SetSkin(GuiMap::Skin skin)
     if ( skin != Skin::ClassicGDI )
     {
         // Perform the data load (requires an OpenGL context)
-        if ( chkd.scrData->isLoaded(renderSettings) )
+        if ( chkd.scrData->isLoaded(loadSettings) )
         {
             auto fileData = ByteBuffer(4);
             ArchiveCluster archiveCluster {std::vector<ArchiveFilePtr>{}};
-            this->scrGraphics->load(chkd.scData, *chkd.scrData, renderSettings, archiveCluster, fileData);
+            this->scrGraphics->load(chkd.scData, *chkd.scrData, loadSettings, archiveCluster, fileData);
             logger.info() << "Switched to skin: " << getSkinName(skin) << '\n';
         }
         else
@@ -4067,7 +4071,7 @@ void GuiMap::SetSkin(GuiMap::Skin skin)
             }
 
             auto fileData = ByteBuffer(1024*1024*120); // 120MB
-            this->scrGraphics->load(chkd.scData, *chkd.scrData, renderSettings, *archiveCluster, fileData);
+            this->scrGraphics->load(chkd.scData, *chkd.scrData, loadSettings, *archiveCluster, fileData);
             auto end = std::chrono::high_resolution_clock::now();
             logger.info() << "New skin loaded in " << std::chrono::duration_cast<std::chrono::milliseconds>(end-begin).count() << "ms\n";
         }

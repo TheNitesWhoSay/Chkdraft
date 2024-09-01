@@ -3116,6 +3116,9 @@ namespace Sc {
         static constexpr size_t PixelsPerTile = 32;
         static const std::vector<std::string> TilesetNames;
 
+        enum_t(TileNeighbor, u8, { Left = BIT_0, Top = BIT_1, Right = BIT_2, Bottom = BIT_3,
+            All = Left | Top | Right | Bottom, xLeft = x8BIT_0, xTop = x8BIT_1, xRight = x8BIT_2, xBottom = x8BIT_3, None = 0 });
+
         enum_t(Tileset, u16, { // u16
             Badlands = 0,
             SpacePlatform = 1,
