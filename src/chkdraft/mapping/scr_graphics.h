@@ -825,11 +825,10 @@ namespace Scr {
         gl::VertexVector<> triangleVertices6 {};
 
     public:
-        MapGrid<Sc::SystemColor> grids[2] {};
         bool fpsEnabled = true;
-        bool useGameTileNums = false; // MTXM versus TILE
         bool displayIsomNums = false;
         bool displayTileNums = false;
+        bool useGameTileNums = false; // Use mtxm instead of tile when displayTileNums is set
         bool displayBuildability = false;
         bool displayElevations = false;
         bool clipLocationNames = true; // If true, text is wrapped and restricted to location bounds
