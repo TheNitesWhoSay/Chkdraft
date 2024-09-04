@@ -458,7 +458,7 @@ namespace Scr {
                 }
             };
 
-            class SpriteShader : public gl::Program
+            class SpriteVertexShader : public gl::Program
             {
                 static constexpr std::string_view vertexShaderCode =
                     "#version 330 core\n"
@@ -470,7 +470,7 @@ namespace Scr {
                     
                     "uniform mat4 posToNdc;"
                     "uniform float imageScale;"
-                    "uniform vec2 image[6];" // centerPos, animSize, animTexScale, frameSize, framePosOffset, frameTexOffset
+                    "uniform vec2 image[7];" // centerPos, animSize, animTexScale, frameSize, framePosOffset, frameTexOffset, frameTexFlipper{mul,add}
 
                     "void main() {"
                     "    vec2 centerPos = image[0];"
@@ -479,18 +479,30 @@ namespace Scr {
                     "    vec2 frameSize = image[3];"
                     "    vec2 framePosOffset = image[4];"
                     "    vec2 frameTexOffset = image[5];"
+                    "    vec2 frameTexFlipper = image[6];"
 
+                    "    vec2 flippedNormalTex = vec2(frameTexFlipper.x*normalTex.x + frameTexFlipper.y, normalTex.y);"
                     "    vec2 imageOriginOffset = -animSize/2.0 + framePosOffset;"
                     "    gl_Position = posToNdc * vec4(centerPos + imageScale*(imageOriginOffset + normalPos*frameSize), 0.0, 1.0);"
-                    "    texCoord = animTexScale * (frameTexOffset + normalTex*frameSize);"
+                    "    texCoord = animTexScale * (frameTexOffset + flippedNormalTex*frameSize);"
                     "};";
 
+                public:
+                    gl::uniform::Mat4 posToNdc { "posToNdc" };
+                    gl::uniform::Float imageScale { "imageScale" };
+                    gl::uniform::Vec2Array image { "image" };
+
+                    void attach()
+                    {
+                        gl::Program::attachShader(gl::Shader(gl::Shader::Type::vertex, vertexShaderCode));
+                    }
+            };
+
+            class SpriteShader : public SpriteVertexShader
+            {
                 static inline const std::string filePath = "ShadersGLSL\\sprite_frag.glsl";
 
             public:
-                gl::uniform::Mat4 posToNdc { "posToNdc" };
-                gl::uniform::Float imageScale { "imageScale" };
-                gl::uniform::Vec2Array image { "image" };
                 gl::uniform::Sampler2D spriteTex { "spriteTex" };
                 gl::uniform::Sampler2D teamColorTex { "teamcolorTex" };
                 gl::uniform::Color multiplyColor { "multiplyColor" };
@@ -500,11 +512,32 @@ namespace Scr {
                 template <typename Preprocessor>
                 void load(ArchiveCluster & archiveCluster, Preprocessor && preprocessor) {
                     gl::Program::create();
-                    gl::Program::attachShader(gl::Shader(gl::Shader::Type::vertex, vertexShaderCode));
+                    SpriteVertexShader::attach();
                     gl::Program::attachShader(std::move(fragmentShaderFromDatFile(archiveCluster, filePath, std::forward<Preprocessor>(preprocessor))));
                     gl::Program::link();
                     gl::Program::use();
                     gl::Program::findUniforms(posToNdc, imageScale, image, spriteTex, teamColorTex, hallucinate, multiplyColor, teamColor);
+                    posToNdc.loadIdentity();
+                }
+            };
+
+            class SelectionShader : public SpriteVertexShader
+            {
+                static inline const std::string filePath = "ShadersGLSL\\sprite_solid_frag.glsl";
+
+            public:
+                gl::uniform::Sampler2D spriteTex { "spriteTex" };
+                gl::uniform::Color solidColor { "solidColor" };
+                gl::uniform::Color multiplyColor { "multiplyColor" };
+
+                template <typename Preprocessor>
+                void load(ArchiveCluster & archiveCluster, Preprocessor && preprocessor) {
+                    gl::Program::create();
+                    SpriteVertexShader::attach();
+                    gl::Program::attachShader(std::move(fragmentShaderFromDatFile(archiveCluster, filePath, std::forward<Preprocessor>(preprocessor))));
+                    gl::Program::link();
+                    gl::Program::use();
+                    gl::Program::findUniforms(posToNdc, imageScale, image, spriteTex, solidColor, multiplyColor);
                     posToNdc.loadIdentity();
                 }
             };
@@ -629,6 +662,7 @@ namespace Scr {
             };
 
             SpriteShader spriteShader {}; // Remastered
+            SelectionShader selectionShader {}; // Remastered
             TileShader tileShader {}; // Remastered
             PaletteShader paletteShader {}; // Remastered
             WaterShader waterShader {}; // Remastered
@@ -803,6 +837,7 @@ namespace Scr {
         u32 nIncrement = 0;
         u64 initialTickCount = 0;
 
+        Sc::Data & scData;
         GuiMap & map; // Reference to the map this instance of graphics renders
         gl::Font* textFont = nullptr;
         Scr::GraphicsData::LoadSettings loadSettings {};
@@ -817,15 +852,46 @@ namespace Scr {
         gl::VertexArray<6*8> waterVertices {}; // 6 verticies forming the two triangles for a quad, 8 elements per vertex (pos.xy, tex.xy, map.xy, map2.xy)
         gl::VertexArray<6*4> animVertices {}; // 6 verticies forming the two triangles for a quad, 4 elements per vertex (posX, posY, texX, texY)
         gl::VertexVector<> lineVertices {};
+        gl::VertexVector<> lineVertices2 {};
         gl::VertexVector<> triangleVertices {};
         gl::VertexVector<> triangleVertices2 {};
         gl::VertexVector<> triangleVertices3 {};
         gl::VertexVector<> triangleVertices4 {};
         gl::VertexVector<> triangleVertices5 {};
         gl::VertexVector<> triangleVertices6 {};
+        
+        u32 getPlayerColor(u8 player);
+        size_t getImageId(Sc::Unit::Type unitType);
+        size_t getImageId(Sc::Sprite::Type spriteType);
+        size_t getImageId(Sc::Sprite::Type spriteType, bool isDrawnAsSprite);
+        size_t getImageId(const Chk::Unit & unit);
+        size_t getImageId(const Chk::Sprite & sprite);
+        struct UnitInfo {
+            size_t imageId;
+            size_t imageFrame;
+            size_t subUnitImageId;
+            point subUnitOffset;
+            size_t subUnitFrame;
+            size_t overlayImageId;
+            size_t attachOverlayImageId;
+            size_t attachFrame;
+        };
+        UnitInfo getUnitInfo(Sc::Unit::Type unitType, bool attached, bool lifted);
+        struct SelectInfo {
+            size_t imageId;
+            s32 yOffset;
+        };
+        SelectInfo getSelInfo(Sc::Unit::Type unitType);
+        SelectInfo getSelInfo(Sc::Sprite::Type spriteType, bool isDrawnAsSprite);
+        Scr::Animation & getImage(size_t imageId);
+        Scr::Animation & getImage(Sc::Unit::Type unitType);
+        Scr::Animation & getImage(Sc::Sprite::Type spriteType);
+        Scr::Animation & getImage(Sc::Sprite::Type spriteType, bool isDrawnAsSprite);
+        Scr::Animation & getImage(const Chk::Unit & unit);
+        Scr::Animation & getImage(const Chk::Sprite & sprite);
 
     public:
-        bool fpsEnabled = true;
+        bool fpsEnabled = false;
         bool displayIsomNums = false;
         bool displayTileNums = false;
         bool useGameTileNums = false; // Use mtxm instead of tile when displayTileNums is set
@@ -833,7 +899,7 @@ namespace Scr {
         bool displayElevations = false;
         bool clipLocationNames = true; // If true, text is wrapped and restricted to location bounds
 
-        MapGraphics(GuiMap & guiMap);
+        MapGraphics(Sc::Data & data, GuiMap & guiMap);
 
         void updateGrid(); // Occurs when the map view, grid size or grid color changes
         void mapViewChanged(); // Occurs when the window bounds, zoom-level or skin changes
@@ -851,28 +917,40 @@ namespace Scr {
         void setGridColor(uint32_t gridColor);
         void setGridSize(s32 gridSize);
 
-        void load(Sc::Data & scData, Scr::GraphicsData & scrDat, const Scr::GraphicsData::LoadSettings & loadSettings, ArchiveCluster & archiveCluster, ByteBuffer & fileData);
+        void load(Scr::GraphicsData & scrDat, const Scr::GraphicsData::LoadSettings & loadSettings, ArchiveCluster & archiveCluster, ByteBuffer & fileData);
 
         void drawTestTex(gl::Texture & tex);
 
         void drawGrid();
-        void drawClassicStars(Sc::Data & scData);
+        void drawClassicStars();
         void drawStars(u32 multiplyColor);
-        void drawTileNums(Sc::Data & scData);
+        void drawTileNums();
         void drawIsomTileNums();
-        void drawTileOverlays(Sc::Data & scData);
-        void drawTileVertices(Scr::Grp & tilesetGrp, s32 width, s32 height, const glm::mat4x4 & positionTransformation);
-        void drawTerrain(Sc::Data & scData);
-        void drawTilesetIndexed(Sc::Data & scData, s32 left, s32 top, s32 width, s32 height, s32 scrollY);
-        void prepareImageRendering();
-        void drawImage(Scr::Animation & animation, s32 x, s32 y, u32 frame, u32 multiplyColor, u32 playerColor, bool hallucinate);
-        void drawClassicImage(Sc::Data & scData, gl::Palette & palette, s32 x, s32 y, u32 imageId, Chk::PlayerColor color);
-        void drawImages(Sc::Data & scData);
+        void drawTileOverlays();
+        void drawTileVertices(Scr::Grp & tilesetGrp, s32 width, s32 height, const glm::mat4x4 & positionTransformation, bool isBaseTerrain = false);
+        void drawTerrain();
+        void drawTilesetIndexed(s32 left, s32 top, s32 width, s32 height, s32 scrollY);
+        void drawTileSelection();
+        void prepareImageRendering(bool isSelections = false);
+        void drawImage(Scr::Animation & animation, s32 x, s32 y, u32 frame, u32 multiplyColor, u32 playerColor, bool hallucinate, bool flipped = false);
+        void drawSelectionImage(Scr::Animation & animation, s32 x, s32 y, u32 frame, u32 multiplyColor);
+        void drawClassicImage(gl::Palette & palette, s32 x, s32 y, u32 frame, u32 imageId, Chk::PlayerColor color, bool flipped = false);
+        void drawUnitSelection(Sc::Unit::Type unitType, s32 x, s32 y);
+        void drawSpriteSelection(Sc::Sprite::Type spriteType, s32 x, s32 y, bool isDrawnAsSprite);
+        void drawImageSelections();
+        void drawUnit(const Chk::Unit & unit);
+        void drawSprite(const Chk::Sprite & sprite);
+        void drawImages();
         void drawLocations();
+        void drawTemporaryLocations();
+        void drawSelectionRectangle(const gl::Rect2D<GLfloat> & rectangle);
         void drawFog();
+        void drawFogTileSelection();
+        void drawDoodadSelection();
         void drawFps();
+        void drawPastes();
 
-        void render(Sc::Data & scData);
+        void render();
 
         void updateGraphics(u64 ticks); // Runs every few ms, with ticks being the ms since the last frame
     };

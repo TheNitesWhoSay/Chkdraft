@@ -68,7 +68,7 @@ struct PasteUnitNode
     s32 yc = 0;
 
     PasteUnitNode() = delete;
-    PasteUnitNode(const Chk::Unit & unit) : unit(unit), xc(xc), yc(yc) {}
+    PasteUnitNode(const Chk::Unit & unit) : unit(unit), xc(unit.xc), yc(unit.yc) {}
 };
 
 struct PasteFogTileNode

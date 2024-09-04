@@ -129,7 +129,7 @@ void TerrainPaletteWindow::DoPaint()
             glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            CM->scrGraphics->drawTilesetIndexed(chkd.scData, rcCli.left, rcCli.top, rcCli.right-rcCli.left, rcCli.bottom-rcCli.top, tilesetIndexedYC);
+            CM->scrGraphics->drawTilesetIndexed(rcCli.left, rcCli.top, rcCli.right-rcCli.left, rcCli.bottom-rcCli.top, tilesetIndexedYC);
             
             glFlush();
             SwapBuffers(openGlDc->getDcHandle());

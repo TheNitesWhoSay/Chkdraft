@@ -1178,7 +1178,8 @@ namespace Chk {
         Green = 8,
         PaleYellow = 9,
         Tan = 10,
-        Azure_NeutralColor = 11
+        Azure_NeutralColor = 11,
+        None = std::numeric_limits<u8>::max()
     });
 
     constexpr size_t TotalColors = 12;

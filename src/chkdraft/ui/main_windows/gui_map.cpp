@@ -24,7 +24,7 @@ bool GuiMap::doAutoBackups = false;
 
 GuiMap::GuiMap(Clipboard & clipboard, const std::string & filePath) : MapFile(filePath),
     Chk::IsomCache(Scenario::tileset, Scenario::dimensions.tileWidth, Scenario::dimensions.tileHeight, chkd.scData.terrain.get(Scenario::tileset)),
-    clipboard(clipboard), scrGraphics{std::make_unique<Scr::MapGraphics>(*this)}
+    clipboard(clipboard), scrGraphics{std::make_unique<Scr::MapGraphics>(chkd.scData, *this)}
 {
     SetWinText(MapFile::getFileName());
     int layerSel = chkd.mainToolbar.layerBox.GetSel();
@@ -34,7 +34,7 @@ GuiMap::GuiMap(Clipboard & clipboard, const std::string & filePath) : MapFile(fi
 
 GuiMap::GuiMap(Clipboard & clipboard, FileBrowserPtr<SaveType> fileBrowser) : MapFile(fileBrowser),
     Chk::IsomCache(Scenario::tileset, Scenario::dimensions.tileWidth, Scenario::dimensions.tileHeight, chkd.scData.terrain.get(Scenario::tileset)),
-    clipboard(clipboard), scrGraphics{std::make_unique<Scr::MapGraphics>(*this)}
+    clipboard(clipboard), scrGraphics{std::make_unique<Scr::MapGraphics>(chkd.scData, *this)}
 {
     SetWinText(MapFile::getFileName());
     int layerSel = chkd.mainToolbar.layerBox.GetSel();
@@ -45,7 +45,7 @@ GuiMap::GuiMap(Clipboard & clipboard, FileBrowserPtr<SaveType> fileBrowser) : Ma
 GuiMap::GuiMap(Clipboard & clipboard, Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex, DefaultTriggers defaultTriggers)
     : MapFile(tileset, width, height),
     Chk::IsomCache(Scenario::tileset, Scenario::dimensions.tileWidth, Scenario::dimensions.tileHeight, chkd.scData.terrain.get(Scenario::tileset)),
-    clipboard(clipboard), scrGraphics{std::make_unique<Scr::MapGraphics>(*this)}
+    clipboard(clipboard), scrGraphics{std::make_unique<Scr::MapGraphics>(chkd.scData, *this)}
 {
     uint16_t val = ((Chk::IsomCache::getTerrainTypeIsomValue(terrainTypeIndex) << 4) | Chk::IsomRect::EditorFlag::Modified);
     Scenario::isomRects.assign(Scenario::getIsomWidth()*Scenario::getIsomHeight(), Chk::IsomRect{val, val, val, val});
@@ -1821,8 +1821,9 @@ void GuiMap::PaintMap(GuiMapPtr currMap, bool pasting)
             scrGraphics->displayBuildability = scGraphics.DisplayingBuildability();
             scrGraphics->displayElevations = scGraphics.DisplayingElevations();
             scrGraphics->clipLocationNames = scGraphics.ClippingLocationNames();
-
-            scrGraphics->render(chkd.scData);
+            
+            SnapSelEndDrag();
+            scrGraphics->render();
             
             glFlush();
             SwapBuffers(openGlDc->getDcHandle());
@@ -1830,7 +1831,18 @@ void GuiMap::PaintMap(GuiMapPtr currMap, bool pasting)
         }
         // TODO: temp copy of minimap render code
         if ( currMap == nullptr || currMap.get() == this ) // Only redraw minimap for active window
+        {
+            u16 scaledWidth = cliRect.right-cliRect.left,
+                scaledHeight = cliRect.bottom-cliRect.top;
+
+            if ( zoom < 1 || zoom > 1 )
+            {
+                scaledWidth = u16(((double)scaledWidth) / zoom),
+                scaledHeight = u16(((double)scaledHeight) / zoom);
+            }
+            EnsureBitmapSize(scaledWidth, scaledHeight);
             RedrawWindow(chkd.mainPlot.leftBar.miniMap.getHandle(), NULL, NULL, RDW_INVALIDATE | RDW_UPDATENOW);
+        }
         return;
     }
 
@@ -4046,7 +4058,7 @@ void GuiMap::SetSkin(GuiMap::Skin skin)
         {
             auto fileData = ByteBuffer(4);
             ArchiveCluster archiveCluster {std::vector<ArchiveFilePtr>{}};
-            this->scrGraphics->load(chkd.scData, *chkd.scrData, loadSettings, archiveCluster, fileData);
+            this->scrGraphics->load(*chkd.scrData, loadSettings, archiveCluster, fileData);
             logger.info() << "Switched to skin: " << getSkinName(skin) << '\n';
         }
         else
@@ -4071,7 +4083,7 @@ void GuiMap::SetSkin(GuiMap::Skin skin)
             }
 
             auto fileData = ByteBuffer(1024*1024*120); // 120MB
-            this->scrGraphics->load(chkd.scData, *chkd.scrData, loadSettings, *archiveCluster, fileData);
+            this->scrGraphics->load(*chkd.scrData, loadSettings, *archiveCluster, fileData);
             auto end = std::chrono::high_resolution_clock::now();
             logger.info() << "New skin loaded in " << std::chrono::duration_cast<std::chrono::milliseconds>(end-begin).count() << "ms\n";
         }
