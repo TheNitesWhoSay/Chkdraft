@@ -1446,7 +1446,7 @@ Scr::MapGraphics::MapGraphics(Sc::Data & scData, GuiMap & guiMap) : scData(scDat
 
 void Scr::MapGraphics::updateGrid()
 {
-    if ( gridSize > 0 )
+    if ( gridSize > 0 && gridVertices )
     {
         /* Grid lines are drawn in grid-space, which starts at (0, 0) and goes to (maxPossibleVerticalLines, maxPossibleHorizontalLines)
            Horizontal and vertical grid lines are placed from (x, y)->(1, 1) to (maxVerticalLines, maxHorizontalLines) at every 1.0 interval
@@ -1460,11 +1460,12 @@ void Scr::MapGraphics::updateGrid()
             .width = (mapViewBounds.right + largestGridSize)/gridSize,
             .height = (mapViewBounds.bottom + largestGridSize)/gridSize
         };
+        auto halfFragTranslation = glm::translate(glm::mat4x4(1.f), {.5f/windowDimensions.width, -.5f/windowDimensions.height, 0.f});
         auto gridScale = glm::scale(glm::mat4x4(1.f), {gridSize, gridSize, 1.f});
         auto gridTranslation = glm::translate(glm::mat4x4(1.f), {GLfloat(-gridOffset.x), GLfloat(-gridOffset.y), 0.f});
         auto ndcScale = glm::scale(glm::mat4x4(1.f), {2.f/mapViewDimensions.width, -2.f/mapViewDimensions.height, 1.f});
         auto ndcTranslation = glm::translate(glm::mat4x4(1.f), {-1.f, 1.f, 0.f});
-        gridToNdc = ndcTranslation * ndcScale * gridTranslation * gridScale;
+        gridToNdc = halfFragTranslation * ndcTranslation * ndcScale * gridTranslation * gridScale;
 
         auto & solidColorShader = renderDat->shaders->solidColorShader;
         solidColorShader.use();
@@ -1531,22 +1532,23 @@ void Scr::MapGraphics::mapViewChanged()
         .width = mapViewBounds.right + (32 - tileOffset.x) - (mapViewBounds.left - tileOffset.x),
         .height = mapViewBounds.bottom + (32 - tileOffset.y) - (mapViewBounds.top - tileOffset.y)
     };
+    auto halfFragTranslation = glm::translate(glm::mat4x4(1.f), {.5f/windowDimensions.width, -.5f/windowDimensions.height, 0.f});
     auto tileScale = glm::scale(glm::mat4x4(1.f), {32.f, 32.f, 1.f});
     auto gameTranslation = glm::translate(glm::mat4x4(1.f), {-mapViewBounds.left, -mapViewBounds.top, 0.f});
     auto windowToNdcScale = glm::scale(glm::mat4x4(1.f), {2.f/windowDimensions.width, -2.f/windowDimensions.height, 1.f});
     auto mapViewToNdcScale = glm::scale(glm::mat4x4(1.f), {2.f/mapViewDimensions.width, -2.f/mapViewDimensions.height, 1.f});
     auto ndcTranslation = glm::translate(glm::mat4x4(1.f), {-1.f, 1.f, 0.f});
     auto visualQualityScale = glm::scale(glm::mat4x4(1.f), {1.f/loadSettings.visualQuality.scale, 1.f/loadSettings.visualQuality.scale, 1.f});
-    gameToNdc = ndcTranslation * mapViewToNdcScale * gameTranslation;
-    starToNdc = ndcTranslation * mapViewToNdcScale * visualQualityScale;
-    tileToNdc = ndcTranslation * mapViewToNdcScale * gameTranslation * tileScale;
+
+    gameToNdc = halfFragTranslation * ndcTranslation * mapViewToNdcScale * gameTranslation;
+    starToNdc = halfFragTranslation * ndcTranslation * mapViewToNdcScale * visualQualityScale;
+    tileToNdc = halfFragTranslation * ndcTranslation * mapViewToNdcScale * gameTranslation * tileScale;
     glyphScaling = glm::mat2x2({2.f/windowDimensions.width, 0.f}, {0.f, -2.f/windowDimensions.height});
-    unscrolledWindowToNdc = ndcTranslation * windowToNdcScale;
+    unscrolledWindowToNdc = halfFragTranslation * ndcTranslation * windowToNdcScale;
 
     auto tileTexScale = glm::scale(glm::mat4x4(1.f), {1.f/128.f, 1.f/128.f, 1.f});
     auto tileTexTranslate = glm::translate(glm::mat4x4(1.f), {.5f/32.f/128.f, -.5f/32.f/128.f, 0.f}); // Sample center of texels to reduce lines when zooming
     tileToTex = tileTexScale * tileTexTranslate;
-
     updateGrid();
 }
 
@@ -1939,7 +1941,7 @@ void Scr::MapGraphics::drawIsomTileNums()
         auto & solidColorShader = renderDat->shaders->solidColorShader;
         solidColorShader.use();
         solidColorShader.posToNdc.setMat4(gameToNdc);
-        solidColorShader.solidColor.setColor(0xFF000000); // Line color: 0xAABBGGRR
+        solidColorShader.solidColor.setColor(0xFFFFFFFF); // Line color: 0xAABBGGRR
 
         lineVertices.bind();
         lineVertices.bufferData(gl::UsageHint::DynamicDraw);
@@ -2381,15 +2383,15 @@ void Scr::MapGraphics::drawTileSelection()
             if ( (tile.neighbors & TileNeighbor::Bottom) == TileNeighbor::Bottom )
             {
                 lineVertices.vertices.insert(lineVertices.vertices.end(), {
-                    rect.left, rect.bottom,
                     rect.right, rect.bottom,
+                    rect.left, rect.bottom,
                 });
             }
             if ( (tile.neighbors & TileNeighbor::Left) == TileNeighbor::Left )
             {
                 lineVertices.vertices.insert(lineVertices.vertices.end(), {
-                    rect.left, rect.top,
                     rect.left, rect.bottom,
+                    rect.left, rect.top,
                 });
             }
         }
@@ -2406,7 +2408,7 @@ void Scr::MapGraphics::drawTileSelection()
         triangleVertices.drawTriangles();
         if ( !lineVertices.vertices.empty() )
         {
-            solidColorShader.solidColor.setColor(0x80FFFF00); // Line color: 0xAABBGGRR
+            solidColorShader.solidColor.setColor(0xFFFFFF00); // Line color: 0xAABBGGRR
             lineVertices.bind();
             lineVertices.bufferData(gl::UsageHint::DynamicDraw);
             lineVertices.drawLines();
@@ -2670,13 +2672,13 @@ void Scr::MapGraphics::drawLocations()
         });
         lineVertices.vertices.insert(lineVertices.vertices.end(), {
             GLfloat(location.left), GLfloat(location.top),
-            GLfloat(location.left), GLfloat(location.bottom),
-            GLfloat(location.left), GLfloat(location.top),
             GLfloat(location.right), GLfloat(location.top),
             GLfloat(location.right), GLfloat(location.top),
             GLfloat(location.right), GLfloat(location.bottom),
+            GLfloat(location.right), GLfloat(location.bottom),
             GLfloat(location.left), GLfloat(location.bottom),
-            GLfloat(location.right), GLfloat(location.bottom)
+            GLfloat(location.left), GLfloat(location.bottom),
+            GLfloat(location.left), GLfloat(location.top),
         });
     }
     
@@ -2714,13 +2716,13 @@ void Scr::MapGraphics::drawLocations()
             auto & location = map.getLocation(selectedLocation);
             lineVertices.vertices.insert(lineVertices.vertices.end(), {
                 GLfloat(location.left), GLfloat(location.top),
-                GLfloat(location.left), GLfloat(location.bottom),
-                GLfloat(location.left), GLfloat(location.top),
                 GLfloat(location.right), GLfloat(location.top),
                 GLfloat(location.right), GLfloat(location.top),
                 GLfloat(location.right), GLfloat(location.bottom),
+                GLfloat(location.right), GLfloat(location.bottom),
                 GLfloat(location.left), GLfloat(location.bottom),
-                GLfloat(location.right), GLfloat(location.bottom)
+                GLfloat(location.left), GLfloat(location.bottom),
+                GLfloat(location.left), GLfloat(location.top),
             });
             solidColorShader.solidColor.setColor(0xFFFFFFFF); // Line color: 0xAABBGGRR
             lineVertices.bufferData(gl::UsageHint::DynamicDraw);
@@ -2792,10 +2794,10 @@ void Scr::MapGraphics::drawSelectionRectangle(const gl::Rect2D<GLfloat> & rectan
         rectangle.right, rectangle.top,
         rectangle.right, rectangle.top,
         rectangle.right, rectangle.bottom,
-        rectangle.left, rectangle.bottom,
         rectangle.right, rectangle.bottom,
+        rectangle.left, rectangle.bottom,
+        rectangle.left, rectangle.bottom,
         rectangle.left, rectangle.top,
-        rectangle.left, rectangle.bottom
     };
     lineVertices.bind();
     lineVertices.bufferData(gl::UsageHint::DynamicDraw);
@@ -2941,15 +2943,15 @@ void Scr::MapGraphics::drawFogTileSelection()
             if ( (tile.neighbors & TileNeighbor::Bottom) == TileNeighbor::Bottom )
             {
                 lineVertices.vertices.insert(lineVertices.vertices.end(), {
-                    rect.left, rect.bottom,
                     rect.right, rect.bottom,
+                    rect.left, rect.bottom,
                 });
             }
             if ( (tile.neighbors & TileNeighbor::Left) == TileNeighbor::Left )
             {
                 lineVertices.vertices.insert(lineVertices.vertices.end(), {
-                    rect.left, rect.top,
                     rect.left, rect.bottom,
+                    rect.left, rect.top,
                 });
             }
         }
@@ -3106,15 +3108,15 @@ void Scr::MapGraphics::drawPastes()
                         if ( (tile.neighbors & TileNeighbor::Bottom) == TileNeighbor::Bottom )
                         {
                             lineVertices.vertices.insert(lineVertices.vertices.end(), {
-                                rect.left*32, rect.bottom*32,
                                 rect.right*32, rect.bottom*32,
+                                rect.left*32, rect.bottom*32,
                             });
                         }
                         if ( (tile.neighbors & TileNeighbor::Left) == TileNeighbor::Left )
                         {
                             lineVertices.vertices.insert(lineVertices.vertices.end(), {
-                                rect.left*32, rect.top*32,
                                 rect.left*32, rect.bottom*32,
+                                rect.left*32, rect.top*32,
                             });
                         }
                     }
@@ -3126,7 +3128,7 @@ void Scr::MapGraphics::drawPastes()
                 auto & solidColorShader = renderDat->shaders->solidColorShader;
                 solidColorShader.use();
                 solidColorShader.posToNdc.setMat4(gameToNdc);
-                solidColorShader.solidColor.setColor(0x80FFFF00); // Line color: 0xAABBGGRR
+                solidColorShader.solidColor.setColor(0xFFFFFF00); // Line color: 0xAABBGGRR
                 lineVertices.bind();
                 lineVertices.bufferData(gl::UsageHint::DynamicDraw);
                 lineVertices.drawLines();
@@ -3179,15 +3181,15 @@ void Scr::MapGraphics::drawPastes()
                 if ( (fogTile.neighbors & TileNeighbor::Bottom) == TileNeighbor::Bottom )
                 {
                     lineVertices.vertices.insert(lineVertices.vertices.end(), {
-                        rect.left, rect.bottom,
                         rect.right, rect.bottom,
+                        rect.left, rect.bottom,
                     });
                 }
                 if ( (fogTile.neighbors & TileNeighbor::Left) == TileNeighbor::Left )
                 {
                     lineVertices.vertices.insert(lineVertices.vertices.end(), {
-                        rect.left, rect.top,
                         rect.left, rect.bottom,
+                        rect.left, rect.top,
                     });
                 }
             }
@@ -3384,10 +3386,10 @@ void Scr::MapGraphics::drawPastes()
                         rect.right, rect.top,
                         rect.right, rect.top,
                         rect.right, rect.bottom,
+                        rect.right, rect.bottom,
+                        rect.left, rect.bottom,
+                        rect.left, rect.bottom,
                         rect.left, rect.top,
-                        rect.left, rect.bottom,
-                        rect.left, rect.bottom,
-                        rect.right, rect.bottom
                     });
                 }
             }
@@ -3480,10 +3482,10 @@ void Scr::MapGraphics::drawPastes()
                 rect.right, rect.top,
                 rect.right, rect.top,
                 rect.right, rect.bottom,
-                rect.left, rect.bottom,
                 rect.right, rect.bottom,
+                rect.left, rect.bottom,
+                rect.left, rect.bottom,
                 rect.left, rect.top,
-                rect.left, rect.bottom
             };
             lineVertices.bind();
             lineVertices.bufferData(gl::UsageHint::DynamicDraw);

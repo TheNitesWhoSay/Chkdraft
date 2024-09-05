@@ -46,6 +46,8 @@ namespace gl
         GLsizei elementsPerVertex = 0;
 
     public:
+        constexpr operator bool() { return vbo != 0; }
+
         ~VerticesBase()
         {
             if ( vbo != 0 )
