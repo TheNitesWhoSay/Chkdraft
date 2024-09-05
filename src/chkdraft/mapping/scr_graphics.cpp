@@ -220,7 +220,7 @@ gl::Texture Scr::GraphicsData::loadDdsTexture(u8* data, gl::ContextSemaphore* co
     if ( mipMapCount > 1 )
     {
         texture.setMipmapLevelRange(0, mipMapCount-1);
-        texture.setMinMagFilters(GL_NEAREST_MIPMAP_LINEAR, GL_LINEAR);
+        texture.setMinMagFilters(GL_NEAREST_MIPMAP_NEAREST, GL_NEAREST);
     }
     else // No mipMaps
         texture.setMinMagFilters(GL_NEAREST);
@@ -285,7 +285,7 @@ gl::Texture Scr::GraphicsData::loadBmpLuminanceTexture(u8* data, GLsizei width, 
     texture.genTexture();
 
     texture.bind();
-    texture.setMinMagFilters(GL_LINEAR);
+    texture.setMinMagFilters(GL_NEAREST);
     texture.loadImage2D({
         .data = &data[4],
         .width = width,
@@ -495,7 +495,7 @@ bool Scr::GraphicsData::loadGrp(ArchiveCluster & archiveCluster, const std::file
                 if ( framedTex )
                 {
                     grp.texture[i].bind();
-                    grp.texture[i].setMinMagFilters(GL_LINEAR);
+                    grp.texture[i].setMinMagFilters(GL_NEAREST);
                     grp.texture[i].loadImage2D({
                         .data = (void*)offset,
                         .width = bmp->width,
@@ -586,7 +586,7 @@ void Scr::GraphicsData::loadMaskedTiles(ArchiveCluster & archiveCluster, Sc::Ter
 
     tileMasks.mergedTexture.genTexture();
     tileMasks.mergedTexture.bind();
-    tileMasks.mergedTexture.setMinMagFilters(GL_LINEAR);
+    tileMasks.mergedTexture.setMinMagFilters(GL_NEAREST);
     tileMasks.mergedTexture.loadImage2D(gl::Texture::Image2D {
         .data = NULL,
         .width = GLsizei(128*tilesetGrp.width),
@@ -604,7 +604,7 @@ void Scr::GraphicsData::loadMaskedTiles(ArchiveCluster & archiveCluster, Sc::Ter
     gl::Texture blackMask {};
     blackMask.genTexture();
     blackMask.bind();
-    blackMask.setMinMagFilters(GL_LINEAR);
+    blackMask.setMinMagFilters(GL_NEAREST);
     blackMask.loadImage2D(gl::Texture::Image2D {
         .data = &blackMaskedData[0],
         .width = GLsizei(tilesetGrp.width),
@@ -1547,8 +1547,7 @@ void Scr::MapGraphics::mapViewChanged()
     unscrolledWindowToNdc = halfFragTranslation * ndcTranslation * windowToNdcScale;
 
     auto tileTexScale = glm::scale(glm::mat4x4(1.f), {1.f/128.f, 1.f/128.f, 1.f});
-    auto tileTexTranslate = glm::translate(glm::mat4x4(1.f), {.5f/32.f/128.f, -.5f/32.f/128.f, 0.f}); // Sample center of texels to reduce lines when zooming
-    tileToTex = tileTexScale * tileTexTranslate;
+    tileToTex = tileTexScale;
     updateGrid();
 }
 
@@ -2145,7 +2144,7 @@ void Scr::MapGraphics::drawTileVertices(Scr::Grp & tilesetGrp, s32 width, s32 he
         gl::Texture screenTex {};
         screenTex.genTexture();
         screenTex.bind();
-        screenTex.setMinMagFilters(GL_LINEAR);
+        screenTex.setMinMagFilters(GL_NEAREST);
         screenTex.loadImage2D(gl::Texture::Image2D {
             .data = NULL,
             .width = GLsizei(width),
@@ -2259,6 +2258,9 @@ void Scr::MapGraphics::drawTileVertices(Scr::Grp & tilesetGrp, s32 width, s32 he
 
 void Scr::MapGraphics::drawTerrain()
 {
+    auto startOff = .6f/(128*renderDat->tiles->tilesetGrp.width);
+    auto endOff = -.1f/(128*renderDat->tiles->tilesetGrp.width);
+
     tileVertices.clear();
     auto tiles = scData.terrain.get(Sc::Terrain::Tileset(map.tileset));
     for ( s32 y=mapTileBounds.top; y<=mapTileBounds.bottom; ++y )
@@ -2274,12 +2276,12 @@ void Scr::MapGraphics::drawTerrain()
                 auto texX = GLfloat(megaTileIndex%128);
                 auto texY = GLfloat(megaTileIndex/128);
                 tileVertices.vertices.insert(tileVertices.vertices.end(), {
-                    GLfloat(x  ), GLfloat(y  ), texX    , texY,
-                    GLfloat(x+1), GLfloat(y  ), texX+1.f, texY,
-                    GLfloat(x  ), GLfloat(y+1), texX    , texY+1.f,
-                    GLfloat(x  ), GLfloat(y+1), texX    , texY+1.f,
-                    GLfloat(x+1), GLfloat(y+1), texX+1.f, texY+1.f,
-                    GLfloat(x+1), GLfloat(y  ), texX+1.f, texY
+                    GLfloat(x  ), GLfloat(y  ), texX+startOff  , texY+startOff,
+                    GLfloat(x+1), GLfloat(y  ), texX+1.f+endOff, texY+startOff,
+                    GLfloat(x  ), GLfloat(y+1), texX+startOff  , texY+1.f+endOff,
+                    GLfloat(x  ), GLfloat(y+1), texX+startOff  , texY+1.f+endOff,
+                    GLfloat(x+1), GLfloat(y+1), texX+1.f+endOff, texY+1.f+endOff,
+                    GLfloat(x+1), GLfloat(y  ), texX+1.f+endOff, texY+startOff
                 });
             }
         }
