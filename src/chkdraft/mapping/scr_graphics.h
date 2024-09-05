@@ -926,10 +926,12 @@ namespace Scr {
         void drawStars(u32 multiplyColor);
         void drawTileNums();
         void drawIsomTileNums();
+        void drawTileBuildabilityVertices();
+        void drawTileElevationVertices();
         void drawTileOverlays();
         void drawTileVertices(Scr::Grp & tilesetGrp, s32 width, s32 height, const glm::mat4x4 & positionTransformation, bool isBaseTerrain = false);
         void drawTerrain();
-        void drawTilesetIndexed(s32 left, s32 top, s32 width, s32 height, s32 scrollY);
+        void drawTilesetIndexed(s32 left, s32 top, s32 width, s32 height, s32 scrollY, std::optional<u16> selectedTile);
         void drawTileSelection();
         void prepareImageRendering(bool isSelections = false);
         void drawImage(Scr::Animation & animation, s32 x, s32 y, u32 frame, u32 multiplyColor, u32 playerColor, bool hallucinate, bool flipped = false);

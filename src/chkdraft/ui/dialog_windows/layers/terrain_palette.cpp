@@ -129,7 +129,10 @@ void TerrainPaletteWindow::DoPaint()
             glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            CM->scrGraphics->drawTilesetIndexed(rcCli.left, rcCli.top, rcCli.right-rcCli.left, rcCli.bottom-rcCli.top, tilesetIndexedYC);
+            auto selectedTile = chkd.maps.clipboard.hasQuickTiles() ?
+                std::make_optional<u16>(chkd.maps.clipboard.getTiles()[0].value) : std::nullopt;
+
+            CM->scrGraphics->drawTilesetIndexed(rcCli.left, rcCli.top, rcCli.right-rcCli.left, rcCli.bottom-rcCli.top, tilesetIndexedYC, selectedTile);
             
             glFlush();
             SwapBuffers(openGlDc->getDcHandle());
