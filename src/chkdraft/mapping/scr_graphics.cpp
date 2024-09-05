@@ -1383,8 +1383,8 @@ Scr::MapGraphics::UnitInfo Scr::MapGraphics::getUnitInfo(Sc::Unit::Type unitType
         .subUnitOffset = getSubUnitOffset(unitDat.subunit1),
         .subUnitFrame = getPreferredFrame(unitDat.subunit1),
         .overlayImageId = getOverlay(unitType),
-        .attachOverlayImageId = getAttachedOverlay(unitType),
-        .attachFrame = getAttachedOverlayPreferredFrame(unitType)
+        .attachOverlayImageId = attached ? getAttachedOverlay(unitType) : std::numeric_limits<size_t>::max(),
+        .attachFrame = attached ? getAttachedOverlayPreferredFrame(unitType) : std::numeric_limits<size_t>::max()
     };
 }
 
