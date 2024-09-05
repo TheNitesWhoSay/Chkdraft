@@ -546,7 +546,7 @@ namespace gl
         Font(FT_Face ftFontFace, hb_font_t* hbFont, std::shared_ptr<Memory> fontMemory)
             : ftFontFace(ftFontFace), hbFont(hbFont), fontMemory(fontMemory) {}
 
-        ~Font() { FT_Done_Face(ftFontFace); }
+        ~Font() {}
 
         static std::unique_ptr<Font> load(const std::string & fontFilePath, FT_F26Dot6 width, FT_F26Dot6 height, FT_UInt hozResolution, FT_UInt vertResolution)
         {
