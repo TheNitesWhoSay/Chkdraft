@@ -3569,14 +3569,19 @@ void Scr::MapGraphics::render()
         drawSelectionRectangle({GLfloat(map.selections.startDrag.x), GLfloat(map.selections.startDrag.y), GLfloat(map.selections.endDrag.x), GLfloat(map.selections.endDrag.y)});
 }
 
-void Scr::MapGraphics::updateGraphics(u64 ticks)
+bool Scr::MapGraphics::updateGraphics(u64 ticks)
 {
+    bool updated = false;
+
     // update classic/SD color cycling
     auto & tilesetGrp = renderDat->tiles->tilesetGrp;
     if ( tilesetGrp.palette )
     {
         if ( colorCycler.cycleColors(GetTickCount64(), map.getTileset(), tilesetGrp.palette.value()) )
+        {
             tilesetGrp.palette->update();
+            updated = true;
+        }
     }
 
     // update HD water animation
@@ -3594,6 +3599,15 @@ void Scr::MapGraphics::updateGraphics(u64 ticks)
             n2Frame++;
             if ( n2Frame >= renderDat->waterNormal[1]->frames )
                 n2Frame = 0;
+
+            updated = true;
         }
     }
+
+    // If HD water is used, updates happen on every change to ticks/ever call to updateGraphics
+    bool drawHdWater = loadSettings.visualQuality > VisualQuality::SD &&
+        (loadSettings.tileset == Sc::Terrain::Tileset::Badlands || loadSettings.tileset == Sc::Terrain::Tileset::Jungle ||
+            loadSettings.tileset == Sc::Terrain::Tileset::Arctic || loadSettings.tileset == Sc::Terrain::Tileset::Twilight);
+
+    return updated || drawHdWater;
 }

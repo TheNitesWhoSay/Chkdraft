@@ -103,7 +103,10 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
             }
         }
 
-        if ( CM != nullptr && colorCycler.cycleColors(GetTickCount64(), CM->getTileset(), CM->getPalette()) )
+
+        if ( CM != nullptr && CM->GetSkin() == GuiMap::Skin::ClassicGDI && colorCycler.cycleColors(GetTickCount64(), CM->getTileset(), CM->getPalette()) )
+            CM->Redraw(false);
+        else if ( CM != nullptr && CM->GetSkin() != GuiMap::Skin::ClassicGDI && CM->UpdateGlGraphics() )
             CM->Redraw(false);
 
         std::this_thread::sleep_for(std::chrono::milliseconds(1)); // Avoid consuming a core

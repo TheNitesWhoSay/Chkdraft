@@ -952,7 +952,7 @@ namespace Scr {
 
         void render();
 
-        void updateGraphics(u64 ticks); // Runs every few ms, with ticks being the ms since the last frame
+        bool updateGraphics(u64 ticks); // Runs every few ms, with ticks being the ms since the last frame
     };
 }
 

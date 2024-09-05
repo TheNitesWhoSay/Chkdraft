@@ -1797,6 +1797,18 @@ void GuiMap::SnapSelEndDrag()
     }
 }
 
+bool GuiMap::UpdateGlGraphics()
+{
+    auto currTickCount = GetTickCount64();
+    auto ticks = currTickCount - prevTickCount;
+    if ( ticks > 0 )
+    {
+        prevTickCount = currTickCount;
+        return scrGraphics->updateGraphics(ticks);
+    }
+    return false;
+}
+
 void GuiMap::PaintMap(GuiMapPtr currMap, bool pasting)
 {
     if ( CM.get() == this && this->skin != GuiMap::Skin::ClassicGDI )
@@ -1805,11 +1817,6 @@ void GuiMap::PaintMap(GuiMapPtr currMap, bool pasting)
         if ( getClientRect(cliRect) )
         {
             chkd.maps.setGlRenderTarget(this->openGlDc, *this);
-            auto currTickCount = GetTickCount64();
-            if ( currTickCount > prevTickCount )
-                scrGraphics->updateGraphics(currTickCount-prevTickCount);
-
-            prevTickCount = currTickCount;
 
             glClearColor(0.0f, 0.f, 0.f, 0.f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
