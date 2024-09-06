@@ -1,1 +1,0 @@
-You'll need to clone https://github.com/google/googletest here to be able to run unit tests.
