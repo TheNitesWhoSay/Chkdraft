@@ -6949,7 +6949,7 @@ std::vector<Chk::Trigger> Scenario::replaceBriefingTriggerRange(size_t beginInde
     {
         auto begin = this->briefingTriggers.begin()+beginIndex;
         auto end = this->briefingTriggers.begin()+endIndex;
-        std::vector<Chk::Trigger> replacedBriefingTriggers(this->briefingTriggers.begin()+beginIndex, this->briefingTriggers.end()+endIndex);
+        std::vector<Chk::Trigger> replacedBriefingTriggers(this->briefingTriggers.begin()+beginIndex, this->briefingTriggers.begin()+endIndex);
         this->briefingTriggers.erase(begin, end);
         this->briefingTriggers.insert(this->briefingTriggers.begin()+beginIndex, briefingTriggers.begin(), briefingTriggers.end());
         return replacedBriefingTriggers;
