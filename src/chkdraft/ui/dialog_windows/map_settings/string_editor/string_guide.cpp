@@ -47,7 +47,7 @@ StringGuideWindow::~StringGuideWindow()
 bool StringGuideWindow::CreateThis(HWND hParent)
 {
     if ( ClassWindow::RegisterWindowClass(0, NULL, NULL, WinLib::ResourceManager::getSolidBrush(RGB(0, 0, 0)), NULL, "StringGuide", NULL, false) &&
-         ClassWindow::CreateClassWindow(0, "", WS_OVERLAPPED|WS_CHILD|WS_VISIBLE, 463, 7, 125, 365, hParent, NULL) )
+         ClassWindow::CreateClassWindow(0, "", WS_OVERLAPPED|WS_CHILD|WS_VISIBLE, 463, 6, 128, 365, hParent, NULL) )
     {
         auto dc = this->getDeviceContext();
         dc.setDefaultFont();
