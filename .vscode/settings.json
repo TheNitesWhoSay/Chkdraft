@@ -1,0 +1,6 @@
+{
+    "files.exclude": {
+        "**/edit_resource.sln": true,
+        "**/edit_resource.vcxproj": true
+    }
+}

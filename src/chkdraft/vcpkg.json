@@ -1,0 +1,13 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg/master/scripts/vcpkg.schema.json",
+  "name": "chkdraft-lib",
+  "version": "0.1.0",
+  "dependencies": [
+    "gtest",
+    "icu",
+    "freetype",
+    "harfbuzz",
+    "glm"
+  ],
+  "builtin-baseline": "821100d967e1737d96414a308e3f7cbe0d1abf18"
+}
