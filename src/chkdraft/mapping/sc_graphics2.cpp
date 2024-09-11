@@ -167,7 +167,6 @@ bool Graphics::doAnimation()
         }
         activeIscriptUnit = nullptr;
         unk_unit_6D11F4 = nullptr;
-        logger.info() << "Anim\n";
         redraw = true;
     }
     return redraw;

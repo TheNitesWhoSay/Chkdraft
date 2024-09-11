@@ -4100,6 +4100,7 @@ bool Sc::Pcx::load(ArchiveCluster & archiveCluster, const std::string & assetArc
             if ( compSect < PcxFile::MaxOffset ) // Single RGB from palette starting at compSect*3
             {
                 paletteIndex.push_back(compSect);
+                palette.push_back(Sc::SystemColor(paletteData[compSect*3], paletteData[compSect*3+1], paletteData[compSect*3+2]));
                 rgbaPalette.push_back(Sc::Color<float>(paletteData[compSect*3], paletteData[compSect*3+1], paletteData[compSect*3+2]));
                 bgraPalette.push_back(Sc::SystemColor(paletteData[compSect*3], paletteData[compSect*3+1], paletteData[compSect*3+2]));
                 pixel++;
@@ -4107,9 +4108,10 @@ bool Sc::Pcx::load(ArchiveCluster & archiveCluster, const std::string & assetArc
             else // Repeat color at palette starting at colorIndex*3, compSect-MaxOffset times
             {
                 u8 colorIndex = pcxFile.data[dataOffset++];
-                paletteIndex.insert(paletteIndex.end(), compSect-PcxFile::MaxOffset, colorIndex);
                 Sc::Color<float> rgbaColor(paletteData[colorIndex*3], paletteData[colorIndex*3+1], paletteData[colorIndex*3+2]);
                 Sc::SystemColor bgraColor(paletteData[colorIndex*3], paletteData[colorIndex*3+1], paletteData[colorIndex*3+2]);
+                palette.insert(palette.end(), compSect-PcxFile::MaxOffset, bgraColor);
+                paletteIndex.insert(paletteIndex.end(), compSect-PcxFile::MaxOffset, colorIndex);
                 rgbaPalette.insert(rgbaPalette.end(), compSect-PcxFile::MaxOffset, rgbaColor);
                 bgraPalette.insert(bgraPalette.end(), compSect-PcxFile::MaxOffset, bgraColor);
                 pixel += (compSect-PcxFile::MaxOffset);
@@ -4572,9 +4574,6 @@ bool Sc::Data::load(Sc::DataFile::BrowserPtr dataFileBrowser, const std::vector<
 
     if ( !tselect.load(*archiveCluster, "game\\tselect.pcx") )
         CHKD_ERR("Failed to load tselect.pcx");
-
-    if ( !iScripts.load(*archiveCluster) )
-        CHKD_ERR("Failed to load iScripts");
 
     if ( !loadSpriteGroups(imagesTbl) )
         CHKD_ERR("Failed to load sprite groups");

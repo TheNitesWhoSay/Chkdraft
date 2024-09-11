@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 #include <array>
-#include "Defines.h" // I don't know where these go
+#include "defines.h" // I don't know where these go
 class GuiMap;
 class Selections;
 
