@@ -75,7 +75,7 @@ void LeftBar::NotifyTreeItemSelected(LPARAM newValue)
                 unit.validStateFlags |= Chk::Unit::State::Hallucinated;
 
             unit.energyPercent = 100;
-            unit.hangerAmount = 0;
+            unit.hangarAmount = 0;
             unit.hitpointPercent = 100;
             unit.type = (Sc::Unit::Type)itemData;
             unit.relationClassId = 0;
@@ -86,7 +86,24 @@ void LeftBar::NotifyTreeItemSelected(LPARAM newValue)
             unit.shieldPercent = 100;
             unit.stateFlags = 0;
             unit.unused = 0;
-            unit.validFieldFlags = 0;
+
+            unit.validFieldFlags = Chk::Unit::ValidField::Owner;
+
+            if ( (unitDat.flags & Sc::Unit::Flags::Spellcaster) == Sc::Unit::Flags::Spellcaster )
+                unit.validFieldFlags |= Chk::Unit::ValidField::Energy;
+
+            if ( unitDat.shieldEnable != 0 )
+                unit.validFieldFlags |= Chk::Unit::ValidField::Shields;
+
+            if ( (unitDat.flags & Sc::Unit::Flags::ResourceContainer) == 0 )
+                unit.validFieldFlags |= Chk::Unit::ValidField::Resources;
+
+            if ( unit.type == Sc::Unit::Type::ProtossCarrier || unit.type == Sc::Unit::Type::Gantrithor_Carrier ||
+                 unit.type == Sc::Unit::Type::ProtossReaver || unit.type == Sc::Unit::Type::Warbringer_Reaver )
+            {
+                unit.validFieldFlags |= Chk::Unit::ValidField::Hangar;
+            }
+
             unit.xc = 0;
             unit.yc = 0;
             chkd.maps.clipboard.addQuickUnit(unit);

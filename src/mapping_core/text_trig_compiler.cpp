@@ -1494,8 +1494,8 @@ bool TextTrigCompiler::parseActionName(const std::string & arg, Chk::Action::Vir
         {
             if ( arg.compare(10, 6, "ENERGY") == 0 )
                 actionType = Chk::Action::VirtualType::ModifyUnitEnergy;
-            else if ( arg.compare(10, 11, "HANGERCOUNT") == 0 )
-                actionType = Chk::Action::VirtualType::ModifyUnitHangerCount;
+            else if ( arg.compare(10, 11, "HANGERCOUNT") == 0 || arg.compare(10, 11, "HANGARCOUNT") == 0 )
+                actionType = Chk::Action::VirtualType::ModifyUnitHangarCount;
             else if ( arg.compare(10, 9, "HITPOINTS") == 0 )
                 actionType = Chk::Action::VirtualType::ModifyUnitHitpoints;
             else if ( arg.compare(10, 14, "RESOURCEAMOUNT") == 0 )
@@ -1730,8 +1730,8 @@ bool TextTrigCompiler::parseAction(std::string & text, size_t pos, size_t end, C
         {
             if ( arg.compare(10, 6, "ENERGY") == 0 )
                 actionType = Chk::Action::VirtualType::ModifyUnitEnergy;
-            else if ( arg.compare(10, 11, "HANGERCOUNT") == 0 )
-                actionType = Chk::Action::VirtualType::ModifyUnitHangerCount;
+            else if ( arg.compare(10, 11, "HANGERCOUNT") == 0 || arg.compare(10, 11, "HANGARCOUNT") == 0 )
+                actionType = Chk::Action::VirtualType::ModifyUnitHangarCount;
             else if ( arg.compare(10, 9, "HITPOINTS") == 0 )
                 actionType = Chk::Action::VirtualType::ModifyUnitHitpoints;
             else if ( arg.compare(10, 14, "RESOURCEAMOUNT") == 0 )

@@ -222,7 +222,7 @@ Chk::Action::Argument Chk::Action::classicArguments[NumActionTypes][MaxArguments
     /** 50 = Modify Unit Energy ------------------- */ { numUnitsArg, unitArg, playerArg, locationArg, percentArg },
     /** 51 = Modify Unit Shield points              */ { numUnitsArg, unitArg, playerArg, locationArg, percentArg },
     /** 52 = Modify Unit Resource Amount ---------- */ { numUnitsArg, playerArg, locationArg, amountArg },
-    /** 53 = Modify Unit Hanger Count               */ { amountArg, numUnitsArg, unitArg, locationArg, playerArg },
+    /** 53 = Modify Unit Hangar Count               */ { amountArg, numUnitsArg, unitArg, locationArg, playerArg },
     /** 54 = Pause Timer -------------------------- */ {},
     /** 55 = Unpause Timer                          */ {},
     /** 56 = Draw --------------------------------- */ {},
@@ -285,7 +285,7 @@ Chk::Action::Argument Chk::Action::textArguments[NumActionTypes][MaxArguments] =
     /** 50 = Modify Unit Energy ------------------- */ { playerArg, unitArg, percentArg, unitQuantityArg, locationArg },
     /** 51 = Modify Unit Shield points              */ { playerArg, unitArg, percentArg, unitQuantityArg, locationArg },
     /** 52 = Modify Unit Resource Amount ---------- */ { playerArg, amountArg, unitQuantityArg, locationArg },
-    /** 53 = Modify Unit Hanger Count               */ { playerArg, unitArg, amountArg, unitQuantityArg, locationArg },
+    /** 53 = Modify Unit Hangar Count               */ { playerArg, unitArg, amountArg, unitQuantityArg, locationArg },
     /** 54 = Pause Timer -------------------------- */ {},
     /** 55 = Unpause Timer                          */ {},
     /** 56 = Draw --------------------------------- */ {},
@@ -348,7 +348,7 @@ u8 Chk::Action::defaultFlags[NumActionTypes] = {
     /** 50 = Modify Unit Energy ------------------- */ (u8)Flags::UnitTypeUsed | (u8)Flags::AlwaysDisplay,
     /** 51 = Modify Unit Shield points              */ (u8)Flags::UnitTypeUsed | (u8)Flags::AlwaysDisplay,
     /** 52 = Modify Unit Resource Amount ---------- */ (u8)Flags::AlwaysDisplay,
-    /** 53 = Modify Unit Hanger Count               */ (u8)Flags::UnitTypeUsed | (u8)Flags::AlwaysDisplay,
+    /** 53 = Modify Unit Hangar Count               */ (u8)Flags::UnitTypeUsed | (u8)Flags::AlwaysDisplay,
     /** 54 = Pause Timer -------------------------- */ (u8)Flags::AlwaysDisplay,
     /** 55 = Unpause Timer                          */ (u8)Flags::AlwaysDisplay,
     /** 56 = Draw --------------------------------- */ (u8)Flags::AlwaysDisplay,
@@ -945,7 +945,7 @@ bool Chk::Action::actionUsesLocationArg[NumActionTypes] = {
     /** 42 = Set Doodad State                       */ true , /** 43 = Set Invincibility                      */ true , /** 44 = Create Unit                            */ true ,
     /** 45 = Set Deaths --------------------------- */ false, /** 46 = Order -------------------------------- */ true , /** 47 = Comment ------------------------------ */ false,
     /** 48 = Give Units to Player                   */ true , /** 49 = Modify Unit Hit Points                 */ true , /** 50 = Modify Unit Energy                     */ true ,
-    /** 51 = Modify Unit Shield points ------------ */ true , /** 52 = Modify Unit Resource Amount ---------- */ true , /** 53 = Modify Unit Hanger Count ------------- */ true ,
+    /** 51 = Modify Unit Shield points ------------ */ true , /** 52 = Modify Unit Resource Amount ---------- */ true , /** 53 = Modify Unit Hangar Count ------------- */ true ,
     /** 54 = Pause Timer                            */ false, /** 55 = Unpause Timer                          */ false, /** 56 = Draw                                   */ false,
     /** 57 = Set Alliance Status ------------------ */ false, /** 58 = Disable Debug Mode ------------------- */ false, /** 59 = Enable Debug Mode -------------------- */ false
 };
@@ -968,7 +968,7 @@ bool Chk::Action::actionUsesSecondaryLocationArg[NumActionTypes] = {
     /** 42 = Set Doodad State                       */ false, /** 43 = Set Invincibility                      */ false, /** 44 = Create Unit                            */ false,
     /** 45 = Set Deaths --------------------------- */ false, /** 46 = Order -------------------------------- */ true , /** 47 = Comment ------------------------------ */ false,
     /** 48 = Give Units to Player                   */ false, /** 49 = Modify Unit Hit Points                 */ false, /** 50 = Modify Unit Energy                     */ false,
-    /** 51 = Modify Unit Shield points ------------ */ false, /** 52 = Modify Unit Resource Amount ---------- */ false, /** 53 = Modify Unit Hanger Count ------------- */ false,
+    /** 51 = Modify Unit Shield points ------------ */ false, /** 52 = Modify Unit Resource Amount ---------- */ false, /** 53 = Modify Unit Hangar Count ------------- */ false,
     /** 54 = Pause Timer                            */ false, /** 55 = Unpause Timer                          */ false, /** 56 = Draw                                   */ false,
     /** 57 = Set Alliance Status ------------------ */ false, /** 58 = Disable Debug Mode ------------------- */ false, /** 59 = Enable Debug Mode -------------------- */ false
 };
@@ -991,7 +991,7 @@ bool Chk::Action::actionUsesStringArg[NumActionTypes] = {
     /** 42 = Set Doodad State                       */ false, /** 43 = Set Invincibility                      */ false, /** 44 = Create Unit                            */ false,
     /** 45 = Set Deaths --------------------------- */ false, /** 46 = Order -------------------------------- */ false, /** 47 = Comment ------------------------------ */ true ,
     /** 48 = Give Units to Player                   */ false, /** 49 = Modify Unit Hit Points                 */ false, /** 50 = Modify Unit Energy                     */ false,
-    /** 51 = Modify Unit Shield points ------------ */ false, /** 52 = Modify Unit Resource Amount ---------- */ false, /** 53 = Modify Unit Hanger Count ------------- */ false,
+    /** 51 = Modify Unit Shield points ------------ */ false, /** 52 = Modify Unit Resource Amount ---------- */ false, /** 53 = Modify Unit Hangar Count ------------- */ false,
     /** 54 = Pause Timer                            */ false, /** 55 = Unpause Timer                          */ false, /** 56 = Draw                                   */ false,
     /** 57 = Set Alliance Status ------------------ */ false, /** 58 = Disable Debug Mode ------------------- */ false, /** 59 = Enable Debug Mode -------------------- */ false
 };
@@ -1014,7 +1014,7 @@ bool Chk::Action::actionUsesGameStringArg[NumActionTypes] = {
     /** 42 = Set Doodad State                       */ false, /** 43 = Set Invincibility                      */ false, /** 44 = Create Unit                            */ false,
     /** 45 = Set Deaths --------------------------- */ false, /** 46 = Order -------------------------------- */ false, /** 47 = Comment ------------------------------ */ false,
     /** 48 = Give Units to Player                   */ false, /** 49 = Modify Unit Hit Points                 */ false, /** 50 = Modify Unit Energy                     */ false,
-    /** 51 = Modify Unit Shield points ------------ */ false, /** 52 = Modify Unit Resource Amount ---------- */ false, /** 53 = Modify Unit Hanger Count ------------- */ false,
+    /** 51 = Modify Unit Shield points ------------ */ false, /** 52 = Modify Unit Resource Amount ---------- */ false, /** 53 = Modify Unit Hangar Count ------------- */ false,
     /** 54 = Pause Timer                            */ false, /** 55 = Unpause Timer                          */ false, /** 56 = Draw                                   */ false,
     /** 57 = Set Alliance Status ------------------ */ false, /** 58 = Disable Debug Mode ------------------- */ false, /** 59 = Enable Debug Mode -------------------- */ false
 };
@@ -1037,7 +1037,7 @@ bool Chk::Action::actionUsesSoundArg[NumActionTypes] = {
     /** 42 = Set Doodad State                       */ false, /** 43 = Set Invincibility                      */ false, /** 44 = Create Unit                            */ false,
     /** 45 = Set Deaths --------------------------- */ false, /** 46 = Order -------------------------------- */ false, /** 47 = Comment ------------------------------ */ false,
     /** 48 = Give Units to Player                   */ false, /** 49 = Modify Unit Hit Points                 */ false, /** 50 = Modify Unit Energy                     */ false,
-    /** 51 = Modify Unit Shield points ------------ */ false, /** 52 = Modify Unit Resource Amount ---------- */ false, /** 53 = Modify Unit Hanger Count ------------- */ false,
+    /** 51 = Modify Unit Shield points ------------ */ false, /** 52 = Modify Unit Resource Amount ---------- */ false, /** 53 = Modify Unit Hangar Count ------------- */ false,
     /** 54 = Pause Timer                            */ false, /** 55 = Unpause Timer                          */ false, /** 56 = Draw                                   */ false,
     /** 57 = Set Alliance Status ------------------ */ false, /** 58 = Disable Debug Mode ------------------- */ false, /** 59 = Enable Debug Mode -------------------- */ false
 };
