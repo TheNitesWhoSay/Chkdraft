@@ -95,7 +95,7 @@ void LeftBar::NotifyTreeItemSelected(LPARAM newValue)
             if ( unitDat.shieldEnable != 0 )
                 unit.validFieldFlags |= Chk::Unit::ValidField::Shields;
 
-            if ( (unitDat.flags & Sc::Unit::Flags::ResourceContainer) == 0 )
+            if ( (unitDat.flags & Sc::Unit::Flags::ResourceContainer) == Sc::Unit::Flags::ResourceContainer )
                 unit.validFieldFlags |= Chk::Unit::ValidField::Resources;
 
             if ( unit.type == Sc::Unit::Type::ProtossCarrier || unit.type == Sc::Unit::Type::Gantrithor_Carrier ||
