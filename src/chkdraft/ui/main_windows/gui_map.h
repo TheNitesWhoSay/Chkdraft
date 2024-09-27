@@ -80,6 +80,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     void createInvertedLocation();
                     void createMobileInvertedLocation();
 
+                    void viewUnit(u16 unitIndex);
                     void viewLocation(u16 locationId);
                     LocSelFlags getLocSelFlags(s32 xc, s32 yc);
                     bool moveLocation(u32 downX, u32 downY, u32 upX, u32 upY);
@@ -132,6 +133,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
 
                     u32 getNextClassId();
                     bool isValidUnitPlacement(Sc::Unit::Type unitType, s32 x, s32 y);
+                    bool isLinkable(const Chk::Unit & first, const Chk::Unit & second);
                     std::optional<u16> getLinkableUnitIndex(Sc::Unit::Type unitType, s32 x, s32 y);
                     
                     void ToggleBuildingsSnapToTile();

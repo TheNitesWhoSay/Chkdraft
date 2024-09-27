@@ -39,7 +39,7 @@ void PreservedUnitStats::AddStats(Selections & sel, Chk::Unit::Field statField)
             case Chk::Unit::Field::ShieldPercent: preservedValues.push_back(unit.shieldPercent); break;
             case Chk::Unit::Field::EnergyPercent: preservedValues.push_back(unit.energyPercent); break;
             case Chk::Unit::Field::ResourceAmount: preservedValues.push_back(unit.resourceAmount); break;
-            case Chk::Unit::Field::HangerAmount: preservedValues.push_back(unit.hangerAmount); break;
+            case Chk::Unit::Field::HangarAmount: preservedValues.push_back(unit.hangarAmount); break;
             case Chk::Unit::Field::StateFlags: preservedValues.push_back(unit.stateFlags); break;
             case Chk::Unit::Field::Unused: preservedValues.push_back(unit.unused); break;
             case Chk::Unit::Field::RelationClassId: preservedValues.push_back(unit.relationClassId); break;

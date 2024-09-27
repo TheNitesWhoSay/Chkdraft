@@ -12,6 +12,26 @@ enum class UnitListColumn { Name, Owner, Xc, Yc, Index };
 enum_t(Id, u32, {
     UnitList = ID_FIRST,
     ComboPlayer,
+    ButtonLinkUnlink, ButtonJumpTo,
+
+    GroupValidFieldFlags, GroupValidStateFlags, GroupLinkFlags,
+    
+    CheckValidFieldOwner, CheckValidFieldLife, CheckValidFieldMana, CheckValidFieldShield, CheckValidFieldResources, CheckValidFieldHangar,
+    TextValidFieldRawFlags, EditValidFieldRawFlags,
+
+    CheckValidStateInvincible, CheckValidStateHallucinated, CheckValidStateBurrowed, CheckValidStateCloaked, CheckValidStateLifted,
+    TextValidStateRawFlags, EditValidStateRawFlags,
+
+    GroupMisc,
+    TextRawStateFlags, TextUnused, TextUniqueId, TextLinkedId,
+    EditRawStateFlags, EditUnused, EditUniqueId, EditLinkedId,
+
+    CheckNydus, CheckAddon,
+    TextLinkRawFlags,
+    EditLinkRawFlags,
+
+    GroupUnitProperties = IDC_GROUP_PROPERTIES,
+    GroupLinkedUnit = IDC_GROUP_LINK,
 
     ButtonMoveUp = IDC_BUTTON_MOVEUP,
     ButtonMoveTop = IDC_BUTTON_MOVETOP,
@@ -19,13 +39,14 @@ enum_t(Id, u32, {
     ButtonMoveEnd = IDC_BUTTON_MOVEEND,
     ButtonDelete = IDC_BUTTON_DELETE,
     ButtonMoveTo = IDC_BUTTON_MOVE_TO,
+    ButtonAdvanced = IDC_BUTTON_ADVANCED,
     ButtonClose = IDC_BUTTON_CLOSE,
 
     EditHp = IDC_EDIT_HP,
     EditMp = IDC_EDIT_MP,
     EditShields = IDC_EDIT_SHIELD,
     EditResources = IDC_EDIT_RESOURCES,
-    EditHanger = IDC_EDIT_HANGER,
+    EditHangar = IDC_EDIT_HANGAR,
     EditUnitId = IDC_EDIT_ID,
     EditXc = IDC_EDIT_XC,
     EditYc = IDC_EDIT_YC,
@@ -59,18 +80,21 @@ bool UnitPropertiesWindow::CreateThis(HWND hParent)
 
 bool UnitPropertiesWindow::CreateSubWindows(HWND hWnd)
 {
+    groupUnitProperties.FindThis(hWnd, Id::GroupUnitProperties);
+
     buttonMoveUp.FindThis(hWnd, Id::ButtonMoveUp);
     buttonMoveTop.FindThis(hWnd, Id::ButtonMoveTop);
     buttonMoveDown.FindThis(hWnd, Id::ButtonMoveDown);
     buttonMoveEnd.FindThis(hWnd, Id::ButtonMoveEnd);
     buttonDelete.FindThis(hWnd, Id::ButtonDelete);
     buttonMoveTo.FindThis(hWnd, Id::ButtonMoveTo);
+    buttonAdvanced.FindThis(hWnd, Id::ButtonAdvanced);
 
     editLife.FindThis(hWnd, Id::EditHp);
     editMana.FindThis(hWnd, Id::EditMp);
     editShield.FindThis(hWnd, Id::EditShields);
     editResources.FindThis(hWnd, Id::EditResources);
-    editHanger.FindThis(hWnd, Id::EditHanger);
+    editHangar.FindThis(hWnd, Id::EditHangar);
     editUnitId.FindThis(hWnd, Id::EditUnitId);
     editXc.FindThis(hWnd, Id::EditXc);
     editYc.FindThis(hWnd, Id::EditYc);
@@ -83,13 +107,21 @@ bool UnitPropertiesWindow::CreateSubWindows(HWND hWnd)
 
     dropPlayer.CreateThis(hWnd, 657, 29, 90, 438, Id::ComboPlayer, false);
 
+    groupLinkedUnit.FindThis(hWnd, Id::GroupLinkedUnit);
+    buttonLinkUnlink.CreateThis(hWnd, 586, 392, 150, 23, "Link Selected Units", Id::ButtonLinkUnlink, false);
+    buttonJumpTo.CreateThis(hWnd, 586, buttonLinkUnlink.Bottom()+2, 150, 23, "Jump To Linked Unit", Id::ButtonJumpTo, false);
+    buttonLinkUnlink.setDefaultFont();
+    buttonJumpTo.setDefaultFont();
+    buttonLinkUnlink.DisableThis();
+    buttonJumpTo.DisableThis();
+
     initilizing = true;
 
     editLife.CreateNumberBuddy(0, 100);
     editMana.CreateNumberBuddy(0, 100);
     editShield.CreateNumberBuddy(0, 100);
     editResources.CreateNumberBuddy(0, 50000);
-    editHanger.CreateNumberBuddy(0, 8);
+    editHangar.CreateNumberBuddy(0, 8);
     editUnitId.CreateNumberBuddy(0, 65535);
 
     listUnits.CreateThis(hWnd, 9, 10, 549, 449, false, false, Id::UnitList);
@@ -102,6 +134,9 @@ bool UnitPropertiesWindow::CreateSubWindows(HWND hWnd)
     listUnits.AddColumn(3, "Y", 75, LVCFMT_RIGHT);
     listUnits.AddColumn(4, "Index", 75, LVCFMT_RIGHT);
 
+    if ( advanced )
+        CreateAdvancedTab();
+
     RepopulateList();
 
     listUnits.Show();
@@ -110,9 +145,97 @@ bool UnitPropertiesWindow::CreateSubWindows(HWND hWnd)
     return true;
 }
 
+void UnitPropertiesWindow::CreateAdvancedTab()
+{
+    initilizing = true;
+    this->setDefaultFont(false);
+    standardWidth = this->Width();
+    this->SetWidth(standardWidth+206);
+
+    if ( advancedTabCreated )
+    {
+        if ( CM != nullptr && CM->selections.hasUnits() && CM->selections.getFirstUnit() < CM->numUnits() )
+        {
+            auto & unit = CM->getUnit(CM->selections.getFirstUnit());
+            this->SetUnitFieldText(unit);
+        }
+        return;
+    }
+    else
+        advancedTabCreated = true;
+
+    HWND hWnd = getHandle();
+    groupValidFieldFlags.CreateThis(hWnd, groupUnitProperties.Right()+16, groupUnitProperties.Top(), 190, 135, "Valid Field Flags", Id::GroupValidFieldFlags);
+    auto checkLeft = groupValidFieldFlags.Left()+19;
+    checkValidFieldOwner.CreateThis(hWnd, checkLeft, groupValidFieldFlags.Top()+20, 65, 16, false, "Owner", Id::CheckValidFieldOwner);
+    checkValidFieldLife.CreateThis(hWnd, checkLeft, checkValidFieldOwner.Bottom()+2, 65, 16, false, "Life", Id::CheckValidFieldLife);
+    checkValidFieldMana.CreateThis(hWnd, checkLeft, checkValidFieldLife.Bottom()+2, 65, 16, false, "Mana", Id::CheckValidFieldMana);
+    checkValidFieldShield.CreateThis(hWnd, checkValidFieldOwner.Right()+7, groupValidFieldFlags.Top()+20, 70, 16, false, "Shield", Id::CheckValidFieldShield);
+    checkValidFieldResources.CreateThis(hWnd, checkValidFieldOwner.Right()+7, checkValidFieldShield.Bottom()+2, 70, 16, false, "Resources", Id::CheckValidFieldResources);
+    checkValidFieldHangar.CreateThis(hWnd, checkValidFieldOwner.Right()+7, checkValidFieldResources.Bottom()+2, 70, 16, false, "Hangar", Id::CheckValidFieldHangar);
+    textValidFieldRawFlags.CreateThis(hWnd, checkLeft, checkValidFieldMana.Bottom()+5, 55, 13, "Raw Flags:", Id::TextValidFieldRawFlags);
+    editValidFieldRawFlags.CreateThis(hWnd, textValidFieldRawFlags.Right()+2, checkValidFieldMana.Bottom()+5, 100, 20, false, Id::EditValidFieldRawFlags);
+
+    groupValidStateFlags.CreateThis(hWnd, groupUnitProperties.Right()+16, groupValidFieldFlags.Bottom()+5, 190, 104, "Valid State Flags", Id::GroupValidStateFlags);
+    checkValidStateInvincible.CreateThis(hWnd, checkLeft, groupValidStateFlags.Top()+20, 65, 16, false, "Invincible", Id::CheckValidStateInvincible);
+    checkValidStateBurrowed.CreateThis(hWnd, checkLeft, checkValidStateInvincible.Bottom()+2, 65, 16, false, "Burrowed", Id::CheckValidStateBurrowed);
+    checkValidStateHallucinated.CreateThis(hWnd, checkValidStateInvincible.Right()+7, groupValidStateFlags.Top()+20, 70, 16, false, "Hallucinated", Id::CheckValidStateHallucinated);
+    checkValidStateCloaked.CreateThis(hWnd, checkValidStateInvincible.Right()+7, checkValidStateHallucinated.Bottom()+2, 70, 16, false, "Cloaked", Id::CheckValidStateCloaked);
+    checkValidStateLifted.CreateThis(hWnd, checkValidStateInvincible.Right()+7, checkValidStateCloaked.Bottom()+2, 70, 16, false, "Lifted", Id::CheckValidStateLifted);
+    textValidStateRawFlags.CreateThis(hWnd, checkLeft, checkValidStateLifted.Bottom()+5, 55, 13, "Raw Flags:", Id::TextValidStateRawFlags);
+    editValidStateRawFlags.CreateThis(hWnd, textValidStateRawFlags.Right()+2, checkValidStateLifted.Bottom()+5, 100, 20, false, Id::EditValidStateRawFlags);
+    
+    groupMisc.CreateThis(hWnd, groupUnitProperties.Right()+16, groupValidStateFlags.Bottom()+5, 190, 122, "Misc", Id::GroupMisc);
+    textRawStateFlags.CreateThis(hWnd, checkLeft, groupMisc.Top()+20, 83, 13, "Raw State Flags:", Id::TextRawStateFlags);
+    editRawStateFlags.CreateThis(hWnd, textRawStateFlags.Right()+2, groupMisc.Top()+20, 72, 20, false, Id::EditRawStateFlags);
+    textUnused.CreateThis(hWnd, groupValidStateFlags.Left()+41, editRawStateFlags.Bottom()+5, 42, 13, "Unused:", Id::TextUnused);
+    editUnused.CreateThis(hWnd, textUnused.Right()+2, editRawStateFlags.Bottom()+5, 91, 20, false, Id::EditUnused);
+    textUniqueId.CreateThis(hWnd, groupValidStateFlags.Left()+30, editUnused.Bottom()+5, 53, 13, "Unique ID:", Id::TextUniqueId);
+    editUniqueId.CreateThis(hWnd, textUniqueId.Right()+2, editUnused.Bottom()+5, 91, 20, false, Id::EditUniqueId);
+    textLinkedId.CreateThis(hWnd, groupValidStateFlags.Left()+32, editUniqueId.Bottom()+5, 51, 13, "Linked ID:", Id::TextLinkedId);
+    editLinkedId.CreateThis(hWnd, textLinkedId.Right()+2, editUniqueId.Bottom()+5, 91, 20, false, Id::EditLinkedId);
+
+    groupLinkFlags.CreateThis(hWnd, groupUnitProperties.Right()+16, groupMisc.Bottom()+10, 190, 68, "Link Flags", Id::GroupLinkFlags);
+    checkNydus.CreateThis(hWnd, checkLeft, groupLinkFlags.Top()+20, 65, 16, false, "Nydus", Id::CheckNydus);
+    checkAddon.CreateThis(hWnd, checkNydus.Right()+7, groupLinkFlags.Top()+20, 65, 16, false, "Addon", Id::CheckAddon);
+    textLinkRawFlags.CreateThis(hWnd, checkLeft, checkNydus.Bottom()+5, 55, 13, "Raw Flags:", Id::TextLinkRawFlags);
+    editLinkRawFlags.CreateThis(hWnd, textLinkRawFlags.Right()+2, checkNydus.Bottom()+5, 100, 20, false, Id::EditLinkRawFlags);
+
+    const WindowsItem* advancedItems[] {
+        &groupValidFieldFlags, &checkValidFieldOwner, &checkValidFieldLife, &checkValidFieldMana, &checkValidFieldShield, &checkValidFieldResources,
+        &checkValidFieldHangar, &textValidFieldRawFlags, &editValidFieldRawFlags,
+
+        &groupValidStateFlags, &checkValidStateInvincible, &checkValidStateBurrowed, &checkValidStateHallucinated, &checkValidStateCloaked,
+        &checkValidStateLifted, &textValidStateRawFlags, &editValidStateRawFlags,
+
+        &groupMisc,
+        &textRawStateFlags, &editRawStateFlags,
+        &textUnused, &editUnused,
+        &textUniqueId, &editUniqueId,
+        &textLinkedId, &editLinkedId,
+
+        &groupLinkFlags,
+        &checkNydus, &checkAddon,
+        &textLinkRawFlags, &editLinkRawFlags
+    };
+
+    for ( const WindowsItem* item : advancedItems )
+        item->setDefaultFont();
+
+    if ( CM != nullptr && CM->selections.hasUnits() && CM->selections.getFirstUnit() < CM->numUnits() )
+    {
+        auto & unit = CM->getUnit(CM->selections.getFirstUnit());
+        this->SetUnitFieldText(unit);
+    }
+
+    initilizing = false;
+}
+
 bool UnitPropertiesWindow::DestroyThis()
 {
     columnSortedBy = UnitListColumn::Index; // Reset column sorted by
+    this->standardWidth = 0;
+    this->advancedTabCreated = false;
     return ClassDialog::DestroyDialog();
 }
 
@@ -130,10 +253,12 @@ void UnitPropertiesWindow::ChangeCurrOwner(u8 newOwner)
         Chk::Unit & unit = CM->getUnit(unitIndex);
         if ( unit.owner != newOwner ) // If the current and new owners are different
         {
+            unit.validFieldFlags |= Chk::Unit::ValidField::Owner;
             CM->changeUnitOwner(unitIndex, newOwner, undoableChanges);
             ChangeUnitsDisplayedOwner(unitIndex, newOwner);
         }
     }
+    this->SetUnitFieldText();
     CM->AddUndo(undoableChanges);
     CM->Redraw(true);
 }
@@ -206,6 +331,14 @@ void UnitPropertiesWindow::FocusAndSelectIndex(u16 unitIndex)
     findInfo.lParam = unitIndex;
     s32 lvIndex = ListView_FindItem(listUnits.getHandle(), -1, &findInfo);
     ListView_SetItemState(listUnits.getHandle(), lvIndex, LVIS_FOCUSED | LVIS_SELECTED, LVIS_FOCUSED | LVIS_SELECTED);
+    
+    if ( CM->selections.hasUnits() && CM->selections.getFirstUnit() < CM->numUnits() )
+    {
+        initilizing = true;
+        const Chk::Unit & unit = CM->getUnit(CM->selections.getFirstUnit());
+        UpdateLinkArea(unit);
+        initilizing = false;
+    }
 }
 
 void UnitPropertiesWindow::DeselectIndex(u16 unitIndex)
@@ -216,6 +349,14 @@ void UnitPropertiesWindow::DeselectIndex(u16 unitIndex)
 
     int lvIndex = ListView_FindItem(listUnits.getHandle(), -1, &findInfo);
     ListView_SetItemState(listUnits.getHandle(), lvIndex, 0, LVIS_FOCUSED | LVIS_SELECTED);
+    
+    if ( CM->selections.hasUnits() && CM->selections.getFirstUnit() < CM->numUnits() )
+    {
+        initilizing = true;
+        const Chk::Unit & unit = CM->getUnit(CM->selections.getFirstUnit());
+        UpdateLinkArea(unit);
+        initilizing = false;
+    }
 }
 
 void UnitPropertiesWindow::UpdateEnabledState()
@@ -279,7 +420,7 @@ void UnitPropertiesWindow::EnableUnitEditing()
     dropPlayer.EnableThis();
 
     WinLib::ButtonControl* buttonControls[] = { &buttonMoveUp, &buttonMoveTop, &buttonMoveDown, &buttonMoveEnd, &buttonDelete, &buttonMoveTo };
-    WinLib::EditControl* editControls[] = { &editLife, &editMana, &editShield, &editResources, &editHanger, &editUnitId, &editXc, &editYc };
+    WinLib::EditControl* editControls[] = { &editLife, &editMana, &editShield, &editResources, &editHangar, &editUnitId, &editXc, &editYc };
     WinLib::CheckBoxControl* checkControls[] = { &checkInvincible, &checkHallucinated, &checkBurrowed, &checkCloaked, &checkLifted };
     int numButtonControls = sizeof(buttonControls) / sizeof(WinLib::ButtonControl*),
         numEditControls = sizeof(editControls) / sizeof(WinLib::EditControl*),
@@ -299,6 +440,30 @@ void UnitPropertiesWindow::EnableUnitEditing()
 
     const Chk::Unit & unit = CM->getUnit(CM->selections.getFirstUnit());
     SetUnitFieldText(unit);
+
+    if ( advanced )
+    {
+        WindowsItem* advancedItems[] {
+            &groupValidFieldFlags, &checkValidFieldOwner, &checkValidFieldLife, &checkValidFieldMana, &checkValidFieldShield, &checkValidFieldResources,
+            &checkValidFieldHangar, &textValidFieldRawFlags, &editValidFieldRawFlags,
+
+            &groupValidStateFlags, &checkValidStateInvincible, &checkValidStateBurrowed, &checkValidStateHallucinated, &checkValidStateCloaked,
+            &checkValidStateLifted, &textValidStateRawFlags, &editValidStateRawFlags,
+
+            &groupMisc,
+            &textRawStateFlags, &editRawStateFlags,
+            &textUnused, &editUnused,
+            &textUniqueId, &editUniqueId,
+            &textLinkedId, &editLinkedId,
+
+            &groupLinkFlags,
+            &checkNydus, &checkAddon,
+            &textLinkRawFlags, &editLinkRawFlags
+        };
+
+        for ( WindowsItem* item : advancedItems )
+            item->EnableThis();
+    }
 }
 
 void UnitPropertiesWindow::DisableUnitEditing()
@@ -309,7 +474,7 @@ void UnitPropertiesWindow::DisableUnitEditing()
     dropPlayer.DisableThis();
 
     WinLib::ButtonControl* buttonControls[] = { &buttonMoveUp, &buttonMoveTop, &buttonMoveDown, &buttonMoveEnd, &buttonDelete, &buttonMoveTo };
-    WinLib::EditControl* editControls[] = { &editLife, &editMana, &editShield, &editResources, &editHanger, &editUnitId, &editXc, &editYc };
+    WinLib::EditControl* editControls[] = { &editLife, &editMana, &editShield, &editResources, &editHangar, &editUnitId, &editXc, &editYc };
     WinLib::CheckBoxControl* checkControls[] = { &checkInvincible, &checkHallucinated, &checkBurrowed, &checkCloaked, &checkLifted };
     int numButtonControls = sizeof(buttonControls) / sizeof(WinLib::ButtonControl*),
         numEditControls = sizeof(editControls) / sizeof(WinLib::EditControl*),
@@ -329,6 +494,111 @@ void UnitPropertiesWindow::DisableUnitEditing()
         checkControls[i]->SetCheck(false);
         checkControls[i]->DisableThis();
     }
+
+    if ( advanced )
+    {
+        WinLib::CheckBoxControl* advancedCheckControls[] {
+            &checkValidFieldOwner, &checkValidFieldLife, &checkValidFieldMana, &checkValidFieldShield, &checkValidFieldResources, &checkValidFieldHangar,
+            &checkValidStateInvincible, &checkValidStateBurrowed, &checkValidStateHallucinated, &checkValidStateCloaked, &checkValidStateLifted,
+            &checkNydus, &checkAddon
+        };
+        WinLib::EditControl* advancedEditControls[] { &editValidFieldRawFlags, &editValidStateRawFlags,
+            &editRawStateFlags, &editUnused, &editUniqueId, &editLinkedId, &editLinkRawFlags };
+
+        for ( WinLib::CheckBoxControl* checkControl : advancedCheckControls )
+        {
+            checkControl->SetCheck(false);
+            checkControl->DisableThis();
+        }
+
+        for ( WinLib::EditControl* editControl : advancedEditControls )
+        {
+            editControl->SetText("");
+            editControl->DisableThis();
+        }
+    }
+}
+
+void UnitPropertiesWindow::UpdateLinkArea(const Chk::Unit & unit)
+{
+    bool linked = CM != nullptr && unit.isLinked();
+    if ( linked )
+    {
+        bool found = false;
+        auto relatedId = unit.relationClassId;
+        for ( size_t i=0; i<CM->units.size(); ++i )
+        {
+            auto & otherUnit = CM->units[i];
+            if ( unit.relationClassId == otherUnit.classId )
+            {
+                auto linkedUnitType = otherUnit.type;
+                std::string displayText = "Linked ";
+                if ( linkedUnitType < Sc::Unit::TotalTypes )
+                {
+                    std::string unitName = Sc::Unit::defaultDisplayNames[linkedUnitType];
+                    constexpr std::string_view terran = "Terran ";
+                    constexpr std::string_view zerg = "Zerg ";
+                    constexpr std::string_view protoss = "Protoss ";
+                    if ( unitName.find(terran) == 0 )
+                        displayText += unitName.substr(terran.size(), unitName.size()-terran.size());
+                    else if ( unitName.find(zerg) == 0 )
+                        displayText += unitName.substr(zerg.size(), unitName.size()-zerg.size());
+                    else if ( unitName.find(protoss) == 0 )
+                        displayText += unitName.substr(protoss.size(), unitName.size()-protoss.size());
+                    else
+                        displayText += unitName;
+                }
+                else
+                    displayText += "UnitId:" + std::to_string(u16(linkedUnitType));
+
+                groupLinkedUnit.SetWinText(displayText + " [" + std::to_string(i) + "]");
+
+                buttonLinkUnlink.SetText("Unlink");
+                buttonLinkUnlink.EnableThis();
+                buttonJumpTo.SetWinText("Jump To Linked Unit");
+                buttonJumpTo.EnableThis();
+                found = true;
+                break;
+            }
+        }
+
+        if ( !found )
+            linked = false;
+    }
+
+    if ( !linked )
+    {
+        bool linkable = false;
+        if ( CM->selections.numUnits() == 2 )
+        {
+            auto firstIndex = CM->selections.units[0];
+            auto secondIndex = CM->selections.units[1];
+            if ( firstIndex != secondIndex && firstIndex < CM->numUnits() && secondIndex < CM->numUnits() )
+            {
+                auto & first = CM->getUnit(firstIndex);
+                auto & second = CM->getUnit(secondIndex);
+                auto firstType = first.type;
+                auto secondType = second.type;
+                if ( !first.isLinked() && !second.isLinked() && CM->isLinkable(first, second) )
+                {
+                    groupLinkedUnit.SetWinText("Nydus/Addon Link");
+                    buttonLinkUnlink.SetWinText("Link Selected Units");
+                    buttonLinkUnlink.EnableThis();
+                    buttonJumpTo.SetWinText("Jump To Linked Unit");
+                    buttonJumpTo.DisableThis();
+                    linkable = true;
+                }
+            }
+        }
+        if ( !linkable )
+        {
+            groupLinkedUnit.SetWinText("Nydus/Addon Link");
+            buttonLinkUnlink.SetWinText("Link Selected Units");
+            buttonLinkUnlink.DisableThis();
+            buttonJumpTo.SetWinText("Jump To Linked Unit");
+            buttonJumpTo.DisableThis();
+        }
+    }
 }
 
 void UnitPropertiesWindow::SetUnitFieldText(const Chk::Unit & unit)
@@ -344,19 +614,53 @@ void UnitPropertiesWindow::SetUnitFieldText(const Chk::Unit & unit)
     editMana.SetText(std::to_string(unit.energyPercent));
     editShield.SetText(std::to_string(unit.shieldPercent));
     editResources.SetText(std::to_string(unit.resourceAmount));
-    editHanger.SetText(std::to_string(unit.hangerAmount));
+    editHangar.SetText(std::to_string(unit.hangarAmount));
     editUnitId.SetText(std::to_string((u16)unit.type));
     editXc.SetText(std::to_string(unit.xc));
     editYc.SetText(std::to_string(unit.yc));
 
-    
     checkInvincible.SetCheck((unit.stateFlags&Chk::Unit::State::Invincible) == Chk::Unit::State::Invincible);
     checkHallucinated.SetCheck((unit.stateFlags&Chk::Unit::State::Hallucinated) == Chk::Unit::State::Hallucinated);
     checkBurrowed.SetCheck((unit.stateFlags&Chk::Unit::State::Burrow) == Chk::Unit::State::Burrow);
     checkCloaked.SetCheck((unit.stateFlags&Chk::Unit::State::Cloak) == Chk::Unit::State::Cloak);
     checkLifted.SetCheck((unit.stateFlags&Chk::Unit::State::InTransit) == Chk::Unit::State::InTransit);
 
+    UpdateLinkArea(unit);
+
+    if ( advanced )
+    {
+        checkValidFieldOwner.SetCheck((unit.validFieldFlags&Chk::Unit::ValidField::Owner) == Chk::Unit::ValidField::Owner);
+        checkValidFieldLife.SetCheck((unit.validFieldFlags&Chk::Unit::ValidField::Hitpoints) == Chk::Unit::ValidField::Hitpoints);
+        checkValidFieldMana.SetCheck((unit.validFieldFlags&Chk::Unit::ValidField::Energy) == Chk::Unit::ValidField::Energy);
+        checkValidFieldShield.SetCheck((unit.validFieldFlags&Chk::Unit::ValidField::Shields) == Chk::Unit::ValidField::Shields);
+        checkValidFieldResources.SetCheck((unit.validFieldFlags&Chk::Unit::ValidField::Resources) == Chk::Unit::ValidField::Resources);
+        checkValidFieldHangar.SetCheck((unit.validFieldFlags&Chk::Unit::ValidField::Hangar) == Chk::Unit::ValidField::Hangar);
+        editValidFieldRawFlags.SetEditNum(unit.validFieldFlags);
+
+        checkValidStateInvincible.SetCheck((unit.validStateFlags&Chk::Unit::State::Invincible) == Chk::Unit::State::Invincible);
+        checkValidStateBurrowed.SetCheck((unit.validStateFlags&Chk::Unit::State::Burrow) == Chk::Unit::State::Burrow);
+        checkValidStateHallucinated.SetCheck((unit.validStateFlags&Chk::Unit::State::Hallucinated) == Chk::Unit::State::Hallucinated);
+        checkValidStateCloaked.SetCheck((unit.validStateFlags&Chk::Unit::State::Cloak) == Chk::Unit::State::Cloak);
+        checkValidStateLifted.SetCheck((unit.validStateFlags&Chk::Unit::State::InTransit) == Chk::Unit::State::InTransit);
+        editValidStateRawFlags.SetEditNum(unit.validStateFlags);
+
+        editRawStateFlags.SetEditNum(unit.stateFlags);
+        editUnused.SetEditNum(unit.unused);
+        editUniqueId.SetEditNum(unit.classId);
+        editLinkedId.SetEditNum(unit.relationClassId);
+    
+        checkNydus.SetCheck((unit.relationFlags&Chk::Unit::RelationFlag::NydusLink) == Chk::Unit::RelationFlag::NydusLink);
+        checkAddon.SetCheck((unit.relationFlags&Chk::Unit::RelationFlag::AddonLink) == Chk::Unit::RelationFlag::AddonLink);
+        editLinkRawFlags.SetEditNum(unit.relationFlags);
+    }
+
     initilizing = false;
+}
+
+void UnitPropertiesWindow::SetUnitFieldText()
+{
+    if ( CM != nullptr && CM->selections.hasUnits() && CM->selections.getFirstUnit() < CM->numUnits() )
+        SetUnitFieldText(CM->getUnit(CM->selections.getFirstUnit()));
 }
 
 void UnitPropertiesWindow::SwapIndexes(HWND hListView, LPARAM index1, LPARAM index2)
@@ -493,6 +797,13 @@ void UnitPropertiesWindow::LvItemChanged(NMHDR* nmhdr)
                                                         // Remove item from selection
         {
             selections.removeUnit(index);
+            if ( CM->selections.hasUnits() && CM->selections.getFirstUnit() < CM->numUnits() )
+            {
+                initilizing = true;
+                const Chk::Unit & unit = CM->getUnit(CM->selections.getFirstUnit());
+                UpdateLinkArea(unit);
+                initilizing = false;
+            }
 
             if ( !selections.hasUnits()
                 && !(GetKeyState(VK_DOWN) & 0x8000
@@ -507,6 +818,21 @@ void UnitPropertiesWindow::LvItemChanged(NMHDR* nmhdr)
 
             CM->Redraw(false);
         }
+    }
+}
+
+void UnitPropertiesWindow::NotifyAdvancedToggled()
+{
+    advanced = !advanced;
+    if ( advanced )
+    {
+        this->CreateAdvancedTab();
+        this->buttonAdvanced.SetText("Standard");
+    }
+    else
+    {
+        this->SetWidth(standardWidth);
+        this->buttonAdvanced.SetText("Advanced");
     }
 }
 
@@ -737,6 +1063,92 @@ void UnitPropertiesWindow::NotifyDeletePressed()
     listUnits.SetRedraw(true);
 }
 
+void UnitPropertiesWindow::NotifyLinkUnlinkPressed()
+{
+    size_t numUnits = CM->numUnits();
+    if ( CM == nullptr || !CM->selections.hasUnits() || CM->selections.getFirstUnit() >= numUnits )
+        return;
+
+    size_t currUnitIndex = size_t(CM->selections.getFirstUnit());
+    auto & unit = CM->getUnit(currUnitIndex);
+    if ( unit.isLinked() ) // Break or clear the link
+    {
+        for ( size_t i=0; i<numUnits; ++i )
+        {
+            auto & otherUnit = CM->getUnit(i);
+            if ( unit.relationClassId == otherUnit.classId && i != currUnitIndex )
+            {
+                auto unitChanges = ReversibleActions::Make();
+                unitChanges->Insert(UnitChange::Make(currUnitIndex, Chk::Unit::Field::RelationClassId, unit.relationClassId));
+                unitChanges->Insert(UnitChange::Make(currUnitIndex, Chk::Unit::Field::RelationFlags, unit.relationFlags));
+                unitChanges->Insert(UnitChange::Make(i, Chk::Unit::Field::RelationClassId, otherUnit.relationClassId));
+                unitChanges->Insert(UnitChange::Make(i, Chk::Unit::Field::RelationFlags, otherUnit.relationFlags));
+                unit.relationClassId = 0;
+                unit.relationFlags = 0;
+                otherUnit.relationClassId = 0;
+                otherUnit.relationFlags = 0;
+                CM->AddUndo(unitChanges);
+                SetUnitFieldText(unit);
+                return;
+            }
+        }
+    }
+    else if ( CM->selections.numUnits() == 2 ) // Link up the units
+    {
+        bool linkable = false;
+        auto firstIndex = CM->selections.units[0];
+        auto secondIndex = CM->selections.units[1];
+        if ( firstIndex != secondIndex && firstIndex < CM->numUnits() && secondIndex < CM->numUnits() )
+        {
+            auto & first = CM->getUnit(firstIndex);
+            auto & second = CM->getUnit(secondIndex);
+            auto firstType = first.type;
+            auto secondType = second.type;
+            if ( !first.isLinked() && !second.isLinked() && CM->isLinkable(first, second) )
+            {
+                auto unitChanges = ReversibleActions::Make();
+                unitChanges->Insert(UnitChange::Make(firstIndex, Chk::Unit::Field::RelationClassId, first.relationClassId));
+                unitChanges->Insert(UnitChange::Make(firstIndex, Chk::Unit::Field::RelationFlags, first.relationFlags));
+                unitChanges->Insert(UnitChange::Make(secondIndex, Chk::Unit::Field::RelationClassId, second.relationClassId));
+                unitChanges->Insert(UnitChange::Make(secondIndex, Chk::Unit::Field::RelationFlags, second.relationFlags));
+                first.relationClassId = second.classId;
+                second.relationClassId = first.classId;
+                auto relationFlags = first.type == Sc::Unit::Type::ZergNydusCanal ? Chk::Unit::RelationFlag::NydusLink : Chk::Unit::RelationFlag::AddonLink;
+                first.relationFlags = relationFlags;
+                second.relationFlags = relationFlags;
+                CM->AddUndo(unitChanges);
+                SetUnitFieldText(first);
+                return;
+            }
+        }
+    }
+}
+
+void UnitPropertiesWindow::NotifyJumpToPressed()
+{
+    size_t numUnits = CM->numUnits();
+    if ( CM == nullptr || !CM->selections.hasUnits() || CM->selections.getFirstUnit() >= numUnits )
+        return;
+
+    size_t currUnitIndex = size_t(CM->selections.getFirstUnit());
+    auto & unit = CM->getUnit(currUnitIndex);
+    if ( unit.isLinked() )
+    {
+        for ( size_t i=0; i<numUnits; ++i )
+        {
+            auto & otherUnit = CM->getUnit(i);
+            if ( unit.relationClassId == otherUnit.classId && i != currUnitIndex )
+            {
+                CM->selections.removeUnits();
+                CM->selections.addUnit(i);
+                this->RepopulateList();
+                CM->viewUnit(i);
+                return;
+            }
+        }
+    }
+}
+
 void UnitPropertiesWindow::NotifyInvincibleClicked()
 {
     auto unitChanges = ReversibleActions::Make();
@@ -747,10 +1159,14 @@ void UnitPropertiesWindow::NotifyInvincibleClicked()
         unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::StateFlags, unit.stateFlags));
 
         if ( checkInvincible.isChecked() )
+        {
             unit.stateFlags |= Chk::Unit::State::Invincible;
+            unit.validStateFlags |= Chk::Unit::State::Invincible;
+        }
         else
             unit.stateFlags &= ~Chk::Unit::State::Invincible;
     }
+    this->SetUnitFieldText();
     CM->AddUndo(unitChanges);
 }
 
@@ -764,10 +1180,14 @@ void UnitPropertiesWindow::NotifyHallucinatedClicked()
         unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::StateFlags, unit.stateFlags));
 
         if ( checkHallucinated.isChecked() )
+        {
             unit.stateFlags |= Chk::Unit::State::Hallucinated;
+            unit.validStateFlags |= Chk::Unit::State::Hallucinated;
+        }
         else
             unit.stateFlags &= ~Chk::Unit::State::Hallucinated;
     }
+    this->SetUnitFieldText();
     CM->AddUndo(unitChanges);
 }
 
@@ -781,10 +1201,14 @@ void UnitPropertiesWindow::NotifyBurrowedClicked()
         unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::StateFlags, unit.stateFlags));
 
         if ( checkBurrowed.isChecked() )
+        {
             unit.stateFlags |= Chk::Unit::State::Burrow;
+            unit.validStateFlags |= Chk::Unit::State::Burrow;
+        }
         else
             unit.stateFlags &= ~Chk::Unit::State::Burrow;
     }
+    this->SetUnitFieldText();
     CM->AddUndo(unitChanges);
 }
 
@@ -798,10 +1222,14 @@ void UnitPropertiesWindow::NotifyCloakedClicked()
         unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::StateFlags, unit.stateFlags));
 
         if ( checkCloaked.isChecked() )
+        {
             unit.stateFlags |= Chk::Unit::State::Cloak;
+            unit.validStateFlags |= Chk::Unit::State::Cloak;
+        }
         else
             unit.stateFlags &= ~Chk::Unit::State::Cloak;
     }
+    this->SetUnitFieldText();
     CM->AddUndo(unitChanges);
 }
 
@@ -815,10 +1243,14 @@ void UnitPropertiesWindow::NotifyLiftedClicked()
         unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::StateFlags, unit.stateFlags));
 
         if ( checkLifted.isChecked() )
+        {
             unit.stateFlags |= Chk::Unit::State::InTransit; // Check lifted state
+            unit.validStateFlags |= Chk::Unit::State::InTransit;
+        }
         else
             unit.stateFlags &= ~Chk::Unit::State::InTransit; // Uncheck lifted state
     }
+    this->SetUnitFieldText();
     CM->AddUndo(unitChanges);
 }
 
@@ -829,8 +1261,12 @@ void UnitPropertiesWindow::NotifyHpEditUpdated()
     {
         auto & selUnits = CM->selections.units;
         for ( u16 & unitIndex : selUnits )
-            CM->getUnit(unitIndex).hitpointPercent = hpPercent;
-
+        {
+            auto & unit = CM->getUnit(unitIndex);
+            unit.hitpointPercent = hpPercent;
+            unit.validFieldFlags |= Chk::Unit::ValidField::Hitpoints;
+        }
+        this->SetUnitFieldText();
         CM->Redraw(false);
     }
 }
@@ -842,8 +1278,12 @@ void UnitPropertiesWindow::NotifyMpEditUpdated()
     {
         auto & selUnits = CM->selections.units;
         for ( u16 & unitIndex : selUnits )
-            CM->getUnit(unitIndex).energyPercent = mpPercent;
-
+        {
+            auto & unit = CM->getUnit(unitIndex);
+            unit.energyPercent = mpPercent;
+            unit.validFieldFlags |= Chk::Unit::ValidField::Energy;
+        }
+        this->SetUnitFieldText();
         CM->Redraw(false);
     }
 }
@@ -855,8 +1295,12 @@ void UnitPropertiesWindow::NotifyShieldEditUpdated()
     {
         auto & selUnits = CM->selections.units;
         for ( u16 & unitIndex : selUnits )
-            CM->getUnit(unitIndex).shieldPercent = shieldPercent;
-
+        {
+            auto & unit = CM->getUnit(unitIndex);
+            unit.shieldPercent = shieldPercent;
+            unit.validFieldFlags |= Chk::Unit::ValidField::Shields;
+        }
+        this->SetUnitFieldText();
         CM->Redraw(false);
     }
 }
@@ -868,21 +1312,30 @@ void UnitPropertiesWindow::NotifyResourcesEditUpdated()
     {
         auto & selUnits = CM->selections.units;
         for ( u16 & unitIndex : selUnits )
-            CM->getUnit(unitIndex).resourceAmount = resources;
+        {
+            auto & unit = CM->getUnit(unitIndex);
+            unit.resourceAmount = resources;
+            unit.validFieldFlags |= Chk::Unit::ValidField::Resources;
+        }
+        this->SetUnitFieldText();
 
         CM->Redraw(false);
     }
 }
 
-void UnitPropertiesWindow::NotifyHangerEditUpdated()
+void UnitPropertiesWindow::NotifyHangarEditUpdated()
 {
-    u16 hanger = 0;
-    if ( editHanger.GetEditNum<u16>(hanger) )
+    u16 hangar = 0;
+    if ( editHangar.GetEditNum<u16>(hangar) )
     {
         auto & selUnits = CM->selections.units;
         for ( u16 & unitIndex : selUnits )
-            CM->getUnit(unitIndex).hangerAmount = hanger;
-
+        {
+            auto & unit = CM->getUnit(unitIndex);
+            unit.hangarAmount = hangar;
+            unit.validFieldFlags |= Chk::Unit::ValidField::Hangar;
+        }
+        this->SetUnitFieldText();
         CM->Redraw(true);
     }
 }
@@ -943,10 +1396,334 @@ void UnitPropertiesWindow::NotifyYcEditUpdated()
     }
 }
 
+void UnitPropertiesWindow::NotifyValidFieldOwnerClicked()
+{
+    auto unitChanges = ReversibleActions::Make();
+    auto & selUnits = CM->selections.units;
+    for ( u16 & unitIndex : selUnits )
+    {
+        Chk::Unit & unit = CM->getUnit(unitIndex);
+        unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::ValidFieldFlags, unit.validFieldFlags));
+
+        if ( checkValidFieldOwner.isChecked() )
+            unit.validFieldFlags |= Chk::Unit::ValidField::Owner;
+        else
+            unit.validFieldFlags &= ~Chk::Unit::ValidField::Owner;
+    }
+    this->SetUnitFieldText();
+    CM->AddUndo(unitChanges);
+}
+
+void UnitPropertiesWindow::NotifyValidFieldLifeClicked()
+{
+    auto unitChanges = ReversibleActions::Make();
+    auto & selUnits = CM->selections.units;
+    for ( u16 & unitIndex : selUnits )
+    {
+        Chk::Unit & unit = CM->getUnit(unitIndex);
+        unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::ValidFieldFlags, unit.validFieldFlags));
+
+        if ( checkValidFieldLife.isChecked() )
+            unit.validFieldFlags |= Chk::Unit::ValidField::Hitpoints;
+        else
+            unit.validFieldFlags &= ~Chk::Unit::ValidField::Hitpoints;
+    }
+    this->SetUnitFieldText();
+    CM->AddUndo(unitChanges);
+}
+
+void UnitPropertiesWindow::NotifyValidFieldManaClicked()
+{
+    auto unitChanges = ReversibleActions::Make();
+    auto & selUnits = CM->selections.units;
+    for ( u16 & unitIndex : selUnits )
+    {
+        Chk::Unit & unit = CM->getUnit(unitIndex);
+        unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::ValidFieldFlags, unit.validFieldFlags));
+
+        if ( checkValidFieldMana.isChecked() )
+            unit.validFieldFlags |= Chk::Unit::ValidField::Energy;
+        else
+            unit.validFieldFlags &= ~Chk::Unit::ValidField::Energy;
+    }
+    this->SetUnitFieldText();
+    CM->AddUndo(unitChanges);
+}
+
+void UnitPropertiesWindow::NotifyValidFieldShieldClicked()
+{
+    auto unitChanges = ReversibleActions::Make();
+    auto & selUnits = CM->selections.units;
+    for ( u16 & unitIndex : selUnits )
+    {
+        Chk::Unit & unit = CM->getUnit(unitIndex);
+        unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::ValidFieldFlags, unit.validFieldFlags));
+
+        if ( checkValidFieldShield.isChecked() )
+            unit.validFieldFlags |= Chk::Unit::ValidField::Shields;
+        else
+            unit.validFieldFlags &= ~Chk::Unit::ValidField::Shields;
+    }
+    this->SetUnitFieldText();
+    CM->AddUndo(unitChanges);
+}
+
+void UnitPropertiesWindow::NotifyValidFieldResourcesClicked()
+{
+    auto unitChanges = ReversibleActions::Make();
+    auto & selUnits = CM->selections.units;
+    for ( u16 & unitIndex : selUnits )
+    {
+        Chk::Unit & unit = CM->getUnit(unitIndex);
+        unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::ValidFieldFlags, unit.validFieldFlags));
+
+        if ( checkValidFieldResources.isChecked() )
+            unit.validFieldFlags |= Chk::Unit::ValidField::Resources;
+        else
+            unit.validFieldFlags &= ~Chk::Unit::ValidField::Resources;
+    }
+    this->SetUnitFieldText();
+    CM->AddUndo(unitChanges);
+}
+
+void UnitPropertiesWindow::NotifyValidFieldHangarClicked()
+{
+    auto unitChanges = ReversibleActions::Make();
+    auto & selUnits = CM->selections.units;
+    for ( u16 & unitIndex : selUnits )
+    {
+        Chk::Unit & unit = CM->getUnit(unitIndex);
+        unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::ValidFieldFlags, unit.validFieldFlags));
+
+        if ( checkValidFieldHangar.isChecked() )
+            unit.validFieldFlags |= Chk::Unit::ValidField::Hangar;
+        else
+            unit.validFieldFlags &= ~Chk::Unit::ValidField::Hangar;
+    }
+    this->SetUnitFieldText();
+    CM->AddUndo(unitChanges);
+}
+
+void UnitPropertiesWindow::NotifyValidFieldRawFlagsEditUpdated()
+{
+    u16 validFields = 0;
+    if ( editValidFieldRawFlags.GetEditNum<u16>(validFields) )
+    {
+        auto & selUnits = CM->selections.units;
+        for ( u16 & unitIndex : selUnits )
+            CM->getUnit(unitIndex).validFieldFlags = validFields;
+    }
+    this->SetUnitFieldText();
+}
+
+void UnitPropertiesWindow::NotifyValidStateInvincibleClicked()
+{
+    auto unitChanges = ReversibleActions::Make();
+    auto & selUnits = CM->selections.units;
+    for ( u16 & unitIndex : selUnits )
+    {
+        Chk::Unit & unit = CM->getUnit(unitIndex);
+        unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::ValidStateFlags, unit.validStateFlags));
+
+        if ( checkValidStateInvincible.isChecked() )
+            unit.validStateFlags |= Chk::Unit::State::Invincible;
+        else
+            unit.validStateFlags &= ~Chk::Unit::State::Invincible;
+    }
+    this->SetUnitFieldText();
+    CM->AddUndo(unitChanges);
+}
+
+void UnitPropertiesWindow::NotifyValidStateBurrowedClicked()
+{
+    auto unitChanges = ReversibleActions::Make();
+    auto & selUnits = CM->selections.units;
+    for ( u16 & unitIndex : selUnits )
+    {
+        Chk::Unit & unit = CM->getUnit(unitIndex);
+        unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::ValidStateFlags, unit.validStateFlags));
+
+        if ( checkValidStateBurrowed.isChecked() )
+            unit.validStateFlags |= Chk::Unit::State::Burrow;
+        else
+            unit.validStateFlags &= ~Chk::Unit::State::Burrow;
+    }
+    this->SetUnitFieldText();
+    CM->AddUndo(unitChanges);
+}
+
+void UnitPropertiesWindow::NotifyValidStateHallucinatedClicked()
+{
+    auto unitChanges = ReversibleActions::Make();
+    auto & selUnits = CM->selections.units;
+    for ( u16 & unitIndex : selUnits )
+    {
+        Chk::Unit & unit = CM->getUnit(unitIndex);
+        unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::ValidStateFlags, unit.validStateFlags));
+
+        if ( checkValidStateHallucinated.isChecked() )
+            unit.validStateFlags |= Chk::Unit::State::Hallucinated;
+        else
+            unit.validStateFlags &= ~Chk::Unit::State::Hallucinated;
+    }
+    this->SetUnitFieldText();
+    CM->AddUndo(unitChanges);
+}
+
+void UnitPropertiesWindow::NotifyValidStateCloakedClicked()
+{
+    auto unitChanges = ReversibleActions::Make();
+    auto & selUnits = CM->selections.units;
+    for ( u16 & unitIndex : selUnits )
+    {
+        Chk::Unit & unit = CM->getUnit(unitIndex);
+        unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::ValidStateFlags, unit.validStateFlags));
+
+        if ( checkValidStateCloaked.isChecked() )
+            unit.validStateFlags |= Chk::Unit::State::Cloak;
+        else
+            unit.validStateFlags &= ~Chk::Unit::State::Cloak;
+    }
+    this->SetUnitFieldText();
+    CM->AddUndo(unitChanges);
+}
+
+void UnitPropertiesWindow::NotifyValidStateLiftedClicked()
+{
+    auto unitChanges = ReversibleActions::Make();
+    auto & selUnits = CM->selections.units;
+    for ( u16 & unitIndex : selUnits )
+    {
+        Chk::Unit & unit = CM->getUnit(unitIndex);
+        unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::ValidStateFlags, unit.validStateFlags));
+
+        if ( checkValidStateLifted.isChecked() )
+            unit.validStateFlags |= Chk::Unit::State::InTransit;
+        else
+            unit.validStateFlags &= ~Chk::Unit::State::InTransit;
+    }
+    this->SetUnitFieldText();
+    CM->AddUndo(unitChanges);
+}
+
+void UnitPropertiesWindow::NotifyValidStateRawFlagsEditUpdated()
+{
+    u16 validState = 0;
+    if ( editValidStateRawFlags.GetEditNum<u16>(validState) )
+    {
+        auto & selUnits = CM->selections.units;
+        for ( u16 & unitIndex : selUnits )
+            CM->getUnit(unitIndex).validStateFlags = validState;
+    }
+    this->SetUnitFieldText();
+}
+
+void UnitPropertiesWindow::NotifyStateRawFlagsEditUpdated()
+{
+    u16 state = 0;
+    if ( editRawStateFlags.GetEditNum<u16>(state) )
+    {
+        auto & selUnits = CM->selections.units;
+        for ( u16 & unitIndex : selUnits )
+            CM->getUnit(unitIndex).stateFlags = state;
+    }
+    this->SetUnitFieldText();
+}
+
+void UnitPropertiesWindow::NotifyUnusedEditUpdated()
+{
+    u16 unused = 0;
+    if ( editUnused.GetEditNum<u16>(unused) )
+    {
+        auto & selUnits = CM->selections.units;
+        for ( u16 & unitIndex : selUnits )
+            CM->getUnit(unitIndex).unused = unused;
+    }
+    this->SetUnitFieldText();
+}
+
+void UnitPropertiesWindow::NotifyUniqueIdEditUpdated()
+{
+    u16 uniqueId = 0;
+    if ( editUniqueId.GetEditNum<u16>(uniqueId) )
+    {
+        auto & selUnits = CM->selections.units;
+        for ( u16 & unitIndex : selUnits )
+            CM->getUnit(unitIndex).classId = uniqueId;
+    }
+    this->SetUnitFieldText();
+    CM->Redraw(false);
+}
+
+void UnitPropertiesWindow::NotifyLinkedIdEditUpdated()
+{
+    u16 linkedId = 0;
+    if ( editLinkedId.GetEditNum<u16>(linkedId) )
+    {
+        auto & selUnits = CM->selections.units;
+        for ( u16 & unitIndex : selUnits )
+            CM->getUnit(unitIndex).relationClassId = linkedId;
+    }
+    this->SetUnitFieldText();
+    CM->Redraw(false);
+}
+
+void UnitPropertiesWindow::NotifyLinkNydusClicked()
+{
+    auto unitChanges = ReversibleActions::Make();
+    auto & selUnits = CM->selections.units;
+    for ( u16 & unitIndex : selUnits )
+    {
+        Chk::Unit & unit = CM->getUnit(unitIndex);
+        unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::RelationFlags, unit.relationFlags));
+
+        if ( checkNydus.isChecked() )
+            unit.relationFlags |= Chk::Unit::RelationFlag::NydusLink;
+        else
+            unit.relationFlags &= ~Chk::Unit::RelationFlag::NydusLink;
+    }
+    this->SetUnitFieldText();
+    CM->AddUndo(unitChanges);
+    CM->Redraw(false);
+}
+
+void UnitPropertiesWindow::NotifyLinkAddonClicked()
+{
+    auto unitChanges = ReversibleActions::Make();
+    auto & selUnits = CM->selections.units;
+    for ( u16 & unitIndex : selUnits )
+    {
+        Chk::Unit & unit = CM->getUnit(unitIndex);
+        unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::RelationFlags, unit.relationFlags));
+
+        if ( checkAddon.isChecked() )
+            unit.relationFlags |= Chk::Unit::RelationFlag::AddonLink;
+        else
+            unit.relationFlags &= ~Chk::Unit::RelationFlag::AddonLink;
+    }
+    this->SetUnitFieldText();
+    CM->AddUndo(unitChanges);
+    CM->Redraw(false);
+}
+
+void UnitPropertiesWindow::NotifyRelationRawFlagsEditUpdated()
+{
+    u16 relationFlags = 0;
+    if ( editLinkRawFlags.GetEditNum<u16>(relationFlags) )
+    {
+        auto & selUnits = CM->selections.units;
+        for ( u16 & unitIndex : selUnits )
+            CM->getUnit(unitIndex).relationFlags = relationFlags;
+    }
+    this->SetUnitFieldText();
+    CM->Redraw(false);
+}
+
 void UnitPropertiesWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
 {
     switch ( idFrom )
     {
+    case Id::ButtonAdvanced: NotifyAdvancedToggled(); break;
     case Id::ButtonClose: NotifyClosePressed(); break;
     case Id::ButtonMoveTop: NotifyMoveTopPressed(); break;
     case Id::ButtonMoveEnd: NotifyMoveEndPressed(); break;
@@ -954,11 +1731,26 @@ void UnitPropertiesWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
     case Id::ButtonMoveDown: NotifyMoveDownPressed(); break;
     case Id::ButtonMoveTo: NotifyMoveToPressed(); break;
     case Id::ButtonDelete: NotifyDeletePressed(); break;
+    case Id::ButtonLinkUnlink: NotifyLinkUnlinkPressed(); break;
+    case Id::ButtonJumpTo: NotifyJumpToPressed(); break;
     case Id::CheckInvincible: NotifyInvincibleClicked(); break;
     case Id::CheckHallucinated: NotifyHallucinatedClicked(); break;
     case Id::CheckBurrowed: NotifyBurrowedClicked(); break;
     case Id::CheckCloaked: NotifyCloakedClicked(); break;
     case Id::CheckLifted: NotifyLiftedClicked(); break;
+    case Id::CheckValidFieldOwner: NotifyValidFieldOwnerClicked(); break;
+    case Id::CheckValidFieldLife: NotifyValidFieldLifeClicked(); break;
+    case Id::CheckValidFieldMana: NotifyValidFieldManaClicked(); break;
+    case Id::CheckValidFieldShield: NotifyValidFieldShieldClicked(); break;
+    case Id::CheckValidFieldResources: NotifyValidFieldResourcesClicked(); break;
+    case Id::CheckValidFieldHangar: NotifyValidFieldHangarClicked(); break;
+    case Id::CheckValidStateInvincible: NotifyValidStateInvincibleClicked(); break;
+    case Id::CheckValidStateBurrowed: NotifyValidStateBurrowedClicked(); break;
+    case Id::CheckValidStateHallucinated: NotifyValidStateHallucinatedClicked(); break;
+    case Id::CheckValidStateCloaked: NotifyValidStateCloakedClicked(); break;
+    case Id::CheckValidStateLifted: NotifyValidStateLiftedClicked(); break;
+    case Id::CheckNydus: NotifyLinkNydusClicked(); break;
+    case Id::CheckAddon: NotifyLinkAddonClicked(); break;
     }
 }
 
@@ -973,10 +1765,17 @@ void UnitPropertiesWindow::NotifyEditUpdated(int idFrom, HWND hWndFrom)
     case Id::EditMp: NotifyMpEditUpdated(); break;
     case Id::EditShields: NotifyShieldEditUpdated(); break;
     case Id::EditResources: NotifyResourcesEditUpdated(); break;
-    case Id::EditHanger: NotifyHangerEditUpdated(); break;
+    case Id::EditHangar: NotifyHangarEditUpdated(); break;
     case Id::EditUnitId: NotifyIdEditUpdated(); break;
     case Id::EditXc: NotifyXcEditUpdated(); break;
     case Id::EditYc: NotifyYcEditUpdated(); break;
+    case Id::EditValidFieldRawFlags: NotifyValidFieldRawFlagsEditUpdated(); break;
+    case Id::EditValidStateRawFlags: NotifyValidStateRawFlagsEditUpdated(); break;
+    case Id::EditRawStateFlags: NotifyStateRawFlagsEditUpdated(); break;
+    case Id::EditUnused: NotifyUnusedEditUpdated(); break;
+    case Id::EditUniqueId: NotifyUniqueIdEditUpdated(); break;
+    case Id::EditLinkedId: NotifyLinkedIdEditUpdated(); break;
+    case Id::EditLinkRawFlags: NotifyRelationRawFlagsEditUpdated(); break;
     }
 }
 
@@ -988,18 +1787,27 @@ void UnitPropertiesWindow::NotifyEditFocused(int idFrom, HWND hWndFrom)
     case Id::EditMp: preservedStats.AddStats(CM->selections, Chk::Unit::Field::EnergyPercent); break;
     case Id::EditShields: preservedStats.AddStats(CM->selections, Chk::Unit::Field::ShieldPercent); break;
     case Id::EditResources: preservedStats.AddStats(CM->selections, Chk::Unit::Field::ResourceAmount); break;
-    case Id::EditHanger: preservedStats.AddStats(CM->selections, Chk::Unit::Field::HangerAmount); break;
+    case Id::EditHangar: preservedStats.AddStats(CM->selections, Chk::Unit::Field::HangarAmount); break;
     case Id::EditUnitId: preservedStats.AddStats(CM->selections, Chk::Unit::Field::Type); break;
     case Id::EditXc: preservedStats.AddStats(CM->selections, Chk::Unit::Field::Xc); break;
     case Id::EditYc: preservedStats.AddStats(CM->selections, Chk::Unit::Field::Yc); break;
+    case Id::EditValidFieldRawFlags: preservedStats.AddStats(CM->selections, Chk::Unit::Field::ValidFieldFlags); break;
+    case Id::EditValidStateRawFlags: preservedStats.AddStats(CM->selections, Chk::Unit::Field::ValidStateFlags); break;
+    case Id::EditRawStateFlags: preservedStats.AddStats(CM->selections, Chk::Unit::Field::StateFlags); break;
+    case Id::EditUnused: preservedStats.AddStats(CM->selections, Chk::Unit::Field::Unused); break;
+    case Id::EditUniqueId: preservedStats.AddStats(CM->selections, Chk::Unit::Field::ClassId); break;
+    case Id::EditLinkedId: preservedStats.AddStats(CM->selections, Chk::Unit::Field::RelationClassId); break;
+    case Id::EditLinkRawFlags: preservedStats.AddStats(CM->selections, Chk::Unit::Field::RelationFlags); break;
     }
 }
 
 void UnitPropertiesWindow::NotifyEditFocusLost(int idFrom, HWND hWndFrom)
 {
     if ( idFrom == Id::EditHp || idFrom == Id::EditMp || idFrom == Id::EditShields ||
-        idFrom == Id::EditResources || idFrom == Id::EditHanger || idFrom == Id::EditUnitId ||
-        idFrom == Id::EditXc || idFrom == Id::EditYc )
+        idFrom == Id::EditResources || idFrom == Id::EditHangar || idFrom == Id::EditUnitId ||
+        idFrom == Id::EditXc || idFrom == Id::EditYc || idFrom == Id::EditValidFieldRawFlags ||
+        idFrom == Id::EditValidStateRawFlags || idFrom == Id::EditRawStateFlags || idFrom == Id::EditUnused ||
+        idFrom == Id::EditUniqueId || idFrom == Id::EditLinkedId || idFrom == Id::EditLinkRawFlags )
     {
         preservedStats.convertToUndo();
     }

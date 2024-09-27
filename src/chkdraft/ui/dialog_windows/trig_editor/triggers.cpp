@@ -609,8 +609,8 @@ std::string TriggersWindow::GetActionString(u8 actionNum, const Chk::Trigger & t
                 << "\x0C owned by \x08" << tt.getTrigPlayer(action.group) << "\x0C at \'\x08" << tt.getTrigLocation(action.locationId)
                 << "\x0C\' to \x08" << tt.getTrigNumber(action.number) << "\x0C%.";
             break;
-        case Chk::Action::Type::ModifyUnitHangerCount: // Number, Type2, Type, Location, Players
-            ssAction << "Add at most \x08" << tt.getTrigNumber(action.number) << "\x0C to hanger for \x08"
+        case Chk::Action::Type::ModifyUnitHangarCount: // Number, Type2, Type, Location, Players
+            ssAction << "Add at most \x08" << tt.getTrigNumber(action.number) << "\x0C to hangar for \x08"
                 << tt.getTrigNumUnits((Chk::Action::NumUnits)action.type2) << "\x0C \x08" << tt.getTrigUnit((Sc::Unit::Type)action.type) << "\x0C at \'\x08"
                 << tt.getTrigLocation(action.locationId) << "\x0C\' owned by \x08" << tt.getTrigPlayer(action.group) << "\x0C.";
             break;

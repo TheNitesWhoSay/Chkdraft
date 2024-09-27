@@ -613,6 +613,7 @@ void GuiMap::changeUnitOwner(size_t unitIndex, u8 newPlayer, std::shared_ptr<Rev
                     {
                         opUndos->Insert(UnitChange::Make(u16(unitIndex), Chk::Unit::Field::Owner, unit.owner));
                         unit.owner = newPlayer;
+                        unit.validFieldFlags |= Chk::Unit::ValidField::Owner;
                     }
                 }
             }
@@ -928,6 +929,23 @@ void GuiMap::createMobileInvertedLocation()
     }
     else
         logger.warn("No units selected to create location");
+}
+
+void GuiMap::viewUnit(u16 unitIndex)
+{
+    RECT rect {};
+    if ( unitIndex < Scenario::numUnits() && GetClientRect(getHandle(), &rect) != 0 )
+    {
+        const Chk::Unit & unit = Scenario::getUnit(unitIndex);
+        s32 width = rect.right - rect.left,
+            height = rect.bottom - rect.top;
+
+        screenLeft = unit.xc - width/2;
+        screenTop = unit.yc - height/2;
+
+        Scroll(true, true, true);
+        Redraw(false);
+    }
 }
 
 void GuiMap::viewLocation(u16 locationId)
@@ -1888,7 +1906,7 @@ void GuiMap::PaintMap(GuiMapPtr currMap, bool pasting)
                 scGraphics.DrawTools(toolsBuffer, scaledWidth, scaledHeight,
                     screenLeft, screenTop, selections, pasting, clipboard, *this);
 
-                if ( currLayer != Layer::Locations && dragging )
+                if ( currLayer != Layer::Locations && dragging && !clipboard.isPasting() )
                     DrawSelectingFrame(toolsBuffer, selections, screenLeft, screenTop, bitmapWidth, bitmapHeight, zoom);
             }
             SetStretchBltMode(dc.getDcHandle(), HALFTONE);
@@ -2208,6 +2226,27 @@ bool GuiMap::isValidUnitPlacement(Sc::Unit::Type unitType, s32 x, s32 y)
         }
     }
     return true;
+}
+
+bool GuiMap::isLinkable(const Chk::Unit & first, const Chk::Unit & second)
+{
+    switch ( first.type )
+    {
+        case Sc::Unit::Type::TerranControlTower: return second.type == Sc::Unit::Type::TerranStarport;
+        case Sc::Unit::Type::TerranMachineShop: return second.type == Sc::Unit::Type::TerranFactory;
+        case Sc::Unit::Type::TerranComsatStation: return second.type == Sc::Unit::Type::TerranCommandCenter;
+        case Sc::Unit::Type::TerranNuclearSilo: return second.type == Sc::Unit::Type::TerranCommandCenter;
+        case Sc::Unit::Type::TerranCovertOps: return second.type == Sc::Unit::Type::TerranScienceFacility;
+        case Sc::Unit::Type::TerranPhysicsLab: return second.type == Sc::Unit::Type::TerranScienceFacility;
+        case Sc::Unit::Type::TerranStarport: return second.type == Sc::Unit::Type::TerranControlTower;
+        case Sc::Unit::Type::TerranFactory: return second.type == Sc::Unit::Type::TerranMachineShop;
+        case Sc::Unit::Type::TerranCommandCenter:
+            return second.type == Sc::Unit::Type::TerranComsatStation || second.type == Sc::Unit::Type::TerranNuclearSilo;
+        case Sc::Unit::Type::TerranScienceFacility:
+            return second.type == Sc::Unit::Type::TerranCovertOps || second.type == Sc::Unit::Type::TerranPhysicsLab;
+        case Sc::Unit::Type::ZergNydusCanal: return second.type == Sc::Unit::Type::ZergNydusCanal;
+        default: return false;
+    }
 }
 
 std::optional<u16> GuiMap::getLinkableUnitIndex(Sc::Unit::Type unitType, s32 x, s32 y)

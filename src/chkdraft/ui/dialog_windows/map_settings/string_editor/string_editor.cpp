@@ -1,6 +1,7 @@
 #include "string_editor.h"
 #include <mapping_core/file_browser.h>
 #include "chkdraft/chkdraft.h"
+#include <filesystem>
 #include <fstream>
 #include <string>
 
@@ -340,7 +341,7 @@ void StringEditorWindow::saveStrings()
 
         removeFile(filePath);
 
-        std::ofstream outFile(filePath, std::ofstream::out);
+        std::ofstream outFile(std::filesystem::path(asUtf8(filePath)), std::ofstream::out);
         if ( outFile.is_open() )
         {
             for ( u32 i=0; i<CM->getCapacity(extended ? Chk::Scope::Editor : Chk::Scope::Game); i++ )
