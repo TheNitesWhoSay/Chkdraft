@@ -1,5 +1,6 @@
 #include "settings.h"
 #include <cross_cut/logger.h>
+#include <filesystem>
 #include <fstream>
 
 std::string Settings::starCraftPath("");
@@ -125,7 +126,7 @@ bool Settings::readSettingsFile()
     if ( auto settingsPath = GetSettingsPath() )
     {
         std::ifstream loadFile;
-        loadFile.open(*settingsPath + "settings.ini");
+        loadFile.open(std::filesystem::path(asUtf8(*settingsPath + "settings.ini")));
 
         std::string line = "";
         while (std::getline(loadFile, line))
@@ -191,7 +192,7 @@ bool Settings::updateSettingsFile()
     if ( auto settingsPath = GetSettingsPath() )
     {
         std::ofstream loadFile;
-        loadFile.open(*settingsPath + "settings.ini");
+        loadFile.open(std::filesystem::path(asUtf8(*settingsPath + "settings.ini")));
         loadFile
             << "starCraftPath=" << starCraftPath << std::endl
             << "starDatPath=" << starDatPath << std::endl

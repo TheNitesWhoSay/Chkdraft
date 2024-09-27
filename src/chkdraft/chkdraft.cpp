@@ -125,7 +125,7 @@ void Chkdraft::SetupLogging()
         logger.setAggregator(stdOut);
         logger.setOutputStream(mainPlot.loggerWindow);
         logger.info("Setting log file to: " + logFilePath);
-        logFile.setOutputStream(std::shared_ptr<std::ostream>(new std::ofstream(logFilePath), [](std::ostream* os) {
+        logFile.setOutputStream(std::shared_ptr<std::ostream>(new std::ofstream(std::filesystem::path(asUtf8(logFilePath))), [](std::ostream* os) {
             if ( os != nullptr ) { // Close and delete when output stream goes out of scope
                 ((std::ofstream*)os)->close();
                 delete os;

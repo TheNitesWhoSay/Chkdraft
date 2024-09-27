@@ -26,7 +26,7 @@ void CuwpInputDialog::ClearStoredCuwps()
     newCuwp.shieldPercent = 0;
     newCuwp.energyPercent = 0;
     newCuwp.resourceAmount = 0;
-    newCuwp.hangerAmount = 0;
+    newCuwp.hangarAmount = 0;
     newCuwp.unitStateFlags = 0;
 
     initialCuwp.validUnitStateFlags = 0;
@@ -36,7 +36,7 @@ void CuwpInputDialog::ClearStoredCuwps()
     initialCuwp.shieldPercent = 0;
     initialCuwp.energyPercent = 0;
     initialCuwp.resourceAmount = 0;
-    initialCuwp.hangerAmount = 0;
+    initialCuwp.hangarAmount = 0;
     initialCuwp.unitStateFlags = 0;
 }
 
@@ -69,7 +69,7 @@ BOOL CuwpInputDialog::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
             editManaPercent.GetEditNum<u8>(newCuwp.energyPercent) &&
             editShieldPercent.GetEditNum<u8>(newCuwp.shieldPercent) &&
             editResources.GetEditNum<u32>(newCuwp.resourceAmount) &&
-            editHanger.GetEditNum<u16>(newCuwp.hangerAmount);
+            editHangar.GetEditNum<u16>(newCuwp.hangarAmount);
 
         newCuwp.setInvincible(checkInvincible.isChecked());
         newCuwp.setBurrowed(checkBurrowed.isChecked());
@@ -96,13 +96,13 @@ BOOL CuwpInputDialog::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
         editManaPercent.FindThis(hWnd, IDC_EDITCUWPMANA);
         editShieldPercent.FindThis(hWnd, IDC_EDITCUWPSHIELD);
         editResources.FindThis(hWnd, IDC_EDITCUWPRESOURCES);
-        editHanger.FindThis(hWnd, IDC_EDITCUWPHANGER);
+        editHangar.FindThis(hWnd, IDC_EDITCUWPHANGAR);
 
         editHitpointPercent.SetEditNum<u8>(initialCuwp.hitpointPercent);
         editManaPercent.SetEditNum<u8>(initialCuwp.energyPercent);
         editShieldPercent.SetEditNum<u8>(initialCuwp.shieldPercent);
         editResources.SetEditNum<u32>(initialCuwp.resourceAmount);
-        editHanger.SetEditNum<u16>(initialCuwp.hangerAmount);
+        editHangar.SetEditNum<u16>(initialCuwp.hangarAmount);
 
         checkInvincible.FindThis(hWnd, IDC_CHECKCUWPINVINCIBLE);
         checkBurrowed.FindThis(hWnd, IDC_CHECKCUWPBURROWED);

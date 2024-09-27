@@ -8,7 +8,7 @@ enum_t(Id, u32, {
     EditMana,
     EditShields,
     EditResources,
-    EditHanger,
+    EditHangar,
     CheckInvincible,
     CheckBurrowed,
     CheckLifted,
@@ -74,7 +74,7 @@ void CUWPsWindow::RefreshWindow(bool includeTree)
         editManaPercent.SetEditNum<u8>(cuwp.energyPercent);
         editShieldPercent.SetEditNum<u8>(cuwp.shieldPercent);
         editResources.SetEditNum<u32>(cuwp.resourceAmount);
-        editHanger.SetEditNum<u16>(cuwp.hangerAmount);
+        editHangar.SetEditNum<u16>(cuwp.hangarAmount);
 
         checkInvincible.SetCheck(cuwp.isInvincible());
         checkBurrowed.SetCheck(cuwp.isBurrowed());
@@ -101,13 +101,13 @@ void CUWPsWindow::CreateSubWindows(HWND hWnd)
     manaPercent.CreateThis(hWnd, 190, 65, 65, 20, "Mana (%): ", 0);
     shieldPercent.CreateThis(hWnd, 190, 90, 65, 20, "Shield (%): ", 0);
     resourceAmount.CreateThis(hWnd, 190, 115, 65, 20, "Resources: ", 0);
-    hangerAmount.CreateThis(hWnd, 190, 140, 65, 20, "Hanger: ", 0);
+    hangarAmount.CreateThis(hWnd, 190, 140, 65, 20, "Hangar: ", 0);
 
     editHitpointPercent.CreateThis(hWnd, 260, 38, 80, 20, false, Id::EditHitpoints);
     editManaPercent.CreateThis(hWnd, 260, 63, 80, 20, false, Id::EditMana);
     editShieldPercent.CreateThis(hWnd, 260, 88, 80, 20, false, Id::EditShields);
     editResources.CreateThis(hWnd, 260, 113, 80, 20, false, Id::EditResources);
-    editHanger.CreateThis(hWnd, 260, 138, 80, 20, false, Id::EditHanger);
+    editHangar.CreateThis(hWnd, 260, 138, 80, 20, false, Id::EditHangar);
 
     checkInvincible.CreateThis(hWnd, 190, 170, 100, 20, false, "Invincible", Id::CheckInvincible);
     checkBurrowed.CreateThis(hWnd, 190, 190, 100, 20, false, "Burrowed", Id::CheckBurrowed);
@@ -125,13 +125,13 @@ void CUWPsWindow::DisableEditing()
     manaPercent.DisableThis();
     shieldPercent.DisableThis();
     resourceAmount.DisableThis();
-    hangerAmount.DisableThis();
+    hangarAmount.DisableThis();
 
     editHitpointPercent.DisableThis();
     editManaPercent.DisableThis();
     editShieldPercent.DisableThis();
     editResources.DisableThis();
-    editHanger.DisableThis();
+    editHangar.DisableThis();
 
     checkInvincible.DisableThis();
     checkBurrowed.DisableThis();
@@ -146,13 +146,13 @@ void CUWPsWindow::EnableEditing()
     manaPercent.EnableThis();
     shieldPercent.EnableThis();
     resourceAmount.EnableThis();
-    hangerAmount.EnableThis();
+    hangarAmount.EnableThis();
 
     editHitpointPercent.EnableThis();
     editManaPercent.EnableThis();
     editShieldPercent.EnableThis();
     editResources.EnableThis();
-    editHanger.EnableThis();
+    editHangar.EnableThis();
 
     checkInvincible.EnableThis();
     checkBurrowed.EnableThis();
@@ -215,7 +215,7 @@ void CUWPsWindow::NotifyEditUpdated(int idFrom, HWND hWndFrom)
         case Id::EditMana: if ( editManaPercent.GetEditNum(editNum) ) cuwp.energyPercent = editNum; break;
         case Id::EditShields: if ( editShieldPercent.GetEditNum(editNum) ) cuwp.shieldPercent = editNum; break;
         case Id::EditResources: if ( editResources.GetEditNum(editNum) ) cuwp.resourceAmount = editNum; break;
-        case Id::EditHanger: if ( editHanger.GetEditNum(editNum) ) cuwp.hangerAmount = editNum; break;
+        case Id::EditHangar: if ( editHangar.GetEditNum(editNum) ) cuwp.hangarAmount = editNum; break;
     }
     CM->setCuwp(selectedCuwp, cuwp);
     CM->notifyChange(false);

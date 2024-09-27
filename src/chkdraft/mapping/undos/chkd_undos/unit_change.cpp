@@ -40,8 +40,8 @@ void UnitChange::Reverse(void *guiMap)
             ((GuiMap*)guiMap)->getUnit(unitIndex).energyPercent = (u8)data; break;
         case Chk::Unit::Field::ResourceAmount: replacedData = u32(((GuiMap*)guiMap)->getUnit(unitIndex).resourceAmount);
             ((GuiMap*)guiMap)->getUnit(unitIndex).resourceAmount = data; break;
-        case Chk::Unit::Field::HangerAmount: replacedData = u32(((GuiMap*)guiMap)->getUnit(unitIndex).hangerAmount);
-            ((GuiMap*)guiMap)->getUnit(unitIndex).hangerAmount = (u16)data; break;
+        case Chk::Unit::Field::HangarAmount: replacedData = u32(((GuiMap*)guiMap)->getUnit(unitIndex).hangarAmount);
+            ((GuiMap*)guiMap)->getUnit(unitIndex).hangarAmount = (u16)data; break;
         case Chk::Unit::Field::StateFlags: replacedData = u32(((GuiMap*)guiMap)->getUnit(unitIndex).stateFlags);
             ((GuiMap*)guiMap)->getUnit(unitIndex).stateFlags = (u16)data; break;
         case Chk::Unit::Field::Unused: replacedData = u32(((GuiMap*)guiMap)->getUnit(unitIndex).unused);

@@ -5,6 +5,7 @@
 #include <gl/uniform.h>
 #include <gl/vertices.h>
 #include <hb-ft.h>
+#include <cstdint>
 #include <stdexcept>
 #include <string_view>
 #include FT_FREETYPE_H
@@ -327,7 +328,7 @@ namespace gl
             std::vector<RenderLine> renderLines {};
 
             PrepareClippedText(const std::string & utf8Text, bool renderTextures, FT_Face ftFontFace, hb_font_t* hbFont,
-                std::unordered_map<hb_codepoint_t, std::unique_ptr<gl::Texture>> & glyphCache, s32 clipWidth, s32 clipHeight)
+                std::unordered_map<hb_codepoint_t, std::unique_ptr<gl::Texture>> & glyphCache, int32_t clipWidth, int32_t clipHeight)
             {
                 std::vector<std::vector<std::string_view>> textLines {};
                 std::string_view remainingText = utf8Text;
@@ -623,7 +624,7 @@ namespace gl
         void drawPreparedClippedText(GLfloat x, GLfloat y, GLfloat lineHeight, PrepareClippedText & preparedClippedText)
         {
             auto & [renderLines] = preparedClippedText;
-            s32 lineIndex = 0;
+            int32_t lineIndex = 0;
             for ( auto & renderLine : renderLines )
             {
                 auto & [renderGlyphs, dim, offset] = renderLine;
@@ -665,7 +666,7 @@ namespace gl
         }
 
         template <gl::Align Alignment = gl::Align::Left>
-        void drawClippedText(GLfloat x, GLfloat y, GLfloat lineHeight, const std::string & utf8Text, s32 clipWidth, s32 clipHeight)
+        void drawClippedText(GLfloat x, GLfloat y, GLfloat lineHeight, const std::string & utf8Text, int32_t clipWidth, int32_t clipHeight)
         {
             auto preparedText = PrepareClippedText {utf8Text, true, ftFontFace, hbFont, glyphCache, clipWidth, clipHeight};
             drawPreparedClippedText<Alignment>(x, y, lineHeight, preparedText);

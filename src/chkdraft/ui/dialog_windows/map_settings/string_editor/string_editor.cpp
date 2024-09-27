@@ -1,6 +1,7 @@
 #include "string_editor.h"
 #include <mapping_core/file_browser.h>
 #include "chkdraft/chkdraft.h"
+#include <filesystem>
 #include <fstream>
 #include <string>
 
@@ -116,10 +117,10 @@ void StringEditorWindow::CreateSubWindows(HWND hWnd)
 
     buttonDeleteString.CreateThis(hWnd, 130, 290, 200, 20, "Delete String", Id::DELETE_STRING);
     buttonSaveString.CreateThis(hWnd, 340, 290, 75, 20, "Save to...", Id::SAVE_TO);
-    editString.CreateThis(hWnd, 5, 310, 453, 140, true, Id::EDIT_STRING);
+    editString.CreateThis(hWnd, 5, 310, 453, 150, true, Id::EDIT_STRING);
 
-    textStringUsage.CreateThis(hWnd, 480, 379, 125, 20, "String Usage:", 0);
-    listUsage.CreateThis(hWnd, 463, 394, 125, 83, false, false, false, false, false, Id::LB_STRINGUSE);
+    textStringUsage.CreateThis(hWnd, 480, 389, 125, 20, "String Usage:", 0);
+    listUsage.CreateThis(hWnd, 463, 404, 125, 83, false, false, false, false, false, Id::LB_STRINGUSE);
 
     stringGuide.CreateThis(hWnd);
     stringPreviewWindow.CreateThis(hWnd, Id::PREVIEW_STRING);
@@ -256,6 +257,7 @@ LRESULT StringEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 
         case WinLib::LB::WM_PREMEASUREITEMS: // Measuring is time sensative, load necessary items for measuring all strings once
             stringListDc.emplace(listStrings.getHandle());
+            stringListDc->setDefaultFont();
             break;
 
         case WM_MEASUREITEM:
@@ -293,6 +295,7 @@ LRESULT StringEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
                 if ( pdis->itemID != -1 && ( drawSelection || drawEntire ) )
                 {
                     WinLib::DeviceContext dc { pdis->hDC };
+                    dc.setDefaultFont();
                     auto str = CM->getString<RawString>((size_t)pdis->itemData, this->extended ? Chk::Scope::Editor : Chk::Scope::Game);
                     if ( CM != nullptr && str )
                     {
@@ -338,7 +341,7 @@ void StringEditorWindow::saveStrings()
 
         removeFile(filePath);
 
-        std::ofstream outFile(filePath, std::ofstream::out);
+        std::ofstream outFile(std::filesystem::path(asUtf8(filePath)), std::ofstream::out);
         if ( outFile.is_open() )
         {
             for ( u32 i=0; i<CM->getCapacity(extended ? Chk::Scope::Editor : Chk::Scope::Game); i++ )
