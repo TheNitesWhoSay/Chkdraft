@@ -29,6 +29,7 @@ bool MapSettingsWindow::CreateThis(HWND hParent)
 bool MapSettingsWindow::DestroyThis()
 {
     currTab = Tab::MapProperties;
+    chkd.FocusThis();
     ClassDialog::Hide();
     mapPropertiesWindow.DestroyThis();
     forcesWindow.DestroyThis();
