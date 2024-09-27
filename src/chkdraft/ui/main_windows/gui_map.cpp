@@ -1906,7 +1906,7 @@ void GuiMap::PaintMap(GuiMapPtr currMap, bool pasting)
                 scGraphics.DrawTools(toolsBuffer, scaledWidth, scaledHeight,
                     screenLeft, screenTop, selections, pasting, clipboard, *this);
 
-                if ( currLayer != Layer::Locations && dragging )
+                if ( currLayer != Layer::Locations && dragging && !clipboard.isPasting() )
                     DrawSelectingFrame(toolsBuffer, selections, screenLeft, screenTop, bitmapWidth, bitmapHeight, zoom);
             }
             SetStretchBltMode(dc.getDcHandle(), HALFTONE);
