@@ -54,7 +54,7 @@
 #define IDC_EDIT_MP                     1033
 #define IDC_EDIT_SHIELD                 1034
 #define IDC_EDIT_RESOURCES              1035
-#define IDC_EDIT_HANGER                 1036
+#define IDC_EDIT_HANGAR                 1036
 #define IDC_EDIT_ID                     1037
 #define IDC_CHECK_INVINCIBLE            1038
 #define IDC_CHECK_HALLUCINATED          1039
@@ -76,7 +76,7 @@
 #define IDC_STATIC_MANA                 1056
 #define IDC_STATIC_SHIELD               1057
 #define IDC_STATIC_RESOURCES            1058
-#define IDC_STATIC_HANGER               1059
+#define IDC_STATIC_HANGAR               1059
 #define IDC_STATIC_UNITID               1060
 #define IDC_STATIC_XCENTER              1061
 #define IDC_STATIC_YCENTER              1062
@@ -132,13 +132,14 @@
 #define IDC_EDIT_TOP                    1101
 #define IDC_EDIT5                       1102
 #define IDC_LOCRIGHT                    1102
-#define IDC_EDITCUWPHANGER              1102
+#define IDC_EDITCUWPHANGAR              1102
 #define IDC_EDIT6                       1103
 #define IDC_LOCBOTTOM                   1103
 #define IDC_BUTTON1                     1104
 #define IDC_INVERTX                     1104
 #define IDC_BUTTON_LITSAVE              1104
 #define ID_REFRESH_TEXTTRIGS            1104
+#define IDC_BUTTON_ADVANCED             1104
 #define IDC_BUTTON2                     1105
 #define IDC_INVERTY                     1105
 #define IDC_CHANGEPASSAPPLY             1105
@@ -185,6 +186,7 @@
 #define IDC_LIST2                       1141
 #define IDC_LIST_TERRAIN                1141
 #define IDC_CHECK_SMOOTHBORDER          1142
+#define IDC_GROUP_LINK                  1143
 #define ID_FILE_NEW1                    40025
 #define ID_FILE_OPEN1                   40026
 #define ID_ADVANCED_OPENBACKUPDATABASE  40027
@@ -384,7 +386,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        165
 #define _APS_NEXT_COMMAND_VALUE         40679
-#define _APS_NEXT_CONTROL_VALUE         1143
+#define _APS_NEXT_CONTROL_VALUE         1144
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

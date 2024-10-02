@@ -1,3 +1,4 @@
+#include "basics.h"
 #include "system_io.h"
 #include <cross_cut/simple_icu.h>
 #include <algorithm>
@@ -14,9 +15,6 @@
 #include <Windows.h>
 #include <direct.h>
 #endif
-
-constexpr u32 size_1kb = 0x400;
-constexpr u32 size_1gb = 0x40000000;
 
 bool hasExtension(const std::string & systemFilePath, const std::string & extension)
 {
@@ -282,7 +280,7 @@ bool patientFindFile(const std::string & filePath, int numWaitTimes, int* waitTi
 std::optional<std::string> fileToString(const std::string & fileName)
 {
     try {
-        std::ifstream file(fileName, std::ifstream::in | std::ifstream::ate); // Open at ending characters position
+        std::ifstream file(std::filesystem::path(asUtf8(fileName)), std::ifstream::in | std::ifstream::ate); // Open at ending characters position
         if ( file.is_open() )
         {
             auto size = file.tellg(); // Grab size via current position
@@ -306,7 +304,7 @@ std::optional<std::string> fileToString(const std::string & fileName)
 
 std::optional<std::vector<u8>> fileToBuffer(const std::string & systemFilePath)
 {
-    std::ifstream inFile(systemFilePath, std::ios_base::binary|std::ios_base::in);
+    std::ifstream inFile(std::filesystem::path(asUtf8(systemFilePath)), std::ios_base::binary|std::ios_base::in);
     auto buffer = std::make_optional<std::vector<u8>>(std::istreambuf_iterator<char>(inFile), std::istreambuf_iterator<char>());
     bool success = inFile.good();
     inFile.close();
@@ -315,7 +313,7 @@ std::optional<std::vector<u8>> fileToBuffer(const std::string & systemFilePath)
 
 bool bufferToFile(const std::string & systemFilePath, const std::vector<u8> & buffer)
 {
-    std::ofstream outFile(systemFilePath, std::ios_base::binary|std::ios_base::out);
+    std::ofstream outFile(std::filesystem::path(asUtf8(systemFilePath)), std::ios_base::binary|std::ios_base::out);
     outFile.write(reinterpret_cast<const char*>(&buffer[0]), std::streamsize(buffer.size()));
     bool success = outFile.good();
     outFile.close();
@@ -329,10 +327,10 @@ bool makeFileCopy(const std::string & inFilePath, const std::string & outFilePat
     std::ofstream outFile;
     try
     {
-        inFile.open(inFilePath, std::fstream::binary);
+        inFile.open(std::filesystem::path(asUtf8(inFilePath)), std::fstream::binary);
         if ( inFile.is_open() )
         {
-            outFile.open(outFilePath, std::fstream::out|std::fstream::binary);
+            outFile.open(std::filesystem::path(asUtf8(outFilePath)), std::fstream::out|std::fstream::binary);
             if ( outFile.is_open() )
             {
                 outFile << inFile.rdbuf();
