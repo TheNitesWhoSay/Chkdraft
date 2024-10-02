@@ -1797,6 +1797,12 @@ void GuiMap::SnapSelEndDrag()
     }
 }
 
+void GuiMap::Animate(std::uint64_t currentTick)
+{
+    for ( auto & pasteSprite : clipboard.getSprites() )
+        pasteSprite.anim.animate(currentTick);
+}
+
 bool GuiMap::UpdateGlGraphics()
 {
     auto currTickCount = GetTickCount64();

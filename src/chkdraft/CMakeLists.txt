@@ -55,10 +55,13 @@ set(Headers
   common_files/resource.h
   common_files/structs.h
   common_files/version.h
+  mapping/animation.h
+  mapping/animation.cpp
   mapping/chkd_plugins.h
   mapping/clipboard.h
   mapping/color_cycler.h
   mapping/data_file_browsers.h
+  mapping/game_clock.h
   mapping/memory_tiered_tasks.h
   mapping/sc_graphics.h
   mapping/scr_graphics.h

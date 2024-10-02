@@ -836,6 +836,7 @@ namespace Scr {
         u32 n2Frame = 0;
         u32 nIncrement = 0;
         u64 initialTickCount = 0;
+        std::chrono::system_clock::time_point frameStart {};
 
         Sc::Data & scData;
         GuiMap & map; // Reference to the map this instance of graphics renders

@@ -2695,7 +2695,7 @@ void Scr::MapGraphics::drawClassicImage(gl::Palette & palette, s32 x, s32 y, u32
     remapPalette<8, 8>(palette, &scData.tunit.rgbaPalette[color < 16 ? 8*color : 8*(color%16)], color, prevMappedColor);
 
     auto & imageInfo = (*renderDat->classicImages)[imageId];
-    auto & frameInfo = imageInfo->frames[frameIndex];
+    auto & frameInfo = imageInfo->frames[frameIndex >= imageInfo->frames.size() ? 0 : frameIndex];
 
     GLfloat vertexLeft = GLfloat(flipped ?
         -imageInfo->grpWidth/2 + frameInfo.xOffset - s16(frameInfo.texWidth-frameInfo.frameWidth) :
@@ -3197,7 +3197,7 @@ void Scr::MapGraphics::drawDoodadSelection()
 
 void Scr::MapGraphics::drawFps()
 {
-    fps.update(std::chrono::system_clock::now());
+    fps.update(frameStart);
     textFont->textShader.use();
     textFont->textShader.glyphScaling.setMat2(glyphScaling);
     textFont->textShader.textPosToNdc.setMat4(unscrolledWindowToNdc);
@@ -3618,12 +3618,18 @@ void Scr::MapGraphics::drawPastes()
             if ( loadSettings.skinId == Scr::Skin::Id::Classic )
             {
                 for ( auto & pasteSprite : sprites )
-                    drawClassicImage(*palette, paste.x+pasteSprite.xc, paste.y+pasteSprite.yc, 0, getImageId(pasteSprite.sprite), (Chk::PlayerColor)pasteSprite.sprite.owner);
+                {
+                    drawClassicImage(*palette, paste.x+pasteSprite.xc, paste.y+pasteSprite.yc, pasteSprite.anim.frame,
+                        getImageId(pasteSprite.sprite), (Chk::PlayerColor)pasteSprite.sprite.owner);
+                }
             }
             else
             {
                 for ( auto & pasteSprite : sprites )
-                    drawImage(getImage(pasteSprite.sprite), paste.x+pasteSprite.xc, paste.y+pasteSprite.yc, 0, 0xFFFFFFFF, getPlayerColor(pasteSprite.sprite.owner), false);
+                {
+                    drawImage(getImage(pasteSprite.sprite), paste.x+pasteSprite.xc+pasteSprite.anim.xOffset, paste.y+pasteSprite.yc+pasteSprite.anim.yOffset,
+                        pasteSprite.anim.frame, 0xFFFFFFFF, getPlayerColor(pasteSprite.sprite.owner), false);
+                }
             }
         }
     };
@@ -3697,6 +3703,7 @@ void Scr::MapGraphics::drawPastes()
 
 void Scr::MapGraphics::render()
 {
+    this->frameStart = std::chrono::system_clock::now();
     auto layer = map.getLayer();
 
     if ( loadSettings.skinId == Skin::Id::Classic )

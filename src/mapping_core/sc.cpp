@@ -2473,6 +2473,12 @@ bool Sc::Sprite::load(ArchiveCluster & archiveCluster, Sc::TblFilePtr imagesTbl)
     IScriptIdTableEntry* iScriptIdTable = (IScriptIdTableEntry*)&iscript[isIdTableOffset];
     for ( ; iScriptIdTable->id != 0xFFFF; ++iScriptIdTable )
     {
+        if ( iScriptIdTable->id >= iscriptOffsets.size() )
+            iscriptOffsets.resize(iScriptIdTable->id+1, 0);
+        
+        iscriptOffsets[iScriptIdTable->id] = iScriptIdTable->offset;
+
+        // TODO: Long-term it's likely that only the iscriptOffsets code above is needed and the below code and the loadAnimation method can be removed
         u16 id = iScriptIdTable->id;
         bool idIncludesFlip = false;
         bool idIncludesUnflip = false;
@@ -2484,7 +2490,7 @@ bool Sc::Sprite::load(ArchiveCluster & archiveCluster, Sc::TblFilePtr imagesTbl)
         }
         IScriptAnimationHeader* iScriptAnimationHeader = (IScriptAnimationHeader*)&iscript[animationsOffset];
         size_t totalAnimations = size_t(iScriptAnimationHeader->animationCount & 0xFFFE) + 2;
-        //logger << id << " has " << totalAnimations << " animations" << std::endl;
+
         for ( size_t animationIndex=0; animationIndex < totalAnimations; ++animationIndex )
         {
             size_t animationOffset = iScriptAnimationHeader->animationsOffset[animationIndex];
@@ -2496,14 +2502,13 @@ bool Sc::Sprite::load(ArchiveCluster & archiveCluster, Sc::TblFilePtr imagesTbl)
                     logger.error() << "Failed to parse scripts\\ISCRIPT.BIN" << std::endl;
                     return false;
                 }
-                //logger << currOffset << ": " << std::endl;
 
                 if ( currOffset < iscript.size() )
                 {
                     IScriptAnimation* animation = (IScriptAnimation*)&iscript[currOffset];
                     std::set<size_t> visitedOffsets {};
                     visitedOffsets.insert(currOffset);
-                    if ( !loadAnimation(animation, currOffset, idIncludesFlip, idIncludesUnflip, visitedOffsets) )
+                    if ( !loadAnimation(id, animation, currOffset, idIncludesFlip, idIncludesUnflip, visitedOffsets) )
                         return false;
                 }
                 else
@@ -2521,20 +2526,22 @@ bool Sc::Sprite::load(ArchiveCluster & archiveCluster, Sc::TblFilePtr imagesTbl)
     return true;
 }
 
-bool Sc::Sprite::loadAnimation(IScriptAnimation* animation, size_t currOffset, bool & idIncludesFlip, bool & idIncludesUnflip, std::set<size_t> & visitedOffsets)
+bool Sc::Sprite::loadAnimation(u16 id, IScriptAnimation* animation, size_t currOffset, bool & idIncludesFlip, bool & idIncludesUnflip, std::set<size_t> & visitedOffsets)
 {
+    // id here is just a temporary stopgap so I can examine one script, flip and unflip temporary loaders
+    // visitedOffset is an immediate-cache preventing infinite loops during initial load... during actual animation though you want the infinite loop behavior
+    // iScript being just a byte vector..., currOffset an index into it, animation a pointer into it at currOffset
     for ( ; ; )
     {
         if ( currOffset >= iscript.size() )
             return true;
+
         Op code = Op(animation->code);
         ++currOffset; // 1-byte code
-        //std::string opName = code < OpName.size() ? std::string(OpName[code]) : std::to_string(int(code));
-        //logger << "  " << opName << ", ";
         if ( code < OpParams.size() )
         {
             auto & opCodeParams = OpParams[code];
-            if ( code == Op::setflipstate && iscript[currOffset] == 1 )
+            if ( code == Op::setflipstate && iscript[currOffset] == 1 ) 
                 idIncludesFlip = true;
             else if ( code == Op::setflipstate && iscript[currOffset] == 0 )
                 idIncludesUnflip = true;
@@ -2552,9 +2559,10 @@ bool Sc::Sprite::loadAnimation(IScriptAnimation* animation, size_t currOffset, b
                 {
                     visitedOffsets.insert(dest);
                     IScriptAnimation* subAnimation = (IScriptAnimation*)&iscript[dest];
-                    if ( !loadAnimation(subAnimation, dest, idIncludesFlip, idIncludesUnflip, visitedOffsets) )
-                        return false;
+                    return loadAnimation(id, subAnimation, dest, idIncludesFlip, idIncludesUnflip, visitedOffsets);
                 }
+                else
+                    return true;
             }
             
             // Move currOffset past all the parameters
@@ -2563,14 +2571,43 @@ bool Sc::Sprite::loadAnimation(IScriptAnimation* animation, size_t currOffset, b
                 auto currParam = opCodeParams[param];
                 auto paramSize = ParamSize[size_t(currParam)];
                 u16 paramValue = paramSize == 1 ? iscript[currOffset] : (u16 &)iscript[currOffset];
-                //logger << paramValue << ", ";
                 currOffset += paramSize;
             }
             if ( currOffset < iscript.size() )
                 animation = (IScriptAnimation*)&iscript[currOffset];
         }
-        //logger << std::endl;
     }
+    return true;
+}
+
+const Sc::Sprite::IScriptAnimation* Sc::Sprite::getAnimationHeader(size_t iScriptId) const
+{
+    IScriptDatFileHeader* scriptHeader = (IScriptDatFileHeader*)&iscript[0];
+    size_t animationsOffset = iscriptOffsets[iScriptId];
+    if ( animationsOffset >= iscript.size() )
+    {
+        logger.error() << "Invalid iscript\n";
+        return nullptr;
+    }
+    IScriptAnimationHeader* iScriptAnimationHeader = (IScriptAnimationHeader*)&iscript[animationsOffset];
+    //size_t totalAnimations = size_t(iScriptAnimationHeader->animationCount & 0xFFFE) + 2;
+    size_t animationIndex = 0; // TODO: Where are other animationIndexes coming from?
+    size_t animationOffset = iScriptAnimationHeader->animationsOffset[animationIndex];
+    if ( animationOffset > 0 )
+    {
+        size_t currOffset = animationOffset;
+        if ( currOffset >= iscript.size() )
+        {
+            logger.error() << "Invalid iscript\n";
+            return nullptr;
+        }
+        else
+        {
+            IScriptAnimation* animation = (IScriptAnimation*)&iscript[currOffset];
+            return animation;
+        }
+    }
+    return nullptr;
 }
 
 const Sc::Sprite::Grp & Sc::Sprite::getGrp(size_t grpIndex)

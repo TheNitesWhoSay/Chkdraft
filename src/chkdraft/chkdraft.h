@@ -5,6 +5,7 @@
 #include "ui/dialog_windows/dialog_windows.h"
 #include "mapping/chkd_plugins.h"
 #include "mapping/color_cycler.h"
+#include "mapping/game_clock.h"
 #include "ui/main_windows/main_toolbar.h"
 #include "ui/main_windows/main_plot.h"
 #include "ui/dialog_windows/new_map/new_map.h"
@@ -23,6 +24,7 @@ class Chkdraft : public WinLib::ClassWindow
                     ColorCycler colorCycler {}; // Graphics palette color cycler
                     Maps maps; // Main map container
                     Commander mainCommander; // Main commander used for mapping-data and mapping-data-related UI changes
+                    GameClock gameClock {};
 
 /* Dialog Boxes */  NewMap newMap; // New map DialogBox
 

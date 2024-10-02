@@ -15,8 +15,8 @@
 
 void Chkdraft::OnLoadTest()
 {
-    /*auto & map = []() -> GuiMap & {
-        auto map = chkd.maps.NewMap();
+    auto & map = []() -> GuiMap & {
+        auto map = chkd.maps.NewMap(Sc::Terrain::Tileset::SpacePlatform, 64, 64, Sc::Isom::Brush::Space::DarkPlatform);
         map->addUnit(Chk::Unit {map->getNextClassId(), 64, 64, Sc::Unit::Type::StartLocation, 0, 0, 0, Sc::Player::Id::Player1});
         map->addUnit(Chk::Unit {map->getNextClassId(), 192, 64, Sc::Unit::Type::StartLocation, 0, 0, 0, Sc::Player::Id::Player2});
         map->setForceFlags(Chk::Force::Force1, Chk::ForceFlags::All & Chk::ForceFlags::xRandomizeStartLocation);
@@ -24,7 +24,13 @@ void Chkdraft::OnLoadTest()
         map->setPlayerForce(Sc::Player::Id::Player2, Chk::Force::Force2);
         map->setSlotType(1, Sc::Player::SlotType::Computer);
         _Pragma("warning(suppress: 26716)") return *map;
-    }();*/
+    }();
+    CM->SetSkin(GuiMap::Skin::ScrSD);
+    maps.ChangeLayer(Layer::Sprites);
+    CM->clipboard.addQuickSprite(Chk::Sprite {
+        .type = Sc::Sprite::Type(65), .flags = Chk::Sprite::SpriteFlags::DrawAsSprite
+    });
+    CM->clipboard.beginPasting(true);
 }
 
 enum_t(Id, u32, {
@@ -104,10 +110,22 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
         }
 
 
-        if ( CM != nullptr && CM->GetSkin() == GuiMap::Skin::ClassicGDI && colorCycler.cycleColors(GetTickCount64(), CM->getTileset(), CM->getPalette()) )
-            CM->Redraw(false);
-        else if ( CM != nullptr && CM->GetSkin() != GuiMap::Skin::ClassicGDI && CM->UpdateGlGraphics() )
-            CM->Redraw(false);
+        if ( CM != nullptr )
+        {
+            if ( CM->GetSkin() == GuiMap::Skin::ClassicGDI )
+            {
+                if ( colorCycler.cycleColors(GetTickCount64(), CM->getTileset(), CM->getPalette()) )
+                    CM->Redraw(false);
+            }
+            else if ( gameClock.tick() )
+            {
+                CM->Animate(gameClock.currentTick());
+                CM->UpdateGlGraphics(); // Color cycling or HD water
+                CM->Redraw(false);
+            }
+            else if ( CM->UpdateGlGraphics() )
+                CM->Redraw(false);
+        }
 
         std::this_thread::sleep_for(std::chrono::milliseconds(1)); // Avoid consuming a core
 

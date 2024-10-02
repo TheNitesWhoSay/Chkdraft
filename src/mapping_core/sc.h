@@ -878,7 +878,8 @@ namespace Sc {
         };
 
         bool load(ArchiveCluster & archiveCluster, Sc::TblFilePtr imagesTbl);
-        bool loadAnimation(IScriptAnimation* animation, size_t currOffset, bool & idIncludesFlip, bool & idIncludesUnflip, std::set<size_t> & visitedOffsets);
+        bool loadAnimation(u16 id, IScriptAnimation* animation, size_t currOffset, bool & idIncludesFlip, bool & idIncludesUnflip, std::set<size_t> & visitedOffsets);
+        const IScriptAnimation* getAnimationHeader(size_t iScriptId) const;
         const Grp & getGrp(size_t grpIndex);
         const ImageDatEntry & getImage(size_t imageIndex) const;
         const DatEntry & getSprite(size_t spriteIndex) const;
@@ -886,12 +887,13 @@ namespace Sc {
         size_t numImages() const;
         size_t numSprites() const;
         bool imageFlipped(u16 imageId) const; // TODO: Temp solution
+        std::vector<u8> iscript;
+        std::vector<u16> iscriptOffsets;
 
     private:
         std::vector<Grp> grps;
         std::vector<ImageDatEntry> images;
         std::vector<DatEntry> sprites;
-        std::vector<u8> iscript;
         std::set<u16> iscriptIdFlipsGrp; // TODO: Temp solution
 
     public:

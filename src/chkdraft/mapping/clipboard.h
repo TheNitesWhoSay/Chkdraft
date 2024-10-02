@@ -2,6 +2,7 @@
 #define CLIPBOARD_H
 #include <common_files/constants.h>
 #include <common_files/structs.h>
+#include <mapping/animation.h>
 #include <mapping_core/mapping_core.h>
 #include <chrono>
 #include <string>
@@ -56,9 +57,10 @@ struct PasteSpriteNode
     Chk::Sprite sprite {};
     s32 xc = 0;
     s32 yc = 0;
+    IscriptAnim anim {};
 
     PasteSpriteNode() = delete;
-    PasteSpriteNode(const Chk::Sprite & sprite) : sprite(sprite), xc(sprite.xc), yc(sprite.yc) {}
+    PasteSpriteNode(const Chk::Sprite & sprite);
 };
 
 struct PasteUnitNode
