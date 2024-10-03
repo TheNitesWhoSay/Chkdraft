@@ -55,8 +55,8 @@ set(Headers
   common_files/resource.h
   common_files/structs.h
   common_files/version.h
-  mapping/animation.h
-  mapping/animation.cpp
+  mapping/map_actor.h
+  mapping/map_actor.cpp
   mapping/chkd_plugins.h
   mapping/clipboard.h
   mapping/color_cycler.h

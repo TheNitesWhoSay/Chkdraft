@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <string_view>
 
-struct IscriptAnim {
+struct MapActor {
     u16 returnOffset = 0;
     size_t iScriptId = 0;
     size_t frame = 0;

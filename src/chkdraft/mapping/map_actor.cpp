@@ -1,7 +1,7 @@
-#include "animation.h"
+#include "map_actor.h"
 #include "../chkdraft.h"
 
-void IscriptAnim::initialize(std::uint64_t currentTick, size_t iScriptId)
+void MapActor::initialize(std::uint64_t currentTick, size_t iScriptId)
 {
     this->iScriptId = iScriptId;
     animation = chkd.scData.sprites.getAnimationHeader(iScriptId);
@@ -14,30 +14,30 @@ void IscriptAnim::initialize(std::uint64_t currentTick, size_t iScriptId)
     }
 }
 
-bool IscriptAnim::end()
+bool MapActor::end()
 {
     waitUntil = std::numeric_limits<uint64_t>::max();
     return true;
 }
 
-void IscriptAnim::error(std::string_view message)
+void MapActor::error(std::string_view message)
 {
     logger.error(message);
     end();
 }
 
-void IscriptAnim::restartIfEnded(std::uint64_t currentTick)
+void MapActor::restartIfEnded(std::uint64_t currentTick)
 {
     if ( waitUntil == std::numeric_limits<uint64_t>::max() )
         initialize(currentTick, this->iScriptId);
 }
 
-void IscriptAnim::advanceBy(size_t numBytes)
+void MapActor::advanceBy(size_t numBytes)
 {
     ((u8* &)animation) += numBytes;
 }
 
-void IscriptAnim::animate(std::uint64_t currentTick)
+void MapActor::animate(std::uint64_t currentTick)
 {
     auto & iscript = chkd.scData.sprites.iscript;
     size_t currOffset = std::distance((const u8*)&iscript[0], (const u8*)animation);
