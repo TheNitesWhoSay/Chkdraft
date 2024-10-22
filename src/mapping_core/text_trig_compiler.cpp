@@ -3016,15 +3016,16 @@ bool TextTrigCompiler::parseSwitch(std::string & text, std::vector<RawString> & 
 
     if ( size < 12 )
     {
+        u16 swId = 0;
         std::array<char, 12> sw;
         copyUpperCaseNoSpace(sw, str);
 
         // Check if it's a standard switch name
         if ( sw[0] == 'S' && sw[1] == 'W' && sw[2] == 'I' &&
             sw[3] == 'T' && sw[4] == 'C' && sw[5] == 'H' &&
-            ( dest = atoi(&sw[6]) ) )
+            ( swId = atoi(&sw[6]) ) )
         {
-            dest --; // 0 based
+            dest = swId-1; // From 1 in the text to 0 based in the data
             success = true;
         }
     }
