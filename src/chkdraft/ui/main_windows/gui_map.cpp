@@ -3440,7 +3440,7 @@ void GuiMap::LButtonUp(HWND hWnd, int x, int y, WPARAM wParam)
 
         selections.endDrag = {-1, -1};
         setDragging(false);
-        RedrawWindow(hWnd, NULL, NULL, RDW_INVALIDATE);
+        Redraw(false);
     }
 
     if ( !chkd.maps.clipboard.isPasting() || (currLayer == Layer::FogEdit && !dragging) )
