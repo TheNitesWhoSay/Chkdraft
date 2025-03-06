@@ -76,7 +76,7 @@ LRESULT MiniMap::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
             break;
 
         case WM_MOUSEMOVE:
-            if ( wParam == MK_LBUTTON )
+            if ( (wParam & MK_LBUTTON) == MK_LBUTTON )
                 MiniMapClick(lParam);
             else if ( (wParam & MK_LBUTTON) != MK_LBUTTON )
                 UnlockCursor();

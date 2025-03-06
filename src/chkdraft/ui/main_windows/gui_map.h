@@ -23,6 +23,14 @@ enum class DefaultTriggers
     SevenPlayerMeleeWithObs = 7
 };
 
+enum class Direction
+{
+    Left,
+    Up,
+    Right,
+    Down
+};
+
 class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos, private Chk::IsomCache
 {
     public:
@@ -105,6 +113,8 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     void PlayerChanged(u8 newPlayer);
                     u16 GetSelectedLocation();
                     bool autoSwappingAddonPlayers();
+                    bool pastingToGrid();
+                    void moveSelection(Direction direction, bool useGrid);
 
 /*   Undo Redo  */  void AddUndo(ReversiblePtr action);
                     void undo();
