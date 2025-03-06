@@ -21,14 +21,14 @@ bool LeftBar::CreateThis(HWND hParent)
 
 void LeftBar::NotifyTreeItemSelected(LPARAM newValue)
 {
-    if ( CM != nullptr )
+    if ( CM != nullptr && !blockSelections )
     {
         LPARAM itemType = newValue&TreeTypePortion,
             itemData = newValue&TreeDataPortion;
 
         switch ( itemType )
         {
-            //case TREE_TYPE_ROOT: // Same as category
+        case TreeTypeRoot: // Same as category
         case TreeTypeCategory: if ( CM->getLayer() != (Layer)itemData ) chkd.maps.ChangeLayer((Layer)itemData); break; // The layer was AND'd with the category
         case TreeTypeIsom: chkd.maps.ChangeSubLayer(TerrainSubLayer::Isom); break;
         case TreeTypeUnit: if ( CM->getLayer() != Layer::Units ) chkd.maps.ChangeLayer(Layer::Units); break;
@@ -238,7 +238,9 @@ LRESULT LeftBar::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 {
                     mainTree.setDefaultFont();
                     mainTree.unitTree.UpdateUnitNames(Sc::Unit::defaultDisplayNames);
+                    this->blockSelections = true;
                     mainTree.BuildMainTree();
+                    this->blockSelections = false;
                 }
             }
             break;

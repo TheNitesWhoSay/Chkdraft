@@ -330,6 +330,8 @@ void Clipboard::pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & u
     auto currPasteTime = std::chrono::steady_clock::now();
     if ( allowStack && std::chrono::duration_cast<std::chrono::milliseconds>(currPasteTime - this->lastPasteTime).count() < 250 && isNearPrevPaste(mapClickX, mapClickY) )
         return; // Prevent unintentional repeat-pastes
+    else if ( mapClickX == prevPaste.x && mapClickY == prevPaste.y && map.pastingToGrid() )
+        return; // Prevent repeat pasting to the same grid node
     else
         this->lastPasteTime = currPasteTime;
 
@@ -435,6 +437,8 @@ void Clipboard::pasteSprites(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos &
     auto currPasteTime = std::chrono::steady_clock::now();
     if ( std::chrono::duration_cast<std::chrono::milliseconds>(currPasteTime - this->lastPasteTime).count() < 250 && isNearPrevPaste(mapClickX, mapClickY) )
         return; // Prevent unintentional repeat-pastes
+    else if ( mapClickX == prevPaste.x && mapClickY == prevPaste.y && map.pastingToGrid() )
+        return; // Prevent repeat pasting to the same grid node
     else
         this->lastPasteTime = currPasteTime;
 
