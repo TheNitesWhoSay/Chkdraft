@@ -1627,11 +1627,6 @@ bool GuiMap::autoSwappingAddonPlayers()
 
 void GuiMap::moveSelection(Direction direction, bool useGrid)
 {
-    switch ( currLayer )
-    {
-    case Layer::Units: break;
-    case Layer::Sprites: break;
-    }
     if ( useGrid )
     {
         u16 gridOffX = 0, gridOffY = 0;
@@ -1834,6 +1829,7 @@ void GuiMap::moveSelection(Direction direction, bool useGrid)
             break;
         }
     }
+    Redraw(false);
 }
 
 bool GuiMap::pastingToGrid()
