@@ -1175,9 +1175,11 @@ void GuiMap::refreshScenario()
     selections.removeUnits();
     selections.removeSprites();
     selections.removeFog();
+    chkd.mainPlot.leftBar.blockSelections = true;
     chkd.mainPlot.leftBar.mainTree.isomTree.UpdateIsomTree();
     chkd.mainPlot.leftBar.mainTree.doodadTree.UpdateDoodadTree();
     chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree(currLayer == Layer::Locations);
+    chkd.mainPlot.leftBar.blockSelections = false;
     
     if ( chkd.unitWindow.getHandle() != nullptr )
         chkd.unitWindow.RepopulateList();
@@ -1621,6 +1623,229 @@ u16 GuiMap::GetSelectedLocation()
 bool GuiMap::autoSwappingAddonPlayers()
 {
     return addonAutoPlayerSwap;
+}
+
+void GuiMap::moveSelection(Direction direction, bool useGrid)
+{
+    if ( useGrid )
+    {
+        u16 gridOffX = 0, gridOffY = 0;
+        u16 gridWidth = 32, gridHeight = 32;
+        if ( !scGraphics.GetGridSize(0, gridWidth, gridHeight) || gridWidth == 0 || gridHeight == 0 )
+        {
+            gridWidth = 32;
+            gridHeight = 32;
+        }
+        scGraphics.GetGridOffset(0, gridOffX, gridOffY);
+        switch ( currLayer )
+        {
+        case Layer::Units:
+        {
+            if ( selections.hasUnits() )
+            {
+                auto & firstUnit = Scenario::getUnit(selections.getFirstUnit());
+                switch ( direction )
+                {
+                    case Direction::Left:
+                    {
+                        PreservedUnitStats preservedStats {};
+                        preservedStats.AddStats(selections, Chk::Unit::Field::Xc);
+                        auto diff = ((firstUnit.xc-gridOffX) % gridWidth) > 0 ? ((firstUnit.xc-gridOffX) % gridWidth) : gridWidth;
+                        for ( auto unitIndex : selections.units )
+                            Scenario::getUnit(unitIndex).xc -= diff;
+                        preservedStats.convertToUndo();
+                    }
+                    break;
+                    case Direction::Up:
+                    {
+                        PreservedUnitStats preservedStats {};
+                        preservedStats.AddStats(selections, Chk::Unit::Field::Yc);
+                        auto diff = ((firstUnit.yc-gridOffY) % gridHeight) > 0 ? ((firstUnit.yc-gridOffY) % gridHeight) : gridHeight;
+                        for ( auto unitIndex : selections.units )
+                            Scenario::getUnit(unitIndex).yc -= diff;
+                        preservedStats.convertToUndo();
+                    }
+                    break;
+                    case Direction::Right:
+                    {
+                        PreservedUnitStats preservedStats {};
+                        preservedStats.AddStats(selections, Chk::Unit::Field::Xc);
+                        auto diff = ((firstUnit.xc-gridOffX) % gridWidth) > 0 ? (gridWidth-((firstUnit.xc-gridOffX) % gridWidth)) : gridWidth;
+                        for ( auto unitIndex : selections.units )
+                            Scenario::getUnit(unitIndex).xc += diff;
+                        preservedStats.convertToUndo();
+                    }
+                    break;
+                    case Direction::Down:
+                    {
+                        PreservedUnitStats preservedStats {};
+                        preservedStats.AddStats(selections, Chk::Unit::Field::Yc);
+                        auto diff = ((firstUnit.yc-gridOffY) % gridHeight) > 0 ? (gridHeight-((firstUnit.yc-gridOffY) % gridHeight)) : gridHeight;
+                        for ( auto unitIndex : selections.units )
+                            Scenario::getUnit(unitIndex).yc += diff;
+                        preservedStats.convertToUndo();
+                    }
+                    break;
+                }
+            }
+        }
+        break;
+        case Layer::Sprites:
+            if ( selections.hasSprites() )
+            {
+                auto & firstSprite = Scenario::getSprite(selections.getFirstSprite());
+                switch ( direction )
+                {
+                    case Direction::Left:
+                    {
+                        PreservedSpriteStats preservedStats {};
+                        preservedStats.AddStats(selections, Chk::Sprite::Field::Xc);
+                        auto diff = ((firstSprite.xc-gridOffX) % gridWidth) > 0 ? ((firstSprite.xc-gridOffX) % gridWidth) : gridWidth;
+                        for ( auto spriteIndex : selections.sprites )
+                            Scenario::getSprite(spriteIndex).xc -= diff;
+                        preservedStats.convertToUndo();
+                    }
+                    break;
+                    case Direction::Up:
+                    {
+                        PreservedSpriteStats preservedStats {};
+                        preservedStats.AddStats(selections, Chk::Sprite::Field::Yc);
+                        auto diff = ((firstSprite.yc-gridOffY) % gridHeight) > 0 ? ((firstSprite.yc-gridOffY) % gridHeight) : gridHeight;
+                        for ( auto spriteIndex : selections.sprites )
+                            Scenario::getSprite(spriteIndex).yc -= diff;
+                        preservedStats.convertToUndo();
+                    }
+                    break;
+                    case Direction::Right:
+                    {
+                        PreservedSpriteStats preservedStats {};
+                        preservedStats.AddStats(selections, Chk::Sprite::Field::Xc);
+                        auto diff = ((firstSprite.xc-gridOffX) % gridWidth) > 0 ? (gridWidth-((firstSprite.xc-gridOffX) % gridWidth)) : gridWidth;
+                        for ( auto spriteIndex : selections.sprites )
+                            Scenario::getSprite(spriteIndex).xc += diff;
+                        preservedStats.convertToUndo();
+                    }
+                    break;
+                    case Direction::Down:
+                    {
+                        PreservedSpriteStats preservedStats {};
+                        preservedStats.AddStats(selections, Chk::Sprite::Field::Yc);
+                        auto diff = ((firstSprite.yc-gridOffY) % gridHeight) > 0 ? (gridHeight-((firstSprite.yc-gridOffY) % gridHeight)) : gridHeight;
+                        for ( auto spriteIndex : selections.sprites )
+                            Scenario::getSprite(spriteIndex).yc += diff;
+                        preservedStats.convertToUndo();
+                    }
+                    break;
+                }
+            }
+            break;
+        }
+    }
+    else // No-grid
+    {
+        switch ( currLayer )
+        {
+        case Layer::Units:
+            for ( auto unitIndex : selections.units )
+            {
+                auto & unit = Scenario::getUnit(unitIndex);
+                switch ( direction )
+                {
+                    case Direction::Left:
+                    {
+                        PreservedUnitStats preservedStats {};
+                        preservedStats.AddStats(selections, Chk::Unit::Field::Xc);
+                        unit.xc -= 1;
+                        preservedStats.convertToUndo();
+                    }
+                    break;
+                    case Direction::Up:
+                    {
+                        PreservedUnitStats preservedStats {};
+                        preservedStats.AddStats(selections, Chk::Unit::Field::Yc);
+                        unit.yc -= 1;
+                        preservedStats.convertToUndo();
+                    }
+                    break;
+                    case Direction::Right:
+                    {
+                        PreservedUnitStats preservedStats {};
+                        preservedStats.AddStats(selections, Chk::Unit::Field::Xc);
+                        unit.xc += 1;
+                        preservedStats.convertToUndo();
+                    }
+                    break;
+                    case Direction::Down:
+                    {
+                        PreservedUnitStats preservedStats {};
+                        preservedStats.AddStats(selections, Chk::Unit::Field::Yc);
+                        unit.yc += 1;
+                        preservedStats.convertToUndo();
+                    }
+                    break;
+                }
+            }
+            break;
+        case Layer::Sprites:
+            for ( auto spriteIndex : selections.sprites )
+            {
+                auto & sprite = Scenario::getSprite(spriteIndex);
+                switch ( direction )
+                {
+                    case Direction::Left:
+                    {
+                        PreservedSpriteStats preservedStats {};
+                        preservedStats.AddStats(selections, Chk::Sprite::Field::Xc);
+                        sprite.xc -= 1;
+                        preservedStats.convertToUndo();
+                    }
+                    break;
+                    case Direction::Up:
+                    {
+                        PreservedSpriteStats preservedStats {};
+                        preservedStats.AddStats(selections, Chk::Sprite::Field::Yc);
+                        sprite.yc -= 1;
+                        preservedStats.convertToUndo();
+                    }
+                    break;
+                    case Direction::Right:
+                    {
+                        PreservedSpriteStats preservedStats {};
+                        preservedStats.AddStats(selections, Chk::Sprite::Field::Xc);
+                        sprite.xc += 1;
+                        preservedStats.convertToUndo();
+                    }
+                    break;
+                    case Direction::Down:
+                    {
+                        PreservedSpriteStats preservedStats {};
+                        preservedStats.AddStats(selections, Chk::Sprite::Field::Yc);
+                        sprite.yc += 1;
+                        preservedStats.convertToUndo();
+                    }
+                    break;
+                }
+            }
+            break;
+        }
+    }
+    Redraw(false);
+}
+
+bool GuiMap::pastingToGrid()
+{
+    u16 gridWidth = 32, gridHeight = 32;
+    if ( scGraphics.GetGridSize(0, gridWidth, gridHeight) && (gridWidth == 0 || gridHeight == 0) )
+        return false;
+
+    switch ( currLayer )
+    {
+        case Layer::Locations: return this->snapLocations;
+        case Layer::Units: return this->snapUnits;
+        case Layer::Sprites: return this->snapSprites;
+        case Layer::CutCopyPaste: return this->snapCutCopyPasteSel;
+    }
+    return false;
 }
 
 void GuiMap::AddUndo(ReversiblePtr action)
@@ -3053,6 +3278,7 @@ void GuiMap::LButtonDoubleClick(int x, int y, WPARAM wParam)
 
 void GuiMap::LButtonDown(int x, int y, WPARAM wParam)
 {
+    FocusThis();
     selections.moved = false;
     u32 mapClickX = (s32(((double)x)/getZoom()) + screenLeft),
         mapClickY = (s32(((double)y)/getZoom()) + screenTop);
@@ -3440,7 +3666,7 @@ void GuiMap::LButtonUp(HWND hWnd, int x, int y, WPARAM wParam)
 
         selections.endDrag = {-1, -1};
         setDragging(false);
-        RedrawWindow(hWnd, NULL, NULL, RDW_INVALIDATE);
+        Redraw(false);
     }
 
     if ( !chkd.maps.clipboard.isPasting() || (currLayer == Layer::FogEdit && !dragging) )

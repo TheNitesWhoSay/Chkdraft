@@ -197,7 +197,9 @@ bool Maps::SaveCurr(bool saveAs)
     if ( currentlyActiveMap->SaveFile(saveAs) )
     {
         currentlyActiveMap->SetWinText(currentlyActiveMap->getFilePath());
-        currentlyActiveMap->refreshScenario();
+        if ( saveAs )
+            currentlyActiveMap->refreshScenario();
+
         return true;
     }
     else

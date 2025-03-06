@@ -88,6 +88,11 @@ namespace WinLib {
         ::SendMessage(getHandle(), EM_SETCARETINDEX, WPARAM(caretPos), 0);
     }
 
+    void EditControl::SelectAll()
+    {
+        SendMessage(getHandle(), EM_SETSEL, 0, -1);
+    }
+
     bool EditControl::CreateNumberBuddy(int minimumValue, int maximumValue)
     {
         hBuddy = CreateWindowEx(0, UPDOWN_CLASS, NULL, WS_CHILDWINDOW | WS_VISIBLE | WS_DISABLED |
