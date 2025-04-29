@@ -27,7 +27,11 @@ bool TerrainPaletteWindow::CreateThis(HWND hParent)
 
 bool TerrainPaletteWindow::DestroyThis()
 {
-    this->openGlDc = nullptr;
+    if ( this->openGlDc != nullptr )
+    {
+        chkd.maps.releaseRenderContext(this->openGlDc);
+        this->openGlDc = nullptr;
+    }
     return ClassDialog::DestroyDialog();
 }
 
@@ -278,8 +282,7 @@ BOOL TerrainPaletteWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
         case WM_PAINT: DoPaint(); break;
         case WM_MOUSEWHEEL: MouseWheel(wParam); break;
         case WM_GETMINMAXINFO: GetMinMaxInfo(lParam); break;
-        case WM_CLOSE: ClassDialog::DestroyDialog(); break;
-        case WM_DESTROY: ClassDialog::DestroyDialog(); break;
+        case WM_CLOSE: DestroyThis(); return TRUE; break;
         default: return ClassDialog::DlgProc(hWnd, msg, wParam, lParam); break;
     }
     return 0;

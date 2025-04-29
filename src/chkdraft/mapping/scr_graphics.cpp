@@ -2135,6 +2135,9 @@ void Scr::MapGraphics::drawTileOverlays()
 
 void Scr::MapGraphics::drawTileVertices(Scr::Grp & tilesetGrp, s32 width, s32 height, const glm::mat4x4 & positionTransformation, bool isBaseTerrain)
 {
+    if ( tileVertices.vertices.empty() )
+        return;
+
     auto tilesetIndex = Sc::Terrain::Tileset(map.getTileset() % Sc::Terrain::NumTilesets);
     bool drawHdWater = loadSettings.visualQuality > VisualQuality::SD && isBaseTerrain &&
         (tilesetIndex == Sc::Terrain::Tileset::Badlands || tilesetIndex == Sc::Terrain::Tileset::Jungle ||

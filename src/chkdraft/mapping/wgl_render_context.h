@@ -88,4 +88,15 @@ public:
             gl::ContextSemaphore::claimContext();
     }
 
+    void releaseDeviceContext(std::shared_ptr<WinLib::DeviceContext> & deviceContext)
+    {
+        if ( deviceContext.get() == this->deviceContext.get() )
+        {
+            if ( deviceContextUsed )
+                gl::ContextSemaphore::releaseContext();
+            
+            this->deviceContext = nullptr;
+        }
+    }
+
 };
