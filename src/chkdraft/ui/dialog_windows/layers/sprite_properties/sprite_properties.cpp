@@ -516,7 +516,7 @@ void SpritePropertiesWindow::LvItemChanged(NMHDR* nmhdr)
             WindowsItem::SetWinText(spriteName);
             SetSpriteFieldText(sprite);
 
-            CM->Redraw(false);
+            CM->viewSprite(index);
         }
         else if ( itemInfo->uOldState & LVIS_SELECTED ) // From selected to not selected
                                                         // Remove item from selection
@@ -534,7 +534,10 @@ void SpritePropertiesWindow::LvItemChanged(NMHDR* nmhdr)
                 DisableSpriteEditing();
             }
 
-            CM->Redraw(false);
+            if ( selections.hasSprites() )
+                CM->viewSprite(selections.getFirstSprite());
+            else
+                CM->Redraw(false);
         }
     }
 }

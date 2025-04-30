@@ -2048,20 +2048,24 @@ void DrawPasteGraphics(const WinLib::DeviceContext & dc, ChkdPalette & palette, 
         dc.setBitsToDevice(0, 0, width, height, 0, 0, 0, height, &graphicBits[0], &bmi);
     };
 
+    auto graphicalEndDrag = selections.endDrag;
+    if ( graphicalEndDrag.x == -1 && graphicalEndDrag.y == -1 )
+        graphicalEndDrag = map.getLastMousePosition();
+
     if ( layer == Layer::Terrain )
-        drawPasteTerrain(selections.endDrag);
+        drawPasteTerrain(graphicalEndDrag);
     else if ( layer == Layer::Doodads )
-        drawPasteDoodads(selections.endDrag);
+        drawPasteDoodads(graphicalEndDrag);
     else if ( layer == Layer::Units )
-        drawPasteUnits(selections.endDrag);
+        drawPasteUnits(graphicalEndDrag);
     else if ( layer == Layer::Sprites )
-        drawPasteSprites(selections.endDrag);
+        drawPasteSprites(graphicalEndDrag);
     else if ( layer == Layer::FogEdit )
     {
         const auto brushWidth = clipboard.getFogBrush().width;
         const auto brushHeight = clipboard.getFogBrush().height;
-        s32 hoverTileX = (selections.endDrag.x + (brushWidth % 2 == 0 ? 16 : 0))/32;
-        s32 hoverTileY = (selections.endDrag.y + (brushHeight % 2 == 0 ? 16 : 0))/32;
+        s32 hoverTileX = (graphicalEndDrag.x + (brushWidth % 2 == 0 ? 16 : 0))/32;
+        s32 hoverTileY = (graphicalEndDrag.y + (brushHeight % 2 == 0 ? 16 : 0))/32;
 
         const auto startX = 32*(hoverTileX - brushWidth/2) - screenLeft;
         const auto startY = 32*(hoverTileY - brushHeight/2) - screenTop;
@@ -2077,7 +2081,7 @@ void DrawPasteGraphics(const WinLib::DeviceContext & dc, ChkdPalette & palette, 
     }
     else if ( layer == Layer::CutCopyPaste )
     {
-        point paste = selections.endDrag;
+        point paste = graphicalEndDrag;
         bool pastingTerrain = map.getCutCopyPasteTerrain() && clipboard.hasTiles();
         bool pastingDoodads = map.getCutCopyPasteDoodads() && clipboard.hasDoodads();
         bool pastingFog = map.getCutCopyPasteFog() && clipboard.hasFogTiles();
