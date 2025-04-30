@@ -810,6 +810,12 @@ void Maps::updateCursor(s32 xc, s32 yc)
         SetCursor(standardCursor);
 }
 
+void Maps::releaseRenderContext(std::shared_ptr<WinLib::DeviceContext> & deviceContext)
+{
+    if ( openGlRenderContext && deviceContext != nullptr )
+        openGlRenderContext->releaseDeviceContext(deviceContext);
+}
+
 void Maps::setGlRenderTarget(std::shared_ptr<WinLib::DeviceContext> & deviceContext, WinLib::WindowsItem & windowsItem)
 {
     if ( !deviceContext )

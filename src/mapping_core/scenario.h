@@ -272,9 +272,9 @@ struct Scenario
     void setDimensions(u16 newTileWidth, u16 newTileHeight, u16 sizeValidationFlags = SizeValidationFlag::Default, s32 leftEdge = 0, s32 topEdge = 0);
 
     u16 getTile(size_t tileXc, size_t tileYc, Chk::Scope scope = Chk::Scope::Game) const;
-    inline u16 getTilePx(size_t pixelXc, size_t pixelYc, Chk::Scope scope = Chk::Scope::Game) const;
+    u16 getTilePx(size_t pixelXc, size_t pixelYc, Chk::Scope scope = Chk::Scope::Game) const;
     void setTile(size_t tileXc, size_t tileYc, u16 tileValue, Chk::Scope scope = Chk::Scope::Game);
-    inline void setTilePx(size_t pixelXc, size_t pixelYc, u16 tileValue, Chk::Scope scope = Chk::Scope::Game);
+    void setTilePx(size_t pixelXc, size_t pixelYc, u16 tileValue, Chk::Scope scope = Chk::Scope::Game);
         
     Chk::IsomRect & getIsomRect(size_t isomRectIndex);
     const Chk::IsomRect & getIsomRect(size_t isomRectIndex) const;

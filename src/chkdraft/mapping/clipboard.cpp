@@ -777,8 +777,10 @@ void Clipboard::copy(GuiMap & map, Layer layer)
         middle.y = edges.top+(edges.bottom-edges.top)/2;
         if ( hasTiles() || hasDoodads() || hasFogTiles() )
         {
-            middle.x = (middle.x+16)/32*32;
-            middle.y = (middle.y+16)/32*32;
+            bool evenTileWidth = (edges.right-edges.left)/32%2 == 0;
+            bool evenTileHeight = (edges.bottom-edges.top)/32%2 == 0;
+            middle.x = (middle.x+16)/32*32-(evenTileWidth ? 0 : 16);
+            middle.y = (middle.y+16)/32*32-(evenTileHeight ? 0 : 16);
         }
         return middle;
     };
@@ -852,6 +854,12 @@ void Clipboard::setQuickDoodad(u16 doodadStartTileGroup)
     prevPaste.y = -1;
     quickPaste = true;
     pasting = true;
+}
+
+void Clipboard::setQuickTile(u16 index, s32 xc, s32 yc)
+{
+    quickTiles.clear();
+    quickTiles.push_back(PasteTileNode(index, xc, yc, TileNeighbor::All));
 }
 
 void Clipboard::addQuickTile(u16 index, s32 xc, s32 yc)
