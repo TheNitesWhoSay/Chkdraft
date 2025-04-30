@@ -3660,7 +3660,7 @@ u16 Scenario::getTile(size_t tileXc, size_t tileYc, Chk::Scope scope) const
     return 0;
 }
 
-inline u16 Scenario::getTilePx(size_t pixelXc, size_t pixelYc, Chk::Scope scope) const
+u16 Scenario::getTilePx(size_t pixelXc, size_t pixelYc, Chk::Scope scope) const
 {
     return getTile(pixelXc / Sc::Terrain::PixelsPerTile, pixelYc / Sc::Terrain::PixelsPerTile, scope);
 }
@@ -3685,7 +3685,7 @@ void Scenario::setTile(size_t tileXc, size_t tileYc, u16 tileValue, Chk::Scope s
     }
 }
 
-inline void Scenario::setTilePx(size_t pixelXc, size_t pixelYc, u16 tileValue, Chk::Scope scope)
+void Scenario::setTilePx(size_t pixelXc, size_t pixelYc, u16 tileValue, Chk::Scope scope)
 {
     setTile(pixelXc / Sc::Terrain::PixelsPerTile, pixelYc / Sc::Terrain::PixelsPerTile, tileValue, scope);
 }

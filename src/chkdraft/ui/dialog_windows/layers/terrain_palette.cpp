@@ -4,7 +4,7 @@
 #include <WindowsX.h>
 
 #define START_TILES_YC 0
-#define NUM_TILES 26640
+#define NUM_TILES 32752
 #define TILES_PER_ROW 16
 #define PIXELS_PER_TILE 33
 #define PIXELS_PER_WHEEL 32
@@ -33,6 +33,41 @@ bool TerrainPaletteWindow::DestroyThis()
         this->openGlDc = nullptr;
     }
     return ClassDialog::DestroyDialog();
+}
+
+void TerrainPaletteWindow::SelectTile(std::uint16_t tileValue)
+{
+    u32 newTileRow = u32(tileValue)/TILES_PER_ROW;
+    int newTileOffsetY = newTileRow*PIXELS_PER_TILE;
+    int numRows = (WindowsItem::cliHeight()-START_TILES_YC) / PIXELS_PER_TILE;
+    
+    u32 firstRow = tilesetIndexedYC/PIXELS_PER_TILE;
+    int yOffset = tilesetIndexedYC%PIXELS_PER_TILE;
+    u32 lastRow = firstRow+numRows;
+
+    bool redraw = false;
+    if ( newTileRow <= firstRow )
+    {
+        tilesetIndexedYC = newTileRow*PIXELS_PER_TILE;
+        redraw = true;
+    }
+    else if ( newTileRow >= lastRow )
+    {
+        tilesetIndexedYC = (newTileRow-numRows)*PIXELS_PER_TILE+(PIXELS_PER_TILE-WindowsItem::cliHeight()%PIXELS_PER_TILE);
+        redraw = true;
+    }
+
+    if ( !chkd.maps.clipboard.hasQuickTiles() || !chkd.maps.clipboard.isPasting() || chkd.maps.clipboard.getTiles()[0].value != tileValue )
+    {
+        chkd.maps.clipboard.endPasting();
+        CM->setSubLayer(TerrainSubLayer::Rectangular);
+        chkd.maps.clipboard.setQuickTile(tileValue, -16, -16);
+        chkd.maps.startPaste(true);
+        redraw = true;
+    }
+
+    if ( redraw )
+        WindowsItem::RedrawThis();
 }
 
 void TerrainPaletteWindow::Activate(WPARAM wParam)

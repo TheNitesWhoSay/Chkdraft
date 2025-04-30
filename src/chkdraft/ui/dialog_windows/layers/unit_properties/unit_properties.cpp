@@ -791,7 +791,7 @@ void UnitPropertiesWindow::LvItemChanged(NMHDR* nmhdr)
             WindowsItem::SetWinText(*unitName);
             SetUnitFieldText(unit);
 
-            CM->Redraw(false);
+            CM->viewUnit(index);
         }
         else if ( itemInfo->uOldState & LVIS_SELECTED ) // From selected to not selected
                                                         // Remove item from selection
@@ -816,7 +816,10 @@ void UnitPropertiesWindow::LvItemChanged(NMHDR* nmhdr)
                 DisableUnitEditing();
             }
 
-            CM->Redraw(false);
+            if ( selections.hasUnits() )
+                CM->viewUnit(selections.getFirstUnit());
+            else
+                CM->Redraw(false);
         }
     }
 }

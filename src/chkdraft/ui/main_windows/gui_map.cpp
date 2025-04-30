@@ -948,6 +948,23 @@ void GuiMap::viewUnit(u16 unitIndex)
     }
 }
 
+void GuiMap::viewSprite(u16 spriteIndex)
+{
+    RECT rect {};
+    if ( spriteIndex < Scenario::numSprites() && GetClientRect(getHandle(), &rect) != 0 )
+    {
+        const Chk::Sprite & sprite = Scenario::getSprite(spriteIndex);
+        s32 width = rect.right - rect.left,
+            height = rect.bottom - rect.top;
+
+        screenLeft = sprite.xc - width/2;
+        screenTop = sprite.yc - height/2;
+
+        Scroll(true, true, true);
+        Redraw(false);
+    }
+}
+
 void GuiMap::viewLocation(u16 locationId)
 {
     RECT rect {};
@@ -3420,6 +3437,11 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
     char newPos[64];
     std::snprintf(newPos, 64, "%i, %i (%i, %i)", mapHoverX, mapHoverY, mapHoverX / 32, mapHoverY / 32);
     chkd.statusBar.SetText(0, newPos);
+
+    lastMousePosition = {mapHoverX, mapHoverY};
+    
+    if ( (wParam & MK_LBUTTON) && (wParam & MK_CONTROL) && currLayer == Layer::Terrain && chkd.terrainPalWindow.getHandle() != nullptr )
+        chkd.terrainPalWindow.SelectTile(Scenario::getTilePx((std::size_t)mapHoverX, (std::size_t)mapHoverY));
     
     if ( currLayer == Layer::FogEdit )
     {
@@ -3448,9 +3470,7 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
                     }
 
                     selections.endDrag = {mapHoverX, mapHoverY};
-                    if ( currLayer == Layer::Terrain )
-                        selections.endDrag = { (mapHoverX+16)/32*32, (mapHoverY+16)/32*32 };
-                    else if ( currLayer == Layer::Locations )
+                    if ( currLayer == Layer::Locations )
                     {
                         u32 x2 = mapHoverX, y2 = mapHoverY;
                         if ( SnapLocationDimensions(x2, y2, x2, y2, LocSnapFlags(LocSnapFlags::SnapX2|LocSnapFlags::SnapY2)) )
@@ -3625,14 +3645,19 @@ void GuiMap::LButtonUp(HWND hWnd, int x, int y, WPARAM wParam)
 {
     finalizeTerrainOperation();
     ReleaseCapture();
+    if ( x < 0 ) x = 0;
+    if ( y < 0 ) y = 0;
+    x = s16(x/getZoom() + screenLeft);
+    y = s16(y/getZoom() + screenTop);
+    if ( wParam == MK_CONTROL && currLayer == Layer::Terrain && chkd.terrainPalWindow.getHandle() != nullptr )
+    {
+        chkd.terrainPalWindow.SelectTile(Scenario::getTilePx((std::size_t)x, (std::size_t)y));
+        UnlockCursor();
+    }
+
     if ( isDragging() )
     {
         setDragging(false);
-        if ( x < 0 ) x = 0;
-        if ( y < 0 ) y = 0;
-        x = s16(x/getZoom() + screenLeft);
-        y = s16(y/getZoom() + screenTop);
-
         if ( !clipboard.isPasting() )
         {
             if ( currLayer == Layer::Terrain )
