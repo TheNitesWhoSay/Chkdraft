@@ -92,6 +92,7 @@ class TextTrigGenerator
         inline void appendConditionMaskFlag(StringBuffer & output, const Chk::Condition::MaskFlag & maskFlag) const;
         inline void appendActionMaskFlag(StringBuffer & output, const Chk::Action::MaskFlag & maskFlag) const;
         inline void appendMemory(StringBuffer & output, const u32 & memory) const;
+        inline void appendBitmask(StringBuffer & output, const u32 & bitmask) const;
         inline void appendTextFlags(StringBuffer & output, const Chk::Action::Flags & textFlags) const;
 
         bool useAddressesForMemory; // If true, uses 1.16.1 addresses for memory conditions and actions

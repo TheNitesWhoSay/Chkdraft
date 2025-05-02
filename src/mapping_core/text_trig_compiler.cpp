@@ -344,6 +344,7 @@ bool TextTrigCompiler::parseTriggers(std::string & text, std::vector<RawString> 
     text.push_back('\0'); // Add a terminating null character
 
     u8 flags = 0;
+    u16 maskFlag = 0;
     size_t pos = 0,
         lineEnd = 0,
         playerEnd = 0,
@@ -416,7 +417,7 @@ bool TextTrigCompiler::parseTriggers(std::string & text, std::vector<RawString> 
                 // or   flags:
                 // or   }
                 if ( !parsePartFour(text, currTrig, error, pos, line, expecting, conditionEnd, lineEnd, conditionId,
-                    flags, argIndex, numConditions, currCondition) )
+                    flags, maskFlag, argIndex, numConditions, currCondition) )
                     return false;
                 break;
 
@@ -441,7 +442,7 @@ bool TextTrigCompiler::parseTriggers(std::string & text, std::vector<RawString> 
                 // or   ;%ActionName(
                 // or   flags:
                 // or   }
-                if ( !parsePartSeven(text, currTrig, error, pos, line, expecting, flags, actionEnd, lineEnd,
+                if ( !parsePartSeven(text, currTrig, error, pos, line, expecting, flags, maskFlag, actionEnd, lineEnd,
                     actionId, argIndex, numActions, currAction) )
                     return false;
                 break;
@@ -664,7 +665,7 @@ inline bool TextTrigCompiler::parsePartThree(std::string & text, std::stringstre
 }
 
 inline bool TextTrigCompiler::parsePartFour(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting,
-    size_t & conditionEnd, size_t & lineEnd, Chk::Condition::VirtualType & conditionId, u8 & flags, u32 & argIndex, u32 & numConditions,
+    size_t & conditionEnd, size_t & lineEnd, Chk::Condition::VirtualType & conditionId, u8 & flags, u16 & maskFlag, u32 & argIndex, u32 & numConditions,
     Chk::Condition* & currCondition)
 {
     //      %ConditionName(
@@ -689,7 +690,7 @@ inline bool TextTrigCompiler::parsePartFour(std::string & text, Chk::Trigger & o
 
             conditionEnd = std::min(conditionEnd, lineEnd);
 
-            if ( parseCondition(text, pos, conditionEnd, conditionId, flags) )
+            if ( parseCondition(text, pos, conditionEnd, conditionId, flags, maskFlag) )
             {
                 argIndex = 0;
                 if ( numConditions > Chk::Trigger::MaxConditions )
@@ -699,6 +700,7 @@ inline bool TextTrigCompiler::parsePartFour(std::string & text, Chk::Trigger & o
                 }
                 currCondition = &output.condition(numConditions);
                 currCondition->flags = flags | Chk::Condition::Flags::Disabled;
+                currCondition->maskFlag = (Chk::Condition::MaskFlag)maskFlag;
                 if ( (s32)conditionId < 0 )
                     currCondition->conditionType = extendedToRegularConditionType(conditionId);
                 else
@@ -784,7 +786,7 @@ inline bool TextTrigCompiler::parsePartFour(std::string & text, Chk::Trigger & o
 
             conditionEnd = std::min(conditionEnd, lineEnd);
 
-            if ( parseCondition(text, pos, conditionEnd, conditionId, flags) )
+            if ( parseCondition(text, pos, conditionEnd, conditionId, flags, maskFlag) )
             {
                 argIndex = 0;
                 if ( numConditions > Chk::Trigger::MaxConditions )
@@ -794,6 +796,7 @@ inline bool TextTrigCompiler::parsePartFour(std::string & text, Chk::Trigger & o
                 }
                 currCondition = &output.condition(numConditions);
                 currCondition->flags = flags;
+                currCondition->maskFlag = (Chk::Condition::MaskFlag)maskFlag;
                 if ( (s32)conditionId < 0 )
                     currCondition->conditionType = extendedToRegularConditionType(conditionId);
                 else
@@ -953,7 +956,7 @@ inline bool TextTrigCompiler::parsePartSix(std::string & text, std::stringstream
 }
 
 inline bool TextTrigCompiler::parsePartSeven(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting,
-    u8 & flags, size_t & actionEnd, size_t & lineEnd, Chk::Action::VirtualType & actionId, u32 & argIndex, u32 & numActions,
+    u8 & flags, u16 & maskFlag, size_t & actionEnd, size_t & lineEnd, Chk::Action::VirtualType & actionId, u32 & argIndex, u32 & numActions,
     Chk::Action* & currAction)
 {
     //      %ActionName(
@@ -972,7 +975,7 @@ inline bool TextTrigCompiler::parsePartSeven(std::string & text, Chk::Trigger & 
 
             actionEnd = std::min(actionEnd, lineEnd);
 
-            if ( parseAction(text, pos, actionEnd, actionId, flags) )
+            if ( parseAction(text, pos, actionEnd, actionId, flags, maskFlag) )
             {
                 argIndex = 0;
                 if ( numActions > Chk::Trigger::MaxActions )
@@ -982,6 +985,7 @@ inline bool TextTrigCompiler::parsePartSeven(std::string & text, Chk::Trigger & 
                 }
                 currAction = &output.action(numActions);
                 currAction->flags = flags | Chk::Action::Flags::Disabled;
+                currAction->maskFlag = (Chk::Action::MaskFlag)maskFlag;
                 if ( actionId < 0 )
                     currAction->actionType = extendedToRegularActionType(actionId);
                 else
@@ -1028,7 +1032,7 @@ inline bool TextTrigCompiler::parsePartSeven(std::string & text, Chk::Trigger & 
 
             actionEnd = std::min(actionEnd, lineEnd);
 
-            if ( parseAction(text, pos, actionEnd, actionId, flags) )
+            if ( parseAction(text, pos, actionEnd, actionId, flags, maskFlag) )
             {
                 argIndex = 0;
                 if ( numActions > Chk::Trigger::MaxActions )
@@ -1038,6 +1042,7 @@ inline bool TextTrigCompiler::parsePartSeven(std::string & text, Chk::Trigger & 
                 }
                 currAction = &output.action(numActions);
                 currAction->flags = flags;
+                currAction->maskFlag = (Chk::Action::MaskFlag)maskFlag;
                 if ( (s32)actionId < 0 )
                     currAction->actionType = extendedToRegularActionType(actionId);
                 else
@@ -1330,8 +1335,15 @@ bool TextTrigCompiler::parseConditionName(const std::string & arg, Chk::Conditio
         break;
 
     case 'M':
-        if ( arg.compare(1, 5, "EMORY") == 0 )
-            conditionType = Chk::Condition::VirtualType::Memory;
+        if ( arg.compare(1, 15, "ASKEDMEMORYADDR") == 0 )
+            conditionType = Chk::Condition::VirtualType::MemoryMasked;
+        else if ( arg.compare(1, 5, "EMORY") == 0 )
+        {
+            if ( arg.compare(6, 6, "MASKED") == 0 )
+                conditionType = Chk::Condition::VirtualType::MemoryMasked;
+            else
+                conditionType = Chk::Condition::VirtualType::Memory;
+        }
         else if ( arg.compare(1, 3, "OST") == 0 )
         {
             if ( arg.compare(4, 5, "KILLS") == 0 )
@@ -1362,7 +1374,7 @@ bool TextTrigCompiler::parseConditionName(const std::string & arg, Chk::Conditio
     return conditionType != Chk::Condition::VirtualType::NoCondition;
 }
 
-bool TextTrigCompiler::parseCondition(std::string & text, size_t pos, size_t end, Chk::Condition::VirtualType & conditionType, u8 & flags)
+bool TextTrigCompiler::parseCondition(std::string & text, size_t pos, size_t end, Chk::Condition::VirtualType & conditionType, u8 & flags, u16 & maskFlag)
 {
     conditionType = Chk::Condition::VirtualType::NoCondition;
     u16 number = 0;
@@ -1382,6 +1394,7 @@ bool TextTrigCompiler::parseCondition(std::string & text, size_t pos, size_t end
     parseConditionName(arg, conditionType);
 
     flags = Chk::Condition::getDefaultFlags(conditionType);
+    maskFlag = (conditionType == Chk::Condition::VirtualType::MemoryMasked ? Chk::Condition::MaskFlag::Enabled : Chk::Condition::MaskFlag::Disabled);
 
     return conditionType != Chk::Condition::VirtualType::NoCondition;
 }
@@ -1481,8 +1494,15 @@ bool TextTrigCompiler::parseActionName(const std::string & arg, Chk::Action::Vir
         break;
 
     case 'M':
-        if ( arg.compare(1, 5, "EMORY") == 0 )
-            actionType = Chk::Action::VirtualType::SetMemory;
+        if ( arg.compare(1, 15, "ASKEDMEMORYADDR") == 0 )
+            actionType = Chk::Action::VirtualType::SetMemoryMasked;
+        else if ( arg.compare(1, 5, "EMORY") == 0 )
+        {
+            if ( arg.compare(6, 6, "MASKED") == 0 )
+                actionType = Chk::Action::VirtualType::SetMemoryMasked;
+            else
+                actionType = Chk::Action::VirtualType::SetMemory;
+        }
         else if ( arg.compare(1, 3, "OVE") == 0 )
         {
             if ( arg.compare(4, 4, "UNIT") == 0 )
@@ -1569,7 +1589,12 @@ bool TextTrigCompiler::parseActionName(const std::string & arg, Chk::Action::Vir
             else if ( arg.compare(3, 12, "NEXTSCENARIO") == 0 )
                 actionType = Chk::Action::VirtualType::SetNextScenario;
             else if ( arg.compare(3, 6, "MEMORY") == 0 )
-                actionType = Chk::Action::VirtualType::SetMemory;
+            {
+                if ( arg.compare(9, 6, "MASKED") == 0 )
+                    actionType = Chk::Action::VirtualType::SetMemoryMasked;
+                else
+                    actionType = Chk::Action::VirtualType::SetMemory;
+            }
         }
         break;
 
@@ -1606,7 +1631,7 @@ bool TextTrigCompiler::parseActionName(const std::string & arg, Chk::Action::Vir
     return actionType != Chk::Action::VirtualType::NoAction;
 }
 
-bool TextTrigCompiler::parseAction(std::string & text, size_t pos, size_t end, Chk::Action::VirtualType & actionType, u8 & flags)
+bool TextTrigCompiler::parseAction(std::string & text, size_t pos, size_t end, Chk::Action::VirtualType & actionType, u8 & flags, u16 & maskFlag)
 {
     actionType = Chk::Action::VirtualType::NoAction;
     u16 number = 0;
@@ -1717,8 +1742,15 @@ bool TextTrigCompiler::parseAction(std::string & text, size_t pos, size_t end, C
         break;
 
     case 'M':
-        if ( arg.compare(1, 5, "EMORY") == 0 )
-            actionType = Chk::Action::VirtualType::SetMemory;
+        if ( arg.compare(1, 15, "ASKEDMEMORYADDR") == 0 )
+            actionType = Chk::Action::VirtualType::SetMemoryMasked;
+        else if ( arg.compare(1, 5, "EMORY") == 0 )
+        {
+            if ( arg.compare(6, 6, "MASKED") == 0 )
+                actionType = Chk::Action::VirtualType::SetMemoryMasked;
+            else
+                actionType = Chk::Action::VirtualType::SetMemory;
+        }
         else if ( arg.compare(1, 3, "OVE") == 0 )
         {
             if ( arg.compare(4, 4, "UNIT") == 0 )
@@ -1805,7 +1837,12 @@ bool TextTrigCompiler::parseAction(std::string & text, size_t pos, size_t end, C
             else if ( arg.compare(3, 12, "NEXTSCENARIO") == 0 )
                 actionType = Chk::Action::VirtualType::SetNextScenario;
             else if ( arg.compare(3, 6, "MEMORY") == 0 )
-                actionType = Chk::Action::VirtualType::SetMemory;
+            {
+                if ( arg.compare(9, 6, "MASKED") == 0 )
+                    actionType = Chk::Action::VirtualType::SetMemoryMasked;
+                else
+                    actionType = Chk::Action::VirtualType::SetMemory;
+            }
         }
         break;
 
@@ -1840,6 +1877,7 @@ bool TextTrigCompiler::parseAction(std::string & text, size_t pos, size_t end, C
     }
 
     flags = Chk::Action::getDefaultFlags(actionType);
+    maskFlag = (actionType == Chk::Action::VirtualType::SetMemoryMasked ? Chk::Action::MaskFlag::Enabled : Chk::Action::MaskFlag::Disabled);
 
     return actionType != Chk::Action::VirtualType::NoAction;
 }
@@ -1918,6 +1956,9 @@ bool TextTrigCompiler::parseConditionArg(std::string & text, std::vector<RawStri
             returnMsg( (useAddressesForMemory && parseMemoryAddress(text, currCondition.player, pos, end, deathTableOffset) ||
                 !useAddressesForMemory && parseLong(text, currCondition.player, pos, end)),
                 (useAddressesForMemory ? "Expected: 4-byte address" : "Expected: 4-byte death table offset") );
+        case Chk::Condition::ArgType::MemoryBitmask:
+            returnMsg( parseLong(text, currCondition.locationId, pos, end),
+                "Expected: 4-byte amount" );
     }
     CHKD_ERR("INTERNAL ERROR: Invalid argIndex or argument unhandled, report this");
     return false;
@@ -2035,6 +2076,9 @@ bool TextTrigCompiler::parseActionArg(std::string & text, std::vector<RawString>
             returnMsg( (useAddressesForMemory && parseMemoryAddress(text, currAction.group, pos, end, deathTableOffset) ||
                 !useAddressesForMemory && parseLong(text, currAction.group, pos, end)),
                 (useAddressesForMemory ? "Expected: 4-byte address" : "Expected: 4-byte death table offset") );
+        case Chk::Action::ArgType::MemoryBitmask:
+            returnMsg( parseLong(text, currAction.locationId, pos, end),
+                "Expected: 4-byte number");
     }
     CHKD_ERR("INTERNAL ERROR: Invalid argIndex or argument unhandled, report this");
     return false;
@@ -3154,6 +3198,9 @@ Chk::Condition::Type TextTrigCompiler::extendedToRegularConditionType(Chk::Condi
     case Chk::Condition::VirtualType::Memory:
         return (Chk::Condition::Type)Chk::Condition::ExtendedBaseType::Memory;
         break;
+    case Chk::Condition::VirtualType::MemoryMasked:
+        return (Chk::Condition::Type)Chk::Condition::ExtendedBaseType::MemoryMasked;
+        break;
     }
     return (Chk::Condition::Type)conditionType;
 }
@@ -3165,6 +3212,9 @@ Chk::Action::Type TextTrigCompiler::extendedToRegularActionType(Chk::Action::Vir
         // Don't include AID_CUSTOM, that is set while parsing args
     case Chk::Action::VirtualType::SetMemory:
         return (Chk::Action::Type)Chk::Action::ExtendedBaseType::SetMemory;
+        break;
+    case Chk::Action::VirtualType::SetMemoryMasked:
+        return (Chk::Action::Type)Chk::Action::ExtendedBaseType::SetMemoryMasked;
         break;
     }
     return (Chk::Action::Type)actionType;
@@ -3976,6 +4026,7 @@ bool BriefingTextTrigCompiler::parseBriefingTriggers(std::string & text, std::ve
     text.push_back('\0'); // Add a terminating null character
     
     u8 flags = 0;
+    u16 maskFlag = 0;
     size_t pos = 0,
         lineEnd = 0,
         playerEnd = 0,
