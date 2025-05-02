@@ -14,8 +14,9 @@ Chk::Condition::Argument comparisonCndArg = { Chk::Condition::ArgType::Compariso
 Chk::Condition::Argument conditionTypeCndArg = { Chk::Condition::ArgType::ConditionType, Chk::Condition::ArgField::ConditionType };
 Chk::Condition::Argument typeIndexCndArg = { Chk::Condition::ArgType::TypeIndex, Chk::Condition::ArgField::TypeIndex };
 Chk::Condition::Argument flagsCndArg = { Chk::Condition::ArgType::Flags, Chk::Condition::ArgField::Flags };
-Chk::Condition::Argument maskFlagCndArg = { Chk::Condition::ArgType::MaskFlag, Chk::Condition::ArgField::MaskFlag };
 Chk::Condition::Argument memoryOffsetCndArg = { Chk::Condition::ArgType::MemoryOffset, Chk::Condition::ArgField::Player };
+Chk::Condition::Argument memoryBitmaskCndArg = { Chk::Condition::ArgType::MemoryBitmask, Chk::Condition::ArgField::LocationId };
+Chk::Condition::Argument maskFlagCndArg = { Chk::Condition::ArgType::MaskFlag, Chk::Condition::ArgField::MaskFlag };
 
 Chk::Condition::Argument Chk::Condition::classicArguments[NumConditionTypes][MaxArguments] = {
     /**  0 = No Condition         */ {},
@@ -130,7 +131,9 @@ std::unordered_map<Chk::Condition::VirtualType, Chk::Condition::VirtualCondition
         Chk::Condition::VirtualType::Custom, { Chk::Condition::VirtualType::Indeterminate, {
             locationCndArg, playerCndArg, amountCndArg, unitCndArg, comparisonCndArg, conditionTypeCndArg, typeIndexCndArg, flagsCndArg, maskFlagCndArg } } ),
     std::pair<Chk::Condition::VirtualType, Chk::Condition::VirtualCondition>(
-        Chk::Condition::VirtualType::Memory, { Chk::Condition::VirtualType::Deaths, { memoryOffsetCndArg, numericComparisonCndArg, amountCndArg } } )
+        Chk::Condition::VirtualType::Memory, { Chk::Condition::VirtualType::Deaths, { memoryOffsetCndArg, numericComparisonCndArg, amountCndArg } } ),
+    std::pair<Chk::Condition::VirtualType, Chk::Condition::VirtualCondition>(
+        Chk::Condition::VirtualType::MemoryMasked, { Chk::Condition::VirtualType::Deaths, { memoryOffsetCndArg, numericComparisonCndArg, amountCndArg, memoryBitmaskCndArg } } )
 };
 
 Chk::Action::Argument Chk::Action::noArg = { Chk::Action::ArgType::NoType, Chk::Action::ArgField::NoField };
@@ -157,13 +160,14 @@ Chk::Action::Argument cuwpArg = { Chk::Action::ArgType::CUWP, Chk::Action::ArgFi
 Chk::Action::Argument switchArg = { Chk::Action::ArgType::Switch, Chk::Action::ArgField::Number };
 Chk::Action::Argument stringArg = { Chk::Action::ArgType::String, Chk::Action::ArgField::StringId };
 Chk::Action::Argument soundArg = { Chk::Action::ArgType::Sound, Chk::Action::ArgField::SoundStringId };
-Chk::Action::Argument memoryOffsetArg = { Chk::Action::ArgType::MemoryOffset, Chk::Action::ArgField::Group };
 Chk::Action::Argument numberArg = { Chk::Action::ArgType::Number, Chk::Action::ArgField::Number };
 Chk::Action::Argument typeIndexArg = { Chk::Action::ArgType::TypeIndex, Chk::Action::ArgField::Type };
 Chk::Action::Argument actionTypeArg = { Chk::Action::ArgType::ActionType, Chk::Action::ArgField::ActionType };
 Chk::Action::Argument secondaryTypeIndexArg = { Chk::Action::ArgType::SecondaryTypeIndex, Chk::Action::ArgField::Type2 };
 Chk::Action::Argument flagsArg = { Chk::Action::ArgType::Flags, Chk::Action::ArgField::Flags };
 Chk::Action::Argument paddingArg = { Chk::Action::ArgType::Padding, Chk::Action::ArgField::Padding };
+Chk::Action::Argument memoryOffsetArg = { Chk::Action::ArgType::MemoryOffset, Chk::Action::ArgField::Group };
+Chk::Action::Argument memoryBitmaskArg = { Chk::Action::ArgType::MemoryBitmask, Chk::Action::ArgField::LocationId };
 Chk::Action::Argument maskFlagArg = { Chk::Action::ArgType::MaskFlag, Chk::Action::ArgField::MaskFlag };
 
 Chk::Action::Argument briefingSlotArg = { Chk::Action::ArgType::BriefingSlot, Chk::Action::ArgField::Group };
@@ -461,6 +465,7 @@ u8 Chk::Condition::getDefaultFlags(VirtualType conditionType)
         {
             // Don't include VirtualType::Custom, that is determined by parsing args
             case Condition::VirtualType::Memory: return defaultFlags[Condition::ExtendedBaseType::Memory];
+            case Condition::VirtualType::MemoryMasked: return defaultFlags[Condition::ExtendedBaseType::MemoryMasked];
             default: return u8(0);
         }
     }
@@ -660,6 +665,7 @@ u8 Chk::Action::getDefaultFlags(VirtualType actionType)
         {
             // Don't include VirtualType::Custom, that is determined by parsing args
             case Action::VirtualType::SetMemory: return defaultFlags[Action::ExtendedBaseType::SetMemory];
+            case Action::VirtualType::SetMemoryMasked: return defaultFlags[Action::ExtendedBaseType::SetMemoryMasked];
             default: return u8(0);
         }
     }
@@ -917,7 +923,9 @@ std::unordered_map<Chk::Action::VirtualType, Chk::Action::VirtualAction> Chk::Ac
             locationArg, stringArg, soundArg, durationArg, playerArg, numberArg, typeIndexArg,
             actionTypeArg, secondaryTypeIndexArg, flagsArg, paddingArg, maskFlagArg } } ),
     std::pair<Chk::Action::VirtualType, Chk::Action::VirtualAction>(
-        Chk::Action::VirtualType::SetMemory, { Chk::Action::VirtualType::SetDeaths, { memoryOffsetArg, numericModArg, amountArg } } )
+        Chk::Action::VirtualType::SetMemory, { Chk::Action::VirtualType::SetDeaths, { memoryOffsetArg, numericModArg, amountArg } } ),
+    std::pair<Chk::Action::VirtualType, Chk::Action::VirtualAction>(
+        Chk::Action::VirtualType::SetMemoryMasked, { Chk::Action::VirtualType::SetDeaths, { memoryOffsetArg, numericModArg, amountArg, memoryBitmaskArg } } )
 };
 
 std::unordered_map<Chk::Action::VirtualType, Chk::Action::VirtualAction> Chk::Action::virtualBriefingActions = {
