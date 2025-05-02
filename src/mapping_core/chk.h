@@ -623,11 +623,13 @@ namespace Chk {
 
             Custom = -1,
             Memory = -2,
+            MemoryMasked = -3,
 
             Indeterminate = s32_min
         });
         enum_t(ExtendedBaseType, s32, { // s32
             Memory = (u8)Type::Deaths, // Deaths
+            MemoryMasked = (u8)Type::Deaths, // Deaths
         });
         enum_t(Flags, u8, { // u8
             Disabled = BIT_1, // If set, the trigger condition is disabled/ignored
@@ -651,7 +653,8 @@ namespace Chk {
             TypeIndex = 12, // ResourceType, ScoreType, Switch
             Flags = 13,
             MaskFlag = 14,
-            MemoryOffset = 15
+            MemoryOffset = 15,
+            MemoryBitmask = 16
         };
         enum class ArgField : u32 { // u32
             LocationId = 0,
@@ -870,6 +873,7 @@ namespace Chk {
 
             Custom = -1,
             SetMemory = -2,
+            SetMemoryMasked = -3,
 
             Indeterminate = s32_min,
 
@@ -888,6 +892,7 @@ namespace Chk {
         });
         enum_t(ExtendedBaseType, s32, { // s32
             SetMemory = (u8)Type::SetDeaths, // SetDeaths
+            SetMemoryMasked = (u8)Type::SetDeaths // SetDeaths
         });
         enum_t(Flags, u8, { // u8
             Disabled = BIT_1, // If set, the trigger action is disabled/ignored
@@ -928,8 +933,9 @@ namespace Chk {
             Padding = 26,
             MaskFlag = 27,
             MemoryOffset = 28,
+            MemoryBitmask = 29,
 
-            BriefingSlot = 29
+            BriefingSlot = 30
         };
         enum class ArgField : u32 { // u32
             LocationId = 0,

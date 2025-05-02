@@ -8,7 +8,7 @@ using u16 = uint16_t;
 constexpr u16 MajorVersionNumber = 1;
 
 // Minor version is a 2-digit base-10 number
-constexpr u16 MinorVersionNumber = 10;
+constexpr u16 MinorVersionNumber = 11;
 
 u16 GetDateShort(); // Returns 384*(year-2000) + 32*month + day based on the date compiled
 
