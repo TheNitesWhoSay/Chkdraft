@@ -145,6 +145,7 @@ public:
     void setQuickIsom(size_t terrainTypeIndex);
     void setQuickDoodad(u16 doodadStartTileGroup);
         
+    void setQuickTile(u16 index, s32 xc, s32 yc);
     void addQuickTile(u16 index, s32 xc, s32 yc);
     bool hasQuickTiles() { return quickTiles.size() > 0; }
 

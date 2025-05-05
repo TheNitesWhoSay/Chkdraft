@@ -102,13 +102,13 @@ class TextTrigCompiler
         inline bool parsePartTwo(std::string & text, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting);
         inline bool parsePartThree(std::string & text, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting);
         inline bool parsePartFour(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting,
-            size_t & conditionEnd, size_t & lineEnd, Chk::Condition::VirtualType & conditionType, u8 & flags, u32 & argIndex, u32 & numConditions,
+            size_t & conditionEnd, size_t & lineEnd, Chk::Condition::VirtualType & conditionType, u8 & flags, u16 & maskFlag, u32 & argIndex, u32 & numConditions,
             Chk::Condition* & currCondition);
         inline bool parsePartFive(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting, u32 & argIndex, size_t & argEnd,
             Chk::Condition* & currCondition, Chk::Condition::VirtualType & conditionType);
         inline bool parsePartSix(std::string & text, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting);
         inline bool parsePartSeven(std::string & text, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting,
-            u8 & flags, size_t & actionEnd, size_t & lineEnd, Chk::Action::VirtualType & actionType, u32 & argIndex, u32 & numActions,
+            u8 & flags, u16 & maskFlag, size_t & actionEnd, size_t & lineEnd, Chk::Action::VirtualType & actionType, u32 & argIndex, u32 & numActions,
             Chk::Action* & currAction);
         inline bool parsePartEight(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting,
             u32 & argIndex, size_t & argEnd, Chk::Action* & currAction, Chk::Action::VirtualType & actionType, size_t trigIndex, size_t actionIndex);
@@ -119,9 +119,9 @@ class TextTrigCompiler
 
         bool parseExecutingPlayer(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Trigger & currTrig, size_t pos, size_t end) const; // Parse a player that the trigger is executed by
         bool parseConditionName(const std::string & arg, Chk::Condition::VirtualType & conditionType) const;
-        bool parseCondition(std::string & text, size_t pos, size_t end, Chk::Condition::VirtualType & conditionType, u8 & flags); // Find the equivilant conditionType
+        bool parseCondition(std::string & text, size_t pos, size_t end, Chk::Condition::VirtualType & conditionType, u8 & flags, u16 & maskFlag); // Find the equivilant conditionType
         bool parseActionName(const std::string & arg, Chk::Action::VirtualType & actionType) const;
-        bool parseAction(std::string & text, size_t pos, size_t end, Chk::Action::VirtualType & actionType, u8 & flags); // Find the equivilant actionType
+        bool parseAction(std::string & text, size_t pos, size_t end, Chk::Action::VirtualType & actionType, u8 & flags, u16 & maskFlag); // Find the equivilant actionType
         bool parseConditionArg(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Condition & currCondition, size_t pos, size_t end, Chk::Condition::Argument argument, std::stringstream & error); // Parse an argument belonging to a condition
         bool parseActionArg(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Action & currAction, size_t pos, size_t end, Chk::Action::Argument argument, std::stringstream & error, size_t trigIndex, size_t actionIndex); // Parse an argument belonging to an action
         bool parseExecutionFlags(std::string & text, size_t pos, size_t end, u32 & flags) const;

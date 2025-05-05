@@ -24,6 +24,14 @@ enum class DefaultTriggers
     SevenPlayerMeleeWithObs = 7
 };
 
+enum class Direction
+{
+    Left,
+    Up,
+    Right,
+    Down
+};
+
 class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos, private Chk::IsomCache
 {
     public:
@@ -83,6 +91,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     void createMobileInvertedLocation();
 
                     void viewUnit(u16 unitIndex);
+                    void viewSprite(u16 spriteIndex);
                     void viewLocation(u16 locationId);
                     LocSelFlags getLocSelFlags(s32 xc, s32 yc);
                     bool moveLocation(u32 downX, u32 downY, u32 upX, u32 upY);
@@ -107,6 +116,8 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     void PlayerChanged(u8 newPlayer);
                     u16 GetSelectedLocation();
                     bool autoSwappingAddonPlayers();
+                    bool pastingToGrid();
+                    void moveSelection(Direction direction, bool useGrid);
 
 /*   Undo Redo  */  void AddUndo(ReversiblePtr action);
                     void undo();
@@ -221,6 +232,8 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     GuiMap::Skin GetSkin();
                     void SetSkin(GuiMap::Skin skin);
 
+                    point getLastMousePosition() { return lastMousePosition; }
+
 
     protected:
 
@@ -315,6 +328,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     int panCurrentY = 0;
 
                     ChkdBitmap graphicBits {};
+                    point lastMousePosition {};
                     s32 screenLeft = 0;
                     s32 screenTop = 0;
                     u32 bitmapWidth = 0;

@@ -12,6 +12,7 @@ class TerrainPaletteWindow : public WinLib::ClassDialog
         bool CreateThis(HWND hParent);
         bool DestroyThis();
         void SetTileDialog(HWND hWnd);
+        void SelectTile(std::uint16_t tileValue);
 
     protected:
         void Activate(WPARAM wParam);

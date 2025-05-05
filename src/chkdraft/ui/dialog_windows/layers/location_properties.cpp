@@ -63,6 +63,8 @@ bool LocationWindow::CreateThis(HWND hParent)
         buttonInvertXY.FindThis(getHandle(), Id::ButtonInvertXY);
 
         RefreshLocationInfo();
+        editLocName.FocusThis();
+        editLocName.SelectAll();
 
         return true;
     }
@@ -111,6 +113,7 @@ void LocationWindow::RefreshLocationInfo()
     currentLocationId = CM->GetSelectedLocation();
     if ( currentLocationId != NO_LOCATION && currentLocationId < CM->numLocations() )
     {
+        this->SetWinText(std::string("Edit Location #") + std::to_string(currentLocationId));
         const Chk::Location & locRef = CM->getLocation(currentLocationId);
         editLocLeft.SetText(std::to_string(locRef.left));
         editLocTop.SetText(std::to_string(locRef.top));

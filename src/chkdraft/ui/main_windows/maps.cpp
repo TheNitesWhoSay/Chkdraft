@@ -197,7 +197,9 @@ bool Maps::SaveCurr(bool saveAs)
     if ( currentlyActiveMap->SaveFile(saveAs) )
     {
         currentlyActiveMap->SetWinText(currentlyActiveMap->getFilePath());
-        currentlyActiveMap->refreshScenario();
+        if ( saveAs )
+            currentlyActiveMap->refreshScenario();
+
         return true;
     }
     else
@@ -806,6 +808,12 @@ void Maps::updateCursor(s32 xc, s32 yc)
     }
     else if ( nonStandardCursor )
         SetCursor(standardCursor);
+}
+
+void Maps::releaseRenderContext(std::shared_ptr<WinLib::DeviceContext> & deviceContext)
+{
+    if ( openGlRenderContext && deviceContext != nullptr )
+        openGlRenderContext->releaseDeviceContext(deviceContext);
 }
 
 void Maps::setGlRenderTarget(std::shared_ptr<WinLib::DeviceContext> & deviceContext, WinLib::WindowsItem & windowsItem)
