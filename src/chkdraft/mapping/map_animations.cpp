@@ -94,6 +94,9 @@ void MapAnimations::initialize(const Scenario & scenario)
 
 void MapAnimations::animate(uint64_t currentTick)
 {
+    for ( auto & clipboardSprite : CM->clipboard.getSprites() )
+        clipboardSprite.testAnim.animate(currentTick);
+
     for ( auto & actor : unitActors )
         actor.animate(currentTick);
 

@@ -2,7 +2,7 @@
 #define CLIPBOARD_H
 #include <common_files/constants.h>
 #include <common_files/structs.h>
-//#include <mapping/map_actor.h>
+#include <mapping/map_actor.h>
 #include <mapping_core/mapping_core.h>
 #include <chrono>
 #include <string>
@@ -57,7 +57,7 @@ struct PasteSpriteNode
     Chk::Sprite sprite {};
     s32 xc = 0;
     s32 yc = 0;
-    //MapActor anim {};
+    MapActor testAnim; // TODO: Remove this
 
     PasteSpriteNode() = delete;
     PasteSpriteNode(const Chk::Sprite & sprite);

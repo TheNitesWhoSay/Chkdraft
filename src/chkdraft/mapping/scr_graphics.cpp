@@ -3640,7 +3640,7 @@ void Scr::MapGraphics::drawPastes()
                 for ( auto & pasteSprite : sprites )
                 {
                     drawImage(getImage(pasteSprite.sprite), paste.x+pasteSprite.xc/*+pasteSprite.anim.xOffset*/, paste.y+pasteSprite.yc/*+pasteSprite.anim.yOffset*/,
-                        0/*pasteSprite.anim.frame*/, 0xFFFFFFFF, getPlayerColor(pasteSprite.sprite.owner), false);
+                        pasteSprite.testAnim.mapImages[0].frame, 0xFFFFFFFF, getPlayerColor(pasteSprite.sprite.owner), false);
                 }
             }
         }
