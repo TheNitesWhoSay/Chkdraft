@@ -3,6 +3,7 @@
 #include "common_files/constants.h"
 #include "common_files/structs.h"
 #include "mapping/color_cycler.h"
+#include "mapping/map_animations.h"
 #include <mapping_core/mapping_core.h>
 #include <rarecpp/reflect.h>
 #include <cstdint>
@@ -892,6 +893,7 @@ namespace Scr {
         Scr::Animation & getImage(const Chk::Sprite & sprite);
 
     public:
+
         bool fpsEnabled = false;
         bool displayIsomNums = false;
         bool displayTileNums = false;

@@ -73,16 +73,15 @@ void MapActor::animate(std::uint64_t currentTick)
                 switch ( code )
                 {
                     case Sc::Sprite::Op::playfram:
-                        this->frame = iscript[currOffset];
+                        mapImages[usedImages[0]].frame = iscript[currOffset];
                         break;
                     case Sc::Sprite::Op::setflipstate:
-                        //bool flipped = (iscript[currOffset] == 1);
-                        // TODO: set some kinda flipped state
+                        mapImages[usedImages[0]].flipped = (iscript[currOffset] != 0);
                         break;
                     case Sc::Sprite::Op::sprol:
-                        this->xOffset = s32(s8(iscript[currOffset+2]));
-                        this->yOffset = s32(s8(iscript[currOffset+3]));
-                        this->frame++;
+                        //this->xOffset = s32(s8(iscript[currOffset+2]));
+                        //this->yOffset = s32(s8(iscript[currOffset+3]));
+                        //this->frame++;
                         break;
                     case Sc::Sprite::Op::call:
                         {
@@ -105,7 +104,7 @@ void MapActor::animate(std::uint64_t currentTick)
                         {
                             // wait-looped, you don't necessarily want to end here but it permits restarting
                             // TODO: Just because you're wait-looped doesn't mean restarting is appropriate...
-                            frame = 0;
+                            mapImages[usedImages[0]].frame = 0;
                             end();
                             return;
                         }

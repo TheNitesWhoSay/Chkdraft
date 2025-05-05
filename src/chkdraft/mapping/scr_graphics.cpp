@@ -2817,11 +2817,20 @@ void Scr::MapGraphics::drawImages()
     auto & palette = renderDat->tiles->tilesetGrp.palette; // For SC:R there is no palette/this is std::nullopt
     ScopedPaletteRestore<8, 8> remapped {palette, prevMappedColor}; // For SC:R this does nothing
 
-    for ( const auto & unit : map.units )
-        drawUnit(unit);
+    //for ( const auto & unit : map.units )
+    //    drawUnit(unit);
 
-    for ( const auto & sprite : map.sprites )
-        drawSprite(sprite);
+    //for ( const auto & sprite : map.sprites )
+    //    drawSprite(sprite);
+
+    /*for ( size_t i=1; i<map.animations.images.size(); ++i )
+    {
+        const auto & image = map.animations.images[i];
+        if ( loadSettings.skinId == Scr::Skin::Id::Classic )
+            drawClassicImage(*renderDat->tiles->tilesetGrp.palette, image.xc, image.yc, image.frame, image.imageId, (Chk::PlayerColor)image.owner, image.flipped);
+        else
+            drawImage(getImage(image.imageId), image.xc, image.yc, image.frame, 0xFFFFFFFF, getPlayerColor(image.owner), false, image.flipped);
+    }*/
 }
 
 void Scr::MapGraphics::drawLocations()
@@ -3619,7 +3628,7 @@ void Scr::MapGraphics::drawPastes()
             {
                 for ( auto & pasteSprite : sprites )
                 {
-                    drawClassicImage(*palette, paste.x+pasteSprite.xc, paste.y+pasteSprite.yc, pasteSprite.anim.frame,
+                    drawClassicImage(*palette, paste.x+pasteSprite.xc, paste.y+pasteSprite.yc, 0,//pasteSprite.anim.frame,
                         getImageId(pasteSprite.sprite), (Chk::PlayerColor)pasteSprite.sprite.owner);
                 }
             }
@@ -3627,8 +3636,8 @@ void Scr::MapGraphics::drawPastes()
             {
                 for ( auto & pasteSprite : sprites )
                 {
-                    drawImage(getImage(pasteSprite.sprite), paste.x+pasteSprite.xc+pasteSprite.anim.xOffset, paste.y+pasteSprite.yc+pasteSprite.anim.yOffset,
-                        pasteSprite.anim.frame, 0xFFFFFFFF, getPlayerColor(pasteSprite.sprite.owner), false);
+                    drawImage(getImage(pasteSprite.sprite), paste.x+pasteSprite.xc/*+pasteSprite.anim.xOffset*/, paste.y+pasteSprite.yc/*+pasteSprite.anim.yOffset*/,
+                        0/*pasteSprite.anim.frame*/, 0xFFFFFFFF, getPlayerColor(pasteSprite.sprite.owner), false);
                 }
             }
         }

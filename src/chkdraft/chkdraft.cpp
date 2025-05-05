@@ -119,7 +119,7 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
             }
             else if ( gameClock.tick() )
             {
-                CM->Animate(gameClock.currentTick());
+                CM->animations.animate(gameClock.currentTick()); //CM->Animate(gameClock.currentTick());
                 CM->UpdateGlGraphics(); // Color cycling or HD water
                 CM->Redraw(false);
             }
@@ -409,6 +409,8 @@ bool Chkdraft::DlgKeyListener(HWND hWnd, UINT & msg, WPARAM wParam, LPARAM lPara
                 UnlockCursor();
                 return true;
             }
+            if ( wParam == VK_SPACE && CM != nullptr )
+                CM->animations.initialize(*CM);
             break;
     }
     return false;

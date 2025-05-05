@@ -3,6 +3,7 @@
 #include <common_files/common_files.h>
 #include <windows/windows_ui.h>
 #include "mapping/clipboard.h"
+#include "mapping/map_animations.h"
 #include "mapping/sc_graphics.h"
 #include "mapping/selections.h"
 #include "mapping/undos/undos.h"
@@ -30,6 +31,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     Selections selections {*this};
                     Undos undos {*this};
                     std::unique_ptr<Scr::MapGraphics> scrGraphics;
+                    MapAnimations animations;
 
 /* Constructor  */  GuiMap(Clipboard & clipboard, const std::string & filePath);
                     GuiMap(Clipboard & clipboard, FileBrowserPtr<SaveType> fileBrowser = getDefaultOpenMapBrowser());
@@ -117,7 +119,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
 
                     bool EnsureBitmapSize(u32 desiredWidth, u32 desiredHeight);
                     void SnapSelEndDrag();
-                    void Animate(std::uint64_t currentTick);
+                    //void Animate(std::uint64_t currentTick);
                     bool UpdateGlGraphics();
                     void PaintMap(GuiMapPtr currMap, bool pasting);
                     void PaintMiniMap(const WinLib::DeviceContext & dc);

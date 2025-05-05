@@ -57,6 +57,10 @@ set(Headers
   common_files/version.h
   mapping/map_actor.h
   mapping/map_actor.cpp
+  mapping/map_animations.h
+  mapping/map_animations.cpp
+  mapping/map_image.h
+  mapping/map_image.cpp
   mapping/chkd_plugins.h
   mapping/clipboard.h
   mapping/color_cycler.h

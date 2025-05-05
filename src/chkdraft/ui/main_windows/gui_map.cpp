@@ -30,6 +30,8 @@ GuiMap::GuiMap(Clipboard & clipboard, const std::string & filePath) : MapFile(fi
     int layerSel = chkd.mainToolbar.layerBox.GetSel();
     if ( layerSel != CB_ERR )
         currLayer = (Layer)layerSel;
+
+    animations.initialize(*this);
 }
 
 GuiMap::GuiMap(Clipboard & clipboard, FileBrowserPtr<SaveType> fileBrowser) : MapFile(fileBrowser),
@@ -40,6 +42,8 @@ GuiMap::GuiMap(Clipboard & clipboard, FileBrowserPtr<SaveType> fileBrowser) : Ma
     int layerSel = chkd.mainToolbar.layerBox.GetSel();
     if ( layerSel != CB_ERR )
         currLayer = (Layer)layerSel;
+
+    animations.initialize(*this);
 }
 
 GuiMap::GuiMap(Clipboard & clipboard, Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex, DefaultTriggers defaultTriggers)
@@ -137,6 +141,8 @@ GuiMap::GuiMap(Clipboard & clipboard, Sc::Terrain::Tileset tileset, u16 width, u
         addSharedVision(Sc::Player::Id::Force2);
         break;
     }
+
+    animations.initialize(*this);
 }
 
 GuiMap::~GuiMap()
@@ -1815,11 +1821,11 @@ void GuiMap::SnapSelEndDrag()
     }
 }
 
-void GuiMap::Animate(std::uint64_t currentTick)
+/*void GuiMap::Animate(std::uint64_t currentTick)
 {
     for ( auto & pasteSprite : clipboard.getSprites() )
         pasteSprite.anim.animate(currentTick);
-}
+}*/
 
 bool GuiMap::UpdateGlGraphics()
 {
@@ -4151,6 +4157,8 @@ void GuiMap::SetSkin(GuiMap::Skin skin)
     this->Redraw(true);
     if ( chkd.terrainPalWindow.getHandle() != NULL )
         chkd.terrainPalWindow.RedrawThis();
+
+    animations.initialize(*this); // TODO: Temporary/doesn't belong here
 }
 
 void GuiMap::addIsomUndo(const Chk::IsomRectUndo & isomUndo)

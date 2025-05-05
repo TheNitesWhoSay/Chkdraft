@@ -147,7 +147,7 @@ bool PasteDoodadNode::isPlaceable(const Scenario & scenario, s32 xTileStart, s32
 PasteSpriteNode::PasteSpriteNode(const Chk::Sprite & sprite) : sprite(sprite), xc(sprite.xc), yc(sprite.yc)
 {
     auto now = std::chrono::system_clock::now();
-    anim.initialize(chkd.gameClock.currentTick(), chkd.scData.sprites.getImage(chkd.scData.sprites.getSprite(sprite.type).imageFile).iScriptId);
+    //anim.initialize(chkd.gameClock.currentTick(), chkd.scData.sprites.getImage(chkd.scData.sprites.getSprite(sprite.type).imageFile).iScriptId);
 }
 
 bool Clipboard::isNearPrevPaste(s32 mapClickX, s32 mapClickY)
