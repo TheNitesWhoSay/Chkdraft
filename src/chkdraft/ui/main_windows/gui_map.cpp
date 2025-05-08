@@ -3018,7 +3018,7 @@ bool GuiMap::addUnit(Sc::Unit::Type unitType, u8 owner, u16 xc, u16 yc, u16 stat
 		unitType == 81 || // Warbringer
 		unitType == 82 || // Reaver
 		unitType == 83) // Gantrithor
-		unit.validFieldFlags |= Chk::Unit::ValidField::Hanger;
+		unit.validFieldFlags |= Chk::Unit::ValidField::Hangar;
 
 	if (unitdat.flags & 0x00000200) // Cloakable
 		unit.validStateFlags |= Chk::Unit::State::Cloak;
