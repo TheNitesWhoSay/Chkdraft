@@ -395,7 +395,12 @@ inline void TextTrigGenerator::appendTrigger(StringBuffer & output, const Chk::T
 
             // Add condition name
             if ( conditionType == Chk::Condition::VirtualType::Deaths && condition.player > 28 ) // Memory condition
-                output += "Memory";
+            {
+                if ( condition.maskFlag == Chk::Condition::MaskFlag::Enabled )
+                    output += "Memory Masked";
+                else
+                    output += "Memory";
+            }
             else if ( conditionType >= 0 && (size_t)conditionType < conditionTable.size() )
                 output += conditionTable[conditionType];
             else
@@ -404,7 +409,12 @@ inline void TextTrigGenerator::appendTrigger(StringBuffer & output, const Chk::T
             output += '(';
             // Add condition args
             if ( conditionType == Chk::Condition::VirtualType::Deaths && condition.player > 28 ) // Memory condition
-                conditionType = Chk::Condition::VirtualType::Memory;
+            {
+                if ( condition.maskFlag == Chk::Condition::MaskFlag::Enabled )
+                    conditionType = Chk::Condition::VirtualType::MemoryMasked;
+                else
+                    conditionType = Chk::Condition::VirtualType::Memory;
+            }
 
             if ( conditionType > Chk::Condition::VirtualType::Never )
                 conditionType = Chk::Condition::VirtualType::Custom;
@@ -444,7 +454,12 @@ inline void TextTrigGenerator::appendTrigger(StringBuffer & output, const Chk::T
 
             // Add action name
             if ( actionType == Chk::Action::VirtualType::SetDeaths && action.group > 28 ) // Memory action
-                output += "Set Memory";
+            {
+                if ( action.maskFlag == Chk::Action::MaskFlag::Enabled )
+                    output += "Set Memory Masked";
+                else
+                    output += "Set Memory";
+            }
             else if ( actionType >= 0 && (size_t)actionType < actionTable.size() )
                 output += actionTable[actionType];
             else
@@ -453,7 +468,12 @@ inline void TextTrigGenerator::appendTrigger(StringBuffer & output, const Chk::T
             output += '(';
             // Add action args
             if ( actionType == Chk::Action::VirtualType::SetDeaths && action.group > 28 ) // Memory action
-                actionType = Chk::Action::VirtualType::SetMemory;
+            {
+                if ( action.maskFlag == Chk::Action::MaskFlag::Enabled )
+                    actionType = Chk::Action::VirtualType::SetMemoryMasked;
+                else
+                    actionType = Chk::Action::VirtualType::SetMemory;
+            }
 
             if ( actionType > Chk::Action::VirtualType::EnableDebugMode )
                 actionType = Chk::Action::VirtualType::Custom;
@@ -510,6 +530,7 @@ inline void TextTrigGenerator::appendConditionArgument(StringBuffer & output, co
         case Chk::Condition::ArgType::Flags: appendNumber(output, condition.flags); break;
         case Chk::Condition::ArgType::MaskFlag: appendConditionMaskFlag(output, condition.maskFlag); break;
         case Chk::Condition::ArgType::MemoryOffset: appendMemory(output, condition.player); break;
+        case Chk::Condition::ArgType::MemoryBitmask: appendBitmask(output, condition.locationId); break;
     }
 }
 
@@ -560,6 +581,7 @@ inline void TextTrigGenerator::appendActionArgument(StringBuffer & output, const
         case Chk::Action::ArgType::Padding: appendNumber(output, action.padding); break;
         case Chk::Action::ArgType::MaskFlag: appendActionMaskFlag(output, action.maskFlag); break;
         case Chk::Action::ArgType::MemoryOffset: appendMemory(output, action.group); break;
+        case Chk::Action::ArgType::MemoryBitmask: appendBitmask(output, action.locationId); break;
     }
 }
 
@@ -754,6 +776,11 @@ inline void TextTrigGenerator::appendMemory(StringBuffer & output, const u32 & m
         output += to_hex_string(memory*4+deathTableOffset);
     else
         output += std::to_string(memory);
+}
+
+inline void TextTrigGenerator::appendBitmask(StringBuffer & output, const u32 & bitmask) const
+{
+    output += to_hex_string(bitmask);
 }
 
 inline void TextTrigGenerator::appendTextFlags(StringBuffer & output, const Chk::Action::Flags & textFlags) const

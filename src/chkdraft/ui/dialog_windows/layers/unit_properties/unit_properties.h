@@ -15,6 +15,7 @@ class UnitPropertiesWindow : public WinLib::ClassDialog
         virtual ~UnitPropertiesWindow();
         bool CreateThis(HWND hParent);
         bool CreateSubWindows(HWND hWnd);
+        void CreateAdvancedTab();
         bool DestroyThis();
         void SetChangeHighlightOnly(bool changeHighlightOnly);
         void ChangeCurrOwner(u8 newOwner);
@@ -30,13 +31,16 @@ class UnitPropertiesWindow : public WinLib::ClassDialog
     protected:
         void EnableUnitEditing();
         void DisableUnitEditing();
+        void UpdateLinkArea(const Chk::Unit & unit);
         void SetUnitFieldText(const Chk::Unit & unit);
+        void SetUnitFieldText();
         void SwapIndexes(HWND hListView, LPARAM index1, LPARAM index2);
         void ChangeIndex(HWND hListView, LPARAM oldLParam, LPARAM newLParam);
         int CompareLvItems(LPARAM index1, LPARAM index2);
         void LvColumnClicked(NMHDR* nmhdr);
         void LvItemChanged(NMHDR* nmhdr);
 
+        void NotifyAdvancedToggled();
         void NotifyClosePressed();
         void NotifyMoveTopPressed();
         void NotifyMoveEndPressed();
@@ -44,6 +48,8 @@ class UnitPropertiesWindow : public WinLib::ClassDialog
         void NotifyMoveDownPressed();
         void NotifyMoveToPressed();
         void NotifyDeletePressed();
+        void NotifyLinkUnlinkPressed();
+        void NotifyJumpToPressed();
 
         void NotifyInvincibleClicked();
         void NotifyHallucinatedClicked();
@@ -55,10 +61,37 @@ class UnitPropertiesWindow : public WinLib::ClassDialog
         void NotifyMpEditUpdated();
         void NotifyShieldEditUpdated();
         void NotifyResourcesEditUpdated();
-        void NotifyHangerEditUpdated();
+        void NotifyHangarEditUpdated();
         void NotifyIdEditUpdated();
         void NotifyXcEditUpdated();
         void NotifyYcEditUpdated();
+        
+        void NotifyValidFieldOwnerClicked();
+        void NotifyValidFieldLifeClicked();
+        void NotifyValidFieldManaClicked();
+        void NotifyValidFieldShieldClicked();
+        void NotifyValidFieldResourcesClicked();
+        void NotifyValidFieldHangarClicked();
+
+        void NotifyValidFieldRawFlagsEditUpdated();
+
+        void NotifyValidStateInvincibleClicked();
+        void NotifyValidStateBurrowedClicked();
+        void NotifyValidStateHallucinatedClicked();
+        void NotifyValidStateCloakedClicked();
+        void NotifyValidStateLiftedClicked();
+
+        void NotifyValidStateRawFlagsEditUpdated();
+
+        void NotifyStateRawFlagsEditUpdated();
+        void NotifyUnusedEditUpdated();
+        void NotifyUniqueIdEditUpdated();
+        void NotifyLinkedIdEditUpdated();
+
+        void NotifyLinkNydusClicked();
+        void NotifyLinkAddonClicked();
+
+        void NotifyRelationRawFlagsEditUpdated();
 
         virtual void NotifyButtonClicked(int idFrom, HWND hWndFrom); // Sent when a button or checkbox is clicked
         virtual void NotifyEditUpdated(int idFrom, HWND hWndFrom); // Sent when edit text changes, before redraw
@@ -75,16 +108,40 @@ class UnitPropertiesWindow : public WinLib::ClassDialog
 
     private:
         UnitListColumn columnSortedBy;
+        int standardWidth = 0;
+        bool advancedTabCreated = false;
+        bool advanced = false;
         bool flipSort;
         bool initilizing;
         bool changeHighlightOnly;
         PreservedUnitStats preservedStats;
 
+        WinLib::GroupBoxControl groupUnitProperties;
         WinLib::ListViewControl listUnits;
         PlayerDropdown dropPlayer;
-        WinLib::ButtonControl buttonMoveUp, buttonMoveTop, buttonMoveDown, buttonMoveEnd, buttonDelete, buttonMoveTo;
-        WinLib::EditControl editLife, editMana, editShield, editResources, editHanger, editUnitId, editXc, editYc;
+        WinLib::ButtonControl buttonMoveUp, buttonMoveTop, buttonMoveDown, buttonMoveEnd, buttonDelete, buttonMoveTo,
+            buttonLinkSelection, buttonUnlink, buttonJumpToLink, buttonAdvanced, buttonLinkUnlink, buttonJumpTo;
+        WinLib::EditControl editLife, editMana, editShield, editResources, editHangar, editUnitId, editXc, editYc;
         WinLib::CheckBoxControl checkInvincible, checkHallucinated, checkBurrowed, checkCloaked, checkLifted;
+
+        WinLib::GroupBoxControl groupLinkedUnit, groupValidFieldFlags, groupValidStateFlags, groupLinkFlags;
+        WinLib::CheckBoxControl checkValidFieldOwner, checkValidFieldLife, checkValidFieldMana, checkValidFieldShield,
+            checkValidFieldResources, checkValidFieldHangar;
+        WinLib::TextControl textValidFieldRawFlags;
+        WinLib::EditControl editValidFieldRawFlags;
+
+        WinLib::CheckBoxControl checkValidStateInvincible, checkValidStateHallucinated, checkValidStateBurrowed,
+            checkValidStateCloaked, checkValidStateLifted;
+        WinLib::TextControl textValidStateRawFlags;
+        WinLib::EditControl editValidStateRawFlags;
+
+        WinLib::GroupBoxControl groupMisc;
+        WinLib::TextControl textRawStateFlags, textUnused, textUniqueId, textLinkedId;
+        WinLib::EditControl editRawStateFlags, editUnused, editUniqueId, editLinkedId;
+
+        WinLib::CheckBoxControl checkNydus, checkAddon;
+        WinLib::TextControl textLinkRawFlags;
+        WinLib::EditControl editLinkRawFlags;
 };
 
 #endif

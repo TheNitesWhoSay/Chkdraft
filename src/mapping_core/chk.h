@@ -116,17 +116,17 @@ namespace Chk {
             Shields = BIT_2,
             Energy = BIT_3,
             Resources = BIT_4,
-            Hanger = BIT_5,
+            Hangar = BIT_5,
 
             xOwner = x16BIT_0,
             xHitpoints = x16BIT_1,
             xShields = x16BIT_2,
             xEnergy = x16BIT_3,
             xResources = x16BIT_4,
-            xHanger = x16BIT_5
+            xHangar = x16BIT_5
         });
         enum class Field { // Typeless
-            ClassId, Xc, Yc, Type, RelationFlags, ValidStateFlags, ValidFieldFlags, Owner, HitpointPercent, ShieldPercent, EnergyPercent, ResourceAmount, HangerAmount, StateFlags, Unused, RelationClassId
+            ClassId, Xc, Yc, Type, RelationFlags, ValidStateFlags, ValidFieldFlags, Owner, HitpointPercent, ShieldPercent, EnergyPercent, ResourceAmount, HangarAmount, StateFlags, Unused, RelationClassId
         };
 
         u32 classId; // Unique number used to identify this unit for related units (may be an addon or the building that has an addon)
@@ -141,16 +141,17 @@ namespace Chk {
         u8 shieldPercent;
         u8 energyPercent;
         u32 resourceAmount;
-        u16 hangerAmount;
+        u16 hangarAmount;
         u16 stateFlags;
         u32 unused;
         u32 relationClassId; // classId of related unit (may be an addon or the building that has an addon)
         
         constexpr bool isLifted() const { return (stateFlags & State::InTransit) == State::InTransit; }
         constexpr bool isAttached() const { return (relationFlags & RelationFlag::AddonLink) == RelationFlag::AddonLink; }
+        constexpr bool isLinked() const { return relationFlags != 0 && classId != relationClassId; }
 
         REFLECT(Unit, classId, xc, yc, type, relationFlags, validStateFlags, validFieldFlags, owner,
-            hitpointPercent, shieldPercent, energyPercent, resourceAmount, hangerAmount, stateFlags, unused, relationClassId)
+            hitpointPercent, shieldPercent, energyPercent, resourceAmount, hangarAmount, stateFlags, unused, relationClassId)
     }; // 36 (0x24) bytes
 
     struct IsomRect
@@ -461,14 +462,14 @@ namespace Chk {
             Shields = BIT_2,
             Energy = BIT_3,
             Resources = BIT_4,
-            Hanger = BIT_5,
+            Hangar = BIT_5,
 
             xOwner = x16BIT_0,
             xHitpoints = x16BIT_1,
             xShields = x16BIT_2,
             xEnergy = x16BIT_3,
             xResources = x16BIT_4,
-            xHanger = x16BIT_5
+            xHangar = x16BIT_5
         });
         
         bool isCloaked() const;
@@ -490,12 +491,12 @@ namespace Chk {
         u8 shieldPercent;
         u8 energyPercent;
         u32 resourceAmount;
-        u16 hangerAmount;
+        u16 hangarAmount;
         u16 unitStateFlags;
         u32 unknown;
 
         REFLECT(Cuwp, validUnitStateFlags, validUnitFieldFlags, owner,
-            hitpointPercent, shieldPercent, energyPercent, resourceAmount, hangerAmount, unitStateFlags, unknown)
+            hitpointPercent, shieldPercent, energyPercent, resourceAmount, hangarAmount, unitStateFlags, unknown)
     };
 
     constexpr size_t TotalOriginalLocations = 64;
@@ -622,11 +623,13 @@ namespace Chk {
 
             Custom = -1,
             Memory = -2,
+            MemoryMasked = -3,
 
             Indeterminate = s32_min
         });
         enum_t(ExtendedBaseType, s32, { // s32
             Memory = (u8)Type::Deaths, // Deaths
+            MemoryMasked = (u8)Type::Deaths, // Deaths
         });
         enum_t(Flags, u8, { // u8
             Disabled = BIT_1, // If set, the trigger condition is disabled/ignored
@@ -650,7 +653,8 @@ namespace Chk {
             TypeIndex = 12, // ResourceType, ScoreType, Switch
             Flags = 13,
             MaskFlag = 14,
-            MemoryOffset = 15
+            MemoryOffset = 15,
+            MemoryBitmask = 16
         };
         enum class ArgField : u32 { // u32
             LocationId = 0,
@@ -758,7 +762,7 @@ namespace Chk {
             LeaderboardGoalResources = 35,
             MinimapPing = 28,
             ModifyUnitEnergy = 50,
-            ModifyUnitHangerCount = 53,
+            ModifyUnitHangarCount = 53,
             ModifyUnitHitpoints = 49,
             ModifyUnitResourceAmount = 52,
             ModifyUnitShieldPoints = 51,
@@ -832,7 +836,7 @@ namespace Chk {
             LeaderboardGoalResources = 35,
             MinimapPing = 28,
             ModifyUnitEnergy = 50,
-            ModifyUnitHangerCount = 53,
+            ModifyUnitHangarCount = 53,
             ModifyUnitHitpoints = 49,
             ModifyUnitResourceAmount = 52,
             ModifyUnitShieldPoints = 51,
@@ -869,6 +873,7 @@ namespace Chk {
 
             Custom = -1,
             SetMemory = -2,
+            SetMemoryMasked = -3,
 
             Indeterminate = s32_min,
 
@@ -887,6 +892,7 @@ namespace Chk {
         });
         enum_t(ExtendedBaseType, s32, { // s32
             SetMemory = (u8)Type::SetDeaths, // SetDeaths
+            SetMemoryMasked = (u8)Type::SetDeaths // SetDeaths
         });
         enum_t(Flags, u8, { // u8
             Disabled = BIT_1, // If set, the trigger action is disabled/ignored
@@ -927,8 +933,9 @@ namespace Chk {
             Padding = 26,
             MaskFlag = 27,
             MemoryOffset = 28,
+            MemoryBitmask = 29,
 
-            BriefingSlot = 29
+            BriefingSlot = 30
         };
         enum class ArgField : u32 { // u32
             LocationId = 0,

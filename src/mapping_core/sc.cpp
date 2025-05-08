@@ -9,6 +9,7 @@
 extern Logger logger;
 
 const std::string Sc::DataFile::starCraftFileName = "StarCraft.exe";
+const std::string Sc::DataFile::buildInfoFileName = ".build.info";
 const std::string Sc::DataFile::starDatFileName = "StarDat.mpq";
 const std::string Sc::DataFile::brooDatFileName = "BrooDat.mpq";
 const std::string Sc::DataFile::patchRtFileName = "patch_rt.mpq";
@@ -172,7 +173,8 @@ bool Sc::DataFile::Browser::findStarCraftDirectory(std::string & starCraftDirect
     const std::string & expectedStarCraftDirectory, FileBrowserPtr<u32> starCraftBrowser)
 {
     u32 filterIndex = 0;
-    if ( !expectedStarCraftDirectory.empty() && findFile(makeSystemFilePath(expectedStarCraftDirectory, starCraftFileName)) )
+    if ( !expectedStarCraftDirectory.empty() && findFile(makeSystemFilePath(expectedStarCraftDirectory, starCraftFileName)) &&
+        !findFile(makeSystemFilePath(expectedStarCraftDirectory, buildInfoFileName)) )
     {
         starCraftDirectory = expectedStarCraftDirectory;
         isRemastered = false;

@@ -21,14 +21,14 @@ bool LeftBar::CreateThis(HWND hParent)
 
 void LeftBar::NotifyTreeItemSelected(LPARAM newValue)
 {
-    if ( CM != nullptr )
+    if ( CM != nullptr && !blockSelections )
     {
         LPARAM itemType = newValue&TreeTypePortion,
             itemData = newValue&TreeDataPortion;
 
         switch ( itemType )
         {
-            //case TREE_TYPE_ROOT: // Same as category
+        case TreeTypeRoot: // Same as category
         case TreeTypeCategory: if ( CM->getLayer() != (Layer)itemData ) chkd.maps.ChangeLayer((Layer)itemData); break; // The layer was AND'd with the category
         case TreeTypeIsom: chkd.maps.ChangeSubLayer(TerrainSubLayer::Isom); break;
         case TreeTypeUnit: if ( CM->getLayer() != Layer::Units ) chkd.maps.ChangeLayer(Layer::Units); break;
@@ -75,7 +75,7 @@ void LeftBar::NotifyTreeItemSelected(LPARAM newValue)
                 unit.validStateFlags |= Chk::Unit::State::Hallucinated;
 
             unit.energyPercent = 100;
-            unit.hangerAmount = 0;
+            unit.hangarAmount = 0;
             unit.hitpointPercent = 100;
             unit.type = (Sc::Unit::Type)itemData;
             unit.relationClassId = 0;
@@ -86,7 +86,24 @@ void LeftBar::NotifyTreeItemSelected(LPARAM newValue)
             unit.shieldPercent = 100;
             unit.stateFlags = 0;
             unit.unused = 0;
-            unit.validFieldFlags = 0;
+
+            unit.validFieldFlags = Chk::Unit::ValidField::Owner;
+
+            if ( (unitDat.flags & Sc::Unit::Flags::Spellcaster) == Sc::Unit::Flags::Spellcaster )
+                unit.validFieldFlags |= Chk::Unit::ValidField::Energy;
+
+            if ( unitDat.shieldEnable != 0 )
+                unit.validFieldFlags |= Chk::Unit::ValidField::Shields;
+
+            if ( (unitDat.flags & Sc::Unit::Flags::ResourceContainer) == Sc::Unit::Flags::ResourceContainer )
+                unit.validFieldFlags |= Chk::Unit::ValidField::Resources;
+
+            if ( unit.type == Sc::Unit::Type::ProtossCarrier || unit.type == Sc::Unit::Type::Gantrithor_Carrier ||
+                 unit.type == Sc::Unit::Type::ProtossReaver || unit.type == Sc::Unit::Type::Warbringer_Reaver )
+            {
+                unit.validFieldFlags |= Chk::Unit::ValidField::Hangar;
+            }
+
             unit.xc = 0;
             unit.yc = 0;
             chkd.maps.clipboard.addQuickUnit(unit);
@@ -221,7 +238,9 @@ LRESULT LeftBar::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 {
                     mainTree.setDefaultFont();
                     mainTree.unitTree.UpdateUnitNames(Sc::Unit::defaultDisplayNames);
+                    this->blockSelections = true;
                     mainTree.BuildMainTree();
+                    this->blockSelections = false;
                 }
             }
             break;

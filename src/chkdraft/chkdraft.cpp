@@ -124,7 +124,7 @@ void Chkdraft::SetupLogging()
         logger.setAggregator(stdOut);
         logger.setOutputStream(mainPlot.loggerWindow);
         logger.info("Setting log file to: " + logFilePath);
-        logFile.setOutputStream(std::shared_ptr<std::ostream>(new std::ofstream(logFilePath), [](std::ostream* os) {
+        logFile.setOutputStream(std::shared_ptr<std::ostream>(new std::ofstream(std::filesystem::path(asUtf8(logFilePath))), [](std::ostream* os) {
             if ( os != nullptr ) { // Close and delete when output stream goes out of scope
                 ((std::ofstream*)os)->close();
                 delete os;
@@ -449,7 +449,41 @@ void Chkdraft::KeyListener(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                             case VK_OEM_MINUS: if ( CM != nullptr ) maps.ChangeZoom(false); return; break;
                             case VK_F4: if ( CM != nullptr ) maps.CloseActive(); return; break;
                             case VK_F6: if ( CM != nullptr ) maps.nextMdi(); return; break;
+                            case VK_UP: case VK_DOWN: case VK_LEFT: case VK_RIGHT:
+                                if ( GetParent(hWnd) == maps.getHandle() )
+                                {
+                                    CM->moveSelection([&]() -> Direction {
+                                        switch ( wParam ) {
+                                            case VK_UP: return Direction::Up;
+                                            case VK_DOWN: return Direction::Down;
+                                            case VK_LEFT: return Direction::Left;
+                                            case VK_RIGHT: return Direction::Right;
+                                            default: throw std::exception();
+                                        }
+                                    }(), true);
+                                }
+                                break;
                         }
+                    }
+                }
+                else if ( GetKeyState(VK_SHIFT) & 0x8000 ) // Shift is down
+                {
+                    switch ( wParam )
+                    {
+                    case VK_UP: case VK_DOWN: case VK_LEFT: case VK_RIGHT:
+                        if ( GetParent(hWnd) == maps.getHandle() )
+                        {
+                            CM->moveSelection([&]() -> Direction {
+                                switch ( wParam ) {
+                                    case VK_UP: return Direction::Up;
+                                    case VK_DOWN: return Direction::Down;
+                                    case VK_LEFT: return Direction::Left;
+                                    case VK_RIGHT: return Direction::Right;
+                                    default: throw std::exception();
+                                }
+                            }(), false);
+                        }
+                        break;
                     }
                 }
             }

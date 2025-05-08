@@ -32,7 +32,7 @@ namespace WinLib {
         windowClassName.clear();
     }
 
-    HWND WindowsItem::getHandle()
+    HWND WindowsItem::getHandle() const
     {
         return windowsItemHandle;
     }
@@ -242,39 +242,39 @@ namespace WinLib {
         return TRUE;
     }
 
-    void WindowsItem::setFont(int width, int height, const std::string & fontName, bool redrawImmediately)
+    void WindowsItem::setFont(int width, int height, const std::string & fontName, bool redrawImmediately) const
     {
         HFONT hFont = ResourceManager::getFont(width, height, fontName);
         if ( hFont != NULL )
             ::SendMessage(getHandle(), WM_SETFONT, (WPARAM)hFont, MAKELPARAM(redrawImmediately ? TRUE : FALSE, 0));
     }
 
-    void WindowsItem::setFont(HFONT hFont, bool redrawImmediately)
+    void WindowsItem::setFont(HFONT hFont, bool redrawImmediately) const
     {
         ::SendMessage(getHandle(), WM_SETFONT, (WPARAM)hFont, MAKELPARAM(redrawImmediately ? TRUE : FALSE, 0));
     }
 
-    void WindowsItem::setDefaultFont(bool redrawImmediately)
+    void WindowsItem::setDefaultFont(bool redrawImmediately) const
     {
         HFONT hFont = ResourceManager::getDefaultFont();
         if ( hFont != NULL )
             ::SendMessage(getHandle(), WM_SETFONT, (WPARAM)hFont, MAKELPARAM(redrawImmediately ? TRUE : FALSE, 0));
     }
 
-    void WindowsItem::replaceChildFonts(int width, int height, const std::string & fontName)
+    void WindowsItem::replaceChildFonts(int width, int height, const std::string & fontName) const
     {
         HFONT hFont = ResourceManager::getFont(width, height, fontName);
         if ( hFont != NULL )
             ::EnumChildWindows(getHandle(), (WNDENUMPROC)WinLib::SetFont, (LPARAM)hFont);
     }
 
-    void WindowsItem::replaceChildFonts(HFONT hFont)
+    void WindowsItem::replaceChildFonts(HFONT hFont) const
     {
         if ( hFont != NULL )
             ::EnumChildWindows(getHandle(), (WNDENUMPROC)WinLib::SetFont, (LPARAM)hFont);
     }
 
-    void WindowsItem::defaultChildFonts()
+    void WindowsItem::defaultChildFonts() const
     {
         HFONT hFont = ResourceManager::getDefaultFont();
         if ( hFont != NULL )

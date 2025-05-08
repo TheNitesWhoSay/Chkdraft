@@ -1,6 +1,7 @@
 #include "lit.h"
 #include "chkdraft/chkdraft.h"
 #include "mapping/settings.h"
+#include <filesystem>
 #include <fstream>
 #include <string>
 
@@ -116,7 +117,7 @@ std::optional<std::string> LitWindow::WriteLitBat(const std::string & inputFileP
 
     std::string litBatPath = litDirectory + "chkd-LIT_LIT.bat";
     removeFile(litBatPath);
-    std::ofstream litBat(litBatPath);
+    std::ofstream litBat(std::filesystem::path(asUtf8(litBatPath)));
     if ( !::findFile(litDirectory + "LIT.exe") )
         logger.error("LIT.exe not found!");
 

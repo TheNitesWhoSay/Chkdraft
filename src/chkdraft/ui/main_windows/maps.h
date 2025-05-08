@@ -57,6 +57,7 @@ class Maps : public WinLib::MdiClient
         void stickCursor(); // Ensures that the cursor does revert during click & drags
         void updateCursor(s32 xc, s32 yc);
 
+        void releaseRenderContext(std::shared_ptr<WinLib::DeviceContext> & deviceContext);
         // If not created, creates the rendering context with the given device context (which is also created if null); targets the given/new device context
         void setGlRenderTarget(std::shared_ptr<WinLib::DeviceContext> & deviceContext, WinLib::WindowsItem & windowsItem);
         gl::ContextSemaphore* getContextSemaphore();

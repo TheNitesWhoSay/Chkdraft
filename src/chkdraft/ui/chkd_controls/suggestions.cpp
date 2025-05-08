@@ -55,11 +55,11 @@ Suggestions::~Suggestions()
 
 bool Suggestions::CreateThis(HWND hParent, int x, int y, int width, int height)
 {
+    suggestParent = hParent;
     if ( ClassWindow::RegisterWindowClass(0, NULL, NULL, NULL, NULL, "Suggestions", NULL, false) )
     {
         if ( ClassWindow::CreateClassWindow(WS_EX_TOPMOST, "SuggestionsWindow", WS_POPUP, x, y, width, height, NULL, NULL) )
         {
-            suggestParent = hParent;
             SetWindowPos(getHandle(), HWND_TOPMOST, 0, 0, 0, 0, SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE);
             listSuggestions.CreateThis(getHandle(), 0, 0, width, height, true, false, true, false, true, 0);
             listSuggestions.setDefaultFont(false);

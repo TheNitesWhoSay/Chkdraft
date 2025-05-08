@@ -28,8 +28,8 @@ class CUWPsWindow : public WinLib::ClassWindow
         s32 selectedCuwp;
         WinLib::TreeViewControl cuwpTree;
         WinLib::CheckBoxControl checkUsed;
-        WinLib::TextControl healthPercent, manaPercent, shieldPercent, resourceAmount, hangerAmount;
-        WinLib::EditControl editHitpointPercent, editManaPercent, editShieldPercent, editResources, editHanger;
+        WinLib::TextControl healthPercent, manaPercent, shieldPercent, resourceAmount, hangarAmount;
+        WinLib::EditControl editHitpointPercent, editManaPercent, editShieldPercent, editResources, editHangar;
         WinLib::CheckBoxControl checkInvincible, checkBurrowed, checkLifted, checkHallucinated, checkCloaked;
 };
 

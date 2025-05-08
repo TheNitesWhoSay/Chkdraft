@@ -1,6 +1,7 @@
 #include "casc_archive.h"
 #include <CascLib.h>
 #include <cross_cut/simple_icu.h>
+#include <filesystem>
 #include <fstream>
 
 CascArchive::CascArchive() : ArchiveFile(false), filePath(""), hCasc(NULL)
@@ -163,7 +164,7 @@ bool CascArchive::extractFile(const std::string & cascPath, const std::string & 
     bool success = false;
     if ( auto fileData = getFile(cascPath) )
     {
-        std::ofstream extractedFile(systemFilePath);
+        std::ofstream extractedFile(std::filesystem::path(asUtf8(systemFilePath)), std::ios_base::out|std::ios_base::binary);
         extractedFile.write(reinterpret_cast<const char*>(&fileData.value()[0]), std::streamsize(fileData->size()));
         success = extractedFile.good();
         extractedFile.close();

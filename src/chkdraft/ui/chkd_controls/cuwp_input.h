@@ -21,7 +21,7 @@ class CuwpInputDialog : public WinLib::ClassDialog
         Chk::Cuwp newCuwp;
         Chk::Cuwp initialCuwp;
 
-        WinLib::EditControl editHitpointPercent, editManaPercent, editShieldPercent, editResources, editHanger;
+        WinLib::EditControl editHitpointPercent, editManaPercent, editShieldPercent, editResources, editHangar;
         WinLib::CheckBoxControl checkInvincible, checkBurrowed, checkLifted, checkHallucinated, checkCloaked;
 };
 

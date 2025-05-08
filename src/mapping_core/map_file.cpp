@@ -5,6 +5,7 @@
 #include "escape_strings.h"
 #include <cstdio>
 #include <cstdarg>
+#include <filesystem>
 #include <fstream>
 #include <sstream>
 #include <chrono>
@@ -317,7 +318,7 @@ bool MapFile::openMapFile(const std::string & filePath)
         else if ( extension == ".chk" )
         {
             this->mapFilePath = filePath;
-            std::ifstream chk(filePath, std::ios_base::binary|std::ios_base::in);
+            std::ifstream chk(std::filesystem::path(asUtf8(filePath)), std::ios_base::binary|std::ios_base::in);
             if ( Scenario::read(chk) )
             {
                 if ( Scenario::isOriginal() )

@@ -7,6 +7,7 @@
 class LeftBar : public WinLib::ClassWindow
 {
     public:
+        bool blockSelections = true;
         MiniMap miniMap;
         MainTree mainTree;
 

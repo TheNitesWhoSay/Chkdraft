@@ -5,6 +5,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 
 /**
     Basics contains several things...
@@ -288,5 +289,7 @@ public:
             throw std::out_of_range("Span index out of bounds");
     }
 };
+
+inline std::u8string_view asUtf8(const std::string & utf8String) { return std::u8string_view((char8_t*)utf8String.c_str(), utf8String.size()); }
 
 #endif

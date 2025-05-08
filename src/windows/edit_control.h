@@ -22,6 +22,7 @@ namespace WinLib {
 
             bool SetText(const std::string & newText); // Sets new text content
             void SetCaret(int caretPos);
+            void SelectAll();
 
             template <typename numType>
                 bool SetEditNum(numType num);

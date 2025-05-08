@@ -35,6 +35,7 @@ namespace Sc {
         };
         
         static const std::string starCraftFileName;
+        static const std::string buildInfoFileName;
         static const std::string starDatFileName;
         static const std::string brooDatFileName;
         static const std::string patchRtFileName;

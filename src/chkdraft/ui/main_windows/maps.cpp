@@ -197,7 +197,9 @@ bool Maps::SaveCurr(bool saveAs)
     if ( currentlyActiveMap->SaveFile(saveAs) )
     {
         currentlyActiveMap->SetWinText(currentlyActiveMap->getFilePath());
-        currentlyActiveMap->refreshScenario();
+        if ( saveAs )
+            currentlyActiveMap->refreshScenario();
+
         return true;
     }
     else
@@ -808,6 +810,12 @@ void Maps::updateCursor(s32 xc, s32 yc)
         SetCursor(standardCursor);
 }
 
+void Maps::releaseRenderContext(std::shared_ptr<WinLib::DeviceContext> & deviceContext)
+{
+    if ( openGlRenderContext && deviceContext != nullptr )
+        openGlRenderContext->releaseDeviceContext(deviceContext);
+}
+
 void Maps::setGlRenderTarget(std::shared_ptr<WinLib::DeviceContext> & deviceContext, WinLib::WindowsItem & windowsItem)
 {
     if ( !deviceContext )
@@ -913,6 +921,10 @@ void Maps::DisableMapping()
         for ( int i = 0; i < sizeof(toolbarItems) / sizeof(int); i++ )
             SendMessage(chkd.mainToolbar.getHandle(), TB_ENABLEBUTTON, toolbarItems[i], false);
 
+        chkd.mainToolbar.layerBox.SetSel(0);
+        chkd.mainToolbar.zoomBox.SetSel(4);
+        chkd.mainToolbar.playerBox.SetSel(0);
+        chkd.mainToolbar.terrainBox.SetSel(0);
         ShowWindow(chkd.mainToolbar.layerBox.getHandle(), SW_HIDE);
         ShowWindow(chkd.mainToolbar.zoomBox.getHandle(), SW_HIDE);
         ShowWindow(chkd.mainToolbar.playerBox.getHandle(), SW_HIDE);

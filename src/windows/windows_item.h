@@ -22,7 +22,7 @@ namespace WinLib {
             void DestroyThis();
 
             bool operator==(HWND hWnd); // Tests whether the encapsulated handle equals this handle
-            HWND getHandle();
+            HWND getHandle() const;
             HWND getParent();
             DeviceContext getDeviceContext();
 
@@ -43,12 +43,12 @@ namespace WinLib {
             LONG GetWinLong(int index);
             void SetWinLong(int index, LONG newLong);
 
-            void setFont(int width, int height, const std::string & fontName, bool redrawImmediately = true);
-            void setFont(HFONT hFont, bool redrawImmediately = true);
-            void setDefaultFont(bool redrawImmediately = true);
-            void replaceChildFonts(int width, int height, const std::string & fontName);
-            void replaceChildFonts(HFONT hFont);
-            void defaultChildFonts();
+            void setFont(int width, int height, const std::string & fontName, bool redrawImmediately = true) const;
+            void setFont(HFONT hFont, bool redrawImmediately = true) const;
+            void setDefaultFont(bool redrawImmediately = true) const;
+            void replaceChildFonts(int width, int height, const std::string & fontName) const;
+            void replaceChildFonts(HFONT hFont) const;
+            void defaultChildFonts() const;
 
             void LockCursor(); // Prevents cursor from leaving this window
             void UnlockCursor(); // Globally unlocks the cursor
