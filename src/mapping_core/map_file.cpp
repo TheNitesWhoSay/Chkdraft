@@ -635,7 +635,7 @@ SoundStatus MapFile::getSoundStatus(size_t soundStringId)
         auto soundString = Scenario::getString<RawString>(soundStringId, Chk::Scope::Game);
         if ( soundString )
         {
-            for ( ModifiedAsset & modifiedAsset : modifiedAssets )
+            for ( const ModifiedAsset & modifiedAsset : modifiedAssets )
             {
                 if ( modifiedAsset.actionTaken == AssetAction::Add && soundString->compare(modifiedAsset.assetMpqPath) == 0 )
                     return SoundStatus::PendingMatch;
@@ -704,7 +704,7 @@ bool MapFile::getSoundStatuses(std::map<size_t/*stringId*/, SoundStatus> & outSo
         }
         else if ( auto soundString = Scenario::getString<RawString>(soundStringId) )
         {
-            for ( ModifiedAsset & modifiedAsset : modifiedAssets )
+            for ( const ModifiedAsset & modifiedAsset : modifiedAssets )
             {
                 if ( modifiedAsset.actionTaken == AssetAction::Add && soundString->compare(modifiedAsset.assetMpqPath) == 0 )
                 {
