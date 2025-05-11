@@ -7,7 +7,7 @@
 #include <string>
 #include <array>
 #include <map>
-#include <list>
+#include <vector>
 
 /*
     Versions [VER, TYPE, IVER, IVE2, VCOD] - versioning and validation
@@ -19,7 +19,25 @@
     Triggers [UPRP, UPUS, TRIG, MBRF, SWNM, WAV] - triggers, briefing, and trigger/briefing specific data
 */
 
-struct Scenario
+enum class SaveType // The types of files a map can be saved as
+{
+    StarCraftScm = 0,
+    HybridScm = 1,
+    ExpansionScx = 2,
+    RemasteredScx = 3,
+    StarCraftChk = 4,
+    HybridChk = 5,
+    ExpansionChk = 6,
+    RemasteredChk = 7,
+    AllScm = 8,
+    AllScx = 9,
+    AllChk = 10,
+    AllMaps = 11,
+    AllFiles = 12,
+    Unknown // Have this higher than all other SaveTypes
+};
+
+struct MapData
 {
     Chk::Version version {Chk::Version::StarCraft_Hybrid};
     Chk::Type type {Chk::Type::RAWS}; // Redundant
@@ -75,13 +93,32 @@ struct Scenario
     std::vector<Chk::ExtendedTrigData> triggerExtensions {};
     std::vector<Chk::TriggerGroup> triggerGroupings {};
 
-    REFLECT(Scenario, version, type, iVersion, i2Version, validation, strings, editorStrings, editorStringOverrides, scenarioProperties,
+    struct Section {
+        Chk::SectionName sectionName;
+        std::optional<std::vector<u8>> sectionData {}; // If not present, section data is found in the fields of Scenario
+        REFLECT(Section, sectionName, sectionData)
+    };
+    
+    SaveType saveType = SaveType::HybridScm;
+    std::string mapFilePath = "";
+    std::vector<u8> strTailData {}; // Any data that comes after the regular STR section data, and after any padding
+    std::vector<Section> saveSections {}; // Maintains the order of sections in the map and stores data for any sections that are not parsed
+    std::array<u8, 7> tailData {}; // The 0-7 bytes just before the Scenario file ends, after the last valid section
+    u8 tailLength {0}; // 0 for no tail data, must be less than 8
+    bool mapIsProtected {false}; // Flagged if map is protected
+    bool jumpCompress {false}; // If true, the map will attempt to compress using jump sections when saving
+
+    REFLECT(MapData, version, type, iVersion, i2Version, validation, strings, editorStrings, editorStringOverrides, scenarioProperties,
         playerRaces, playerColors, customColors, forces, slotTypes, iownSlotTypes, sprites, doodads, units, locations,
         dimensions, tileset, tileFog, tiles, editorTiles, isomRects,
         unitAvailability, unitSettings, upgradeCosts, upgradeLeveling, techCosts, techAvailability,
         origUnitSettings, origUpgradeCosts, origUpgradeLeveling, origTechnologyCosts, origTechnologyAvailability,
-        createUnitProperties, createUnitPropertiesUsed, triggers, briefingTriggers, switchNames, soundPaths, triggerExtensions, triggerGroupings)
-    
+        createUnitProperties, createUnitPropertiesUsed, triggers, briefingTriggers, switchNames, soundPaths, triggerExtensions, triggerGroupings,
+        saveType, mapFilePath, strTailData, saveSections, tailData, tailLength, mapIsProtected, jumpCompress)
+};
+
+struct Scenario : MapData
+{
     Scenario(); // Construct empty map
     Scenario(Sc::Terrain::Tileset tileset, u16 width = 64, u16 height = 64); // Construct new map
 
@@ -133,9 +170,6 @@ struct Scenario
 
     std::vector<u8> & getStrTailData(); // Gets the data appended after the STR section
     size_t getStrTailDataOffset(); // Gets the offset tail data would be at within the STR section were it written right now
-    size_t getInitialStrTailDataOffset() const; // Gets the offset tail data was at when it was initially read in
-    size_t getStrBytePaddedTo() const; // Gets the current byte alignment setting for tailData (usually 4 for new StrSections, 0/none if existing tailData was read in)
-    void setStrBytePaddedTo(size_t bytePaddedTo); // Sets the current byte alignment setting for tailData (only 2 and 4 are aligned, other values are ignored/treat tailData as unpadded)
 
     size_t getScenarioNameStringId(Chk::Scope storageScope = Chk::Scope::Game) const;
     size_t getScenarioDescriptionStringId(Chk::Scope storageScope = Chk::Scope::Game) const;
@@ -509,15 +543,11 @@ struct Scenario
     bool hasPassword() const; // Checks if the map has a password
     bool isPassword(const std::string & password) const; // Checks if this is the password the map has
     bool setPassword(const std::string & oldPass, const std::string & newPass); // Attempts to password-protect the map
-    bool login(const std::string & password) const; // Attempts to login to the map
+    bool login(const std::string & password); // Attempts to login to the map
         
+    void clear();
     void read(std::istream & is, Chk::SectionName sectionName, Chk::SectionSize sectionSize); // Parse the given section
     bool read(std::istream & is); // Parses supplied scenario file data
-    
-    struct Section {
-        Chk::SectionName sectionName;
-        std::optional<std::vector<u8>> sectionData {}; // If not present, section data is found in the fields of Scenario
-    };
     
     void writeSection(std::ostream & os, const Section & section, bool includeHeader = true);
     void writeSection(std::ostream & os, Chk::SectionName sectionName, bool includeHeader = true);
@@ -535,24 +565,7 @@ struct Scenario
     void updateSaveSections();
     bool changeVersionTo(Chk::Version version, bool lockAnywhere = true, bool autoDefragmentLocations = true);
 
-protected:
-    bool parsingFailed(const std::string & error);
-    void clear();
-
 private:
-    std::list<Section> saveSections {}; // Maintains the order of sections in the map and stores data for any sections that are not parsed
-    std::array<u8, 7> tailData {}; // The 0-7 bytes just before the Scenario file ends, after the last valid section
-    u8 tailLength {0}; // 0 for no tail data, must be less than 8
-    mutable bool mapIsProtected {false}; // Flagged if map is protected
-    bool jumpCompress {false}; // If true, the map will attempt to compress using jump sections when saving
-
-    size_t strBytePaddedTo {0}; // If 2, or 4, it's padded to the nearest 2 or 4 byte boundary; no other value has any effect; 4 by default, 0 if "read" is called and any tailData is found
-    size_t initialStrTailDataOffset {0}; // The offset at which strTailData started when the STR section was read, "0" if "read" is never called or there was no tailData
-    std::vector<u8> strTailData {}; // Any data that comes after the regular STR section data, and after any padding
-        
-    static const std::vector<u32> compressionFlagsProgression;
-
-
     // ISOM helpers
     inline uint16_t getTileValue(size_t tileX, size_t tileY) const { return editorTiles[tileY*getTileWidth() + tileX]; }
     inline uint16_t getCentralIsomValue(Chk::IsomRect::Point point) const { return isomRects[point.y*getIsomWidth() + point.x].left >> 4; }

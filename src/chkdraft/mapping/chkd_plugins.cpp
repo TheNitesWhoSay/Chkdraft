@@ -127,7 +127,7 @@ bool runMpqRecompiler()
     MpqFile outputFile{};
     auto saveMapBrowser = MapFile::getDefaultSaveMapBrowser();
     std::string outputFilePath = inputMapFile.getFilePath();
-    SaveType saveType = inputMapFile.getSaveType();
+    SaveType saveType = inputMapFile.saveType;
     if ( !saveMapBrowser->browseForSavePath(outputFilePath, saveType) )
         return signalRecompileError("Failed to get a save file path");
     if ( outputFilePath == inputMapFile.getFilePath() )

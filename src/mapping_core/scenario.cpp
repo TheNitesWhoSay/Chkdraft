@@ -34,56 +34,56 @@ std::unordered_map<Chk::SectionName, size_t> sectionMemberIndex {
     {SectionName::KTGP, Member::triggerGroupings}
 };
 
-Scenario::Scenario() :
-    playerRaces{
+Scenario::Scenario() : MapData {
+    .playerRaces{
         Chk::Race::Terran  , Chk::Race::Zerg    , Chk::Race::Protoss , Chk::Race::Terran,
         Chk::Race::Zerg    , Chk::Race::Protoss , Chk::Race::Terran  , Chk::Race::Zerg,
         Chk::Race::Inactive, Chk::Race::Inactive, Chk::Race::Inactive, Chk::Race::Neutral
     },
-    playerColors{
+    .playerColors{
         Chk::PlayerColor::Red, Chk::PlayerColor::Blue, Chk::PlayerColor::Teal, Chk::PlayerColor::Purple,
         Chk::PlayerColor::Orange, Chk::PlayerColor::Brown, Chk::PlayerColor::White, Chk::PlayerColor::Yellow
     },
-    slotTypes{
+    .slotTypes{
         Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen,
         Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen,
         Sc::Player::SlotType::Inactive, Sc::Player::SlotType::Inactive, Sc::Player::SlotType::Inactive, Sc::Player::SlotType::Inactive
     },
-    iownSlotTypes{
+    .iownSlotTypes{
         Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen,
         Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen,
         Sc::Player::SlotType::Inactive, Sc::Player::SlotType::Inactive, Sc::Player::SlotType::Inactive, Sc::Player::SlotType::Inactive
     },
-    dimensions({0, 0})
-{}
+    .dimensions{0, 0}
+} {}
 
-Scenario::Scenario(Sc::Terrain::Tileset tileset, u16 width, u16 height) :
-    playerRaces{
+Scenario::Scenario(Sc::Terrain::Tileset tileset, u16 width, u16 height) : MapData {
+    .playerRaces{
         Chk::Race::Terran  , Chk::Race::Zerg    , Chk::Race::Protoss , Chk::Race::Terran,
         Chk::Race::Zerg    , Chk::Race::Protoss , Chk::Race::Terran  , Chk::Race::Zerg,
         Chk::Race::Inactive, Chk::Race::Inactive, Chk::Race::Inactive, Chk::Race::Neutral
     },
-    playerColors{
+    .playerColors{
         Chk::PlayerColor::Red, Chk::PlayerColor::Blue, Chk::PlayerColor::Teal, Chk::PlayerColor::Purple,
         Chk::PlayerColor::Orange, Chk::PlayerColor::Brown, Chk::PlayerColor::White, Chk::PlayerColor::Yellow
     },
-    slotTypes{
+    .slotTypes{
         Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen,
         Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen,
         Sc::Player::SlotType::Inactive, Sc::Player::SlotType::Inactive, Sc::Player::SlotType::Inactive, Sc::Player::SlotType::Inactive
     },
-    iownSlotTypes{
+    .iownSlotTypes{
         Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen,
         Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen,
         Sc::Player::SlotType::Inactive, Sc::Player::SlotType::Inactive, Sc::Player::SlotType::Inactive, Sc::Player::SlotType::Inactive
     },
-    dimensions({width, height}), tileset(tileset),
-    tiles(size_t(width)*size_t(height), u16(0)),
-    editorTiles(size_t(width)*size_t(height), u16(0)),
-    tileFog(size_t(width)*size_t(height), u8(0)),
-    isomRects((size_t(width) / size_t(2) + size_t(1)) * (size_t(height) + size_t(1))),
-    tailData({}), tailLength(0), mapIsProtected(false), jumpCompress(false)
-{{
+    .dimensions{width, height}, .tileset{tileset},
+    .tiles = std::vector<u16>(size_t(width)*size_t(height), u16(0)),
+    .editorTiles = std::vector<u16>(size_t(width)*size_t(height), u16(0)),
+    .tileFog = std::vector<u8>(size_t(width)*size_t(height), u8(0)),
+    .isomRects = std::vector<Chk::IsomRect>((size_t(width) / size_t(2) + size_t(1)) * (size_t(height) + size_t(1))),
+    .tailData{}, .tailLength{0}, .mapIsProtected{false}, .jumpCompress{false}
+} {
     strings.push_back(std::nullopt); // 0 (always unused)
     strings.push_back("Untitled Scenario"); // 1
     strings.push_back("Destroy all enemy buildings."); // 2
@@ -129,7 +129,212 @@ Scenario::Scenario(Sc::Terrain::Tileset tileset, u16 width, u16 height) :
         {Chk::SectionName::TECS}, {Chk::SectionName::SWNM}, {Chk::SectionName::COLR}, {Chk::SectionName::PUPx},
         {Chk::SectionName::PTEx}, {Chk::SectionName::UNIx}, {Chk::SectionName::UPGx}, {Chk::SectionName::TECx}
     });
-}}
+}
+
+bool Scenario::empty() const
+{
+    return saveSections.empty() && tailLength == 0;
+}
+
+bool Scenario::isProtected() const
+{
+    return mapIsProtected;
+}
+
+bool Scenario::hasPassword() const
+{
+    return tailLength == 7;
+}
+
+bool Scenario::isPassword(const std::string & password) const
+{
+    if ( hasPassword() )
+    {
+        SHA256 sha256;
+        std::string hashStr = sha256(password);
+        if ( hashStr.length() >= 7 )
+        {
+            u64 eightHashBytes = std::stoull(hashStr.substr(0, 8), nullptr, 16);
+            u8* hashBytes = (u8*)&eightHashBytes;
+
+            for ( u8 i = 0; i < tailLength && i < 8; i++ )
+            {
+                if ( tailData[i] != hashBytes[i] )
+                    return false;
+            }
+            return true;
+        }
+        else
+            return false;
+    }
+    else // No password
+        return false;
+}
+
+bool Scenario::setPassword(const std::string & oldPass, const std::string & newPass)
+{
+    if ( !hasPassword() || isPassword(oldPass) )
+    {
+        if ( newPass == "" )
+        {
+            for ( u8 i = 0; i < tailLength && i < 8; i++ )
+                tailData[i] = 0;
+
+            tailLength = 0;
+            return true;
+        }
+        else
+        {
+            SHA256 sha256;
+            std::string hashStr = sha256(newPass);
+            if ( hashStr.length() >= 7 )
+            {
+                u64 eightHashBytes = stoull(hashStr.substr(0, 8), nullptr, 16);
+                u8* hashBytes = (u8*)&eightHashBytes;
+
+                tailLength = 7;
+                for ( u8 i = 0; i < tailLength && i < 8; i++ )
+                    tailData[i] = hashBytes[i];
+
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+bool Scenario::login(const std::string & password)
+{
+    if ( isPassword(password) )
+    {
+        mapIsProtected = false;
+        return true;
+    }
+    return false;
+}
+
+template <typename T>
+constexpr size_t size()
+{
+    if constexpr ( RareTs::is_static_array_v<T> )
+        return ::size<RareTs::element_type_t<T>>() * std::extent_v<T>;
+    else if constexpr ( RareTs::is_iterable_v<T> )
+        throw std::logic_error("Cannot get a static size for a non-static-array iterable type");
+    else if constexpr ( std::is_enum_v<T> )
+        return sizeof(std::underlying_type_t<T>);
+    else if constexpr ( RareTs::is_reflected_v<T> )
+    {
+        return RareTs::Members<T>::pack([](auto ... member) {
+            return (size<typename std::remove_reference_t<decltype(member)>::type>() + ...);
+        });
+    }
+    else
+        return sizeof(T);
+}
+
+template <typename T, typename Value>
+constexpr s32 size(const Value & value)
+{
+    if constexpr ( RareTs::has_begin_end_v<T> )
+        return s32(::size<RareTs::element_type_t<T>>() * value.size());
+    else
+        return s32(::size<T>());
+}
+
+template <typename T, typename Value>
+void read(std::istream & is, Value & value, std::streamsize sectionSize)
+{
+    if constexpr ( RareTs::is_static_array_v<T> )
+    {
+        using Element = RareTs::element_type_t<T>;
+        for ( size_t i=0; i<std::extent_v<T>; i++ )
+            ::read<Element>(is, value[i], sectionSize);
+        //is.read(reinterpret_cast<char*>(&value[0]), std::streamsize(std::extent_v<T>*sizeof(Element))); // Performs better, TODO: static check for safety then use
+    }
+    else if constexpr ( RareTs::is_specialization_v<T, std::vector> )
+    {
+        using Element = RareTs::element_type_t<T>;
+        size_t wholeElements = size_t(sectionSize)/sizeof(Element) + (size_t(sectionSize)%sizeof(Element) > 0 ? 1 : 0);
+        value = std::vector<Element>(wholeElements);
+        for ( size_t i=0; i<wholeElements; ++i )
+            ::read<Element>(is, value[i], sectionSize);
+        //is.read(reinterpret_cast<char*>(&value[0]), std::streamsize(wholeElements*sizeof(Element))); // Performs better, TODO: static check for safety then use
+    }
+    else if constexpr ( RareTs::is_in_class_reflected_v<T> )
+    {
+        return RareTs::Members<T>::pack([&](auto ... member) {
+            (::read<typename std::remove_reference_t<decltype(member)>::type>(is, member.value(value), sectionSize), ...);
+        });
+    }
+    else if constexpr ( std::is_enum_v<T> )
+        is.read(reinterpret_cast<char*>(&value), sizeof(std::underlying_type_t<T>));
+    else
+        is.read(reinterpret_cast<char*>(&value), sizeof(T));
+}
+
+void Scenario::read(std::istream & is, Chk::SectionName sectionName, Chk::SectionSize sectionSize)
+{
+    auto & section = addSaveSection(Section{sectionName});
+    switch ( sectionName )
+    {
+        case SectionName::MRGN: // Manual deserialization to account for zeroth location being unused
+        {
+            size_t numLocations = size_t(sectionSize) / ::size<Chk::Location>();
+            locations.assign(numLocations+1, Chk::Location{});
+            for ( size_t i=1; i<=numLocations; ++i )
+                ::read<Chk::Location>(is, locations[i], std::streamsize(::size<Chk::Location>()));
+        }
+        break;
+        case SectionName::MTXM:
+        {
+            size_t totalTiles = sectionSize/2 + (sectionSize % 2 > 0 ? 1 : 0);
+            this->tiles = std::vector<u16>(totalTiles);
+            is.read(reinterpret_cast<char*>(&this->tiles[0]), sectionSize);
+        }
+        break;
+        case SectionName::STR:
+        {
+            std::vector<u8> bytes(sectionSize);
+            is.read(reinterpret_cast<char*>(&bytes[0]), sectionSize);
+            if ( !hasSection(SectionName::STRx) )
+                syncBytesToStrings(bytes);
+        }
+        break;
+        case SectionName::STRx:
+        {
+            std::vector<u8> bytes(sectionSize);
+            is.read(reinterpret_cast<char*>(&bytes[0]), sectionSize);
+            syncRemasteredBytesToStrings(bytes);
+        }
+        break;
+        case SectionName::KSTR:
+        {
+            std::vector<u8> bytes(sectionSize);
+            is.read(reinterpret_cast<char*>(&bytes[0]), sectionSize);
+            syncBytesToKstrings(bytes);
+        }
+        break;
+        default:
+        {
+            auto memberIndex = sectionMemberIndex.find(sectionName);
+            if ( memberIndex != sectionMemberIndex.end() )
+            {
+                RareTs::Members<MapData>::at(memberIndex->second, (MapData &)(*this), [&](auto member, auto & value) {
+                    std::streamsize bytesRemaining = std::streamsize(sectionSize);
+                    ::read<typename decltype(member)::type>(is, value, bytesRemaining);
+                });
+            }
+            else
+            {
+                logger.info() << "Encountered unknown section: " << Chk::getNameString(sectionName) << std::endl;
+                section.sectionData = std::make_optional<std::vector<u8>>(size_t(sectionSize));
+                if ( sectionSize > 0 )
+                    is.read((char*)&section.sectionData.value()[0], std::streamsize(sectionSize));
+            }
+        }
+        break;
+    }
+}
 
 void Scenario::clear()
 {
@@ -213,218 +418,18 @@ void Scenario::clear()
     mapIsProtected = false;
     jumpCompress = false;
 
-    strBytePaddedTo = 0;
-    initialStrTailDataOffset = 0;
     strTailData.clear();
-}
-
-bool Scenario::empty() const
-{
-    return saveSections.empty() && tailLength == 0;
-}
-
-bool Scenario::isProtected() const
-{
-    return mapIsProtected;
-}
-
-bool Scenario::hasPassword() const
-{
-    return tailLength == 7;
-}
-
-bool Scenario::isPassword(const std::string & password) const
-{
-    if ( hasPassword() )
-    {
-        SHA256 sha256;
-        std::string hashStr = sha256(password);
-        if ( hashStr.length() >= 7 )
-        {
-            u64 eightHashBytes = std::stoull(hashStr.substr(0, 8), nullptr, 16);
-            u8* hashBytes = (u8*)&eightHashBytes;
-
-            for ( u8 i = 0; i < tailLength; i++ )
-            {
-                if ( tailData[i] != hashBytes[i] )
-                    return false;
-            }
-            return true;
-        }
-        else
-            return false;
-    }
-    else // No password
-        return false;
-}
-
-bool Scenario::setPassword(const std::string & oldPass, const std::string & newPass)
-{
-    if ( !hasPassword() || isPassword(oldPass) )
-    {
-        if ( newPass == "" )
-        {
-            for ( u8 i = 0; i < tailLength; i++ )
-                tailData[i] = 0;
-
-            tailLength = 0;
-            return true;
-        }
-        else
-        {
-            SHA256 sha256;
-            std::string hashStr = sha256(newPass);
-            if ( hashStr.length() >= 7 )
-            {
-                u64 eightHashBytes = stoull(hashStr.substr(0, 8), nullptr, 16);
-                u8* hashBytes = (u8*)&eightHashBytes;
-
-                tailLength = 7;
-                for ( u8 i = 0; i < tailLength; i++ )
-                    tailData[i] = hashBytes[i];
-
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
-bool Scenario::login(const std::string & password) const
-{
-    if ( isPassword(password) )
-    {
-        mapIsProtected = false;
-        return true;
-    }
-    return false;
-}
-
-template <typename T>
-constexpr size_t size()
-{
-    if constexpr ( RareTs::is_static_array_v<T> )
-        return ::size<RareTs::element_type_t<T>>() * std::extent_v<T>;
-    else if constexpr ( RareTs::is_iterable_v<T> )
-        throw std::logic_error("Cannot get a static size for a non-static-array iterable type");
-    else if constexpr ( std::is_enum_v<T> )
-        return sizeof(std::underlying_type_t<T>);
-    else if constexpr ( RareTs::is_reflected_v<T> )
-    {
-        return RareTs::Members<T>::pack([](auto ... member) {
-            return (size<typename std::remove_reference_t<decltype(member)>::type>() + ...);
-        });
-    }
-    else
-        return sizeof(T);
-}
-
-template <typename T, typename Value>
-constexpr s32 size(const Value & value)
-{
-    if constexpr ( RareTs::has_begin_end_v<T> )
-        return s32(::size<RareTs::element_type_t<T>>() * value.size());
-    else
-        return s32(::size<T>());
-}
-
-template <typename T, typename Value>
-void read(std::istream & is, Value & value, std::streamsize sectionSize)
-{
-    if constexpr ( std::is_array_v<T> )
-    {
-        using Element = RareTs::element_type_t<T>;
-        for ( size_t i=0; i<std::extent_v<T>; i++ )
-            ::read<Element>(is, value[i], sectionSize);
-        //is.read(reinterpret_cast<char*>(&value[0]), std::streamsize(std::extent_v<T>*sizeof(Element))); // Performs better, TODO: static check for safety then use
-    }
-    else if constexpr ( RareTs::has_begin_end_v<T> ) // e.g. vector
-    {
-        using Element = RareTs::element_type_t<T>;
-        size_t wholeElements = size_t(sectionSize)/sizeof(Element) + (size_t(sectionSize)%sizeof(Element) > 0 ? 1 : 0);
-        value = std::vector<Element>(wholeElements);
-        for ( size_t i=0; i<wholeElements; ++i )
-            ::read<Element>(is, value[i], sectionSize);
-        //is.read(reinterpret_cast<char*>(&value[0]), std::streamsize(wholeElements*sizeof(Element))); // Performs better, TODO: static check for safety then use
-    }
-    else if constexpr ( RareTs::is_reflected_v<T> )
-    {
-        return RareTs::Members<T>::pack([&](auto ... member) {
-            (::read<typename std::remove_reference_t<decltype(member)>::type>(is, member.value(value), sectionSize), ...);
-        });
-    }
-    else if constexpr ( std::is_enum_v<T> )
-        is.read(reinterpret_cast<char*>(&value), sizeof(std::underlying_type_t<T>));
-    else
-        is.read(reinterpret_cast<char*>(&value), sizeof(T));
-}
-
-void Scenario::read(std::istream & is, Chk::SectionName sectionName, Chk::SectionSize sectionSize)
-{
-    auto & section = addSaveSection(Section{sectionName});
-    switch ( sectionName )
-    {
-        case SectionName::MRGN: // Manual deserialization to account for zeroth location being unused
-        {
-            size_t numLocations = size_t(sectionSize) / ::size<Chk::Location>();
-            locations.assign(numLocations+1, Chk::Location{});
-            for ( size_t i=1; i<=numLocations; ++i )
-                ::read<Chk::Location>(is, locations[i], std::streamsize(::size<Chk::Location>()));
-        }
-        break;
-        case SectionName::MTXM:
-        {
-            size_t totalTiles = sectionSize/2 + (sectionSize % 2 > 0 ? 1 : 0);
-            this->tiles = std::vector<u16>(totalTiles);
-            is.read(reinterpret_cast<char*>(&this->tiles[0]), sectionSize);
-        }
-        break;
-        case SectionName::STR:
-        {
-            std::vector<u8> bytes(sectionSize);
-            is.read(reinterpret_cast<char*>(&bytes[0]), sectionSize);
-            if ( !hasSection(SectionName::STRx) )
-                syncBytesToStrings(bytes);
-        }
-        break;
-        case SectionName::STRx:
-        {
-            std::vector<u8> bytes(sectionSize);
-            is.read(reinterpret_cast<char*>(&bytes[0]), sectionSize);
-            syncRemasteredBytesToStrings(bytes);
-        }
-        break;
-        case SectionName::KSTR:
-        {
-            std::vector<u8> bytes(sectionSize);
-            is.read(reinterpret_cast<char*>(&bytes[0]), sectionSize);
-            syncBytesToKstrings(bytes);
-        }
-        break;
-        default:
-        {
-            auto memberIndex = sectionMemberIndex.find(sectionName);
-            if ( memberIndex != sectionMemberIndex.end() )
-            {
-                RareTs::Members<Scenario>::at(memberIndex->second, *this, [&](auto member, auto & value) {
-                    std::streamsize bytesRemaining = std::streamsize(sectionSize);
-                    ::read<typename decltype(member)::type>(is, value, bytesRemaining);
-                });
-            }
-            else
-            {
-                logger.info() << "Encountered unknown section: " << Chk::getNameString(sectionName) << std::endl;
-                section.sectionData = std::make_optional<std::vector<u8>>(size_t(sectionSize));
-                if ( sectionSize > 0 )
-                    is.read((char*)&section.sectionData.value()[0], std::streamsize(sectionSize));
-            }
-        }
-        break;
-    }
 }
 
 bool Scenario::read(std::istream & is)
 {
+    auto parsingFailed = [&](const std::string & error)
+    {
+        logger.error(error);
+        clear();
+        return false;
+    };
+
     clear();
     bool hasLegacyKstr = false;
 
@@ -514,13 +519,6 @@ bool Scenario::hasSection(SectionName sectionName) const
         if ( section.sectionName == sectionName )
             return true;
     }
-    return false;
-}
-
-bool Scenario::parsingFailed(const std::string & error)
-{
-    logger.error(error);
-    clear();
     return false;
 }
 
@@ -676,7 +674,7 @@ void Scenario::write(std::ostream & os)
             writeSection(os, section, true);
 
         if ( tailLength > 0 )
-            os.write(reinterpret_cast<const char*>(&tailData[0]), std::streamsize(tailLength));
+            os.write(reinterpret_cast<const char*>(&tailData[0]), std::streamsize(tailLength < 8 ? tailLength : 7));
     }
     catch ( std::exception & e )
     {
@@ -1919,21 +1917,6 @@ size_t Scenario::getStrTailDataOffset()
     return stringBytes.size();
 }
 
-size_t Scenario::getInitialStrTailDataOffset() const
-{
-    return initialStrTailDataOffset;
-}
-
-size_t Scenario::getStrBytePaddedTo() const
-{
-    return strBytePaddedTo;
-}
-
-void Scenario::setStrBytePaddedTo(size_t bytePaddedTo)
-{
-    this->strBytePaddedTo = bytePaddedTo;
-}
-
 size_t Scenario::getScenarioNameStringId(Chk::Scope storageScope) const
 {
     return storageScope == Chk::Scope::Editor ? this->editorStringOverrides.scenarioName : this->scenarioProperties.scenarioNameStringId;
@@ -2575,19 +2558,13 @@ void Scenario::syncBytesToStrings(const std::vector<u8> & stringBytes)
     size_t regularStrSectionEnd = std::max(offsetsEnd, charactersEnd);
     if ( regularStrSectionEnd < numBytes ) // Tail data exists starting at regularStrSectionEnd
     {
-        strBytePaddedTo = 0;
-        initialStrTailDataOffset = regularStrSectionEnd;
         auto tailStart = std::next(stringBytes.begin(), regularStrSectionEnd);
         auto tailEnd = stringBytes.end();
         strTailData.assign(tailStart, tailEnd);
         logger.info() << "Read " << tailData.size() << " bytes of tailData after the STR section" << std::endl;
     }
     else // No tail data exists
-    {
-        strBytePaddedTo = 4;
-        initialStrTailDataOffset = 0;
         strTailData.clear();
-    }
 }
 
 void Scenario::syncRemasteredBytesToStrings(const std::vector<u8> & stringBytes)
@@ -2623,19 +2600,13 @@ void Scenario::syncRemasteredBytesToStrings(const std::vector<u8> & stringBytes)
     size_t regularStrxSectionEnd = std::max(offsetsEnd, charactersEnd);
     if ( regularStrxSectionEnd < numBytes ) // Tail data exists starting at regularStrxSectionEnd
     {
-        strBytePaddedTo = 0;
-        initialStrTailDataOffset = regularStrxSectionEnd;
         auto tailStart = std::next(stringBytes.begin(), regularStrxSectionEnd);
         auto tailEnd = stringBytes.end();
         strTailData.assign(tailStart, tailEnd);
         logger.info() << "Read " << strTailData.size() << " bytes of tailData after the STRx section" << std::endl;
     }
     else // No tail data exists
-    {
-        strBytePaddedTo = 4;
-        initialStrTailDataOffset = 0;
         strTailData.clear();
-    }
 }
 
 void Scenario::syncBytesToKstrings(const std::vector<u8> & stringBytes)
@@ -2955,7 +2926,7 @@ void Scenario::upgradeKstrToCurrent()
     }
 }
 
-const std::vector<u32> Scenario::compressionFlagsProgression = {
+const std::vector<u32> compressionFlagsProgression = {
     StrCompressFlag::None,
     StrCompressFlag::DuplicateStringRecycling,
     StrCompressFlag::LastStringTrick,

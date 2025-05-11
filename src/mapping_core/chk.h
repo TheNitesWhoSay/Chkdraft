@@ -5,6 +5,7 @@
 #include "escape_strings.h"
 #include "sc.h"
 #include <bitset>
+#include <iosfwd>
 #include <map>
 
 #undef PlaySound
@@ -1529,6 +1530,8 @@ namespace Chk {
         };
         u16 forceString[TotalForces] {4, 5, 6, 7};
         u8 flags[TotalForces] {Chk::ForceFlags::All, Chk::ForceFlags::All, Chk::ForceFlags::All, Chk::ForceFlags::All};
+
+        REFLECT(FORC, playerForce, forceString, flags)
     }; // Size <= 20 (validated)
     
     __declspec(align(1)) struct WAV {
@@ -2051,6 +2054,8 @@ namespace Chk {
             StrProp strProp; // Additional color and font details, if this string is extended and gets stored
 
             static void adopt(ScStr* parent, ScStr* child, size_t parentLength, size_t childLength, const char* parentSubString);
+
+            inline friend auto & operator<<(std::ostream & os, const ScStr & s) { os << std::string_view(&s.allocation[0], std::size(s.allocation)); return os; }
     };
 
     struct IsomRectUndo {

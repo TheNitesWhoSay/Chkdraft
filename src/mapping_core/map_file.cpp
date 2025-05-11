@@ -14,7 +14,6 @@ extern Logger logger;
 
 #undef PlaySound
 
-std::hash<std::string> MapFile::strHash;
 std::map<size_t, std::string> MapFile::virtualSoundTable;
 u64 MapFile::nextAssetFileId(0);
 
@@ -28,32 +27,25 @@ FileBrowserPtr<SaveType> MapFile::getDefaultSaveMapBrowser()
     return FileBrowserPtr<SaveType>(new FileBrowser<SaveType>(getSaveMapFilters(), "Save Map", false, true));
 }
 
-MapFile::MapFile(const std::string & filePath) :
-    saveType(SaveType::Unknown), mapFilePath(""), temporaryMpqPath(""), temporaryMpq(true, true)
+MapFile::MapFile(const std::string & filePath) : temporaryMpqPath(""), temporaryMpq(true, true)
 {
     initializeVirtualSoundTable();
     load(filePath);
 }
 
-MapFile::MapFile(FileBrowserPtr<SaveType> fileBrowser) :
-    saveType(SaveType::Unknown), mapFilePath(""), temporaryMpqPath(""), temporaryMpq(true, true)
+MapFile::MapFile(FileBrowserPtr<SaveType> fileBrowser) : temporaryMpqPath(""), temporaryMpq(true, true)
 {
     initializeVirtualSoundTable();
     load(fileBrowser);
 }
 
 MapFile::MapFile(Sc::Terrain::Tileset tileset, u16 width, u16 height)
-    : Scenario(tileset, width, height), saveType(SaveType::HybridScm), mapFilePath(""), temporaryMpqPath(""), temporaryMpq(true, true)
+    : Scenario(tileset, width, height), temporaryMpqPath(""), temporaryMpq(true, true)
 {
     initializeVirtualSoundTable();
 }
 
-MapFile::MapFile() : Scenario(), saveType(SaveType::HybridScm), mapFilePath(""), temporaryMpqPath(""), temporaryMpq(true, true)
-{
-
-}
-
-MapFile::~MapFile()
+MapFile::MapFile() : Scenario(), temporaryMpqPath(""), temporaryMpq(true, true)
 {
 
 }
@@ -66,7 +58,7 @@ bool MapFile::load(const std::string & filePath)
 bool MapFile::load(FileBrowserPtr<SaveType> fileBrowser)
 {
     std::string browseFilePath = "";
-    SaveType saveType;
+    SaveType saveType = SaveType::Unknown;
     return fileBrowser != nullptr && fileBrowser->browseForOpenPath(browseFilePath, saveType) && openMapFile(browseFilePath);
 }
 
@@ -401,20 +393,10 @@ void MapFile::initializeVirtualSoundTable()
         for ( size_t i=0; i<numVirtualSounds; i++ )
         {
             std::string soundPath(Sc::Sound::virtualSoundPaths[i]);
-            size_t hash = strHash(soundPath);
+            size_t hash = std::hash<std::string>{}(soundPath);
             virtualSoundTable.insert(std::pair<size_t, std::string>(hash, soundPath));
         }
     }
-}
-
-SaveType MapFile::getSaveType()
-{
-    return saveType;
-}
-
-void MapFile::setSaveType(SaveType newSaveType)
-{
-    saveType = newSaveType;
 }
 
 std::string MapFile::GetStandardSoundDir()
@@ -749,7 +731,7 @@ bool MapFile::getSoundStatuses(std::map<size_t/*stringId*/, SoundStatus> & outSo
 
 bool MapFile::isInVirtualSoundList(const std::string & soundMpqPath) const
 {
-    size_t hash = MapFile::strHash(soundMpqPath);
+    size_t hash = std::hash<std::string>{}(soundMpqPath);
     size_t numMatching = MapFile::virtualSoundTable.count(hash);
     if ( numMatching == 1 )
     {
