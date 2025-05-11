@@ -101,7 +101,6 @@ struct MapData
     };
     
     SaveType saveType = SaveType::HybridScm;
-    std::string mapFilePath = "";
     std::vector<u8> strTailData {}; // Any data that comes after the regular STR section data, and after any padding
     std::vector<Section> saveSections {}; // Maintains the order of sections in the map and stores data for any sections that are not parsed
     std::array<u8, 7> tailData {}; // The 0-7 bytes just before the Scenario file ends, after the last valid section
@@ -117,7 +116,7 @@ struct MapData
         unitAvailability, unitSettings, upgradeCosts, upgradeLeveling, techCosts, techAvailability,
         origUnitSettings, origUpgradeCosts, origUpgradeLeveling, origTechnologyCosts, origTechnologyAvailability,
         createUnitProperties, createUnitPropertiesUsed, triggers, briefingTriggers, switchNames, soundPaths, triggerExtensions, triggerGroupings,
-        saveType, mapFilePath, strTailData, saveSections, tailData, tailLength, mapIsProtected, jumpCompress)
+        saveType, strTailData, saveSections, tailData, tailLength, mapIsProtected, jumpCompress)
 };
 
 struct Scenario : MapData

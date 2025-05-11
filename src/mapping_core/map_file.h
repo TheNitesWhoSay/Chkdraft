@@ -60,6 +60,7 @@ struct MapFile : Scenario, MpqFile // MapFile is a scenario file and usually an 
     static FileBrowserPtr<SaveType> getDefaultSaveMapBrowser();
 
 private:
+    std::string mapFilePath = "";
     std::string temporaryMpqPath;
     MpqFile temporaryMpq;
     std::vector<ModifiedAsset> modifiedAssets; // A record of all MPQ assets changes since the last save
