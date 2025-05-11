@@ -12,6 +12,7 @@
 #include <regex>
 #include "ui/chkd_controls/chkd_string_input.h"
 #include <CommCtrl.h>
+#include "temptest.h"
 
 void Chkdraft::OnLoadTest()
 {
@@ -25,6 +26,29 @@ void Chkdraft::OnLoadTest()
         map->setSlotType(1, Sc::Player::SlotType::Computer);
         _Pragma("warning(suppress: 26716)") return *map;
     }();*/
+}
+
+void Chkdraft::PreLoadTest()
+{
+    auto mapStorage = std::make_unique<TestMap>();
+    auto & map = *mapStorage;
+
+    map.init();
+    std::cout << "init:\n" << Json::out(map->units) << "\n\n";
+    
+    map.doSomething();
+    std::cout << "doSomething:\n" << Json::out(map->units) << "\n\n";
+    
+    map.undoAction();
+    std::cout << "undo:\n" << Json::out(map->units) << "\n\n";
+    
+    map.redoAction();
+    std::cout << "redo:\n" << Json::out(map->units) << "\n\n";
+
+    map.printChangeHistory();
+    
+    std::cin.clear();
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 }
 
 enum_t(Id, u32, {
@@ -50,6 +74,7 @@ Chkdraft::~Chkdraft()
 
 int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
 {
+    PreLoadTest();
     SetupLogging();
     if ( !CreateThis() )
         return 1;

@@ -8,6 +8,7 @@
 #include <array>
 #include <map>
 #include <vector>
+#include <rarecpp/editor.h>
 
 /*
     Versions [VER, TYPE, IVER, IVE2, VCOD] - versioning and validation
@@ -107,7 +108,9 @@ struct MapData
     u8 tailLength {0}; // 0 for no tail data, must be less than 8
     bool mapIsProtected {false}; // Flagged if map is protected
     bool jumpCompress {false}; // If true, the map will attempt to compress using jump sections when saving
-
+    
+    NOTE(sprites, RareEdit::IndexSize<u32>{})
+    NOTE(units, RareEdit::IndexSize<u32>{})
     REFLECT(MapData, version, type, iVersion, i2Version, validation, strings, editorStrings, editorStringOverrides, scenarioProperties,
         playerRaces, playerColors, customColors, forces, slotTypes, iownSlotTypes, sprites, doodads, units, locations,
         dimensions, tileset, tileFog, tiles, editorTiles, isomRects,

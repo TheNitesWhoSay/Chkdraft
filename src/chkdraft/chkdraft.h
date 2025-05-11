@@ -17,6 +17,7 @@ class Chkdraft : public WinLib::ClassWindow
 {
     public:
                     void OnLoadTest(); // Write testing code here
+                    void PreLoadTest(); // Write testing code that runs before data & UI loads here
 
 /*  Main Items  */  Sc::Data scData; // Data from StarCraft files
                     std::unique_ptr<Scr::GraphicsData> scrData; // Remastered graphics data from StarCraft files
