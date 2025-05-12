@@ -1,6 +1,6 @@
 #ifndef MAPFILE_H
 #define MAPFILE_H
-#include "scenario.h"
+#include "lite_scenario.h"
 #include "file_browser.h"
 #include "mpq_file.h"
 #include <utility>
@@ -11,6 +11,9 @@
 
     Sometimes a scenario file alone, which has a .chk extension, may be considered a map file and may still be fully edited as one
     Though any attempt to save a map file as a scenario file will result in any sounds and any mpq assets not being included
+
+    The "Lite" version of MapFile does not have automatic history tracking & no sel/undo/redo support
+    It is not used by Chkdraft but it may be more appropriate for some 3rd party applications
 */
 
 #ifdef CHKDRAFT
@@ -18,14 +21,12 @@ std::optional<std::string> getPreSavePath(); // Gets path holding assets to be w
 #endif
 
 class SimpleMapBrowser;
-enum class SoundStatus;
-
-struct MapFile : Scenario, MpqFile // MapFile is a scenario file and usually an MpqFile
+struct LiteMapFile : LiteScenario, MpqFile // LiteMapFile is a scenario file and usually an MpqFile
 {
-    MapFile(const std::string & filePath); // Load map at filePath
-    MapFile(FileBrowserPtr<SaveType> fileBrowser); // Load map selected from browser, can use getDefaultOpenMapBrowser()
-    MapFile(Sc::Terrain::Tileset tileset, u16 width = 64, u16 height = 64); // Create new map
-    MapFile();
+    LiteMapFile(const std::string & filePath); // Load map at filePath
+    LiteMapFile(FileBrowserPtr<SaveType> fileBrowser); // Load map selected from browser, can use getDefaultOpenMapBrowser()
+    LiteMapFile(Sc::Terrain::Tileset tileset, u16 width = 64, u16 height = 64); // Create new map
+    LiteMapFile();
         
     bool save(const std::string & saveFilePath, bool overwriting = false, bool updateListFile = true, bool lockAnywhere = true, bool autoDefragmentLocations = true);
     bool save(bool saveAs = false, bool updateListFile = true, FileBrowserPtr<SaveType> fileBrowser = getDefaultSaveMapBrowser(),

@@ -1,19 +1,21 @@
-#ifndef SCENARIO_H
-#define SCENARIO_H
+#ifndef LITESCENARIO_H
+#define LITESCENARIO_H
 #include "basics.h"
-#include "escape_strings.h"
 #include "chk.h"
+#include "escape_strings.h"
 #include "map_data.h"
-#include <rarecpp/editor.h>
+#include <array>
+#include <map>
 #include <optional>
 #include <string>
-#include <map>
 #include <vector>
 
-struct Scenario : MapData
+// The "Lite" version of scenario does not have automatic history tracking & no sel/undo/redo support
+// It is not used by Chkdraft but it may be more appropriate for some 3rd party applications
+struct LiteScenario : MapData
 {
-    Scenario(); // Construct empty map
-    Scenario(Sc::Terrain::Tileset tileset, u16 width = 64, u16 height = 64); // Construct new map
+    LiteScenario(); // Construct empty map
+    LiteScenario(Sc::Terrain::Tileset tileset, u16 width = 64, u16 height = 64); // Construct new map
 
     // Versioning API
     Chk::Version getVersion() const;
@@ -209,7 +211,7 @@ struct Scenario : MapData
     inline Chk::IsomRect & isomRectAt(Chk::IsomRect::Point point) { return isomRects[point.y*getIsomWidth() + point.x]; }
     
     bool placeIsomTerrain(Chk::IsomDiamond isomDiamond, size_t terrainType, size_t brushExtent, Chk::IsomCache & cache);
-    void copyIsomFrom(const Scenario & sourceMap, int32_t xTileOffset, int32_t yTileOffset, bool undoable, Chk::IsomCache & destCache);
+    void copyIsomFrom(const LiteScenario & sourceMap, int32_t xTileOffset, int32_t yTileOffset, bool undoable, Chk::IsomCache & destCache);
     void updateTilesFromIsom(Chk::IsomCache & cache);
     bool resizeIsom(int32_t xTileOffset, int32_t yTileOffset, size_t oldMapWidth, size_t oldMapHeight, bool fixBorders, Chk::IsomCache & cache);
     Chk::TileOccupationCache getTileOccupationCache(const Sc::Terrain::Tiles & tileset, const Sc::Unit & unitData) const;
