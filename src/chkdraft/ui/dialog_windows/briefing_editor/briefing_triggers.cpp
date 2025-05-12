@@ -925,7 +925,7 @@ LRESULT BriefingTriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
             break;
 
         case WinLib::LB::WM_PREMEASUREITEMS: // Measuring is time sensative, load necessary items for measuring all triggers once
-            briefingTextTrigGenerator.loadScenario(*CM);
+            briefingTextTrigGenerator.loadScenario((Scenario &)*CM);
             briefingTrigListDc.emplace(listBriefingTriggers.getHandle());
             briefingTrigListDc->setDefaultFont();
             briefingTrigLineSizeTable.clear();
@@ -975,7 +975,7 @@ LRESULT BriefingTriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
             break;
 
         case WinLib::LB::WM_PREDRAWITEMS:
-            briefingTextTrigGenerator.loadScenario(*CM);
+            briefingTextTrigGenerator.loadScenario((Scenario &)*CM);
             drawingAll = true;
             break;
 
@@ -983,7 +983,7 @@ LRESULT BriefingTriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
             if ( wParam == Id::LIST_TRIGGERS )
             {
                 if ( !drawingAll )
-                    briefingTextTrigGenerator.loadScenario(*CM);
+                    briefingTextTrigGenerator.loadScenario((Scenario &)*CM);
 
                 PDRAWITEMSTRUCT pdis = (PDRAWITEMSTRUCT)lParam;
                 bool isSelected = ((pdis->itemState&ODS_SELECTED) == ODS_SELECTED),

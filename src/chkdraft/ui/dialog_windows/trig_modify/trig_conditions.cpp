@@ -61,7 +61,7 @@ void TrigConditionsWindow::RefreshWindow(u32 trigIndex)
     this->trigIndex = trigIndex;
     const Chk::Trigger & trig = CM->getTrigger(trigIndex);
     TextTrigGenerator ttg(Settings::useAddressesForMemory, Settings::deathTableStart, true);
-    if ( ttg.loadScenario(*CM) )
+    if ( ttg.loadScenario((Scenario &)*CM) )
     {
         for ( u8 y=0; y<Chk::Trigger::MaxConditions; y++ )
         {
@@ -370,9 +370,9 @@ void TrigConditionsWindow::UpdateConditionArg(u8 conditionNum, u8 argNum, const 
             RefreshConditionAreas();
     }
     else if ( (parseChkdStr(ChkdString(newText), rawUpdateText) &&
-        ttc.parseConditionArg(rawUpdateText, argument, trig.condition(conditionNum), *CM, chkd.scData, trigIndex, !suggestion.str.empty()) ) ||
+        ttc.parseConditionArg(rawUpdateText, argument, trig.condition(conditionNum), (Scenario &)*CM, chkd.scData, trigIndex, !suggestion.str.empty()) ) ||
         ( !suggestion.str.empty() && parseChkdStr(ChkdString(suggestion.str), rawSuggestText) &&
-            ttc.parseConditionArg(rawSuggestText, argument, trig.condition(conditionNum), *CM, chkd.scData, trigIndex, false) ) )
+            ttc.parseConditionArg(rawSuggestText, argument, trig.condition(conditionNum), (Scenario &)*CM, chkd.scData, trigIndex, false) ) )
     {
         if ( refreshImmediately )
             RefreshConditionAreas();
@@ -430,7 +430,7 @@ void TrigConditionsWindow::DrawSelectedCondition()
             u8 conditionNum = (u8)focusedY;
             TextTrigGenerator ttg(Settings::useAddressesForMemory, Settings::deathTableStart, true);
             std::string str;
-            ttg.loadScenario(*CM);
+            ttg.loadScenario((Scenario &)*CM);
             str = chkd.trigEditorWindow.triggersWindow.GetConditionString(conditionNum, trig, ttg);
             ttg.clearScenario();
 

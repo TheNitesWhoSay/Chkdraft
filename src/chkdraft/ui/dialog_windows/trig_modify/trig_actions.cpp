@@ -67,7 +67,7 @@ void TrigActionsWindow::RefreshWindow(u32 trigIndex)
     this->trigIndex = trigIndex;
     const auto & trig = CM->getTrigger(trigIndex);
     TextTrigGenerator ttg(Settings::useAddressesForMemory, Settings::deathTableStart, true);
-    if ( ttg.loadScenario(*CM) )
+    if ( ttg.loadScenario((Scenario &)*CM) )
     {
         for ( u8 y = 0; y<Chk::Trigger::MaxActions; y++ )
         {
@@ -500,9 +500,9 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
                 {
                     Chk::Action::Argument argument = Chk::Action::getClassicArg(trig.action(actionNum).actionType, argNum);
                     madeChange = (parseChkdStr(chkdNewText, rawUpdateText) &&
-                        ttc.parseActionArg(rawUpdateText, argument, action, *CM, chkd.scData, trigIndex, actionNum, !suggestion.str.empty())) ||
+                        ttc.parseActionArg(rawUpdateText, argument, action, (Scenario &)*CM, chkd.scData, trigIndex, actionNum, !suggestion.str.empty())) ||
                         (!suggestion.str.empty() && parseChkdStr(suggestion.str, rawSuggestText) &&
-                            ttc.parseActionArg(rawSuggestText, argument, action, *CM, chkd.scData, trigIndex, actionNum, false));
+                            ttc.parseActionArg(rawSuggestText, argument, action, (Scenario &)*CM, chkd.scData, trigIndex, actionNum, false));
                 }
             }
 
@@ -538,9 +538,9 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
             else
             {
                 madeChange = (parseChkdStr(chkdNewText, rawUpdateText) &&
-                    ttc.parseActionArg(rawUpdateText, argument, action, *CM, chkd.scData, trigIndex, actionNum, !suggestion.str.empty())) ||
+                    ttc.parseActionArg(rawUpdateText, argument, action, (Scenario &)*CM, chkd.scData, trigIndex, actionNum, !suggestion.str.empty())) ||
                     (!suggestion.str.empty() && parseChkdStr(suggestion.str, rawSuggestText) &&
-                        ttc.parseActionArg(rawSuggestText, argument, action, *CM, chkd.scData, trigIndex, actionNum, false));
+                        ttc.parseActionArg(rawSuggestText, argument, action, (Scenario &)*CM, chkd.scData, trigIndex, actionNum, false));
             }
         }
 
@@ -602,7 +602,7 @@ void TrigActionsWindow::DrawSelectedAction()
         {
             u8 actionNum = (u8)focusedY;
             TextTrigGenerator ttg(Settings::useAddressesForMemory, Settings::deathTableStart, true);
-            ttg.loadScenario(*CM);
+            ttg.loadScenario((Scenario &)*CM);
             ChkdString str = chkd.trigEditorWindow.triggersWindow.GetActionString(actionNum, trig, ttg);
             ttg.clearScenario();
 

@@ -62,7 +62,7 @@ void BriefingTrigActionsWindow::RefreshWindow(u32 briefingTrigIndex)
     this->briefingTrigIndex = briefingTrigIndex;
     const auto & briefingTrig = CM->getBriefingTrigger(briefingTrigIndex);
     BriefingTextTrigGenerator ttg{true};
-    if ( ttg.loadScenario(*CM) )
+    if ( ttg.loadScenario((Scenario &)*CM) )
     {
         for ( u8 y = 0; y<Chk::Trigger::MaxActions; y++ )
         {
@@ -455,9 +455,9 @@ void BriefingTrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const s
             else
             {
                 madeChange = (parseChkdStr(chkdNewText, rawUpdateText) &&
-                    ttc.parseBriefingActionArg(rawUpdateText, argument, action, *CM, chkd.scData, briefingTrigIndex, actionNum, !suggestion.str.empty())) ||
+                    ttc.parseBriefingActionArg(rawUpdateText, argument, action, (Scenario &)*CM, chkd.scData, briefingTrigIndex, actionNum, !suggestion.str.empty())) ||
                     (!suggestion.str.empty() && parseChkdStr(suggestion.str, rawSuggestText) &&
-                        ttc.parseBriefingActionArg(rawSuggestText, argument, action, *CM, chkd.scData, briefingTrigIndex, actionNum, false));
+                        ttc.parseBriefingActionArg(rawSuggestText, argument, action, (Scenario &)*CM, chkd.scData, briefingTrigIndex, actionNum, false));
             }
         }
 
@@ -519,7 +519,7 @@ void BriefingTrigActionsWindow::DrawSelectedAction()
         {
             u8 actionNum = (u8)focusedY;
             BriefingTextTrigGenerator ttg {true};
-            ttg.loadScenario(*CM);
+            ttg.loadScenario((Scenario &)*CM);
             ChkdString str = chkd.briefingTrigEditorWindow.briefingTriggersWindow.GetActionString(actionNum, briefingTrig, ttg);
             ttg.clearScenario();
 

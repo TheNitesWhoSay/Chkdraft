@@ -41,8 +41,6 @@ set(Headers
   chk.h
   escape_strings.h
   file_browser.h
-  lite_map_file.h
-  lite_scenario.h
   map_data.h
   map_file.h
   mapping_core.h
@@ -62,8 +60,6 @@ set(Sources
   chk.cpp
   escape_strings.cpp
   file_browser.cpp
-  lite_map_file.cpp
-  lite_scenario.cpp
   map_file.cpp
   mpq_file.cpp
   sc.cpp
