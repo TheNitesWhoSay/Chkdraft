@@ -1,5 +1,5 @@
-#ifndef MAPFILE_H
-#define MAPFILE_H
+#ifndef LITEMAPFILE_H
+#define LITEMAPFILE_H
 #include "lite_scenario.h"
 #include "file_browser.h"
 #include "mpq_file.h"

@@ -80,19 +80,19 @@ class TextTrigCompiler
         });
 
         TextTrigCompiler(bool useAddressesForMemory, u32 deathTableOffset);
-        bool compileTriggers(std::string & trigText, Scenario & chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd); // Compiles text, overwrites TRIG and STR upon success
-        bool compileTrigger(std::string & trigText, Scenario & chk, Sc::Data & scData, size_t trigIndex); // Compiles text, fills trigger upon success
+        template <class MapType> bool compileTriggers(std::string & trigText, MapType & chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd); // Compiles text, overwrites TRIG and STR upon success
+        template <class MapType> bool compileTrigger(std::string & trigText, MapType & chk, Sc::Data & scData, size_t trigIndex); // Compiles text, fills trigger upon success
 
         // Attempts to compile the condition argument at argIndex into the given condition
         bool parseConditionName(std::string text, Chk::Condition::Type & conditionType) const;
-        bool parseConditionArg(std::string conditionArgText, Chk::Condition::Argument argument, Chk::Condition & condition, const Scenario & chk, Sc::Data & scData, size_t trigIndex, bool silent = false);
+        template <class MapType> bool parseConditionArg(std::string conditionArgText, Chk::Condition::Argument argument, Chk::Condition & condition, const MapType & chk, Sc::Data & scData, size_t trigIndex, bool silent = false);
         bool parseActionName(std::string text, Chk::Action::Type & actionType) const;
-        bool parseActionArg(std::string actionArgText, Chk::Action::Argument argument, Chk::Action & action, const Scenario & chk, Sc::Data & scData, size_t trigIndex, size_t actionIndex, bool silent = false);
+        template <class MapType> bool parseActionArg(std::string actionArgText, Chk::Action::Argument argument, Chk::Action & action, const MapType & chk, Sc::Data & scData, size_t trigIndex, size_t actionIndex, bool silent = false);
 
 
     protected:
 
-        bool loadCompiler(const Scenario & chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd, ScenarioDataFlag dataTypes = ScenarioDataFlag::All); // Sets up all the data needed for a run of the compiler
+        template <class MapType> bool loadCompiler(const MapType & chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd, ScenarioDataFlag dataTypes = ScenarioDataFlag::All); // Sets up all the data needed for a run of the compiler
         void clearCompiler(); // Clears data loaded for a run of the compiler
         bool cleanText(std::string & text, std::vector<RawString> & stringContents, std::stringstream & error) const; // Remove spacing and standardize line endings
 
@@ -183,15 +183,15 @@ class TextTrigCompiler
         std::unordered_multimap<size_t, std::unique_ptr<StringTableNode>> newExtendedStringTable; // Extended string hash map
         std::vector<StringTableNode*> unassignedExtendedStrings; // Extended strings in extendedStringTable that have yet to be assigned stringIds
 
-        bool prepLocationTable(const Scenario & map); // Fills locationTable
-        bool prepUnitTable(const Scenario & map); // Fills unitTable
-        bool prepSwitchTable(const Scenario & map); // Fills switchTable
-        bool prepGroupTable(const Scenario & map); // Fills groupTable
+        template <class MapType> bool prepLocationTable(const MapType & map); // Fills locationTable
+        template <class MapType> bool prepUnitTable(const MapType & map); // Fills unitTable
+        template <class MapType> bool prepSwitchTable(const MapType & map); // Fills switchTable
+        template <class MapType> bool prepGroupTable(const MapType & map); // Fills groupTable
         bool prepScriptTable(Sc::Data & scData); // Fills scriptTable
-        bool prepStringTable(const Scenario & map, std::unordered_multimap<size_t, std::unique_ptr<StringTableNode>> & stringHashTable, size_t trigIndexBegin, size_t trigIndexEnd, const Chk::Scope & scope); // Fills stringUsed and stringTable
-        void prepTriggerString(const Scenario & scenario, std::unordered_multimap<size_t, std::unique_ptr<StringTableNode>> & stringHashTable, const u32 & stringId, const bool & inReplacedRange, const Chk::Scope & scope);
+        template <class MapType> bool prepStringTable(const MapType & map, std::unordered_multimap<size_t, std::unique_ptr<StringTableNode>> & stringHashTable, size_t trigIndexBegin, size_t trigIndexEnd, const Chk::Scope & scope); // Fills stringUsed and stringTable
+        template <class MapType> void prepTriggerString(const MapType & scenario, std::unordered_multimap<size_t, std::unique_ptr<StringTableNode>> & stringHashTable, const u32 & stringId, const bool & inReplacedRange, const Chk::Scope & scope);
 
-        bool buildNewMap(Scenario & scenario, size_t trigIndexBegin, size_t trigIndexEnd, std::vector<Chk::Trigger> & triggers, std::stringstream & error) const; // Builds the new TRIG and STR sections
+        template <class MapType> bool buildNewMap(MapType & scenario, size_t trigIndexBegin, size_t trigIndexEnd, std::vector<Chk::Trigger> & triggers, std::stringstream & error) const; // Builds the new TRIG and STR sections
 };
 
 class BriefingTextTrigCompiler : private TextTrigCompiler
@@ -199,11 +199,11 @@ class BriefingTextTrigCompiler : private TextTrigCompiler
     public:
 
         BriefingTextTrigCompiler();
-        bool compileBriefingTriggers(std::string & trigText, Scenario & chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd); // Compiles text, overwrites TRIG and STR upon success
-        bool compileBriefingTrigger(std::string & trigText, Scenario & chk, Sc::Data & scData, size_t trigIndex); // Compiles text, fills trigger upon success
+        template <class MapType> bool compileBriefingTriggers(std::string & trigText, MapType & chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd); // Compiles text, overwrites TRIG and STR upon success
+        template <class MapType> bool compileBriefingTrigger(std::string & trigText, MapType & chk, Sc::Data & scData, size_t trigIndex); // Compiles text, fills trigger upon success
 
         bool parseBriefingActionName(std::string text, Chk::Action::Type & actionType) const;
-        bool parseBriefingActionArg(std::string actionArgText, Chk::Action::Argument argument, Chk::Action & action, const Scenario & chk, Sc::Data & scData, size_t trigIndex, size_t actionIndex, bool silent = false);
+        template <class MapType> bool parseBriefingActionArg(std::string actionArgText, Chk::Action::Argument argument, Chk::Action & action, const MapType & chk, Sc::Data & scData, size_t trigIndex, size_t actionIndex, bool silent = false);
 
     private:
 
@@ -220,7 +220,7 @@ class BriefingTextTrigCompiler : private TextTrigCompiler
 
         bool parseBriefingSlot(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end) const;
 
-        bool buildNewMap(Scenario & scenario, size_t trigIndexBegin, size_t trigIndexEnd, std::vector<Chk::Trigger> & briefingTriggers, std::stringstream & error) const; // Builds the new MBRF and STR sections
+        template <class MapType> bool buildNewMap(MapType & scenario, size_t trigIndexBegin, size_t trigIndexEnd, std::vector<Chk::Trigger> & briefingTriggers, std::stringstream & error) const; // Builds the new MBRF and STR sections
 };
 
 // Returns the position of the next unescaped quote, pos must be greater than the position of the string's open quote, returns npos on failure
