@@ -12,6 +12,10 @@
 
 struct Scenario : MapData
 {
+    void undoAction();
+    void redoAction();
+    void printChangeHistory();
+
     Scenario(); // Construct empty map
     Scenario(Sc::Terrain::Tileset tileset, u16 width = 64, u16 height = 64); // Construct new map
 

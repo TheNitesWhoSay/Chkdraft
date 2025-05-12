@@ -64,6 +64,9 @@ set(Sources
   mpq_file.cpp
   sc.cpp
   scenario.cpp
+  scenario_print.cpp
+  scenario_redo.cpp
+  scenario_undo.cpp
   sha256.cpp
   system_io.cpp
   text_trig_compiler.cpp

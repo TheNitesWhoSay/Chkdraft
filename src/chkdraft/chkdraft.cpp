@@ -26,6 +26,11 @@ void Chkdraft::OnLoadTest()
         map->setSlotType(1, Sc::Player::SlotType::Computer);
         _Pragma("warning(suppress: 26716)") return *map;
     }();*/
+
+    auto actualMap = chkd.maps.NewMap();
+    actualMap->undoAction();
+    actualMap->redoAction();
+    actualMap->printChangeHistory();
 }
 
 void Chkdraft::PreLoadTest()
