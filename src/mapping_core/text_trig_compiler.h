@@ -3,6 +3,7 @@
 #include "basics.h"
 #include "sc.h"
 #include "scenario.h"
+#include <optional>
 #include <unordered_map>
 #include <sstream>
 #include <string>
@@ -85,9 +86,9 @@ class TextTrigCompiler
 
         // Attempts to compile the condition argument at argIndex into the given condition
         bool parseConditionName(std::string text, Chk::Condition::Type & conditionType) const;
-        template <class MapType> bool parseConditionArg(std::string conditionArgText, Chk::Condition::Argument argument, Chk::Condition & condition, const MapType & chk, Sc::Data & scData, size_t trigIndex, bool silent = false);
+        template <class MapType> std::optional<Chk::Condition::ArgField> parseConditionArg(std::string conditionArgText, Chk::Condition::Argument argument, Chk::Condition & condition, const MapType & chk, Sc::Data & scData, size_t trigIndex, bool silent = false);
         bool parseActionName(std::string text, Chk::Action::Type & actionType) const;
-        template <class MapType> bool parseActionArg(std::string actionArgText, Chk::Action::Argument argument, Chk::Action & action, const MapType & chk, Sc::Data & scData, size_t trigIndex, size_t actionIndex, bool silent = false);
+        template <class MapType> std::optional<Chk::Action::ArgField> parseActionArg(std::string actionArgText, Chk::Action::Argument argument, Chk::Action & action, const MapType & chk, Sc::Data & scData, size_t trigIndex, size_t actionIndex, bool silent = false);
 
 
     protected:
@@ -122,8 +123,8 @@ class TextTrigCompiler
         bool parseCondition(std::string & text, size_t pos, size_t end, Chk::Condition::VirtualType & conditionType, u8 & flags, u16 & maskFlag); // Find the equivilant conditionType
         bool parseActionName(const std::string & arg, Chk::Action::VirtualType & actionType) const;
         bool parseAction(std::string & text, size_t pos, size_t end, Chk::Action::VirtualType & actionType, u8 & flags, u16 & maskFlag); // Find the equivilant actionType
-        bool parseConditionArg(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Condition & currCondition, size_t pos, size_t end, Chk::Condition::Argument argument, std::stringstream & error); // Parse an argument belonging to a condition
-        bool parseActionArg(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Action & currAction, size_t pos, size_t end, Chk::Action::Argument argument, std::stringstream & error, size_t trigIndex, size_t actionIndex); // Parse an argument belonging to an action
+        std::optional<Chk::Condition::ArgField> parseConditionArg(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Condition & currCondition, size_t pos, size_t end, Chk::Condition::Argument argument, std::stringstream & error); // Parse an argument belonging to a condition
+        std::optional<Chk::Action::ArgField> parseActionArg(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Action & currAction, size_t pos, size_t end, Chk::Action::Argument argument, std::stringstream & error, size_t trigIndex, size_t actionIndex); // Parse an argument belonging to an action
         bool parseExecutionFlags(std::string & text, size_t pos, size_t end, u32 & flags) const;
 
         bool parseString(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end, size_t trigIndex, size_t actionIndex, bool isSound); // Find a given string (not an extended string) in the map, prepare to add it if necessary
@@ -203,7 +204,7 @@ class BriefingTextTrigCompiler : private TextTrigCompiler
         template <class MapType> bool compileBriefingTrigger(std::string & trigText, MapType & chk, Sc::Data & scData, size_t trigIndex); // Compiles text, fills trigger upon success
 
         bool parseBriefingActionName(std::string text, Chk::Action::Type & actionType) const;
-        template <class MapType> bool parseBriefingActionArg(std::string actionArgText, Chk::Action::Argument argument, Chk::Action & action, const MapType & chk, Sc::Data & scData, size_t trigIndex, size_t actionIndex, bool silent = false);
+        template <class MapType> std::optional<Chk::Action::ArgField> parseBriefingActionArg(std::string actionArgText, Chk::Action::Argument argument, Chk::Action & action, const MapType & chk, Sc::Data & scData, size_t trigIndex, size_t actionIndex, bool silent = false);
 
     private:
 
@@ -216,7 +217,7 @@ class BriefingTextTrigCompiler : private TextTrigCompiler
         
         bool parseBriefingActionName(const std::string & arg, Chk::Action::VirtualType & actionType) const;
         bool parseBriefingAction(std::string & text, size_t pos, size_t end, Chk::Action::VirtualType & actionType, u8 & flags); // Find the equivilant actionType
-        bool parseBriefingActionArg(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Action & currAction, size_t pos, size_t end, Chk::Action::Argument argument, std::stringstream & error, size_t trigIndex, size_t actionIndex); // Parse an argument belonging to an action
+        std::optional<Chk::Action::ArgField> parseBriefingActionArg(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Action & currAction, size_t pos, size_t end, Chk::Action::Argument argument, std::stringstream & error, size_t trigIndex, size_t actionIndex); // Parse an argument belonging to an action
 
         bool parseBriefingSlot(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end) const;
 

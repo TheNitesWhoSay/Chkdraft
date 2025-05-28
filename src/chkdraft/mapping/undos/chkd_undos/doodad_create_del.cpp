@@ -18,7 +18,7 @@ std::shared_ptr<DoodadCreateDel> DoodadCreateDel::Make(u16 index, const Chk::Doo
 
 void DoodadCreateDel::Reverse(void *guiMap)
 {
-    GuiMap & map = *((GuiMap*)guiMap);
+    /*GuiMap & map = *((GuiMap*)guiMap);
     const auto & tileset = chkd.scData.terrain.get(map.getTileset());
     auto doodadType = doodad != nullptr ? doodad->type : map.getDoodad(doodadIndex).type;
     if ( auto doodadGroupIndex = tileset.getDoodadGroupIndex(doodadType) )
@@ -104,7 +104,7 @@ void DoodadCreateDel::Reverse(void *guiMap)
             ((GuiMap*)guiMap)->insertDoodad(doodadIndex, *doodad);
             doodad = nullptr;
         }
-    }
+    }*/
 }
 
 int32_t DoodadCreateDel::GetType()

@@ -302,7 +302,7 @@ void Graphics::DrawLocations(ChkdBitmap & bitmap, bool showAnywhere)
 
     for ( size_t locationId=1; locationId<map.numLocations(); ++locationId )
     {
-        const auto & location = map.locations[locationId];
+        const auto & location = map->locations[locationId];
         if ( locationId != Chk::LocationId::Anywhere || showAnywhere )
         {
             
@@ -398,7 +398,7 @@ void Graphics::DrawLocations(ChkdBitmap & bitmap, bool showAnywhere)
     }
 
     u16 selectedLoc = selections.getSelectedLocation();
-    if ( selectedLoc != NO_LOCATION && selectedLoc < map.locations.size() )
+    if ( selectedLoc != NO_LOCATION && selectedLoc < map->locations.size() )
     {
         const Chk::Location & loc = map.getLocation(selectedLoc);
         s32 leftMost = std::min(loc.left, loc.right);
@@ -1916,7 +1916,7 @@ void DrawPasteGraphics(const WinLib::DeviceContext & dc, ChkdPalette & palette, 
                                 {
                                     size_t tileXc = xTileStart+x;
                                     size_t tileYc = yTileStart+y;
-                                    if ( tileXc < map.dimensions.tileWidth && tileYc < map.dimensions.tileHeight )
+                                    if ( tileXc < map->dimensions.tileWidth && tileYc < map->dimensions.tileHeight )
                                     {
                                         u16 existingTileGroup = map.getTile(tileXc, tileYc) / 16;
                                         if ( existingTileGroup == placability.tileGroup[y*tileWidth+x] || allowIllegalDoodads )
@@ -2278,7 +2278,7 @@ void DrawMiniMapTiles(ChkdBitmap & bitmap, const ChkdPalette & palette, s64 bitW
 void DrawMiniMapUnits(ChkdBitmap & bitmap, u16 bitWidth, u16 bitHeight, u16 xSize, u16 ySize,
                        u16 xOffset, u16 yOffset, float scale, const Sc::Terrain::Tiles & tiles, GuiMap & map )
 {
-    for ( const auto & unit : map.units )
+    for ( const auto & unit : map->units )
     {
         Chk::PlayerColor color = (unit.owner < Sc::Player::TotalSlots ?
             map.getPlayerColor(unit.owner) : (Chk::PlayerColor)unit.owner);
@@ -2295,7 +2295,7 @@ void DrawMiniMapUnits(ChkdBitmap & bitmap, u16 bitWidth, u16 bitHeight, u16 xSiz
             bitmap[bitIndex] = chkd.scData.tminimap.bgraPalette[color];
     }
     
-    for ( const auto & sprite : map.sprites )
+    for ( const auto & sprite : map->sprites )
     {
         if ( sprite.isDrawnAsSprite() )
         {

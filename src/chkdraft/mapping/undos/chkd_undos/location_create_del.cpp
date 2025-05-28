@@ -18,7 +18,7 @@ std::shared_ptr<LocationCreateDel> LocationCreateDel::Make(u16 locationId)
 
 void LocationCreateDel::Reverse(void *guiMap)
 {
-    if ( location == nullptr ) // Do delete
+    /*if ( location == nullptr ) // Do delete
     {
         location = std::unique_ptr<Chk::Location>(new Chk::Location);
         *location = ((GuiMap*)guiMap)->getLocation(locationId);
@@ -35,7 +35,7 @@ void LocationCreateDel::Reverse(void *guiMap)
         ((GuiMap*)guiMap)->getLocation(newLocationId).stringId = (u16)((GuiMap*)guiMap)->addString(locationName);
         location = nullptr;
         locationName.clear();
-    }
+    }*/
 }
 
 int32_t LocationCreateDel::GetType()

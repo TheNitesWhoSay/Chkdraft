@@ -13,7 +13,7 @@ std::shared_ptr<UnitChange> UnitChange::Make(u16 unitIndex, Chk::Unit::Field fie
 
 void UnitChange::Reverse(void *guiMap)
 {
-    u32 replacedData = 0;
+    /*u32 replacedData = 0;
     switch ( field )
     {
         case Chk::Unit::Field::ClassId: replacedData = u32(((GuiMap*)guiMap)->getUnit(unitIndex).classId);
@@ -49,7 +49,7 @@ void UnitChange::Reverse(void *guiMap)
         case Chk::Unit::Field::RelationClassId: replacedData = u32(((GuiMap*)guiMap)->getUnit(unitIndex).relationClassId);
             ((GuiMap*)guiMap)->getUnit(unitIndex).relationClassId = data; break;
     }
-    data = replacedData;
+    data = replacedData;*/
 }
 
 int32_t UnitChange::GetType()

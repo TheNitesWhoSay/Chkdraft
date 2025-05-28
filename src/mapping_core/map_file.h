@@ -24,7 +24,7 @@ struct MapFile : Scenario, MpqFile // MapFile is a scenario file and usually an 
 {
     MapFile(const std::string & filePath); // Load map at filePath
     MapFile(FileBrowserPtr<SaveType> fileBrowser); // Load map selected from browser, can use getDefaultOpenMapBrowser()
-    MapFile(Sc::Terrain::Tileset tileset, u16 width = 64, u16 height = 64); // Create new map
+    MapFile(Sc::Terrain::Tileset tileset, u16 width = 64, u16 height = 64, size_t terrainTypeIndex = 0, const Sc::Terrain::Tiles* tilesetData = nullptr); // Create new map
     MapFile();
         
     bool save(const std::string & saveFilePath, bool overwriting = false, bool updateListFile = true, bool lockAnywhere = true, bool autoDefragmentLocations = true);

@@ -161,19 +161,19 @@ void TrigActionsWindow::HideSuggestions()
 
 void TrigActionsWindow::CndActEnableToggled(u8 actionNum)
 {
-    auto & trig = CM->getTrigger(trigIndex);
     if ( actionNum >= 0 && actionNum < 64 )
     {
-        Chk::Action & action = trig.action(actionNum);
-        if ( action.actionType != Chk::Action::Type::NoAction )
+        auto editTrig = CM->editTrigger(trigIndex);
+        auto editAction = editTrig.editAction(actionNum);
+        if ( editAction->actionType != Chk::Action::Type::NoAction )
         {
-            action.toggleDisabled();
+            editAction.toggleDisabled();
 
             CM->notifyChange(false);
             RefreshWindow(trigIndex);
             chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
 
-            gridActions.SetEnabledCheck(actionNum, !action.isDisabled());
+            gridActions.SetEnabledCheck(actionNum, !editAction->isDisabled());
         }
     }
 }
@@ -325,48 +325,48 @@ LRESULT TrigActionsWindow::EraseBackground(HWND hWnd, UINT msg, WPARAM wParam, L
     return result;
 }
 
-void TrigActionsWindow::ChangeActionType(Chk::Action & action, Chk::Action::Type newType)
+void TrigActionsWindow::ChangeActionType(std::size_t triggerIndex, std::size_t actionIndex, Chk::Action::Type newType)
 {
-    if ( action.actionType != newType )
+    if ( triggerIndex < CM->numTriggers() && actionIndex < Chk::Trigger::MaxActions )
     {
-        action.locationId = 0;
-        action.stringId = 0;
-        action.soundStringId = 0;
-        action.time = 0;
-        action.group = 0;
-        action.number = 0;
-        action.type = 0;
-        action.actionType = newType;
-
-        if ( newType == Chk::Action::Type::SetSwitch || newType == Chk::Action::Type::LeaderboardCompPlayers ||
-            newType == Chk::Action::Type::SetDoodadState || newType == Chk::Action::Type::SetInvincibility )
+        const auto & action = CM->read.triggers[triggerIndex].actions[actionIndex];
+        if ( action.actionType != newType )
         {
-            action.type2 = 5;
+            CM->operator()()->triggers[triggerIndex].actions[actionIndex] = Chk::Action {
+                .locationId = 0,
+                .stringId = 0,
+                .soundStringId = 0,
+                .time = 0,
+                .group = 0,
+                .number = 0,
+                .type = 0,
+                .actionType = newType,
+                .type2 = u8((newType == Chk::Action::Type::SetSwitch || newType == Chk::Action::Type::LeaderboardCompPlayers ||
+                        newType == Chk::Action::Type::SetDoodadState || newType == Chk::Action::Type::SetInvincibility) ? 5 :
+                    ((newType == Chk::Action::Type::SetCountdownTimer || newType == Chk::Action::Type::SetDeaths || newType == Chk::Action::Type::SetResources ||
+                        newType == Chk::Action::Type::SetScore || newType == Chk::Action::Type::Transmission) ? 7 : 0)),
+                .flags = Chk::Action::getDefaultFlags(newType),
+                .padding = 0,
+                .maskFlag = Chk::Action::MaskFlag::Disabled
+            };
         }
-        else if ( newType == Chk::Action::Type::SetCountdownTimer || newType == Chk::Action::Type::SetDeaths || newType == Chk::Action::Type::SetResources ||
-            newType == Chk::Action::Type::SetScore || newType == Chk::Action::Type::Transmission )
-        {
-            action.type2 = 7;
-        }
-        else
-            action.type2 = 0;
-
-        action.flags = Chk::Action::getDefaultFlags(newType);
-        action.padding = 0;
-        action.maskFlag = Chk::Action::MaskFlag::Disabled;
     }
     DrawSelectedAction();
 }
 
-bool TrigActionsWindow::TransformAction(Chk::Action & action, Chk::Action::Type newType, bool refreshImmediately)
+bool TrigActionsWindow::TransformAction(std::size_t triggerIndex, std::size_t actionIndex, Chk::Action::Type newType, bool refreshImmediately)
 {
-    if ( action.actionType != newType )
+    if ( triggerIndex < CM->numTriggers() && actionIndex < Chk::Trigger::MaxActions )
     {
-        ChangeActionType(action, newType);
-        if ( refreshImmediately )
-            RefreshActionAreas();
-
-        return true;
+        const auto & action = CM->getTrigger(triggerIndex).action(actionIndex);
+        if ( action.actionType != newType )
+        {
+            ChangeActionType(triggerIndex, actionIndex, newType);
+            if ( refreshImmediately )
+                RefreshActionAreas();
+            
+            return true;
+        }
     }
     return false;
 }
@@ -380,25 +380,19 @@ void TrigActionsWindow::RefreshActionAreas()
 
 void TrigActionsWindow::UpdateActionName(u8 actionNum, const std::string & newText, bool refreshImmediately)
 {
-    auto & trig = CM->getTrigger(trigIndex);
+    const auto & trig = CM->getTrigger(trigIndex);
     TextTrigCompiler ttc(Settings::useAddressesForMemory, Settings::deathTableStart);
     Chk::Action::Type newType = Chk::Action::Type::NoAction;
     SuggestionItem suggestion = suggestions.Take();
     if ( suggestion.data )
-    {
-        Chk::Action & action = trig.action(actionNum);
-        TransformAction(action, Chk::Action::Type(suggestion.data.value()), refreshImmediately);
-    }
+        TransformAction(trigIndex, actionNum, Chk::Action::Type(suggestion.data.value()), refreshImmediately);
     else if ( ttc.parseActionName(newText, newType) || ttc.parseActionName(suggestion.str, newType) )
-    {
-        Chk::Action & action = trig.action(actionNum);
-        TransformAction(action, newType, refreshImmediately);
-    }
+        TransformAction(trigIndex, actionNum, newType, refreshImmediately);
     else if ( newText.length() == 0 )
     {
         if ( trig.action(actionNum).actionType != newType )
         {
-            trig.deleteAction((u8)actionNum);
+            CM->editTrigger(trigIndex).deleteAction(actionNum);
             if ( refreshImmediately )
                 RefreshActionAreas();
         }
@@ -411,13 +405,34 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
     SuggestionItem suggestion = suggestions.Take();
     TextTrigCompiler ttc(Settings::useAddressesForMemory, Settings::deathTableStart);
     auto & trig = CM->getTrigger(trigIndex);
-    Chk::Action & action = trig.action(actionNum);
+    const Chk::Action & action = trig.action(actionNum);
     if ( action.actionType < Chk::Action::NumActionTypes )
     {
         Chk::Action::ArgType argType = Chk::Action::getClassicArgType(action.actionType, argNum);
         SingleLineChkdString chkdNewText = ChkdString(newText);
 
+        auto editedAction = CM->editTrigger(trigIndex).editAction(actionNum);
+        auto editAction = editedAction.edit;
         bool madeChange = false;
+
+        auto copyArg = [&](Chk::Action::ArgField argField, const Chk::Action & srcAction) {
+            switch ( argField )
+            {
+                case Chk::Action::ArgField::LocationId: editAction.locationId = srcAction.locationId; break;
+                case Chk::Action::ArgField::StringId: editAction.stringId = srcAction.stringId; break;
+                case Chk::Action::ArgField::SoundStringId: editAction.soundStringId = srcAction.soundStringId; break;
+                case Chk::Action::ArgField::Time: editAction.time = srcAction.time; break;
+                case Chk::Action::ArgField::Group: editAction.group = srcAction.group; break;
+                case Chk::Action::ArgField::Number: editAction.number = srcAction.number; break;
+                case Chk::Action::ArgField::Type: editAction.type = srcAction.type; break;
+                case Chk::Action::ArgField::ActionType: editAction.actionType = srcAction.actionType; break;
+                case Chk::Action::ArgField::Type2: editAction.type2 = srcAction.type2; break;
+                case Chk::Action::ArgField::Flags: editAction.flags = srcAction.flags; break;
+                case Chk::Action::ArgField::Padding: editAction.padding = srcAction.padding; break;
+                case Chk::Action::ArgField::MaskFlag: editAction.maskFlag = srcAction.maskFlag; break;
+            }
+        };
+
         if ( argType == Chk::Action::ArgType::String || argType == Chk::Action::ArgType::Sound )
         {
             if ( suggestion.data )
@@ -431,9 +446,9 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
                     if ( newStringId != Chk::StringId::NoString )
                     {
                         if ( argType == Chk::Action::ArgType::String )
-                            action.stringId = (u32)newStringId;
+                            editAction.stringId = (u32)newStringId;
                         else if ( argType == Chk::Action::ArgType::Sound )
-                            action.soundStringId = (u32)newStringId;
+                            editAction.soundStringId = (u32)newStringId;
                 
                         CM->deleteUnusedStrings(Chk::Scope::Both);
                         madeChange = true;
@@ -442,9 +457,9 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
                 else
                 {
                     if ( argType == Chk::Action::ArgType::String )
-                        action.stringId = (u32)suggestion.data.value();
+                        editAction.stringId = (u32)suggestion.data.value();
                     else if ( argType == Chk::Action::ArgType::Sound )
-                        action.soundStringId = (u32)suggestion.data.value();
+                        editAction.soundStringId = (u32)suggestion.data.value();
                 
                     CM->deleteUnusedStrings(Chk::Scope::Both);
                     madeChange = true;
@@ -459,9 +474,9 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
                 if ( newStringId != Chk::StringId::NoString )
                 {
                     if ( argType == Chk::Action::ArgType::String )
-                        action.stringId = (u32)newStringId;
+                        editAction.stringId = (u32)newStringId;
                     else if ( argType == Chk::Action::ArgType::Sound )
-                        action.soundStringId = (u32)newStringId;
+                        editAction.soundStringId = (u32)newStringId;
                     
                     CM->deleteUnusedStrings(Chk::Scope::Both);
                     madeChange = true;
@@ -499,16 +514,30 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
                 else
                 {
                     Chk::Action::Argument argument = Chk::Action::getClassicArg(trig.action(actionNum).actionType, argNum);
-                    madeChange = (parseChkdStr(chkdNewText, rawUpdateText) &&
-                        ttc.parseActionArg(rawUpdateText, argument, action, (Scenario &)*CM, chkd.scData, trigIndex, actionNum, !suggestion.str.empty())) ||
-                        (!suggestion.str.empty() && parseChkdStr(suggestion.str, rawSuggestText) &&
-                            ttc.parseActionArg(rawSuggestText, argument, action, (Scenario &)*CM, chkd.scData, trigIndex, actionNum, false));
+                    if ( parseChkdStr(chkdNewText, rawUpdateText) )
+                    {
+                        Chk::Action tempAction {};
+                        if ( auto result = ttc.parseActionArg(rawUpdateText, argument, tempAction, (Scenario &)*CM, chkd.scData, trigIndex, actionNum, !suggestion.str.empty()) )
+                        {
+                            madeChange = true;
+                            copyArg(*result, tempAction);
+                        }
+                    }
+                    if ( !madeChange && !suggestion.str.empty() && parseChkdStr(suggestion.str, rawSuggestText) )
+                    {
+                        Chk::Action tempAction {};
+                        if ( auto result = ttc.parseActionArg(rawSuggestText, argument, tempAction, (Scenario &)*CM, chkd.scData, trigIndex, actionNum, false) )
+                        {
+                            madeChange = true;
+                            copyArg(*result, tempAction);
+                        }
+                    }
                 }
             }
 
             if ( newScriptNum != 0 )
             {
-                action.number = newScriptNum;
+                editAction.number = newScriptNum;
                 madeChange = true;
             }
         }
@@ -520,27 +549,41 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
                 madeChange = true;
                 switch ( argument.field )
                 {
-                    case Chk::Action::ArgField::LocationId: action.locationId = suggestion.data.value(); break;
-                    case Chk::Action::ArgField::StringId: action.stringId = suggestion.data.value(); break;
-                    case Chk::Action::ArgField::SoundStringId: action.soundStringId = suggestion.data.value(); break;
-                    case Chk::Action::ArgField::Time: action.time = suggestion.data.value(); break;
-                    case Chk::Action::ArgField::Group: action.group = suggestion.data.value(); break;
-                    case Chk::Action::ArgField::Number: action.number = suggestion.data.value(); break;
-                    case Chk::Action::ArgField::Type: action.type = u16(suggestion.data.value()); break;
-                    case Chk::Action::ArgField::ActionType: action.actionType = Chk::Action::Type(suggestion.data.value()); break;
-                    case Chk::Action::ArgField::Type2: action.type2 = u8(suggestion.data.value()); break;
-                    case Chk::Action::ArgField::Flags: action.flags = u8(suggestion.data.value()); break;
-                    case Chk::Action::ArgField::Padding: action.padding = u8(suggestion.data.value()); break;
-                    case Chk::Action::ArgField::MaskFlag: action.maskFlag = Chk::Action::MaskFlag(suggestion.data.value()); break;
+                    case Chk::Action::ArgField::LocationId: editAction.locationId = suggestion.data.value(); break;
+                    case Chk::Action::ArgField::StringId: editAction.stringId = suggestion.data.value(); break;
+                    case Chk::Action::ArgField::SoundStringId: editAction.soundStringId = suggestion.data.value(); break;
+                    case Chk::Action::ArgField::Time: editAction.time = suggestion.data.value(); break;
+                    case Chk::Action::ArgField::Group: editAction.group = suggestion.data.value(); break;
+                    case Chk::Action::ArgField::Number: editAction.number = suggestion.data.value(); break;
+                    case Chk::Action::ArgField::Type: editAction.type = u16(suggestion.data.value()); break;
+                    case Chk::Action::ArgField::ActionType: editAction.actionType = Chk::Action::Type(suggestion.data.value()); break;
+                    case Chk::Action::ArgField::Type2: editAction.type2 = u8(suggestion.data.value()); break;
+                    case Chk::Action::ArgField::Flags: editAction.flags = u8(suggestion.data.value()); break;
+                    case Chk::Action::ArgField::Padding: editAction.padding = u8(suggestion.data.value()); break;
+                    case Chk::Action::ArgField::MaskFlag: editAction.maskFlag = Chk::Action::MaskFlag(suggestion.data.value()); break;
                     default: madeChange = false; logger.error() << "Unknown action arg field encountered" << std::endl; break;
                 }
             }
             else
             {
-                madeChange = (parseChkdStr(chkdNewText, rawUpdateText) &&
-                    ttc.parseActionArg(rawUpdateText, argument, action, (Scenario &)*CM, chkd.scData, trigIndex, actionNum, !suggestion.str.empty())) ||
-                    (!suggestion.str.empty() && parseChkdStr(suggestion.str, rawSuggestText) &&
-                        ttc.parseActionArg(rawSuggestText, argument, action, (Scenario &)*CM, chkd.scData, trigIndex, actionNum, false));
+                if ( parseChkdStr(chkdNewText, rawUpdateText) )
+                {
+                    Chk::Action tempAction {};
+                    if ( auto result = ttc.parseActionArg(rawUpdateText, argument, tempAction, (Scenario &)*CM, chkd.scData, trigIndex, actionNum, !suggestion.str.empty()) )
+                    {
+                        madeChange = true;
+                        copyArg(*result, tempAction);
+                    }
+                }
+                if ( !madeChange && !suggestion.str.empty() && parseChkdStr(suggestion.str, rawSuggestText) )
+                {
+                    Chk::Action tempAction {};
+                    if ( auto result = ttc.parseActionArg(rawSuggestText, argument, tempAction, (Scenario &)*CM, chkd.scData, trigIndex, actionNum, false) )
+                    {
+                        madeChange = true;
+                        copyArg(*result, tempAction);
+                    }
+                }
             }
         }
 
@@ -580,7 +623,7 @@ BOOL TrigActionsWindow::GridItemDeleting(u16 gridItemX, u16 gridItemY)
         if ( gridItemX == 1 && // Action Name
             trig.action(actionNum).actionType != Chk::Action::Type::NoAction )
         {
-            ChangeActionType(trig.action(actionNum), Chk::Action::Type::NoAction);
+            ChangeActionType(trigIndex, actionNum, Chk::Action::Type::NoAction);
         }
         else if ( gridItemX > 1 ) // Action Arg
         {
@@ -1049,10 +1092,10 @@ void TrigActionsWindow::DisableStringEdit()
 void TrigActionsWindow::ButtonEditString()
 {
     int focusedX, focusedY;
-    Chk::Trigger & trig = CM->getTrigger(trigIndex);
+    const Chk::Trigger & trig = CM->getTrigger(trigIndex);
     if ( gridActions.GetFocusedItem(focusedX, focusedY) )
     {
-        Chk::Action & action = trig.action((u8)focusedY);
+        const Chk::Action & action = trig.action((u8)focusedY);
         if ( action.hasStringArgument() )
         {
             std::optional<ChkdString> gameString, editorString;
@@ -1061,16 +1104,17 @@ void TrigActionsWindow::ButtonEditString()
 
             if ( (result & ChkdStringInputDialog::Result::GameStringChanged) == ChkdStringInputDialog::Result::GameStringChanged )
             {
+                auto edit = CM->operator()();
                 if ( gameString )
                 {
                     size_t stringId = CM->addString<ChkdString>(*gameString);
                     if ( stringId != Chk::StringId::NoString )
                     {
-                        action.stringId = (u32)stringId;
+                        edit->triggers[trigIndex].actions[focusedY].stringId = (u32)stringId;
                     }
                 }
                 else
-                    action.stringId = Chk::StringId::NoString;
+                    edit->triggers[trigIndex].actions[focusedY].stringId = Chk::StringId::NoString;
 
                 CM->deleteUnusedStrings(Chk::Scope::Game);
             }
@@ -1098,10 +1142,10 @@ void TrigActionsWindow::DisableSoundEdit()
 void TrigActionsWindow::ButtonEditSound()
 {
     int focusedX, focusedY;
-    Chk::Trigger & trig = CM->getTrigger(trigIndex);
+    const Chk::Trigger & trig = CM->getTrigger(trigIndex);
     if ( gridActions.GetFocusedItem(focusedX, focusedY) )
     {
-        Chk::Action & action = trig.action((u8)focusedY);
+        const Chk::Action & action = trig.action((u8)focusedY);
         if ( action.hasSoundArgument() )
         {
             std::optional<ChkdString> gameString, editorString;
@@ -1110,16 +1154,17 @@ void TrigActionsWindow::ButtonEditSound()
 
             if ( (result & ChkdStringInputDialog::Result::GameStringChanged) == ChkdStringInputDialog::Result::GameStringChanged )
             {
+                auto edit = CM->operator()();
                 if ( gameString )
                 {
                     size_t stringId = CM->addString<ChkdString>(*gameString);
                     if ( stringId != Chk::StringId::NoString )
                     {
-                        action.soundStringId = (u32)stringId;
+                        edit->triggers[trigIndex].actions[focusedY].soundStringId = (u32)stringId;
                     }
                 }
                 else
-                    action.soundStringId = Chk::StringId::NoString;
+                    edit->triggers[trigIndex].actions[focusedY].soundStringId = Chk::StringId::NoString;
 
                 CM->deleteUnusedStrings(Chk::Scope::Game);
             }
@@ -1146,11 +1191,11 @@ void TrigActionsWindow::DisableUnitPropertiesEdit()
 
 void TrigActionsWindow::ButtonEditUnitProperties()
 {
-    Chk::Trigger & trig = CM->getTrigger(trigIndex);
+    const Chk::Trigger & trig = CM->getTrigger(trigIndex);
     int focusedX = 0, focusedY = 0;
     if ( gridActions.GetFocusedItem(focusedX, focusedY) )
     {
-        Chk::Action & action = trig.action((u8)focusedY);
+        const Chk::Action & action = trig.action((u8)focusedY);
         u32 cuwpIndex = action.number;
         Chk::Cuwp initialCuwp = CM->getCuwp(cuwpIndex);
         Chk::Cuwp newCuwp = {};
@@ -1159,7 +1204,8 @@ void TrigActionsWindow::ButtonEditUnitProperties()
             size_t newCuwpIndex = CM->addCuwp(newCuwp, true, trigIndex, (size_t)focusedY);
             if ( newCuwpIndex < Sc::Unit::MaxCuwps )
             {
-                action.number = (u32)newCuwpIndex;
+                auto edit = CM->operator()();
+                edit->triggers[trigIndex].actions[focusedY].number = (u32)newCuwpIndex;
                 CM->setCuwpUsed(newCuwpIndex, true);
                 RefreshWindow(trigIndex);
             }
@@ -1171,8 +1217,8 @@ void TrigActionsWindow::ButtonEditUnitProperties()
 
 void TrigActionsWindow::GridEditStart(u16 gridItemX, u16 gridItemY)
 {
-    Chk::Trigger & trig = CM->getTrigger(trigIndex);
-    Chk::Action & action = trig.action((u8)gridItemY);
+    const Chk::Trigger & trig = CM->getTrigger(trigIndex);
+    const Chk::Action & action = trig.action((u8)gridItemY);
     Chk::Action::Argument arg = Chk::Action::noArg;
     if ( gridItemX == 1 ) // Action Name
     {

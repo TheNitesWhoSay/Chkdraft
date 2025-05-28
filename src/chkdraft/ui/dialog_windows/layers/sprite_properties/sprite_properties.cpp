@@ -133,15 +133,16 @@ void SpritePropertiesWindow::SetChangeHighlightOnly(bool changeHighlightOnly)
 
 void SpritePropertiesWindow::ChangeCurrOwner(u8 newOwner)
 {
+    auto edit = CM->operator()();
     auto undoableChanges = ReversibleActions::Make();
     auto & selSprites = CM->selections.sprites;
     for ( size_t spriteIndex : selSprites )
     {
-        Chk::Sprite & sprite = CM->getSprite(spriteIndex);
+        const Chk::Sprite & sprite = CM->getSprite(spriteIndex);
         if ( sprite.owner != newOwner ) // If the current and new owners are different
         {
             undoableChanges->Insert(SpriteChange::Make(spriteIndex, sprite));
-            sprite.owner = newOwner;
+            edit->sprites[spriteIndex].owner = newOwner;
             ChangeSpritesDisplayedOwner(int(spriteIndex), newOwner);
         }
     }
@@ -776,11 +777,12 @@ void SpritePropertiesWindow::NotifyDeletePressed()
 
 void SpritePropertiesWindow::NotifyCheckClicked(u32 idFrom)
 {
+    auto edit = CM->operator()();
     auto spriteChanges = ReversibleActions::Make();
     auto & selSprites = CM->selections.sprites;
     for ( size_t & spriteIndex : selSprites )
     {
-        Chk::Sprite & sprite = CM->getSprite(spriteIndex);
+        const Chk::Sprite & sprite = CM->getSprite(spriteIndex);
         spriteChanges->Insert(SpriteChange::Make(spriteIndex, sprite));
 
         WinLib::CheckBoxControl* checkControl = nullptr;
@@ -806,22 +808,23 @@ void SpritePropertiesWindow::NotifyCheckClicked(u32 idFrom)
         }
 
         if ( checkControl->isChecked() )
-            sprite.flags |= flag;
+            edit->sprites[spriteIndex].flags |= flag;
         else
-            sprite.flags &= ~flag;
+            edit->sprites[spriteIndex].flags &= ~flag;
     }
     CM->AddUndo(spriteChanges);
 }
 
 void SpritePropertiesWindow::NotifyIdEditUpdated()
 {
+    auto edit = CM->operator()();
     u16 spriteID = 0;
     if ( editSpriteId.GetEditNum<u16>(spriteID) )
     {
         auto & selSprites = CM->selections.sprites;
         for ( size_t & spriteIndex : selSprites )
         {
-            CM->getSprite(spriteIndex).type = (Sc::Sprite::Type)spriteID;
+            edit->sprites[spriteIndex].type = (Sc::Sprite::Type)spriteID;
             int row = listSprites.GetItemRow(int(spriteIndex));
 
             auto spriteName = GetSpriteName(Sc::Sprite::Type(spriteID), CM->getSprite(spriteIndex).isUnit());
@@ -837,12 +840,13 @@ void SpritePropertiesWindow::NotifyIdEditUpdated()
 
 void SpritePropertiesWindow::NotifyUnusedEditUpdated()
 {
+    auto edit = CM->operator()();
     u8 unused = 0;
     if ( editUnused.GetEditNum<u8>(unused) )
     {
         auto & selSprites = CM->selections.sprites;
         for ( size_t & spriteIndex : selSprites )
-            CM->getSprite(spriteIndex).unused = unused;
+            edit->sprites[spriteIndex].unused = unused;
 
         CM->Redraw(false);
     }
@@ -850,13 +854,14 @@ void SpritePropertiesWindow::NotifyUnusedEditUpdated()
 
 void SpritePropertiesWindow::NotifyXcEditUpdated()
 {
+    auto edit = CM->operator()();
     u16 spriteXC = 0;
     if ( editXc.GetEditNum<u16>(spriteXC) )
     {
         auto & selSprites = CM->selections.sprites;
         for ( size_t & spriteIndex : selSprites )
         {
-            CM->getSprite(spriteIndex).xc = spriteXC;
+            edit->sprites[spriteIndex].xc = spriteXC;
             int row = listSprites.GetItemRow(int(spriteIndex));
             listSprites.SetItemText(row, (int)SpriteListColumn::Xc, spriteXC);
         }
@@ -867,13 +872,14 @@ void SpritePropertiesWindow::NotifyXcEditUpdated()
 
 void SpritePropertiesWindow::NotifyYcEditUpdated()
 {
+    auto edit = CM->operator()();
     u16 spriteYC = 0;
     if ( editYc.GetEditNum<u16>(spriteYC) )
     {
         auto & selSprites = CM->selections.sprites;
         for ( size_t & spriteIndex : selSprites )
         {
-            CM->getSprite(spriteIndex).yc = spriteYC;
+            edit->sprites[spriteIndex].yc = spriteYC;
             int row = listSprites.GetItemRow(int(spriteIndex));
             listSprites.SetItemText(row, (int)SpriteListColumn::Yc, spriteYC);
         }

@@ -366,7 +366,7 @@ bool TextTrigGenerator::buildTextTrig(const Chk::Trigger & trigger, std::string 
 
 template <class MapType> inline void TextTrigGenerator::appendTriggers(StringBuffer & output, const MapType & scenario) const
 {
-    for ( const auto & trigger : scenario.triggers )
+    for ( const auto & trigger : scenario->triggers )
         appendTrigger(output, trigger);
 }
 template void TextTrigGenerator::appendTriggers<Scenario>(StringBuffer & output, const Scenario & scenario) const;
@@ -1055,7 +1055,7 @@ template <class MapType> bool TextTrigGenerator::prepScriptTable(const MapType &
 
     scriptTable.insert(std::pair<Sc::Ai::ScriptId, std::string>(Sc::Ai::ScriptId::NoScript, "No Script"));
 
-    for ( const auto & trigger : map.triggers )
+    for ( const auto & trigger : map->triggers )
     {
         for ( size_t actionNum = 0; actionNum < Chk::Trigger::MaxActions; actionNum++ )
         {
@@ -1296,7 +1296,7 @@ bool BriefingTextTrigGenerator::buildBriefingTextTrig(const Chk::Trigger & trigg
 
 template <class MapType> void BriefingTextTrigGenerator::appendBriefingTriggers(StringBuffer & output, const MapType & scenario) const
 {
-    for ( const auto & briefingTrigger : scenario.briefingTriggers )
+    for ( const auto & briefingTrigger : scenario->briefingTriggers )
         appendBriefingTrigger(output, briefingTrigger);
 }
 template void BriefingTextTrigGenerator::appendBriefingTriggers<Scenario>(StringBuffer & output, const Scenario & scenario) const;

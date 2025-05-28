@@ -215,6 +215,7 @@ void Clipboard::pasteDoodads(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos &
     const auto & doodads = getDoodads();
     if ( !doodads.empty() )
     {
+        auto edit = map.operator()();
         const auto & first = doodads[0];
         bool firstEvenWidth = first.tileWidth%2 == 0;
         bool firstEvenHeight = first.tileHeight%2 == 0;
@@ -327,6 +328,7 @@ void Clipboard::fillPasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap & map, Und
 
 void Clipboard::pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos, bool allowStack)
 {
+    auto edit = map.operator()();
     auto currPasteTime = std::chrono::steady_clock::now();
     if ( allowStack && std::chrono::duration_cast<std::chrono::milliseconds>(currPasteTime - this->lastPasteTime).count() < 250 && isNearPrevPaste(mapClickX, mapClickY) )
         return; // Prevent unintentional repeat-pastes
@@ -368,15 +370,15 @@ void Clipboard::pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & u
                 {
                     if ( lastPasteNydus )
                     {
-                        auto & lastNydus = map.getUnit(*lastPasteNydus);
+                        const auto & lastNydus = map.getUnit(*lastPasteNydus);
                         if ( pasteUnit.unit.owner == lastNydus.owner )
                         {
                             unitCreates->Insert(UnitChange::Make(*lastPasteNydus, Chk::Unit::Field::RelationClassId, lastNydus.relationClassId));
                             unitCreates->Insert(UnitChange::Make(*lastPasteNydus, Chk::Unit::Field::RelationFlags, lastNydus.relationFlags));
                             pasteUnit.unit.relationClassId = lastNydus.classId;
                             pasteUnit.unit.relationFlags = Chk::Unit::RelationFlag::NydusLink;
-                            lastNydus.relationClassId = pasteUnit.unit.classId;
-                            lastNydus.relationFlags = Chk::Unit::RelationFlag::NydusLink;
+                            edit->units[*lastPasteNydus].relationClassId = pasteUnit.unit.classId;
+                            edit->units[*lastPasteNydus].relationFlags = Chk::Unit::RelationFlag::NydusLink;
                             logger.info() << "Nydus at index " << numUnits << " linked to nydus at index " << *lastPasteNydus << std::endl;
                             lastPasteNydus = std::nullopt;
                         }
@@ -399,10 +401,10 @@ void Clipboard::pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & u
     {
         for ( auto pastedAddonIndex : pastedAddons )
         {
-            auto & pastedAddon = map.getUnit(pastedAddonIndex);
+            const auto & pastedAddon = map.getUnit(pastedAddonIndex);
             if ( auto buildingOpt = map.getLinkableUnitIndex(pastedAddon.type, pastedAddon.xc, pastedAddon.yc) )
             {
-                auto & building = map.getUnit(*buildingOpt);
+                const auto & building = map.getUnit(*buildingOpt);
                 if ( pastedAddon.owner == building.owner || map.autoSwappingAddonPlayers() )
                 {
                     if ( map.autoSwappingAddonPlayers() && building.owner != pastedAddon.owner )
@@ -410,20 +412,20 @@ void Clipboard::pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & u
                         if ( (chkd.scData.units.getUnit(pastedAddon.type).flags & Sc::Unit::Flags::Addon) == Sc::Unit::Flags::Addon )
                         {
                             unitCreates->Insert(UnitChange::Make(u16(pastedAddonIndex), Chk::Unit::Field::Owner, pastedAddon.owner));
-                            pastedAddon.owner = building.owner;
+                            edit->units[pastedAddonIndex].owner = building.owner;
                         }
                         else
                         {
                             unitCreates->Insert(UnitChange::Make(*buildingOpt, Chk::Unit::Field::Owner, building.owner));
-                            building.owner = pastedAddon.owner;
+                            edit->units[*buildingOpt].owner = pastedAddon.owner;
                         }
                     }
                     unitCreates->Insert(UnitChange::Make(*buildingOpt, Chk::Unit::Field::RelationClassId, building.relationClassId));
                     unitCreates->Insert(UnitChange::Make(*buildingOpt, Chk::Unit::Field::RelationFlags, building.relationFlags));
-                    pastedAddon.relationClassId = building.classId;
-                    pastedAddon.relationFlags = Chk::Unit::RelationFlag::AddonLink;
-                    building.relationClassId = pastedAddon.classId;
-                    building.relationFlags = Chk::Unit::RelationFlag::AddonLink;
+                    edit->units[pastedAddonIndex].relationClassId = building.classId;
+                    edit->units[pastedAddonIndex].relationFlags = Chk::Unit::RelationFlag::AddonLink;
+                    edit->units[*buildingOpt].relationClassId = pastedAddon.classId;
+                    edit->units[*buildingOpt].relationFlags = Chk::Unit::RelationFlag::AddonLink;
                     logger.info() << "Addon pasted at index " << pastedAddonIndex << " linked to building at index " << *buildingOpt << std::endl;
                 }
             }

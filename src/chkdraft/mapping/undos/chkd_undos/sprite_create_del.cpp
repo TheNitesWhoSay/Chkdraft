@@ -18,7 +18,7 @@ std::shared_ptr<SpriteCreateDel> SpriteCreateDel::Make(size_t index, const Chk::
 
 void SpriteCreateDel::Reverse(void *guiMap)
 {
-    if ( sprite == nullptr ) // Do delete
+    /*if ( sprite == nullptr ) // Do delete
     {
         sprite = std::unique_ptr<Chk::Sprite>(new Chk::Sprite);
         *sprite = ((GuiMap*)guiMap)->getSprite(index);
@@ -28,7 +28,7 @@ void SpriteCreateDel::Reverse(void *guiMap)
     {
         ((GuiMap*)guiMap)->insertSprite(index, *sprite);
         sprite = nullptr;
-    }
+    }*/
 }
 
 int32_t SpriteCreateDel::GetType()

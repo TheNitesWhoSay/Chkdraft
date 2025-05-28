@@ -39,24 +39,39 @@ enum class SaveType // The types of files a map can be saved as
 struct MapData
 {
     Chk::Version version {Chk::Version::StarCraft_Hybrid};
-    Chk::Type type {Chk::Type::RAWS}; // Redundant
+    Chk::Type mapType {Chk::Type::RAWS}; // Redundant
     Chk::IVersion iVersion {Chk::IVersion::Current}; // Redundant
     Chk::I2Version i2Version {Chk::I2Version::StarCraft_1_04}; // Redundant
     Chk::VCOD validation {};
 
-    std::vector<std::optional<ScStr>> strings {}; // STR section, Index 0 is unused
+    std::vector<std::optional<ScStr>> strings {}; // STR and/or STRx section, Index 0 is unused
     std::vector<std::optional<ScStr>> editorStrings {}; // Index 0 is unused
     Chk::KstrVersion editorStringsVersion {Chk::KstrVersion::Current};
     Chk::OSTR editorStringOverrides {};
     Chk::SPRP scenarioProperties {};
 
-    Chk::Race playerRaces[Sc::Player::Total] {};
-    Chk::PlayerColor playerColors[Sc::Player::TotalSlots] {};
+    Chk::Race playerRaces[Sc::Player::Total] {
+        Chk::Race::Terran  , Chk::Race::Zerg    , Chk::Race::Protoss , Chk::Race::Terran,
+        Chk::Race::Zerg    , Chk::Race::Protoss , Chk::Race::Terran  , Chk::Race::Zerg,
+        Chk::Race::Inactive, Chk::Race::Inactive, Chk::Race::Inactive, Chk::Race::Neutral
+    };
+    Chk::PlayerColor playerColors[Sc::Player::TotalSlots] {
+        Chk::PlayerColor::Red, Chk::PlayerColor::Blue, Chk::PlayerColor::Teal, Chk::PlayerColor::Purple,
+        Chk::PlayerColor::Orange, Chk::PlayerColor::Brown, Chk::PlayerColor::White, Chk::PlayerColor::Yellow
+    };
     Chk::CRGB customColors {};
     Chk::FORC forces {};
 
-    Sc::Player::SlotType slotTypes[Sc::Player::Total] {};
-    Sc::Player::SlotType iownSlotTypes[Sc::Player::Total] {}; // Redundant slot owners
+    Sc::Player::SlotType slotTypes[Sc::Player::Total] {
+        Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen,
+        Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen,
+        Sc::Player::SlotType::Inactive, Sc::Player::SlotType::Inactive, Sc::Player::SlotType::Inactive, Sc::Player::SlotType::Inactive
+    };
+    Sc::Player::SlotType iownSlotTypes[Sc::Player::Total] { // Redundant slot owners
+        Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen,
+        Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen,
+        Sc::Player::SlotType::Inactive, Sc::Player::SlotType::Inactive, Sc::Player::SlotType::Inactive, Sc::Player::SlotType::Inactive
+    };
 
     std::vector<Chk::Sprite> sprites {};
     std::vector<Chk::Doodad> doodads {};
@@ -103,18 +118,44 @@ struct MapData
     std::vector<Section> saveSections {}; // Maintains the order of sections in the map and stores data for any sections that are not parsed
     std::array<u8, 7> tailData {}; // The 0-7 bytes just before the Scenario file ends, after the last valid section
     u8 tailLength {0}; // 0 for no tail data, must be less than 8
-    bool mapIsProtected {false}; // Flagged if map is protected
     bool jumpCompress {false}; // If true, the map will attempt to compress using jump sections when saving
     
-    NOTE(sprites, RareEdit::IndexSize<u32>{})
-    NOTE(units, RareEdit::IndexSize<u32>{})
-    REFLECT(MapData, version, type, iVersion, i2Version, validation, strings, editorStrings, editorStringOverrides, scenarioProperties,
-        playerRaces, playerColors, customColors, forces, slotTypes, iownSlotTypes, sprites, doodads, units, locations,
+    bool hasSection(SectionName sectionName) const {
+        for ( auto & section : saveSections )
+        {
+            if ( section.sectionName == sectionName )
+                return true;
+        }
+        return false;
+    }
+
+    Section & addSaveSection(Section section)
+    {
+        if ( hasSection(section.sectionName) )
+        {
+            for ( std::size_t i=0; i<saveSections.size(); ++i )
+            {
+                if ( section.sectionName == saveSections[i].sectionName )
+                    return section;
+            }
+            throw std::logic_error("An internal error occured");
+        }
+        else
+        {
+            saveSections.push_back(section);
+            return saveSections.back();
+        }
+    }
+
+    NOTE(sprites, RareEdit::IndexSize<u32>)
+    NOTE(units, RareEdit::IndexSize<u32>)
+    REFLECT(MapData, version, mapType, iVersion, i2Version, validation, strings, editorStrings, editorStringsVersion, editorStringOverrides,
+        scenarioProperties, playerRaces, playerColors, customColors, forces, slotTypes, iownSlotTypes, sprites, doodads, units, locations,
         dimensions, tileset, tileFog, tiles, editorTiles, isomRects,
         unitAvailability, unitSettings, upgradeCosts, upgradeLeveling, techCosts, techAvailability,
         origUnitSettings, origUpgradeCosts, origUpgradeLeveling, origTechnologyCosts, origTechnologyAvailability,
         createUnitProperties, createUnitPropertiesUsed, triggers, briefingTriggers, switchNames, soundPaths, triggerExtensions, triggerGroupings,
-        saveType, strTailData, saveSections, tailData, tailLength, mapIsProtected, jumpCompress)
+        saveType, strTailData, saveSections, tailData, tailLength, jumpCompress)
 };
 
 enum class SoundStatus

@@ -13,10 +13,10 @@ std::shared_ptr<IsomChange> IsomChange::Make(const Chk::IsomRectUndo & isomRectU
 
 void IsomChange::Reverse(void *guiMap)
 {
-    auto replacedValue = ((GuiMap*)guiMap)->getIsomRect({isomRectUndo.diamond.x, isomRectUndo.diamond.y});
+    /*auto replacedValue = ((GuiMap*)guiMap)->getIsomRect({isomRectUndo.diamond.x, isomRectUndo.diamond.y});
     ((GuiMap*)guiMap)->isomRectAt({isomRectUndo.diamond.x, isomRectUndo.diamond.y}) = isomRectUndo.oldValue;
     isomRectUndo.newValue = isomRectUndo.oldValue;
-    isomRectUndo.oldValue = replacedValue;
+    isomRectUndo.oldValue = replacedValue;*/
 }
 
 int32_t IsomChange::GetType()

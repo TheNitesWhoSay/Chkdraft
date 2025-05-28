@@ -18,7 +18,7 @@ std::shared_ptr<UnitCreateDel> UnitCreateDel::Make(u16 index, const Chk::Unit & 
 
 void UnitCreateDel::Reverse(void *guiMap)
 {
-    if ( unit == nullptr ) // Do delete
+    /*if ( unit == nullptr ) // Do delete
     {
         unit = std::unique_ptr<Chk::Unit>(new Chk::Unit);
         *unit = ((GuiMap*)guiMap)->getUnit(index);
@@ -28,7 +28,7 @@ void UnitCreateDel::Reverse(void *guiMap)
     {
         ((GuiMap*)guiMap)->insertUnit(index, *unit);
         unit = nullptr;
-    }
+    }*/
 }
 
 int32_t UnitCreateDel::GetType()

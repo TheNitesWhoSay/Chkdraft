@@ -2,5 +2,5 @@
 
 void TestMap::printChangeHistory()
 {
-    Tracked::printChangeHistory();
+    Tracked::printChangeHistory(std::cout);
 }

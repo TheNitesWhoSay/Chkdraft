@@ -14,7 +14,7 @@ std::shared_ptr<DoodadChange> DoodadChange::Make(u16 doodadIndex, u8 owner, Chk:
 
 void DoodadChange::Reverse(void *guiMap)
 {
-    GuiMap & map = *((GuiMap*)guiMap);
+    /*GuiMap & map = *((GuiMap*)guiMap);
     if ( doodadIndex < map.numDoodads() )
     {
         auto & doodad = ((GuiMap*)guiMap)->getDoodad(doodadIndex);
@@ -35,7 +35,7 @@ void DoodadChange::Reverse(void *guiMap)
                 }
             }
         }
-    }
+    }*/
 }
 
 int32_t DoodadChange::GetType()

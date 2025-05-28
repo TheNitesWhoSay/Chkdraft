@@ -2277,12 +2277,12 @@ void Scr::MapGraphics::drawTerrain()
     auto endOff = -.1f/(128*renderDat->tiles->tilesetGrp.width);
 
     tileVertices.clear();
-    auto tiles = scData.terrain.get(Sc::Terrain::Tileset(map.tileset));
+    auto tiles = scData.terrain.get(Sc::Terrain::Tileset(map->tileset));
     for ( s32 y=mapTileBounds.top; y<=mapTileBounds.bottom; ++y )
     {
         for ( s32 x=mapTileBounds.left; x<=mapTileBounds.right; ++x )
         {
-            u16 tileIndex = map.tiles[size_t(y) * size_t(map.dimensions.tileWidth) + size_t(x)];
+            u16 tileIndex = map->tiles[size_t(y) * size_t(map->dimensions.tileWidth) + size_t(x)];
             size_t groupIndex = Sc::Terrain::Tiles::getGroupIndex(tileIndex);
             if ( groupIndex < tiles.tileGroups.size() )
             {
@@ -2311,7 +2311,7 @@ void Scr::MapGraphics::drawTilesetIndexed(s32 left, s32 top, s32 width, s32 heig
     auto & tilesetGrp = renderDat->tiles->tilesetGrp;
 
     tileVertices.clear();
-    auto & tiles = scData.terrain.get(Sc::Terrain::Tileset(map.tileset));
+    auto & tiles = scData.terrain.get(Sc::Terrain::Tileset(map->tileset));
 
     s32 topRow = scrollY/33;
     s32 bottomRow = (scrollY + height)/33;
@@ -2524,7 +2524,7 @@ void Scr::MapGraphics::drawTilesetIndexed(s32 left, s32 top, s32 width, s32 heig
 
 void Scr::MapGraphics::drawTileSelection()
 {
-    const Sc::Terrain::Tiles & tiles = scData.terrain.get(map.tileset);
+    const Sc::Terrain::Tiles & tiles = scData.terrain.get(map->tileset);
     triangleVertices.clear();
     lineVertices.clear();
     for ( auto & tile : map.selections.tiles )
@@ -2764,18 +2764,18 @@ void Scr::MapGraphics::drawImageSelections()
 
     for ( auto unitIndex : map.selections.units )
     {
-        if ( unitIndex < map.units.size() )
+        if ( unitIndex < map->units.size() )
         {
-            auto & unit = map.units[unitIndex];
+            auto & unit = map->units[unitIndex];
             drawUnitSelection(unit.type, unit.xc, unit.yc);
         }
     }
 
     for ( auto spriteIndex : map.selections.sprites )
     {
-        if ( spriteIndex < map.sprites.size() )
+        if ( spriteIndex < map->sprites.size() )
         {
-            auto & sprite = map.sprites[spriteIndex];
+            auto & sprite = map->sprites[spriteIndex];
             drawSpriteSelection(sprite.type, sprite.xc, sprite.yc, sprite.isDrawnAsSprite());
         }
     }
@@ -2820,10 +2820,10 @@ void Scr::MapGraphics::drawImages()
     auto & palette = renderDat->tiles->tilesetGrp.palette; // For SC:R there is no palette/this is std::nullopt
     ScopedPaletteRestore<8, 8> remapped {palette, prevMappedColor}; // For SC:R this does nothing
 
-    for ( const auto & unit : map.units )
+    for ( const auto & unit : map->units )
         drawUnit(unit);
 
-    for ( const auto & sprite : map.sprites )
+    for ( const auto & sprite : map->sprites )
         drawSprite(sprite);
 }
 
@@ -2833,12 +2833,12 @@ void Scr::MapGraphics::drawLocations()
     lineVertices.clear();
     triangleVertices.clear();
     triangleVertices2.clear();
-    for ( size_t i=0; i<map.locations.size(); ++i )
+    for ( size_t i=0; i<map->locations.size(); ++i )
     {
         if ( i == Chk::LocationId::Anywhere && map.LockAnywhere() )
             continue;
 
-        const auto & location = map.locations[i];
+        const auto & location = map->locations[i];
         auto & triVertices = location.right < location.left || location.bottom < location.top ?
             triangleVertices2.vertices : triangleVertices.vertices;
 
@@ -2917,12 +2917,12 @@ void Scr::MapGraphics::drawLocations()
         textFont->clippedTextShader.textPosToNdc.setMat4(gameToNdc);
         textFont->setColor(255, 255, 0);
 
-        for ( size_t i=0; i<map.locations.size(); ++i )
+        for ( size_t i=0; i<map->locations.size(); ++i )
         {
             if ( i == Chk::LocationId::Anywhere && map.LockAnywhere() )
                 continue;
 
-            const auto & location = map.locations[i];
+            const auto & location = map->locations[i];
 
             auto locationName = map.getLocationName<RawString>(i);
             if ( locationName )
@@ -2949,9 +2949,9 @@ void Scr::MapGraphics::drawLocations()
         textFont->textShader.glyphScaling.setMat2(glyphScaling);
         textFont->textShader.textPosToNdc.setMat4(gameToNdc);
         textFont->setColor(255, 255, 0);
-        for ( size_t i=0; i<map.locations.size(); ++i )
+        for ( size_t i=0; i<map->locations.size(); ++i )
         {
-            const auto & location = map.locations[i];
+            const auto & location = map->locations[i];
             auto locationName = map.getLocationName<RawString>(i);
             if ( locationName )
             {
@@ -3160,7 +3160,7 @@ void Scr::MapGraphics::drawFogTileSelection()
 void Scr::MapGraphics::drawDoodadSelection()
 {
     lineVertices.vertices.clear();
-    const auto & tileset = scData.terrain.get(map.tileset);
+    const auto & tileset = scData.terrain.get(map->tileset);
     for ( auto index : map.selections.doodads )
     {
         const auto & selDoodad = map.getDoodad(index);
@@ -3240,7 +3240,7 @@ void Scr::MapGraphics::drawPastes()
         else if ( subLayer == TerrainSubLayer::Rectangular || layer == Layer::CutCopyPaste )
         {
             point center { paste.x+16, paste.y+16 };
-            const Sc::Terrain::Tiles & tiles = scData.terrain.get(map.tileset);
+            const Sc::Terrain::Tiles & tiles = scData.terrain.get(map->tileset);
             auto & pasteTiles = map.clipboard.getTiles();
             tileVertices.vertices.clear();
             lineVertices.vertices.clear();
@@ -3399,7 +3399,7 @@ void Scr::MapGraphics::drawPastes()
         const auto & doodads = map.clipboard.getDoodads();
         if ( !doodads.empty() )
         {
-            const Sc::Terrain::Tiles & tiles = scData.terrain.get(map.tileset);
+            const Sc::Terrain::Tiles & tiles = scData.terrain.get(map->tileset);
             point center { paste.x, paste.y };
             tileVertices.vertices.clear();
             triangleVertices.clear();
@@ -3447,7 +3447,7 @@ void Scr::MapGraphics::drawPastes()
                                 {
                                     size_t tileXc = xTileStart + x;
                                     size_t tileYc = yTileStart + y;
-                                    if ( tileXc < map.dimensions.tileWidth && tileYc < map.dimensions.tileHeight )
+                                    if ( tileXc < map->dimensions.tileWidth && tileYc < map->dimensions.tileHeight )
                                     {
                                         u16 existingTileGroup = map.getTile(tileXc, tileYc) / 16;
                                         bool placeable = existingTileGroup == placability.tileGroup[y*tileWidth+x] || allowIllegalDoodads;

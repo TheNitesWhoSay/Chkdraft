@@ -13,11 +13,11 @@ std::shared_ptr<SpriteIndexMove> SpriteIndexMove::Make(u16 oldIndex, u16 newInde
 
 void SpriteIndexMove::Reverse(void *guiMap)
 {
-    Chk::Sprite preserve = ((GuiMap*)guiMap)->getSprite(newIndex);
+    /*Chk::Sprite preserve = ((GuiMap*)guiMap)->getSprite(newIndex);
     ((GuiMap*)guiMap)->deleteSprite(newIndex);
     ((GuiMap*)guiMap)->insertSprite(oldIndex, preserve);
     ((GuiMap*)guiMap)->selections.sendSpriteMove(oldIndex, newIndex);
-    std::swap(oldIndex, newIndex);
+    std::swap(oldIndex, newIndex);*/
 }
 
 int32_t SpriteIndexMove::GetType()

@@ -422,21 +422,21 @@ void Maps::ChangePlayer(u8 newPlayer, bool updateMapPlayers)
                 auto & selDoodads = currentlyActiveMap->selections.doodads;
                 for ( auto doodadIndex : selDoodads )
                 {
-                    auto & selDoodad = currentlyActiveMap->getDoodad(doodadIndex);
+                    const auto & selDoodad = currentlyActiveMap->getDoodad(doodadIndex);
                     if ( auto doodadGroupIndex = tileset.getDoodadGroupIndex(selDoodad.type) )
                     {
                         const auto & doodadDat = (Sc::Terrain::DoodadCv5 &)tileset.tileGroups[*doodadGroupIndex];
                         if ( selDoodad.owner != newPlayer )
                         {
                             doodadPlayerChangeUndo->Insert(DoodadChange::Make(u16(doodadIndex), selDoodad.owner, selDoodad.enabled));
-                            selDoodad.owner = newPlayer;
-                            if ( !currentlyActiveMap->sprites.empty() )
+                            currentlyActiveMap->operator()()->doodads[doodadIndex].owner = newPlayer;
+                            if ( !currentlyActiveMap->read.sprites.empty() )
                             {
-                                for ( int i=int(currentlyActiveMap->sprites.size())-1; i>=0; --i )
+                                for ( int i=int(currentlyActiveMap->read.sprites.size())-1; i>=0; --i )
                                 {
-                                    auto & sprite = currentlyActiveMap->sprites[i];
+                                    const auto & sprite = currentlyActiveMap->read.sprites[i];
                                     if ( sprite.type == doodadDat.overlayIndex && sprite.xc == selDoodad.xc && sprite.yc == selDoodad.yc )
-                                        sprite.owner = newPlayer;
+                                        currentlyActiveMap->operator()()->sprites[i].owner = newPlayer;
                                 }
                             }
                         }

@@ -523,16 +523,14 @@ namespace Chk {
             Left, Top, Right, Bottom, StringId, ElevationFlags
         };
 
-        Location();
-
         bool isBlank() const;
         
-        u32 left;
-        u32 top;
-        u32 right;
-        u32 bottom;
-        u16 stringId;
-        u16 elevationFlags;
+        u32 left = 0;
+        u32 top = 0;
+        u32 right = 0;
+        u32 bottom = 0;
+        u16 stringId = 0;
+        u16 elevationFlags = 0;
 
         REFLECT(Location, left, top, right, bottom, stringId, elevationFlags)
     };
@@ -692,15 +690,15 @@ namespace Chk {
             Argument arguments[MaxArguments];
         };
 
-        u32 locationId; // 1 based, is also the bitmask for deaths
-        u32 player;
-        u32 amount;
-        Sc::Unit::Type unitType;
-        Comparison comparison;
-        Type conditionType;
-        u8 typeIndex; // Resource type/score type/switch num
-        u8 flags;
-        MaskFlag maskFlag; // Set to "SC" (0x53, 0x43) for masked deaths; leave as zero otherwise
+        u32 locationId = 0; // 1 based, is also the bitmask for deaths
+        u32 player = 0;
+        u32 amount = 0;
+        Sc::Unit::Type unitType = Sc::Unit::Type::TerranMarine;
+        Comparison comparison = Comparison::AtLeast;
+        Type conditionType = Type::NoCondition;
+        u8 typeIndex = 0; // Resource type/score type/switch num
+        u8 flags = 0;
+        MaskFlag maskFlag = MaskFlag::Disabled; // Set to "SC" (0x53, 0x43) for masked deaths; leave as zero otherwise
 
         REFLECT(Condition, locationId, player, amount, unitType, comparison, conditionType, typeIndex, flags, maskFlag)
 
@@ -988,18 +986,18 @@ namespace Chk {
             Argument arguments[MaxArguments];
         };
 
-        u32 locationId; // 1 based, is also the bitmask for deaths
+        u32 locationId = 0; // 1 based, is also the bitmask for deaths
         u32 stringId;
         u32 soundStringId;
-        u32 time;
-        u32 group; // Group/ZeroBasedBriefingSlot
-        u32 number; // Amount/Group2/LocDest/UnitPropNum/ScriptNum/SwitchIndex
-        u16 type; // Unit/score/resource type/alliance status
-        Type actionType; // u8
-        u8 type2; // Num units/switch action/unit order/modify type
-        u8 flags;
-        u8 padding;
-        MaskFlag maskFlag; // u16, set to "SC" (0x53, 0x43) for masked deaths
+        u32 time = 0;
+        u32 group = 0; // Group/ZeroBasedBriefingSlot
+        u32 number = 0; // Amount/Group2/LocDest/UnitPropNum/ScriptNum/SwitchIndex
+        u16 type = 0; // Unit/score/resource type/alliance status
+        Type actionType = Type::NoAction; // u8
+        u8 type2 = 0; // Num units/switch action/unit order/modify type
+        u8 flags = 0;
+        u8 padding = 0;
+        MaskFlag maskFlag = MaskFlag::Disabled; // u16, set to "SC" (0x53, 0x43) for masked deaths
 
         REFLECT(Action, locationId, stringId, soundStringId, time, group, number, type, actionType, type2, flags, padding, maskFlag)
 
@@ -1998,64 +1996,45 @@ namespace Chk {
             MaximumOffsetAndCharsExceeded(); // Disallow ctor
     };
 
-    class StrProp {
-        public:
-            u8 red;
-            u8 green;
-            u8 blue;
-            u32 size;
-            bool isUsed;
-            bool hasPriority;
-            bool isBold;
-            bool isUnderlined;
-            bool isItalics;
-    
-            StrProp();
-            StrProp(Chk::StringProperties stringProperties);
-            StrProp(u8 red, u8 green, u8 blue, u32 size, bool isUsed, bool hasPriority, bool isBold, bool isUnderlined, bool isItalics);
+    struct StrProp {
+        u8 red = 0;
+        u8 green = 0;
+        u8 blue = 0;
+        u32 size = Chk::baseFontSize;
+        bool isUsed = false;
+        bool hasPriority = false;
+        bool isBold = false;
+        bool isUnderlined = false;
+        bool isItalics = false;
+
+        StrProp() = default;
+        StrProp(Chk::StringProperties stringProperties);
+
+        REFLECT(StrProp, red, green, blue, size, isUsed, hasPriority, isBold, isUnderlined, isItalics)
     };
 
-    class ScStr
+    struct ScStr
     {
-        public:
-            const char* str; // The content of this string (RawString/no formatting)
-        
-            ScStr();
-            ScStr(const std::string & str);
-            ScStr(const std::string & str, const StrProp & strProp);
-            ScStr(const char* str);
-            ScStr(const u8* str);
-            ScStr(const u8* str, size_t length);
-            ScStr(const std::vector<u8> & strBytes);
-            template <size_t N> ScStr(const char (&str)[N]) : ScStr(std::string(str)) {}
+        std::string str {};
+        StrProp properties {};
 
-            bool empty() const;
-            size_t length() const;
-        
-            StrProp & properties();
-            const StrProp & properties() const;
+        ScStr() = default;
+        ScStr(const std::string & str) : str(str) {}
+        ScStr(const std::string & str, const StrProp & properties) : str(str), properties(properties) {}
+        template <size_t N> ScStr(const char (&str)[N]) : ScStr(std::string(str, N-1)) {}
 
-            template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkdString (Editor <01>Style)
-            int compare(const StringType & str) const;
+        bool empty() const;
+        size_t length() const;
 
-            template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkdString (Editor <01>Style)
-            StringType toString() const;
+        template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkdString (Editor <01>Style)
+        int compare(const StringType & str) const;
 
-            ScStr* getParentStr() const;
-            ScStr* getChildStr() const;
-            static bool adopt(ScStr* lhs, ScStr* rhs); // Make lhs the parent of rhs if possible, or vice-versa
-            void disown(); // Break any connections with parent and child strings
+        template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkdString (Editor <01>Style)
+        StringType toString() const;
 
-        private:
-            ScStr* parentStr = nullptr; // The larger string inside which this string fits, if null then this is a root string
-            ScStr* childStr = nullptr; // The next largest string that fits inside this string
-            std::vector<char> allocation; // If parentStr is null, then this is the actual string data and str points to the first character
-                                          // else str points to first character of this string within the allocation of the highest-order parent
-            StrProp strProp; // Additional color and font details, if this string is extended and gets stored
+        inline friend auto & operator<<(std::ostream & os, const ScStr & s) { os << s.str; return os; }
 
-            static void adopt(ScStr* parent, ScStr* child, size_t parentLength, size_t childLength, const char* parentSubString);
-
-            inline friend auto & operator<<(std::ostream & os, const ScStr & s) { os << std::string_view(&s.allocation[0], std::size(s.allocation)); return os; }
+        REFLECT(ScStr, str, properties)
     };
 
     struct IsomRectUndo {

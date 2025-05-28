@@ -39,8 +39,8 @@ MapFile::MapFile(FileBrowserPtr<SaveType> fileBrowser) : temporaryMpqPath(""), t
     load(fileBrowser);
 }
 
-MapFile::MapFile(Sc::Terrain::Tileset tileset, u16 width, u16 height)
-    : Scenario(tileset, width, height), temporaryMpqPath(""), temporaryMpq(true, true)
+MapFile::MapFile(Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex, const Sc::Terrain::Tiles* tilesetData)
+    : Scenario(tileset, width, height, terrainTypeIndex, tilesetData), temporaryMpqPath(""), temporaryMpq(true, true)
 {
     initializeVirtualSoundTable();
 }
@@ -71,16 +71,16 @@ bool MapFile::save(const std::string & saveFilePath, bool overwriting, bool upda
         CHKD_ERR("Cannot save protected maps!");
     else if ( !saveFilePath.empty() )
     {
-        logger.info() << "Saving to: " << saveFilePath << " with saveType: \"" << saveTypeToStr(saveType) << "\"" << std::endl;
+        logger.info() << "Saving to: " << saveFilePath << " with saveType: \"" << saveTypeToStr(read.saveType) << "\"" << std::endl;
         auto start = std::chrono::high_resolution_clock::now();
         bool versionCorrect = true;
-        if ( saveType == SaveType::StarCraftScm || saveType == SaveType::StarCraftChk ) // StarCraft Map, edit to match
+        if ( read.saveType == SaveType::StarCraftScm || read.saveType == SaveType::StarCraftChk ) // StarCraft Map, edit to match
             versionCorrect = Scenario::changeVersionTo(Chk::Version::StarCraft_Original);
-        else if ( saveType == SaveType::HybridScm || saveType == SaveType::HybridChk ) // Hybrid Map, edit to match
+        else if ( read.saveType == SaveType::HybridScm || read.saveType == SaveType::HybridChk ) // Hybrid Map, edit to match
             versionCorrect = Scenario::changeVersionTo(Chk::Version::StarCraft_Hybrid);
-        else if ( saveType == SaveType::ExpansionScx || saveType == SaveType::ExpansionChk || saveType == SaveType::AllMaps ) // BroodWar Map, edit to match
+        else if ( read.saveType == SaveType::ExpansionScx || read.saveType == SaveType::ExpansionChk || read.saveType == SaveType::AllMaps ) // BroodWar Map, edit to match
             versionCorrect = Scenario::changeVersionTo(Chk::Version::StarCraft_BroodWar);
-        else if ( saveType == SaveType::RemasteredScx || saveType == SaveType::RemasteredChk || saveType == SaveType::AllMaps ) // Remastered Map, edit to match
+        else if ( read.saveType == SaveType::RemasteredScx || read.saveType == SaveType::RemasteredChk || read.saveType == SaveType::AllMaps ) // Remastered Map, edit to match
             versionCorrect = Scenario::changeVersionTo(Chk::Version::StarCraft_Remastered);
 
         if ( !versionCorrect )
@@ -91,8 +91,8 @@ bool MapFile::save(const std::string & saveFilePath, bool overwriting, bool upda
 
         updateSaveSections();
 
-        if ( (saveType == SaveType::StarCraftScm || saveType == SaveType::HybridScm ||
-              saveType == SaveType::ExpansionScx || saveType == SaveType::RemasteredScx) || saveType == SaveType::AllMaps ) // Must be packed into an MPQ
+        if ( (read.saveType == SaveType::StarCraftScm || read.saveType == SaveType::HybridScm ||
+              read.saveType == SaveType::ExpansionScx || read.saveType == SaveType::RemasteredScx) || read.saveType == SaveType::AllMaps ) // Must be packed into an MPQ
         {
             if ( savePathChanged && overwriting && !::removeFile(saveFilePath) )
             {
@@ -125,7 +125,7 @@ bool MapFile::save(const std::string & saveFilePath, bool overwriting, bool upda
                         mapFilePath = saveFilePath;
                         
                         auto finish = std::chrono::high_resolution_clock::now();
-                        logger.info() << "Successfully saved to: " << saveFilePath << " with saveType: \"" << saveTypeToStr(saveType) << "\" in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
+                        logger.info() << "Successfully saved to: " << saveFilePath << " with saveType: \"" << saveTypeToStr(read.saveType) << "\" in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
                         return success;
                     }
                     else
@@ -147,7 +147,7 @@ bool MapFile::save(const std::string & saveFilePath, bool overwriting, bool upda
                     {
                         mapFilePath = saveFilePath;
                         auto finish = std::chrono::high_resolution_clock::now();
-                        logger.info() << "Successfully saved to: " << saveFilePath << " with saveType: \"" << saveTypeToStr(saveType) << "\" in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
+                        logger.info() << "Successfully saved to: " << saveFilePath << " with saveType: \"" << saveTypeToStr(read.saveType) << "\" in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
                         return true;
                     }
                     else
@@ -179,20 +179,25 @@ bool MapFile::save(bool saveAs, bool updateListFile, FileBrowserPtr<SaveType> fi
         CHKD_ERR("Cannot save protected maps!");
     else
     {
+        auto edit = createAction();
         // If scenario changed such that save type should have changed, adjust it in advance so filter type is correct
         if ( Scenario::getVersion() >= Chk::Version::StarCraft_Remastered )
-            saveType = isChkSaveType(saveType) ? SaveType::RemasteredChk : SaveType::RemasteredScx;
+            edit->saveType = isChkSaveType(read.saveType) ? SaveType::RemasteredChk : SaveType::RemasteredScx;
         else if ( Scenario::getVersion() >= Chk::Version::StarCraft_BroodWar )
-            saveType = isChkSaveType(saveType) ? SaveType::ExpansionChk : SaveType::ExpansionScx;
+            edit->saveType = isChkSaveType(read.saveType) ? SaveType::ExpansionChk : SaveType::ExpansionScx;
         else if ( Scenario::getVersion() >= Chk::Version::StarCraft_Hybrid )
-            saveType = isChkSaveType(saveType) ? SaveType::HybridChk : SaveType::HybridScm;
+            edit->saveType = isChkSaveType(read.saveType) ? SaveType::HybridChk : SaveType::HybridScm;
         else // version < Chk::Version::StarCraft_Hybrid
-            saveType = isChkSaveType(saveType) ? SaveType::StarCraftChk : SaveType::StarCraftScm;
+            edit->saveType = isChkSaveType(read.saveType) ? SaveType::StarCraftChk : SaveType::StarCraftScm;
 
         bool overwriting = false;
         std::string newMapFilePath;
+        auto newSaveType = read.saveType;
         if ( (saveAs || mapFilePath.empty()) && fileBrowser != nullptr ) // saveAs specified or filePath not yet determined, and a fileBrowser is available
-            getSaveDetails(saveType, newMapFilePath, overwriting, fileBrowser);
+        {
+            if ( getSaveDetails(newSaveType, newMapFilePath, overwriting, fileBrowser) && read.saveType != newSaveType )
+                edit->saveType = newSaveType;
+        }
         else if ( !saveAs )
             newMapFilePath = mapFilePath;
 
@@ -279,16 +284,17 @@ bool MapFile::openMapFile(const std::string & filePath)
 
                     std::stringstream chk(std::ios_base::in|std::ios_base::out|std::ios_base::binary);
                     std::copy(chkData->begin(), chkData->end(), std::ostream_iterator<u8>(chk));
-                    if ( Scenario::read(chk) )
+                    if ( Scenario::parse(chk) )
                     {
+                        auto edit = createAction();
                         if ( Scenario::isOriginal() )
-                            saveType = SaveType::StarCraftScm; // Vanilla
+                            edit->saveType = SaveType::StarCraftScm; // Vanilla
                         else if ( Scenario::isHybrid() )
-                            saveType = SaveType::HybridScm; // Hybrid
+                            edit->saveType = SaveType::HybridScm; // Hybrid
                         else if ( Scenario::isExpansion() )
-                            saveType = SaveType::ExpansionScx; // Expansion
+                            edit->saveType = SaveType::ExpansionScx; // Expansion
                         else if ( Scenario::isRemastered() )
-                            saveType = SaveType::RemasteredScx; // Remastered
+                            edit->saveType = SaveType::RemasteredScx; // Remastered
                     
                         auto finish = std::chrono::high_resolution_clock::now();
                         logger.info() << "Map " << mapFilePath << " opened in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
@@ -311,16 +317,17 @@ bool MapFile::openMapFile(const std::string & filePath)
         {
             this->mapFilePath = filePath;
             std::ifstream chk(std::filesystem::path(asUtf8(filePath)), std::ios_base::binary|std::ios_base::in);
-            if ( Scenario::read(chk) )
+            if ( Scenario::parse(chk) )
             {
+                auto edit = createAction();
                 if ( Scenario::isOriginal() )
-                    saveType = SaveType::StarCraftChk; // Vanilla chk
+                    edit->saveType = SaveType::StarCraftChk; // Vanilla chk
                 else if ( Scenario::isHybrid() )
-                    saveType = SaveType::HybridChk; // Hybrid chk
+                    edit->saveType = SaveType::HybridChk; // Hybrid chk
                 else if ( Scenario::isExpansion() )
-                    saveType = SaveType::ExpansionChk; // Expansion chk
+                    edit->saveType = SaveType::ExpansionChk; // Expansion chk
                 else
-                    saveType = SaveType::RemasteredChk;
+                    edit->saveType = SaveType::RemasteredChk;
                 
                 auto finish = std::chrono::high_resolution_clock::now();
                 logger.info() << "Map " << mapFilePath << " opened in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;

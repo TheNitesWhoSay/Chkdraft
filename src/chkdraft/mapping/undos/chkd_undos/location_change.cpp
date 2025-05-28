@@ -13,7 +13,7 @@ std::shared_ptr<LocationChange> LocationChange::Make(u16 locationId, Chk::Locati
 
 void LocationChange::Reverse(void *guiMap)
 {
-    u32 replacedData = 0; // ((GuiMap*)guiMap)->GetLocationFieldData(locationId, field);
+    /*u32 replacedData = 0; // ((GuiMap*)guiMap)->GetLocationFieldData(locationId, field);
     switch ( field )
     {
         case Chk::Location::Field::Left: replacedData = (u32)((GuiMap*)guiMap)->getLocation(locationId).left;
@@ -27,7 +27,7 @@ void LocationChange::Reverse(void *guiMap)
         case Chk::Location::Field::ElevationFlags: replacedData = (u32)((GuiMap*)guiMap)->getLocation(locationId).elevationFlags;
             ((GuiMap*)guiMap)->getLocation(locationId).elevationFlags = data; break;
     }
-    data = replacedData;
+    data = replacedData;*/
 }
 
 int32_t LocationChange::GetType()

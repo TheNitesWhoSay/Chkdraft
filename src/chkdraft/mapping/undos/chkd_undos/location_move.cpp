@@ -13,13 +13,13 @@ std::shared_ptr<LocationMove> LocationMove::Make(u16 locationId, s32 xChange, s3
 
 void LocationMove::Reverse(void *guiMap)
 {
-    auto & loc = ((GuiMap*)guiMap)->getLocation(locationId);
+    /*auto & loc = ((GuiMap*)guiMap)->getLocation(locationId);
     loc.left += xChange;
     loc.right += xChange;
     loc.top += yChange;
     loc.bottom += yChange;
     xChange = -xChange;
-    yChange = -yChange;
+    yChange = -yChange;*/
 }
 
 int32_t LocationMove::GetType()

@@ -28,14 +28,12 @@ void Chkdraft::OnLoadTest()
     }();*/
 
     auto actualMap = chkd.maps.NewMap();
-    actualMap->undoAction();
-    actualMap->redoAction();
-    actualMap->printChangeHistory();
+    actualMap->clearHistory();
 }
 
 void Chkdraft::PreLoadTest()
 {
-    auto mapStorage = std::make_unique<TestMap>();
+    /*auto mapStorage = std::make_unique<TestMap>();
     auto & map = *mapStorage;
 
     map.init();
@@ -53,7 +51,7 @@ void Chkdraft::PreLoadTest()
     map.printChangeHistory();
     
     std::cin.clear();
-    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');*/
 }
 
 enum_t(Id, u32, {

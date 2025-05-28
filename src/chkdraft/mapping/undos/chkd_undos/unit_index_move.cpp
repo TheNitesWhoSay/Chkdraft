@@ -13,11 +13,11 @@ std::shared_ptr<UnitIndexMove> UnitIndexMove::Make(u16 oldIndex, u16 newIndex)
 
 void UnitIndexMove::Reverse(void *guiMap)
 {
-    Chk::Unit preserve = ((GuiMap*)guiMap)->getUnit(newIndex);
+    /*Chk::Unit preserve = ((GuiMap*)guiMap)->getUnit(newIndex);
     ((GuiMap*)guiMap)->deleteUnit(newIndex);
     ((GuiMap*)guiMap)->insertUnit(oldIndex, preserve);
     ((GuiMap*)guiMap)->selections.sendUnitMove(oldIndex, newIndex);
-    std::swap(oldIndex, newIndex);
+    std::swap(oldIndex, newIndex);*/
 }
 
 int32_t UnitIndexMove::GetType()

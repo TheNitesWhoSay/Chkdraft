@@ -14,7 +14,7 @@ std::shared_ptr<DimensionChange> DimensionChange::Make(void* guiMap)
 
 void DimensionChange::Reverse(void *guiMap)
 {
-    Scenario* scenario = (GuiMap*)guiMap;
+    /*Scenario* scenario = (GuiMap*)guiMap;
     std::swap(this->dimensions, scenario->dimensions);
     std::swap(this->tileset, scenario->tileset);
     std::swap(this->tiles, scenario->tiles);
@@ -26,7 +26,7 @@ void DimensionChange::Reverse(void *guiMap)
     std::swap(this->units, scenario->units);
     std::swap(this->locations, scenario->locations);
     ((GuiMap*)guiMap)->refreshScenario();
-    ((GuiMap*)guiMap)->Redraw(true);
+    ((GuiMap*)guiMap)->Redraw(true);*/
 }
 
 int32_t DimensionChange::GetType()
@@ -36,7 +36,7 @@ int32_t DimensionChange::GetType()
 
 DimensionChange::DimensionChange(void* guiMap)
 {
-    Scenario* scenario = (GuiMap*)guiMap;
+    /*Scenario* scenario = (GuiMap*)guiMap;
     this->dimensions = scenario->dimensions;
     this->tileset = scenario->tileset;
     this->tiles = scenario->tiles;
@@ -46,5 +46,5 @@ DimensionChange::DimensionChange(void* guiMap)
     this->doodads = scenario->doodads;
     this->sprites = scenario->sprites;
     this->units = scenario->units;
-    this->locations = scenario->locations;
+    this->locations = scenario->locations;*/
 }

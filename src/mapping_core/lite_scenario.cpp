@@ -2333,9 +2333,9 @@ void LiteScenario::setSwitchName(size_t switchIndex, const StringType & switchNa
         if ( newStringId != (size_t)Chk::StringId::NoString )
         {
             if ( storageScope == Chk::Scope::Game )
-                this->switchNames[switchIndex] = u32(newStringId);
+                createAction()->switchNames[switchIndex] = u32(newStringId);
             else if ( storageScope == Chk::Scope::Editor )
-                this->editorStringOverrides.switchName[switchIndex] = u32(newStringId);
+                createAction()->editorStringOverrides.switchName[switchIndex] = u32(newStringId);
         }
     }
 }
@@ -2353,9 +2353,9 @@ void LiteScenario::setLocationName(size_t locationId, const StringType & locatio
         if ( newStringId != (size_t)Chk::StringId::NoString )
         {
             if ( storageScope == Chk::Scope::Game )
-                getLocation(locationId).stringId = (u16)newStringId;
+                createAction()->locations[locationId].stringId = (u16)newStringId;
             else if ( storageScope == Chk::Scope::Editor )
-                this->editorStringOverrides.locationName[locationId] = u32(newStringId);
+                createAction()->editorStringOverrides.locationName[locationId] = u32(newStringId);
         }
     }
 }

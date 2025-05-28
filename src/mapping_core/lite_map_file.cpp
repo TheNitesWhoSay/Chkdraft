@@ -279,7 +279,7 @@ bool LiteMapFile::openMapFile(const std::string & filePath)
 
                     std::stringstream chk(std::ios_base::in|std::ios_base::out|std::ios_base::binary);
                     std::copy(chkData->begin(), chkData->end(), std::ostream_iterator<u8>(chk));
-                    if ( LiteScenario::read(chk) )
+                    if ( LiteScenario::parse(chk) )
                     {
                         if ( LiteScenario::isOriginal() )
                             saveType = SaveType::StarCraftScm; // Vanilla
@@ -311,7 +311,7 @@ bool LiteMapFile::openMapFile(const std::string & filePath)
         {
             this->mapFilePath = filePath;
             std::ifstream chk(std::filesystem::path(asUtf8(filePath)), std::ios_base::binary|std::ios_base::in);
-            if ( LiteScenario::read(chk) )
+            if ( LiteScenario::parse(chk) )
             {
                 if ( LiteScenario::isOriginal() )
                     saveType = SaveType::StarCraftChk; // Vanilla chk

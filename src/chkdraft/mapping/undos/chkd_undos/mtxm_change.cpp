@@ -13,9 +13,9 @@ std::shared_ptr<MtxmChange> MtxmChange::Make(u16 xc, u16 yc, u16 tileValue)
 
 void MtxmChange::Reverse(void *guiMap)
 {
-    u16 replacedValue = ((GuiMap*)guiMap)->getTile(xc, yc, Chk::Scope::Game);
+    /*u16 replacedValue = ((GuiMap*)guiMap)->getTile(xc, yc, Chk::Scope::Game);
     ((GuiMap*)guiMap)->setTile(xc, yc, tileValue, Chk::Scope::Game);
-    tileValue = replacedValue;
+    tileValue = replacedValue;*/
 }
 
 int32_t MtxmChange::GetType()

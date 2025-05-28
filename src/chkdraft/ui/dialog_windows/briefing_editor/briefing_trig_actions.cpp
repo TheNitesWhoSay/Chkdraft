@@ -150,19 +150,19 @@ void BriefingTrigActionsWindow::HideSuggestions()
 
 void BriefingTrigActionsWindow::CndActEnableToggled(u8 actionNum)
 {
-    auto & briefingTrig = CM->getBriefingTrigger(briefingTrigIndex);
     if ( actionNum >= 0 && actionNum < 64 )
     {
-        Chk::Action & action = briefingTrig.action(actionNum);
-        if ( action.actionType != Chk::Action::Type::NoAction )
+        auto editBriefingTrig = CM->editBriefingTrigger(briefingTrigIndex);
+        auto editAction = editBriefingTrig.editBriefingAction(actionNum);
+        if ( editAction->actionType != Chk::Action::Type::NoAction )
         {
-            action.toggleDisabled();
+            editAction.toggleDisabled();
 
             CM->notifyChange(false);
             RefreshWindow(briefingTrigIndex);
             chkd.briefingTrigEditorWindow.briefingTriggersWindow.RefreshWindow(false);
 
-            gridActions.SetEnabledCheck(actionNum, !action.isDisabled());
+            gridActions.SetEnabledCheck(actionNum, !editAction->isDisabled());
         }
     }
 }
@@ -294,40 +294,45 @@ LRESULT BriefingTrigActionsWindow::EraseBackground(HWND hWnd, UINT msg, WPARAM w
     return result;
 }
 
-void BriefingTrigActionsWindow::ChangeActionType(Chk::Action & action, Chk::Action::Type newType)
+void BriefingTrigActionsWindow::ChangeActionType(std::size_t briefingTriggerIndex, std::size_t actionIndex, Chk::Action::Type newType)
 {
-    if ( action.actionType != newType )
+    if ( briefingTriggerIndex < CM->numBriefingTriggers() && actionIndex < Chk::Trigger::MaxActions )
     {
-        action.locationId = 0;
-        action.stringId = 0;
-        action.soundStringId = 0;
-        action.time = 0;
-        action.group = 0;
-        action.number = 0;
-        action.type = 0;
-        action.actionType = newType;
-
-        if ( newType == Chk::Action::Type::BriefingTransmission )
-            action.type2 = Chk::Trigger::ValueModifier::SetTo;
-        else
-            action.type2 = 0;
-
-        action.flags = Chk::Action::getBriefingDefaultFlags(newType);
-        action.padding = 0;
-        action.maskFlag = Chk::Action::MaskFlag::Disabled;
+        const auto & action = CM->read.briefingTriggers[briefingTriggerIndex].actions[actionIndex];
+        if ( action.actionType != newType )
+        {
+            CM->operator()()->briefingTriggers[briefingTriggerIndex].actions[actionIndex] = Chk::Action {
+                .locationId = 0,
+                .stringId = 0,
+                .soundStringId = 0,
+                .time = 0,
+                .group = 0,
+                .number = 0,
+                .type = 0,
+                .actionType = newType,
+                .type2 = u8(newType == Chk::Action::Type::BriefingTransmission ? Chk::Trigger::ValueModifier::SetTo : 0),
+                .flags = Chk::Action::getBriefingDefaultFlags(newType),
+                .padding = 0,
+                .maskFlag = Chk::Action::MaskFlag::Disabled
+            };
+        }
     }
     DrawSelectedAction();
 }
 
-bool BriefingTrigActionsWindow::TransformAction(Chk::Action & action, Chk::Action::Type newType, bool refreshImmediately)
+bool BriefingTrigActionsWindow::TransformAction(std::size_t briefingTriggerIndex, std::size_t actionIndex, Chk::Action::Type newType, bool refreshImmediately)
 {
-    if ( action.actionType != newType )
+    if ( briefingTriggerIndex < CM->numBriefingTriggers() && actionIndex < Chk::Trigger::MaxActions )
     {
-        ChangeActionType(action, newType);
-        if ( refreshImmediately )
-            RefreshActionAreas();
+        const auto & action = CM->getBriefingTrigger(briefingTriggerIndex).action(actionIndex);
+        if ( action.actionType != newType )
+        {
+            ChangeActionType(briefingTriggerIndex, actionIndex, newType);
+            if ( refreshImmediately )
+                RefreshActionAreas();
 
-        return true;
+            return true;
+        }
     }
     return false;
 }
@@ -341,25 +346,19 @@ void BriefingTrigActionsWindow::RefreshActionAreas()
 
 void BriefingTrigActionsWindow::UpdateActionName(u8 actionNum, const std::string & newText, bool refreshImmediately)
 {
-    auto & briefingTrig = CM->getBriefingTrigger(briefingTrigIndex);
+    const auto & briefingTrig = CM->getBriefingTrigger(briefingTrigIndex);
     BriefingTextTrigCompiler ttc{};
     Chk::Action::Type newType = Chk::Action::Type::NoAction;
     SuggestionItem suggestion = suggestions.Take();
     if ( suggestion.data )
-    {
-        Chk::Action & action = briefingTrig.action(actionNum);
-        TransformAction(action, Chk::Action::Type(suggestion.data.value()), refreshImmediately);
-    }
+        TransformAction(briefingTrigIndex, actionNum, Chk::Action::Type(suggestion.data.value()), refreshImmediately);
     else if ( ttc.parseBriefingActionName(newText, newType) || ttc.parseBriefingActionName(suggestion.str, newType) )
-    {
-        Chk::Action & action = briefingTrig.action(actionNum);
-        TransformAction(action, newType, refreshImmediately);
-    }
+        TransformAction(briefingTrigIndex, actionNum, newType, refreshImmediately);
     else if ( newText.length() == 0 )
     {
         if ( briefingTrig.action(actionNum).actionType != newType )
         {
-            briefingTrig.deleteAction((u8)actionNum);
+            CM->editBriefingTrigger(briefingTrigIndex).deleteAction((u8)actionNum);
             if ( refreshImmediately )
                 RefreshActionAreas();
         }
@@ -371,13 +370,15 @@ void BriefingTrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const s
     RawString rawUpdateText, rawSuggestText;
     SuggestionItem suggestion = suggestions.Take();
     BriefingTextTrigCompiler ttc {};
-    auto & briefingTrig = CM->getBriefingTrigger(briefingTrigIndex);
-    Chk::Action & action = briefingTrig.action(actionNum);
+    const Chk::Action & action = CM->getBriefingTrigger(briefingTrigIndex).action(actionNum);
     if ( action.actionType < Chk::Action::NumBriefingActionTypes )
     {
+        const auto & briefingTrig = CM->getBriefingTrigger(briefingTrigIndex);
         Chk::Action::ArgType argType = Chk::Action::getBriefingClassicArgType(action.actionType, argNum);
         SingleLineChkdString chkdNewText = ChkdString(newText);
 
+        auto editedAction = CM->editBriefingTrigger(briefingTrigIndex).editBriefingAction(actionNum);
+        auto editAction = editedAction.edit;
         bool madeChange = false;
         if ( argType == Chk::Action::ArgType::String || argType == Chk::Action::ArgType::Sound )
         {
@@ -392,9 +393,9 @@ void BriefingTrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const s
                     if ( newStringId != Chk::StringId::NoString )
                     {
                         if ( argType == Chk::Action::ArgType::String )
-                            action.stringId = (u32)newStringId;
+                            editAction.stringId = (u32)newStringId;
                         else if ( argType == Chk::Action::ArgType::Sound )
-                            action.soundStringId = (u32)newStringId;
+                            editAction.soundStringId = (u32)newStringId;
                 
                         CM->deleteUnusedStrings(Chk::Scope::Both);
                         madeChange = true;
@@ -403,9 +404,9 @@ void BriefingTrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const s
                 else
                 {
                     if ( argType == Chk::Action::ArgType::String )
-                        action.stringId = (u32)suggestion.data.value();
+                        editAction.stringId = (u32)suggestion.data.value();
                     else if ( argType == Chk::Action::ArgType::Sound )
-                        action.soundStringId = (u32)suggestion.data.value();
+                        editAction.soundStringId = (u32)suggestion.data.value();
                 
                     CM->deleteUnusedStrings(Chk::Scope::Both);
                     madeChange = true;
@@ -420,9 +421,9 @@ void BriefingTrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const s
                 if ( newStringId != Chk::StringId::NoString )
                 {
                     if ( argType == Chk::Action::ArgType::String )
-                        action.stringId = (u32)newStringId;
+                        editAction.stringId = (u32)newStringId;
                     else if ( argType == Chk::Action::ArgType::Sound )
-                        action.soundStringId = (u32)newStringId;
+                        editAction.soundStringId = (u32)newStringId;
                     
                     CM->deleteUnusedStrings(Chk::Scope::Both);
                     madeChange = true;
@@ -437,27 +438,58 @@ void BriefingTrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const s
                 madeChange = true;
                 switch ( argument.field )
                 {
-                    case Chk::Action::ArgField::LocationId: action.locationId = suggestion.data.value(); break; // u32
-                    case Chk::Action::ArgField::StringId: action.stringId = suggestion.data.value(); break; // u32
-                    case Chk::Action::ArgField::SoundStringId: action.soundStringId = suggestion.data.value(); break; // u32
-                    case Chk::Action::ArgField::Time: action.time = suggestion.data.value(); break; // u32
-                    case Chk::Action::ArgField::Group: action.group = suggestion.data.value(); break; // u32
-                    case Chk::Action::ArgField::Number: action.number = suggestion.data.value(); break; // u32
-                    case Chk::Action::ArgField::Type: action.type = u16(suggestion.data.value()); break; // u16
-                    case Chk::Action::ArgField::ActionType: action.actionType = Chk::Action::Type(suggestion.data.value()); break; // u8
-                    case Chk::Action::ArgField::Type2: action.type2 = u8(suggestion.data.value()); break; // u8
-                    case Chk::Action::ArgField::Flags: action.flags = u8(suggestion.data.value()); break; // u8
-                    case Chk::Action::ArgField::Padding: action.padding = u8(suggestion.data.value()); break; // u8
-                    case Chk::Action::ArgField::MaskFlag: action.maskFlag = Chk::Action::MaskFlag(suggestion.data.value()); break; // u16
+                    case Chk::Action::ArgField::LocationId: editAction.locationId = suggestion.data.value(); break; // u32
+                    case Chk::Action::ArgField::StringId: editAction.stringId = suggestion.data.value(); break; // u32
+                    case Chk::Action::ArgField::SoundStringId: editAction.soundStringId = suggestion.data.value(); break; // u32
+                    case Chk::Action::ArgField::Time: editAction.time = suggestion.data.value(); break; // u32
+                    case Chk::Action::ArgField::Group: editAction.group = suggestion.data.value(); break; // u32
+                    case Chk::Action::ArgField::Number: editAction.number = suggestion.data.value(); break; // u32
+                    case Chk::Action::ArgField::Type: editAction.type = u16(suggestion.data.value()); break; // u16
+                    case Chk::Action::ArgField::ActionType: editAction.actionType = Chk::Action::Type(suggestion.data.value()); break; // u8
+                    case Chk::Action::ArgField::Type2: editAction.type2 = u8(suggestion.data.value()); break; // u8
+                    case Chk::Action::ArgField::Flags: editAction.flags = u8(suggestion.data.value()); break; // u8
+                    case Chk::Action::ArgField::Padding: editAction.padding = u8(suggestion.data.value()); break; // u8
+                    case Chk::Action::ArgField::MaskFlag: editAction.maskFlag = Chk::Action::MaskFlag(suggestion.data.value()); break; // u16
                     default: madeChange = false; logger.error() << "Unknown action arg field encountered" << std::endl; break;
                 }
             }
             else
             {
-                madeChange = (parseChkdStr(chkdNewText, rawUpdateText) &&
-                    ttc.parseBriefingActionArg(rawUpdateText, argument, action, (Scenario &)*CM, chkd.scData, briefingTrigIndex, actionNum, !suggestion.str.empty())) ||
-                    (!suggestion.str.empty() && parseChkdStr(suggestion.str, rawSuggestText) &&
-                        ttc.parseBriefingActionArg(rawSuggestText, argument, action, (Scenario &)*CM, chkd.scData, briefingTrigIndex, actionNum, false));
+                auto copyArg = [&](Chk::Action::ArgField argField, const Chk::Action & srcAction) {
+                    switch ( argField )
+                    {
+                        case Chk::Action::ArgField::LocationId: editAction.locationId = srcAction.locationId; break;
+                        case Chk::Action::ArgField::StringId: editAction.stringId = srcAction.stringId; break;
+                        case Chk::Action::ArgField::SoundStringId: editAction.soundStringId = srcAction.soundStringId; break;
+                        case Chk::Action::ArgField::Time: editAction.time = srcAction.time; break;
+                        case Chk::Action::ArgField::Group: editAction.group = srcAction.group; break;
+                        case Chk::Action::ArgField::Number: editAction.number = srcAction.number; break;
+                        case Chk::Action::ArgField::Type: editAction.type = srcAction.type; break;
+                        case Chk::Action::ArgField::ActionType: editAction.actionType = srcAction.actionType; break;
+                        case Chk::Action::ArgField::Type2: editAction.type2 = srcAction.type2; break;
+                        case Chk::Action::ArgField::Flags: editAction.flags = srcAction.flags; break;
+                        case Chk::Action::ArgField::Padding: editAction.padding = srcAction.padding; break;
+                        case Chk::Action::ArgField::MaskFlag: editAction.maskFlag = srcAction.maskFlag; break;
+                    }
+                };
+                if ( parseChkdStr(chkdNewText, rawUpdateText) )
+                {
+                    Chk::Action tempAction {};
+                    if ( auto result = ttc.parseBriefingActionArg(rawUpdateText, argument, tempAction, (Scenario &)*CM, chkd.scData, briefingTrigIndex, actionNum, !suggestion.str.empty()) )
+                    {
+                        madeChange = true;
+                        copyArg(*result, tempAction);
+                    }
+                }
+                if ( !madeChange && !suggestion.str.empty() && parseChkdStr(suggestion.str, rawSuggestText) )
+                {
+                    Chk::Action tempAction {};
+                    if ( auto result = ttc.parseBriefingActionArg(rawSuggestText, argument, tempAction, (Scenario &)*CM, chkd.scData, briefingTrigIndex, actionNum, false) )
+                    {
+                        madeChange = true;
+                        copyArg(*result, tempAction);
+                    }
+                }
             }
         }
 
@@ -497,7 +529,7 @@ BOOL BriefingTrigActionsWindow::GridItemDeleting(u16 gridItemX, u16 gridItemY)
         if ( gridItemX == 1 && // Action Name
             briefingTrig.action(actionNum).actionType != Chk::Action::Type::NoAction )
         {
-            ChangeActionType(briefingTrig.action(actionNum), Chk::Action::Type::NoAction);
+            ChangeActionType(briefingTrigIndex, actionNum, Chk::Action::Type::NoAction);
         }
         else if ( gridItemX > 1 ) // Action Arg
         {
@@ -823,11 +855,12 @@ void BriefingTrigActionsWindow::DisableStringEdit()
 
 void BriefingTrigActionsWindow::ButtonEditString()
 {
+    
     int focusedX, focusedY;
-    Chk::Trigger & briefingTrig = CM->getBriefingTrigger(briefingTrigIndex);
+    const Chk::Trigger & briefingTrig = CM->getBriefingTrigger(briefingTrigIndex);
     if ( gridActions.GetFocusedItem(focusedX, focusedY) )
     {
-        Chk::Action & action = briefingTrig.action((u8)focusedY);
+        const Chk::Action & action = briefingTrig.action((u8)focusedY);
         if ( action.hasBriefingStringArgument() )
         {
             std::optional<ChkdString> gameString, editorString;
@@ -836,16 +869,17 @@ void BriefingTrigActionsWindow::ButtonEditString()
 
             if ( (result & ChkdStringInputDialog::Result::GameStringChanged) == ChkdStringInputDialog::Result::GameStringChanged )
             {
+                auto edit = CM->operator()();
                 if ( gameString )
                 {
                     size_t stringId = CM->addString<ChkdString>(*gameString);
                     if ( stringId != Chk::StringId::NoString )
                     {
-                        action.stringId = (u32)stringId;
+                        edit->briefingTriggers[briefingTrigIndex].actions[focusedY].stringId = (u32)stringId;
                     }
                 }
                 else
-                    action.stringId = Chk::StringId::NoString;
+                    edit->briefingTriggers[briefingTrigIndex].actions[focusedY].stringId = Chk::StringId::NoString;
 
                 CM->deleteUnusedStrings(Chk::Scope::Game);
             }
@@ -873,10 +907,10 @@ void BriefingTrigActionsWindow::DisableSoundEdit()
 void BriefingTrigActionsWindow::ButtonEditSound()
 {
     int focusedX, focusedY;
-    Chk::Trigger & briefingTrig = CM->getBriefingTrigger(briefingTrigIndex);
+    const Chk::Trigger & briefingTrig = CM->getBriefingTrigger(briefingTrigIndex);
     if ( gridActions.GetFocusedItem(focusedX, focusedY) )
     {
-        Chk::Action & action = briefingTrig.action((u8)focusedY);
+        const Chk::Action & action = briefingTrig.action((u8)focusedY);
         if ( action.hasBriefingSoundArgument() )
         {
             std::optional<ChkdString> gameString, editorString;
@@ -885,16 +919,17 @@ void BriefingTrigActionsWindow::ButtonEditSound()
 
             if ( (result & ChkdStringInputDialog::Result::GameStringChanged) == ChkdStringInputDialog::Result::GameStringChanged )
             {
+                auto edit = CM->operator()();
                 if ( gameString )
                 {
                     size_t stringId = CM->addString<ChkdString>(*gameString);
                     if ( stringId != Chk::StringId::NoString )
                     {
-                        action.soundStringId = (u32)stringId;
+                        edit->briefingTriggers[briefingTrigIndex].actions[focusedY].soundStringId = (u32)stringId;
                     }
                 }
                 else
-                    action.soundStringId = Chk::StringId::NoString;
+                    edit->briefingTriggers[briefingTrigIndex].actions[focusedY].soundStringId = Chk::StringId::NoString;
 
                 CM->deleteUnusedStrings(Chk::Scope::Game);
             }
@@ -909,8 +944,8 @@ void BriefingTrigActionsWindow::ButtonEditSound()
 
 void BriefingTrigActionsWindow::GridEditStart(u16 gridItemX, u16 gridItemY)
 {
-    Chk::Trigger & briefingTrig = CM->getBriefingTrigger(briefingTrigIndex);
-    Chk::Action & action = briefingTrig.action((u8)gridItemY);
+    const Chk::Trigger & briefingTrig = CM->getBriefingTrigger(briefingTrigIndex);
+    const Chk::Action & action = briefingTrig.action((u8)gridItemY);
     Chk::Action::Argument arg = Chk::Action::noArg;
     if ( gridItemX == 1 ) // Action Name
     {

@@ -10,14 +10,96 @@
 #include <map>
 #include <vector>
 
-struct Scenario : MapData
+struct Scenario : RareEdit::Tracked<MapData, Scenario>
 {
+    struct EditCondition : RareEdit::TrackedElement<Chk::Condition, PATH(root->triggers[0].conditions[0])>
+    {
+        using TrackedElement::TrackedElement;
+
+        void toggleDisabled();
+        void remapLocationIds(const std::map<u32, u32> & locationIdRemappings);
+        void deleteLocation(size_t locationId);
+    };
+
+    struct EditAction : RareEdit::TrackedElement<Chk::Action, PATH(root->triggers[0].actions[0])>
+    {
+        using TrackedElement::TrackedElement;
+
+        void toggleDisabled();
+        void remapLocationIds(const std::map<u32, u32> & locationIdRemappings);
+        void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
+        void deleteLocation(size_t locationId);
+        void deleteString(size_t stringId);
+    };
+
+    struct EditTrigger : RareEdit::TrackedElement<Chk::Trigger, PATH(root->triggers[0])>
+    {
+        using TrackedElement::TrackedElement;
+
+        //Condition& condition(size_t conditionIndex);
+        //Action& action(size_t actionIndex);
+        //Owned& owned(size_t ownerIndex);
+        //Trigger& operator= (const Trigger& trigger);
+
+        EditCondition editCondition(std::size_t conditionIndex);
+        EditAction editAction(std::size_t actionIndex);
+
+        void deleteAction(size_t actionIndex, bool alignTop = true);
+        void deleteCondition(size_t conditionIndex, bool alignTop = true);
+
+        void setPreserveTriggerFlagged(bool preserved);
+        void setDisabled(bool disabled);
+        void setIgnoreConditionsOnce(bool ignoreConditionsOnce);
+        void setIgnoreWaitSkipOnce(bool ignoreWaitSkipOnce);
+        void setIgnoreMiscActionsOnce(bool ignoreMiscActionsOnce);
+        void setIgnoreDefeatDraw(bool ignoreDefeatDraw);
+        void setPauseFlagged(bool pauseFlagged);
+
+        void setExtendedDataIndex(size_t extendedDataIndex);
+        void clearExtendedDataIndex();
+
+        void remapLocationIds(const std::map<u32, u32>& locationIdRemappings);
+        void remapStringIds(const std::map<u32, u32>& stringIdRemappings);
+        void deleteLocation(size_t locationId);
+        void deleteString(size_t stringId);
+
+        void alignConditionsTop();
+        void alignActionsTop();
+    };
+
+    struct EditBriefingAction : RareEdit::TrackedElement<Chk::Action, PATH(root->briefingTriggers[0].actions[0])>
+    {
+        using TrackedElement::TrackedElement;
+        
+        void toggleDisabled();
+        void remapBriefingStringIds(const std::map<u32, u32> & stringIdRemappings);
+        void deleteBriefingString(size_t stringId);
+    };
+
+    struct EditBriefingTrigger : RareEdit::TrackedElement<Chk::Trigger, PATH(root->briefingTriggers[0])>
+    {
+        using TrackedElement::TrackedElement;
+
+        EditBriefingAction editBriefingAction(std::size_t actionIndex);
+        
+        void deleteAction(size_t actionIndex, bool alignTop = true);
+
+        void remapBriefingStringIds(const std::map<u32, u32>& stringIdRemappings);
+        void deleteBriefingString(size_t stringId);
+
+        void alignActionsTop();
+    };
+
     void undoAction();
     void redoAction();
     void printChangeHistory();
 
+    void afterAction(std::size_t actionIndex);
+
     Scenario(); // Construct empty map
-    Scenario(Sc::Terrain::Tileset tileset, u16 width = 64, u16 height = 64); // Construct new map
+    
+    // Construct new map
+    Scenario(Sc::Terrain::Tileset tileset, u16 width = 64, u16 height = 64, size_t terrainTypeIndex = 0, const Sc::Terrain::Tiles* tilesetData = nullptr);
 
     // Versioning API
     Chk::Version getVersion() const;
@@ -65,7 +147,7 @@ struct Scenario : MapData
     void moveString(size_t stringIdFrom, size_t stringIdTo, Chk::Scope storageScope = Chk::Scope::Game);
     size_t rescopeString(size_t stringId, Chk::Scope changeStorageScopeTo = Chk::Scope::Editor, bool autoDefragment = true);
 
-    std::vector<u8> & getStrTailData(); // Gets the data appended after the STR section
+    const std::vector<u8> & getStrTailData() const; // Gets the data appended after the STR section
     size_t getStrTailDataOffset(); // Gets the offset tail data would be at within the STR section were it written right now
 
     size_t getScenarioNameStringId(Chk::Scope storageScope = Chk::Scope::Game) const;
@@ -133,12 +215,12 @@ struct Scenario : MapData
     void syncRemasteredStringsToBytes(std::vector<u8> & stringBytes);
     void syncKstringsToBytes(std::vector<u8> & stringBytes, u32 requestedCompressionFlags = Chk::StrCompressFlag::Unchanged, u32 allowedCompressionFlags = Chk::StrCompressFlag::Unchanged);
     
-    void syncBytesToStrings(const std::vector<u8> & stringBytes);
-    void syncRemasteredBytesToStrings(const std::vector<u8> & stringBytes);
-    void syncBytesToKstrings(const std::vector<u8> & stringBytes);
+    void syncBytesToStrings(const std::vector<u8> & stringBytes, std::vector<std::optional<ScStr>> & strings, std::vector<u8> & strTailData);
+    void syncRemasteredBytesToStrings(const std::vector<u8> & stringBytes, std::vector<std::optional<ScStr>> & strings, std::vector<u8> & strTailData);
+    void syncBytesToKstrings(const std::vector<u8> & stringBytes, std::vector<std::optional<ScStr>> & editorStrings, Chk::KstrVersion & editorStringsVersion);
 
-    size_t loadString(const std::vector<u8> & stringBytes, const size_t & stringOffset, const size_t & sectionSize);
-    void loadKstring(const std::vector<u8> & stringBytes, const size_t & stringOffset, const size_t & sectionSize);
+    size_t loadString(const std::vector<u8> & stringBytes, const size_t & stringOffset, const size_t & sectionSize, std::vector<std::optional<ScStr>> & strings);
+    void loadKstring(const std::vector<u8> & stringBytes, const size_t & stringOffset, const size_t & sectionSize, std::vector<std::optional<ScStr>> & editorStrings);
     void upgradeKstrToCurrent();
 
     std::vector<std::optional<ScStr>> copyStrings(Chk::Scope storageScope = Chk::Scope::Game) const;
@@ -192,10 +274,10 @@ struct Scenario : MapData
     Sc::Terrain::Tileset getTileset() const;
     void setTileset(Sc::Terrain::Tileset tileset);
     
-    constexpr size_t getTileWidth() const { return dimensions.tileWidth; }
-    constexpr size_t getTileHeight() const { return dimensions.tileHeight; }
-    constexpr size_t getIsomWidth() const { return size_t(dimensions.tileWidth)/2 + 1; }
-    constexpr size_t getIsomHeight() const { return size_t(dimensions.tileHeight) + 1; }
+    constexpr size_t getTileWidth() const { return read.dimensions.tileWidth; }
+    constexpr size_t getTileHeight() const { return read.dimensions.tileHeight; }
+    constexpr size_t getIsomWidth() const { return size_t(read.dimensions.tileWidth)/2 + 1; }
+    constexpr size_t getIsomHeight() const { return size_t(read.dimensions.tileHeight) + 1; }
     size_t getPixelWidth() const;
     size_t getPixelHeight() const;
     void setTileWidth(u16 newTileWidth, u16 sizeValidationFlags = SizeValidationFlag::Default, s32 leftEdge = 0);
@@ -207,10 +289,10 @@ struct Scenario : MapData
     void setTile(size_t tileXc, size_t tileYc, u16 tileValue, Chk::Scope scope = Chk::Scope::Game);
     void setTilePx(size_t pixelXc, size_t pixelYc, u16 tileValue, Chk::Scope scope = Chk::Scope::Game);
         
-    Chk::IsomRect & getIsomRect(size_t isomRectIndex);
+    //Chk::IsomRect & getIsomRect(size_t isomRectIndex);
     const Chk::IsomRect & getIsomRect(size_t isomRectIndex) const;
-    inline const Chk::IsomRect & getIsomRect(Chk::IsomRect::Point point) const { return isomRects[point.y*getIsomWidth() + point.x]; }
-    inline Chk::IsomRect & isomRectAt(Chk::IsomRect::Point point) { return isomRects[point.y*getIsomWidth() + point.x]; }
+    inline const Chk::IsomRect & getIsomRect(Chk::IsomRect::Point point) const { return read.isomRects[point.y*getIsomWidth() + point.x]; }
+    //inline Chk::IsomRect & isomRectAt(Chk::IsomRect::Point point) { return isomRects[point.y*getIsomWidth() + point.x]; }
     
     bool placeIsomTerrain(Chk::IsomDiamond isomDiamond, size_t terrainType, size_t brushExtent, Chk::IsomCache & cache);
     void copyIsomFrom(const Scenario & sourceMap, int32_t xTileOffset, int32_t yTileOffset, bool undoable, Chk::IsomCache & destCache);
@@ -228,7 +310,7 @@ struct Scenario : MapData
     inline void setFogPx(size_t pixelXc, size_t pixelYc, u8 fogOfWarPlayers);
 
     size_t numSprites() const;
-    Chk::Sprite & getSprite(size_t spriteIndex);
+    //Chk::Sprite & getSprite(size_t spriteIndex);
     const Chk::Sprite & getSprite(size_t spriteIndex) const;
     size_t addSprite(const Chk::Sprite & sprite);
     void insertSprite(size_t spriteIndex, const Chk::Sprite & sprite);
@@ -238,7 +320,7 @@ struct Scenario : MapData
     void removeOutOfBoundsSprites();
 
     size_t numDoodads() const;
-    Chk::Doodad & getDoodad(size_t doodadIndex);
+    //Chk::Doodad & getDoodad(size_t doodadIndex);
     const Chk::Doodad & getDoodad(size_t doodadIndex) const;
     size_t addDoodad(const Chk::Doodad & doodad);
     void insertDoodad(size_t doodadIndex, const Chk::Doodad & doodad);
@@ -247,7 +329,7 @@ struct Scenario : MapData
     void removeOutOfBoundsDoodads();
 
     size_t numUnits() const;
-    Chk::Unit & getUnit(size_t unitIndex);
+    //Chk::Unit & getUnit(size_t unitIndex);
     const Chk::Unit & getUnit(size_t unitIndex) const;
     size_t addUnit(const Chk::Unit & unit);
     void insertUnit(size_t unitIndex, const Chk::Unit & unit);
@@ -257,7 +339,7 @@ struct Scenario : MapData
     void removeOutOfBoundsUnits();
         
     size_t numLocations() const;
-    Chk::Location & getLocation(size_t locationId);
+    //Chk::Location & getLocation(size_t locationId);
     const Chk::Location & getLocation(size_t locationId) const;
     size_t addLocation(const Chk::Location & location);
     void replaceLocation(size_t locationId, const Chk::Location & location);
@@ -383,7 +465,7 @@ struct Scenario : MapData
     void setCuwpUsed(size_t cuwpIndex, bool cuwpUsed);
 
     size_t numTriggers() const;
-    Chk::Trigger & getTrigger(size_t triggerIndex);
+    EditTrigger editTrigger(size_t triggerIndex);
     const Chk::Trigger & getTrigger(size_t triggerIndex) const;
     size_t addTrigger(const Chk::Trigger & trigger);
     void insertTrigger(size_t triggerIndex, const Chk::Trigger & trigger);
@@ -392,7 +474,8 @@ struct Scenario : MapData
     std::vector<Chk::Trigger> replaceTriggerRange(size_t beginIndex, size_t endIndex, std::vector<Chk::Trigger> & triggers);
         
     bool hasTriggerExtension(size_t triggerIndex) const;
-    Chk::ExtendedTrigData & getTriggerExtension(size_t triggerIndex, bool addIfNotFound = false);
+    //Chk::ExtendedTrigData & getTriggerExtension(size_t triggerIndex, bool addIfNotFound = false);
+    std::size_t getTriggerExtension(std::size_t triggerIndex, bool addIfNotFound = false);
     const Chk::ExtendedTrigData & getTriggerExtension(size_t triggerIndex) const;
     void removeTriggersExtension(size_t triggerIndex);
     void deleteTriggerExtension(size_t triggerExtensionIndex);
@@ -405,7 +488,7 @@ struct Scenario : MapData
     void setExtendedNotesStringId(size_t triggerIndex, size_t stringId);
 
     size_t numBriefingTriggers() const;
-    Chk::Trigger & getBriefingTrigger(size_t briefingTriggerIndex);
+    EditBriefingTrigger editBriefingTrigger(size_t briefingTriggerIndex);
     const Chk::Trigger & getBriefingTrigger(size_t briefingTriggerIndex) const;
     size_t addBriefingTrigger(const Chk::Trigger & briefingTrigger);
     void insertBriefingTrigger(size_t briefingTriggerIndex, const Chk::Trigger & briefingTrigger);
@@ -441,12 +524,11 @@ struct Scenario : MapData
     bool isPassword(const std::string & password) const; // Checks if this is the password the map has
     bool setPassword(const std::string & oldPass, const std::string & newPass); // Attempts to password-protect the map
     bool login(const std::string & password); // Attempts to login to the map
-        
-    void clear();
-    void read(std::istream & is, Chk::SectionName sectionName, Chk::SectionSize sectionSize); // Parse the given section
-    bool read(std::istream & is); // Parses supplied scenario file data
+
+    void parse(std::istream & is, ::MapData & mapData, Chk::SectionName sectionName, Chk::SectionSize sectionSize); // Parse the given section
+    bool parse(std::istream & is); // Parses supplied scenario file data
     
-    void writeSection(std::ostream & os, const Section & section, bool includeHeader = true);
+    void writeSection(std::ostream & os, const ::MapData::Section & section, bool includeHeader = true);
     void writeSection(std::ostream & os, Chk::SectionName sectionName, bool includeHeader = true);
 
     void write(std::ostream & os); // Writes all sections to the supplied stream
@@ -456,7 +538,7 @@ struct Scenario : MapData
     bool deserialize(Chk::SerializedChk* data); // "Opens" a serialized Scenario.chk file, data must be 8+ bytes
 
     bool hasSection(SectionName sectionName) const;
-    Section & addSaveSection(Section section); // Adds a section to save sections if not already present
+    std::size_t addSaveSection(::MapData::Section section); // Adds a section to save sections if not already present
     void addSaveSection(Chk::SectionName sectionName); // Adds a section to save sections if not already present
     void removeSaveSection(Chk::SectionName sectionName); // Removes a section from save sections if present
     void updateSaveSections();
@@ -464,9 +546,13 @@ struct Scenario : MapData
 
 private:
     // ISOM helpers
-    inline uint16_t getTileValue(size_t tileX, size_t tileY) const { return editorTiles[tileY*getTileWidth() + tileX]; }
-    inline uint16_t getCentralIsomValue(Chk::IsomRect::Point point) const { return isomRects[point.y*getIsomWidth() + point.x].left >> 4; }
-    inline bool centralIsomValueModified(Chk::IsomRect::Point point) const { return isomRects[point.y*getIsomWidth() + point.x].isLeftModified(); }
+    template <class Edit> void clearIsomRectFlags(Edit & edit, Chk::IsomRect::Point point);
+    template <class Edit> void setIsomRectModified(Edit & edit, Chk::IsomRect::Point point, Sc::Isom::ProjectedQuadrant quadrant);
+    template <class Edit> void setIsomRectVisited(Edit & edit, Chk::IsomRect::Point point);
+    template <class Edit> void setIsomRectValue(Edit & edit, Chk::IsomRect::Point point, Sc::Isom::ProjectedQuadrant quadrant, uint16_t value);
+    inline uint16_t getTileValue(size_t tileX, size_t tileY) const { return read.editorTiles[tileY*getTileWidth() + tileX]; }
+    inline uint16_t getCentralIsomValue(Chk::IsomRect::Point point) const { return read.isomRects[point.y*getIsomWidth() + point.x].left >> 4; }
+    inline bool centralIsomValueModified(Chk::IsomRect::Point point) const { return read.isomRects[point.y*getIsomWidth() + point.x].isLeftModified(); }
     constexpr bool isInBounds(Chk::IsomRect::Point point) const { return point.x < getIsomWidth() && point.y < getIsomHeight(); }
 
     void addIsomUndo(Chk::IsomRect::Point point, Chk::IsomCache & cache);
@@ -514,7 +600,8 @@ private:
     std::optional<uint16_t> findBestMatchIsomValue(Chk::IsomDiamond isomDiamond, Chk::IsomCache & cache) const;
     void radiallyUpdateTerrain(bool undoable, std::deque<Chk::IsomDiamond> & diamondsToUpdate, Chk::IsomCache & cache);
 
-    void updateTileFromIsom(Chk::IsomDiamond isomDiamond, Chk::IsomCache & cache);
+private:
+    bool mapIsProtected = false; // Flagged if map is protected (not included in tracked data)
 };
 
 #endif
