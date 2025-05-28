@@ -84,12 +84,13 @@ void Selections::removeTile(u16 xc, u16 yc)
 
 void Selections::clear()
 {
+    auto edit = map();
     removeTiles();
     removeDoodads();
     removeSprites();
     removeUnits();
     removeFog();
-    selectedLocation = Chk::LocationId::NoLocation;
+    edit->locations.clearSelections();
 }
 
 void Selections::addTile(u16 value, u16 xc, u16 yc)
@@ -157,25 +158,29 @@ void Selections::removeTiles()
 
 u16 Selections::getSelectedLocation()
 {
-    return selectedLocation;
+    const auto & selectedLocations = map.view.locations.sel();
+    return !selectedLocations.empty() ? selectedLocations.front() : NO_LOCATION;
 }
 
 void Selections::selectLocation(u16 index)
 {
-    selectedLocation = index;
+    auto edit = map();
+    edit->locations.clearSelections();
+    edit->locations.select(index);
     numRecentLocations = 1;
     recentLocations[0] = u8(index);
 }
 
 void Selections::selectLocation(s32 clickX, s32 clickY, bool canSelectAnywhere)
 {
+    auto edit = map();
     size_t numLocations = map.numLocations();
     u16 firstRecentlySelected = NO_LOCATION;
     bool madeSelection = false;
     
     for ( u16 i=1; i<=numLocations; i++ )
     {
-        if ( i != selectedLocation && (i != Chk::LocationId::Anywhere || canSelectAnywhere) )
+        if ( i != getSelectedLocation() && (i != Chk::LocationId::Anywhere || canSelectAnywhere) )
         {
             const auto & location = map.getLocation(i);
             s32 locLeft = std::min(location.left, location.right),
@@ -203,7 +208,8 @@ void Selections::selectLocation(s32 clickX, s32 clickY, bool canSelectAnywhere)
                 }
                 else // Location hasn't been recently selected, select it
                 {
-                    selectedLocation = i;
+                    edit->locations.clearSelections();
+                    edit->locations.select(i);
                     if ( numRecentLocations < Chk::TotalLocations )
                     {
 
@@ -226,14 +232,15 @@ void Selections::selectLocation(s32 clickX, s32 clickY, bool canSelectAnywhere)
     {
         if ( firstRecentlySelected != NO_LOCATION )
         {
-            selectedLocation = firstRecentlySelected;
+            edit->locations.clearSelections();
+            edit->locations.select(firstRecentlySelected);
             recentLocations[0] = u8(firstRecentlySelected);
             numRecentLocations = 1;
         }
         else // Reset recent locations
         {
-            selectedLocation = NO_LOCATION;
-            recentLocations[0] = u8(selectedLocation);
+            edit->locations.clearSelections();
+            recentLocations[0] = u8(NO_LOCATION);
             numRecentLocations = 1;
         }
     }
@@ -254,6 +261,11 @@ bool Selections::selFlagsIndicateInside() const
         case LocSelFlags::Middle: return true;
         default: return false;
     }
+}
+
+void Selections::removeLocations()
+{
+    map()->locations.clearSelections();
 }
 
 void Selections::addUnit(u16 index)

@@ -427,6 +427,13 @@ struct SimpleCache : Chk::IsomCache
 void GuiMap::setDimensions(u16 newTileWidth, u16 newTileHeight, u16 sizeValidationFlags, s32 leftEdge, s32 topEdge, size_t newTerrainType)
 {
     auto edit = createAction();
+
+    // Selection indexes would be invalidated by a size change
+    edit->tiles.clearSelections();
+    edit->editorTiles.clearSelections();
+    edit->isomRects.clearSelections();
+    edit->tileFog.clearSelections();
+
     bool anywhereWasStandardDimensions = Scenario::anywhereIsStandardDimensions();
 
     auto destMapData = std::make_unique<Scenario>(this->getTileset(), u16(this->getTileWidth()), u16(this->getTileHeight()));
@@ -1261,6 +1268,7 @@ void GuiMap::clearSelection()
     selections.removeSprites();
     selections.removeUnits();
     selections.removeFog();
+    selections.removeLocations();
 }
 
 void GuiMap::selectAll()

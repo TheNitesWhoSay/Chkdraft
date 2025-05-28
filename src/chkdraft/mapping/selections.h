@@ -33,7 +33,6 @@ class Selections
 {
     GuiMap & map; // Reference to the map who has the selections described in this class
 
-    u16 selectedLocation = 0;
     u8 numRecentLocations = 0;
     u8 recentLocations[Chk::TotalLocations] {};
     LocSelFlags locSelFlags = LocSelFlags::None;
@@ -72,7 +71,8 @@ public:
     void setLocationFlags(LocSelFlags flags) { locSelFlags = flags; }
     LocSelFlags getLocationFlags() { return locSelFlags; }
     bool selFlagsIndicateInside() const;
-        
+    void removeLocations();
+
     void addUnit(u16 index);
     void removeUnit(u16 index);
     void removeUnits();
