@@ -719,7 +719,7 @@ void Maps::properties()
         {
             TileNode tile = selections.getFirstTile();
             selections.removeTiles();
-            selections.addTile(tile.value, tile.xc, tile.yc, TileNeighbor::All);
+            selections.addTile(tile.xc, tile.yc, TileNeighbor::All);
 
             RedrawWindow(currentlyActiveMap->getHandle(), NULL, NULL, RDW_INVALIDATE);
             if ( chkd.tilePropWindow.getHandle() != NULL )

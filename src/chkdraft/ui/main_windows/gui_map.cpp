@@ -1121,13 +1121,10 @@ void GuiMap::doubleClickLocation(s32 xPos, s32 yPos)
 
 void GuiMap::openTileProperties(s32 xClick, s32 yClick)
 {
-    u16 xSize = (u16)Scenario::getTileWidth();
-    u16 currTile = Scenario::getTile(xClick/32, yClick/32);
-    
     if ( selections.hasTiles() )
         selections.removeTiles();
                             
-    selections.addTile(currTile, u16(xClick/32), u16(yClick/32), TileNeighbor::All);
+    selections.addTile(u16(xClick/32), u16(yClick/32), TileNeighbor::All);
     RedrawWindow(getHandle(), NULL, NULL, RDW_INVALIDATE);
     if ( chkd.tilePropWindow.getHandle() != NULL )
         chkd.tilePropWindow.UpdateTile();
@@ -1277,45 +1274,32 @@ void GuiMap::selectAll()
         if ( selections.hasTiles() )
             selections.removeTiles();
 
-        u16 tileValue,
-            width = (u16)Scenario::getTileWidth(),
+        u16 width = (u16)Scenario::getTileWidth(),
             height = (u16)Scenario::getTileHeight(),
             x=0, y=0;
-                
-        tileValue = Scenario::getTile(0, 0);
-        selections.addTile(tileValue, 0, 0, TileNeighbor(TileNeighbor::Left|TileNeighbor::Top));
+
+        selections.addTile(0, 0, TileNeighbor(TileNeighbor::Left|TileNeighbor::Top));
         for ( x=1; x<width-1; x++ ) // Add the top row
-        {
-            tileValue = Scenario::getTile(x, 0);
-            selections.addTile(tileValue, x, y, TileNeighbor::Top);
-        }
-        tileValue = Scenario::getTile(0, width-1);
-        selections.addTile(tileValue, width-1, 0, TileNeighbor(TileNeighbor::Right|TileNeighbor::Top));
+            selections.addTile(x, y, TileNeighbor::Top);
+
+        selections.addTile(width-1, 0, TileNeighbor(TileNeighbor::Right|TileNeighbor::Top));
 
         for ( y=1; y<height-1; y++ ) // Add the middle rows
         {
-            tileValue = Scenario::getTile(0, y);
-            selections.addTile(tileValue, 0, y, TileNeighbor::Left); // Add the left tile
+            selections.addTile(0, y, TileNeighbor::Left); // Add the left tile
 
             for ( x=1; x<width-1; x++ )
-            {
-                tileValue = Scenario::getTile(x, y);
-                selections.addTile(tileValue, x, y, TileNeighbor::None); // Add the middle portion of the row
-            }
-            tileValue = Scenario::getTile(width-1, y);
-            selections.addTile(tileValue, width-1, y, TileNeighbor::Right); // Add the right tile
+                selections.addTile(x, y, TileNeighbor::None); // Add the middle portion of the row
+
+            selections.addTile(width-1, y, TileNeighbor::Right); // Add the right tile
         }
 
-        tileValue = Scenario::getTile(0, height-1);
-        selections.addTile(tileValue, 0, height-1, TileNeighbor(TileNeighbor::Left|TileNeighbor::Bottom));
+        selections.addTile(0, height-1, TileNeighbor(TileNeighbor::Left|TileNeighbor::Bottom));
 
         for ( x=1; x<width-1; x++ ) // Add the bottom row
-        {
-            tileValue = Scenario::getTile(x, height-1);
-            selections.addTile(tileValue, x, height-1, TileNeighbor::Bottom);
-        }
-        tileValue = Scenario::getTile(width-1, height-1);
-        selections.addTile(tileValue, width-1, height-1, TileNeighbor(TileNeighbor::Right|TileNeighbor::Bottom));
+            selections.addTile(x, height-1, TileNeighbor::Bottom);
+
+        selections.addTile(width-1, height-1, TileNeighbor(TileNeighbor::Right|TileNeighbor::Bottom));
     };
     auto selectAllUnits = [&]() {
         chkd.unitWindow.SetChangeHighlightOnly(true);
@@ -3789,9 +3773,7 @@ void GuiMap::FinalizeTerrainSelection(HWND hWnd, int mapX, int mapY, WPARAM wPar
     if ( wParam == MK_CONTROL && selections.startEqualsEndDrag() ) // Add/remove single tile to/front existing selection
     {
         selections.endDrag = {mapX/32, mapY/32};
-                            
-        u16 tileValue = Scenario::getTile((u16)selections.endDrag.x, (u16)selections.endDrag.y);
-        selections.addTile(tileValue, (u16)selections.endDrag.x, (u16)selections.endDrag.y);
+        selections.addTile((u16)selections.endDrag.x, (u16)selections.endDrag.y);
     }
     else // Add/remove multiple tiles from selection
     {
@@ -3808,10 +3790,7 @@ void GuiMap::FinalizeTerrainSelection(HWND hWnd, int mapX, int mapY, WPARAM wPar
             for ( int yRow = selections.startDrag.y; yRow < selections.endDrag.y; yRow++ )
             {
                 for ( int xRow = selections.startDrag.x; xRow < selections.endDrag.x; xRow++ )
-                {
-                    u16 tileValue = Scenario::getTile(xRow, yRow);
-                    selections.addTile(tileValue, xRow, yRow);
-                }
+                    selections.addTile(xRow, yRow);
             }
         }
     }
@@ -4239,10 +4218,7 @@ void GuiMap::FinalizeCutCopyPasteSelection(HWND hWnd, int mapX, int mapY, WPARAM
 
         bool startEqualsEnd = startTileX == endTileX && startTileY == endTileY;
         if ( wParam == MK_CONTROL && startEqualsEnd ) // Add/remove single tile to/front existing selection
-        {
-            u16 tileValue = Scenario::getTile(startTileX, startTileY);
-            selections.addTile(tileValue, startTileX, startTileY);
-        }
+            selections.addTile(startTileX, startTileY);
         else if ( startTileX < endTileX && startTileY < endTileY ) // Add/remove multiple tiles from selection
         {
             if ( endTileX > LONG(Scenario::getTileWidth()) )
@@ -4253,10 +4229,7 @@ void GuiMap::FinalizeCutCopyPasteSelection(HWND hWnd, int mapX, int mapY, WPARAM
             for ( int yRow = startTileY; yRow < endTileY; yRow++ )
             {
                 for ( int xRow = startTileX; xRow < endTileX; xRow++ )
-                {
-                    u16 tileValue = Scenario::getTile(xRow, yRow);
-                    selections.addTile(tileValue, xRow, yRow);
-                }
+                    selections.addTile(xRow, yRow);
             }
         }
     }

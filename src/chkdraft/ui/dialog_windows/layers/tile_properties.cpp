@@ -20,7 +20,7 @@ void TilePropWindow::UpdateTile()
 {
     TileNode tile = CM->selections.getFirstTile();
     SetWinText("Tile Properties (" + std::to_string(tile.xc) + ", " + std::to_string(tile.yc) +")");
-    editTileValue.SetEditNum<u16>(tile.value);
+    editTileValue.SetEditNum<u16>(CM->getTile(tile.xc, tile.yc));
 }
 
 BOOL TilePropWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
@@ -41,7 +41,6 @@ BOOL TilePropWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
             tile %= 65536;
 
         TileNode tileNode = CM->selections.getFirstTile();
-        tileNode.value = tile;
         CM->beginTerrainOperation();
         CM->setTileValue(tileNode.xc, tileNode.yc, tile);
         CM->finalizeTerrainOperation();

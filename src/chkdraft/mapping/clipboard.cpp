@@ -642,7 +642,7 @@ void Clipboard::copy(GuiMap & map, Layer layer)
             auto & selTiles = selections.tiles;
             for ( auto & selTile : selTiles ) // Traverse through all tiles
             {
-                PasteTileNode tile(selTile.value, selTile.xc * 32, selTile.yc * 32, selTile.neighbors);
+                PasteTileNode tile(map.getTile(selTile.xc, selTile.yc), selTile.xc * 32, selTile.yc * 32, selTile.neighbors);
 
                 // Record the outermost tile positions for determining their relation to the cursor
                 if      ( tile.xc      < edges.left   ) edges.left   = tile.xc;

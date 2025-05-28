@@ -93,13 +93,12 @@ void Selections::clear()
     edit->locations.clearSelections();
 }
 
-void Selections::addTile(u16 value, u16 xc, u16 yc)
+void Selections::addTile(u16 xc, u16 yc)
 {
     TileNode tile;
     tile.xc = xc;
     tile.yc = yc;
     tile.neighbors = TileNeighbor::All;
-    tile.value = value;
 
     for ( auto & selTile : tiles )
     {
@@ -140,10 +139,9 @@ void Selections::addTile(u16 value, u16 xc, u16 yc)
     tiles.insert(tiles.end(), tile);
 }
 
-void Selections::addTile(u16 value, u16 xc, u16 yc, TileNeighbor neighbors)
+void Selections::addTile(u16 xc, u16 yc, TileNeighbor neighbors)
 {
     TileNode tile {};
-    tile.value = value;
     tile.xc = xc;
     tile.yc = yc;
     tile.neighbors = neighbors;
@@ -561,14 +559,12 @@ TileNode Selections::getFirstTile()
     tile.xc = 0;
     tile.yc = 0;
     tile.neighbors = TileNeighbor::None;
-    tile.value = 0;
 
     if ( tiles.size() > 0 )
     {
         tile.xc = tiles[0].xc;
         tile.yc = tiles[0].yc;
         tile.neighbors = tiles[0].neighbors;
-        tile.value = tiles[0].value;
     }
 
     return tile;

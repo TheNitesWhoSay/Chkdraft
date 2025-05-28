@@ -16,7 +16,6 @@ enum_t(SelSortFlags, u16, { Swapped = (u16)BIT_14, Moved = (u16)BIT_15, Unswap =
 
 struct TileNode
 {
-    u16 value = 0;
     u16 xc = 0;
     u16 yc = 0;
     TileNeighbor neighbors = TileNeighbor::All;
@@ -59,8 +58,8 @@ public:
     void sortDragPoints() { ascendingOrder(startDrag.x, endDrag.x); ascendingOrder(startDrag.y, endDrag.y); }
     void clear();
 
-    void addTile(u16 value, u16 xc, u16 yc);
-    void addTile(u16 value, u16 xc, u16 yc, TileNeighbor neighbors);
+    void addTile(u16 xc, u16 yc);
+    void addTile(u16 xc, u16 yc, TileNeighbor neighbors);
     void removeTile(TileNode* & tile);
     void removeTile(u16 xc, u16 yc);
     void removeTiles();
