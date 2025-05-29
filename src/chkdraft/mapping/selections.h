@@ -14,13 +14,6 @@ enum_t(LocSelFlags, u8, { North = BIT_0, South = BIT_1, East = BIT_2, West = BIT
 
 enum_t(SelSortFlags, u16, { Swapped = (u16)BIT_14, Moved = (u16)BIT_15, Unswap = x16BIT_14, Unmove = x16BIT_15 });
 
-struct TileNode
-{
-    u16 xc = 0;
-    u16 yc = 0;
-    TileNeighbor neighbors = TileNeighbor::All;
-};
-
 struct RenderedSelTiles
 {
     std::size_t xBegin = 0;
