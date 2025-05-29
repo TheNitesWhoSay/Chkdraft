@@ -1558,52 +1558,61 @@ void DrawTileSel(const WinLib::DeviceContext & dc, ChkdPalette & palette, u16 wi
     rcBorder.top    = (0      + screenTop)/32 - 1;
     rcBorder.bottom = (height + screenTop)/32 + 1;
 
-    std::vector<TileNode> & selectedTiles = selections.tiles;
-    for ( auto & tile : selectedTiles )
+    auto selTiles = selections.renderTiles.tiles;
+    if ( !map.view.tiles.sel().empty() )
     {
-        if ( tile.xc > rcBorder.left &&
-             tile.xc < rcBorder.right &&
-             tile.yc > rcBorder.top &&
-             tile.yc < rcBorder.bottom )
-        // If tile is within current map border
+        LONG tileWidth = LONG(map.getTileWidth());
+        auto xBegin = std::max(LONG(selections.renderTiles.xBegin), rcBorder.left);
+        auto xEnd = std::min(LONG(selections.renderTiles.xEnd), rcBorder.right);
+        auto yBegin = std::max(LONG(selections.renderTiles.yBegin), rcBorder.top);
+        auto yEnd = std::min(LONG(selections.renderTiles.yEnd), rcBorder.bottom);
+        for ( LONG y=yBegin; y<yEnd; ++y )
         {
-            int xStart = int(tile.xc)*32-screenLeft;
-            int yStart = int(tile.yc)*32-screenTop;
-            AlphaBlend(dc.getDcHandle(), xStart, yStart, 32, 32,
-                tileBlend.getDcHandle(), 0, 0, 32, 32, blendFunction);
-
-            if ( tile.neighbors != TileNeighbor::None ) // if any edges need to be drawn
+            for ( LONG x=xBegin; x<xEnd; ++x )
             {
-                rect.left   = tile.xc*32 - screenLeft;
-                rect.right  = tile.xc*32 - screenLeft + 32;
-                rect.top    = tile.yc*32 - screenTop;
-                rect.bottom = tile.yc*32 - screenTop + 32;
+                auto selTile = selTiles[y*tileWidth + x];
+                if ( selTile )
+                {
+                    auto neighbors = *selTile;
+                    int xStart = int(x)*32-screenLeft;
+                    int yStart = int(y)*32-screenTop;
+                    AlphaBlend(dc.getDcHandle(), xStart, yStart, 32, 32,
+                        tileBlend.getDcHandle(), 0, 0, 32, 32, blendFunction);
 
-                if ( (tile.neighbors & TileNeighbor::Top) == TileNeighbor::Top )
-                {
-                    dc.moveTo(rect.left, rect.top);
-                    dc.lineTo(rect.right, rect.top);
-                }
-                if ( (tile.neighbors & TileNeighbor::Right) == TileNeighbor::Right )
-                {
-                    if ( rect.right >= width )
-                        rect.right --;
+                    if ( neighbors != TileNeighbor::None ) // if any edges need to be drawn
+                    {
+                        rect.left   = x*32 - screenLeft;
+                        rect.right  = x*32 - screenLeft + 32;
+                        rect.top    = y*32 - screenTop;
+                        rect.bottom = y*32 - screenTop + 32;
 
-                    dc.moveTo(rect.right, rect.top);
-                    dc.lineTo(rect.right, rect.bottom+1);
-                }
-                if ( (tile.neighbors & TileNeighbor::Bottom) == TileNeighbor::Bottom )
-                {
-                    if ( rect.bottom >= height )
-                        rect.bottom --;
+                        if ( (neighbors & TileNeighbor::Top) == TileNeighbor::Top )
+                        {
+                            dc.moveTo(rect.left, rect.top);
+                            dc.lineTo(rect.right, rect.top);
+                        }
+                        if ( (neighbors & TileNeighbor::Right) == TileNeighbor::Right )
+                        {
+                            if ( rect.right >= width )
+                                rect.right --;
 
-                    dc.moveTo(rect.left, rect.bottom);
-                    dc.lineTo(rect.right, rect.bottom);
-                }
-                if ( (tile.neighbors & TileNeighbor::Left) == TileNeighbor::Left )
-                {
-                    dc.moveTo(rect.left, rect.bottom);
-                    dc.lineTo(rect.left, rect.top-1);
+                            dc.moveTo(rect.right, rect.top);
+                            dc.lineTo(rect.right, rect.bottom+1);
+                        }
+                        if ( (neighbors & TileNeighbor::Bottom) == TileNeighbor::Bottom )
+                        {
+                            if ( rect.bottom >= height )
+                                rect.bottom --;
+
+                            dc.moveTo(rect.left, rect.bottom);
+                            dc.lineTo(rect.right, rect.bottom);
+                        }
+                        if ( (neighbors & TileNeighbor::Left) == TileNeighbor::Left )
+                        {
+                            dc.moveTo(rect.left, rect.bottom);
+                            dc.lineTo(rect.left, rect.top-1);
+                        }
+                    }
                 }
             }
         }
@@ -1632,50 +1641,59 @@ void DrawFogTileSel(const WinLib::DeviceContext & dc, ChkdPalette & palette, u16
     rcBorder.top    = (0      + screenTop)/32 - 1;
     rcBorder.bottom = (height + screenTop)/32 + 1;
 
-    auto & selFogTiles = selections.fogTiles;
-    for ( auto & tile : selFogTiles )
+    auto selFogTiles = selections.renderFogTiles.tiles;
+    if ( !map.view.tileFog.sel().empty() )
     {
-        if ( tile.xc > rcBorder.left &&
-             tile.xc < rcBorder.right &&
-             tile.yc > rcBorder.top &&
-             tile.yc < rcBorder.bottom )
-        // If tile is within current map border
+        LONG tileWidth = LONG(map.getTileWidth());
+        auto xBegin = std::max(LONG(selections.renderFogTiles.xBegin), rcBorder.left);
+        auto xEnd = std::min(LONG(selections.renderFogTiles.xEnd), rcBorder.right);
+        auto yBegin = std::max(LONG(selections.renderFogTiles.yBegin), rcBorder.top);
+        auto yEnd = std::min(LONG(selections.renderFogTiles.yEnd), rcBorder.bottom);
+        for ( LONG y=yBegin; y<yEnd; ++y )
         {
-            AlphaBlend(dc.getDcHandle(), int(tile.xc)*32-screenLeft, int(tile.yc)*32-screenTop, 32, 32,
-                tileBlend.getDcHandle(), 0, 0, 32, 32, blendFunction);
-
-            if ( tile.neighbors != TileNeighbor::None ) // if any edges need to be drawn
+            for ( LONG x=xBegin; x<xEnd; ++x )
             {
-                rect.left   = tile.xc*32 - screenLeft;
-                rect.right  = tile.xc*32 - screenLeft + 32;
-                rect.top    = tile.yc*32 - screenTop;
-                rect.bottom = tile.yc*32 - screenTop + 32;
+                auto selFogTile = selFogTiles[y*tileWidth + x];
+                if ( selFogTile )
+                {
+                    auto neighbors = *selFogTile;
+                    AlphaBlend(dc.getDcHandle(), int(x)*32-screenLeft, int(y)*32-screenTop, 32, 32,
+                        tileBlend.getDcHandle(), 0, 0, 32, 32, blendFunction);
 
-                if ( (tile.neighbors & TileNeighbor::Top) == TileNeighbor::Top )
-                {
-                    dc.moveTo(rect.left, rect.top);
-                    dc.lineTo(rect.right, rect.top);
-                }
-                if ( (tile.neighbors & TileNeighbor::Right) == TileNeighbor::Right )
-                {
-                    if ( rect.right >= width )
-                        rect.right --;
+                    if ( neighbors != TileNeighbor::None ) // if any edges need to be drawn
+                    {
+                        rect.left   = x*32 - screenLeft;
+                        rect.right  = x*32 - screenLeft + 32;
+                        rect.top    = y*32 - screenTop;
+                        rect.bottom = y*32 - screenTop + 32;
 
-                    dc.moveTo(rect.right, rect.top);
-                    dc.lineTo(rect.right, rect.bottom+1);
-                }
-                if ( (tile.neighbors & TileNeighbor::Bottom) == TileNeighbor::Bottom )
-                {
-                    if ( rect.bottom >= height )
-                        rect.bottom --;
+                        if ( (neighbors & TileNeighbor::Top) == TileNeighbor::Top )
+                        {
+                            dc.moveTo(rect.left, rect.top);
+                            dc.lineTo(rect.right, rect.top);
+                        }
+                        if ( (neighbors & TileNeighbor::Right) == TileNeighbor::Right )
+                        {
+                            if ( rect.right >= width )
+                                rect.right --;
 
-                    dc.moveTo(rect.left, rect.bottom);
-                    dc.lineTo(rect.right, rect.bottom);
-                }
-                if ( (tile.neighbors & TileNeighbor::Left) == TileNeighbor::Left )
-                {
-                    dc.moveTo(rect.left, rect.bottom);
-                    dc.lineTo(rect.left, rect.top-1);
+                            dc.moveTo(rect.right, rect.top);
+                            dc.lineTo(rect.right, rect.bottom+1);
+                        }
+                        if ( (neighbors & TileNeighbor::Bottom) == TileNeighbor::Bottom )
+                        {
+                            if ( rect.bottom >= height )
+                                rect.bottom --;
+
+                            dc.moveTo(rect.left, rect.bottom);
+                            dc.lineTo(rect.right, rect.bottom);
+                        }
+                        if ( (neighbors & TileNeighbor::Left) == TileNeighbor::Left )
+                        {
+                            dc.moveTo(rect.left, rect.bottom);
+                            dc.lineTo(rect.left, rect.top-1);
+                        }
+                    }
                 }
             }
         }

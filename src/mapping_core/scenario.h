@@ -544,6 +544,15 @@ struct Scenario : RareEdit::Tracked<MapData, Scenario>
     void updateSaveSections();
     bool changeVersionTo(Chk::Version version, bool lockAnywhere = true, bool autoDefragmentLocations = true);
 
+    virtual void tileSelectionsChanged() {} // Does nothing unless overridden
+    virtual void tileFogSelectionsChanged() {} // Does nothing unless overridden
+    using tiles_path = PATH(root->tiles);
+    using editor_tiles_path = PATH(root->editorTiles);
+    using tiles_fog_path = PATH(root->tileFog);
+    void selectionsChanged(tiles_path);
+    void selectionsChanged(editor_tiles_path);
+    void selectionsChanged(tiles_fog_path);
+
 private:
     // ISOM helpers
     template <class Edit> void clearIsomRectFlags(Edit & edit, Chk::IsomRect::Point point);

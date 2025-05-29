@@ -7700,6 +7700,21 @@ void Scenario::deleteTriggerString(size_t stringId, Chk::Scope storageScope)
     }
 }
 
+void Scenario::selectionsChanged(tiles_path)
+{
+    tileSelectionsChanged();
+}
+
+void Scenario::selectionsChanged(editor_tiles_path)
+{
+    tileSelectionsChanged();
+}
+
+void Scenario::selectionsChanged(tiles_fog_path)
+{
+    tileFogSelectionsChanged();
+}
+
 template <class Edit>
 void Scenario::clearIsomRectFlags(Edit & edit, Chk::IsomRect::Point point)
 {

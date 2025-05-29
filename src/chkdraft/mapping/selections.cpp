@@ -52,106 +52,15 @@ void Selections::snapEndDrag(s32 xInterval, s32 yInterval)
         endDrag.y = (endDrag.y+yInterval/2)/yInterval*yInterval;
 }
 
-void Selections::removeTile(TileNode* & tile)
-{
-    removeTile(tile->xc, tile->yc);
-}
-
-void Selections::removeTile(u16 xc, u16 yc)
-{
-    auto toRemove = tiles.end();
-    for ( auto it = tiles.begin(); it != tiles.end(); ++it )
-    {
-        // If an edge is matched to the tile being removed, un-match the edge
-        if ( it->yc == yc ) // Tile is in the same row
-        {
-            if ( it->xc == xc - 1 ) (u8 &)it->neighbors |= TileNeighbor::Right; // OR 0100, flips on the RIGHT edge bit
-            else if ( it->xc == xc + 1 ) (u8 &)it->neighbors |= TileNeighbor::Left; // OR 0001, flips on the LEFT edge bit
-        }
-        else if ( it->xc == xc ) // Tile is in the same column
-        {
-            if ( it->yc == yc - 1 ) (u8 &)it->neighbors |= TileNeighbor::Bottom; // OR 1000, flips on the BOTTOM edge bit
-            else if ( it->yc == yc + 1 ) (u8 &)it->neighbors |= TileNeighbor::Top; // OR 0010, flips on the TOP edge bit
-        }
-
-        if ( it->xc == xc && it->yc == yc )
-            toRemove = it;
-    }
-    
-    if ( toRemove != tiles.end() )
-        tiles.erase(toRemove);
-}
-
 void Selections::clear()
 {
     auto edit = map();
-    removeTiles();
+    edit->tiles.clearSelections();
     removeDoodads();
     removeSprites();
     removeUnits();
-    removeFog();
+    edit->tileFog.clearSelections();
     edit->locations.clearSelections();
-}
-
-void Selections::addTile(u16 xc, u16 yc)
-{
-    TileNode tile;
-    tile.xc = xc;
-    tile.yc = yc;
-    tile.neighbors = TileNeighbor::All;
-
-    for ( auto & selTile : tiles )
-    {
-        // If tile edges are touching, remove that border
-        if ( selTile.yc == yc ) // Tile is in the same row
-        {
-            if ( selTile.xc == xc ) // Tile is in the same column: tile is already selected!
-            {
-                removeTile(xc, yc);
-                return; // Iterators are now invalid, ensure loop is exited
-            }
-            else if ( selTile.xc == xc - 1 ) // 'track' is just left of 'tile'
-            {
-                (u8 &)tile.neighbors &= TileNeighbor::xLeft; // AND 1110, flips off the LEFT edge bit
-                (u8 &)selTile.neighbors &= TileNeighbor::xRight; // AND 1011, flips off the RIGHT edge bit
-            }
-            else if ( selTile.xc == xc + 1 ) // 'track' is just right of 'tile'
-            {
-                (u8 &)tile.neighbors &= TileNeighbor::xRight; // AND 1011, flips off the RIGHT edge bit
-                (u8 &)selTile.neighbors &= TileNeighbor::xLeft; // AND 1110, flips off the LEFT edge bit
-            }
-        }
-        else if ( selTile.xc == xc ) // Tile is in same column
-        {
-            if ( selTile.yc == yc - 1 ) // 'track' is just above 'tile'
-            {
-                (u8 &)tile.neighbors &= TileNeighbor::xTop; // AND 1101, flips off the TOP edge bit
-                (u8 &)selTile.neighbors &= TileNeighbor::xBottom; // AND 0111, flips off the BOTTOM edge bit
-            }
-            else if ( selTile.yc == yc + 1 ) // 'track' is just below 'tile'
-            {
-                (u8 &)tile.neighbors &= TileNeighbor::xBottom; // AND 0111, flips off the BOTTOM edge bit
-                (u8 &)selTile.neighbors &= TileNeighbor::xTop; // AND 1101, flips off the TOP edge bit
-            }
-        }
-    }
-
-    tiles.insert(tiles.end(), tile);
-}
-
-void Selections::addTile(u16 xc, u16 yc, TileNeighbor neighbors)
-{
-    TileNode tile {};
-    tile.xc = xc;
-    tile.yc = yc;
-    tile.neighbors = neighbors;
-
-    tiles.push_back(tile);
-}
-
-void Selections::removeTiles()
-{
-    tiles.clear();
 }
 
 u16 Selections::getSelectedLocation()
@@ -410,92 +319,6 @@ void Selections::finishSpriteMove()
     }
 }
 
-void Selections::addFogTile(u16 xc, u16 yc)
-{
-    FogTile fogTile {};
-    fogTile.xc = xc;
-    fogTile.yc = yc;
-    fogTile.neighbors = TileNeighbor::All;
-
-    for ( auto & selFogTile : fogTiles )
-    {
-        // If tile edges are touching, remove that border
-        if ( selFogTile.yc == yc ) // Tile is in the same row
-        {
-            if ( selFogTile.xc == xc ) // Tile is in the same column: tile is already selected!
-            {
-                removeFogTile(xc, yc);
-                return; // Iterators are now invalid, ensure loop is exited
-            }
-            else if ( selFogTile.xc == xc - 1 ) // 'track' is just left of 'tile'
-            {
-                (u8 &)fogTile.neighbors &= TileNeighbor::xLeft; // AND 1110, flips off the LEFT edge bit
-                (u8 &)selFogTile.neighbors &= TileNeighbor::xRight; // AND 1011, flips off the RIGHT edge bit
-            }
-            else if ( selFogTile.xc == xc + 1 ) // 'track' is just right of 'tile'
-            {
-                (u8 &)fogTile.neighbors &= TileNeighbor::xRight; // AND 1011, flips off the RIGHT edge bit
-                (u8 &)selFogTile.neighbors &= TileNeighbor::xLeft; // AND 1110, flips off the LEFT edge bit
-            }
-        }
-        else if ( selFogTile.xc == xc ) // Tile is in same column
-        {
-            if ( selFogTile.yc == yc - 1 ) // 'track' is just above 'tile'
-            {
-                (u8 &)fogTile.neighbors &= TileNeighbor::xTop; // AND 1101, flips off the TOP edge bit
-                (u8 &)selFogTile.neighbors &= TileNeighbor::xBottom; // AND 0111, flips off the BOTTOM edge bit
-            }
-            else if ( selFogTile.yc == yc + 1 ) // 'track' is just below 'tile'
-            {
-                (u8 &)fogTile.neighbors &= TileNeighbor::xBottom; // AND 0111, flips off the BOTTOM edge bit
-                (u8 &)selFogTile.neighbors &= TileNeighbor::xTop; // AND 1101, flips off the TOP edge bit
-            }
-        }
-    }
-
-    fogTiles.push_back(fogTile);
-}
-
-void Selections::addFogTile(u16 xc, u16 yc, TileNeighbor neighbors)
-{
-    FogTile fogTile {};
-    fogTile.xc = xc;
-    fogTile.yc = yc;
-    fogTile.neighbors = neighbors;
-
-    fogTiles.push_back(fogTile);
-}
-
-void Selections::removeFogTile(u16 xc, u16 yc)
-{
-    auto toRemove = fogTiles.end();
-    for ( auto it = fogTiles.begin(); it != fogTiles.end(); ++it )
-    {
-        // If an edge is matched to the tile being removed, un-match the edge
-        if ( it->yc == yc ) // Tile is in the same row
-        {
-            if ( it->xc == xc - 1 ) (u8 &)it->neighbors |= TileNeighbor::Right; // OR 0100, flips on the RIGHT edge bit
-            else if ( it->xc == xc + 1 ) (u8 &)it->neighbors |= TileNeighbor::Left; // OR 0001, flips on the LEFT edge bit
-        }
-        else if ( it->xc == xc ) // Tile is in the same column
-        {
-            if ( it->yc == yc - 1 ) (u8 &)it->neighbors |= TileNeighbor::Bottom; // OR 1000, flips on the BOTTOM edge bit
-            else if ( it->yc == yc + 1 ) (u8 &)it->neighbors |= TileNeighbor::Top; // OR 0010, flips on the TOP edge bit
-        }
-
-        if ( it->xc == xc && it->yc == yc )
-            toRemove = it;
-    }
-    
-    if ( toRemove != fogTiles.end() )
-        fogTiles.erase(toRemove);
-}
-
-void Selections::removeFog()
-{
-    fogTiles.clear();
-}
-
 bool Selections::unitIsSelected(u16 index)
 {
     for ( u16 & unitIndex : units )
@@ -526,6 +349,16 @@ bool Selections::spriteIsSelected(size_t index)
     return false;
 }
 
+bool Selections::hasTiles()
+{
+    return map.view.tiles.sel().size() > 0;
+}
+
+bool Selections::hasFogTiles()
+{
+    return map.view.tileFog.sel().size() > 0;
+}
+
 u16 Selections::numUnits()
 {
     if ( units.size() < u16_max )
@@ -551,23 +384,6 @@ u16 Selections::numUnitsUnder(u16 index)
             numUnitsBefore++;
     }
     return numUnitsBefore;
-}
-
-TileNode Selections::getFirstTile()
-{
-    TileNode tile;
-    tile.xc = 0;
-    tile.yc = 0;
-    tile.neighbors = TileNeighbor::None;
-
-    if ( tiles.size() > 0 )
-    {
-        tile.xc = tiles[0].xc;
-        tile.yc = tiles[0].yc;
-        tile.neighbors = tiles[0].neighbors;
-    }
-
-    return tile;
 }
 
 u16 Selections::getFirstUnit()

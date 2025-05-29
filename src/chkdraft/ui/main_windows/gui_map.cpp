@@ -1121,10 +1121,18 @@ void GuiMap::doubleClickLocation(s32 xPos, s32 yPos)
 
 void GuiMap::openTileProperties(s32 xClick, s32 yClick)
 {
+    auto edit = createAction();
     if ( selections.hasTiles() )
-        selections.removeTiles();
-                            
-    selections.addTile(u16(xClick/32), u16(yClick/32), TileNeighbor::All);
+    {
+        auto numSelected = view.tiles.sel().size();
+        if ( numSelected > 1 )
+        {
+            std::vector<std::size_t> indexesRemoved(numSelected-1, 0);
+            std::iota(indexesRemoved.begin(), indexesRemoved.end(), 1);
+            edit->tiles.deselect(indexesRemoved);
+        }
+    }
+
     RedrawWindow(getHandle(), NULL, NULL, RDW_INVALIDATE);
     if ( chkd.tilePropWindow.getHandle() != NULL )
         chkd.tilePropWindow.UpdateTile();
@@ -1205,11 +1213,12 @@ u8 GuiMap::GetPlayerOwnerStringId(u8 player)
 
 void GuiMap::refreshScenario()
 {
-    selections.removeTiles();
+    auto edit = createAction();
+    edit->tiles.clearSelections();
     selections.removeDoodads();
     selections.removeUnits();
     selections.removeSprites();
-    selections.removeFog();
+    edit->tileFog.clearSelections();
     chkd.mainPlot.leftBar.blockSelections = true;
     chkd.mainPlot.leftBar.mainTree.isomTree.UpdateIsomTree();
     chkd.mainPlot.leftBar.mainTree.doodadTree.UpdateDoodadTree();
@@ -1240,7 +1249,7 @@ void GuiMap::refreshScenario()
 
 void GuiMap::clearSelectedTiles()
 {
-    selections.removeTiles();
+    createAction()->tiles.clearSelections();
 }
 
 void GuiMap::clearSelectedDoodads()
@@ -1260,46 +1269,20 @@ void GuiMap::clearSelectedSprites()
 
 void GuiMap::clearSelection()
 {
-    selections.removeTiles();
+    auto edit = createAction();
+    edit->tiles.clearSelections();
     selections.removeDoodads();
     selections.removeSprites();
     selections.removeUnits();
-    selections.removeFog();
+    edit->tileFog.clearSelections();
     selections.removeLocations();
 }
 
 void GuiMap::selectAll()
 {
+    auto edit = createAction();
     auto selectAllTiles = [&]() {
-        if ( selections.hasTiles() )
-            selections.removeTiles();
-
-        u16 width = (u16)Scenario::getTileWidth(),
-            height = (u16)Scenario::getTileHeight(),
-            x=0, y=0;
-
-        selections.addTile(0, 0, TileNeighbor(TileNeighbor::Left|TileNeighbor::Top));
-        for ( x=1; x<width-1; x++ ) // Add the top row
-            selections.addTile(x, y, TileNeighbor::Top);
-
-        selections.addTile(width-1, 0, TileNeighbor(TileNeighbor::Right|TileNeighbor::Top));
-
-        for ( y=1; y<height-1; y++ ) // Add the middle rows
-        {
-            selections.addTile(0, y, TileNeighbor::Left); // Add the left tile
-
-            for ( x=1; x<width-1; x++ )
-                selections.addTile(x, y, TileNeighbor::None); // Add the middle portion of the row
-
-            selections.addTile(width-1, y, TileNeighbor::Right); // Add the right tile
-        }
-
-        selections.addTile(0, height-1, TileNeighbor(TileNeighbor::Left|TileNeighbor::Bottom));
-
-        for ( x=1; x<width-1; x++ ) // Add the bottom row
-            selections.addTile(x, height-1, TileNeighbor::Bottom);
-
-        selections.addTile(width-1, height-1, TileNeighbor(TileNeighbor::Right|TileNeighbor::Bottom));
+        edit->tiles.selectAll();
     };
     auto selectAllUnits = [&]() {
         chkd.unitWindow.SetChangeHighlightOnly(true);
@@ -1336,33 +1319,7 @@ void GuiMap::selectAll()
         chkd.spriteWindow.SetChangeHighlightOnly(false);
     };
     auto selectAllFog = [&]() {
-        selections.removeFog();
-        u16 width = (u16)Scenario::getTileWidth(),
-            height = (u16)Scenario::getTileHeight(),
-            x=0, y=0;
-                    
-        selections.addFogTile(0, 0, TileNeighbor(TileNeighbor::Left|TileNeighbor::Top));
-        for ( x=1; x<width-1; x++ ) // Add the top row
-            selections.addFogTile(x, y, TileNeighbor::Top);
-                    
-        selections.addFogTile(width-1, 0, TileNeighbor(TileNeighbor::Right|TileNeighbor::Top));
-
-        for ( y=1; y<height-1; y++ ) // Add the middle rows
-        {
-            selections.addFogTile(0, y, TileNeighbor::Left); // Add the left tile
-
-            for ( x=1; x<width-1; x++ )
-                selections.addFogTile(x, y, TileNeighbor::None); // Add the middle portion of the row
-
-            selections.addFogTile(width-1, y, TileNeighbor::Right); // Add the right tile
-        }
-
-        selections.addFogTile(0, height-1, TileNeighbor(TileNeighbor::Left|TileNeighbor::Bottom));
-
-        for ( x=1; x<width-1; x++ ) // Add the bottom row
-            selections.addFogTile(x, height-1, TileNeighbor::Bottom);
-
-        selections.addFogTile(width-1, height-1, TileNeighbor(TileNeighbor::Right|TileNeighbor::Bottom));
+        edit->tileFog.selectAll();
     };
     switch ( currLayer )
     {
@@ -1403,13 +1360,18 @@ void GuiMap::deleteSelection()
 {
     auto edit = createAction();
     auto deleteTerrainSelection = [&]() {
-        u16 xSize = (u16)Scenario::getTileWidth();
-
-        auto & selTiles = selections.tiles;
-        for ( auto & tile : selTiles )
-            setTileValue(tile.xc, tile.yc, Scenario::getTile(tile.xc, tile.yc, Chk::Scope::Both));
-
-        selections.removeTiles();
+        auto tileWidth = Scenario::getTileWidth();
+        for ( auto tileIndex : view.tiles.sel() )
+        {
+            auto x = tileIndex % tileWidth;
+            auto y = tileIndex / tileWidth;
+            if ( read.tiles[tileIndex] != 0 )
+                edit->tiles[tileIndex] = 0;
+            if ( read.editorTiles[tileIndex] != 0 )
+                edit->editorTiles[tileIndex] = 0;
+        }
+        edit->tiles.clearSelections();
+        edit->editorTiles.clearSelections();
     };
     auto deleteDoodadSelection = [&]() {
         auto doodadsUndo = ReversibleActions::Make();
@@ -1531,18 +1493,15 @@ void GuiMap::deleteSelection()
         }
     };
     auto deleteFogTileSelection = [&]() {
-        auto deletes = ReversibleActions::Make();
-
-        u16 xSize = (u16)Scenario::getTileWidth();
-        auto & selFogTiles = selections.fogTiles;
-        for ( auto & fogTile : selFogTiles )
+        auto tileWidth = Scenario::getTileWidth();
+        for ( auto tileIndex : view.tileFog.sel() )
         {
-            deletes->Insert(FogChange::Make(fogTile.xc, fogTile.yc, getFog(fogTile.xc, fogTile.yc)));
-            setFogValue(fogTile.xc, fogTile.yc, 0);
+            auto x = tileIndex % tileWidth;
+            auto y = tileIndex / tileWidth;
+            if ( read.tileFog[tileIndex] != 0 )
+                edit->tileFog[tileIndex] = 0;
         }
-
-        selections.removeTiles();
-        AddUndo(deletes);
+        edit->tileFog.clearSelections();
     };
    switch ( currLayer )
     {
@@ -1591,7 +1550,8 @@ void GuiMap::deleteSelection()
 
 void GuiMap::paste(s32 mapClickX, s32 mapClickY)
 {
-    selections.removeTiles();
+    auto edit = createAction();
+    edit->tiles.clearSelections();
     s32 xc = mapClickX, yc = mapClickY;
     selections.endDrag = {xc, yc};
     SnapSelEndDrag();
@@ -1882,12 +1842,10 @@ void GuiMap::AddUndo(ReversiblePtr action)
 
 void GuiMap::undo()
 {
-    
     switch ( currLayer )
     {
         case Layer::Terrain:
         case Layer::Doodads:
-            selections.removeTiles();
             selections.removeDoodads();
             undos.doUndo(UndoTypes::TerrainChange, this);
             break;
@@ -1918,7 +1876,6 @@ void GuiMap::undo()
                 chkd.spriteWindow.RepopulateList();
             break;
         case Layer::FogEdit:
-            selections.removeFog();
             undos.doUndo(UndoTypes::FogChange, this);
             break;
         case Layer::CutCopyPaste:
@@ -1935,7 +1892,6 @@ void GuiMap::redo()
     {
         case Layer::Terrain:
         case Layer::Doodads:
-            selections.removeTiles();
             selections.removeDoodads();
             undos.doRedo(UndoTypes::TerrainChange, this);
             break;
@@ -1963,7 +1919,6 @@ void GuiMap::redo()
                 chkd.spriteWindow.RepopulateList();
             break;
         case Layer::FogEdit:
-            selections.removeFog();
             undos.doRedo(UndoTypes::FogChange, this);
             break;
         case Layer::CutCopyPaste:
@@ -3093,7 +3048,7 @@ bool GuiMap::CreateThis(HWND hClient, const std::string & title)
 void GuiMap::ReturnKeyPress()
 {
     if ( currLayer == Layer::Terrain && selections.hasTiles() )
-        openTileProperties(selections.getFirstTile().xc*32, selections.getFirstTile().yc*32);
+        openTileProperties((view.tiles.sel().front()%getTileWidth())*32, (view.tiles.sel().front()/getTileWidth())*32);
     else if ( currLayer == Layer::Units )
     {
         if ( selections.hasUnits() )
@@ -3333,6 +3288,7 @@ void GuiMap::LButtonDoubleClick(int x, int y, WPARAM wParam)
 
 void GuiMap::LButtonDown(int x, int y, WPARAM wParam)
 {
+    auto edit = createAction();
     FocusThis();
     selections.moved = false;
     u32 mapClickX = (s32(((double)x)/getZoom()) + screenLeft),
@@ -3420,7 +3376,7 @@ void GuiMap::LButtonDown(int x, int y, WPARAM wParam)
                     else
                     {
                         if ( selections.hasTiles() )
-                            selections.removeTiles();
+                            edit->tiles.clearSelections();
 
                         selections.setDrags(mapClickX, mapClickY);
                         if ( currLayer == Layer::Terrain )
@@ -3766,6 +3722,7 @@ void GuiMap::PanTimerTimeout()
 
 void GuiMap::FinalizeTerrainSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 {
+    auto edit = createAction();
     selections.endDrag = {(mapX+16)/32, (mapY+16)/32};
     selections.startDrag = {selections.startDrag.x/32, selections.startDrag.y/32};
     u16 width = (u16)Scenario::getTileWidth();
@@ -3773,7 +3730,7 @@ void GuiMap::FinalizeTerrainSelection(HWND hWnd, int mapX, int mapY, WPARAM wPar
     if ( wParam == MK_CONTROL && selections.startEqualsEndDrag() ) // Add/remove single tile to/front existing selection
     {
         selections.endDrag = {mapX/32, mapY/32};
-        selections.addTile((u16)selections.endDrag.x, (u16)selections.endDrag.y);
+        edit->tiles.toggleSelected(selections.endDrag.y * getTileWidth() + selections.endDrag.x);
     }
     else // Add/remove multiple tiles from selection
     {
@@ -3790,7 +3747,7 @@ void GuiMap::FinalizeTerrainSelection(HWND hWnd, int mapX, int mapY, WPARAM wPar
             for ( int yRow = selections.startDrag.y; yRow < selections.endDrag.y; yRow++ )
             {
                 for ( int xRow = selections.startDrag.x; xRow < selections.endDrag.x; xRow++ )
-                    selections.addTile(xRow, yRow);
+                    edit->tiles.toggleSelected(yRow * getTileWidth() + xRow);
             }
         }
     }
@@ -4159,6 +4116,7 @@ void GuiMap::FinalizeSpriteSelection(HWND hWnd, int mapX, int mapY, WPARAM wPara
 
 void GuiMap::FinalizeFogSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 {
+    auto edit = createAction();
     s32 startTileX = (selections.startDrag.x+16)/32;
     s32 startTileY =  (selections.startDrag.y+16)/32;
     s32 endTileX = (selections.endDrag.x+16)/32;
@@ -4169,7 +4127,7 @@ void GuiMap::FinalizeFogSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam)
     {
         s32 endTileX = (selections.endDrag.x)/32;
         s32 endTileY =  (selections.endDrag.y)/32;
-        selections.addFogTile(endTileX, endTileY);
+        edit->tileFog.toggleSelected(endTileY * getTileWidth() + endTileX);
     }
     else if ( startTileX < endTileX && startTileY < endTileY ) // Add/remove multiple fog tiles from selection
     {
@@ -4181,13 +4139,14 @@ void GuiMap::FinalizeFogSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam)
         for ( int yRow = startTileY; yRow < endTileY; yRow++ )
         {
             for ( int xRow = startTileX; xRow < endTileX; xRow++ )
-                selections.addFogTile(xRow, yRow);
+                edit->tileFog.toggleSelected(yRow * getTileWidth() + xRow);
         }
     }
 }
 
 void GuiMap::FinalizeCutCopyPasteSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 {
+    auto edit = createAction();
     bool snapped = false;
     selections.endDrag = {mapX, mapY};
     if ( snapCutCopyPasteSel )
@@ -4202,11 +4161,11 @@ void GuiMap::FinalizeCutCopyPasteSelection(HWND hWnd, int mapX, int mapY, WPARAM
     selections.sortDragPoints();
     if ( (wParam & MK_CONTROL) != MK_CONTROL )
     {
-        selections.removeTiles();
+        edit->tiles.clearSelections();
         selections.removeDoodads();
         selections.removeSprites();
         selections.removeUnits();
-        selections.removeFog();
+        edit->tileFog.clearSelections();
     }
 
     if ( cutCopyPasteTerrain )
@@ -4218,7 +4177,7 @@ void GuiMap::FinalizeCutCopyPasteSelection(HWND hWnd, int mapX, int mapY, WPARAM
 
         bool startEqualsEnd = startTileX == endTileX && startTileY == endTileY;
         if ( wParam == MK_CONTROL && startEqualsEnd ) // Add/remove single tile to/front existing selection
-            selections.addTile(startTileX, startTileY);
+            edit->tiles.toggleSelected(startTileY*getTileWidth()+startTileX);
         else if ( startTileX < endTileX && startTileY < endTileY ) // Add/remove multiple tiles from selection
         {
             if ( endTileX > LONG(Scenario::getTileWidth()) )
@@ -4229,7 +4188,7 @@ void GuiMap::FinalizeCutCopyPasteSelection(HWND hWnd, int mapX, int mapY, WPARAM
             for ( int yRow = startTileY; yRow < endTileY; yRow++ )
             {
                 for ( int xRow = startTileX; xRow < endTileX; xRow++ )
-                    selections.addTile(xRow, yRow);
+                    edit->tiles.toggleSelected(yRow*getTileWidth()+xRow);
             }
         }
     }
@@ -4448,4 +4407,96 @@ void GuiMap::windowBoundsChanged()
         .right = screenLeft + cliRect.right-cliRect.left,
         .bottom = screenTop + cliRect.bottom-cliRect.top
     });
+}
+
+void GuiMap::tileSelectionsChanged()
+{
+    using neighbor_int = std::underlying_type_t<TileNeighbor>;
+    constexpr neighbor_int no_neighbors = neighbor_int(TileNeighbor::None);
+    constexpr neighbor_int left_neighbor = neighbor_int(TileNeighbor::Left);
+    constexpr neighbor_int top_neighbor = neighbor_int(TileNeighbor::Top);
+    constexpr neighbor_int right_neighbor = neighbor_int(TileNeighbor::Right);
+    constexpr neighbor_int bottom_neighbor = neighbor_int(TileNeighbor::Bottom);
+
+    std::size_t tileWidth = getTileWidth();
+    std::size_t tileHeight = getTileHeight();
+    selections.renderTiles.xBegin = std::numeric_limits<std::size_t>::max();
+    selections.renderTiles.xEnd = 0;
+    selections.renderTiles.yBegin = std::numeric_limits<std::size_t>::max();
+    selections.renderTiles.yEnd = 0;
+    selections.renderTiles.tiles.assign(tileWidth * tileHeight, std::nullopt);
+    if ( !view.tiles.sel().empty() )
+    {
+        for ( auto tileIndex : view.tiles.sel() )
+            selections.renderTiles.tiles[tileIndex] = std::make_optional(TileNeighbor::None);
+
+        for ( auto tileIndex : view.tiles.sel() )
+        {
+            std::size_t x = tileIndex % tileWidth;
+            std::size_t y = tileIndex / tileWidth;
+            selections.renderTiles.tiles[tileIndex] = TileNeighbor(
+                (y > 0 && !selections.renderTiles.tiles[(y-1)*tileWidth + x] ? top_neighbor : no_neighbors) |
+                (y+1 < tileHeight && !selections.renderTiles.tiles[(y+1)*tileWidth + x] ? bottom_neighbor : no_neighbors) |
+                (x > 0 && !selections.renderTiles.tiles[y*tileWidth + x - 1] ? left_neighbor : no_neighbors) |
+                (x+1 < tileWidth && !selections.renderTiles.tiles[y*tileWidth + x + 1] ? right_neighbor : no_neighbors)
+            );
+            if ( x < selections.renderTiles.xBegin )
+                selections.renderTiles.xBegin = x;
+            if ( x > selections.renderTiles.xEnd )
+                selections.renderTiles.xEnd = x;
+            if ( y < selections.renderTiles.yBegin )
+                selections.renderTiles.yBegin = y;
+            if ( y > selections.renderTiles.yEnd )
+                selections.renderTiles.yEnd = y;
+        }
+
+        ++(selections.renderTiles.xEnd);
+        ++(selections.renderTiles.yEnd);
+    }
+}
+
+void GuiMap::tileFogSelectionsChanged()
+{
+    using neighbor_int = std::underlying_type_t<TileNeighbor>;
+    constexpr neighbor_int no_neighbors = neighbor_int(TileNeighbor::None);
+    constexpr neighbor_int left_neighbor = neighbor_int(TileNeighbor::Left);
+    constexpr neighbor_int top_neighbor = neighbor_int(TileNeighbor::Top);
+    constexpr neighbor_int right_neighbor = neighbor_int(TileNeighbor::Right);
+    constexpr neighbor_int bottom_neighbor = neighbor_int(TileNeighbor::Bottom);
+
+    std::size_t tileWidth = getTileWidth();
+    std::size_t tileHeight = getTileHeight();
+    selections.renderFogTiles.xBegin = std::numeric_limits<std::size_t>::max();
+    selections.renderFogTiles.xEnd = 0;
+    selections.renderFogTiles.yBegin = std::numeric_limits<std::size_t>::max();
+    selections.renderFogTiles.yEnd = 0;
+    selections.renderFogTiles.tiles.assign(tileWidth * tileHeight, std::nullopt);
+    if ( !view.tileFog.sel().empty() )
+    {
+        for ( auto tileIndex : view.tileFog.sel() )
+            selections.renderFogTiles.tiles[tileIndex] = std::make_optional(TileNeighbor::None);
+
+        for ( auto tileIndex : view.tileFog.sel() )
+        {
+            std::size_t x = tileIndex % tileWidth;
+            std::size_t y = tileIndex / tileWidth;
+            selections.renderFogTiles.tiles[tileIndex] = TileNeighbor(
+                (y > 0 && !selections.renderFogTiles.tiles[(y-1)*tileWidth + x] ? top_neighbor : no_neighbors) |
+                (y+1 < tileHeight && !selections.renderFogTiles.tiles[(y+1)*tileWidth + x] ? bottom_neighbor : no_neighbors) |
+                (x > 0 && !selections.renderFogTiles.tiles[y*tileWidth + x - 1] ? left_neighbor : no_neighbors) |
+                (x+1 < tileWidth && !selections.renderFogTiles.tiles[y*tileWidth + x + 1] ? right_neighbor : no_neighbors)
+            );
+            if ( x < selections.renderFogTiles.xBegin )
+                selections.renderFogTiles.xBegin = x;
+            if ( x > selections.renderFogTiles.xEnd )
+                selections.renderFogTiles.xEnd = x;
+            if ( y < selections.renderFogTiles.yBegin )
+                selections.renderFogTiles.yBegin = y;
+            if ( y > selections.renderFogTiles.yEnd )
+                selections.renderFogTiles.yEnd = y;
+        }
+
+        ++(selections.renderFogTiles.xEnd);
+        ++(selections.renderFogTiles.yEnd);
+    }
 }

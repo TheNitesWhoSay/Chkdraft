@@ -21,11 +21,13 @@ struct TileNode
     TileNeighbor neighbors = TileNeighbor::All;
 };
 
-struct FogTile
+struct RenderedSelTiles
 {
-    u16 xc = 0;
-    u16 yc = 0;
-    TileNeighbor neighbors = TileNeighbor::All;
+    std::size_t xBegin = 0;
+    std::size_t xEnd = 0;
+    std::size_t yBegin = 0;
+    std::size_t yEnd = 0;
+    std::vector<std::optional<TileNeighbor>> tiles;
 };
 
 class Selections
@@ -46,8 +48,9 @@ public:
     std::vector<u16> units {};
     std::vector<size_t> doodads {};
     std::vector<size_t> sprites {};
-    std::vector<TileNode> tiles {};
-    std::vector<FogTile> fogTiles {};
+
+    RenderedSelTiles renderTiles; // TODO: This should be part of some kind of common graphics data, not here
+    RenderedSelTiles renderFogTiles; // TODO: This should be part of some kind of common graphics data, not here
 
     Selections(GuiMap & map) : map(map) {}
 
@@ -57,12 +60,6 @@ public:
     bool startEqualsEndDrag() { return startDrag.x == endDrag.x && startDrag.y == endDrag.y; }
     void sortDragPoints() { ascendingOrder(startDrag.x, endDrag.x); ascendingOrder(startDrag.y, endDrag.y); }
     void clear();
-
-    void addTile(u16 xc, u16 yc);
-    void addTile(u16 xc, u16 yc, TileNeighbor neighbors);
-    void removeTile(TileNode* & tile);
-    void removeTile(u16 xc, u16 yc);
-    void removeTiles();
 
     u16 getSelectedLocation(); // NO_LOCATION if none are selected
     void selectLocation(u16 index); // 0-based index, NO_LOCATION to deselect any selected locations
@@ -91,25 +88,19 @@ public:
     void ensureSpriteFirst(u16 index); // Moves the sprite @ index
     void sendSpriteMove(u16 oldIndex, u16 newIndex);
     void finishSpriteMove();
-        
-    void addFogTile(u16 xc, u16 yc);
-    void addFogTile(u16 xc, u16 yc, TileNeighbor neighbors);
-    void removeFogTile(u16 xc, u16 yc);
-    void removeFog();
 
     bool unitIsSelected(u16 index);
     bool doodadIsSelected(size_t doodadIndex);
     bool spriteIsSelected(size_t spriteIndex);
     bool hasUnits() { return units.size() > 0; }
     bool hasDoodads() { return doodads.size() > 0; }
-    bool hasTiles() { return tiles.size() > 0; }
+    bool hasTiles();
     bool hasSprites() { return sprites.size() > 0; }
-    bool hasFogTiles() { return fogTiles.size() > 0; }
+    bool hasFogTiles();
     u16 numUnits();
     u16 numSprites();
     u16 numUnitsUnder(u16 index);
 
-    TileNode getFirstTile();
     u16 getFirstUnit();
     u16 getFirstDoodad();
     size_t getFirstSprite();

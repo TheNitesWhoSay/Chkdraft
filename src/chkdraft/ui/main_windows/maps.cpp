@@ -712,14 +712,19 @@ void Maps::endPaste()
 
 void Maps::properties()
 {
+    auto edit = currentlyActiveMap->operator()();
     if ( currentlyActiveMap->getLayer() == Layer::Terrain )
     {
         Selections & selections = currentlyActiveMap->selections;
         if ( selections.hasTiles() )
         {
-            TileNode tile = selections.getFirstTile();
-            selections.removeTiles();
-            selections.addTile(tile.xc, tile.yc, TileNeighbor::All);
+            auto numSelected = currentlyActiveMap->view.tiles.sel().size();
+            if ( numSelected > 1 )
+            {
+                std::vector<std::size_t> indexesRemoved(numSelected-1, 0);
+                std::iota(indexesRemoved.begin(), indexesRemoved.end(), 1);
+                edit->tiles.deselect(indexesRemoved);
+            }
 
             RedrawWindow(currentlyActiveMap->getHandle(), NULL, NULL, RDW_INVALIDATE);
             if ( chkd.tilePropWindow.getHandle() != NULL )

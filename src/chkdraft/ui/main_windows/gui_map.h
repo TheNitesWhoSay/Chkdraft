@@ -273,6 +273,9 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     void refreshTileOccupationCache();
                     void windowBoundsChanged();
 
+                    void tileSelectionsChanged() override;
+                    void tileFogSelectionsChanged() override;
+
 /* Private Data */  Graphics scGraphics {*this, selections};
                     GuiMap::Skin skin = Skin::ClassicGDI;
                     std::shared_ptr<WinLib::DeviceContext> openGlDc;
