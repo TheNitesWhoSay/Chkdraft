@@ -30,10 +30,10 @@ ReversibleActions::~ReversibleActions()
 
 }
 
-std::shared_ptr<ReversibleActions> ReversibleActions::Make()
+/*std::shared_ptr<ReversibleActions> ReversibleActions::Make()
 {
     return std::shared_ptr<ReversibleActions>(new ReversibleActions);
-}
+}*/
 
 void ReversibleActions::Reverse(void *obj)
 {
@@ -66,7 +66,7 @@ int32_t ReversibleActions::Count()
     return (int32_t)actions.size();
 }
 
-void ReversibleActions::Insert(std::shared_ptr<Reversible> action)
+/*void ReversibleActions::Insert(std::shared_ptr<Reversible> action)
 {
     actions.push_back(action);
-}
+}*/

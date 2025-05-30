@@ -226,7 +226,6 @@ void Clipboard::pasteDoodads(s32 mapClickX, s32 mapClickY, GuiMap & map, point p
         if ( firstCenterX != prevPaste.x || firstCenterY != prevPaste.y )
         {
             this->prevPaste = {firstCenterX, firstCenterY};
-            auto doodadsUndo = ReversibleActions::Make();
             for ( const auto & doodad : doodads )
             {
                 auto tileWidth = doodad.tileWidth;
@@ -242,7 +241,6 @@ void Clipboard::pasteDoodads(s32 mapClickX, s32 mapClickY, GuiMap & map, point p
                 {
                     if ( xStart >= 0 && yStart >= 0 && xStart+int(tileWidth) <= int(map.getTileWidth()) && yStart+int(tileHeight) <= int(map.getTileHeight()) )
                     {
-                        doodadsUndo->Insert(DoodadCreateDel::Make(u16(map.numDoodads()), Sc::Terrain::Doodad::Type(doodad.doodadId), xStart, yStart, &map));
                         map.addDoodad(Chk::Doodad{Sc::Terrain::Doodad::Type(doodad.doodadId), u16(centerX), u16(centerY), doodad.owner, Chk::Doodad::Enabled::Enabled});
                         if ( doodad.overlayIndex != 0 )
                         {
@@ -260,7 +258,6 @@ void Clipboard::pasteDoodads(s32 mapClickX, s32 mapClickY, GuiMap & map, point p
                     }
                 }
             }
-            map.AddUndo(doodadsUndo);
         }
     }
 }
@@ -337,7 +334,6 @@ void Clipboard::pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap & map, bool allo
     else
         this->lastPasteTime = currPasteTime;
 
-    auto unitCreates = ReversibleActions::Make();
     auto & pasteUnits = getUnits();
     auto nextClassId = map.getNextClassId();
     std::vector<size_t> pastedAddons {};
@@ -373,8 +369,6 @@ void Clipboard::pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap & map, bool allo
                         const auto & lastNydus = map.getUnit(*lastPasteNydus);
                         if ( pasteUnit.unit.owner == lastNydus.owner )
                         {
-                            unitCreates->Insert(UnitChange::Make(*lastPasteNydus, Chk::Unit::Field::RelationClassId, lastNydus.relationClassId));
-                            unitCreates->Insert(UnitChange::Make(*lastPasteNydus, Chk::Unit::Field::RelationFlags, lastNydus.relationFlags));
                             pasteUnit.unit.relationClassId = lastNydus.classId;
                             pasteUnit.unit.relationFlags = Chk::Unit::RelationFlag::NydusLink;
                             edit->units[*lastPasteNydus].relationClassId = pasteUnit.unit.classId;
@@ -392,7 +386,6 @@ void Clipboard::pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap & map, bool allo
                     lastPasteNydus = std::nullopt;
             }
             map.addUnit(pasteUnit.unit);
-            unitCreates->Insert(UnitCreateDel::Make((u16)numUnits));
             if ( chkd.unitWindow.getHandle() != nullptr )
                 chkd.unitWindow.AddUnitItem((u16)numUnits, pasteUnit.unit);
         }
@@ -410,18 +403,10 @@ void Clipboard::pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap & map, bool allo
                     if ( map.autoSwappingAddonPlayers() && building.owner != pastedAddon.owner )
                     {
                         if ( (chkd.scData.units.getUnit(pastedAddon.type).flags & Sc::Unit::Flags::Addon) == Sc::Unit::Flags::Addon )
-                        {
-                            unitCreates->Insert(UnitChange::Make(u16(pastedAddonIndex), Chk::Unit::Field::Owner, pastedAddon.owner));
                             edit->units[pastedAddonIndex].owner = building.owner;
-                        }
                         else
-                        {
-                            unitCreates->Insert(UnitChange::Make(*buildingOpt, Chk::Unit::Field::Owner, building.owner));
                             edit->units[*buildingOpt].owner = pastedAddon.owner;
-                        }
                     }
-                    unitCreates->Insert(UnitChange::Make(*buildingOpt, Chk::Unit::Field::RelationClassId, building.relationClassId));
-                    unitCreates->Insert(UnitChange::Make(*buildingOpt, Chk::Unit::Field::RelationFlags, building.relationFlags));
                     edit->units[pastedAddonIndex].relationClassId = building.classId;
                     edit->units[pastedAddonIndex].relationFlags = Chk::Unit::RelationFlag::AddonLink;
                     edit->units[*buildingOpt].relationClassId = pastedAddon.classId;
@@ -431,7 +416,6 @@ void Clipboard::pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap & map, bool allo
             }
         }
     }
-    CM->AddUndo(unitCreates);
 }
 
 void Clipboard::pasteSprites(s32 mapClickX, s32 mapClickY, GuiMap & map, point prevPaste)
@@ -444,7 +428,6 @@ void Clipboard::pasteSprites(s32 mapClickX, s32 mapClickY, GuiMap & map, point p
     else
         this->lastPasteTime = currPasteTime;
 
-    auto spriteCreates = ReversibleActions::Make();
     auto & pasteSprites = getSprites();
     for ( auto & pasteSprite : pasteSprites )
     {
@@ -456,12 +439,10 @@ void Clipboard::pasteSprites(s32 mapClickX, s32 mapClickY, GuiMap & map, point p
             this->prevPaste.y = pasteSprite.sprite.yc;
             size_t numSprites = map.numSprites();
             map.addSprite(pasteSprite.sprite);
-            spriteCreates->Insert(SpriteCreateDel::Make((u16)numSprites));
             if ( chkd.spriteWindow.getHandle() != nullptr )
                 chkd.spriteWindow.AddSpriteItem((u16)numSprites, pasteSprite.sprite);
         }
     }
-    CM->AddUndo(spriteCreates);
 }
 
 void Clipboard::pasteBrushFog(s32 mapClickX, s32 mapClickY, GuiMap & map, point prevPaste)

@@ -134,18 +134,15 @@ void SpritePropertiesWindow::SetChangeHighlightOnly(bool changeHighlightOnly)
 void SpritePropertiesWindow::ChangeCurrOwner(u8 newOwner)
 {
     auto edit = CM->operator()();
-    auto undoableChanges = ReversibleActions::Make();
     for ( size_t spriteIndex : CM->view.sprites.sel() )
     {
         const Chk::Sprite & sprite = CM->getSprite(spriteIndex);
         if ( sprite.owner != newOwner ) // If the current and new owners are different
         {
-            undoableChanges->Insert(SpriteChange::Make(spriteIndex, sprite));
             edit->sprites[spriteIndex].owner = newOwner;
             ChangeSpritesDisplayedOwner(int(spriteIndex), newOwner);
         }
     }
-    CM->AddUndo(undoableChanges);
     CM->Redraw(true);
 }
 
@@ -620,11 +617,9 @@ void SpritePropertiesWindow::NotifyDeletePressed()
 void SpritePropertiesWindow::NotifyCheckClicked(u32 idFrom)
 {
     auto edit = CM->operator()();
-    auto spriteChanges = ReversibleActions::Make();
     for ( size_t spriteIndex : CM->view.sprites.sel() )
     {
         const Chk::Sprite & sprite = CM->getSprite(spriteIndex);
-        spriteChanges->Insert(SpriteChange::Make(spriteIndex, sprite));
 
         WinLib::CheckBoxControl* checkControl = nullptr;
         Chk::Sprite::SpriteFlags flag = Chk::Sprite::SpriteFlags(0);
@@ -653,7 +648,6 @@ void SpritePropertiesWindow::NotifyCheckClicked(u32 idFrom)
         else
             edit->sprites[spriteIndex].flags &= ~flag;
     }
-    CM->AddUndo(spriteChanges);
 }
 
 void SpritePropertiesWindow::NotifyIdEditUpdated()

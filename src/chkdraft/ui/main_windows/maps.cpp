@@ -417,7 +417,6 @@ void Maps::ChangePlayer(u8 newPlayer, bool updateMapPlayers)
             }
             else if ( currentlyActiveMap->selections.hasDoodads() )
             {
-                auto doodadPlayerChangeUndo = ReversibleActions::Make();
                 const auto & tileset = chkd.scData.terrain.get(currentlyActiveMap->getTileset());
                 for ( auto doodadIndex : currentlyActiveMap->view.doodads.sel() )
                 {
@@ -427,7 +426,6 @@ void Maps::ChangePlayer(u8 newPlayer, bool updateMapPlayers)
                         const auto & doodadDat = (Sc::Terrain::DoodadCv5 &)tileset.tileGroups[*doodadGroupIndex];
                         if ( selDoodad.owner != newPlayer )
                         {
-                            doodadPlayerChangeUndo->Insert(DoodadChange::Make(u16(doodadIndex), selDoodad.owner, selDoodad.enabled));
                             currentlyActiveMap->operator()()->doodads[doodadIndex].owner = newPlayer;
                             if ( !currentlyActiveMap->read.sprites.empty() )
                             {
@@ -441,7 +439,6 @@ void Maps::ChangePlayer(u8 newPlayer, bool updateMapPlayers)
                         }
                     }
                 }
-                currentlyActiveMap->AddUndo(doodadPlayerChangeUndo);
             }
             else if ( currentlyActiveMap->selections.hasSprites() )
             {

@@ -150,10 +150,6 @@ void LocationWindow::InvertXc()
     {
         auto edit = CM->operator()();
         const Chk::Location & locRef = CM->getLocation(currentLocationId);
-        auto locationChanges = ReversibleActions::Make();
-        locationChanges->Insert(LocationChange::Make(currentLocationId, Chk::Location::Field::Left, locRef.left));
-        locationChanges->Insert(LocationChange::Make(currentLocationId, Chk::Location::Field::Right, locRef.right));
-        CM->AddUndo(locationChanges);
         auto temp = locRef.left;
         edit->locations[currentLocationId].left = locRef.right;
         edit->locations[currentLocationId].right = temp;
@@ -168,10 +164,6 @@ void LocationWindow::InvertYc()
     {
         auto edit = CM->operator()();
         const Chk::Location & locRef = CM->getLocation(currentLocationId);
-        auto locationChanges = ReversibleActions::Make();
-        locationChanges->Insert(LocationChange::Make(currentLocationId, Chk::Location::Field::Top, locRef.top));
-        locationChanges->Insert(LocationChange::Make(currentLocationId, Chk::Location::Field::Bottom, locRef.bottom));
-        CM->AddUndo(locationChanges);
         auto temp = locRef.top;
         edit->locations[currentLocationId].top = locRef.bottom;
         edit->locations[currentLocationId].bottom = temp;
@@ -186,12 +178,6 @@ void LocationWindow::InvertXY()
     {
         auto edit = CM->operator()();
         const Chk::Location & locRef = CM->getLocation(currentLocationId);
-        auto locationChanges = ReversibleActions::Make();
-        locationChanges->Insert(LocationChange::Make(currentLocationId, Chk::Location::Field::Left, locRef.left));
-        locationChanges->Insert(LocationChange::Make(currentLocationId, Chk::Location::Field::Right, locRef.right));
-        locationChanges->Insert(LocationChange::Make(currentLocationId, Chk::Location::Field::Top, locRef.top));
-        locationChanges->Insert(LocationChange::Make(currentLocationId, Chk::Location::Field::Bottom, locRef.bottom));
-        CM->AddUndo(locationChanges);
         auto prevLeft = locRef.left;
         auto prevTop = locRef.top;
         edit->locations[currentLocationId].left = locRef.right;

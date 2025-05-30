@@ -209,12 +209,6 @@ void GuiMap::setTileValue(size_t tileX, size_t tileY, uint16_t tileValue)
 {
     if ( tileX < read.dimensions.tileWidth && tileY < read.dimensions.tileHeight )
     {
-        if ( tileChanges != nullptr )
-        {
-            tileChanges->Insert(TileChange::Make(uint16_t(tileX), uint16_t(tileY), Scenario::getTile(tileX, tileY, Chk::Scope::Editor)));
-            tileChanges->Insert(MtxmChange::Make(uint16_t(tileX), uint16_t(tileY), Scenario::getTile(tileX, tileY, Chk::Scope::Game)));
-        }
-
         auto edit = createAction();
         edit->editorTiles[tileY*read.dimensions.tileWidth + tileX] = tileValue;
         if ( !tileOccupationCache.tileOccupied(tileX, tileY, read.dimensions.tileWidth) )
@@ -227,19 +221,13 @@ void GuiMap::setTileValue(size_t tileX, size_t tileY, uint16_t tileValue)
 void GuiMap::setFogValue(size_t tileX, size_t tileY, u8 fogValue)
 {
     if ( tileX < read.dimensions.tileWidth && tileY < read.dimensions.tileHeight )
-    {
-        if ( fogChanges != nullptr )
-            fogChanges->Insert(FogChange::Make(uint16_t(tileX), uint16_t(tileY), Scenario::getFog(tileX, tileY)));
-
         Scenario::setFog(tileX, tileY, fogValue);
-    }
 }
 
 void GuiMap::beginTerrainOperation()
 {
     refreshTileOccupationCache();
-    if ( this->tileChanges == nullptr )
-        tileChanges = ReversibleActions::Make();
+    // TODO: This is a place to consider creating the brush action
 }
 
 void GuiMap::finalizeTerrainOperation()
@@ -247,9 +235,7 @@ void GuiMap::finalizeTerrainOperation()
     clipboard.clearPreviousPasteLoc();
     if ( tileChanges != nullptr )
     {
-        if ( currLayer == Layer::CutCopyPaste )
-            cutCopyPasteChanges->Insert(tileChanges);
-        else
+        if ( currLayer != Layer::CutCopyPaste )
         {
             // TODO: this is a place to consider destroying the Tracked action for the brush
             Chk::IsomCache::finalizeUndoableOperation();
@@ -263,9 +249,7 @@ void GuiMap::finalizeFogOperation()
     clipboard.clearPreviousPasteLoc();
     if ( fogChanges != nullptr )
     {
-        if ( currLayer == Layer::CutCopyPaste )
-            cutCopyPasteChanges->Insert(fogChanges);
-        else
+        if ( currLayer != Layer::CutCopyPaste )
             ;// TODO: this is a place to consider destroying the Tracked action for the brush
 
         fogChanges = nullptr;
@@ -305,7 +289,6 @@ void GuiMap::validateTileOccupiers(size_t tileX, size_t tileY, uint16_t tileValu
                         auto doodadTilePlacability = placability.tileGroup[y*doodadDat.tileWidth+x];
                         if ( doodadTilePlacability != 0 && tileValue/16 != doodadTilePlacability ) // This doodad tile is illegal given the new tileValue
                         {
-                            tileChanges->Insert(DoodadCreateDel::Make(u16(doodadIndex), doodad));
                             if ( !read.sprites.empty() )
                             {
                                 for ( int i=int(read.sprites.size())-1; i>=0; --i )
@@ -608,13 +591,12 @@ void GuiMap::unlinkAndDeleteUnit(size_t unitIndex)
     Scenario::deleteUnit(unitIndex);
 }
 
-void GuiMap::changeUnitOwner(size_t unitIndex, u8 newPlayer, std::shared_ptr<ReversibleActions> opUndos)
+void GuiMap::changeUnitOwner(size_t unitIndex, u8 newPlayer)
 {
     auto edit = createAction();
     const auto & toChange = Scenario::getUnit(unitIndex);
     if ( toChange.owner != newPlayer )
     {
-        opUndos->Insert(UnitChange::Make(u16(unitIndex), Chk::Unit::Field::Owner, toChange.owner));
         edit->units[unitIndex].owner = newPlayer;
 
         if ( toChange.relationClassId != 0 && addonAutoPlayerSwap )
@@ -630,7 +612,6 @@ void GuiMap::changeUnitOwner(size_t unitIndex, u8 newPlayer, std::shared_ptr<Rev
                     const auto & unit = read.units[unitIndex];
                     if ( toChange.relationClassId == unit.classId )
                     {
-                        opUndos->Insert(UnitChange::Make(u16(unitIndex), Chk::Unit::Field::Owner, unit.owner));
                         edit->units[unitIndex].owner = newPlayer;
                         edit->units[unitIndex].validFieldFlags |= Chk::Unit::ValidField::Owner;
                     }
@@ -765,11 +746,9 @@ void GuiMap::convertSelectionToTerrain()
     std::vector<size_t> selectedDoodads = view.doodads.sel();
     edit->doodads.clearSelections();
     
-    auto undoDoodadConversion = ReversibleActions::Make();
     std::sort(selectedDoodads.begin(), selectedDoodads.end(), [&](size_t lhs, size_t rhs) { return lhs > rhs; }); // Highest index to lowest
     for ( size_t doodadIndex : selectedDoodads ) {
         Chk::Doodad doodad = this->getDoodad(doodadIndex);
-        undoDoodadConversion->Insert(DoodadCreateDel::Make(u16(doodadIndex), doodad, true));
         Scenario::deleteDoodad(doodadIndex);
 
         const auto & tileset = chkd.scData.terrain.get(Scenario::getTileset());
@@ -795,21 +774,15 @@ void GuiMap::convertSelectionToTerrain()
                         auto currFinalTile = Scenario::getTile(xc, yc, Chk::Scope::Game);
                         auto underlyingTile = Scenario::getTile(xc, yc, Chk::Scope::Editor);
                         if ( currDoodadTile != underlyingTile ) // TILE
-                        {
-                            undoDoodadConversion->Insert(TileChange::Make(xc, yc, underlyingTile));
                             Scenario::setTile(xc, yc, currDoodadTile, Chk::Scope::Editor);
-                        }
+
                         if ( currDoodadTile != currFinalTile ) // MTXM
-                        {
-                            undoDoodadConversion->Insert(TileChange::Make(xc, yc, currFinalTile));
                             Scenario::setTile(xc, yc, currDoodadTile, Chk::Scope::Game);
-                        }
                     }
                 }
             }
         }
     }
-    AddUndo(undoDoodadConversion);
     refreshTileOccupationCache();
 }
 
@@ -820,30 +793,22 @@ void GuiMap::stackSelected()
     if ( stackSize <= 0 )
         return;
 
-    auto stackUndos = ReversibleActions::Make();
     if ( currLayer == Layer::Units && selections.hasUnits() && Scenario::numUnits() + (size_t(stackSize)*selections.numUnits()) < 4000 )
     {
         for ( auto selectedUnit : view.units.sel() )
-        {
             auto unit = CM->getUnit(selectedUnit);
-            for ( int i=0; i<stackSize-1; ++i )
-                stackUndos->Insert(UnitCreateDel::Make(u16(Scenario::addUnit(unit))));
-        }
+
         if ( chkd.unitWindow.getHandle() != nullptr )
             chkd.unitWindow.RepopulateList();
     }
     else if ( currLayer == Layer::Sprites && selections.hasSprites() && Scenario::numSprites() + (size_t(stackSize)*selections.numSprites()) < 4000 )
     {
         for ( auto selectedSprite : view.sprites.sel() )
-        {
             auto sprite = CM->getSprite(selectedSprite);
-            for ( int i=0; i<stackSize-1; ++i )
-                stackUndos->Insert(SpriteCreateDel::Make(Scenario::addSprite(sprite)));
-        }
+
         if ( chkd.spriteWindow.getHandle() != nullptr )
             chkd.spriteWindow.RepopulateList();
     }
-    CM->AddUndo(stackUndos);
 }
 
 void GuiMap::createLocation()
@@ -1369,12 +1334,10 @@ void GuiMap::deleteSelection()
         edit->editorTiles.clearSelections();
     };
     auto deleteDoodadSelection = [&]() {
-        auto doodadsUndo = ReversibleActions::Make();
         for ( int i=0; i<view.doodads.sel().size(); ++i )
         {
             auto selDoodad = view.doodads.sel()[i];
             const auto & doodad = read.doodads[selDoodad];
-            doodadsUndo->Insert(DoodadCreateDel::Make(u16(selDoodad), doodad));
 
             const auto & tileset = chkd.scData.terrain.get(Scenario::getTileset());
             if ( auto doodadGroupIndex = tileset.getDoodadGroupIndex(doodad.type) )
@@ -1421,14 +1384,12 @@ void GuiMap::deleteSelection()
         }
 
         edit->doodads.clearSelections();
-        AddUndo(doodadsUndo);
     };
     auto deleteUnitSelection = [&]() {
         if ( chkd.unitWindow.getHandle() != nullptr )
             SendMessage(chkd.unitWindow.getHandle(), WM_COMMAND, MAKEWPARAM(IDC_BUTTON_DELETE, NULL), 0);
         else
         {
-            auto deletes = ReversibleActions::Make();
             while ( selections.hasUnits() )
             {
                 // Get the highest index in the selection
@@ -1437,7 +1398,6 @@ void GuiMap::deleteSelection()
 
                 unlinkAndDeleteUnit(index);
             }
-            AddUndo(deletes);
         }
     };
     auto deleteLocationSelection = [&]() {
@@ -1506,10 +1466,6 @@ void GuiMap::deleteSelection()
             break;
         case Layer::CutCopyPaste:
             refreshTileOccupationCache();
-            tileChanges = ReversibleActions::Make();
-            fogChanges = ReversibleActions::Make();
-            cutCopyPasteChanges = ReversibleActions::Make();
-            cutCopyPasteChanges->Insert(CutCopyPasteChange::Make());
             deleteTerrainSelection();
             deleteDoodadSelection();
             deleteUnitSelection();
@@ -1546,10 +1502,9 @@ void GuiMap::PlayerChanged(u8 newPlayer)
     auto edit = createAction();
     if ( currLayer == Layer::Units )
     {
-        auto unitChanges = ReversibleActions::Make();
         for ( auto unitIndex : view.units.sel() )
         {
-            CM->changeUnitOwner(unitIndex, newPlayer, unitChanges);
+            CM->changeUnitOwner(unitIndex, newPlayer);
 
             if ( chkd.unitWindow.getHandle() != nullptr )
                 chkd.unitWindow.ChangeUnitsDisplayedOwner(unitIndex, newPlayer);
@@ -1559,11 +1514,9 @@ void GuiMap::PlayerChanged(u8 newPlayer)
     }
     else if ( currLayer == Layer::Sprites )
     {
-        auto spriteChanges = ReversibleActions::Make();
         for ( size_t spriteIndex : view.sprites.sel() )
         {
             const Chk::Sprite & sprite = Scenario::getSprite(spriteIndex);
-            spriteChanges->Insert(SpriteChange::Make(spriteIndex, sprite));
             edit->sprites[spriteIndex].owner = newPlayer;
 
             if ( chkd.spriteWindow.getHandle() != nullptr )
@@ -3270,7 +3223,7 @@ void GuiMap::LButtonDown(int x, int y, WPARAM wParam)
         case MK_CONTROL|MK_LBUTTON: // Ctrl + LClick
             clipboard.initFogBrush(mapClickX, mapClickY, *this, true);
             setDragging(true);
-            this->fogChanges = ReversibleActions::Make();
+            // TODO: This is a place to consider creating the brush action
             clipboard.doPaste(currLayer, currTerrainSubLayer, mapClickX, mapClickY, *this, false);
             LockCursor();
             TrackMouse(defaultHoverTime);
@@ -3278,7 +3231,7 @@ void GuiMap::LButtonDown(int x, int y, WPARAM wParam)
         case MK_LBUTTON: // LClick
             clipboard.initFogBrush(mapClickX, mapClickY, *this, false);
             setDragging(true);
-            this->fogChanges = ReversibleActions::Make();
+            // TODO: This is a place to consider creating the brush action
             clipboard.doPaste(currLayer, currTerrainSubLayer, mapClickX, mapClickY, *this, false);
             LockCursor();
             TrackMouse(defaultHoverTime);
@@ -3329,15 +3282,12 @@ void GuiMap::LButtonDown(int x, int y, WPARAM wParam)
                         if ( currLayer == Layer::Terrain )
                         {
                             refreshTileOccupationCache();
-                            tileChanges = ReversibleActions::Make();
+                            // TODO: This is a place to consider creating the brush action
                         }
                         else if ( currLayer == Layer::CutCopyPaste )
                         {
                             refreshTileOccupationCache();
-                            tileChanges = ReversibleActions::Make();
-                            this->fogChanges = ReversibleActions::Make();
-                            this->cutCopyPasteChanges = ReversibleActions::Make();
-                            cutCopyPasteChanges->Insert(CutCopyPasteChange::Make());
+                            // TODO: This is a place to consider creating the brush action
                         }
                         paste(mapClickX, mapClickY);
                     }
@@ -4357,8 +4307,7 @@ void GuiMap::SetSkin(GuiMap::Skin skin)
 
 void GuiMap::addIsomUndo(const Chk::IsomRectUndo & isomUndo)
 {
-    if ( tileChanges != nullptr )
-        tileChanges->Insert(IsomChange::Make(isomUndo));
+    // TODO: Delete this method
 }
 
 void GuiMap::refreshTileOccupationCache()

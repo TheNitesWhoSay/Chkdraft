@@ -247,19 +247,17 @@ void UnitPropertiesWindow::SetChangeHighlightOnly(bool changeHighlightOnly)
 void UnitPropertiesWindow::ChangeCurrOwner(u8 newOwner)
 {
     auto edit = CM->operator()();
-    auto undoableChanges = ReversibleActions::Make();
     for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
         if ( unit.owner != newOwner ) // If the current and new owners are different
         {
             edit->units[unitIndex].validFieldFlags |= Chk::Unit::ValidField::Owner;
-            CM->changeUnitOwner(unitIndex, newOwner, undoableChanges);
+            CM->changeUnitOwner(unitIndex, newOwner);
             ChangeUnitsDisplayedOwner(unitIndex, newOwner);
         }
     }
     this->SetUnitFieldText();
-    CM->AddUndo(undoableChanges);
     CM->Redraw(true);
 }
 
@@ -933,16 +931,10 @@ void UnitPropertiesWindow::NotifyLinkUnlinkPressed()
             const auto & otherUnit = CM->getUnit(i);
             if ( unit.relationClassId == otherUnit.classId && i != currUnitIndex )
             {
-                auto unitChanges = ReversibleActions::Make();
-                unitChanges->Insert(UnitChange::Make(currUnitIndex, Chk::Unit::Field::RelationClassId, unit.relationClassId));
-                unitChanges->Insert(UnitChange::Make(currUnitIndex, Chk::Unit::Field::RelationFlags, unit.relationFlags));
-                unitChanges->Insert(UnitChange::Make(i, Chk::Unit::Field::RelationClassId, otherUnit.relationClassId));
-                unitChanges->Insert(UnitChange::Make(i, Chk::Unit::Field::RelationFlags, otherUnit.relationFlags));
                 edit->units[currUnitIndex].relationClassId = 0;
                 edit->units[currUnitIndex].relationFlags = 0;
                 edit->units[i].relationClassId = 0;
                 edit->units[i].relationFlags = 0;
-                CM->AddUndo(unitChanges);
                 SetUnitFieldText(unit);
                 return;
             }
@@ -961,17 +953,11 @@ void UnitPropertiesWindow::NotifyLinkUnlinkPressed()
             auto secondType = second.type;
             if ( !first.isLinked() && !second.isLinked() && CM->isLinkable(first, second) )
             {
-                auto unitChanges = ReversibleActions::Make();
-                unitChanges->Insert(UnitChange::Make(firstIndex, Chk::Unit::Field::RelationClassId, first.relationClassId));
-                unitChanges->Insert(UnitChange::Make(firstIndex, Chk::Unit::Field::RelationFlags, first.relationFlags));
-                unitChanges->Insert(UnitChange::Make(secondIndex, Chk::Unit::Field::RelationClassId, second.relationClassId));
-                unitChanges->Insert(UnitChange::Make(secondIndex, Chk::Unit::Field::RelationFlags, second.relationFlags));
                 edit->units[firstIndex].relationClassId = second.classId;
                 edit->units[secondIndex].relationClassId = first.classId;
                 auto relationFlags = first.type == Sc::Unit::Type::ZergNydusCanal ? Chk::Unit::RelationFlag::NydusLink : Chk::Unit::RelationFlag::AddonLink;
                 edit->units[firstIndex].relationFlags = relationFlags;
                 edit->units[secondIndex].relationFlags = relationFlags;
-                CM->AddUndo(unitChanges);
                 SetUnitFieldText(first);
                 return;
             }
@@ -1008,11 +994,9 @@ void UnitPropertiesWindow::NotifyJumpToPressed()
 void UnitPropertiesWindow::NotifyInvincibleClicked()
 {
     auto edit = CM->operator()();
-    auto unitChanges = ReversibleActions::Make();
     for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
-        unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::StateFlags, unit.stateFlags));
 
         if ( checkInvincible.isChecked() )
         {
@@ -1023,17 +1007,14 @@ void UnitPropertiesWindow::NotifyInvincibleClicked()
             edit->units[unitIndex].stateFlags &= ~Chk::Unit::State::Invincible;
     }
     this->SetUnitFieldText();
-    CM->AddUndo(unitChanges);
 }
 
 void UnitPropertiesWindow::NotifyHallucinatedClicked()
 {
     auto edit = CM->operator()();
-    auto unitChanges = ReversibleActions::Make();
     for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
-        unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::StateFlags, unit.stateFlags));
 
         if ( checkHallucinated.isChecked() )
         {
@@ -1044,17 +1025,14 @@ void UnitPropertiesWindow::NotifyHallucinatedClicked()
             edit->units[unitIndex].stateFlags &= ~Chk::Unit::State::Hallucinated;
     }
     this->SetUnitFieldText();
-    CM->AddUndo(unitChanges);
 }
 
 void UnitPropertiesWindow::NotifyBurrowedClicked()
 {
     auto edit = CM->operator()();
-    auto unitChanges = ReversibleActions::Make();
     for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
-        unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::StateFlags, unit.stateFlags));
 
         if ( checkBurrowed.isChecked() )
         {
@@ -1065,17 +1043,14 @@ void UnitPropertiesWindow::NotifyBurrowedClicked()
             edit->units[unitIndex].stateFlags &= ~Chk::Unit::State::Burrow;
     }
     this->SetUnitFieldText();
-    CM->AddUndo(unitChanges);
 }
 
 void UnitPropertiesWindow::NotifyCloakedClicked()
 {
     auto edit = CM->operator()();
-    auto unitChanges = ReversibleActions::Make();
     for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
-        unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::StateFlags, unit.stateFlags));
 
         if ( checkCloaked.isChecked() )
         {
@@ -1086,17 +1061,14 @@ void UnitPropertiesWindow::NotifyCloakedClicked()
             edit->units[unitIndex].stateFlags &= ~Chk::Unit::State::Cloak;
     }
     this->SetUnitFieldText();
-    CM->AddUndo(unitChanges);
 }
 
 void UnitPropertiesWindow::NotifyLiftedClicked()
 {
     auto edit = CM->operator()();
-    auto unitChanges = ReversibleActions::Make();
     for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
-        unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::StateFlags, unit.stateFlags));
 
         if ( checkLifted.isChecked() )
         {
@@ -1107,7 +1079,6 @@ void UnitPropertiesWindow::NotifyLiftedClicked()
             edit->units[unitIndex].stateFlags &= ~Chk::Unit::State::InTransit; // Uncheck lifted state
     }
     this->SetUnitFieldText();
-    CM->AddUndo(unitChanges);
 }
 
 void UnitPropertiesWindow::NotifyHpEditUpdated()
@@ -1255,11 +1226,9 @@ void UnitPropertiesWindow::NotifyYcEditUpdated()
 void UnitPropertiesWindow::NotifyValidFieldOwnerClicked()
 {
     auto edit = CM->operator()();
-    auto unitChanges = ReversibleActions::Make();
     for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
-        unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::ValidFieldFlags, unit.validFieldFlags));
 
         if ( checkValidFieldOwner.isChecked() )
             edit->units[unitIndex].validFieldFlags |= Chk::Unit::ValidField::Owner;
@@ -1267,17 +1236,14 @@ void UnitPropertiesWindow::NotifyValidFieldOwnerClicked()
             edit->units[unitIndex].validFieldFlags &= ~Chk::Unit::ValidField::Owner;
     }
     this->SetUnitFieldText();
-    CM->AddUndo(unitChanges);
 }
 
 void UnitPropertiesWindow::NotifyValidFieldLifeClicked()
 {
     auto edit = CM->operator()();
-    auto unitChanges = ReversibleActions::Make();
     for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
-        unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::ValidFieldFlags, unit.validFieldFlags));
 
         if ( checkValidFieldLife.isChecked() )
             edit->units[unitIndex].validFieldFlags |= Chk::Unit::ValidField::Hitpoints;
@@ -1285,17 +1251,14 @@ void UnitPropertiesWindow::NotifyValidFieldLifeClicked()
             edit->units[unitIndex].validFieldFlags &= ~Chk::Unit::ValidField::Hitpoints;
     }
     this->SetUnitFieldText();
-    CM->AddUndo(unitChanges);
 }
 
 void UnitPropertiesWindow::NotifyValidFieldManaClicked()
 {
     auto edit = CM->operator()();
-    auto unitChanges = ReversibleActions::Make();
     for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
-        unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::ValidFieldFlags, unit.validFieldFlags));
 
         if ( checkValidFieldMana.isChecked() )
             edit->units[unitIndex].validFieldFlags |= Chk::Unit::ValidField::Energy;
@@ -1303,17 +1266,14 @@ void UnitPropertiesWindow::NotifyValidFieldManaClicked()
             edit->units[unitIndex].validFieldFlags &= ~Chk::Unit::ValidField::Energy;
     }
     this->SetUnitFieldText();
-    CM->AddUndo(unitChanges);
 }
 
 void UnitPropertiesWindow::NotifyValidFieldShieldClicked()
 {
     auto edit = CM->operator()();
-    auto unitChanges = ReversibleActions::Make();
     for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
-        unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::ValidFieldFlags, unit.validFieldFlags));
 
         if ( checkValidFieldShield.isChecked() )
             edit->units[unitIndex].validFieldFlags |= Chk::Unit::ValidField::Shields;
@@ -1321,17 +1281,14 @@ void UnitPropertiesWindow::NotifyValidFieldShieldClicked()
             edit->units[unitIndex].validFieldFlags &= ~Chk::Unit::ValidField::Shields;
     }
     this->SetUnitFieldText();
-    CM->AddUndo(unitChanges);
 }
 
 void UnitPropertiesWindow::NotifyValidFieldResourcesClicked()
 {
     auto edit = CM->operator()();
-    auto unitChanges = ReversibleActions::Make();
     for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
-        unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::ValidFieldFlags, unit.validFieldFlags));
 
         if ( checkValidFieldResources.isChecked() )
             edit->units[unitIndex].validFieldFlags |= Chk::Unit::ValidField::Resources;
@@ -1339,17 +1296,14 @@ void UnitPropertiesWindow::NotifyValidFieldResourcesClicked()
             edit->units[unitIndex].validFieldFlags &= ~Chk::Unit::ValidField::Resources;
     }
     this->SetUnitFieldText();
-    CM->AddUndo(unitChanges);
 }
 
 void UnitPropertiesWindow::NotifyValidFieldHangarClicked()
 {
     auto edit = CM->operator()();
-    auto unitChanges = ReversibleActions::Make();
     for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
-        unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::ValidFieldFlags, unit.validFieldFlags));
 
         if ( checkValidFieldHangar.isChecked() )
             edit->units[unitIndex].validFieldFlags |= Chk::Unit::ValidField::Hangar;
@@ -1357,7 +1311,6 @@ void UnitPropertiesWindow::NotifyValidFieldHangarClicked()
             edit->units[unitIndex].validFieldFlags &= ~Chk::Unit::ValidField::Hangar;
     }
     this->SetUnitFieldText();
-    CM->AddUndo(unitChanges);
 }
 
 void UnitPropertiesWindow::NotifyValidFieldRawFlagsEditUpdated()
@@ -1375,11 +1328,9 @@ void UnitPropertiesWindow::NotifyValidFieldRawFlagsEditUpdated()
 void UnitPropertiesWindow::NotifyValidStateInvincibleClicked()
 {
     auto edit = CM->operator()();
-    auto unitChanges = ReversibleActions::Make();
     for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
-        unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::ValidStateFlags, unit.validStateFlags));
 
         if ( checkValidStateInvincible.isChecked() )
             edit->units[unitIndex].validStateFlags |= Chk::Unit::State::Invincible;
@@ -1387,17 +1338,14 @@ void UnitPropertiesWindow::NotifyValidStateInvincibleClicked()
             edit->units[unitIndex].validStateFlags &= ~Chk::Unit::State::Invincible;
     }
     this->SetUnitFieldText();
-    CM->AddUndo(unitChanges);
 }
 
 void UnitPropertiesWindow::NotifyValidStateBurrowedClicked()
 {
     auto edit = CM->operator()();
-    auto unitChanges = ReversibleActions::Make();
     for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
-        unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::ValidStateFlags, unit.validStateFlags));
 
         if ( checkValidStateBurrowed.isChecked() )
             edit->units[unitIndex].validStateFlags |= Chk::Unit::State::Burrow;
@@ -1405,17 +1353,14 @@ void UnitPropertiesWindow::NotifyValidStateBurrowedClicked()
             edit->units[unitIndex].validStateFlags &= ~Chk::Unit::State::Burrow;
     }
     this->SetUnitFieldText();
-    CM->AddUndo(unitChanges);
 }
 
 void UnitPropertiesWindow::NotifyValidStateHallucinatedClicked()
 {
     auto edit = CM->operator()();
-    auto unitChanges = ReversibleActions::Make();
     for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
-        unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::ValidStateFlags, unit.validStateFlags));
 
         if ( checkValidStateHallucinated.isChecked() )
             edit->units[unitIndex].validStateFlags |= Chk::Unit::State::Hallucinated;
@@ -1423,17 +1368,14 @@ void UnitPropertiesWindow::NotifyValidStateHallucinatedClicked()
             edit->units[unitIndex].validStateFlags &= ~Chk::Unit::State::Hallucinated;
     }
     this->SetUnitFieldText();
-    CM->AddUndo(unitChanges);
 }
 
 void UnitPropertiesWindow::NotifyValidStateCloakedClicked()
 {
     auto edit = CM->operator()();
-    auto unitChanges = ReversibleActions::Make();
     for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
-        unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::ValidStateFlags, unit.validStateFlags));
 
         if ( checkValidStateCloaked.isChecked() )
             edit->units[unitIndex].validStateFlags |= Chk::Unit::State::Cloak;
@@ -1441,17 +1383,14 @@ void UnitPropertiesWindow::NotifyValidStateCloakedClicked()
             edit->units[unitIndex].validStateFlags &= ~Chk::Unit::State::Cloak;
     }
     this->SetUnitFieldText();
-    CM->AddUndo(unitChanges);
 }
 
 void UnitPropertiesWindow::NotifyValidStateLiftedClicked()
 {
     auto edit = CM->operator()();
-    auto unitChanges = ReversibleActions::Make();
     for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
-        unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::ValidStateFlags, unit.validStateFlags));
 
         if ( checkValidStateLifted.isChecked() )
             edit->units[unitIndex].validStateFlags |= Chk::Unit::State::InTransit;
@@ -1459,7 +1398,6 @@ void UnitPropertiesWindow::NotifyValidStateLiftedClicked()
             edit->units[unitIndex].validStateFlags &= ~Chk::Unit::State::InTransit;
     }
     this->SetUnitFieldText();
-    CM->AddUndo(unitChanges);
 }
 
 void UnitPropertiesWindow::NotifyValidStateRawFlagsEditUpdated()
@@ -1527,11 +1465,9 @@ void UnitPropertiesWindow::NotifyLinkedIdEditUpdated()
 void UnitPropertiesWindow::NotifyLinkNydusClicked()
 {
     auto edit = CM->operator()();
-    auto unitChanges = ReversibleActions::Make();
     for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
-        unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::RelationFlags, unit.relationFlags));
 
         if ( checkNydus.isChecked() )
             edit->units[unitIndex].relationFlags |= Chk::Unit::RelationFlag::NydusLink;
@@ -1539,18 +1475,15 @@ void UnitPropertiesWindow::NotifyLinkNydusClicked()
             edit->units[unitIndex].relationFlags &= ~Chk::Unit::RelationFlag::NydusLink;
     }
     this->SetUnitFieldText();
-    CM->AddUndo(unitChanges);
     CM->Redraw(false);
 }
 
 void UnitPropertiesWindow::NotifyLinkAddonClicked()
 {
     auto edit = CM->operator()();
-    auto unitChanges = ReversibleActions::Make();
     for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
-        unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::RelationFlags, unit.relationFlags));
 
         if ( checkAddon.isChecked() )
             edit->units[unitIndex].relationFlags |= Chk::Unit::RelationFlag::AddonLink;
@@ -1558,7 +1491,6 @@ void UnitPropertiesWindow::NotifyLinkAddonClicked()
             edit->units[unitIndex].relationFlags &= ~Chk::Unit::RelationFlag::AddonLink;
     }
     this->SetUnitFieldText();
-    CM->AddUndo(unitChanges);
     CM->Redraw(false);
 }
 
