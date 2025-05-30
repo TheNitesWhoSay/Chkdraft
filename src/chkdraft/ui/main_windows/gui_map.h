@@ -5,7 +5,6 @@
 #include "mapping/clipboard.h"
 #include "mapping/sc_graphics.h"
 #include "mapping/selections.h"
-#include "mapping/undos/undos.h"
 
 namespace Scr { class MapGraphics; }
 
@@ -120,7 +119,6 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCach
                     void redo();
                     virtual void ChangesMade();
                     virtual void ChangesReversed();
-                    inline std::shared_ptr<ReversibleActions> TileChanges() { return this->tileChanges; }
 
 /*   Graphics   */  float MiniMapScale(u16 xSize, u16 ySize);
 
@@ -285,9 +283,6 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCach
 
                     Layer currLayer = Layer::Terrain;
                     TerrainSubLayer currTerrainSubLayer = TerrainSubLayer::Isom;
-                    std::shared_ptr<ReversibleActions> tileChanges = nullptr;
-                    std::shared_ptr<ReversibleActions> fogChanges = nullptr;
-                    std::shared_ptr<ReversibleActions> cutCopyPasteChanges = nullptr; // tileChanges & fogChanges roll into this
                     Chk::TileOccupationCache tileOccupationCache;
                     u8 currPlayer = 0;
                     double zoom = 1.0;

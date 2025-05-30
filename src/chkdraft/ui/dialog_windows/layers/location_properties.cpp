@@ -1,6 +1,5 @@
 #include "location_properties.h"
 #include "chkdraft/chkdraft.h"
-#include "mapping/undos/chkd_undos/location_change.h"
 #include "ui/chkd_controls/chkd_string_input.h"
 #include <exception>
 #include <string>

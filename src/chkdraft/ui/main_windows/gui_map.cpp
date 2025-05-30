@@ -2,20 +2,6 @@
 #include "chkdraft/chkdraft.h"
 #include "ui/chkd_controls/move_to.h"
 #include "mapping/data_file_browsers.h"
-#include "mapping/undos/chkd_undos/cut_copy_paste_change.h"
-#include "mapping/undos/chkd_undos/isom_change.h"
-#include "mapping/undos/chkd_undos/tile_change.h"
-#include "mapping/undos/chkd_undos/mtxm_change.h"
-#include "mapping/undos/chkd_undos/unit_change.h"
-#include "mapping/undos/chkd_undos/unit_create_del.h"
-#include "mapping/undos/chkd_undos/location_create_del.h"
-#include "mapping/undos/chkd_undos/location_move.h"
-#include "mapping/undos/chkd_undos/location_change.h"
-#include "mapping/undos/chkd_undos/doodad_change.h"
-#include "mapping/undos/chkd_undos/doodad_create_del.h"
-#include "mapping/undos/chkd_undos/sprite_change.h"
-#include "mapping/undos/chkd_undos/sprite_create_del.h"
-#include "mapping/undos/chkd_undos/fog_change.h"
 #include "mapping/scr_graphics.h"
 #include <cross_cut/logger.h>
 #include <WindowsX.h>
@@ -233,27 +219,18 @@ void GuiMap::beginTerrainOperation()
 void GuiMap::finalizeTerrainOperation()
 {
     clipboard.clearPreviousPasteLoc();
-    if ( tileChanges != nullptr )
+    if ( currLayer != Layer::CutCopyPaste )
     {
-        if ( currLayer != Layer::CutCopyPaste )
-        {
-            // TODO: this is a place to consider destroying the Tracked action for the brush
-            Chk::IsomCache::finalizeUndoableOperation();
-        }
-        tileChanges = nullptr;
+        // TODO: this is a place to consider destroying the Tracked action for the brush
+        Chk::IsomCache::finalizeUndoableOperation();
     }
 }
 
 void GuiMap::finalizeFogOperation()
 {
     clipboard.clearPreviousPasteLoc();
-    if ( fogChanges != nullptr )
-    {
-        if ( currLayer != Layer::CutCopyPaste )
-            ;// TODO: this is a place to consider destroying the Tracked action for the brush
-
-        fogChanges = nullptr;
-    }
+    if ( currLayer != Layer::CutCopyPaste )
+        ;// TODO: this is a place to consider destroying the Tracked action for the brush
 }
 
 void GuiMap::validateTileOccupiers(size_t tileX, size_t tileY, uint16_t tileValue)
@@ -1472,8 +1449,6 @@ void GuiMap::deleteSelection()
             deleteFogTileSelection();
             finalizeTerrainOperation();
             finalizeFogOperation();
-            if ( cutCopyPasteChanges != nullptr )
-                cutCopyPasteChanges = nullptr;
             break;
     }
 
@@ -3580,14 +3555,7 @@ void GuiMap::LButtonUp(HWND hWnd, int x, int y, WPARAM wParam)
                 FinalizeCutCopyPasteSelection(hWnd, x, y, wParam);
         }
         else if ( currLayer == Layer::CutCopyPaste )
-        {
             finalizeFogOperation();
-            if ( cutCopyPasteChanges != nullptr )
-            {
-                //undos.AddUndo(cutCopyPasteChanges);
-                cutCopyPasteChanges = nullptr;
-            }
-        }
 
         if ( currLayer == Layer::FogEdit )
         {

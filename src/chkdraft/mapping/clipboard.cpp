@@ -1,12 +1,5 @@
 #include "clipboard.h"
 #include "chkdraft/chkdraft.h"
-#include "mapping/undos/chkd_undos/tile_change.h"
-#include "mapping/undos/chkd_undos/mtxm_change.h"
-#include "mapping/undos/chkd_undos/unit_create_del.h"
-#include "mapping/undos/chkd_undos/unit_change.h"
-#include "mapping/undos/chkd_undos/doodad_create_del.h"
-#include "mapping/undos/chkd_undos/sprite_create_del.h"
-#include "mapping/undos/chkd_undos/fog_change.h"
 #include <set>
 
 extern Logger logger;

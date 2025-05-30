@@ -79,26 +79,6 @@ set(Headers
   mapping/opengl/gl/vertices.h
   mapping/opengl/glad/glad/gl.h
   mapping/opengl/glad/KHR/khrplatform.h
-  mapping/undos/reversibles.h
-  mapping/undos/undos.h
-  mapping/undos/chkd_undos/cut_copy_paste_change.h
-  mapping/undos/chkd_undos/dimension_change.h
-  mapping/undos/chkd_undos/doodad_change.h
-  mapping/undos/chkd_undos/doodad_create_del.h
-  mapping/undos/chkd_undos/fog_change.h
-  mapping/undos/chkd_undos/isom_change.h
-  mapping/undos/chkd_undos/location_change.h
-  mapping/undos/chkd_undos/location_create_del.h
-  mapping/undos/chkd_undos/location_move.h
-  mapping/undos/chkd_undos/mtxm_change.h
-  mapping/undos/chkd_undos/sprite_change.h
-  mapping/undos/chkd_undos/sprite_create_del.h
-  mapping/undos/chkd_undos/sprite_index_move.h
-  mapping/undos/chkd_undos/tile_change.h
-  mapping/undos/chkd_undos/undo_types.h
-  mapping/undos/chkd_undos/unit_change.h
-  mapping/undos/chkd_undos/unit_create_del.h
-  mapping/undos/chkd_undos/unit_index_move.h
   ui/chkd_controls/chkd_string_input.h
   ui/chkd_controls/cnd_act_grid.h
   ui/chkd_controls/cuwp_input.h
@@ -185,25 +165,6 @@ set(Sources
   mapping/selections.cpp
   mapping/settings.cpp
   mapping/opengl/glad/glad/gl.c
-  mapping/undos/reversibles.cpp
-  mapping/undos/undos.cpp
-  mapping/undos/chkd_undos/cut_copy_paste_change.cpp
-  mapping/undos/chkd_undos/dimension_change.cpp
-  mapping/undos/chkd_undos/doodad_change.cpp
-  mapping/undos/chkd_undos/doodad_create_del.cpp
-  mapping/undos/chkd_undos/fog_change.cpp
-  mapping/undos/chkd_undos/isom_change.cpp
-  mapping/undos/chkd_undos/location_change.cpp
-  mapping/undos/chkd_undos/location_create_del.cpp
-  mapping/undos/chkd_undos/location_move.cpp
-  mapping/undos/chkd_undos/mtxm_change.cpp
-  mapping/undos/chkd_undos/sprite_change.cpp
-  mapping/undos/chkd_undos/sprite_create_del.cpp
-  mapping/undos/chkd_undos/sprite_index_move.cpp
-  mapping/undos/chkd_undos/tile_change.cpp
-  mapping/undos/chkd_undos/unit_change.cpp
-  mapping/undos/chkd_undos/unit_create_del.cpp
-  mapping/undos/chkd_undos/unit_index_move.cpp
   ui/chkd_controls/chkd_string_input.cpp
   ui/chkd_controls/cnd_act_grid.cpp
   ui/chkd_controls/cuwp_input.cpp

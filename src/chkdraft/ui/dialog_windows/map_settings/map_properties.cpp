@@ -2,7 +2,6 @@
 #include "color_properties.h"
 #include <common_files/common_files.h>
 #include "chkdraft/chkdraft.h"
-#include "mapping/undos/chkd_undos/dimension_change.h"
 #include <string>
 
 extern Logger logger;

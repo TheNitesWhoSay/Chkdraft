@@ -1,9 +1,6 @@
 #include "sprite_properties.h"
 #include "ui/chkd_controls/move_to.h"
 #include "chkdraft/chkdraft.h"
-#include "mapping/undos/chkd_undos/sprite_change.h"
-#include "mapping/undos/chkd_undos/sprite_create_del.h"
-#include "mapping/undos/chkd_undos/sprite_index_move.h"
 #include <CommCtrl.h>
 #include <string>
 

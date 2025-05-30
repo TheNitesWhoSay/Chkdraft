@@ -1,8 +1,5 @@
 #include "maps.h"
 #include "chkdraft/chkdraft.h"
-#include "mapping/undos/chkd_undos/unit_change.h"
-#include "mapping/undos/chkd_undos/doodad_change.h"
-#include "mapping/undos/chkd_undos/sprite_change.h"
 #include <memory>
 #include <string>
 #include <utility>

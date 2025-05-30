@@ -1,9 +1,6 @@
 #include "unit_properties.h"
 #include "ui/chkd_controls/move_to.h"
 #include "chkdraft/chkdraft.h"
-#include "mapping/undos/chkd_undos/unit_change.h"
-#include "mapping/undos/chkd_undos/unit_create_del.h"
-#include "mapping/undos/chkd_undos/unit_index_move.h"
 #include <CommCtrl.h>
 #include <string>
 
