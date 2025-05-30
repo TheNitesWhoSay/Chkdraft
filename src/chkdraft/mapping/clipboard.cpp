@@ -161,7 +161,7 @@ void Clipboard::ClearQuickItems()
     quickSprites.clear();
 }
 
-void Clipboard::pasteTerrain(TerrainSubLayer terrainSubLayer, s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos, point prevPaste)
+void Clipboard::pasteTerrain(TerrainSubLayer terrainSubLayer, s32 mapClickX, s32 mapClickY, GuiMap & map, point prevPaste)
 {
     if ( terrainSubLayer == TerrainSubLayer::Isom && map.getLayer() != Layer::CutCopyPaste )
     {
@@ -174,7 +174,7 @@ void Clipboard::pasteTerrain(TerrainSubLayer terrainSubLayer, s32 mapClickX, s32
     }
     else if ( fillSimilarTiles && getTiles().size() == 1 && map.getLayer() != Layer::CutCopyPaste )
     {
-        fillPasteTerrain(mapClickX, mapClickY, map, undos, prevPaste);
+        fillPasteTerrain(mapClickX, mapClickY, map, prevPaste);
     }
     else
     {
@@ -210,7 +210,7 @@ void Clipboard::pasteTerrain(TerrainSubLayer terrainSubLayer, s32 mapClickX, s32
     }
 }
 
-void Clipboard::pasteDoodads(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos, point prevPaste)
+void Clipboard::pasteDoodads(s32 mapClickX, s32 mapClickY, GuiMap & map, point prevPaste)
 {
     const auto & doodads = getDoodads();
     if ( !doodads.empty() )
@@ -265,7 +265,7 @@ void Clipboard::pasteDoodads(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos &
     }
 }
 
-void Clipboard::fillPasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos, point prevPaste)
+void Clipboard::fillPasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap & map, point prevPaste)
 {
     mapClickX += 16;
     mapClickY += 16;
@@ -326,7 +326,7 @@ void Clipboard::fillPasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap & map, Und
     }
 }
 
-void Clipboard::pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos, bool allowStack, point prevPaste)
+void Clipboard::pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap & map, bool allowStack, point prevPaste)
 {
     auto edit = map.operator()();
     auto currPasteTime = std::chrono::steady_clock::now();
@@ -434,7 +434,7 @@ void Clipboard::pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & u
     CM->AddUndo(unitCreates);
 }
 
-void Clipboard::pasteSprites(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos, point prevPaste)
+void Clipboard::pasteSprites(s32 mapClickX, s32 mapClickY, GuiMap & map, point prevPaste)
 {
     auto currPasteTime = std::chrono::steady_clock::now();
     if ( std::chrono::duration_cast<std::chrono::milliseconds>(currPasteTime - this->lastPasteTime).count() < 250 && isNearPrevPaste(mapClickX, mapClickY) )
@@ -464,7 +464,7 @@ void Clipboard::pasteSprites(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos &
     CM->AddUndo(spriteCreates);
 }
 
-void Clipboard::pasteBrushFog(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos, point prevPaste)
+void Clipboard::pasteBrushFog(s32 mapClickX, s32 mapClickY, GuiMap & map, point prevPaste)
 {
     const auto width = this->fogBrush.width;
     const auto height = this->fogBrush.height;
@@ -525,7 +525,7 @@ void Clipboard::pasteBrushFog(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos 
     }
 }
 
-void Clipboard::pasteFog(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos, point prevPaste)
+void Clipboard::pasteFog(s32 mapClickX, s32 mapClickY, GuiMap & map, point prevPaste)
 {
     mapClickX += 16;
     mapClickY += 16;
@@ -969,24 +969,24 @@ void Clipboard::endPasting()
     }
 }
 
-void Clipboard::doPaste(Layer layer, TerrainSubLayer terrainSubLayer, s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos, bool allowStack)
+void Clipboard::doPaste(Layer layer, TerrainSubLayer terrainSubLayer, s32 mapClickX, s32 mapClickY, GuiMap & map, bool allowStack)
 {
     switch ( layer )
     {
         case Layer::Terrain:
-            pasteTerrain(terrainSubLayer, mapClickX, mapClickY, map, undos, this->prevPaste);
+            pasteTerrain(terrainSubLayer, mapClickX, mapClickY, map, this->prevPaste);
             break;
         case Layer::Doodads:
-            pasteDoodads(mapClickX, mapClickY, map, undos, this->prevPaste);
+            pasteDoodads(mapClickX, mapClickY, map, this->prevPaste);
             break;
         case Layer::Units:
-            pasteUnits(mapClickX, mapClickY, map, undos, allowStack, this->prevPaste);
+            pasteUnits(mapClickX, mapClickY, map, allowStack, this->prevPaste);
             break;
         case Layer::Sprites:
-            pasteSprites(mapClickX, mapClickY, map, undos, this->prevPaste);
+            pasteSprites(mapClickX, mapClickY, map, this->prevPaste);
             break;
         case Layer::FogEdit:
-            pasteBrushFog(mapClickX, mapClickY, map, undos, this->prevPaste);
+            pasteBrushFog(mapClickX, mapClickY, map, this->prevPaste);
             break;
         case Layer::CutCopyPaste:
             {
@@ -999,12 +999,12 @@ void Clipboard::doPaste(Layer layer, TerrainSubLayer terrainSubLayer, s32 mapCli
                     mapClickY = (mapClickY+16)/32*32;
                 }
                 auto prevPaste = this->prevPaste;
-                pasteTerrain(terrainSubLayer, mapClickX, mapClickY, map, undos, prevPaste);
+                pasteTerrain(terrainSubLayer, mapClickX, mapClickY, map, prevPaste);
                 
-                pasteDoodads(mapClickX, mapClickY, map, undos, prevPaste);
-                pasteUnits(mapClickX, mapClickY, map, undos, allowStack, prevPaste);
-                pasteSprites(mapClickX, mapClickY, map, undos, prevPaste);
-                pasteFog(mapClickX, mapClickY, map, undos, prevPaste);
+                pasteDoodads(mapClickX, mapClickY, map, prevPaste);
+                pasteUnits(mapClickX, mapClickY, map, allowStack, prevPaste);
+                pasteSprites(mapClickX, mapClickY, map, prevPaste);
+                pasteFog(mapClickX, mapClickY, map, prevPaste);
             }
             break;
     }

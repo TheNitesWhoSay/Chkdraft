@@ -1,7 +1,7 @@
 #include "undos.h"
 #include "ui/main_windows/gui_map.h"
 
-IObserveUndos::~IObserveUndos()
+/*IObserveUndos::~IObserveUndos()
 {
 
 }
@@ -106,4 +106,4 @@ void Undos::AdjustChangeCount(int32_t type, int32_t adjustBy)
         observer.ChangesReversed();
     else
         observer.ChangesMade();
-}
+}*/

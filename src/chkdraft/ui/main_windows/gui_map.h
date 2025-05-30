@@ -31,12 +31,11 @@ enum class Direction
     Down
 };
 
-class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos, private Chk::IsomCache
+class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCache
 {
     public:
 /* Public Data  */  Clipboard & clipboard;
                     Selections selections {*this};
-                    Undos undos {*this};
                     std::unique_ptr<Scr::MapGraphics> scrGraphics;
 
 /* Constructor  */  GuiMap(Clipboard & clipboard, const std::string & filePath);

@@ -119,13 +119,13 @@ class Clipboard
 
     void ClearQuickItems();
 
-    void pasteTerrain(TerrainSubLayer terrainSubLayer, s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos, point prevPaste);
-    void pasteDoodads(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos, point prevPaste);
-    void fillPasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos, point prevPaste);
-    void pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos, bool allowStack, point prevPaste);
-    void pasteSprites(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos, point prevPaste);
-    void pasteBrushFog(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos, point prevPaste);
-    void pasteFog(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos, point prevPaste);
+    void pasteTerrain(TerrainSubLayer terrainSubLayer, s32 mapClickX, s32 mapClickY, GuiMap & map, point prevPaste);
+    void pasteDoodads(s32 mapClickX, s32 mapClickY, GuiMap & map, point prevPaste);
+    void fillPasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap & map, point prevPaste);
+    void pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap & map, bool allowStack, point prevPaste);
+    void pasteSprites(s32 mapClickX, s32 mapClickY, GuiMap & map, point prevPaste);
+    void pasteBrushFog(s32 mapClickX, s32 mapClickY, GuiMap & map, point prevPaste);
+    void pasteFog(s32 mapClickX, s32 mapClickY, GuiMap & map, point prevPaste);
         
     void updateTileMiddle(point middle);
     void updateDoodadMiddle(point middle);
@@ -162,7 +162,7 @@ public:
     void beginPasting(bool isQuickPaste);
     void endPasting();
 
-    void doPaste(Layer layer, TerrainSubLayer terrainSubLayer, s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos, bool allowStack);
+    void doPaste(Layer layer, TerrainSubLayer terrainSubLayer, s32 mapClickX, s32 mapClickY, GuiMap & map, bool allowStack);
         
     bool getFillSimilarTiles();
     void toggleFillSimilarTiles();

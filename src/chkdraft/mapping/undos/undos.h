@@ -5,15 +5,15 @@
 #include <list>
 #include <map>
 
-class IObserveUndos
+/*class IObserveUndos
 {
     public:
-        /** Sent whenever a change is made, provided it does
-            not meet the criteria for ChangesReversed */
+        // Sent whenever a change is made, provided it does
+        //    not meet the criteria for ChangesReversed 
         virtual void ChangesMade() = 0;
 
-        /** Sent if all changes to unique types have been reversed
-            since load or since the last call to ResetChangeCount */
+        // Sent if all changes to unique types have been reversed
+        //    since load or since the last call to ResetChangeCount
         virtual void ChangesReversed() = 0;
 
         virtual ~IObserveUndos();
@@ -43,6 +43,6 @@ class Undos
         std::list<ReversiblePtr> undos; // front = next undo
         std::list<ReversiblePtr> redos; // front = next redo
         std::map<int32_t, int32_t> changeCounters; // <type, numChanges>, 1 addition/redo = +1 change, 1 undo = -1 change
-};
+};*/
 
 #endif
