@@ -3197,7 +3197,7 @@ void Scr::MapGraphics::drawDoodadSelection()
 {
     lineVertices.vertices.clear();
     const auto & tileset = scData.terrain.get(map->tileset);
-    for ( auto index : map.selections.doodads )
+    for ( auto index : map.view.doodads.sel() )
     {
         const auto & selDoodad = map.getDoodad(index);
         if ( auto doodadGroupIndex = tileset.getDoodadGroupIndex(selDoodad.type) )

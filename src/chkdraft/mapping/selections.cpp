@@ -56,7 +56,7 @@ void Selections::clear()
 {
     auto edit = map();
     edit->tiles.clearSelections();
-    removeDoodads();
+    edit->doodads.clearSelections();
     edit->sprites.clearSelections();
     edit->units.clearSelections();
     edit->tileFog.clearSelections();
@@ -175,24 +175,6 @@ void Selections::removeLocations()
     map()->locations.clearSelections();
 }
 
-void Selections::addDoodad(size_t index)
-{
-    if ( !doodadIsSelected(index) )
-        doodads.insert(doodads.begin(), index);
-}
-
-void Selections::removeDoodad(size_t index)
-{
-    auto toErase = std::find(doodads.begin(), doodads.end(), index);
-    if ( toErase != doodads.end() )
-        doodads.erase(toErase);
-}
-
-void Selections::removeDoodads()
-{
-    doodads.clear();
-}
-
 bool Selections::unitIsSelected(u16 index)
 {
     for ( const auto unitIndex : map.view.units.sel() )
@@ -205,7 +187,7 @@ bool Selections::unitIsSelected(u16 index)
 
 bool Selections::doodadIsSelected(size_t index)
 {
-    for ( size_t doodadIndex : doodads )
+    for ( size_t doodadIndex : map.view.doodads.sel() )
     {
         if ( doodadIndex == index )
             return true;
@@ -226,6 +208,11 @@ bool Selections::spriteIsSelected(size_t index)
 bool Selections::hasUnits()
 {
     return map.view.units.sel().size() > 0;
+}
+
+bool Selections::hasDoodads()
+{
+    return map.view.doodads.sel().size() > 0;
 }
 
 bool Selections::hasTiles()
@@ -280,8 +267,8 @@ u16 Selections::getFirstUnit()
 
 u16 Selections::getFirstDoodad()
 {
-    if ( doodads.size() > 0 )
-        return u16(doodads[0]);
+    if ( map.view.doodads.sel().size() > 0 )
+        return u16(map.view.doodads.sel().front());
     else
         return 0;
 }

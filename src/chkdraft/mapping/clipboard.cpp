@@ -686,8 +686,7 @@ void Clipboard::copy(GuiMap & map, Layer layer)
                 initializedEdges = true;
             }
 
-            const auto & selectedDoodads = selections.doodads;
-            for ( size_t doodadIndex : selectedDoodads )
+            for ( size_t doodadIndex : map.view.doodads.sel() )
             {
                 const Chk::Doodad & currDoodad = map.getDoodad(doodadIndex);
                 PasteDoodadNode add(currDoodad);

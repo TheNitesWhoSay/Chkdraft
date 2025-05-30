@@ -760,8 +760,9 @@ void GuiMap::setDragging(bool bDragging)
 
 void GuiMap::convertSelectionToTerrain()
 {
-    std::vector<size_t> selectedDoodads = selections.doodads;
-    selections.removeDoodads();
+    auto edit = createAction();
+    std::vector<size_t> selectedDoodads = view.doodads.sel();
+    edit->doodads.clearSelections();
     
     auto undoDoodadConversion = ReversibleActions::Make();
     std::sort(selectedDoodads.begin(), selectedDoodads.end(), [&](size_t lhs, size_t rhs) { return lhs > rhs; }); // Highest index to lowest
@@ -1210,7 +1211,7 @@ void GuiMap::refreshScenario()
 {
     auto edit = createAction();
     edit->tiles.clearSelections();
-    selections.removeDoodads();
+    edit->doodads.clearSelections();
     edit->units.clearSelections();
     edit->sprites.clearSelections();
     edit->tileFog.clearSelections();
@@ -1249,7 +1250,7 @@ void GuiMap::clearSelectedTiles()
 
 void GuiMap::clearSelectedDoodads()
 {
-    selections.removeDoodads();
+    createAction()->doodads.clearSelections();
 }
 
 void GuiMap::clearSelectedUnits()
@@ -1266,7 +1267,7 @@ void GuiMap::clearSelection()
 {
     auto edit = createAction();
     edit->tiles.clearSelections();
-    selections.removeDoodads();
+    edit->doodads.clearSelections();
     edit->sprites.clearSelections();
     edit->units.clearSelections();
     edit->tileFog.clearSelections();
@@ -1297,7 +1298,7 @@ void GuiMap::selectAll()
         for ( size_t i=0; i<Scenario::numDoodads(); ++i )
         {
             if ( !selections.doodadIsSelected(i) )
-                selections.addDoodad(i);
+                edit->doodads.select(i);
         }
     };
     auto selectAllSprites = [&]() {
@@ -1371,9 +1372,9 @@ void GuiMap::deleteSelection()
     };
     auto deleteDoodadSelection = [&]() {
         auto doodadsUndo = ReversibleActions::Make();
-        for ( int i=0; i<selections.doodads.size(); ++i )
+        for ( int i=0; i<view.doodads.sel().size(); ++i )
         {
-            auto selDoodad = selections.doodads[i];
+            auto selDoodad = view.doodads.sel()[i];
             const auto & doodad = read.doodads[selDoodad];
             doodadsUndo->Insert(DoodadCreateDel::Make(u16(selDoodad), doodad));
 
@@ -1421,7 +1422,7 @@ void GuiMap::deleteSelection()
             Scenario::deleteDoodad(selDoodad);
         }
 
-        selections.removeDoodads();
+        edit->doodads.clearSelections();
         AddUndo(doodadsUndo);
     };
     auto deleteUnitSelection = [&]() {
@@ -1827,7 +1828,6 @@ void GuiMap::undo()
     {
         case Layer::Terrain:
         case Layer::Doodads:
-            selections.removeDoodads();
             undos.doUndo(UndoTypes::TerrainChange, this);
             break;
         case Layer::Units:
@@ -1871,7 +1871,6 @@ void GuiMap::redo()
     {
         case Layer::Terrain:
         case Layer::Doodads:
-            selections.removeDoodads();
             undos.doRedo(UndoTypes::TerrainChange, this);
             break;
         case Layer::Units:
@@ -4008,10 +4007,11 @@ void GuiMap::FinalizeUnitSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 
 void GuiMap::FinalizeDoodadSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 {
+    auto edit = createAction();
     selections.endDrag = {mapX, mapY};
     selections.sortDragPoints();
     if ( wParam != MK_CONTROL ) // Remove selected doodads
-        selections.removeDoodads();
+        edit->doodads.clearSelections();
         
     size_t numDoodads = Scenario::numDoodads();
     for ( size_t i=0; i<numDoodads; i++ )
@@ -4034,9 +4034,12 @@ void GuiMap::FinalizeDoodadSelection(HWND hWnd, int mapX, int mapY, WPARAM wPara
             s32 selBottom = selections.endDrag.y;
             bool inBounds = left <= selRight && top <= selBottom && right >= selLeft && bottom >= selTop;
             if ( inBounds )
-                selections.addDoodad(i);
-            else if ( selections.doodadIsSelected(i) && wParam != MK_CONTROL )
-                selections.removeDoodad(i);
+            {
+                if ( selections.doodadIsSelected(i) )
+                    edit->doodads.deselect(i);
+                else
+                    edit->doodads.select(i);
+            }
         }
     }
 }
@@ -4139,7 +4142,7 @@ void GuiMap::FinalizeCutCopyPasteSelection(HWND hWnd, int mapX, int mapY, WPARAM
     if ( (wParam & MK_CONTROL) != MK_CONTROL )
     {
         edit->tiles.clearSelections();
-        selections.removeDoodads();
+        edit->doodads.clearSelections();
         edit->sprites.clearSelections();
         edit->units.clearSelections();
         edit->tileFog.clearSelections();

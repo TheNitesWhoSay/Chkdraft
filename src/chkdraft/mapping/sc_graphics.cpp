@@ -1703,8 +1703,7 @@ void DrawFogTileSel(const WinLib::DeviceContext & dc, ChkdPalette & palette, u16
 void DrawDoodadSel(const WinLib::DeviceContext & dc, u16 width, u16 height, u32 screenLeft, u32 screenTop, Selections & selections, GuiMap & map)
 {
     dc.setPen(PS_SOLID, 0, RGB(255, 0, 0));
-    const auto & selDoodads = selections.doodads;
-    for ( auto index : selDoodads )
+    for ( auto index : map.view.doodads.sel() )
     {
         const auto & selDoodad = map.getDoodad(index);
         const auto & tileset = chkd.scData.terrain.get(CM->getTileset());

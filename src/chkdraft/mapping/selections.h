@@ -38,8 +38,6 @@ public:
     point startDrag { -1, -1 };
     point endDrag { -1, -1 };
 
-    std::vector<size_t> doodads {};
-
     RenderedSelTiles renderTiles; // TODO: This should be part of some kind of common graphics data, not here
     RenderedSelTiles renderFogTiles; // TODO: This should be part of some kind of common graphics data, not here
 
@@ -60,15 +58,11 @@ public:
     bool selFlagsIndicateInside() const;
     void removeLocations();
 
-    void addDoodad(size_t index);
-    void removeDoodad(size_t index);
-    void removeDoodads();
-
     bool unitIsSelected(u16 index);
     bool doodadIsSelected(size_t doodadIndex);
     bool spriteIsSelected(size_t spriteIndex);
     bool hasUnits();
-    bool hasDoodads() { return doodads.size() > 0; }
+    bool hasDoodads();
     bool hasTiles();
     bool hasSprites();
     bool hasFogTiles();

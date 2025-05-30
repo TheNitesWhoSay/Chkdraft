@@ -419,8 +419,7 @@ void Maps::ChangePlayer(u8 newPlayer, bool updateMapPlayers)
             {
                 auto doodadPlayerChangeUndo = ReversibleActions::Make();
                 const auto & tileset = chkd.scData.terrain.get(currentlyActiveMap->getTileset());
-                auto & selDoodads = currentlyActiveMap->selections.doodads;
-                for ( auto doodadIndex : selDoodads )
+                for ( auto doodadIndex : currentlyActiveMap->view.doodads.sel() )
                 {
                     const auto & selDoodad = currentlyActiveMap->getDoodad(doodadIndex);
                     if ( auto doodadGroupIndex = tileset.getDoodadGroupIndex(selDoodad.type) )
