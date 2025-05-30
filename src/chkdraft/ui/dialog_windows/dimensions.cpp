@@ -90,7 +90,6 @@ void DimensionsWindow::ResizeChangeTileset()
         }
         else
         {
-            auto dimensionsUndo = DimensionChange::Make((void*)CM.get());
             if ( Sc::Terrain::Tileset(newTilesetIndex) != CM->getTileset() )
                 CM->setTileset(Sc::Terrain::Tileset(newTilesetIndex));
 
@@ -98,11 +97,9 @@ void DimensionsWindow::ResizeChangeTileset()
                 if ( width != CM->getTileWidth() || height != CM->getTileHeight() || leftOffset != 0 || topOffset != 0 )
                     CM->setDimensions(width, height, Scenario::SizeValidationFlag::Default, leftOffset, topOffset, size_t(newTerrainTypeIndex));
 
-                CM->AddUndo(dimensionsUndo);
                 CM->refreshScenario();
                 DestroyThis();
             }  catch ( std::exception & e ) {
-                CM->AddUndo(dimensionsUndo);
                 CM->undo();
                 CM->refreshScenario();
                 DestroyThis();

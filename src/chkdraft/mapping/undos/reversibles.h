@@ -13,7 +13,7 @@ class Reversible
         virtual int32_t Count() = 0;
 };
 
-using ReversiblePtr = std::shared_ptr<Reversible>;
+//using ReversiblePtr = std::shared_ptr<Reversible>;
 
 class ReversibleAction : public Reversible
 {

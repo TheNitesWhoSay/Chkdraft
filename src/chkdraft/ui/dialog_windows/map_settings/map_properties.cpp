@@ -281,7 +281,6 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     {
         if ( HIWORD(wParam) == BN_CLICKED )
         {
-            auto dimensionsUndo = DimensionChange::Make((void*)CM.get());
             Sc::Terrain::Tileset newTileset = (Sc::Terrain::Tileset)SendMessage(GetDlgItem(hWnd, Id::CB_MAPTILESET), CB_GETCURSEL, 0, 0);
             size_t newMapTerrain = dropNewMapTerrain.GetSelData();
             CM->setTileset(newTileset);
@@ -289,7 +288,6 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             if ( editMapWidth.GetEditNum<u16>(newWidth) && editMapHeight.GetEditNum<u16>(newHeight) )
                 CM->setDimensions(newWidth, newHeight, Scenario::SizeValidationFlag::Default, 0, 0, newMapTerrain);
             
-            CM->AddUndo(dimensionsUndo);
             CM->refreshScenario();
             CM->Redraw(true);
         }

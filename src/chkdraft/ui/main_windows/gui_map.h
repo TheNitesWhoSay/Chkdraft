@@ -116,8 +116,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCach
                     bool pastingToGrid();
                     void moveSelection(Direction direction, bool useGrid);
 
-/*   Undo Redo  */  void AddUndo(ReversiblePtr action);
-                    void undo();
+/*   Undo Redo  */  void undo();
                     void redo();
                     virtual void ChangesMade();
                     virtual void ChangesReversed();

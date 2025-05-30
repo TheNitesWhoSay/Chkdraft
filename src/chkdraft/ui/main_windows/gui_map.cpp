@@ -1408,7 +1408,6 @@ void GuiMap::deleteSelection()
         if ( index != NO_LOCATION && index < Scenario::numLocations() )
         {
             const Chk::Location & loc = Scenario::getLocation(index);
-            AddUndo(LocationCreateDel::Make(index));
 
             chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
 
@@ -1758,11 +1757,6 @@ bool GuiMap::pastingToGrid()
         case Layer::CutCopyPaste: return this->snapCutCopyPasteSel;
     }
     return false;
-}
-
-void GuiMap::AddUndo(ReversiblePtr action)
-{
-    // TODO: Delete method
 }
 
 void GuiMap::undo()
