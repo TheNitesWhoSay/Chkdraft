@@ -39,7 +39,6 @@ public:
     point endDrag { -1, -1 };
 
     std::vector<size_t> doodads {};
-    std::vector<size_t> sprites {};
 
     RenderedSelTiles renderTiles; // TODO: This should be part of some kind of common graphics data, not here
     RenderedSelTiles renderFogTiles; // TODO: This should be part of some kind of common graphics data, not here
@@ -65,20 +64,13 @@ public:
     void removeDoodad(size_t index);
     void removeDoodads();
 
-    void addSprite(size_t index);
-    void removeSprite(size_t index);
-    void removeSprites();
-    void ensureSpriteFirst(u16 index); // Moves the sprite @ index
-    void sendSpriteMove(u16 oldIndex, u16 newIndex);
-    void finishSpriteMove();
-
     bool unitIsSelected(u16 index);
     bool doodadIsSelected(size_t doodadIndex);
     bool spriteIsSelected(size_t spriteIndex);
     bool hasUnits();
     bool hasDoodads() { return doodads.size() > 0; }
     bool hasTiles();
-    bool hasSprites() { return sprites.size() > 0; }
+    bool hasSprites();
     bool hasFogTiles();
     u16 numUnits();
     u16 numSprites();

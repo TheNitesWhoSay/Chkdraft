@@ -4,6 +4,7 @@
 #include <mapping_core/mapping_core.h>
 #include "mapping/selections.h"
 
+// TODO: This is used exclusively for undos, remove this
 class PreservedSpriteStats
 {
     public:

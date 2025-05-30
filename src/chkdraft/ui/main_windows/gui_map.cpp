@@ -832,8 +832,7 @@ void GuiMap::stackSelected()
     }
     else if ( currLayer == Layer::Sprites && selections.hasSprites() && Scenario::numSprites() + (size_t(stackSize)*selections.numSprites()) < 4000 )
     {
-        auto & selectedSprites = selections.sprites;
-        for ( auto & selectedSprite : selectedSprites )
+        for ( auto selectedSprite : view.sprites.sel() )
         {
             auto sprite = CM->getSprite(selectedSprite);
             for ( int i=0; i<stackSize-1; ++i )
@@ -1213,7 +1212,7 @@ void GuiMap::refreshScenario()
     edit->tiles.clearSelections();
     selections.removeDoodads();
     edit->units.clearSelections();
-    selections.removeSprites();
+    edit->sprites.clearSelections();
     edit->tileFog.clearSelections();
     chkd.mainPlot.leftBar.blockSelections = true;
     chkd.mainPlot.leftBar.mainTree.isomTree.UpdateIsomTree();
@@ -1268,7 +1267,7 @@ void GuiMap::clearSelection()
     auto edit = createAction();
     edit->tiles.clearSelections();
     selections.removeDoodads();
-    selections.removeSprites();
+    edit->sprites.clearSelections();
     edit->units.clearSelections();
     edit->tileFog.clearSelections();
     selections.removeLocations();
@@ -1303,11 +1302,12 @@ void GuiMap::selectAll()
     };
     auto selectAllSprites = [&]() {
         chkd.spriteWindow.SetChangeHighlightOnly(true);
+
         for ( size_t i=0; i<Scenario::numSprites(); ++i )
         {
             if ( !selections.spriteIsSelected(i) )
             {
-                selections.addSprite(i);
+                edit->sprites.select(i);
                 if ( chkd.spriteWindow.getHandle() != nullptr )
                     chkd.spriteWindow.FocusAndSelectIndex(u16(i));
             }
@@ -1472,21 +1472,8 @@ void GuiMap::deleteSelection()
     auto deleteSpriteSelection = [&]() {
         if ( chkd.spriteWindow.getHandle() != nullptr )
             SendMessage(chkd.spriteWindow.getHandle(), WM_COMMAND, MAKEWPARAM(IDC_BUTTON_DELETE, NULL), 0);
-        else
-        {
-            auto deletes = ReversibleActions::Make();
-            while ( selections.hasSprites() )
-            {
-                // Get the highest index in the selection
-                auto index = selections.getHighestSpriteIndex();
-                selections.removeSprite(index);
-
-                const Chk::Sprite & delSprite = Scenario::getSprite(index);
-                deletes->Insert(SpriteCreateDel::Make(index, delSprite));
-                Scenario::deleteSprite(index);
-            }
-            AddUndo(deletes);
-        }
+        else if ( selections.hasSprites() )
+            edit->sprites.removeSelection();
     };
     auto deleteFogTileSelection = [&]() {
         auto tileWidth = Scenario::getTileWidth();
@@ -1578,8 +1565,7 @@ void GuiMap::PlayerChanged(u8 newPlayer)
     else if ( currLayer == Layer::Sprites )
     {
         auto spriteChanges = ReversibleActions::Make();
-        auto & selSprites = selections.sprites;
-        for ( size_t spriteIndex : selSprites )
+        for ( size_t spriteIndex : view.sprites.sel() )
         {
             const Chk::Sprite & sprite = Scenario::getSprite(spriteIndex);
             spriteChanges->Insert(SpriteChange::Make(spriteIndex, sprite));
@@ -1681,7 +1667,7 @@ void GuiMap::moveSelection(Direction direction, bool useGrid)
                         PreservedSpriteStats preservedStats {};
                         preservedStats.AddStats(selections, Chk::Sprite::Field::Xc);
                         auto diff = ((firstSprite.xc-gridOffX) % gridWidth) > 0 ? ((firstSprite.xc-gridOffX) % gridWidth) : gridWidth;
-                        for ( auto spriteIndex : selections.sprites )
+                        for ( auto spriteIndex : view.sprites.sel() )
                             edit->sprites[spriteIndex].xc -= diff;
                         preservedStats.convertToUndo();
                     }
@@ -1691,7 +1677,7 @@ void GuiMap::moveSelection(Direction direction, bool useGrid)
                         PreservedSpriteStats preservedStats {};
                         preservedStats.AddStats(selections, Chk::Sprite::Field::Yc);
                         auto diff = ((firstSprite.yc-gridOffY) % gridHeight) > 0 ? ((firstSprite.yc-gridOffY) % gridHeight) : gridHeight;
-                        for ( auto spriteIndex : selections.sprites )
+                        for ( auto spriteIndex : view.sprites.sel() )
                             edit->sprites[spriteIndex].yc -= diff;
                         preservedStats.convertToUndo();
                     }
@@ -1701,7 +1687,7 @@ void GuiMap::moveSelection(Direction direction, bool useGrid)
                         PreservedSpriteStats preservedStats {};
                         preservedStats.AddStats(selections, Chk::Sprite::Field::Xc);
                         auto diff = ((firstSprite.xc-gridOffX) % gridWidth) > 0 ? (gridWidth-((firstSprite.xc-gridOffX) % gridWidth)) : gridWidth;
-                        for ( auto spriteIndex : selections.sprites )
+                        for ( auto spriteIndex : view.sprites.sel() )
                             edit->sprites[spriteIndex].xc += diff;
                         preservedStats.convertToUndo();
                     }
@@ -1711,7 +1697,7 @@ void GuiMap::moveSelection(Direction direction, bool useGrid)
                         PreservedSpriteStats preservedStats {};
                         preservedStats.AddStats(selections, Chk::Sprite::Field::Yc);
                         auto diff = ((firstSprite.yc-gridOffY) % gridHeight) > 0 ? (gridHeight-((firstSprite.yc-gridOffY) % gridHeight)) : gridHeight;
-                        for ( auto spriteIndex : selections.sprites )
+                        for ( auto spriteIndex : view.sprites.sel() )
                             edit->sprites[spriteIndex].yc += diff;
                         preservedStats.convertToUndo();
                     }
@@ -1766,7 +1752,7 @@ void GuiMap::moveSelection(Direction direction, bool useGrid)
             }
             break;
         case Layer::Sprites:
-            for ( auto spriteIndex : selections.sprites )
+            for ( auto spriteIndex : view.sprites.sel() )
             {
                 auto & sprite = Scenario::getSprite(spriteIndex);
                 switch ( direction )
@@ -1864,7 +1850,6 @@ void GuiMap::undo()
             }
             break;
         case Layer::Sprites:
-            selections.removeSprites();
             undos.doUndo(UndoTypes::SpriteChange, this);
             if ( chkd.spriteWindow.getHandle() != nullptr )
                 chkd.spriteWindow.RepopulateList();
@@ -1906,7 +1891,6 @@ void GuiMap::redo()
             refreshScenario();
             break;
         case Layer::Sprites:
-            selections.removeSprites();
             undos.doRedo(UndoTypes::SpriteChange, this);
             if ( chkd.spriteWindow.getHandle() != nullptr )
                 chkd.spriteWindow.RepopulateList();
@@ -4059,6 +4043,7 @@ void GuiMap::FinalizeDoodadSelection(HWND hWnd, int mapX, int mapY, WPARAM wPara
 
 void GuiMap::FinalizeSpriteSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 {
+    auto edit = createAction();
     selections.endDrag = {mapX, mapY};
     selections.sortDragPoints();
     if ( wParam != MK_CONTROL )
@@ -4066,13 +4051,12 @@ void GuiMap::FinalizeSpriteSelection(HWND hWnd, int mapX, int mapY, WPARAM wPara
         if ( chkd.spriteWindow.getHandle() != nullptr )
         {
             chkd.spriteWindow.SetChangeHighlightOnly(true);
-            auto & selSprites = selections.sprites;
-            for ( auto spriteIndex : selSprites )
+            for ( auto spriteIndex : view.sprites.sel() )
                 chkd.spriteWindow.DeselectIndex(u16(spriteIndex));
             
             chkd.spriteWindow.SetChangeHighlightOnly(false);
         }
-        selections.removeSprites();
+        edit->sprites.clearSelections();
         chkd.spriteWindow.UpdateEnabledState();
     }
 
@@ -4088,9 +4072,9 @@ void GuiMap::FinalizeSpriteSelection(HWND hWnd, int mapX, int mapY, WPARAM wPara
         {
             bool wasSelected = selections.spriteIsSelected(i);
             if ( wasSelected )
-                selections.removeSprite(i);
+                edit->sprites.deselect(i);
             else
-                selections.addSprite(i);
+                edit->sprites.select(i);
 
             if ( chkd.spriteWindow.getHandle() != nullptr )
             {
@@ -4156,7 +4140,7 @@ void GuiMap::FinalizeCutCopyPasteSelection(HWND hWnd, int mapX, int mapY, WPARAM
     {
         edit->tiles.clearSelections();
         selections.removeDoodads();
-        selections.removeSprites();
+        edit->sprites.clearSelections();
         edit->units.clearSelections();
         edit->tileFog.clearSelections();
     }

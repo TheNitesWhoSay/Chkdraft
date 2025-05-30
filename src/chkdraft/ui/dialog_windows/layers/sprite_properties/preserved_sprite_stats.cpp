@@ -20,7 +20,7 @@ void PreservedSpriteStats::Clear()
 
 void PreservedSpriteStats::AddStats(Selections & sel, Chk::Sprite::Field statField)
 {
-    Clear();
+    /*Clear();
     field = statField;
     for ( size_t & spriteIndex : sel.sprites )
     {
@@ -34,12 +34,12 @@ void PreservedSpriteStats::AddStats(Selections & sel, Chk::Sprite::Field statFie
             case Chk::Sprite::Field::Unused: preservedValues.push_back(sprite.unused); break;
             case Chk::Sprite::Field::Flags: preservedValues.push_back(sprite.flags); break;
         }
-    }
+    }*/
 }
 
 void PreservedSpriteStats::convertToUndo()
 {
-    if ( preservedValues.size() > 0 )
+    /*if ( preservedValues.size() > 0 )
     {
         // For each selected sprite, add the corresponding undo from values
         u32 i = 0;
@@ -62,5 +62,5 @@ void PreservedSpriteStats::convertToUndo()
         }
         CM->AddUndo(spriteChanges);
     }
-    Clear();
+    Clear();*/
 }

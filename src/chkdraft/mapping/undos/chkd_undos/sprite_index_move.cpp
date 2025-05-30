@@ -43,7 +43,7 @@ std::shared_ptr<SpriteIndexMoveBoundary> SpriteIndexMoveBoundary::Make()
 
 void SpriteIndexMoveBoundary::Reverse(void *guiMap)
 {
-    ((GuiMap*)guiMap)->selections.finishSpriteMove();
+    //((GuiMap*)guiMap)->selections.finishSpriteMove();
 }
 
 int32_t SpriteIndexMoveBoundary::GetType()

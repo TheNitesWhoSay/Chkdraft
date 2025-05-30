@@ -57,7 +57,7 @@ void Selections::clear()
     auto edit = map();
     edit->tiles.clearSelections();
     removeDoodads();
-    removeSprites();
+    edit->sprites.clearSelections();
     edit->units.clearSelections();
     edit->tileFog.clearSelections();
     edit->locations.clearSelections();
@@ -193,59 +193,6 @@ void Selections::removeDoodads()
     doodads.clear();
 }
 
-void Selections::addSprite(size_t index)
-{
-    if ( !spriteIsSelected(index) )
-        sprites.insert(sprites.begin(), index);
-}
-
-void Selections::removeSprite(size_t index)
-{
-    auto toErase = std::find(sprites.begin(), sprites.end(), index);
-    if ( toErase != sprites.end() )
-        sprites.erase(toErase);
-}
-
-void Selections::removeSprites()
-{
-    sprites.clear();
-}
-
-void Selections::ensureSpriteFirst(u16 index)
-{
-    if ( sprites.size() > 0 && sprites[0] != size_t(index) )
-    {
-        auto toErase = std::find(sprites.begin(), sprites.end(), size_t(index));
-        if ( toErase != sprites.end() )
-        {
-            sprites.erase(toErase);
-            sprites.insert(sprites.begin(), size_t(index));
-        }
-    }
-}
-
-void Selections::sendSpriteMove(u16 oldIndex, u16 newIndex)
-{
-    for ( size_t & spriteIndex : sprites )
-    {
-        if ( spriteIndex == size_t(newIndex) )
-            spriteIndex = oldIndex | SelSortFlags::Moved;
-        else if ( size_t(newIndex) > spriteIndex && size_t(oldIndex) <= spriteIndex ) // The moved sprite was somewhere ahead of track and is now behind track
-            spriteIndex++; // Selected sprite index needs to be moved forward
-        else if ( size_t(newIndex) < spriteIndex && size_t(oldIndex) >= spriteIndex ) // The moved sprite was somewhere behind track and is now ahead of track
-            spriteIndex--; // Selected sprite index needs to be moved backward
-    }
-}
-
-void Selections::finishSpriteMove()
-{
-    for ( size_t & spriteIndex : sprites )
-    {
-        if ( spriteIndex & SelSortFlags::Moved )
-            spriteIndex &= SelSortFlags::Unmove;
-    }
-}
-
 bool Selections::unitIsSelected(u16 index)
 {
     for ( const auto unitIndex : map.view.units.sel() )
@@ -268,7 +215,7 @@ bool Selections::doodadIsSelected(size_t index)
 
 bool Selections::spriteIsSelected(size_t index)
 {
-    for ( size_t spriteIndex : sprites )
+    for ( size_t spriteIndex : map.view.sprites.sel() )
     {
         if ( spriteIndex == index )
             return true;
@@ -286,6 +233,11 @@ bool Selections::hasTiles()
     return map.view.tiles.sel().size() > 0;
 }
 
+bool Selections::hasSprites()
+{
+    return map.view.sprites.sel().size() > 0;
+}
+
 bool Selections::hasFogTiles()
 {
     return map.view.tileFog.sel().size() > 0;
@@ -301,8 +253,8 @@ u16 Selections::numUnits()
 
 u16 Selections::numSprites()
 {
-    if ( sprites.size() < u16_max )
-        return (u16)sprites.size();
+    if ( map.view.sprites.sel().size() < u16_max )
+        return (u16)map.view.sprites.sel().size();
     else
         return u16_max;
 }
@@ -336,8 +288,8 @@ u16 Selections::getFirstDoodad()
 
 size_t Selections::getFirstSprite()
 {
-    if ( sprites.size() > 0 )
-        return sprites[0];
+    if ( map.view.sprites.sel().size() > 0 )
+        return map.view.sprites.sel().front();
     else
         return 0;
 }
@@ -371,7 +323,7 @@ u16 Selections::getLowestUnitIndex()
 size_t Selections::getHighestSpriteIndex()
 {
     int highestIndex = -1;
-    for ( size_t spriteIndex : sprites )
+    for ( size_t spriteIndex : map.view.sprites.sel() )
     {
         if ( (int)spriteIndex > highestIndex )
             highestIndex = (int)spriteIndex;
@@ -382,7 +334,7 @@ size_t Selections::getHighestSpriteIndex()
 size_t Selections::getLowestSpriteIndex()
 {
     size_t lowestIndex = std::numeric_limits<size_t>::max();
-    for ( size_t spriteIndex : sprites )
+    for ( size_t spriteIndex : map.view.sprites.sel() )
     {
         if ( spriteIndex < lowestIndex )
             lowestIndex = spriteIndex;
@@ -390,6 +342,7 @@ size_t Selections::getLowestSpriteIndex()
     return lowestIndex;
 }
 
+// TODO: These sorts aren't relevant anymore?
 void Selections::sortUnits(bool ascending)
 {
     auto edit = map.operator()();
@@ -401,8 +354,9 @@ void Selections::sortUnits(bool ascending)
 
 void Selections::sortSprites(bool ascending)
 {
+    auto edit = map.operator()();
     if ( ascending )
-        std::sort(sprites.begin(), sprites.end());
+        edit->sprites.sortSelection();
     else // Sort descending
-        std::sort(sprites.begin(), sprites.end(), std::greater<size_t>());
+        edit->sprites.sortSelectionDescending(); // TODO: why is the non-sel op "Desc" and the sel op "Descending"
 }

@@ -745,8 +745,7 @@ void Clipboard::copy(GuiMap & map, Layer layer)
                 initializedEdges = true;
             }
 
-            auto & selectedSprites = selections.sprites;
-            for ( size_t spriteIndex : selectedSprites )
+            for ( size_t spriteIndex : map.view.sprites.sel() )
             {
                 const Chk::Sprite & currSprite = map.getSprite(spriteIndex);
                 PasteSpriteNode add(currSprite);

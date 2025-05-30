@@ -2789,7 +2789,7 @@ void Scr::MapGraphics::drawImageSelections()
         }
     }
 
-    for ( auto spriteIndex : map.selections.sprites )
+    for ( auto spriteIndex : map.view.sprites.sel() )
     {
         if ( spriteIndex < map->sprites.size() )
         {
