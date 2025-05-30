@@ -58,7 +58,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     virtual void setTileset(Sc::Terrain::Tileset tileset);
                     void setDimensions(u16 newTileWidth, u16 newTileHeight, u16 sizeValidationFlags = SizeValidationFlag::Default, s32 leftEdge = 0, s32 topEdge = 0, size_t newTerrainType = 0);
                     bool placeIsomTerrain(Chk::IsomDiamond isomDiamond, size_t terrainType, size_t brushExtent);
-                    void unlinkAndDeleteUnit(size_t unitIndex, std::shared_ptr<ReversibleActions> opUndos);
+                    void unlinkAndDeleteUnit(size_t unitIndex);
                     void changeUnitOwner(size_t unitIndex, u8 newPlayer, std::shared_ptr<ReversibleActions> opUndos);
 
 /*   UI Accel   */  Layer getLayer();

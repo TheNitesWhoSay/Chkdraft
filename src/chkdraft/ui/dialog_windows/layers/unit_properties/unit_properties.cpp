@@ -248,8 +248,7 @@ void UnitPropertiesWindow::ChangeCurrOwner(u8 newOwner)
 {
     auto edit = CM->operator()();
     auto undoableChanges = ReversibleActions::Make();
-    auto & selUnits = CM->selections.units;
-    for ( u16 unitIndex : selUnits )
+    for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
         if ( unit.owner != newOwner ) // If the current and new owners are different
@@ -394,8 +393,7 @@ void UnitPropertiesWindow::RepopulateList()
             u16 selectedIndex = selections.getFirstUnit();
             listUnits.FocusItem(selectedIndex);
 
-            auto & selUnits = selections.units;
-            for ( u16 & unitIndex : selUnits )
+            for ( auto unitIndex : CM->view.units.sel() )
                 listUnits.SelectRow(unitIndex);
 
             EnableUnitEditing();
@@ -572,8 +570,8 @@ void UnitPropertiesWindow::UpdateLinkArea(const Chk::Unit & unit)
         bool linkable = false;
         if ( CM->selections.numUnits() == 2 )
         {
-            auto firstIndex = CM->selections.units[0];
-            auto secondIndex = CM->selections.units[1];
+            auto firstIndex = CM->view.units.sel()[0];
+            auto secondIndex = CM->view.units.sel()[1];
             if ( firstIndex != secondIndex && firstIndex < CM->numUnits() && secondIndex < CM->numUnits() )
             {
                 auto & first = CM->getUnit(firstIndex);
@@ -771,6 +769,7 @@ void UnitPropertiesWindow::LvColumnClicked(NMHDR* nmhdr)
 
 void UnitPropertiesWindow::LvItemChanged(NMHDR* nmhdr)
 {
+    auto edit = CM->operator()();
     Selections & selections = CM->selections;
     preservedStats.convertToUndo();
     if ( !changeHighlightOnly )
@@ -782,7 +781,9 @@ void UnitPropertiesWindow::LvItemChanged(NMHDR* nmhdr)
                                                                            // Add item to selection
         {
             bool firstSelected = !selections.hasUnits();
-            selections.addUnit(index);
+            const auto & sel = CM->view.units.sel();
+            if ( std::find(sel.begin(), sel.end(), index) == sel.end() )
+                edit->units.select(index);
 
             if ( firstSelected )
                 EnableUnitEditing();
@@ -797,7 +798,7 @@ void UnitPropertiesWindow::LvItemChanged(NMHDR* nmhdr)
         else if ( itemInfo->uOldState & LVIS_SELECTED ) // From selected to not selected
                                                         // Remove item from selection
         {
-            selections.removeUnit(index);
+            edit->units.deselect(index);
             if ( CM->selections.hasUnits() && CM->selections.getFirstUnit() < CM->numUnits() )
             {
                 initilizing = true;
@@ -847,224 +848,73 @@ void UnitPropertiesWindow::NotifyClosePressed()
 
 void UnitPropertiesWindow::NotifyMoveTopPressed()
 {
-    Selections & selections = CM->selections;
-
-    u16 unitStackTopIndex = selections.getFirstUnit();
-    selections.sortUnits(true); // sort with lowest indexes first
-
-    listUnits.SetRedraw(false);
-
-    auto unitChanges = ReversibleActions::Make();
-    unitChanges->Insert(UnitIndexMoveBoundary::Make());
-    u16 i = 0;
-    auto & selUnits = selections.units;
-    for ( u16 & unitIndex : selUnits )
+    if ( CM->selections.hasUnits() )
     {
-        if ( unitIndex != 0 ) // If unit is not at the destination index and unitptr can be retrieved
-        {
-            Chk::Unit preserve = CM->getUnit(unitIndex); // Preserve the unit info
-            CM->deleteUnit(unitIndex);
-            CM->insertUnit(i, preserve);
-            unitChanges->Insert(UnitIndexMove::Make(unitIndex, i));
-            if ( unitIndex == unitStackTopIndex )
-                unitStackTopIndex = i;
-
-            unitIndex = i; // Modify the index that denotes unit selection
-        }
-        i++;
+        listUnits.SetRedraw(false);
+        CM->operator()()->units.moveSelectionsTop();
+        RepopulateList();
+        listUnits.SetRedraw(true);
     }
-
-    unitChanges->Insert(UnitIndexMoveBoundary::Make());
-    if ( unitChanges->Count() > 2 )
-        CM->AddUndo(unitChanges);
-
-    selections.ensureUnitFirst(unitStackTopIndex);
-    RepopulateList();
 }
 
 void UnitPropertiesWindow::NotifyMoveEndPressed()
 {
-    Selections & selections = CM->selections;
-
-    u16 unitStackTopIndex = selections.getFirstUnit();
-    selections.sortUnits(false); // Highest First
-
-    listUnits.SetRedraw(false);
-    size_t numUnits = CM->numUnits();
-    u16 numUnitsSelected = selections.numUnits();
-
-    u16 i = 1;
-    auto unitChanges = ReversibleActions::Make();
-    unitChanges->Insert(UnitIndexMoveBoundary::Make());
-    auto & selUnits = selections.units;
-    for ( u16 & unitIndex : selUnits )
+    if ( CM->selections.hasUnits() )
     {
-        if ( unitIndex != numUnits - 1 )
-        {
-            Chk::Unit preserve = CM->getUnit(unitIndex);
-            CM->deleteUnit(unitIndex);
-            CM->insertUnit(numUnits - i, preserve);
-            unitChanges->Insert(UnitIndexMove::Make(unitIndex, u16(numUnits - i)));
-
-            if ( unitIndex == unitStackTopIndex )
-                unitStackTopIndex = u16(numUnits - i);
-
-            unitIndex = u16(numUnits - i);
-        }
-        i++;
+        listUnits.SetRedraw(false);
+        CM->operator()()->units.moveSelectionsBottom();
+        RepopulateList();
+        listUnits.SetRedraw(true);
     }
-
-    unitChanges->Insert(UnitIndexMoveBoundary::Make());
-    if ( unitChanges->Count() > 2 )
-        CM->AddUndo(unitChanges);
-
-    selections.ensureUnitFirst(unitStackTopIndex);
-    RepopulateList();
 }
 
 void UnitPropertiesWindow::NotifyMoveUpPressed()
 {
-    Selections & selections = CM->selections;
-    HWND hUnitList = listUnits.getHandle();
-
-    selections.sortUnits(true);
-    listUnits.SetRedraw(false);
-
-    auto unitChanges = ReversibleActions::Make();
-    unitChanges->Insert(UnitIndexMoveBoundary::Make());
-    auto & selUnits = selections.units;
-    for ( u16 & unitIndex : selUnits )
+    if ( CM->selections.hasUnits() )
     {
-        if ( unitIndex > 0 && !selections.unitIsSelected(unitIndex - 1) )
-        {
-            CM->moveUnit(unitIndex, unitIndex-1);
-            unitChanges->Insert(UnitIndexMove::Make(unitIndex, unitIndex - 1));
-            SwapIndexes(hUnitList, unitIndex, unitIndex - 1);
-            unitIndex--;
-        }
+        listUnits.SetRedraw(false);
+        CM->operator()()->units.moveSelectionsUp();
+        RepopulateList();
+        listUnits.SetRedraw(true);
     }
-
-    ListView_SortItems(hUnitList, ForwardCompareLvItems, this);
-    int row = listUnits.GetItemRow(selections.getHighestUnitIndex());
-    listUnits.EnsureVisible(row, false);
-    row = listUnits.GetItemRow(selections.getLowestUnitIndex());
-    listUnits.EnsureVisible(row, false);
-    unitChanges->Insert(UnitIndexMoveBoundary::Make());
-
-    if ( unitChanges->Count() > 2 )
-        CM->AddUndo(unitChanges);
-
-    listUnits.SetRedraw(true);
 }
 
 void UnitPropertiesWindow::NotifyMoveDownPressed()
 {
-    Selections & selections = CM->selections;
-    HWND hUnitList = listUnits.getHandle();
-
-    selections.sortUnits(false);
-    listUnits.SetRedraw(false);
-
-    auto unitChanges = ReversibleActions::Make();
-    unitChanges->Insert(UnitIndexMoveBoundary::Make());
-    auto & selUnits = selections.units;
-    for ( u16 & unitIndex : selUnits )
+    if ( CM->selections.hasUnits() )
     {
-        if ( size_t(unitIndex+1) < CM->numUnits() && !selections.unitIsSelected(unitIndex + 1) )
-        {
-            CM->moveUnit(unitIndex, unitIndex+1);
-            unitChanges->Insert(UnitIndexMove::Make(unitIndex, unitIndex + 1));
-            SwapIndexes(hUnitList, unitIndex, unitIndex + 1);
-            unitIndex++;
-        }
+        listUnits.SetRedraw(false);
+        CM->operator()()->units.moveSelectionsDown();
+        RepopulateList();
+        listUnits.SetRedraw(true);
     }
-
-    unitChanges->Insert(UnitIndexMoveBoundary::Make());
-    if ( unitChanges->Count() > 2 )
-        CM->AddUndo(unitChanges);
-
-    ListView_SortItems(hUnitList, ForwardCompareLvItems, this);
-    int row = listUnits.GetItemRow(selections.getLowestUnitIndex());
-    listUnits.EnsureVisible(row, false);
-    row = listUnits.GetItemRow(selections.getHighestUnitIndex());
-    listUnits.EnsureVisible(row, false);
-    listUnits.SetRedraw(true);
 }
 
 void UnitPropertiesWindow::NotifyMoveToPressed()
 {
     u32 unitMoveTo = 0;
-    if ( MoveToDialog<u32>::GetIndex(unitMoveTo, getHandle()) && unitMoveTo < u32(CM->numUnits()) )
+    if ( CM->selections.hasUnits() && MoveToDialog<u32>::GetIndex(unitMoveTo, getHandle()) && unitMoveTo < u32(CM->numUnits()) )
     {
-        if ( unitMoveTo == 0 )
-        {
-            NotifyMoveTopPressed();
-        }
-        else if ( unitMoveTo + CM->selections.numUnits() >= CM->numUnits() )
-        {
-            NotifyMoveEndPressed();
-        }
-        else if ( unitMoveTo > 0 )
-        {
-            Selections & selections = CM->selections;
-            u16 numUnitsSelected = selections.numUnits();
-            size_t limit = CM->numUnits() - 1;
-
-            u16 unitStackTopIndex = selections.getFirstUnit();
-            u16 numUnits = selections.numUnits(),
-                shift = numUnits - 1;
-
-            selections.sortUnits(false); // Highest First
-            listUnits.SetRedraw(false);
-
-            std::vector<Chk::Unit> selectedUnits{size_t(numUnitsSelected)};
-            auto unitCreateDels = ReversibleActions::Make();
-            u16 i = 0;
-            auto & selUnits = selections.units;
-            for ( u16 & unitIndex : selUnits )
-            { // Remove each selected unit from the map, store in selectedUnits
-                u32 loc = ((u32)unitIndex)*sizeof(Chk::Unit);
-                selectedUnits[shift - i] = CM->getUnit(unitIndex);
-                CM->deleteUnit(unitIndex);
-                unitCreateDels->Insert(UnitCreateDel::Make((u16)unitIndex, selectedUnits[shift - i]));
-                unitIndex = u16(unitMoveTo + shift - i);
-                i++;
-            }
-
-            for ( int i = 0; i < numUnits; i++ )
-            {
-                CM->insertUnit(unitMoveTo + i, selectedUnits[i]);
-                unitCreateDels->Insert(UnitCreateDel::Make(unitMoveTo + i));
-            }
-
-            selections.finishUnitMove();
-            selections.ensureUnitFirst(unitStackTopIndex);
-            CM->AddUndo(unitCreateDels);
-            RepopulateList();
-        }
+        listUnits.SetRedraw(false);
+        CM->operator()()->units.moveSelectionsTo(unitMoveTo);
+        RepopulateList();
+        listUnits.SetRedraw(true);
     }
 }
 
 void UnitPropertiesWindow::NotifyDeletePressed()
 {
-    Selections & selections = CM->selections;
-    HWND hUnitList = listUnits.getHandle();
-    listUnits.SetRedraw(false);
-    auto unitDeletes = ReversibleActions::Make();
-    while ( selections.hasUnits() )
+    if ( CM->selections.hasUnits() )
     {
-        u16 index = selections.getHighestUnitIndex();
-        selections.removeUnit(index);
-        listUnits.RemoveRow(index);
+        auto edit = CM->operator()();
+        listUnits.SetRedraw(false);
+        for ( auto index : CM->view.units.sel() )
+            CM->unlinkAndDeleteUnit(index);
 
-        CM->unlinkAndDeleteUnit(index, unitDeletes);
-
-        for ( size_t i = index + 1; i <= CM->numUnits(); i++ )
-            ChangeIndex(hUnitList, i, i - 1);
+        RepopulateList();
+        CM->Redraw(true);
+        listUnits.SetRedraw(true);
     }
-    CM->AddUndo(unitDeletes);
-    CM->Redraw(true);
-    listUnits.SetRedraw(true);
 }
 
 void UnitPropertiesWindow::NotifyLinkUnlinkPressed()
@@ -1101,8 +951,8 @@ void UnitPropertiesWindow::NotifyLinkUnlinkPressed()
     else if ( CM->selections.numUnits() == 2 ) // Link up the units
     {
         bool linkable = false;
-        auto firstIndex = CM->selections.units[0];
-        auto secondIndex = CM->selections.units[1];
+        auto firstIndex = CM->view.units.sel()[0];
+        auto secondIndex = CM->view.units.sel()[1];
         if ( firstIndex != secondIndex && firstIndex < CM->numUnits() && secondIndex < CM->numUnits() )
         {
             auto & first = CM->getUnit(firstIndex);
@@ -1131,6 +981,7 @@ void UnitPropertiesWindow::NotifyLinkUnlinkPressed()
 
 void UnitPropertiesWindow::NotifyJumpToPressed()
 {
+    auto edit = CM->operator()();
     size_t numUnits = CM->numUnits();
     if ( CM == nullptr || !CM->selections.hasUnits() || CM->selections.getFirstUnit() >= numUnits )
         return;
@@ -1144,8 +995,8 @@ void UnitPropertiesWindow::NotifyJumpToPressed()
             auto & otherUnit = CM->getUnit(i);
             if ( unit.relationClassId == otherUnit.classId && i != currUnitIndex )
             {
-                CM->selections.removeUnits();
-                CM->selections.addUnit(i);
+                edit->units.clearSelections();
+                edit->units.select(i);
                 this->RepopulateList();
                 CM->viewUnit(i);
                 return;
@@ -1158,8 +1009,7 @@ void UnitPropertiesWindow::NotifyInvincibleClicked()
 {
     auto edit = CM->operator()();
     auto unitChanges = ReversibleActions::Make();
-    auto & selUnits = CM->selections.units;
-    for ( u16 & unitIndex : selUnits )
+    for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
         unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::StateFlags, unit.stateFlags));
@@ -1180,8 +1030,7 @@ void UnitPropertiesWindow::NotifyHallucinatedClicked()
 {
     auto edit = CM->operator()();
     auto unitChanges = ReversibleActions::Make();
-    auto & selUnits = CM->selections.units;
-    for ( u16 & unitIndex : selUnits )
+    for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
         unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::StateFlags, unit.stateFlags));
@@ -1202,8 +1051,7 @@ void UnitPropertiesWindow::NotifyBurrowedClicked()
 {
     auto edit = CM->operator()();
     auto unitChanges = ReversibleActions::Make();
-    auto & selUnits = CM->selections.units;
-    for ( u16 & unitIndex : selUnits )
+    for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
         unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::StateFlags, unit.stateFlags));
@@ -1224,8 +1072,7 @@ void UnitPropertiesWindow::NotifyCloakedClicked()
 {
     auto edit = CM->operator()();
     auto unitChanges = ReversibleActions::Make();
-    auto & selUnits = CM->selections.units;
-    for ( u16 & unitIndex : selUnits )
+    for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
         unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::StateFlags, unit.stateFlags));
@@ -1246,8 +1093,7 @@ void UnitPropertiesWindow::NotifyLiftedClicked()
 {
     auto edit = CM->operator()();
     auto unitChanges = ReversibleActions::Make();
-    auto & selUnits = CM->selections.units;
-    for ( u16 & unitIndex : selUnits )
+    for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
         unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::StateFlags, unit.stateFlags));
@@ -1270,8 +1116,7 @@ void UnitPropertiesWindow::NotifyHpEditUpdated()
     u8 hpPercent = 0;
     if ( editLife.GetEditNum<u8>(hpPercent) )
     {
-        auto & selUnits = CM->selections.units;
-        for ( u16 & unitIndex : selUnits )
+        for ( auto unitIndex : CM->view.units.sel() )
         {
             auto & unit = CM->getUnit(unitIndex);
             edit->units[unitIndex].hitpointPercent = hpPercent;
@@ -1288,8 +1133,7 @@ void UnitPropertiesWindow::NotifyMpEditUpdated()
     u8 mpPercent = 0;
     if ( editMana.GetEditNum<u8>(mpPercent) )
     {
-        auto & selUnits = CM->selections.units;
-        for ( u16 & unitIndex : selUnits )
+        for ( auto unitIndex : CM->view.units.sel() )
         {
             auto & unit = CM->getUnit(unitIndex);
             edit->units[unitIndex].energyPercent = mpPercent;
@@ -1306,8 +1150,7 @@ void UnitPropertiesWindow::NotifyShieldEditUpdated()
     u8 shieldPercent = 0;
     if ( editShield.GetEditNum<u8>(shieldPercent) )
     {
-        auto & selUnits = CM->selections.units;
-        for ( u16 & unitIndex : selUnits )
+        for ( auto unitIndex : CM->view.units.sel() )
         {
             auto & unit = CM->getUnit(unitIndex);
             edit->units[unitIndex].shieldPercent = shieldPercent;
@@ -1324,8 +1167,7 @@ void UnitPropertiesWindow::NotifyResourcesEditUpdated()
     u32 resources = 0;
     if ( editResources.GetEditNum<u32>(resources) )
     {
-        auto & selUnits = CM->selections.units;
-        for ( u16 & unitIndex : selUnits )
+        for ( auto unitIndex : CM->view.units.sel() )
         {
             auto & unit = CM->getUnit(unitIndex);
             edit->units[unitIndex].resourceAmount = resources;
@@ -1343,8 +1185,7 @@ void UnitPropertiesWindow::NotifyHangarEditUpdated()
     u16 hangar = 0;
     if ( editHangar.GetEditNum<u16>(hangar) )
     {
-        auto & selUnits = CM->selections.units;
-        for ( u16 & unitIndex : selUnits )
+        for ( auto unitIndex : CM->view.units.sel() )
         {
             auto & unit = CM->getUnit(unitIndex);
             edit->units[unitIndex].hangarAmount = hangar;
@@ -1361,8 +1202,7 @@ void UnitPropertiesWindow::NotifyIdEditUpdated()
     u16 unitID = 0;
     if ( editUnitId.GetEditNum<u16>(unitID) )
     {
-        auto & selUnits = CM->selections.units;
-        for ( u16 & unitIndex : selUnits )
+        for ( auto unitIndex : CM->view.units.sel() )
         {
             edit->units[unitIndex].type = (Sc::Unit::Type)unitID;
             int row = listUnits.GetItemRow(unitIndex);
@@ -1384,8 +1224,7 @@ void UnitPropertiesWindow::NotifyXcEditUpdated()
     u16 unitXC = 0;
     if ( editXc.GetEditNum<u16>(unitXC) )
     {
-        auto & selUnits = CM->selections.units;
-        for ( u16 & unitIndex : selUnits )
+        for ( auto unitIndex : CM->view.units.sel() )
         {
             edit->units[unitIndex].xc = unitXC;
             int row = listUnits.GetItemRow(unitIndex);
@@ -1402,8 +1241,7 @@ void UnitPropertiesWindow::NotifyYcEditUpdated()
     u16 unitYC = 0;
     if ( editYc.GetEditNum<u16>(unitYC) )
     {
-        auto & selUnits = CM->selections.units;
-        for ( u16 & unitIndex : selUnits )
+        for ( auto unitIndex : CM->view.units.sel() )
         {
             edit->units[unitIndex].yc = unitYC;
             int row = listUnits.GetItemRow(unitIndex);
@@ -1418,8 +1256,7 @@ void UnitPropertiesWindow::NotifyValidFieldOwnerClicked()
 {
     auto edit = CM->operator()();
     auto unitChanges = ReversibleActions::Make();
-    auto & selUnits = CM->selections.units;
-    for ( u16 & unitIndex : selUnits )
+    for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
         unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::ValidFieldFlags, unit.validFieldFlags));
@@ -1437,8 +1274,7 @@ void UnitPropertiesWindow::NotifyValidFieldLifeClicked()
 {
     auto edit = CM->operator()();
     auto unitChanges = ReversibleActions::Make();
-    auto & selUnits = CM->selections.units;
-    for ( u16 & unitIndex : selUnits )
+    for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
         unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::ValidFieldFlags, unit.validFieldFlags));
@@ -1456,8 +1292,7 @@ void UnitPropertiesWindow::NotifyValidFieldManaClicked()
 {
     auto edit = CM->operator()();
     auto unitChanges = ReversibleActions::Make();
-    auto & selUnits = CM->selections.units;
-    for ( u16 & unitIndex : selUnits )
+    for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
         unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::ValidFieldFlags, unit.validFieldFlags));
@@ -1475,8 +1310,7 @@ void UnitPropertiesWindow::NotifyValidFieldShieldClicked()
 {
     auto edit = CM->operator()();
     auto unitChanges = ReversibleActions::Make();
-    auto & selUnits = CM->selections.units;
-    for ( u16 & unitIndex : selUnits )
+    for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
         unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::ValidFieldFlags, unit.validFieldFlags));
@@ -1494,8 +1328,7 @@ void UnitPropertiesWindow::NotifyValidFieldResourcesClicked()
 {
     auto edit = CM->operator()();
     auto unitChanges = ReversibleActions::Make();
-    auto & selUnits = CM->selections.units;
-    for ( u16 & unitIndex : selUnits )
+    for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
         unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::ValidFieldFlags, unit.validFieldFlags));
@@ -1513,8 +1346,7 @@ void UnitPropertiesWindow::NotifyValidFieldHangarClicked()
 {
     auto edit = CM->operator()();
     auto unitChanges = ReversibleActions::Make();
-    auto & selUnits = CM->selections.units;
-    for ( u16 & unitIndex : selUnits )
+    for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
         unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::ValidFieldFlags, unit.validFieldFlags));
@@ -1534,8 +1366,7 @@ void UnitPropertiesWindow::NotifyValidFieldRawFlagsEditUpdated()
     u16 validFields = 0;
     if ( editValidFieldRawFlags.GetEditNum<u16>(validFields) )
     {
-        auto & selUnits = CM->selections.units;
-        for ( u16 & unitIndex : selUnits )
+        for ( auto unitIndex : CM->view.units.sel() )
             edit->units[unitIndex].validFieldFlags = validFields;
     }
     this->SetUnitFieldText();
@@ -1545,8 +1376,7 @@ void UnitPropertiesWindow::NotifyValidStateInvincibleClicked()
 {
     auto edit = CM->operator()();
     auto unitChanges = ReversibleActions::Make();
-    auto & selUnits = CM->selections.units;
-    for ( u16 & unitIndex : selUnits )
+    for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
         unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::ValidStateFlags, unit.validStateFlags));
@@ -1564,8 +1394,7 @@ void UnitPropertiesWindow::NotifyValidStateBurrowedClicked()
 {
     auto edit = CM->operator()();
     auto unitChanges = ReversibleActions::Make();
-    auto & selUnits = CM->selections.units;
-    for ( u16 & unitIndex : selUnits )
+    for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
         unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::ValidStateFlags, unit.validStateFlags));
@@ -1583,8 +1412,7 @@ void UnitPropertiesWindow::NotifyValidStateHallucinatedClicked()
 {
     auto edit = CM->operator()();
     auto unitChanges = ReversibleActions::Make();
-    auto & selUnits = CM->selections.units;
-    for ( u16 & unitIndex : selUnits )
+    for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
         unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::ValidStateFlags, unit.validStateFlags));
@@ -1602,8 +1430,7 @@ void UnitPropertiesWindow::NotifyValidStateCloakedClicked()
 {
     auto edit = CM->operator()();
     auto unitChanges = ReversibleActions::Make();
-    auto & selUnits = CM->selections.units;
-    for ( u16 & unitIndex : selUnits )
+    for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
         unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::ValidStateFlags, unit.validStateFlags));
@@ -1621,8 +1448,7 @@ void UnitPropertiesWindow::NotifyValidStateLiftedClicked()
 {
     auto edit = CM->operator()();
     auto unitChanges = ReversibleActions::Make();
-    auto & selUnits = CM->selections.units;
-    for ( u16 & unitIndex : selUnits )
+    for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
         unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::ValidStateFlags, unit.validStateFlags));
@@ -1642,8 +1468,7 @@ void UnitPropertiesWindow::NotifyValidStateRawFlagsEditUpdated()
     u16 validState = 0;
     if ( editValidStateRawFlags.GetEditNum<u16>(validState) )
     {
-        auto & selUnits = CM->selections.units;
-        for ( u16 & unitIndex : selUnits )
+        for ( auto unitIndex : CM->view.units.sel() )
             edit->units[unitIndex].validStateFlags = validState;
     }
     this->SetUnitFieldText();
@@ -1655,8 +1480,7 @@ void UnitPropertiesWindow::NotifyStateRawFlagsEditUpdated()
     u16 state = 0;
     if ( editRawStateFlags.GetEditNum<u16>(state) )
     {
-        auto & selUnits = CM->selections.units;
-        for ( u16 & unitIndex : selUnits )
+        for ( auto unitIndex : CM->view.units.sel() )
             edit->units[unitIndex].stateFlags = state;
     }
     this->SetUnitFieldText();
@@ -1668,8 +1492,7 @@ void UnitPropertiesWindow::NotifyUnusedEditUpdated()
     u16 unused = 0;
     if ( editUnused.GetEditNum<u16>(unused) )
     {
-        auto & selUnits = CM->selections.units;
-        for ( u16 & unitIndex : selUnits )
+        for ( auto unitIndex : CM->view.units.sel() )
             edit->units[unitIndex].unused = unused;
     }
     this->SetUnitFieldText();
@@ -1681,8 +1504,7 @@ void UnitPropertiesWindow::NotifyUniqueIdEditUpdated()
     u16 uniqueId = 0;
     if ( editUniqueId.GetEditNum<u16>(uniqueId) )
     {
-        auto & selUnits = CM->selections.units;
-        for ( u16 & unitIndex : selUnits )
+        for ( auto unitIndex : CM->view.units.sel() )
             edit->units[unitIndex].classId = uniqueId;
     }
     this->SetUnitFieldText();
@@ -1695,8 +1517,7 @@ void UnitPropertiesWindow::NotifyLinkedIdEditUpdated()
     u16 linkedId = 0;
     if ( editLinkedId.GetEditNum<u16>(linkedId) )
     {
-        auto & selUnits = CM->selections.units;
-        for ( u16 & unitIndex : selUnits )
+        for ( auto unitIndex : CM->view.units.sel() )
             edit->units[unitIndex].relationClassId = linkedId;
     }
     this->SetUnitFieldText();
@@ -1707,8 +1528,7 @@ void UnitPropertiesWindow::NotifyLinkNydusClicked()
 {
     auto edit = CM->operator()();
     auto unitChanges = ReversibleActions::Make();
-    auto & selUnits = CM->selections.units;
-    for ( u16 & unitIndex : selUnits )
+    for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
         unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::RelationFlags, unit.relationFlags));
@@ -1727,8 +1547,7 @@ void UnitPropertiesWindow::NotifyLinkAddonClicked()
 {
     auto edit = CM->operator()();
     auto unitChanges = ReversibleActions::Make();
-    auto & selUnits = CM->selections.units;
-    for ( u16 & unitIndex : selUnits )
+    for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
         unitChanges->Insert(UnitChange::Make(unitIndex, Chk::Unit::Field::RelationFlags, unit.relationFlags));
@@ -1749,8 +1568,7 @@ void UnitPropertiesWindow::NotifyRelationRawFlagsEditUpdated()
     u16 relationFlags = 0;
     if ( editLinkRawFlags.GetEditNum<u16>(relationFlags) )
     {
-        auto & selUnits = CM->selections.units;
-        for ( u16 & unitIndex : selUnits )
+        for ( auto unitIndex : CM->view.units.sel() )
             edit->units[unitIndex].relationFlags = relationFlags;
     }
     this->SetUnitFieldText();

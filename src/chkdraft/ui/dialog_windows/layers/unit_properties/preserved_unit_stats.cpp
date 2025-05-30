@@ -20,7 +20,7 @@ void PreservedUnitStats::Clear()
 
 void PreservedUnitStats::AddStats(Selections & sel, Chk::Unit::Field statField)
 {
-    Clear();
+    /*Clear();
     field = statField;
     for ( u16 & unitIndex : sel.units )
     {
@@ -44,12 +44,12 @@ void PreservedUnitStats::AddStats(Selections & sel, Chk::Unit::Field statField)
             case Chk::Unit::Field::Unused: preservedValues.push_back(unit.unused); break;
             case Chk::Unit::Field::RelationClassId: preservedValues.push_back(unit.relationClassId); break;
         }
-    }
+    }*/
 }
 
 void PreservedUnitStats::convertToUndo()
 {
-    if ( preservedValues.size() > 0 )
+    /*if ( preservedValues.size() > 0 )
     {
         // For each selected unit, add the corresponding undo from values
         u32 i = 0;
@@ -64,5 +64,5 @@ void PreservedUnitStats::convertToUndo()
         }
         CM->AddUndo(unitChanges);
     }
-    Clear();
+    Clear();*/
 }

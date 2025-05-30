@@ -58,7 +58,7 @@ void Selections::clear()
     edit->tiles.clearSelections();
     removeDoodads();
     removeSprites();
-    removeUnits();
+    edit->units.clearSelections();
     edit->tileFog.clearSelections();
     edit->locations.clearSelections();
 }
@@ -175,79 +175,6 @@ void Selections::removeLocations()
     map()->locations.clearSelections();
 }
 
-void Selections::addUnit(u16 index)
-{
-    if ( !unitIsSelected(index) )
-        units.insert(units.begin(), index);
-}
-
-void Selections::removeUnit(u16 index)
-{
-    auto toErase = std::find(units.begin(), units.end(), index);
-    if ( toErase != units.end() )
-        units.erase(toErase);
-}
-
-void Selections::removeUnits()
-{
-    units.clear();
-}
-
-void Selections::ensureUnitFirst(u16 index)
-{
-    if ( units.size() > 0 && units[0] != index )
-    {
-        auto toErase = std::find(units.begin(), units.end(), index);
-        if ( toErase != units.end() )
-        {
-            units.erase(toErase);
-            units.insert(units.begin(), index);
-        }
-    }
-}
-
-void Selections::sendUnitSwap(u16 oldIndex, u16 newIndex)
-{
-    for ( u16 & unitIndex : units )
-    {
-        if ( unitIndex == newIndex )
-            unitIndex = oldIndex | SelSortFlags::Swapped;
-        else if ( unitIndex == oldIndex )
-            unitIndex = newIndex;
-    }
-}
-
-void Selections::sendUnitMove(u16 oldIndex, u16 newIndex) // The item is being moved back to its oldIndex from its newIndex
-{
-    for ( u16 & unitIndex : units )
-    {
-        if ( unitIndex == newIndex )
-            unitIndex = oldIndex | SelSortFlags::Moved;
-        else if ( newIndex > unitIndex && oldIndex <= unitIndex ) // The moved unit was somewhere ahead of track and is now behind track
-            unitIndex++; // Selected unit index needs to be moved forward
-        else if ( newIndex < unitIndex && oldIndex >= unitIndex ) // The moved unit was somewhere behind track and is now ahead of track
-            unitIndex--; // Selected unit index needs to be moved backward
-    }
-}
-
-void Selections::finishUnitSwap()
-{
-    for ( u16 & unitIndex : units )
-    {
-        if ( unitIndex & SelSortFlags::Swapped )
-            unitIndex &= SelSortFlags::Unswap;
-    }
-}
-
-void Selections::finishUnitMove()
-{
-    for ( u16 & unitIndex : units )
-    {
-        if ( unitIndex & SelSortFlags::Moved )
-            unitIndex &= SelSortFlags::Unmove;
-    }
-}
-
 void Selections::addDoodad(size_t index)
 {
     if ( !doodadIsSelected(index) )
@@ -321,7 +248,7 @@ void Selections::finishSpriteMove()
 
 bool Selections::unitIsSelected(u16 index)
 {
-    for ( u16 & unitIndex : units )
+    for ( const auto unitIndex : map.view.units.sel() )
     {
         if ( unitIndex == index )
             return true;
@@ -349,6 +276,11 @@ bool Selections::spriteIsSelected(size_t index)
     return false;
 }
 
+bool Selections::hasUnits()
+{
+    return map.view.units.sel().size() > 0;
+}
+
 bool Selections::hasTiles()
 {
     return map.view.tiles.sel().size() > 0;
@@ -361,8 +293,8 @@ bool Selections::hasFogTiles()
 
 u16 Selections::numUnits()
 {
-    if ( units.size() < u16_max )
-        return (u16)units.size();
+    if ( map.view.units.sel().size() < u16_max )
+        return (u16)map.view.units.sel().size();
     else
         return u16_max;
 }
@@ -378,7 +310,7 @@ u16 Selections::numSprites()
 u16 Selections::numUnitsUnder(u16 index)
 {
     u16 numUnitsBefore = 0;
-    for ( u16 & unitIndex : units )
+    for ( const auto unitIndex : map.view.units.sel() )
     {
         if ( unitIndex < index )
             numUnitsBefore++;
@@ -388,8 +320,8 @@ u16 Selections::numUnitsUnder(u16 index)
 
 u16 Selections::getFirstUnit()
 {
-    if ( units.size() > 0 )
-        return units[0];
+    if ( map.view.units.sel().size() > 0 )
+        return map.view.units.sel().front();
     else
         return 0;
 }
@@ -413,7 +345,7 @@ size_t Selections::getFirstSprite()
 u16 Selections::getHighestUnitIndex()
 {
     int highestIndex = -1;
-    for ( u16 & unitIndex : units )
+    for ( const auto unitIndex : map.view.units.sel() )
     {
         if ( (int)unitIndex > highestIndex )
             highestIndex = (int)unitIndex;
@@ -428,7 +360,7 @@ u16 Selections::getHighestUnitIndex()
 u16 Selections::getLowestUnitIndex()
 {
     u16 lowestIndex = u16_max;
-    for ( u16 & unitIndex : units )
+    for ( const auto unitIndex : map.view.units.sel() )
     {
         if ( unitIndex < lowestIndex )
             lowestIndex = unitIndex;
@@ -460,10 +392,11 @@ size_t Selections::getLowestSpriteIndex()
 
 void Selections::sortUnits(bool ascending)
 {
+    auto edit = map.operator()();
     if ( ascending )
-        std::sort(units.begin(), units.end());
+        edit->units.sortSelection();
     else // Sort descending
-        std::sort(units.begin(), units.end(), std::greater<u16>());
+        edit->units.sortSelectionDescending();
 }
 
 void Selections::sortSprites(bool ascending)

@@ -2780,7 +2780,7 @@ void Scr::MapGraphics::drawImageSelections()
     ScopedPaletteRemap<0, 8> remapped {palette, (void*)&scData.tselect.rgbaPalette[0], prevMappedColor}; // For SC:R this does nothing
     prevMappedColor = Chk::PlayerColor::Red; // Use one unchanging value for player color here to prevent remappings
 
-    for ( auto unitIndex : map.selections.units )
+    for ( auto unitIndex : map.view.units.sel() )
     {
         if ( unitIndex < map->units.size() )
         {

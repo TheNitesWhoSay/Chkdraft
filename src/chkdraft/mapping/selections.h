@@ -38,7 +38,6 @@ public:
     point startDrag { -1, -1 };
     point endDrag { -1, -1 };
 
-    std::vector<u16> units {};
     std::vector<size_t> doodads {};
     std::vector<size_t> sprites {};
 
@@ -62,15 +61,6 @@ public:
     bool selFlagsIndicateInside() const;
     void removeLocations();
 
-    void addUnit(u16 index);
-    void removeUnit(u16 index);
-    void removeUnits();
-    void ensureUnitFirst(u16 index); // Moves the unit @ index
-    void sendUnitSwap(u16 oldIndex, u16 newIndex);
-    void sendUnitMove(u16 oldIndex, u16 newIndex);
-    void finishUnitSwap();
-    void finishUnitMove();
-
     void addDoodad(size_t index);
     void removeDoodad(size_t index);
     void removeDoodads();
@@ -85,7 +75,7 @@ public:
     bool unitIsSelected(u16 index);
     bool doodadIsSelected(size_t doodadIndex);
     bool spriteIsSelected(size_t spriteIndex);
-    bool hasUnits() { return units.size() > 0; }
+    bool hasUnits();
     bool hasDoodads() { return doodads.size() > 0; }
     bool hasTiles();
     bool hasSprites() { return sprites.size() > 0; }

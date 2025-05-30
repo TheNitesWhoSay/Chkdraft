@@ -4,6 +4,7 @@
 #include <mapping_core/mapping_core.h>
 #include "mapping/selections.h"
 
+// TODO: exclusively part of undos, remove this
 class PreservedUnitStats
 {
     public:

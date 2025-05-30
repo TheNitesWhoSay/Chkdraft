@@ -716,8 +716,7 @@ void Clipboard::copy(GuiMap & map, Layer layer)
                 initializedEdges = true;
             }
 
-            auto & selectedUnits = selections.units;
-            for ( u16 & unitIndex : selectedUnits )
+            for ( auto unitIndex : map.view.units.sel() )
             {
                 const Chk::Unit & currUnit = map.getUnit(unitIndex);
                 PasteUnitNode add(currUnit);

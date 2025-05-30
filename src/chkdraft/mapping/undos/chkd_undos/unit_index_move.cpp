@@ -43,7 +43,7 @@ std::shared_ptr<UnitIndexMoveBoundary> UnitIndexMoveBoundary::Make()
 
 void UnitIndexMoveBoundary::Reverse(void *guiMap)
 {
-    ((GuiMap*)guiMap)->selections.finishUnitMove();
+    //((GuiMap*)guiMap)->selections.finishUnitMove();
 }
 
 int32_t UnitIndexMoveBoundary::GetType()

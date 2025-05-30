@@ -380,7 +380,7 @@ void GuiMap::validateTileOccupiers(size_t tileX, size_t tileY, uint16_t tileValu
                                     {
                                         if ( !tileset.tileFlags[megaTileIndex].miniTileFlags[yMiniTile][xMiniTile].isWalkable() ) // Unit is invalidated
                                         {
-                                            unlinkAndDeleteUnit(unitIndex, tileChanges);
+                                            unlinkAndDeleteUnit(unitIndex);
                                             cacheRefreshNeeded = true;
                                             return;
                                         }
@@ -590,7 +590,7 @@ bool GuiMap::placeIsomTerrain(Chk::IsomDiamond isomDiamond, size_t terrainType, 
     return false;
 }
 
-void GuiMap::unlinkAndDeleteUnit(size_t unitIndex, std::shared_ptr<ReversibleActions> opUndos)
+void GuiMap::unlinkAndDeleteUnit(size_t unitIndex)
 {
     auto edit = createAction();
     const auto & toDelete = Scenario::getUnit(unitIndex);
@@ -599,14 +599,11 @@ void GuiMap::unlinkAndDeleteUnit(size_t unitIndex, std::shared_ptr<ReversibleAct
         const auto & unit = read.units[unitIndex];
         if ( unit.relationClassId == toDelete.classId )
         {
-            opUndos->Insert(UnitChange::Make(u16(unitIndex), Chk::Unit::Field::RelationClassId, unit.relationClassId));
-            opUndos->Insert(UnitChange::Make(u16(unitIndex), Chk::Unit::Field::RelationFlags, unit.relationFlags));
             edit->units[unitIndex].relationClassId = 0;
             edit->units[unitIndex].relationFlags = 0;
             logger.info() << "Unit at index " << unitIndex << " unlinked from deleted unit" << std::endl;
         }
     }
-    opUndos->Insert(UnitCreateDel::Make(u16(unitIndex), toDelete));
     Scenario::deleteUnit(unitIndex);
 }
 
@@ -824,8 +821,7 @@ void GuiMap::stackSelected()
     auto stackUndos = ReversibleActions::Make();
     if ( currLayer == Layer::Units && selections.hasUnits() && Scenario::numUnits() + (size_t(stackSize)*selections.numUnits()) < 4000 )
     {
-        auto & selectedUnits = selections.units;
-        for ( auto & selectedUnit : selectedUnits )
+        for ( auto selectedUnit : view.units.sel() )
         {
             auto unit = CM->getUnit(selectedUnit);
             for ( int i=0; i<stackSize-1; ++i )
@@ -1216,7 +1212,7 @@ void GuiMap::refreshScenario()
     auto edit = createAction();
     edit->tiles.clearSelections();
     selections.removeDoodads();
-    selections.removeUnits();
+    edit->units.clearSelections();
     selections.removeSprites();
     edit->tileFog.clearSelections();
     chkd.mainPlot.leftBar.blockSelections = true;
@@ -1259,12 +1255,12 @@ void GuiMap::clearSelectedDoodads()
 
 void GuiMap::clearSelectedUnits()
 {
-    selections.removeUnits();
+    createAction()->units.clearSelections();
 }
 
 void GuiMap::clearSelectedSprites()
 {
-    selections.removeUnits();
+    createAction()->sprites.clearSelections();
 }
 
 void GuiMap::clearSelection()
@@ -1273,7 +1269,7 @@ void GuiMap::clearSelection()
     edit->tiles.clearSelections();
     selections.removeDoodads();
     selections.removeSprites();
-    selections.removeUnits();
+    edit->units.clearSelections();
     edit->tileFog.clearSelections();
     selections.removeLocations();
 }
@@ -1290,7 +1286,7 @@ void GuiMap::selectAll()
         {
             if ( !selections.unitIsSelected(i) )
             {
-                selections.addUnit(i);
+                edit->units.select(i);
                 if ( chkd.unitWindow.getHandle() != nullptr )
                     chkd.unitWindow.FocusAndSelectIndex(i);
             }
@@ -1438,9 +1434,9 @@ void GuiMap::deleteSelection()
             {
                 // Get the highest index in the selection
                 u16 index = selections.getHighestUnitIndex();
-                selections.removeUnit(index);
+                edit->units.deselect(index);
 
-                unlinkAndDeleteUnit(index, deletes);
+                unlinkAndDeleteUnit(index);
             }
             AddUndo(deletes);
         }
@@ -1568,8 +1564,7 @@ void GuiMap::PlayerChanged(u8 newPlayer)
     if ( currLayer == Layer::Units )
     {
         auto unitChanges = ReversibleActions::Make();
-        auto & selUnits = selections.units;
-        for ( u16 unitIndex : selUnits )
+        for ( auto unitIndex : view.units.sel() )
         {
             CM->changeUnitOwner(unitIndex, newPlayer, unitChanges);
 
@@ -1636,7 +1631,7 @@ void GuiMap::moveSelection(Direction direction, bool useGrid)
                         PreservedUnitStats preservedStats {};
                         preservedStats.AddStats(selections, Chk::Unit::Field::Xc);
                         auto diff = ((firstUnit.xc-gridOffX) % gridWidth) > 0 ? ((firstUnit.xc-gridOffX) % gridWidth) : gridWidth;
-                        for ( auto unitIndex : selections.units )
+                        for ( auto unitIndex : view.units.sel() )
                             edit->units[unitIndex].xc -= diff;
                         preservedStats.convertToUndo();
                     }
@@ -1646,7 +1641,7 @@ void GuiMap::moveSelection(Direction direction, bool useGrid)
                         PreservedUnitStats preservedStats {};
                         preservedStats.AddStats(selections, Chk::Unit::Field::Yc);
                         auto diff = ((firstUnit.yc-gridOffY) % gridHeight) > 0 ? ((firstUnit.yc-gridOffY) % gridHeight) : gridHeight;
-                        for ( auto unitIndex : selections.units )
+                        for ( auto unitIndex : view.units.sel() )
                             edit->units[unitIndex].yc -= diff;
                         preservedStats.convertToUndo();
                     }
@@ -1656,7 +1651,7 @@ void GuiMap::moveSelection(Direction direction, bool useGrid)
                         PreservedUnitStats preservedStats {};
                         preservedStats.AddStats(selections, Chk::Unit::Field::Xc);
                         auto diff = ((firstUnit.xc-gridOffX) % gridWidth) > 0 ? (gridWidth-((firstUnit.xc-gridOffX) % gridWidth)) : gridWidth;
-                        for ( auto unitIndex : selections.units )
+                        for ( auto unitIndex : view.units.sel() )
                             edit->units[unitIndex].xc += diff;
                         preservedStats.convertToUndo();
                     }
@@ -1666,7 +1661,7 @@ void GuiMap::moveSelection(Direction direction, bool useGrid)
                         PreservedUnitStats preservedStats {};
                         preservedStats.AddStats(selections, Chk::Unit::Field::Yc);
                         auto diff = ((firstUnit.yc-gridOffY) % gridHeight) > 0 ? (gridHeight-((firstUnit.yc-gridOffY) % gridHeight)) : gridHeight;
-                        for ( auto unitIndex : selections.units )
+                        for ( auto unitIndex : view.units.sel() )
                             edit->units[unitIndex].yc += diff;
                         preservedStats.convertToUndo();
                     }
@@ -1731,7 +1726,7 @@ void GuiMap::moveSelection(Direction direction, bool useGrid)
         switch ( currLayer )
         {
         case Layer::Units:
-            for ( auto unitIndex : selections.units )
+            for ( auto unitIndex : view.units.sel() )
             {
                 switch ( direction )
                 {
@@ -1850,7 +1845,6 @@ void GuiMap::undo()
             undos.doUndo(UndoTypes::TerrainChange, this);
             break;
         case Layer::Units:
-            selections.removeUnits();
             undos.doUndo(UndoTypes::UnitChange, this);
             if ( chkd.unitWindow.getHandle() != nullptr )
                 chkd.unitWindow.RepopulateList();
@@ -1896,7 +1890,6 @@ void GuiMap::redo()
             undos.doRedo(UndoTypes::TerrainChange, this);
             break;
         case Layer::Units:
-            selections.removeUnits();
             undos.doRedo(UndoTypes::UnitChange, this);
             if ( chkd.unitWindow.getHandle() != nullptr )
                 chkd.unitWindow.RepopulateList();
@@ -3964,6 +3957,7 @@ void GuiMap::FinalizeLocationDrag(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 
 void GuiMap::FinalizeUnitSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 {
+    auto edit = createAction();
     selections.endDrag = {mapX, mapY};
     selections.sortDragPoints();
     if ( wParam != MK_CONTROL )
@@ -3972,13 +3966,12 @@ void GuiMap::FinalizeUnitSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam)
         if ( chkd.unitWindow.getHandle() != nullptr )
         {
             chkd.unitWindow.SetChangeHighlightOnly(true);
-            auto & selUnits = selections.units;
-            for ( u16 unitIndex : selUnits )
+            for ( auto unitIndex : view.units.sel() )
                 chkd.unitWindow.DeselectIndex(unitIndex);
             
             chkd.unitWindow.SetChangeHighlightOnly(false);
         }
-        selections.removeUnits();
+        edit->units.clearSelections();
         chkd.unitWindow.UpdateEnabledState();
     }
         
@@ -4010,9 +4003,9 @@ void GuiMap::FinalizeUnitSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam)
         {
             bool wasSelected = selections.unitIsSelected((u16)i);
             if ( wasSelected )
-                selections.removeUnit((u16)i);
+                edit->units.deselect(i);
             else
-                selections.addUnit((u16)i);
+                edit->units.select(i);
 
             if ( chkd.unitWindow.getHandle() != nullptr )
             {
@@ -4164,7 +4157,7 @@ void GuiMap::FinalizeCutCopyPasteSelection(HWND hWnd, int mapX, int mapY, WPARAM
         edit->tiles.clearSelections();
         selections.removeDoodads();
         selections.removeSprites();
-        selections.removeUnits();
+        edit->units.clearSelections();
         edit->tileFog.clearSelections();
     }
 
