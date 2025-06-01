@@ -32,6 +32,16 @@ bool HistoryTree::AddThis(HWND hTree, HTREEITEM hParent)
     return TreeViewControl::SetHandle(hTree);
 }
 
+std::string getSizeString(std::size_t size)
+{
+    if ( size >= 1024*1024*10 )
+        return std::to_string(size/(1024*1024)) + "mb"; // Show MB
+    else if ( size >= 1024*10 )
+        return std::to_string(size/1024) + "kb"; // Show KB
+    else
+        return std::to_string(size) + " bytes";
+}
+
 std::string getActionText(std::size_t actionIndex, const RareEdit::Action & action)
 {
     if ( action.isElisionMarker() )
@@ -51,6 +61,7 @@ std::string getActionText(std::size_t actionIndex, const RareEdit::Action & acti
                 actionText += "Redoable";
                 break;
         }
+        actionText += " (" + getSizeString(action.byteCount) + ")";
         return actionText;
     }
 }
@@ -76,9 +87,10 @@ HistAction* HistoryTree::InsertAction(std::size_t actionIndex, const RareEdit::A
         for ( std::size_t i=0; i<changeEvents.size(); ++i )
         {
             LPARAM lParam = LPARAM(i)|TreeTypeEvent;
-            if ( i > 10 )
+            std::size_t limit = 2;
+            if ( i > limit )
             {
-                std::string text = "  (" + std::to_string(int(changeEvents.size())-10) + " additional events omitted)\n";
+                std::string text = "  (" + std::to_string(int(changeEvents.size())-limit) + " additional events omitted)\n";
                 InsertTreeItem(hActionRoot, text, lParam);
                 histAction.subEvents.push_back(HistEvent{.lParam = lParam, .text = text});
                 break;
@@ -126,12 +138,17 @@ void HistoryTree::RefreshActionHeaders(std::optional<std::size_t> excludeIndex)
     SetRedraw(false);
     std::size_t excludedIndex = excludeIndex ? *excludeIndex : std::numeric_limits<std::size_t>::max();
     auto changeHistory = CM->renderChangeHistory(false);
+    auto cursorIndex = CM->getCursorIndex();
+    std::size_t totalByteCount = 0;
     for ( std::size_t actionIndex=0; actionIndex < changeHistory.size(); ++actionIndex )
     {
+        const auto & action = changeHistory[actionIndex];
+        totalByteCount += action.byteCount;
         if ( actionIndex == excludedIndex )
             continue;
 
-        const auto & action = changeHistory[actionIndex];
+        std::size_t distance = cursorIndex > actionIndex ? cursorIndex-actionIndex : actionIndex-cursorIndex;
+
         //logger.info() << getActionText(actionIndex, action) << '\n';
         
         HistAction* histAction = nullptr;
@@ -170,7 +187,7 @@ void HistoryTree::RefreshActionHeaders(std::optional<std::size_t> excludeIndex)
             item.pszText = (LPTSTR)sysNewText.c_str();
             if ( action.isRedoable() )
                 item.state = TVIS_BOLD;
-            else if ( action.isElided() )
+            else if ( action.isElided() || distance > 3 )
                 item.stateMask |= TVIS_EXPANDED;
             else
                 item.state = 0;
@@ -179,6 +196,7 @@ void HistoryTree::RefreshActionHeaders(std::optional<std::size_t> excludeIndex)
             //SetItemText(hActionItem, getActionText(actionIndex, action));
         }
     }
+    this->SetItemText(hHistoryRoot, "History (" + getSizeString(totalByteCount) + ")");
     SetRedraw(true);
     RedrawThis();
 }
