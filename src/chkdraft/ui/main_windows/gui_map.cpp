@@ -551,6 +551,31 @@ bool GuiMap::placeIsomTerrain(Chk::IsomDiamond isomDiamond, size_t terrainType, 
     return false;
 }
 
+void GuiMap::unlinkAndDeleteSelectedUnits()
+{
+    auto edit = createAction();
+    if ( view.units.sel().size() == read.units.size() )
+        edit->units.reset();
+    else
+    {
+        for ( auto unitIndex : view.units.sel() )
+        {
+            const auto & toDelete = Scenario::getUnit(unitIndex);
+            for ( size_t unitIndex = 0; unitIndex < read.units.size(); ++unitIndex )
+            {
+                const auto & unit = read.units[unitIndex];
+                if ( unit.relationClassId == toDelete.classId )
+                {
+                    edit->units[unitIndex].relationClassId = 0;
+                    edit->units[unitIndex].relationFlags = 0;
+                    logger.info() << "Unit at index " << unitIndex << " unlinked from deleted unit" << std::endl;
+                }
+            }
+            Scenario::deleteUnit(unitIndex);
+        }
+    }
+}
+
 void GuiMap::unlinkAndDeleteUnit(size_t unitIndex)
 {
     auto edit = createAction();
@@ -1226,11 +1251,11 @@ void GuiMap::selectAll()
         {
             if ( !selections.unitIsSelected(i) )
             {
-                edit->units.select(i);
                 if ( chkd.unitWindow.getHandle() != nullptr )
                     chkd.unitWindow.FocusAndSelectIndex(i);
             }
         }
+        edit->units.selectAll();
         chkd.unitWindow.SetChangeHighlightOnly(false);
         Redraw(true);
     };
@@ -1366,16 +1391,7 @@ void GuiMap::deleteSelection()
         if ( chkd.unitWindow.getHandle() != nullptr )
             SendMessage(chkd.unitWindow.getHandle(), WM_COMMAND, MAKEWPARAM(IDC_BUTTON_DELETE, NULL), 0);
         else
-        {
-            while ( selections.hasUnits() )
-            {
-                // Get the highest index in the selection
-                u16 index = selections.getHighestUnitIndex();
-                edit->units.deselect(index);
-
-                unlinkAndDeleteUnit(index);
-            }
-        }
+            unlinkAndDeleteSelectedUnits();
     };
     auto deleteLocationSelection = [&]() {
         if ( chkd.locationWindow.getHandle() != NULL )
@@ -1775,7 +1791,10 @@ void GuiMap::undo()
             //undos.doUndo(UndoTypes::CutCopyPaste, this);
             break;
     }*/
-    Redraw(true);
+    Scenario::undoAction();
+    chkd.mainPlot.leftBar.mainTree.historyTree.RefreshActionHeaders();
+    refreshScenario();
+    //Redraw(true);
 }
 
 void GuiMap::redo()
@@ -1816,7 +1835,10 @@ void GuiMap::redo()
             //undos.doRedo(UndoTypes::CutCopyPaste, this);
             break;
     }*/
-    Redraw(true);
+    Scenario::redoAction();
+    chkd.mainPlot.leftBar.mainTree.historyTree.RefreshActionHeaders();
+    refreshScenario();
+    //Redraw(true);
 }
 
 void GuiMap::ChangesMade()

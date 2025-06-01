@@ -2679,9 +2679,9 @@ void Scenario::setForceName(Chk::Force force, const StringType & forceName, Chk:
         size_t newStringId = addString<StringType>(forceName, storageScope, autoDefragment);
         if ( newStringId != (size_t)Chk::StringId::NoString )
         {
-            if ( storageScope == Chk::Scope::Game )
+            if ( storageScope == Chk::Scope::Game && read.forces.forceString[force] != u16(newStringId) )
                 createAction()->forces.forceString[force] = u16(newStringId);
-            else if ( storageScope == Chk::Scope::Editor )
+            else if ( storageScope == Chk::Scope::Editor && read.editorStringOverrides.forceName[force] != u32(newStringId) )
                 createAction()->editorStringOverrides.forceName[force] = u32(newStringId);
         }
     }

@@ -94,7 +94,7 @@ struct Scenario : RareEdit::Tracked<MapData, Scenario>
     void redoAction();
     void printChangeHistory();
 
-    void afterAction(std::size_t actionIndex);
+    virtual void afterAction(std::size_t actionIndex) {}
 
     Scenario(); // Construct empty map
     

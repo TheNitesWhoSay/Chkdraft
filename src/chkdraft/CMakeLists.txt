@@ -24,7 +24,7 @@ include(FetchContent)
 FetchContent_Declare(
   rarecpp
   GIT_REPOSITORY https://github.com/TheNitesWhoSay/RareCpp.git
-  GIT_TAG 2ee590a # release-2.5.0TODO
+  GIT_TAG cb85d09 # release-2.5.0TODO
 )
 FetchContent_MakeAvailable(rarecpp)
 include_directories(${rarecpp_SOURCE_DIR}/include)
@@ -83,6 +83,7 @@ set(Headers
   ui/chkd_controls/cnd_act_grid.h
   ui/chkd_controls/cuwp_input.h
   ui/chkd_controls/doodad_tree.h
+  ui/chkd_controls/history_tree.h
   ui/chkd_controls/isom_tree.h
   ui/chkd_controls/location_tree.h
   ui/chkd_controls/main_tree.h
@@ -169,6 +170,7 @@ set(Sources
   ui/chkd_controls/cnd_act_grid.cpp
   ui/chkd_controls/cuwp_input.cpp
   ui/chkd_controls/doodad_tree.cpp
+  ui/chkd_controls/history_tree.cpp
   ui/chkd_controls/isom_tree.cpp
   ui/chkd_controls/location_tree.cpp
   ui/chkd_controls/main_tree.cpp
@@ -226,6 +228,7 @@ set(Sources
   ui/dialog_windows/trig_modify/trig_modify_text.cpp
   ui/dialog_windows/trig_modify/trig_players.cpp
   ui/main_windows/gui_map.cpp
+  ui/main_windows/gui_map_printer.cpp
   ui/main_windows/left_bar.cpp
   ui/main_windows/logger_window.cpp
   ui/main_windows/main_plot.cpp

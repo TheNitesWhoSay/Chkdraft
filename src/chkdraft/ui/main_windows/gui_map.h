@@ -56,6 +56,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCach
                     virtual void setTileset(Sc::Terrain::Tileset tileset);
                     void setDimensions(u16 newTileWidth, u16 newTileHeight, u16 sizeValidationFlags = SizeValidationFlag::Default, s32 leftEdge = 0, s32 topEdge = 0, size_t newTerrainType = 0);
                     bool placeIsomTerrain(Chk::IsomDiamond isomDiamond, size_t terrainType, size_t brushExtent);
+                    void unlinkAndDeleteSelectedUnits();
                     void unlinkAndDeleteUnit(size_t unitIndex);
                     void changeUnitOwner(size_t unitIndex, u8 newPlayer);
 
@@ -271,6 +272,8 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCach
 
                     void tileSelectionsChanged() override;
                     void tileFogSelectionsChanged() override;
+
+                    void afterAction(std::size_t actionIndex) override;
 
 /* Private Data */  Graphics scGraphics {*this, selections};
                     GuiMap::Skin skin = Skin::ClassicGDI;

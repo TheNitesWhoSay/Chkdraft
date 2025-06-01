@@ -15,4 +15,5 @@ void MainTree::BuildMainTree()
     locTree.AddThis(hWnd, InsertTreeItem(NULL, "Locations", (LPARAM)Layer::Locations));
     unitTree.AddThis(hWnd, InsertTreeItem(NULL, "Units", (LPARAM)Layer::Units));
     spriteTree.AddThis(hWnd, InsertTreeItem(NULL, "Sprites", (LPARAM)Layer::Sprites));
+    historyTree.AddThis(hWnd, InsertTreeItem(NULL, "History", (LPARAM)0xFFFFFFFF));
 }

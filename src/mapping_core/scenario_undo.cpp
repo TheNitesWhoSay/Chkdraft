@@ -5,6 +5,5 @@ extern Logger logger;
 
 void Scenario::undoAction()
 {
-    logger.info("undoAction()");
-    //Tracked::undoAction();
+    Tracked::undoAction(); // For a large structure like MapData, undo/redo should have their own TU/.cpp file
 }

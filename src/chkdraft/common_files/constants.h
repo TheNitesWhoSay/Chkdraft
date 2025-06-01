@@ -116,6 +116,8 @@ constexpr u32 TreeTypeSprite = (0x50000000);
 constexpr u32 TreeTypeDoodad = (0x60000000);
 constexpr u32 TreeTypeUpgrade = (0x70000000);
 constexpr u32 TreeTypeTech = (0x80000000);
+constexpr u32 TreeTypeAction = (0x90000000);
+constexpr u32 TreeTypeEvent = (0xA0000000);
 
 
 /*###############################*\

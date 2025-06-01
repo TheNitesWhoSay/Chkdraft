@@ -903,8 +903,7 @@ void UnitPropertiesWindow::NotifyDeletePressed()
     {
         auto edit = CM->operator()();
         listUnits.SetRedraw(false);
-        for ( auto index : CM->view.units.sel() )
-            CM->unlinkAndDeleteUnit(index);
+        CM->unlinkAndDeleteSelectedUnits();
 
         RepopulateList();
         CM->Redraw(true);
