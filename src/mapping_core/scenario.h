@@ -10,7 +10,25 @@
 #include <map>
 #include <vector>
 
-struct Scenario : RareEdit::Tracked<MapData, Scenario>
+// TODO: Header for these...
+
+enum class ActionDescriptor
+{
+    None = 0,
+    UpdateUnitSel,
+    ClearUnitSel,
+    CreateUnit,
+    PasteUnits,
+    BrushIsom
+};
+struct DescriptorIndex {
+    ActionDescriptor descriptorIndex = ActionDescriptor::None;
+    constexpr DescriptorIndex() noexcept = default;
+    constexpr DescriptorIndex(ActionDescriptor actionDescriptor) noexcept : descriptorIndex(actionDescriptor) {}
+    friend constexpr bool operator==(const DescriptorIndex & lhs, const DescriptorIndex & rhs) noexcept { return lhs.descriptorIndex == rhs.descriptorIndex; }
+};
+
+struct Scenario : RareEdit::Tracked<MapData, Scenario, DescriptorIndex>
 {
     struct EditCondition : RareEdit::TrackedElement<Chk::Condition, PATH(root->triggers[0].conditions[0])>
     {

@@ -1220,7 +1220,7 @@ void GuiMap::clearSelectedDoodads()
 
 void GuiMap::clearSelectedUnits()
 {
-    createAction()->units.clearSelections();
+    createAction(ActionDescriptor::ClearUnitSel)->units.clearSelections();
 }
 
 void GuiMap::clearSelectedSprites()
@@ -3864,7 +3864,7 @@ void GuiMap::FinalizeLocationDrag(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 
 void GuiMap::FinalizeUnitSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::UpdateUnitSel);
     selections.endDrag = {mapX, mapY};
     selections.sortDragPoints();
     if ( wParam != MK_CONTROL )

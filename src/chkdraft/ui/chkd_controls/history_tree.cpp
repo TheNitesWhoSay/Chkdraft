@@ -42,7 +42,7 @@ std::string getSizeString(std::size_t size)
         return std::to_string(size) + " bytes";
 }
 
-std::string getActionText(std::size_t actionIndex, const RareEdit::Action & action)
+std::string getActionText(std::size_t actionIndex, const RareEdit::RenderAction<DescriptorIndex> & action)
 {
     if ( action.isElisionMarker() )
         return "[" + std::to_string((int)actionIndex-(int)action.elisionCount) + "-" + std::to_string(actionIndex) + "] Elided";
@@ -61,12 +61,25 @@ std::string getActionText(std::size_t actionIndex, const RareEdit::Action & acti
                 actionText += "Redoable";
                 break;
         }
+        if ( action.userData.descriptorIndex != ActionDescriptor::None )
+        {
+            actionText += " - ";
+            switch ( action.userData.descriptorIndex )
+            {
+                case ActionDescriptor::ClearUnitSel: actionText += "Clear Unit Selection"; break;
+                case ActionDescriptor::UpdateUnitSel: actionText += "Update Unit Selection"; break;
+                case ActionDescriptor::CreateUnit: actionText += "Create Unit"; break;
+                case ActionDescriptor::PasteUnits: actionText += "Paste Unit"; break;
+                case ActionDescriptor::BrushIsom: actionText += "Brush Isom"; break;
+                default: actionText += "TODO: " + std::to_string(std::underlying_type_t<ActionDescriptor>(action.userData.descriptorIndex)); break;
+            }
+        }
         actionText += " (" + getSizeString(action.byteCount) + ")";
         return actionText;
     }
 }
 
-HistAction* HistoryTree::InsertAction(std::size_t actionIndex, const RareEdit::Action & action, HTREEITEM parent)
+HistAction* HistoryTree::InsertAction(std::size_t actionIndex, const RareEdit::RenderAction<DescriptorIndex> & action, HTREEITEM parent)
 {
     if ( (u32)actionIndex <= TreeDataPortion )
     {
@@ -112,12 +125,12 @@ HistAction* HistoryTree::InsertAction(std::size_t actionIndex, const RareEdit::A
         return nullptr;
 }
 
-void HistoryTree::InsertAction(std::size_t actionIndex, const RareEdit::Action & action)
+void HistoryTree::InsertAction(std::size_t actionIndex, const RareEdit::RenderAction<DescriptorIndex> & action)
 {
     SetRedraw(false);
-    InsertAction(actionIndex, action, hHistoryRoot);
+    auto* insertedAction = InsertAction(actionIndex, action, hHistoryRoot);
     SetRedraw(true);
-    RedrawThis();
+    SendMessage(TreeViewControl::getHandle(), WM_VSCROLL, SB_BOTTOM, 0);
 }
 
 void HistoryTree::RebuildHistoryTree()
@@ -177,7 +190,6 @@ void HistoryTree::RefreshActionHeaders(std::optional<std::size_t> excludeIndex)
 
         if ( histAction != nullptr && histAction->hItem != NULL && !action.isElisionMarker() )
         {
-            
             icux::uistring sysNewText = icux::toUistring(getActionText(actionIndex, action));
 
             TVITEM item = { };

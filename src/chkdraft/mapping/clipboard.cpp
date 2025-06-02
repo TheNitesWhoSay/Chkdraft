@@ -318,7 +318,7 @@ void Clipboard::fillPasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap & map, poi
 
 void Clipboard::pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap & map, bool allowStack, point prevPaste)
 {
-    auto edit = map.operator()();
+    auto edit = map.operator()(isQuickPasting() ? ActionDescriptor::CreateUnit : ActionDescriptor::PasteUnits);
     auto currPasteTime = std::chrono::steady_clock::now();
     if ( allowStack && std::chrono::duration_cast<std::chrono::milliseconds>(currPasteTime - this->lastPasteTime).count() < 250 && isNearPrevPaste(mapClickX, mapClickY) )
         return; // Prevent unintentional repeat-pastes

@@ -4148,7 +4148,7 @@ void Scenario::copyIsomFrom(const Scenario & sourceMap, int32_t xTileOffset, int
 
 void Scenario::updateTilesFromIsom(Chk::IsomCache & cache)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::BrushIsom);
     for ( size_t y=cache.changedArea.top; y<=cache.changedArea.bottom; ++y )
     {
         for ( size_t x=cache.changedArea.left; x<=cache.changedArea.right; ++x )

@@ -3,7 +3,7 @@
 
 void GuiMap::afterAction(std::size_t actionIndex)
 {
-    RareEdit::Action action {};
+    RareEdit::RenderAction<DescriptorIndex> action {};
     Tracked::renderAction(actionIndex, action, true);
     chkd.mainPlot.leftBar.mainTree.historyTree.RefreshActionHeaders(std::make_optional(actionIndex));
     chkd.mainPlot.leftBar.mainTree.historyTree.InsertAction(actionIndex, action);

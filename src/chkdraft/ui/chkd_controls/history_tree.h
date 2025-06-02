@@ -2,6 +2,7 @@
 #define HISTORYTREE_H
 #include <windows/windows_ui.h>
 #include <common_files/common_files.h>
+#include <mapping_core/scenario.h>
 #include <rarecpp/editor.h>
 
 struct HistEvent
@@ -28,8 +29,8 @@ class HistoryTree : public WinLib::TreeViewControl
     public:
         virtual ~HistoryTree();
         bool AddThis(HWND hTree, HTREEITEM hParent);
-        HistAction* InsertAction(std::size_t actionIndex, const RareEdit::Action & action, HTREEITEM parent);
-        void InsertAction(std::size_t actionIndex, const RareEdit::Action & action);
+        HistAction* InsertAction(std::size_t actionIndex, const RareEdit::RenderAction<DescriptorIndex> & action, HTREEITEM parent);
+        void InsertAction(std::size_t actionIndex, const RareEdit::RenderAction<DescriptorIndex> & action);
         void RebuildHistoryTree();
         void RefreshActionHeaders(std::optional<std::size_t> excludeIndex = std::nullopt);
 
