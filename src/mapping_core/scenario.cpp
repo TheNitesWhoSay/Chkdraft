@@ -547,12 +547,12 @@ Scenario::Scenario() : Tracked{this} {}
 
 Scenario::Scenario(Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex, const Sc::Terrain::Tiles* tilesetData) : Tracked{this}
 {
-    ::MapData mapData {};
-    mapData.dimensions = Chk::DIM{.tileWidth = width, .tileHeight = height};
-    mapData.tileset = tileset;
-    mapData.tiles.assign(size_t(width)*size_t(height), u16(0));
-    mapData.editorTiles.assign(size_t(width)*size_t(height), u16(0));
-    mapData.tileFog.assign(size_t(width)*size_t(height), u8(0));
+    auto mapData = std::make_unique<::MapData>();
+    mapData->dimensions = Chk::DIM{.tileWidth = width, .tileHeight = height};
+    mapData->tileset = tileset;
+    mapData->tiles.assign(size_t(width)*size_t(height), u16(0));
+    mapData->editorTiles.assign(size_t(width)*size_t(height), u16(0));
+    mapData->tileFog.assign(size_t(width)*size_t(height), u8(0));
 
     if ( tilesetData != nullptr )
     {
@@ -560,52 +560,52 @@ Scenario::Scenario(Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t t
         std::size_t tileHeight = size_t(height);
         std::size_t isomWidth = tileWidth/2 + 1;
         std::size_t isomHeight = tileHeight + 1;
-        IsomInitializerCache cache(tileset, width, height, *tilesetData, mapData);
+        IsomInitializerCache cache(tileset, width, height, *tilesetData, *mapData);
         uint16_t val = ((cache.getTerrainTypeIsomValue(terrainTypeIndex) << 4) | Chk::IsomRect::EditorFlag::Modified);
-        mapData.isomRects.assign(isomWidth*isomHeight, Chk::IsomRect{val, val, val, val});
+        mapData->isomRects.assign(isomWidth*isomHeight, Chk::IsomRect{val, val, val, val});
         cache.setAllChanged();
         
         for ( size_t y=cache.changedArea.top; y<=cache.changedArea.bottom; ++y )
         {
             for ( size_t x=cache.changedArea.left; x<=cache.changedArea.right; ++x )
             {
-                Chk::IsomRect isomRect = mapData.isomRects[y*isomWidth+x];
+                Chk::IsomRect isomRect = mapData->isomRects[y*isomWidth+x];
                 if ( isomRect.isLeftOrRightModified() )
-                    updateTileFromIsom({x, y}, cache, tileWidth, tileHeight, mapData.isomRects, mapData.editorTiles);
+                    updateTileFromIsom({x, y}, cache, tileWidth, tileHeight, mapData->isomRects, mapData->editorTiles);
 
                 isomRect.clearEditorFlags();
-                mapData.isomRects[y*isomWidth+x] = isomRect;
+                mapData->isomRects[y*isomWidth+x] = isomRect;
             }
         }
     }
     else
-        mapData.isomRects.assign((size_t(width) / size_t(2) + size_t(1)) * (size_t(height) + size_t(1)), Chk::IsomRect{});
+        mapData->isomRects.assign((size_t(width) / size_t(2) + size_t(1)) * (size_t(height) + size_t(1)), Chk::IsomRect{});
 
-    mapData.strings.reserve(1024);
-    mapData.strings.push_back(std::nullopt); // 0 (always unused)
-    mapData.strings.push_back("Untitled Scenario"); // 1
-    mapData.strings.push_back("Destroy all enemy buildings."); // 2
-    mapData.strings.push_back("Anywhere"); // 3
-    mapData.strings.push_back("Force 1"); // 4
-    mapData.strings.push_back("Force 2"); // 5
-    mapData.strings.push_back("Force 3"); // 6
-    mapData.strings.push_back("Force 4"); // 7
-    for ( size_t i=mapData.strings.size(); i<=1024; ++i )
-        mapData.strings.push_back(std::nullopt);
+    mapData->strings.reserve(1024);
+    mapData->strings.push_back(std::nullopt); // 0 (always unused)
+    mapData->strings.push_back("Untitled Scenario"); // 1
+    mapData->strings.push_back("Destroy all enemy buildings."); // 2
+    mapData->strings.push_back("Anywhere"); // 3
+    mapData->strings.push_back("Force 1"); // 4
+    mapData->strings.push_back("Force 2"); // 5
+    mapData->strings.push_back("Force 3"); // 6
+    mapData->strings.push_back("Force 4"); // 7
+    for ( size_t i=mapData->strings.size(); i<=1024; ++i )
+        mapData->strings.push_back(std::nullopt);
 
      // Note: Location index 0 is unused
-    mapData.locations.assign(this->isHybridOrAbove() ? Chk::TotalLocations : Chk::TotalOriginalLocations, Chk::Location{});
-    mapData.locations[Chk::LocationId::Anywhere] = Chk::Location{.right = (u32)width*32, .bottom = (u32)height*32, .stringId = 3};
+    mapData->locations.assign(this->isHybridOrAbove() ? Chk::TotalLocations : Chk::TotalOriginalLocations, Chk::Location{});
+    mapData->locations[Chk::LocationId::Anywhere] = Chk::Location{.right = (u32)width*32, .bottom = (u32)height*32, .stringId = 3};
 
     if ( this->isHybridOrAbove() )
-        mapData.saveSections.push_back(MapData::Section{Chk::SectionName::TYPE});
+        mapData->saveSections.push_back(MapData::Section{Chk::SectionName::TYPE});
     
-    mapData.saveSections.push_back(MapData::Section{Chk::SectionName::VER});
+    mapData->saveSections.push_back(MapData::Section{Chk::SectionName::VER});
 
     if ( !this->isHybridOrAbove() )
-        mapData.saveSections.push_back(MapData::Section{Chk::SectionName::IVER});
+        mapData->saveSections.push_back(MapData::Section{Chk::SectionName::IVER});
 
-    mapData.saveSections.insert(mapData.saveSections.end(), {
+    mapData->saveSections.insert(mapData->saveSections.end(), {
         {Chk::SectionName::IVE2}, {Chk::SectionName::VCOD}, {Chk::SectionName::IOWN}, {Chk::SectionName::OWNR},
         {Chk::SectionName::ERA }, {Chk::SectionName::DIM }, {Chk::SectionName::SIDE}, {Chk::SectionName::MTXM},
         {Chk::SectionName::PUNI}, {Chk::SectionName::UPGR}, {Chk::SectionName::PTEC}, {Chk::SectionName::UNIT},
@@ -617,7 +617,7 @@ Scenario::Scenario(Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t t
         {Chk::SectionName::PTEx}, {Chk::SectionName::UNIx}, {Chk::SectionName::UPGx}, {Chk::SectionName::TECx}
     });
 
-    initData(mapData);
+    initData(*mapData);
 }
 
 bool Scenario::empty() const

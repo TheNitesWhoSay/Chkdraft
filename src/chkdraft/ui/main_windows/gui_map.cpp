@@ -33,11 +33,7 @@ GuiMap::GuiMap(Clipboard & clipboard, Sc::Terrain::Tileset tileset, u16 width, u
     Chk::IsomCache(read.tileset, read.dimensions.tileWidth, read.dimensions.tileHeight, chkd.scData.terrain.get(read.tileset)),
     clipboard(clipboard), scrGraphics{std::make_unique<Scr::MapGraphics>(chkd.scData, *this)}
 {
-    //uint16_t val = ((Chk::IsomCache::getTerrainTypeIsomValue(terrainTypeIndex) << 4) | Chk::IsomRect::EditorFlag::Modified);
-    //createAction()->isomRects.assign(Scenario::getIsomWidth()*Scenario::getIsomHeight(), Chk::IsomRect{val, val, val, val});
-    //Chk::IsomCache::setAllChanged();
     refreshTileOccupationCache();
-    //Scenario::updateTilesFromIsom(*this);
 
     scGraphics.updatePalette();
     int layerSel = chkd.mainToolbar.layerBox.GetSel();
