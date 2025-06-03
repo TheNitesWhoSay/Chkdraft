@@ -130,7 +130,13 @@ void HistoryTree::InsertAction(std::size_t actionIndex, const RareEdit::RenderAc
     SetRedraw(false);
     auto* insertedAction = InsertAction(actionIndex, action, hHistoryRoot);
     SetRedraw(true);
-    SendMessage(TreeViewControl::getHandle(), WM_VSCROLL, SB_BOTTOM, 0);
+    TVITEM item {
+        .mask = TVIF_HANDLE|TVIF_STATE,
+        .stateMask = TVIS_EXPANDED
+    };
+    TreeView_GetItem(getHandle(), hHistoryRoot);
+    if ( (item.state & TVIS_EXPANDED) == TVIS_EXPANDED )
+        SendMessage(TreeViewControl::getHandle(), WM_VSCROLL, SB_BOTTOM, 0);
 }
 
 void HistoryTree::RebuildHistoryTree()

@@ -1083,15 +1083,11 @@ void GuiMap::doubleClickLocation(s32 xPos, s32 yPos)
 void GuiMap::openTileProperties(s32 xClick, s32 yClick)
 {
     auto edit = createAction();
-    if ( selections.hasTiles() )
+    std::size_t tileIndex = (yClick/32)*Scenario::getTileWidth()+(xClick/32);
+    if ( !(view.tiles.sel().size() == 1 && view.tiles.sel().front() == tileIndex) )
     {
-        auto numSelected = view.tiles.sel().size();
-        if ( numSelected > 1 )
-        {
-            std::vector<std::size_t> indexesRemoved(numSelected-1, 0);
-            std::iota(indexesRemoved.begin(), indexesRemoved.end(), 1);
-            edit->tiles.deselect(indexesRemoved);
-        }
+        edit->tiles.clearSelections();
+        edit->tiles.select(tileIndex);
     }
 
     RedrawWindow(getHandle(), NULL, NULL, RDW_INVALIDATE);
@@ -1172,14 +1168,17 @@ u8 GuiMap::GetPlayerOwnerStringId(u8 player)
     return 0; // Unused
 }
 
-void GuiMap::refreshScenario()
+void GuiMap::refreshScenario(bool clearSelections)
 {
-    auto edit = createAction();
-    edit->tiles.clearSelections();
-    edit->doodads.clearSelections();
-    edit->units.clearSelections();
-    edit->sprites.clearSelections();
-    edit->tileFog.clearSelections();
+    if ( clearSelections )
+    {
+        auto edit = createAction();
+        edit->tiles.clearSelections();
+        edit->doodads.clearSelections();
+        edit->units.clearSelections();
+        edit->sprites.clearSelections();
+        edit->tileFog.clearSelections();
+    }
     chkd.mainPlot.leftBar.blockSelections = true;
     chkd.mainPlot.leftBar.mainTree.isomTree.UpdateIsomTree();
     chkd.mainPlot.leftBar.mainTree.doodadTree.UpdateDoodadTree();
@@ -1793,7 +1792,7 @@ void GuiMap::undo()
     }*/
     Scenario::undoAction();
     chkd.mainPlot.leftBar.mainTree.historyTree.RefreshActionHeaders();
-    refreshScenario();
+    refreshScenario(false);
     //Redraw(true);
 }
 
@@ -1837,7 +1836,7 @@ void GuiMap::redo()
     }*/
     Scenario::redoAction();
     chkd.mainPlot.leftBar.mainTree.historyTree.RefreshActionHeaders();
-    refreshScenario();
+    refreshScenario(false);
     //Redraw(true);
 }
 
@@ -3015,12 +3014,13 @@ LRESULT GuiMap::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     {
         case WM_CONTEXTMENU: ContextMenu(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)); break;
         case WM_PAINT: PaintMap(CM, chkd.maps.clipboard.isPasting()); break;
-        case WM_MDIACTIVATE: ActivateMap((HWND)lParam); return ClassWindow::WndProc(hWnd, msg, wParam, lParam); break;
+        case WM_MDIACTIVATE: ActivateMap((HWND)wParam, (HWND)lParam); return ClassWindow::WndProc(hWnd, msg, wParam, lParam); break;
         case WM_ERASEBKGND: return 1; break; // Prevent background from showing
         case WM_HSCROLL: return HorizontalScroll(hWnd, msg, wParam, lParam); break;
         case WM_VSCROLL: return VerticalScroll(hWnd, msg, wParam, lParam); break;
         case WM_CHAR: return 0; break;
         case WM_SIZE: return DoSize(hWnd, wParam, lParam); break;
+        case WM_KILLFOCUS: destroyBrush(); break;
         case WM_CLOSE: return ConfirmWindowClose(hWnd); break;
         case WM_DESTROY: return DestroyWindow(hWnd); break;
         case WM_RBUTTONUP: RButtonUp(hWnd, wParam, lParam); break;
@@ -3092,8 +3092,11 @@ LRESULT GuiMap::VerticalScroll(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
     return 0;
 }
 
-void GuiMap::ActivateMap(HWND hWnd)
+void GuiMap::ActivateMap(HWND deactivate, HWND activate)
 {
+    if ( getHandle() == deactivate )
+        destroyBrush();
+
     chkd.tilePropWindow.DestroyThis();
     chkd.unitWindow.DestroyThis();
     chkd.spriteWindow.DestroyThis();
@@ -3103,9 +3106,9 @@ void GuiMap::ActivateMap(HWND hWnd)
     chkd.trigEditorWindow.DestroyThis();
     chkd.briefingTrigEditorWindow.DestroyThis();
     
-    if ( hWnd != NULL )
+    if ( activate != NULL )
     {
-        chkd.maps.Focus(hWnd);
+        chkd.maps.Focus(activate);
         Redraw(true);
         chkd.maps.UpdateTreeView();
     }
@@ -3129,6 +3132,9 @@ LRESULT GuiMap::DoSize(HWND hWnd, WPARAM wParam, LPARAM lParam)
 
 LRESULT GuiMap::DestroyWindow(HWND hWnd)
 {
+    if ( brushAction )
+        brushAction = std::nullopt;
+
     if ( panTimerID != 0 ) {
         KillTimer(hWnd, panTimerID);
         panTimerID = 0;
@@ -3179,6 +3185,7 @@ void GuiMap::ContextMenu(int x, int y)
 
 void GuiMap::RButtonUp(HWND hWnd, WPARAM wParam, LPARAM lParam)
 {
+    ScopedBrushDestructor destroyBrush{brushAction};
     bool wasPasting = clipboard.isPasting();
     if ( wasPasting )
         chkd.maps.endPaste();
@@ -3200,122 +3207,77 @@ void GuiMap::LButtonDoubleClick(int x, int y, WPARAM wParam)
 
 void GuiMap::LButtonDown(int x, int y, WPARAM wParam)
 {
-    auto edit = createAction();
+    if ( brushAction )
+        brushAction = std::nullopt;
+
+    if ( (wParam & MK_LBUTTON) != MK_LBUTTON )
+        return; // LButton not down
+
     FocusThis();
     selections.moved = false;
+    u16 gridWidth = 32, gridHeight = 32;
     u32 mapClickX = (s32(((double)x)/getZoom()) + screenLeft),
         mapClickY = (s32(((double)y)/getZoom()) + screenTop);
+    
+    bool shift = (wParam & MK_SHIFT) == MK_SHIFT;
+    bool ctrl = (wParam & MK_CONTROL) == MK_CONTROL;
+    bool shiftOrCtrl = shift || ctrl;
+    bool shiftLeftClick = shift && !ctrl;
+    bool ctrlLeftClick = ctrl && !shift;
+    bool nonZeroDragSnap = ctrlLeftClick;
+    
+    brushAction.emplace(std::move(createAction()));
+    auto & edit = *brushAction;
 
-    if ( currLayer == Layer::FogEdit )
+    if ( shiftLeftClick && currLayer == Layer::Terrain )
     {
-        switch ( wParam )
-        {
-        case MK_SHIFT|MK_LBUTTON: // Shift + LClick
-        case MK_CONTROL|MK_LBUTTON: // Ctrl + LClick
-            clipboard.initFogBrush(mapClickX, mapClickY, *this, true);
-            setDragging(true);
-            // TODO: This is a place to consider creating the brush action
-            clipboard.doPaste(currLayer, currTerrainSubLayer, mapClickX, mapClickY, *this, false);
-            LockCursor();
-            TrackMouse(defaultHoverTime);
-            break;
-        case MK_LBUTTON: // LClick
-            clipboard.initFogBrush(mapClickX, mapClickY, *this, false);
-            setDragging(true);
-            // TODO: This is a place to consider creating the brush action
-            clipboard.doPaste(currLayer, currTerrainSubLayer, mapClickX, mapClickY, *this, false);
-            LockCursor();
-            TrackMouse(defaultHoverTime);
-            break;
-        }
+        openTileProperties(mapClickX, mapClickY);
+        return;
+    }
+
+    chkd.tilePropWindow.DestroyThis();
+    if ( chkd.maps.clipboard.isPasting() )
+    {
+        if ( currLayer == Layer::Terrain || currLayer == Layer::CutCopyPaste )
+            refreshTileOccupationCache();
+
+        paste(mapClickX, mapClickY);
+    }
+    else if ( currLayer == Layer::Terrain )
+    {
+        selections.setDrags((mapClickX+16)/32*32, (mapClickY+16)/32*32);
+        if ( !ctrl )
+            edit->tiles.clearSelections();
     }
     else
     {
-        switch ( wParam )
+        selections.setDrags(mapClickX, mapClickY);
+        if ( currLayer == Layer::FogEdit )
         {
-            case MK_SHIFT|MK_LBUTTON: // Shift + LClick
-                if ( currLayer == Layer::Terrain )
-                    openTileProperties(mapClickX, mapClickY);
-                break;
-    
-            case MK_CONTROL|MK_LBUTTON: // Ctrl + LClick
-                {
-                    chkd.tilePropWindow.DestroyThis();
-                    if ( !chkd.maps.clipboard.isPasting() )
-                    {
-                        if ( currLayer == Layer::Terrain ) // Ctrl + Click tile
-                            selections.setDrags( (mapClickX+16)/32*32, (mapClickY+16)/32*32 );
-                        else if ( currLayer == Layer::CutCopyPaste )
-                        {
-                            selections.setDrags(mapClickX, mapClickY);
-                            if ( snapCutCopyPasteSel )
-                            {
-                                u16 gridWidth = 32, gridHeight = 32;
-                                if ( cutCopyPasteSnapTileOverGrid || scGraphics.GetGridSize(0, gridWidth, gridHeight) )
-                                    selections.snapDrags(gridWidth, gridHeight, true);
-                            }
-                        }
-                        else if ( currLayer == Layer::Doodads || currLayer == Layer::Units || currLayer == Layer::Sprites )
-                            selections.setDrags(mapClickX, mapClickY);
+            clipboard.initFogBrush(mapClickX, mapClickY, *this, shiftOrCtrl);
+            clipboard.doPaste(currLayer, currTerrainSubLayer, mapClickX, mapClickY, *this, false);
+        }
+        else if ( currLayer == Layer::CutCopyPaste )
+        {
+            if ( snapCutCopyPasteSel && (cutCopyPasteSnapTileOverGrid || scGraphics.GetGridSize(0, gridWidth, gridHeight)) )
+                selections.snapDrags(gridWidth, gridHeight, nonZeroDragSnap);
+        }
+        else if ( currLayer == Layer::Locations )
+        {
+            u32 x1 = mapClickX, y1 = mapClickY;
+            if ( SnapLocationDimensions(x1, y1, x1, y1, LocSnapFlags(LocSnapFlags::SnapX1|LocSnapFlags::SnapY1)) )
+                selections.setDrags(x1, y1);
 
-                        LockCursor();
-                        TrackMouse(defaultHoverTime);
-                        setDragging(true);
-                    }
-                }
-                break;
-    
-            case MK_LBUTTON: // LClick
-                {
-                    chkd.tilePropWindow.DestroyThis();
-                    if ( chkd.maps.clipboard.isPasting() )
-                    {
-                        if ( currLayer == Layer::Terrain )
-                        {
-                            refreshTileOccupationCache();
-                            // TODO: This is a place to consider creating the brush action
-                        }
-                        else if ( currLayer == Layer::CutCopyPaste )
-                        {
-                            refreshTileOccupationCache();
-                            // TODO: This is a place to consider creating the brush action
-                        }
-                        paste(mapClickX, mapClickY);
-                    }
-                    else
-                    {
-                        if ( selections.hasTiles() )
-                            edit->tiles.clearSelections();
-
-                        selections.setDrags(mapClickX, mapClickY);
-                        if ( currLayer == Layer::Terrain )
-                            selections.setDrags( (mapClickX+16)/32*32, (mapClickY+16)/32*32 );
-                        else if ( currLayer == Layer::CutCopyPaste )
-                        {
-                            u16 gridWidth = 32, gridHeight = 32;
-                            if ( cutCopyPasteSnapTileOverGrid || scGraphics.GetGridSize(0, gridWidth, gridHeight) )
-                                selections.snapDrags(gridWidth, gridHeight, false);
-                        }
-                        else if ( currLayer == Layer::Locations )
-                        {
-                            u32 x1 = mapClickX, y1 = mapClickY;
-                            if ( SnapLocationDimensions(x1, y1, x1, y1, LocSnapFlags(LocSnapFlags::SnapX1|LocSnapFlags::SnapY1)) )
-                                selections.setDrags(x1, y1);
-
-                            selections.setLocationFlags(getLocSelFlags(mapClickX, mapClickY));
-                            if ( selections.getSelectedLocation() != Chk::LocationId::NoLocation && !selections.selFlagsIndicateInside() )
-                                selections.clear();
-                        }
-                    }
-
-                    SetCapture(getHandle());
-                    TrackMouse(defaultHoverTime);
-                    setDragging(true);
-                    Redraw(false);
-                }
-                break;
+            selections.setLocationFlags(getLocSelFlags(mapClickX, mapClickY));
+            if ( selections.getSelectedLocation() != Chk::LocationId::NoLocation && !selections.selFlagsIndicateInside() )
+                selections.clear();
         }
     }
+
+    SetCapture(getHandle());
+    TrackMouse(defaultHoverTime);
+    setDragging(true);
+    Redraw(false);
 }
 
 void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
@@ -3546,6 +3508,7 @@ void GuiMap::MouseWheel(HWND hWnd, int x, int y, int z, WPARAM wParam)
 
 void GuiMap::LButtonUp(HWND hWnd, int x, int y, WPARAM wParam)
 {
+    ScopedBrushDestructor destroyBrush{brushAction};
     finalizeTerrainOperation();
     ReleaseCapture();
     if ( x < 0 ) x = 0;
@@ -4292,6 +4255,12 @@ void GuiMap::SetSkin(GuiMap::Skin skin)
 void GuiMap::addIsomUndo(const Chk::IsomRectUndo & isomUndo)
 {
     // TODO: Delete this method
+}
+
+void GuiMap::destroyBrush()
+{
+    if ( brushAction )
+        brushAction = std::nullopt;
 }
 
 void GuiMap::refreshTileOccupationCache()

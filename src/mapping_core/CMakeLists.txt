@@ -28,7 +28,7 @@ include(FetchContent)
 FetchContent_Declare(
   rarecpp
   GIT_REPOSITORY https://github.com/TheNitesWhoSay/RareCpp.git
-  GIT_TAG eeabf65 # release-2.5.0TODO
+  GIT_TAG 22b142c # release-2.5.0TODO
 )
 FetchContent_MakeAvailable(rarecpp)
 include_directories(${rarecpp_SOURCE_DIR}/include)

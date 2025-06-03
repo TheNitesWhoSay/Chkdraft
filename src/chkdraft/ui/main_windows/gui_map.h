@@ -100,7 +100,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCach
                     /** Takes a player number, outputs the string/string index of the associated owner (i.e. rescuable) */
                     u8 GetPlayerOwnerStringId(u8 player);
 
-                    void refreshScenario();
+                    void refreshScenario(bool clearSelections = true);
 
 /*   Sel/Paste  */  void clearSelectedTiles();
                     void clearSelectedDoodads();
@@ -237,7 +237,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCach
                     LRESULT HorizontalScroll(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
                     LRESULT VerticalScroll(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
                     LRESULT DoSize(HWND hWnd, WPARAM wParam, LPARAM lParam);
-                    void ActivateMap(HWND hWnd);
+                    void ActivateMap(HWND deactivate, HWND activate);
                     LRESULT DestroyWindow(HWND hWnd);
 
                     void ContextMenu(int x, int y);
@@ -267,6 +267,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCach
     private:
 
                     void addIsomUndo(const Chk::IsomRectUndo & isomUndo) final;
+                    void destroyBrush();
                     void refreshTileOccupationCache();
                     void windowBoundsChanged();
 
@@ -279,6 +280,11 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCach
                     GuiMap::Skin skin = Skin::ClassicGDI;
                     std::shared_ptr<WinLib::DeviceContext> openGlDc;
                     u64 prevTickCount = GetTickCount64();
+                    std::optional<RareEdit::Editor<Tracked>> brushAction {};
+                    struct ScopedBrushDestructor { // Destroys the brush when this object goes out of scope
+                        std::optional<RareEdit::Editor<Tracked>> & brushAction;
+                        ~ScopedBrushDestructor() { brushAction = std::nullopt; }
+                    };
 
                     u16 mapId = 0;
                     bool changeLock = false;
