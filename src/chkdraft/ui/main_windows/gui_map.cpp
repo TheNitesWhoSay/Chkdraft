@@ -154,14 +154,9 @@ bool GuiMap::SaveFile(bool saveAs)
 
     if ( MapFile::save(saveAs) )
     {
-        changeLock = false;
-        if ( unsavedChanges )
-        {
-            unsavedChanges = false;
-            removeAsterisk();
-            // TODO: unsaved changes asterisk
-            //undos.ResetChangeCount();
-        }
+        lastSaveActionIndex = Tracked::getCursorIndex();
+        postSaveSelActionCount = 1;
+        notifyNoUnsavedChanges();
         return true;
     }
     else
@@ -1787,6 +1782,7 @@ void GuiMap::undo()
             break;
     }*/
     Scenario::undoAction();
+    checkUnsavedChanges();
     chkd.mainPlot.leftBar.mainTree.historyTree.RefreshActionHeaders();
     refreshScenario(false);
     //Redraw(true);
@@ -1831,19 +1827,27 @@ void GuiMap::redo()
             break;
     }*/
     Scenario::redoAction();
+    checkUnsavedChanges();
     chkd.mainPlot.leftBar.mainTree.historyTree.RefreshActionHeaders();
     refreshScenario(false);
     //Redraw(true);
 }
 
-void GuiMap::ChangesMade()
+bool GuiMap::isInNoChangeRange(std::size_t actionIndex)
 {
-    notifyChange(true);
+    auto noChangesBegin = this->lastSaveActionIndex;
+    auto noChangesEnd = this->lastSaveActionIndex+this->postSaveSelActionCount;
+    return actionIndex >= noChangesBegin && actionIndex <= noChangesEnd;
 }
 
-void GuiMap::ChangesReversed()
+void GuiMap::checkUnsavedChanges()
 {
-    changesUndone();
+    auto cursorActionIndex = Tracked::getCursorIndex();
+    bool inNoChangeRange = isInNoChangeRange(cursorActionIndex);
+    if ( this->unsavedChanges && inNoChangeRange )
+        notifyNoUnsavedChanges();
+    else if ( !this->unsavedChanges && !inNoChangeRange )
+        notifyUnsavedChanges();
 }
 
 float GuiMap::MiniMapScale(u16 xSize, u16 ySize)
@@ -2871,46 +2875,28 @@ u16 GuiMap::getMapId()
     return this->mapId;
 }
 
-void GuiMap::notifyChange(bool undoable)
+void GuiMap::notifyUnsavedChanges()
 {
-    if ( changeLock == false && undoable == false )
-        changeLock = true;
-
     if ( !unsavedChanges )
     {
         unsavedChanges = true;
-        addAsterisk();
+        if ( auto windowTitle = WindowsItem::GetWinText() )
+            WindowsItem::SetWinText(*windowTitle + "*");
     }
 }
 
-void GuiMap::changesUndone()
+void GuiMap::notifyNoUnsavedChanges()
 {
-    if ( !changeLock )
+    if ( unsavedChanges )
     {
         unsavedChanges = false;
-        removeAsterisk();
-    }
-}
-
-bool GuiMap::changesLocked()
-{
-    return changeLock;
-}
-
-void GuiMap::addAsterisk()
-{
-    if ( auto windowTitle = WindowsItem::GetWinText() )
-        WindowsItem::SetWinText(*windowTitle + "*");
-}
-
-void GuiMap::removeAsterisk()
-{
-    if ( auto windowTitle = WindowsItem::GetWinText() )
-    {
-        if ( windowTitle->back() == '*' )
+        if ( auto windowTitle = WindowsItem::GetWinText() )
         {
-            windowTitle->pop_back();
-            WindowsItem::SetWinText(*windowTitle);
+            if ( windowTitle->back() == '*' )
+            {
+                windowTitle->pop_back();
+                WindowsItem::SetWinText(*windowTitle);
+            }
         }
     }
 }

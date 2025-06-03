@@ -29,7 +29,6 @@ LRESULT CALLBACK PluginProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                                     if ( map->deserialize((Chk::SerializedChk*)copyData) )
                                     {
                                         map->refreshScenario();
-                                        map->notifyChange(false);
                                         return TRUE;
                                     }
                                 }
@@ -45,10 +44,7 @@ LRESULT CALLBACK PluginProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
                                     TextTrigCompiler compiler(Settings::useAddressesForMemory, Settings::deathTableStart);
                                     if ( compiler.compileTriggers(textBuf, (Scenario &)*map, chkd.scData, 0, map->numTriggers()) )
-                                    {
-                                        map->notifyChange(false);
                                         return TRUE;
-                                    }
                                     else
                                         WinLib::Message("Compilation failed.", "Error!");
                                 }
@@ -330,7 +326,6 @@ void repairSounds()
             }
         }
     }
-    CM->notifyChange(false);
     CM->refreshScenario();
 
     if ( warn )
@@ -881,6 +876,5 @@ void repairStrings(bool compatibilityMode)
     }
     
     edit->strTailData.reset();
-    CM->notifyChange(false);
     CM->refreshScenario();
 }

@@ -407,7 +407,6 @@ void UnitSettingsWindow::CheckReplaceUnitName()
         {
             CM->setUnitName<ChkdString>((Sc::Unit::Type)selectedUnitType, *newUnitName);
             CM->deleteUnusedStrings(Chk::Scope::Both);
-            CM->notifyChange(false);
             chkd.unitWindow.RepopulateList();
             RedrawWindow(chkd.unitWindow.getHandle(), NULL, NULL, RDW_INVALIDATE);
 
@@ -473,8 +472,6 @@ void UnitSettingsWindow::SetDefaultUnitProperties()
             CM->setWeaponBaseDamage((Sc::Weapon::Type)airWeapon, defaultBaseDamage);
             CM->setWeaponUpgradeDamage((Sc::Weapon::Type)airWeapon, defaultBonusDamage);
         }
-
-        CM->notifyChange(false);
     }
     refreshing = false;
 }
@@ -498,8 +495,6 @@ void UnitSettingsWindow::ClearDefaultUnitProperties()
         CM->setUnitBuildTime(selectedUnitType, 0, Chk::UseExpSection::Both);
         CM->setUnitMineralCost(selectedUnitType, 0, Chk::UseExpSection::Both);
         CM->setUnitGasCost(selectedUnitType, 0, Chk::UseExpSection::Both);
-
-        CM->notifyChange(false);
     }
 }
 
@@ -543,7 +538,6 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 CM->deleteUnusedStrings();
                 DisableUnitEditing();
                 RefreshWindow();
-                CM->notifyChange(false);
             }
         }
         break;
@@ -570,7 +564,6 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 RefreshWindow();
                 chkd.unitWindow.RepopulateList();
                 RedrawWindow(chkd.unitWindow.getHandle(), NULL, NULL, RDW_INVALIDATE);
-                CM->notifyChange(false);
             }
         }
         break;
@@ -592,8 +585,6 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 }
                 else
                     editUnitName.EnableThis();
-
-                CM->notifyChange(false);
             }
         }
         break;
@@ -602,10 +593,7 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
         {
             LRESULT state = SendMessage((HWND)lParam, BM_GETCHECK, 0, 0);
             if ( selectedUnitType != Sc::Unit::Type::NoUnit )
-            {
                 CM->setUnitDefaultBuildable(selectedUnitType, state == BST_CHECKED);
-                CM->notifyChange(false);
-            }
         }
         break;
     case Id::EDIT_UNITNAME:
@@ -622,7 +610,6 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             {
                 u32 oldHitpoints = CM->getUnitHitpoints(selectedUnitType);
                 CM->setUnitHitpoints(selectedUnitType, newHitPoints*256+oldHitpoints%256);
-                CM->notifyChange(false);
             }
         }
         break;
@@ -634,7 +621,6 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             {
                 u32 oldHitpoints = CM->getUnitHitpoints(selectedUnitType);
                 CM->setUnitHitpoints(selectedUnitType, oldHitpoints-oldHitpoints%256+newHitPointByte);
-                CM->notifyChange(false);
             }
         }
         break;
@@ -643,10 +629,7 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
         {
             u16 newShieldPoints;
             if ( editShieldPoints.GetEditNum<u16>(newShieldPoints) )
-            {
                 CM->setUnitShieldPoints(selectedUnitType, newShieldPoints);
-                CM->notifyChange(false);
-            }
         }
         break;
     case Id::EDIT_UNITARMOR:
@@ -654,10 +637,7 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
         {
             u8 newArmorByte;
             if ( editArmor.GetEditNum<u8>(newArmorByte) )
-            {
                 CM->setUnitArmorLevel(selectedUnitType, newArmorByte);
-                CM->notifyChange(false);
-            }
         }
         break;
     case Id::EDIT_UNITBUILDTIME:
@@ -665,10 +645,7 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
         {
             u16 newBuildTime;
             if ( editBuildTime.GetEditNum<u16>(newBuildTime) )
-            {
                 CM->setUnitBuildTime(selectedUnitType, newBuildTime);
-                CM->notifyChange(false);
-            }
         }
         break;
     case Id::EDIT_UNITMINERALCOST:
@@ -676,10 +653,7 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
         {
             u16 newMineralCost;
             if ( editMineralCost.GetEditNum<u16>(newMineralCost) )
-            {
                 CM->setUnitMineralCost(selectedUnitType, newMineralCost);
-                CM->notifyChange(false);
-            }
         }
         break;
     case Id::EDIT_UNITGASCOST:
@@ -687,10 +661,7 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
         {
             u16 newGasCost;
             if ( editGasCost.GetEditNum<u16>(newGasCost) )
-            {
                 CM->setUnitGasCost(selectedUnitType, newGasCost);
-                CM->notifyChange(false);
-            }
         }
         break;
     case Id::EDIT_UNITGROUNDDAMAGE:
@@ -705,10 +676,7 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 if ( subUnitId != 228 && groundWeapon == 130 ) // If unit has a subunit
                     groundWeapon = chkd.scData.units.getUnit(subUnitId).groundWeapon; // If unit might have a subunit ground attack
                 if ( groundWeapon < 130 )
-                {
                     CM->setWeaponBaseDamage((Sc::Weapon::Type)groundWeapon, newGroundDamage);
-                    CM->notifyChange(false);
-                }
             }
         }
         break;
@@ -724,10 +692,7 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 if ( subUnitId != (u16)Sc::Unit::Type::NoSubUnit && groundWeapon == 130 ) // If unit has a subunit
                     groundWeapon = chkd.scData.units.getUnit(subUnitId).groundWeapon; // If unit might have a subunit ground attack
                 if ( groundWeapon < 130 )
-                {
                     CM->setWeaponUpgradeDamage((Sc::Weapon::Type)groundWeapon, newGroundBonus);
-                    CM->notifyChange(false);
-                }
             }
         }
         break;
@@ -743,10 +708,7 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 if ( subUnitId != (u16)Sc::Unit::Type::NoSubUnit && airWeapon == 130 ) // If unit has a subunit
                     airWeapon = chkd.scData.units.getUnit(subUnitId).airWeapon; // If unit might have a subunit ground attack
                 if ( airWeapon < 130 )
-                {
                     CM->setWeaponBaseDamage((Sc::Weapon::Type)airWeapon, newAirDamage);
-                    CM->notifyChange(false);
-                }
             }
         }
         break;
@@ -763,7 +725,6 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                     airWeapon = chkd.scData.units.getUnit(subUnitId).airWeapon; // If unit might have a subunit ground attack
 
                 CM->setWeaponUpgradeDamage((Sc::Weapon::Type)airWeapon, newAirBonus);
-                CM->notifyChange(false);
             }
         }
         break;
@@ -787,7 +748,6 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 CM->setUnitBuildable(selectedUnitType, player, false);
             }
 
-            CM->notifyChange(false);
             RefreshWindow();
         }
         break;

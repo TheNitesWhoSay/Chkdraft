@@ -133,7 +133,6 @@ void TrigConditionsWindow::CndActEnableToggled(u8 conditionNum)
         {
             editCondition.toggleDisabled();
 
-            CM->notifyChange(false);
             RefreshWindow(trigIndex);
             chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
 
@@ -305,7 +304,6 @@ bool TrigConditionsWindow::TransformCondition(std::size_t triggerIndex, std::siz
 
 void TrigConditionsWindow::RefreshConditionAreas()
 {
-    CM->notifyChange(false);
     RefreshWindow(trigIndex);
     chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
 }

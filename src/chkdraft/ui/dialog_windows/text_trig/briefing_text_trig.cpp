@@ -68,10 +68,7 @@ BOOL BriefingTextTrigWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 if ( chkd.maps.SaveCurr(false) )
                     WinLib::Message("Success", "Compiler");
                 else
-                {
                     WinLib::Message("Compile Succeeded, Save Failed", "Compiler");
-                    CM->notifyChange(false);
-                }
             }
         }
         else
@@ -82,7 +79,6 @@ BOOL BriefingTextTrigWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
         {
             if ( CompileEditText(*CM) )
             {
-                CM->notifyChange(false);
                 CM->refreshScenario();
                 RefreshWindow();
                 WinLib::Message("Success", "Compiler");

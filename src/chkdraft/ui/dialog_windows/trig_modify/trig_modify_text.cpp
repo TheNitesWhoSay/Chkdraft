@@ -126,7 +126,6 @@ void TrigModifyTextWindow::Compile(bool silent, bool saveAfter)
                 if ( CompileEditText(*newText) )
                 {
                     trigText = *newText;
-                    CM->notifyChange(false);
                     CM->refreshScenario();
                     if ( saveAfter )
                     {

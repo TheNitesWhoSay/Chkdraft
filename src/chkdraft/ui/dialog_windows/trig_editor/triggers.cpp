@@ -234,7 +234,6 @@ void TriggersWindow::DeleteSelection()
         CM->deleteTrigger(currTrigger);
         CM->deleteUnusedStrings(Chk::Scope::Both);
         trigModifyWindow.DestroyThis();
-        CM->notifyChange(false);
         int sel;
         RefreshGroupList();
         if ( listTriggers.GetCurSel(sel) && DeleteTrigListItem(sel) && (SelectTrigListItem(sel) || SelectTrigListItem(sel-1)) )
@@ -252,7 +251,6 @@ void TriggersWindow::CopySelection()
     {
         CM->insertTrigger(currTrigger+1, CM->getTrigger(currTrigger));
         trigModifyWindow.DestroyThis();
-        CM->notifyChange(false);
         int sel;
         if ( listTriggers.GetCurSel(sel) && CopyTrigListItem(sel) && SelectTrigListItem(sel+1) )
             RefreshTrigList();
@@ -271,7 +269,6 @@ void TriggersWindow::MoveUp()
          listTriggers.GetItemData(sel-1, prevTrigIndex) )
     {
         trigModifyWindow.DestroyThis();
-        CM->notifyChange(false);
         CM->moveTrigger(currTrigger, size_t(prevTrigIndex));
         if ( MoveUpTrigListItem(sel, u32(prevTrigIndex)) )
         {
@@ -293,7 +290,6 @@ void TriggersWindow::MoveDown()
          listTriggers.GetItemData(sel+1, nextTrigIndex) )
     {
         trigModifyWindow.DestroyThis();
-        CM->notifyChange(false);
         CM->moveTrigger(currTrigger, size_t(nextTrigIndex));
         if ( MoveDownTrigListItem(sel, u32(nextTrigIndex)) )
         {
@@ -317,7 +313,6 @@ void TriggersWindow::MoveTrigTo()
          targetTrigIndex < CM->numTriggers() )
     {
         trigModifyWindow.DestroyThis();
-        CM->notifyChange(false);
         CM->moveTrigger(currTrigger, targetTrigIndex);
         int listIndexMovedTo = -1;
         listTriggers.SetRedraw(false);
@@ -360,7 +355,6 @@ void TriggersWindow::ButtonNew()
         newTrigId = LPARAM(CM->numTriggers()-1);
     }
 
-    CM->notifyChange(false);
     currTrigger = u32(newTrigId);
     RefreshWindow(true);
     ButtonModify();

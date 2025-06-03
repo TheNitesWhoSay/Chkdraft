@@ -261,8 +261,6 @@ void TrigPlayersWindow::ParseRawPlayers()
         auto edit = CM->operator()();
         for ( std::size_t i=0; i<Chk::Trigger::MaxOwners; ++i )
             edit->triggers[trigIndex].owners[i] = owners[i];
-
-        CM->notifyChange(false);
     }
         
     RefreshWindow(trigIndex);

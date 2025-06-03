@@ -257,7 +257,6 @@ void BriefingTrigPlayersWindow::ParseRawPlayers()
         for ( std::size_t i=0; i<Chk::Trigger::MaxOwners; ++i )
             edit->triggers[briefingTrigIndex].owners[i] = owners[i];
 
-        CM->notifyChange(false);
     }
         
     RefreshWindow(briefingTrigIndex);

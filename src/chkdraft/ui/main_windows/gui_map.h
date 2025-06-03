@@ -118,8 +118,8 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCach
 
 /*   Undo Redo  */  void undo();
                     void redo();
-                    virtual void ChangesMade();
-                    virtual void ChangesReversed();
+                    bool isInNoChangeRange(std::size_t actionIndex);
+                    void checkUnsavedChanges();
 
 /*   Graphics   */  float MiniMapScale(u16 xSize, u16 ySize);
 
@@ -200,11 +200,8 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCach
 
 /*     Misc     */  void setMapId(u16 mapId);
                     u16 getMapId();
-                    void notifyChange(bool undoable); // Notifies that a change occured, if it's not undoable changes are locked
-                    void changesUndone(); // Notifies that all undoable changes have been undone
-                    bool changesLocked(); // Checks if changes are locked
-                    void addAsterisk(); // Adds an asterix onto the map name
-                    void removeAsterisk(); // Removes an asterix from the map name
+                    void notifyUnsavedChanges(); // Adds an asterix onto the map name
+                    void notifyNoUnsavedChanges(); // Removes an asterix from the map name
                     void updateMenu(); // Updates which items are checked in the main menu
 
                     bool CreateThis(HWND hClient, const std::string & title);
@@ -287,8 +284,9 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCach
                     };
 
                     u16 mapId = 0;
-                    bool changeLock = false;
                     bool unsavedChanges = false;
+                    std::size_t lastSaveActionIndex = 0;
+                    std::size_t postSaveSelActionCount = 1;
 
                     Layer currLayer = Layer::Terrain;
                     TerrainSubLayer currTerrainSubLayer = TerrainSubLayer::Isom;

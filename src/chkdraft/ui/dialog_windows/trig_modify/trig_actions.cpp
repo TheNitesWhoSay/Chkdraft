@@ -169,7 +169,6 @@ void TrigActionsWindow::CndActEnableToggled(u8 actionNum)
         {
             editAction.toggleDisabled();
 
-            CM->notifyChange(false);
             RefreshWindow(trigIndex);
             chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
 
@@ -373,7 +372,6 @@ bool TrigActionsWindow::TransformAction(std::size_t triggerIndex, std::size_t ac
 
 void TrigActionsWindow::RefreshActionAreas()
 {
-    CM->notifyChange(false);
     RefreshWindow(trigIndex);
     chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
 }

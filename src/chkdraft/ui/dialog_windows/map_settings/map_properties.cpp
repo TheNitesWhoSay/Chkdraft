@@ -331,10 +331,7 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 case 4: newType = Sc::Player::SlotType::Neutral; break;
                 }
                 if ( newType != Sc::Player::SlotType::Inactive )
-                {
                     CM->setSlotType(player, newType);
-                    CM->notifyChange(false);
-                }
             }
         }
         break;
@@ -351,7 +348,6 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 CM->setPlayerRace(player, (Chk::Race)newRace);
                 chkd.maps.UpdatePlayerStatus();
                 CM->Redraw(true);
-                CM->notifyChange(false);
             }
         }
         break;
@@ -375,7 +371,6 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 }
                 chkd.maps.UpdatePlayerStatus();
                 CM->Redraw(true);
-                CM->notifyChange(false);
             }
         }
         break;
@@ -388,7 +383,6 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 CM->setPlayerColor(player, (Chk::PlayerColor)newColor);
                 chkd.maps.UpdatePlayerStatus();
                 CM->Redraw(true);
-                CM->notifyChange(false);
             }
         }
 
@@ -434,7 +428,6 @@ void MapPropertiesWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
             CM->setPlayerCustomColor(playerIndex, *playerColor);
             chkd.maps.UpdatePlayerStatus();
             CM->Redraw(true);
-            CM->notifyChange(false);
             this->RefreshWindow();
         }
     }
@@ -448,7 +441,6 @@ void MapPropertiesWindow::CheckReplaceMapTitle()
         {
             CM->setScenarioName<ChkdString>(*newMapTitle);
             CM->deleteUnusedStrings(Chk::Scope::Both);
-            CM->notifyChange(false);
             possibleTitleUpdate = false;
         }
     }
@@ -462,7 +454,6 @@ void MapPropertiesWindow::CheckReplaceMapDescription()
         {
             CM->setScenarioDescription<ChkdString>(*newMapDescription);
             CM->deleteUnusedStrings(Chk::Scope::Both);
-            CM->notifyChange(false);
             possibleDescriptionUpdate = false;
         }
     }

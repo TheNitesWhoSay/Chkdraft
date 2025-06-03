@@ -158,7 +158,6 @@ void BriefingTrigActionsWindow::CndActEnableToggled(u8 actionNum)
         {
             editAction.toggleDisabled();
 
-            CM->notifyChange(false);
             RefreshWindow(briefingTrigIndex);
             chkd.briefingTrigEditorWindow.briefingTriggersWindow.RefreshWindow(false);
 
@@ -339,7 +338,6 @@ bool BriefingTrigActionsWindow::TransformAction(std::size_t briefingTriggerIndex
 
 void BriefingTrigActionsWindow::RefreshActionAreas()
 {
-    CM->notifyChange(false);
     RefreshWindow(briefingTrigIndex);
     chkd.briefingTrigEditorWindow.briefingTriggersWindow.RefreshWindow(false);
 }

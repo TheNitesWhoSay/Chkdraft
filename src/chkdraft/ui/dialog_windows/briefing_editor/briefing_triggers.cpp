@@ -168,7 +168,6 @@ void BriefingTriggersWindow::DeleteSelection()
         CM->deleteBriefingTrigger(currBriefingTrigger);
         CM->deleteUnusedStrings(Chk::Scope::Both);
         briefingTrigModifyWindow.DestroyThis();
-        CM->notifyChange(false);
         int sel;
         RefreshGroupList();
         if ( listBriefingTriggers.GetCurSel(sel) && DeleteTrigListItem(sel) && (SelectTrigListItem(sel) || SelectTrigListItem(sel-1)) )
@@ -186,7 +185,6 @@ void BriefingTriggersWindow::CopySelection()
     {
         CM->insertBriefingTrigger(currBriefingTrigger+1, CM->getBriefingTrigger(currBriefingTrigger));
         briefingTrigModifyWindow.DestroyThis();
-        CM->notifyChange(false);
         int sel;
         if ( listBriefingTriggers.GetCurSel(sel) && CopyTrigListItem(sel) && SelectTrigListItem(sel+1) )
             RefreshTrigList();
@@ -205,7 +203,6 @@ void BriefingTriggersWindow::MoveUp()
          listBriefingTriggers.GetItemData(sel-1, prevTrigIndex) )
     {
         briefingTrigModifyWindow.DestroyThis();
-        CM->notifyChange(false);
         CM->moveBriefingTrigger(currBriefingTrigger, size_t(prevTrigIndex));
         if ( MoveUpTrigListItem(sel, u32(prevTrigIndex)) )
         {
@@ -227,7 +224,6 @@ void BriefingTriggersWindow::MoveDown()
          listBriefingTriggers.GetItemData(sel+1, nextTrigIndex) )
     {
         briefingTrigModifyWindow.DestroyThis();
-        CM->notifyChange(false);
         CM->moveBriefingTrigger(currBriefingTrigger, size_t(nextTrigIndex));
         if ( MoveDownTrigListItem(sel, u32(nextTrigIndex)) )
         {
@@ -251,7 +247,6 @@ void BriefingTriggersWindow::MoveTrigTo()
          targetTrigIndex < CM->numBriefingTriggers() )
     {
         briefingTrigModifyWindow.DestroyThis();
-        CM->notifyChange(false);
         CM->moveBriefingTrigger(currBriefingTrigger, targetTrigIndex);
         int listIndexMovedTo = -1;
         listBriefingTriggers.SetRedraw(false);
@@ -296,7 +291,6 @@ void BriefingTriggersWindow::ButtonNew()
         newTrigId = LPARAM(CM->numBriefingTriggers()-1);
     }
 
-    CM->notifyChange(false);
     currBriefingTrigger = u32(newTrigId);
     RefreshWindow(true);
     ButtonModify();

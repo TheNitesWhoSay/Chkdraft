@@ -403,7 +403,6 @@ void LocationWindow::LocationNameFocusLost()
             auto edit = CM->operator()();
             CM->replaceString<ChkdString>(locRef.stringId, *locationName);
             CM->deleteUnusedStrings(Chk::Scope::Both);
-            CM->notifyChange(false);
             CM->refreshScenario();
         }
     }

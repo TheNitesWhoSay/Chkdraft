@@ -194,12 +194,6 @@ bool Chkdraft::CreateThis()
     return ClassWindow::CreateClassWindow(exStyle, windowName, style, windowX, windowY, windowWidth, windowHeight, NULL, id) && Chkdraft::CreateSubWindows();
 }
 
-bool Chkdraft::ChangesLocked(u16 mapId)
-{
-    GuiMapPtr map = maps.GetMap(mapId);
-    return map != nullptr && map->changesLocked();
-}
-
 bool Chkdraft::EditFocused()
 {
     return editFocused;

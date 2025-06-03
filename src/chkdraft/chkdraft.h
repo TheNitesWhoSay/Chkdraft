@@ -54,8 +54,7 @@ class Chkdraft : public WinLib::ClassWindow
 /*   Startup    */  int Run(LPSTR lpCmdLine, int nCmdShow);
                     void SetupLogging();
 
-/* Quick Access */  bool ChangesLocked(u16 mapId);
-                    bool EditFocused();
+/* Quick Access */  bool EditFocused();
                     HWND CurrDialog();
 
 /*   UI Accel   */  void SetCurrDialog(HWND hDialog);

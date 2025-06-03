@@ -157,7 +157,6 @@ void SwitchesWindow::ToggleUseDefaultString()
         {
             CM->setSwitchNameStringId(selectedSwitch, switchNameStringId);
             CM->deleteString(switchNameStringId);
-            CM->notifyChange(false);
         }
 
         textSwitchName.DisableThis();
@@ -218,7 +217,6 @@ void SwitchesWindow::EditSwitchNameFocusLost()
             CM->setSwitchName(selectedSwitch, temp);
             CM->deleteUnusedStrings(Chk::Scope::Both);
             chkd.mapSettingsWindow.RefreshWindow();
-            CM->notifyChange(false);
         }
     }
 }

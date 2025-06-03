@@ -181,49 +181,42 @@ void TrigGeneralWindow::OnLeave()
 void TrigGeneralWindow::SetPreserveTrigger(bool preserve)
 {
     CM->editTrigger(trigIndex).setPreserveTriggerFlagged(preserve);
-    CM->notifyChange(false);
     RefreshWindow(trigIndex);
 }
 
 void TrigGeneralWindow::SetDisabledTrigger(bool disabled)
 {
     CM->editTrigger(trigIndex).setDisabled(disabled);
-    CM->notifyChange(false);
     RefreshWindow(trigIndex);
 }
 
 void TrigGeneralWindow::SetIgnoreConditionsOnce(bool ignoreConditionsOnce)
 {
     CM->editTrigger(trigIndex).setIgnoreConditionsOnce(ignoreConditionsOnce);
-    CM->notifyChange(false);
     RefreshWindow(trigIndex);
 }
 
 void TrigGeneralWindow::SetIgnoreWaitSkipOnce(bool ignoreWaitSkipOnce)
 {
     CM->editTrigger(trigIndex).setIgnoreWaitSkipOnce(ignoreWaitSkipOnce);
-    CM->notifyChange(false);
     RefreshWindow(trigIndex);
 }
 
 void TrigGeneralWindow::SetIgnoreMiscActionsOnce(bool ignoreMiscActionsOnce)
 {
     CM->editTrigger(trigIndex).setIgnoreMiscActionsOnce(ignoreMiscActionsOnce);
-    CM->notifyChange(false);
     RefreshWindow(trigIndex);
 }
 
 void TrigGeneralWindow::SetIgnoreDefeatDraw(bool ignoreDefeatDraw)
 {
     CM->editTrigger(trigIndex).setIgnoreDefeatDraw(ignoreDefeatDraw);
-    CM->notifyChange(false);
     RefreshWindow(trigIndex);
 }
 
 void TrigGeneralWindow::SetPausedTrigger(bool paused)
 {
     CM->editTrigger(trigIndex).setPauseFlagged(paused);
-    CM->notifyChange(false);
     RefreshWindow(trigIndex);
 }
 
@@ -233,10 +226,7 @@ void TrigGeneralWindow::ParseRawFlagsText()
     {
         u32 triggerFlags = CM->getTrigger(trigIndex).flags;
         if ( editRawFlags.GetEditBinaryNum(triggerFlags) )
-        {
             CM->operator()()->triggers[trigIndex].flags = triggerFlags;
-            CM->notifyChange(false);
-        }
         
         RefreshWindow(trigIndex);
     }
