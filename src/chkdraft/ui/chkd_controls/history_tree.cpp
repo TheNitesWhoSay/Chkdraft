@@ -129,12 +129,6 @@ void HistoryTree::InsertAction(std::size_t actionIndex, const RareEdit::RenderAc
     SetRedraw(false);
     auto* insertedAction = InsertAction(actionIndex, action, hHistoryRoot);
     SetRedraw(true);
-    TVITEM item {
-        .mask = TVIF_HANDLE|TVIF_STATE,
-        .hItem = hHistoryRoot,
-        .stateMask = TVIS_EXPANDED
-    };
-    TreeView_GetItem(getHandle(), &item);
     SendMessage(TreeViewControl::getHandle(), WM_VSCROLL, SB_BOTTOM, 0);
 }
 
@@ -168,8 +162,6 @@ void HistoryTree::RefreshActionHeaders(std::optional<std::size_t> excludeIndex)
             continue;
 
         std::size_t distance = cursorIndex > actionIndex ? cursorIndex-actionIndex : actionIndex-cursorIndex;
-
-        //logger.info() << getActionText(actionIndex, action) << '\n';
         
         HistAction* histAction = nullptr;
         auto found = actionTree.find(actionIndex);
@@ -212,7 +204,6 @@ void HistoryTree::RefreshActionHeaders(std::optional<std::size_t> excludeIndex)
                 item.state = 0;
 
             SendMessage(getHandle(), TVM_SETITEM, 0, (LPARAM)&item);
-            //SetItemText(hActionItem, getActionText(actionIndex, action));
         }
     }
     this->SetItemText(hHistoryRoot, "History (" + getSizeString(totalByteCount) + ")");

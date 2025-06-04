@@ -71,7 +71,6 @@ class SpritePropertiesWindow : public WinLib::ClassDialog
         bool flipSort;
         bool initilizing;
         bool changeHighlightOnly;
-        PreservedSpriteStats preservedStats;
 
         WinLib::ListViewControl listSprites;
         PlayerDropdown dropPlayer;

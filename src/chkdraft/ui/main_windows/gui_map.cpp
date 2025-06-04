@@ -1541,42 +1541,30 @@ void GuiMap::moveSelection(Direction direction, bool useGrid)
                 {
                     case Direction::Left:
                     {
-                        PreservedUnitStats preservedStats {};
-                        preservedStats.AddStats(selections, Chk::Unit::Field::Xc);
                         auto diff = ((firstUnit.xc-gridOffX) % gridWidth) > 0 ? ((firstUnit.xc-gridOffX) % gridWidth) : gridWidth;
                         for ( auto unitIndex : view.units.sel() )
                             edit->units[unitIndex].xc -= diff;
-                        preservedStats.convertToUndo();
                     }
                     break;
                     case Direction::Up:
                     {
-                        PreservedUnitStats preservedStats {};
-                        preservedStats.AddStats(selections, Chk::Unit::Field::Yc);
                         auto diff = ((firstUnit.yc-gridOffY) % gridHeight) > 0 ? ((firstUnit.yc-gridOffY) % gridHeight) : gridHeight;
                         for ( auto unitIndex : view.units.sel() )
                             edit->units[unitIndex].yc -= diff;
-                        preservedStats.convertToUndo();
                     }
                     break;
                     case Direction::Right:
                     {
-                        PreservedUnitStats preservedStats {};
-                        preservedStats.AddStats(selections, Chk::Unit::Field::Xc);
                         auto diff = ((firstUnit.xc-gridOffX) % gridWidth) > 0 ? (gridWidth-((firstUnit.xc-gridOffX) % gridWidth)) : gridWidth;
                         for ( auto unitIndex : view.units.sel() )
                             edit->units[unitIndex].xc += diff;
-                        preservedStats.convertToUndo();
                     }
                     break;
                     case Direction::Down:
                     {
-                        PreservedUnitStats preservedStats {};
-                        preservedStats.AddStats(selections, Chk::Unit::Field::Yc);
                         auto diff = ((firstUnit.yc-gridOffY) % gridHeight) > 0 ? (gridHeight-((firstUnit.yc-gridOffY) % gridHeight)) : gridHeight;
                         for ( auto unitIndex : view.units.sel() )
                             edit->units[unitIndex].yc += diff;
-                        preservedStats.convertToUndo();
                     }
                     break;
                 }
@@ -1591,42 +1579,30 @@ void GuiMap::moveSelection(Direction direction, bool useGrid)
                 {
                     case Direction::Left:
                     {
-                        PreservedSpriteStats preservedStats {};
-                        preservedStats.AddStats(selections, Chk::Sprite::Field::Xc);
                         auto diff = ((firstSprite.xc-gridOffX) % gridWidth) > 0 ? ((firstSprite.xc-gridOffX) % gridWidth) : gridWidth;
                         for ( auto spriteIndex : view.sprites.sel() )
                             edit->sprites[spriteIndex].xc -= diff;
-                        preservedStats.convertToUndo();
                     }
                     break;
                     case Direction::Up:
                     {
-                        PreservedSpriteStats preservedStats {};
-                        preservedStats.AddStats(selections, Chk::Sprite::Field::Yc);
                         auto diff = ((firstSprite.yc-gridOffY) % gridHeight) > 0 ? ((firstSprite.yc-gridOffY) % gridHeight) : gridHeight;
                         for ( auto spriteIndex : view.sprites.sel() )
                             edit->sprites[spriteIndex].yc -= diff;
-                        preservedStats.convertToUndo();
                     }
                     break;
                     case Direction::Right:
                     {
-                        PreservedSpriteStats preservedStats {};
-                        preservedStats.AddStats(selections, Chk::Sprite::Field::Xc);
                         auto diff = ((firstSprite.xc-gridOffX) % gridWidth) > 0 ? (gridWidth-((firstSprite.xc-gridOffX) % gridWidth)) : gridWidth;
                         for ( auto spriteIndex : view.sprites.sel() )
                             edit->sprites[spriteIndex].xc += diff;
-                        preservedStats.convertToUndo();
                     }
                     break;
                     case Direction::Down:
                     {
-                        PreservedSpriteStats preservedStats {};
-                        preservedStats.AddStats(selections, Chk::Sprite::Field::Yc);
                         auto diff = ((firstSprite.yc-gridOffY) % gridHeight) > 0 ? (gridHeight-((firstSprite.yc-gridOffY) % gridHeight)) : gridHeight;
                         for ( auto spriteIndex : view.sprites.sel() )
                             edit->sprites[spriteIndex].yc += diff;
-                        preservedStats.convertToUndo();
                     }
                     break;
                 }
@@ -1644,37 +1620,17 @@ void GuiMap::moveSelection(Direction direction, bool useGrid)
                 switch ( direction )
                 {
                     case Direction::Left:
-                    {
-                        PreservedUnitStats preservedStats {};
-                        preservedStats.AddStats(selections, Chk::Unit::Field::Xc);
                         edit->units[unitIndex].xc -= 1;
-                        preservedStats.convertToUndo();
-                    }
-                    break;
+                        break;
                     case Direction::Up:
-                    {
-                        PreservedUnitStats preservedStats {};
-                        preservedStats.AddStats(selections, Chk::Unit::Field::Yc);
                         edit->units[unitIndex].yc -= 1;
-                        preservedStats.convertToUndo();
-                    }
-                    break;
+                        break;
                     case Direction::Right:
-                    {
-                        PreservedUnitStats preservedStats {};
-                        preservedStats.AddStats(selections, Chk::Unit::Field::Xc);
                         edit->units[unitIndex].xc += 1;
-                        preservedStats.convertToUndo();
-                    }
-                    break;
+                        break;
                     case Direction::Down:
-                    {
-                        PreservedUnitStats preservedStats {};
-                        preservedStats.AddStats(selections, Chk::Unit::Field::Yc);
                         edit->units[unitIndex].yc += 1;
-                        preservedStats.convertToUndo();
-                    }
-                    break;
+                        break;
                 }
             }
             break;
@@ -1685,37 +1641,17 @@ void GuiMap::moveSelection(Direction direction, bool useGrid)
                 switch ( direction )
                 {
                     case Direction::Left:
-                    {
-                        PreservedSpriteStats preservedStats {};
-                        preservedStats.AddStats(selections, Chk::Sprite::Field::Xc);
                         edit->sprites[spriteIndex].xc -= 1;
-                        preservedStats.convertToUndo();
-                    }
-                    break;
+                        break;
                     case Direction::Up:
-                    {
-                        PreservedSpriteStats preservedStats {};
-                        preservedStats.AddStats(selections, Chk::Sprite::Field::Yc);
                         edit->sprites[spriteIndex].yc -= 1;
-                        preservedStats.convertToUndo();
-                    }
-                    break;
+                        break;
                     case Direction::Right:
-                    {
-                        PreservedSpriteStats preservedStats {};
-                        preservedStats.AddStats(selections, Chk::Sprite::Field::Xc);
                         edit->sprites[spriteIndex].xc += 1;
-                        preservedStats.convertToUndo();
-                    }
-                    break;
+                        break;
                     case Direction::Down:
-                    {
-                        PreservedSpriteStats preservedStats {};
-                        preservedStats.AddStats(selections, Chk::Sprite::Field::Yc);
                         edit->sprites[spriteIndex].yc += 1;
-                        preservedStats.convertToUndo();
-                    }
-                    break;
+                        break;
                 }
             }
             break;

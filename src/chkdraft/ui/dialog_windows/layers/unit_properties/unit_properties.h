@@ -114,7 +114,6 @@ class UnitPropertiesWindow : public WinLib::ClassDialog
         bool flipSort;
         bool initilizing;
         bool changeHighlightOnly;
-        PreservedUnitStats preservedStats;
 
         WinLib::GroupBoxControl groupUnitProperties;
         WinLib::ListViewControl listUnits;

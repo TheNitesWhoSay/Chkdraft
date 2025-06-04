@@ -766,7 +766,6 @@ void UnitPropertiesWindow::LvItemChanged(NMHDR* nmhdr)
 {
     auto edit = CM->operator()();
     Selections & selections = CM->selections;
-    preservedStats.convertToUndo();
     if ( !changeHighlightOnly )
     {
         NMLISTVIEW* itemInfo = (NMLISTVIEW*)nmhdr;
@@ -1565,36 +1564,12 @@ void UnitPropertiesWindow::NotifyEditUpdated(int idFrom, HWND hWndFrom)
 
 void UnitPropertiesWindow::NotifyEditFocused(int idFrom, HWND hWndFrom)
 {
-    switch ( idFrom )
-    {
-    case Id::EditHp: preservedStats.AddStats(CM->selections, Chk::Unit::Field::HitpointPercent); break;
-    case Id::EditMp: preservedStats.AddStats(CM->selections, Chk::Unit::Field::EnergyPercent); break;
-    case Id::EditShields: preservedStats.AddStats(CM->selections, Chk::Unit::Field::ShieldPercent); break;
-    case Id::EditResources: preservedStats.AddStats(CM->selections, Chk::Unit::Field::ResourceAmount); break;
-    case Id::EditHangar: preservedStats.AddStats(CM->selections, Chk::Unit::Field::HangarAmount); break;
-    case Id::EditUnitId: preservedStats.AddStats(CM->selections, Chk::Unit::Field::Type); break;
-    case Id::EditXc: preservedStats.AddStats(CM->selections, Chk::Unit::Field::Xc); break;
-    case Id::EditYc: preservedStats.AddStats(CM->selections, Chk::Unit::Field::Yc); break;
-    case Id::EditValidFieldRawFlags: preservedStats.AddStats(CM->selections, Chk::Unit::Field::ValidFieldFlags); break;
-    case Id::EditValidStateRawFlags: preservedStats.AddStats(CM->selections, Chk::Unit::Field::ValidStateFlags); break;
-    case Id::EditRawStateFlags: preservedStats.AddStats(CM->selections, Chk::Unit::Field::StateFlags); break;
-    case Id::EditUnused: preservedStats.AddStats(CM->selections, Chk::Unit::Field::Unused); break;
-    case Id::EditUniqueId: preservedStats.AddStats(CM->selections, Chk::Unit::Field::ClassId); break;
-    case Id::EditLinkedId: preservedStats.AddStats(CM->selections, Chk::Unit::Field::RelationClassId); break;
-    case Id::EditLinkRawFlags: preservedStats.AddStats(CM->selections, Chk::Unit::Field::RelationFlags); break;
-    }
+
 }
 
 void UnitPropertiesWindow::NotifyEditFocusLost(int idFrom, HWND hWndFrom)
 {
-    if ( idFrom == Id::EditHp || idFrom == Id::EditMp || idFrom == Id::EditShields ||
-        idFrom == Id::EditResources || idFrom == Id::EditHangar || idFrom == Id::EditUnitId ||
-        idFrom == Id::EditXc || idFrom == Id::EditYc || idFrom == Id::EditValidFieldRawFlags ||
-        idFrom == Id::EditValidStateRawFlags || idFrom == Id::EditRawStateFlags || idFrom == Id::EditUnused ||
-        idFrom == Id::EditUniqueId || idFrom == Id::EditLinkedId || idFrom == Id::EditLinkRawFlags )
-    {
-        preservedStats.convertToUndo();
-    }
+
 }
 
 void UnitPropertiesWindow::NotifyComboSelChanged(int idFrom, HWND hWndFrom)

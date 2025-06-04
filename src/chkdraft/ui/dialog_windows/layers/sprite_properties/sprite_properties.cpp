@@ -490,7 +490,6 @@ void SpritePropertiesWindow::LvItemChanged(NMHDR* nmhdr)
 {
     auto edit = CM->operator()();
     Selections & selections = CM->selections;
-    preservedStats.convertToUndo();
     if ( !changeHighlightOnly )
     {
         NMLISTVIEW* itemInfo = (NMLISTVIEW*)nmhdr;
@@ -752,19 +751,12 @@ void SpritePropertiesWindow::NotifyEditUpdated(int idFrom, HWND hWndFrom)
 
 void SpritePropertiesWindow::NotifyEditFocused(int idFrom, HWND hWndFrom)
 {
-    switch ( idFrom )
-    {
-    case Id::EditSpriteId: preservedStats.AddStats(CM->selections, Chk::Sprite::Field::Type); break;
-    case Id::EditUnused: preservedStats.AddStats(CM->selections, Chk::Sprite::Field::Unused); break;
-    case Id::EditXc: preservedStats.AddStats(CM->selections, Chk::Sprite::Field::Xc); break;
-    case Id::EditYc: preservedStats.AddStats(CM->selections, Chk::Sprite::Field::Yc); break;
-    }
+
 }
 
 void SpritePropertiesWindow::NotifyEditFocusLost(int idFrom, HWND hWndFrom)
 {
-    if ( idFrom == Id::EditSpriteId || idFrom == Id::EditXc || idFrom == Id::EditYc )
-        preservedStats.convertToUndo();
+
 }
 
 void SpritePropertiesWindow::NotifyComboSelChanged(int idFrom, HWND hWndFrom)
