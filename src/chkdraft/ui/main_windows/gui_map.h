@@ -118,7 +118,6 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCach
 
 /*   Undo Redo  */  void undo();
                     void redo();
-                    bool isInNoChangeRange(std::size_t actionIndex);
                     void checkUnsavedChanges();
 
 /*   Graphics   */  float MiniMapScale(u16 xSize, u16 ySize);

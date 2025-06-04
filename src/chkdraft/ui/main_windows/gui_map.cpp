@@ -1833,11 +1833,6 @@ void GuiMap::redo()
     //Redraw(true);
 }
 
-bool GuiMap::isInNoChangeRange(std::size_t actionIndex)
-{
-    throw std::runtime_error("Remove me");
-}
-
 void GuiMap::checkUnsavedChanges()
 {
     auto cursorIndex = Tracked::getCursorIndex();
