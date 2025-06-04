@@ -54,11 +54,6 @@ struct Scenario : RareEdit::Tracked<MapData, Scenario, DescriptorIndex>
     {
         using TrackedElement::TrackedElement;
 
-        //Condition& condition(size_t conditionIndex);
-        //Action& action(size_t actionIndex);
-        //Owned& owned(size_t ownerIndex);
-        //Trigger& operator= (const Trigger& trigger);
-
         EditCondition editCondition(std::size_t conditionIndex);
         EditAction editAction(std::size_t actionIndex);
 
@@ -306,11 +301,9 @@ struct Scenario : RareEdit::Tracked<MapData, Scenario, DescriptorIndex>
     u16 getTilePx(size_t pixelXc, size_t pixelYc, Chk::Scope scope = Chk::Scope::Game) const;
     void setTile(size_t tileXc, size_t tileYc, u16 tileValue, Chk::Scope scope = Chk::Scope::Game);
     void setTilePx(size_t pixelXc, size_t pixelYc, u16 tileValue, Chk::Scope scope = Chk::Scope::Game);
-        
-    //Chk::IsomRect & getIsomRect(size_t isomRectIndex);
+
     const Chk::IsomRect & getIsomRect(size_t isomRectIndex) const;
     inline const Chk::IsomRect & getIsomRect(Chk::IsomRect::Point point) const { return read.isomRects[point.y*getIsomWidth() + point.x]; }
-    //inline Chk::IsomRect & isomRectAt(Chk::IsomRect::Point point) { return isomRects[point.y*getIsomWidth() + point.x]; }
     
     bool placeIsomTerrain(Chk::IsomDiamond isomDiamond, size_t terrainType, size_t brushExtent, Chk::IsomCache & cache);
     void copyIsomFrom(const Scenario & sourceMap, int32_t xTileOffset, int32_t yTileOffset, bool undoable, Chk::IsomCache & destCache);
@@ -328,7 +321,6 @@ struct Scenario : RareEdit::Tracked<MapData, Scenario, DescriptorIndex>
     inline void setFogPx(size_t pixelXc, size_t pixelYc, u8 fogOfWarPlayers);
 
     size_t numSprites() const;
-    //Chk::Sprite & getSprite(size_t spriteIndex);
     const Chk::Sprite & getSprite(size_t spriteIndex) const;
     size_t addSprite(const Chk::Sprite & sprite);
     void insertSprite(size_t spriteIndex, const Chk::Sprite & sprite);
@@ -338,7 +330,6 @@ struct Scenario : RareEdit::Tracked<MapData, Scenario, DescriptorIndex>
     void removeOutOfBoundsSprites();
 
     size_t numDoodads() const;
-    //Chk::Doodad & getDoodad(size_t doodadIndex);
     const Chk::Doodad & getDoodad(size_t doodadIndex) const;
     size_t addDoodad(const Chk::Doodad & doodad);
     void insertDoodad(size_t doodadIndex, const Chk::Doodad & doodad);
@@ -347,7 +338,6 @@ struct Scenario : RareEdit::Tracked<MapData, Scenario, DescriptorIndex>
     void removeOutOfBoundsDoodads();
 
     size_t numUnits() const;
-    //Chk::Unit & getUnit(size_t unitIndex);
     const Chk::Unit & getUnit(size_t unitIndex) const;
     size_t addUnit(const Chk::Unit & unit);
     void insertUnit(size_t unitIndex, const Chk::Unit & unit);
@@ -357,7 +347,6 @@ struct Scenario : RareEdit::Tracked<MapData, Scenario, DescriptorIndex>
     void removeOutOfBoundsUnits();
         
     size_t numLocations() const;
-    //Chk::Location & getLocation(size_t locationId);
     const Chk::Location & getLocation(size_t locationId) const;
     size_t addLocation(const Chk::Location & location);
     void replaceLocation(size_t locationId, const Chk::Location & location);
@@ -492,7 +481,6 @@ struct Scenario : RareEdit::Tracked<MapData, Scenario, DescriptorIndex>
     std::vector<Chk::Trigger> replaceTriggerRange(size_t beginIndex, size_t endIndex, std::vector<Chk::Trigger> & triggers);
         
     bool hasTriggerExtension(size_t triggerIndex) const;
-    //Chk::ExtendedTrigData & getTriggerExtension(size_t triggerIndex, bool addIfNotFound = false);
     std::size_t getTriggerExtension(std::size_t triggerIndex, bool addIfNotFound = false);
     const Chk::ExtendedTrigData & getTriggerExtension(size_t triggerIndex) const;
     void removeTriggersExtension(size_t triggerIndex);

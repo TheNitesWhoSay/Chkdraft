@@ -4023,14 +4023,6 @@ void Scenario::setTilePx(size_t pixelXc, size_t pixelYc, u16 tileValue, Chk::Sco
     setTile(pixelXc / Sc::Terrain::PixelsPerTile, pixelYc / Sc::Terrain::PixelsPerTile, tileValue, scope);
 }
 
-/*Chk::IsomRect & Scenario::getIsomRect(size_t isomRectIndex)
-{
-    if ( isomRectIndex < read.isomRects.size() )
-        return read.isomRects[isomRectIndex];
-    else
-        throw std::out_of_range(std::string("IsomRectIndex: ") + std::to_string(isomRectIndex) + " is past the end of the ISOM section!");
-}*/
-
 const Chk::IsomRect & Scenario::getIsomRect(size_t isomRectIndex) const
 {
     if ( isomRectIndex < read.isomRects.size() )
@@ -4115,9 +4107,6 @@ void Scenario::copyIsomFrom(const Scenario & sourceMap, int32_t xTileOffset, int
         std::copy(srcStart, std::next(srcStart, copyWidth), assignedValues.begin());
         std::iota(assignedIndexes.begin(), assignedIndexes.end(), (y+diamondY)*destCache.isomWidth + sourceRc.left + diamondX);
         edit->isomRects.set(assignedIndexes, assignedValues);
-        //const Chk::IsomRect* sourceRow = &sourceMap.isomRects[y*sourceIsomWidth + sourceRc.left];
-        //Chk::IsomRect* destRow = &isomRects[(y+diamondY)*destCache.isomWidth + sourceRc.left + diamondX];
-        //std::memcpy(destRow, sourceRow, sizeof(Chk::IsomRect)*copyWidth);
     }
 
     if ( undoable )
@@ -4472,11 +4461,6 @@ size_t Scenario::numSprites() const
     return read.sprites.size();
 }
 
-/*Chk::Sprite & Scenario::getSprite(size_t spriteIndex)
-{
-    return this->sprites[spriteIndex];
-}*/
-
 const Chk::Sprite & Scenario::getSprite(size_t spriteIndex) const
 {
     return read.sprites[spriteIndex];
@@ -4542,11 +4526,6 @@ size_t Scenario::numDoodads() const
     return read.doodads.size();
 }
 
-/*Chk::Doodad & Scenario::getDoodad(size_t doodadIndex)
-{
-    return doodads[doodadIndex];
-}*/
-
 const Chk::Doodad & Scenario::getDoodad(size_t doodadIndex) const
 {
     return read.doodads[doodadIndex];
@@ -4594,11 +4573,6 @@ size_t Scenario::numUnits() const
 {
     return read.units.size();
 }
-
-/*Chk::Unit & Scenario::getUnit(size_t unitIndex)
-{
-    return this->units[unitIndex];
-}*/
 
 const Chk::Unit & Scenario::getUnit(size_t unitIndex) const
 {
@@ -4664,11 +4638,6 @@ size_t Scenario::numLocations() const
 {
     return read.locations.size() > 0 ? read.locations.size()-1 : 0;
 }
-
-/*Chk::Location & Scenario::getLocation(size_t locationId)
-{
-    return locations[locationId];
-}*/
 
 const Chk::Location & Scenario::getLocation(size_t locationId) const
 {

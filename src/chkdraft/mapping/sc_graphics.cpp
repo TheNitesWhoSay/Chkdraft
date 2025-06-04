@@ -2191,10 +2191,10 @@ void DrawSelectingFrame(const WinLib::DeviceContext & dc, Selections & selection
               endDrag = selections.endDrag;
 
         RECT rect;
-        rect.left   = s32(((s32)startDrag.x-(s32)screenLeft)/**scale*/)  ;
-        rect.right  = s32(((s32)  endDrag.x-(s32)screenLeft)/**scale*/)+1;
-        rect.top    = s32(((s32)startDrag.y-(s32)screenTop )/**scale*/)  ;
-        rect.bottom = s32(((s32)  endDrag.y-(s32)screenTop )/**scale*/)+1;
+        rect.left   = s32(((s32)startDrag.x-(s32)screenLeft))  ;
+        rect.right  = s32(((s32)  endDrag.x-(s32)screenLeft))+1;
+        rect.top    = s32(((s32)startDrag.y-(s32)screenTop ))  ;
+        rect.bottom = s32(((s32)  endDrag.y-(s32)screenTop ))+1;
     
         if ( rect.right < rect.left )
         {
