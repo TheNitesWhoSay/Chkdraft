@@ -1783,7 +1783,7 @@ void GuiMap::undo()
     }*/
     Scenario::undoAction();
     checkUnsavedChanges();
-    chkd.mainPlot.leftBar.mainTree.historyTree.RefreshActionHeaders();
+    chkd.mainPlot.leftBar.historyTree.RefreshActionHeaders();
     refreshScenario(false);
     //Redraw(true);
 }
@@ -1828,7 +1828,7 @@ void GuiMap::redo()
     }*/
     Scenario::redoAction();
     checkUnsavedChanges();
-    chkd.mainPlot.leftBar.mainTree.historyTree.RefreshActionHeaders();
+    chkd.mainPlot.leftBar.historyTree.RefreshActionHeaders();
     refreshScenario(false);
     //Redraw(true);
 }
@@ -4271,12 +4271,13 @@ void GuiMap::tileSelectionsChanged()
     selections.renderTiles.yBegin = std::numeric_limits<std::size_t>::max();
     selections.renderTiles.yEnd = 0;
     selections.renderTiles.tiles.assign(tileWidth * tileHeight, std::nullopt);
-    if ( !view.tiles.sel().empty() )
+    const auto & tileSel = view.tiles.sel();
+    if ( !tileSel.empty() )
     {
-        for ( auto tileIndex : view.tiles.sel() )
+        for ( auto tileIndex : tileSel )
             selections.renderTiles.tiles[tileIndex] = std::make_optional(TileNeighbor::None);
 
-        for ( auto tileIndex : view.tiles.sel() )
+        for ( auto tileIndex : tileSel ) // TODO: This loop isn't fast enough
         {
             std::size_t x = tileIndex % tileWidth;
             std::size_t y = tileIndex / tileWidth;
@@ -4317,12 +4318,13 @@ void GuiMap::tileFogSelectionsChanged()
     selections.renderFogTiles.yBegin = std::numeric_limits<std::size_t>::max();
     selections.renderFogTiles.yEnd = 0;
     selections.renderFogTiles.tiles.assign(tileWidth * tileHeight, std::nullopt);
-    if ( !view.tileFog.sel().empty() )
+    const auto & tileFogSel = view.tileFog.sel();
+    if ( !tileFogSel.empty() )
     {
-        for ( auto tileIndex : view.tileFog.sel() )
+        for ( auto tileIndex : tileFogSel )
             selections.renderFogTiles.tiles[tileIndex] = std::make_optional(TileNeighbor::None);
 
-        for ( auto tileIndex : view.tileFog.sel() )
+        for ( auto tileIndex : tileFogSel )
         {
             std::size_t x = tileIndex % tileWidth;
             std::size_t y = tileIndex / tileWidth;

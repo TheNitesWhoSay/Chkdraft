@@ -18,7 +18,6 @@ class MainTree : public WinLib::TreeViewControl
         UnitTree unitTree;
         LocationTree locTree;
         SpriteTree spriteTree;
-        HistoryTree historyTree;
 
         void BuildMainTree();
 

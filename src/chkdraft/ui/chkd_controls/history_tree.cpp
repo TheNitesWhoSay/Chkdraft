@@ -26,10 +26,9 @@ HistoryTree::~HistoryTree()
 
 }
 
-bool HistoryTree::AddThis(HWND hTree, HTREEITEM hParent)
+void HistoryTree::createRoot()
 {
-    hHistoryRoot = hParent;
-    return TreeViewControl::SetHandle(hTree);
+    hHistoryRoot = InsertTreeItem(NULL, "History", 0, true);
 }
 
 std::string getSizeString(std::size_t size)
@@ -132,24 +131,26 @@ void HistoryTree::InsertAction(std::size_t actionIndex, const RareEdit::RenderAc
     SetRedraw(true);
     TVITEM item {
         .mask = TVIF_HANDLE|TVIF_STATE,
+        .hItem = hHistoryRoot,
         .stateMask = TVIS_EXPANDED
     };
-    TreeView_GetItem(getHandle(), hHistoryRoot);
-    if ( (item.state & TVIS_EXPANDED) == TVIS_EXPANDED )
-        SendMessage(TreeViewControl::getHandle(), WM_VSCROLL, SB_BOTTOM, 0);
+    TreeView_GetItem(getHandle(), &item);
+    SendMessage(TreeViewControl::getHandle(), WM_VSCROLL, SB_BOTTOM, 0);
 }
 
 void HistoryTree::RebuildHistoryTree()
 {
-    /*EmptySubTree(hHistoryRoot);
-
-    HTREEITEM selected = NULL;
-    for ( size_t i = 1; i < 10; i++ )
-        ;//InsertAction("asdf", (u32)i);
-
-    ExpandItem(hHistoryRoot);
-
-    RedrawThis();*/
+    SetRedraw(false);
+    EmptySubTree(hHistoryRoot);
+    
+    this->actionTree.clear();
+    auto changeHistory = CM->renderChangeHistory(true);
+    for ( std::size_t i=0; i<changeHistory.size(); ++i )
+        InsertAction(i, changeHistory[i]);
+    
+    this->SetItemText(hHistoryRoot, "History");
+    SetRedraw(true);
+    RedrawThis();
 }
 
 void HistoryTree::RefreshActionHeaders(std::optional<std::size_t> excludeIndex)
@@ -215,6 +216,13 @@ void HistoryTree::RefreshActionHeaders(std::optional<std::size_t> excludeIndex)
         }
     }
     this->SetItemText(hHistoryRoot, "History (" + getSizeString(totalByteCount) + ")");
+    if ( cursorIndex == 0 )
+        SendMessage(TreeViewControl::getHandle(), WM_VSCROLL, SB_TOP, 0);
+    else if ( cursorIndex == actionTree.size() )
+        SendMessage(TreeViewControl::getHandle(), WM_VSCROLL, SB_BOTTOM, 0);
+    else if ( actionTree.contains(cursorIndex-1) )
+        TreeView_EnsureVisible(getHandle(), this->actionTree.find(cursorIndex-1)->second.hItem);
+
     SetRedraw(true);
     RedrawThis();
 }

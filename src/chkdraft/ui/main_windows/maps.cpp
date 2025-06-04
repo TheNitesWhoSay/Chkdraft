@@ -49,6 +49,7 @@ bool Maps::Focus(std::shared_ptr<GuiMap> guiMap)
         chkd.mainPlot.leftBar.mainTree.isomTree.UpdateIsomTree();
         chkd.mainPlot.leftBar.mainTree.doodadTree.UpdateDoodadTree();
         chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
+        chkd.mainPlot.leftBar.historyTree.RebuildHistoryTree();
         currentlyActiveMap->updateMenu();
         return true;
     }

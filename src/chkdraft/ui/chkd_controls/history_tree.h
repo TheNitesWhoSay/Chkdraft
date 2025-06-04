@@ -28,7 +28,7 @@ class HistoryTree : public WinLib::TreeViewControl
 {
     public:
         virtual ~HistoryTree();
-        bool AddThis(HWND hTree, HTREEITEM hParent);
+        void createRoot();
         HistAction* InsertAction(std::size_t actionIndex, const RareEdit::RenderAction<DescriptorIndex> & action, HTREEITEM parent);
         void InsertAction(std::size_t actionIndex, const RareEdit::RenderAction<DescriptorIndex> & action);
         void RebuildHistoryTree();

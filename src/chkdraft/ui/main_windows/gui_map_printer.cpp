@@ -5,8 +5,8 @@ void GuiMap::afterAction(std::size_t actionIndex)
 {
     RareEdit::RenderAction<DescriptorIndex> action {};
     Tracked::renderAction(actionIndex, action, true);
-    chkd.mainPlot.leftBar.mainTree.historyTree.RefreshActionHeaders(std::make_optional(actionIndex));
-    chkd.mainPlot.leftBar.mainTree.historyTree.InsertAction(actionIndex, action);
+    chkd.mainPlot.leftBar.historyTree.RefreshActionHeaders(std::make_optional(actionIndex));
+    chkd.mainPlot.leftBar.historyTree.InsertAction(actionIndex, action);
     if ( nonSelChangeCursor > Tracked::previousCursorIndex() )
         nonSelChangeCursor = std::numeric_limits<std::size_t>::max(); // Previous nonSelChangeCursor was elided, reset indicating no change
     
