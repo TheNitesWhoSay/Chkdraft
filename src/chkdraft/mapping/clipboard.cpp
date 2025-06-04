@@ -1,6 +1,7 @@
 #include "clipboard.h"
 #include "chkdraft/chkdraft.h"
 #include <set>
+#include <stack>
 
 extern Logger logger;
 

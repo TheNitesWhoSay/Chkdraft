@@ -204,24 +204,18 @@ void GuiMap::setFogValue(size_t tileX, size_t tileY, u8 fogValue)
 void GuiMap::beginTerrainOperation()
 {
     refreshTileOccupationCache();
-    // TODO: This is a place to consider creating the brush action
 }
 
 void GuiMap::finalizeTerrainOperation()
 {
     clipboard.clearPreviousPasteLoc();
     if ( currLayer != Layer::CutCopyPaste )
-    {
-        // TODO: this is a place to consider destroying the Tracked action for the brush
         Chk::IsomCache::finalizeUndoableOperation();
-    }
 }
 
 void GuiMap::finalizeFogOperation()
 {
     clipboard.clearPreviousPasteLoc();
-    if ( currLayer != Layer::CutCopyPaste )
-        ;// TODO: this is a place to consider destroying the Tracked action for the brush
 }
 
 void GuiMap::validateTileOccupiers(size_t tileX, size_t tileY, uint16_t tileValue)
@@ -1678,95 +1672,18 @@ bool GuiMap::pastingToGrid()
 
 void GuiMap::undo()
 {
-    // TODO: need some kind of replacement for refreshes
-    /*switch ( currLayer )
-    {
-        case Layer::Terrain:
-        case Layer::Doodads:
-            //undos.doUndo(UndoTypes::TerrainChange, this);
-            break;
-        case Layer::Units:
-            //undos.doUndo(UndoTypes::UnitChange, this);
-            if ( chkd.unitWindow.getHandle() != nullptr )
-                chkd.unitWindow.RepopulateList();
-            break;
-        case Layer::Locations:
-            {
-                //undos.doUndo(UndoTypes::LocationChange, this);
-                if ( chkd.locationWindow.getHandle() != NULL )
-                {
-                    if ( CM->numLocations() > 0 )
-                        chkd.locationWindow.RefreshLocationInfo();
-                    else
-                        chkd.locationWindow.DestroyThis();
-                }
-                refreshScenario();
-                chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
-            }
-            break;
-        case Layer::Sprites:
-            //undos.doUndo(UndoTypes::SpriteChange, this);
-            if ( chkd.spriteWindow.getHandle() != nullptr )
-                chkd.spriteWindow.RepopulateList();
-            break;
-        case Layer::FogEdit:
-            //undos.doUndo(UndoTypes::FogChange, this);
-            break;
-        case Layer::CutCopyPaste:
-            selections.clear();
-            //undos.doUndo(UndoTypes::CutCopyPaste, this);
-            break;
-    }*/
     Scenario::undoAction();
     checkUnsavedChanges();
     chkd.mainPlot.leftBar.historyTree.RefreshActionHeaders();
-    refreshScenario(false);
-    //Redraw(true);
+    refreshScenario(false); // TODO: rely on change notifications instead of using hard refreshes
 }
 
 void GuiMap::redo()
 {
-    // TODO: need some kind of replacement for refreshes
-    /*switch ( currLayer )
-    {
-        case Layer::Terrain:
-        case Layer::Doodads:
-            //undos.doRedo(UndoTypes::TerrainChange, this);
-            break;
-        case Layer::Units:
-            //undos.doRedo(UndoTypes::UnitChange, this);
-            if ( chkd.unitWindow.getHandle() != nullptr )
-                chkd.unitWindow.RepopulateList();
-            break;
-        case Layer::Locations:
-            //undos.doRedo(UndoTypes::LocationChange, this);
-            if ( chkd.locationWindow.getHandle() != NULL )
-            {
-                if ( CM->numLocations() == 0 )
-                    chkd.locationWindow.DestroyThis();
-                else
-                    chkd.locationWindow.RefreshLocationInfo();
-            }
-            refreshScenario();
-            break;
-        case Layer::Sprites:
-            //undos.doRedo(UndoTypes::SpriteChange, this);
-            if ( chkd.spriteWindow.getHandle() != nullptr )
-                chkd.spriteWindow.RepopulateList();
-            break;
-        case Layer::FogEdit:
-            //undos.doRedo(UndoTypes::FogChange, this);
-            break;
-        case Layer::CutCopyPaste:
-            selections.clear();
-            //undos.doRedo(UndoTypes::CutCopyPaste, this);
-            break;
-    }*/
     Scenario::redoAction();
     checkUnsavedChanges();
     chkd.mainPlot.leftBar.historyTree.RefreshActionHeaders();
-    refreshScenario(false);
-    //Redraw(true);
+    refreshScenario(false); // TODO: rely on change notifications instead of using hard refreshes
 }
 
 void GuiMap::checkUnsavedChanges()
@@ -3561,7 +3478,6 @@ void GuiMap::FinalizeLocationDrag(HWND hWnd, int mapX, int mapY, WPARAM wParam)
                 {
                     Scenario::setLocationName<RawString>(newLocationId, "Location " + std::to_string(newLocationId), Chk::Scope::Game);
                     Scenario::deleteUnusedStrings(Chk::Scope::Both);
-                    // TODO: this is a place to consider destroying the Tracked action for the brush
                     selections.selectLocation(u16(newLocationId));
                     chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree(true);
                     refreshScenario();
@@ -3647,7 +3563,6 @@ void GuiMap::FinalizeLocationDrag(HWND hWnd, int mapX, int mapY, WPARAM wParam)
                         edit->locations[selectedLocation].bottom += loc.top - yc1Preserve; // Maintain location height
                         dragY += loc.bottom - yc2Preserve;
                     }
-                    // TODO: this is a place to consider destroying the Tracked action for the brush
                 }
                 else // Resize location
                 {
@@ -3655,13 +3570,11 @@ void GuiMap::FinalizeLocationDrag(HWND hWnd, int mapX, int mapY, WPARAM wParam)
                     {
                         if ( loc.top <= loc.bottom ) // Standard yc
                         {
-                            // TODO: this is a place to consider destroying the Tracked action for the brush
                             edit->locations[selectedLocation].top += dragY;
                             SnapLocationDimensions(selectedLocation, LocSnapFlags::SnapY1);
                         }
                         else // Inverted yc
                         {
-                            // TODO: this is a place to consider destroying the Tracked action for the brush
                             edit->locations[selectedLocation].bottom += dragY;
                             SnapLocationDimensions(selectedLocation, LocSnapFlags::SnapY2);
                         }
@@ -3671,13 +3584,11 @@ void GuiMap::FinalizeLocationDrag(HWND hWnd, int mapX, int mapY, WPARAM wParam)
                     {
                         if ( loc.top <= loc.bottom ) // Standard yc
                         {
-                            // TODO: this is a place to consider destroying the Tracked action for the brush
                             edit->locations[selectedLocation].bottom += dragY;
                             SnapLocationDimensions(selectedLocation, LocSnapFlags::SnapY2);
                         }
                         else // Inverted yc
                         {
-                            // TODO: this is a place to consider destroying the Tracked action for the brush
                             edit->locations[selectedLocation].top += dragY;
                             SnapLocationDimensions(selectedLocation, LocSnapFlags::SnapY1);
                         }
@@ -3687,13 +3598,11 @@ void GuiMap::FinalizeLocationDrag(HWND hWnd, int mapX, int mapY, WPARAM wParam)
                     {
                         if ( loc.left <= loc.right ) // Standard xc
                         {
-                            // TODO: this is a place to consider destroying the Tracked action for the brush
                             edit->locations[selectedLocation].left += dragX;
                             SnapLocationDimensions(selectedLocation, LocSnapFlags::SnapX1);
                         }
                         else // Inverted xc
                         {
-                            // TODO: this is a place to consider destroying the Tracked action for the brush
                             edit->locations[selectedLocation].right += dragX;
                             SnapLocationDimensions(selectedLocation, LocSnapFlags::SnapX2);
                         }
@@ -3702,13 +3611,11 @@ void GuiMap::FinalizeLocationDrag(HWND hWnd, int mapX, int mapY, WPARAM wParam)
                     {
                         if ( loc.left <= loc.right ) // Standard xc
                         {
-                            // TODO: this is a place to consider destroying the Tracked action for the brush
                             edit->locations[selectedLocation].right += dragX;
                             SnapLocationDimensions(selectedLocation, LocSnapFlags::SnapX2);
                         }
                         else // Inverted xc
                         {
-                            // TODO: this is a place to consider destroying the Tracked action for the brush
                             edit->locations[selectedLocation].left += dragX;
                             SnapLocationDimensions(selectedLocation, LocSnapFlags::SnapX1);
                         }
@@ -4160,11 +4067,6 @@ void GuiMap::SetSkin(GuiMap::Skin skin)
     this->Redraw(true);
     if ( chkd.terrainPalWindow.getHandle() != NULL )
         chkd.terrainPalWindow.RedrawThis();
-}
-
-void GuiMap::addIsomUndo(const Chk::IsomRectUndo & isomUndo)
-{
-    // TODO: Delete this method
 }
 
 void GuiMap::destroyBrush()

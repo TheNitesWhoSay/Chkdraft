@@ -261,8 +261,6 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCach
 
 
     private:
-
-                    void addIsomUndo(const Chk::IsomRectUndo & isomUndo) final;
                     void destroyBrush();
                     void refreshTileOccupationCache();
                     void windowBoundsChanged();

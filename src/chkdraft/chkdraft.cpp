@@ -1,6 +1,4 @@
 #include "chkdraft.h"
-#include <cross_cut/logger.h>
-#include <cross_cut/test_commands.h>
 #include "mapping/data_file_browsers.h"
 #include "mapping/settings.h"
 #include "mapping/scr_graphics.h"
@@ -12,7 +10,6 @@
 #include <regex>
 #include "ui/chkd_controls/chkd_string_input.h"
 #include <CommCtrl.h>
-#include "temptest.h"
 
 void Chkdraft::OnLoadTest()
 {
@@ -33,25 +30,7 @@ void Chkdraft::OnLoadTest()
 
 void Chkdraft::PreLoadTest()
 {
-    /*auto mapStorage = std::make_unique<TestMap>();
-    auto & map = *mapStorage;
 
-    map.init();
-    std::cout << "init:\n" << Json::out(map->units) << "\n\n";
-    
-    map.doSomething();
-    std::cout << "doSomething:\n" << Json::out(map->units) << "\n\n";
-    
-    map.undoAction();
-    std::cout << "undo:\n" << Json::out(map->units) << "\n\n";
-    
-    map.redoAction();
-    std::cout << "redo:\n" << Json::out(map->units) << "\n\n";
-
-    map.printChangeHistory();
-    
-    std::cin.clear();
-    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');*/
 }
 
 enum_t(Id, u32, {
@@ -65,7 +44,7 @@ enum_t(Id, u32, {
 
 #define ifmapopen(dothis) if ( CM != nullptr ) dothis;
 
-Chkdraft::Chkdraft() : currDialog(NULL), editFocused(false), mainCommander(std::shared_ptr<Logger>(&logger, [](Logger*){})), logFile(nullptr, nullptr, logger.getLogLevel())
+Chkdraft::Chkdraft() : currDialog(NULL), editFocused(false), logFile(nullptr, nullptr, logger.getLogLevel())
 {
     
 }

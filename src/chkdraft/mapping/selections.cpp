@@ -328,22 +328,3 @@ size_t Selections::getLowestSpriteIndex()
     }
     return lowestIndex;
 }
-
-// TODO: These sorts aren't relevant anymore?
-void Selections::sortUnits(bool ascending)
-{
-    auto edit = map.operator()();
-    if ( ascending )
-        edit->units.sortSelection();
-    else // Sort descending
-        edit->units.sortSelectionDescending();
-}
-
-void Selections::sortSprites(bool ascending)
-{
-    auto edit = map.operator()();
-    if ( ascending )
-        edit->sprites.sortSelection();
-    else // Sort descending
-        edit->sprites.sortSelectionDescending(); // TODO: why is the non-sel op "Desc" and the sel op "Descending"
-}

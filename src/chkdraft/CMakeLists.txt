@@ -49,7 +49,6 @@ find_package(glm CONFIG REQUIRED)
 
 set(Headers
   chkdraft.h
-  temptest.h
   common_files/common_files.h
   common_files/constants.h
   common_files/debug.h
@@ -149,10 +148,6 @@ set(Headers
 )
 set(Sources
   chkdraft.cpp
-  temptestdo.cpp
-  temptestprint.cpp
-  temptestundo.cpp
-  temptestredo.cpp
   common_files/constants.cpp
   common_files/debug.cpp
   common_files/version.cpp

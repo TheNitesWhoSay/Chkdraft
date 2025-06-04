@@ -2,6 +2,7 @@
 #define CHKDRAFT_H
 #include <windows/windows_ui.h>
 #include <common_files/common_files.h>
+#include <cross_cut/logger.h>
 #include "ui/dialog_windows/dialog_windows.h"
 #include "mapping/chkd_plugins.h"
 #include "mapping/color_cycler.h"
@@ -9,7 +10,6 @@
 #include "ui/main_windows/main_plot.h"
 #include "ui/dialog_windows/new_map/new_map.h"
 #include "ui/main_windows/maps.h"
-#include <cross_cut/commander.h>
 
 namespace Scr { struct GraphicsData; }
 
@@ -23,7 +23,6 @@ class Chkdraft : public WinLib::ClassWindow
                     std::unique_ptr<Scr::GraphicsData> scrData; // Remastered graphics data from StarCraft files
                     ColorCycler colorCycler {}; // Graphics palette color cycler
                     Maps maps; // Main map container
-                    Commander mainCommander; // Main commander used for mapping-data and mapping-data-related UI changes
 
 /* Dialog Boxes */  NewMap newMap; // New map DialogBox
 

@@ -77,9 +77,6 @@ public:
     u16 getLowestUnitIndex();
     size_t getHighestSpriteIndex();
     size_t getLowestSpriteIndex();
-        
-    void sortUnits(bool ascending);
-    void sortSprites(bool ascending);
 
     bool selectionAreaIsNull() { return startDrag.x == -1 && startDrag.y == -1; }
 };
