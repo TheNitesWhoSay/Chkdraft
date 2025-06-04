@@ -34,6 +34,7 @@ FetchContent_MakeAvailable(rarecpp)
 include_directories(${rarecpp_SOURCE_DIR}/include)
 
 set(Headers
+  action_descriptor.h
   archive_cluster.h
   archive_file.h
   basics.h
