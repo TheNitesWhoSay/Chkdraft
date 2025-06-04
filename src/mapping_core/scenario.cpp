@@ -4055,7 +4055,7 @@ bool Scenario::placeIsomTerrain(Chk::IsomDiamond isomDiamond, size_t terrainType
             size_t brushY = isomDiamond.y + brushOffsetX + brushOffsetY;
             if ( isInBounds({brushX, brushY}) )
             {
-                setDiamondIsomValues({brushX, brushY}, isomValue, true, cache);
+                setDiamondIsomValues({brushX, brushY}, isomValue, cache);
                 if ( brushOffsetX == brushMin || brushOffsetX == brushMax-1 || brushOffsetY == brushMin || brushOffsetY == brushMax-1 )
                 { // Mark diamonds on the edge of the brush for radial updates
                     for ( auto i : Chk::IsomDiamond::neighbors )
@@ -4068,24 +4068,15 @@ bool Scenario::placeIsomTerrain(Chk::IsomDiamond isomDiamond, size_t terrainType
             }
         }
     }
-    radiallyUpdateTerrain(true, diamondsToUpdate, cache);
+    radiallyUpdateTerrain(diamondsToUpdate, cache);
     return true;
 }
 
-void Scenario::copyIsomFrom(const Scenario & sourceMap, int32_t xTileOffset, int32_t yTileOffset, bool undoable, Chk::IsomCache & destCache)
+void Scenario::copyIsomFrom(const Scenario & sourceMap, int32_t xTileOffset, int32_t yTileOffset, Chk::IsomCache & destCache)
 {
     auto edit = createAction();
     size_t sourceIsomWidth = sourceMap.getTileWidth()/2 + 1;
     size_t sourceIsomHeight = sourceMap.getTileHeight() + 1;
-
-    if ( undoable )
-    {
-        for ( size_t y=0; y<destCache.isomHeight; ++y )
-        {
-            for ( size_t x=0; x<destCache.isomWidth; ++x )
-                addIsomUndo({x, y}, destCache);
-        }
-    }
 
     int32_t diamondX = xTileOffset / 2;
     int32_t diamondY = yTileOffset;
@@ -4107,31 +4098,6 @@ void Scenario::copyIsomFrom(const Scenario & sourceMap, int32_t xTileOffset, int
         std::copy(srcStart, std::next(srcStart, copyWidth), assignedValues.begin());
         std::iota(assignedIndexes.begin(), assignedIndexes.end(), (y+diamondY)*destCache.isomWidth + sourceRc.left + diamondX);
         edit->isomRects.set(assignedIndexes, assignedValues);
-    }
-
-    if ( undoable )
-    {
-        // Clear out-of-bounds isom values
-        for ( size_t y=sourceIsomHeight; y<destCache.isomHeight; ++y )
-        {
-            for ( size_t x=0; x<destCache.isomWidth; ++x )
-                edit->isomRects[y*getIsomWidth()+x] = Chk::IsomRect{};
-        }
-
-        if ( sourceIsomWidth < destCache.isomWidth )
-        {
-            for ( size_t y=0; y<destCache.isomHeight; ++y )
-            {
-                for ( size_t x=sourceIsomWidth; x<destCache.isomWidth; ++x )
-                    edit->isomRects[y*getIsomWidth()+x] = Chk::IsomRect{};
-            }
-        }
-
-        for ( size_t y=0; y<destCache.isomHeight; ++y )
-        {
-            for ( size_t x=0; x<destCache.isomWidth; ++x )
-                destCache.undoMap[y*destCache.isomWidth + x]->setNewValue(getIsomRect({x, y})); // Update undo info for this position
-        }
     }
 }
 
@@ -4206,7 +4172,7 @@ bool Scenario::resizeIsom(int32_t xTileOffset, int32_t yTileOffset, size_t oldMa
                     if ( (rectCoords.x < innerArea.left || rectCoords.x >= innerArea.right || // Quadrant is outside inner area
                         rectCoords.y < innerArea.top || rectCoords.y >= innerArea.bottom) )
                     {
-                        setIsomValue(rectCoords, Sc::Isom::quadrants[size_t(i)], isomValue, false, cache);
+                        setIsomValue(rectCoords, Sc::Isom::quadrants[size_t(i)], isomValue, cache);
                     }
                 }
 
@@ -4256,7 +4222,7 @@ bool Scenario::resizeIsom(int32_t xTileOffset, int32_t yTileOffset, size_t oldMa
         if ( diamondNeedsUpdate({edge.x, edge.y}) )
             diamondsToUpdate.push_back({edge.x, edge.y});
     }
-    radiallyUpdateTerrain(false, diamondsToUpdate, cache);
+    radiallyUpdateTerrain(diamondsToUpdate, cache);
 
     // Clear the changed and visited flags
     for ( size_t y=cache.changedArea.top; y<=cache.changedArea.bottom; ++y )
@@ -7742,16 +7708,6 @@ void Scenario::setIsomRectValue(Edit & edit, Chk::IsomRect::Point point, Sc::Iso
     }
 }
 
-void Scenario::addIsomUndo(Chk::IsomRect::Point point, Chk::IsomCache & cache)
-{
-    if ( !cache.undoMap[point.y*cache.isomWidth + point.x] ) // if undoMap entry doesn't already exist at this position...
-    {
-        Chk::IsomRectUndo isomRectUndo(Chk::IsomDiamond{point.x, point.y}, getIsomRect(point), Chk::IsomRect{});
-        cache.undoMap[point.y*cache.isomWidth + point.x] = isomRectUndo; // add undoMap entry at position
-        cache.addIsomUndo(isomRectUndo);
-    }
-}
-
 bool Scenario::diamondNeedsUpdate(Chk::IsomDiamond isomDiamond) const
 {
     return isInBounds(isomDiamond) &&
@@ -7759,34 +7715,25 @@ bool Scenario::diamondNeedsUpdate(Chk::IsomDiamond isomDiamond) const
         getCentralIsomValue(isomDiamond) != 0;
 }
 
-void Scenario::setIsomValue(Chk::IsomRect::Point isomDiamond, Sc::Isom::Quadrant shapeQuadrant, uint16_t isomValue, bool undoable, Chk::IsomCache & cache)
+void Scenario::setIsomValue(Chk::IsomRect::Point isomDiamond, Sc::Isom::Quadrant shapeQuadrant, uint16_t isomValue, Chk::IsomCache & cache)
 {
     if ( isInBounds(isomDiamond) )
     {
         auto edit = createAction();
-        Chk::IsomRectUndo* isomUndo = nullptr;
         size_t isomRectIndex = isomDiamond.y*cache.isomWidth + size_t(isomDiamond.x);
-        if ( undoable && isomRectIndex < cache.undoMap.size() )
-        {
-            addIsomUndo(isomDiamond, cache);
-            isomUndo = cache.undoMap[isomRectIndex] ? &cache.undoMap[isomRectIndex].value() : nullptr;
-        }
 
         setIsomRectValue(edit, isomDiamond, shapeQuadrant, isomValue);
         setIsomRectModified(edit, isomDiamond, shapeQuadrant);
         cache.changedArea.expandToInclude(isomDiamond.x, isomDiamond.y);
-
-        if ( isomUndo != nullptr ) // Update the undo if it was present prior to the changes
-            isomUndo->setNewValue(read.isomRects[isomDiamond.y*getIsomWidth()+isomDiamond.x]);
     }
 }
 
-void Scenario::setDiamondIsomValues(Chk::IsomDiamond isomDiamond, uint16_t isomValue, bool undoable, Chk::IsomCache & cache)
+void Scenario::setDiamondIsomValues(Chk::IsomDiamond isomDiamond, uint16_t isomValue, Chk::IsomCache & cache)
 {
-    setIsomValue(isomDiamond.getRectangleCoords(Sc::Isom::Quadrant::TopLeft), Sc::Isom::Quadrant::TopLeft, isomValue, undoable, cache);
-    setIsomValue(isomDiamond.getRectangleCoords(Sc::Isom::Quadrant::TopRight), Sc::Isom::Quadrant::TopRight, isomValue, undoable, cache);
-    setIsomValue(isomDiamond.getRectangleCoords(Sc::Isom::Quadrant::BottomRight), Sc::Isom::Quadrant::BottomRight, isomValue, undoable, cache);
-    setIsomValue(isomDiamond.getRectangleCoords(Sc::Isom::Quadrant::BottomLeft), Sc::Isom::Quadrant::BottomLeft, isomValue, undoable, cache);
+    setIsomValue(isomDiamond.getRectangleCoords(Sc::Isom::Quadrant::TopLeft), Sc::Isom::Quadrant::TopLeft, isomValue, cache);
+    setIsomValue(isomDiamond.getRectangleCoords(Sc::Isom::Quadrant::TopRight), Sc::Isom::Quadrant::TopRight, isomValue, cache);
+    setIsomValue(isomDiamond.getRectangleCoords(Sc::Isom::Quadrant::BottomRight), Sc::Isom::Quadrant::BottomRight, isomValue, cache);
+    setIsomValue(isomDiamond.getRectangleCoords(Sc::Isom::Quadrant::BottomLeft), Sc::Isom::Quadrant::BottomLeft, isomValue, cache);
 }
 
 void Scenario::loadNeighborInfo(Chk::IsomDiamond isomDiamond, IsomNeighbors & neighbors, Span<Sc::Isom::ShapeLinks> isomLinks) const
@@ -7867,7 +7814,7 @@ std::optional<uint16_t> Scenario::findBestMatchIsomValue(Chk::IsomDiamond isomDi
         return neighbors.bestMatch.isomValue;
 }
 
-void Scenario::radiallyUpdateTerrain(bool undoable, std::deque<Chk::IsomDiamond> & diamondsToUpdate, Chk::IsomCache & cache)
+void Scenario::radiallyUpdateTerrain(std::deque<Chk::IsomDiamond> & diamondsToUpdate, Chk::IsomCache & cache)
 {
     auto edit = createAction();
     while ( !diamondsToUpdate.empty() )
@@ -7881,7 +7828,7 @@ void Scenario::radiallyUpdateTerrain(bool undoable, std::deque<Chk::IsomDiamond>
             if ( auto bestMatch = findBestMatchIsomValue(isomDiamond, cache) )
             {
                 if ( *bestMatch != 0 )
-                    setDiamondIsomValues(isomDiamond, *bestMatch, undoable, cache);
+                    setDiamondIsomValues(isomDiamond, *bestMatch, cache);
 
                 for ( auto i : Chk::IsomDiamond::neighbors )
                 {

@@ -2028,33 +2028,6 @@ namespace Chk {
         REFLECT(ScStr, str, properties)
     };
 
-    struct IsomRectUndo {
-        Chk::IsomDiamond diamond {};
-        Chk::IsomRect oldValue {};
-        Chk::IsomRect newValue {};
-
-        constexpr void setOldValue(const Chk::IsomRect & oldValue) {
-            this->oldValue.left = oldValue.left & Chk::IsomRect::EditorFlag::ClearAll;
-            this->oldValue.right = oldValue.right & Chk::IsomRect::EditorFlag::ClearAll;
-            this->oldValue.top = oldValue.top & Chk::IsomRect::EditorFlag::ClearAll;
-            this->oldValue.bottom = oldValue.bottom & Chk::IsomRect::EditorFlag::ClearAll;
-        }
-
-        constexpr void setNewValue(const Chk::IsomRect & newValue) {
-            this->newValue.left = newValue.left & Chk::IsomRect::EditorFlag::ClearAll;
-            this->newValue.right = newValue.right & Chk::IsomRect::EditorFlag::ClearAll;
-            this->newValue.top = newValue.top & Chk::IsomRect::EditorFlag::ClearAll;
-            this->newValue.bottom = newValue.bottom & Chk::IsomRect::EditorFlag::ClearAll;
-        }
-
-        IsomRectUndo(Chk::IsomDiamond diamond, const Chk::IsomRect & oldValue, const Chk::IsomRect & newValue)
-            : diamond(diamond)
-        {
-            setOldValue(oldValue);
-            setNewValue(newValue);
-        }
-    };
-
     // IsomCache holds all the data required to edit isometric terrain which is not a part of scenario; as well as methods that operate on said data exclusively
     // IsomCache is invalidated & must be re-created whenever tileset, map width, or map height changes
     struct IsomCache
@@ -2062,8 +2035,6 @@ namespace Chk {
         size_t isomWidth; // This is a sort of isometric width, not tileWidth
         size_t isomHeight; // This is a sort of isometric height, not tileHeight
         Sc::BoundingBox changedArea {};
-
-        std::vector<std::optional<IsomRectUndo>> undoMap {}; // Undo per x, y coordinate
 
         Span<Sc::Terrain::TileGroup> tileGroups {};
         Span<Sc::Isom::ShapeLinks> isomLinks {};
@@ -2078,8 +2049,7 @@ namespace Chk {
             isomLinks(&tilesetData.isomLinks[0], tilesetData.isomLinks.size()),
             terrainTypes(&tilesetData.terrainTypes[0], tilesetData.terrainTypes.size()),
             terrainTypeMap(&tilesetData.terrainTypeMap[0], tilesetData.terrainTypeMap.size()),
-            hashToTileGroup(&tilesetData.hashToTileGroup),
-            undoMap(isomWidth*isomHeight, std::nullopt)
+            hashToTileGroup(&tilesetData.hashToTileGroup)
         {
             resetChangedArea();
         }
@@ -2123,16 +2093,6 @@ namespace Chk {
         }
 
         virtual inline void setTileValue(size_t tileX, size_t tileY, uint16_t tileValue) {} // Does nothing unless overridden
-
-        virtual inline void addIsomUndo(const IsomRectUndo & /*isomUndo*/) {} // Does nothing unless overridden
-
-        // Call when one undoable operation is complete, e.g. resize a map, or mouse up after pasting/brushing some terrain
-        // When changing lots of terrain (e.g. by holding the mouse button and moving around), undos are blocked from being added to the same tiles multiple times
-        // Calling this method clears out said blockers
-        inline void finalizeUndoableOperation()
-        {
-            undoMap.assign(isomWidth*isomHeight, std::nullopt); // Clears out the undoMap so new entries can be set
-        }
     };
 
     // When tiles change... doodads, units, and possibly other things may be invalidated and need to be removed (depending on editor configuration settings)

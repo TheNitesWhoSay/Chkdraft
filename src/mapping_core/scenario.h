@@ -289,7 +289,7 @@ struct Scenario : RareEdit::Tracked<MapData, Scenario, DescriptorIndex>
     inline const Chk::IsomRect & getIsomRect(Chk::IsomRect::Point point) const { return read.isomRects[point.y*getIsomWidth() + point.x]; }
     
     bool placeIsomTerrain(Chk::IsomDiamond isomDiamond, size_t terrainType, size_t brushExtent, Chk::IsomCache & cache);
-    void copyIsomFrom(const Scenario & sourceMap, int32_t xTileOffset, int32_t yTileOffset, bool undoable, Chk::IsomCache & destCache);
+    void copyIsomFrom(const Scenario & sourceMap, int32_t xTileOffset, int32_t yTileOffset, Chk::IsomCache & destCache);
     void updateTilesFromIsom(Chk::IsomCache & cache);
     bool resizeIsom(int32_t xTileOffset, int32_t yTileOffset, size_t oldMapWidth, size_t oldMapHeight, bool fixBorders, Chk::IsomCache & cache);
     Chk::TileOccupationCache getTileOccupationCache(const Sc::Terrain::Tiles & tileset, const Sc::Unit & unitData) const;
@@ -553,10 +553,9 @@ private:
     inline bool centralIsomValueModified(Chk::IsomRect::Point point) const { return read.isomRects[point.y*getIsomWidth() + point.x].isLeftModified(); }
     constexpr bool isInBounds(Chk::IsomRect::Point point) const { return point.x < getIsomWidth() && point.y < getIsomHeight(); }
 
-    void addIsomUndo(Chk::IsomRect::Point point, Chk::IsomCache & cache);
     bool diamondNeedsUpdate(Chk::IsomDiamond isomDiamond) const;
-    void setIsomValue(Chk::IsomRect::Point isomDiamond, Sc::Isom::Quadrant shapeQuadrant, uint16_t isomValue, bool undoable, Chk::IsomCache & cache);
-    void setDiamondIsomValues(Chk::IsomDiamond isomDiamond, uint16_t isomValue, bool undoable, Chk::IsomCache & cache);
+    void setIsomValue(Chk::IsomRect::Point isomDiamond, Sc::Isom::Quadrant shapeQuadrant, uint16_t isomValue, Chk::IsomCache & cache);
+    void setDiamondIsomValues(Chk::IsomDiamond isomDiamond, uint16_t isomValue, Chk::IsomCache & cache);
 
     struct IsomNeighbors
     {
@@ -596,7 +595,7 @@ private:
     uint16_t countNeighborMatches(const Sc::Isom::ShapeLinks & shapeLinks, IsomNeighbors & neighbors, Span<Sc::Isom::ShapeLinks> isomLinks) const;
     void searchForBestMatch(uint16_t startingTerrainType, IsomNeighbors & neighbors, Chk::IsomCache & cache) const;
     std::optional<uint16_t> findBestMatchIsomValue(Chk::IsomDiamond isomDiamond, Chk::IsomCache & cache) const;
-    void radiallyUpdateTerrain(bool undoable, std::deque<Chk::IsomDiamond> & diamondsToUpdate, Chk::IsomCache & cache);
+    void radiallyUpdateTerrain(std::deque<Chk::IsomDiamond> & diamondsToUpdate, Chk::IsomCache & cache);
 
 private:
     bool mapIsProtected = false; // Flagged if map is protected (not included in tracked data)

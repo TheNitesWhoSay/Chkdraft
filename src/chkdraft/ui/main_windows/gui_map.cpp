@@ -209,8 +209,6 @@ void GuiMap::beginTerrainOperation()
 void GuiMap::finalizeTerrainOperation()
 {
     clipboard.clearPreviousPasteLoc();
-    if ( currLayer != Layer::CutCopyPaste )
-        Chk::IsomCache::finalizeUndoableOperation();
 }
 
 void GuiMap::finalizeFogOperation()
@@ -399,7 +397,7 @@ void GuiMap::setDimensions(u16 newTileWidth, u16 newTileHeight, u16 sizeValidati
     editDest->dimensions = Chk::DIM{newTileWidth, newTileHeight};
     editDest->isomRects.assign((newTileWidth/2+1)*(newTileHeight+1), Chk::IsomRect{ isomValue, isomValue, isomValue, isomValue });
     
-    destMap.copyIsomFrom(*this, leftEdge, topEdge, false, destMapCache);
+    destMap.copyIsomFrom(*this, leftEdge, topEdge, destMapCache);
     destMap.resizeIsom(leftEdge, topEdge, this->getTileWidth(), this->getTileHeight(), false, destMapCache);
     destMap.updateTilesFromIsom(destMapCache);
 
@@ -3621,7 +3619,6 @@ void GuiMap::FinalizeLocationDrag(HWND hWnd, int mapX, int mapY, WPARAM wParam)
                         }
                     }
                 }
-                //undos().submitUndo();
                 Redraw(false);
                 if ( chkd.locationWindow.getHandle() != NULL )
                     chkd.locationWindow.RefreshLocationInfo();
@@ -4095,6 +4092,7 @@ void GuiMap::windowBoundsChanged()
 
 void GuiMap::tileSelectionsChanged()
 {
+    logger.info("TileSelChanged");
     using neighbor_int = std::underlying_type_t<TileNeighbor>;
     constexpr neighbor_int no_neighbors = neighbor_int(TileNeighbor::None);
     constexpr neighbor_int left_neighbor = neighbor_int(TileNeighbor::Left);

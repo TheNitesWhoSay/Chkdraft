@@ -5,8 +5,8 @@
 #include <mapping_core/mapping_core.h>
 #include <chrono>
 #include <string>
+
 class GuiMap;
-class Undos;
 
 using TileNeighbor = Sc::Terrain::TileNeighbor;
 
