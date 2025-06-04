@@ -71,7 +71,7 @@ u16 Selections::getSelectedLocation()
 
 void Selections::selectLocation(u16 index)
 {
-    auto edit = map();
+    auto edit = map(ActionDescriptor::UpdateLocationSel);
     edit->locations.clearSelections();
     edit->locations.select(index);
     numRecentLocations = 1;
@@ -80,7 +80,7 @@ void Selections::selectLocation(u16 index)
 
 void Selections::selectLocation(s32 clickX, s32 clickY, bool canSelectAnywhere)
 {
-    auto edit = map();
+    auto edit = map(ActionDescriptor::UpdateLocationSel);
     size_t numLocations = map.numLocations();
     u16 firstRecentlySelected = NO_LOCATION;
     bool madeSelection = false;
@@ -146,6 +146,7 @@ void Selections::selectLocation(s32 clickX, s32 clickY, bool canSelectAnywhere)
         }
         else // Reset recent locations
         {
+            map.setActionDescription(ActionDescriptor::ClearLocationSel);
             edit->locations.clearSelections();
             recentLocations[0] = u8(NO_LOCATION);
             numRecentLocations = 1;

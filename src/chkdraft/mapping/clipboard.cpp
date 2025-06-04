@@ -172,6 +172,7 @@ void Clipboard::pasteTerrain(TerrainSubLayer terrainSubLayer, s32 mapClickX, s32
     }
     else
     {
+        map.setActionDescription(ActionDescriptor::PasteTiles);
         mapClickX += 16;
         mapClickY += 16;
 
@@ -209,6 +210,7 @@ void Clipboard::pasteDoodads(s32 mapClickX, s32 mapClickY, GuiMap & map, point p
     const auto & doodads = getDoodads();
     if ( !doodads.empty() )
     {
+        map.setActionDescription(ActionDescriptor::PasteDoodad);
         auto edit = map.operator()();
         const auto & first = doodads[0];
         bool firstEvenWidth = first.tileWidth%2 == 0;
@@ -258,6 +260,7 @@ void Clipboard::pasteDoodads(s32 mapClickX, s32 mapClickY, GuiMap & map, point p
 
 void Clipboard::fillPasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap & map, point prevPaste)
 {
+    map.setActionDescription(ActionDescriptor::FillPasteTiles);
     mapClickX += 16;
     mapClickY += 16;
 
@@ -414,6 +417,7 @@ void Clipboard::pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap & map, bool allo
 
 void Clipboard::pasteSprites(s32 mapClickX, s32 mapClickY, GuiMap & map, point prevPaste)
 {
+    auto edit = map.operator()(isQuickPasting() ? ActionDescriptor::CreateSprite : ActionDescriptor::PasteSprites);
     auto currPasteTime = std::chrono::steady_clock::now();
     if ( std::chrono::duration_cast<std::chrono::milliseconds>(currPasteTime - this->lastPasteTime).count() < 250 && isNearPrevPaste(mapClickX, mapClickY) )
         return; // Prevent unintentional repeat-pastes
@@ -502,6 +506,7 @@ void Clipboard::pasteBrushFog(s32 mapClickX, s32 mapClickY, GuiMap & map, point 
 
 void Clipboard::pasteFog(s32 mapClickX, s32 mapClickY, GuiMap & map, point prevPaste)
 {
+    map.setActionDescription(ActionDescriptor::PasteFog);
     mapClickX += 16;
     mapClickY += 16;
 

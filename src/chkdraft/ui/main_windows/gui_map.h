@@ -267,6 +267,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCach
 
                     void tileSelectionsChanged();
                     void tileFogSelectionsChanged();
+                    void checkSelChangeFlags();
 
                     void afterAction(std::size_t actionIndex) override;
 

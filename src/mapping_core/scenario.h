@@ -531,6 +531,8 @@ struct Scenario : RareEdit::Tracked<MapData, Scenario, DescriptorIndex>
     void updateSaveSections();
     bool changeVersionTo(Chk::Version version, bool lockAnywhere = true, bool autoDefragmentLocations = true);
     
+    void setActionDescription(ActionDescriptor actionDescriptor);
+
     bool clearTileSelChanged();
     bool clearFogSelChanged();
     using tiles_path = PATH(root->tiles);

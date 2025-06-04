@@ -616,6 +616,7 @@ void Maps::SetGridColor(u8 red, u8 green, u8 blue)
 
 void Maps::startPaste(bool isQuickPaste)
 {
+    auto edit = currentlyActiveMap->operator()(ActionDescriptor::BeginPaste);
     if ( currentlyActiveMap == nullptr )
         return;
     else if ( currentlyActiveMap->getLayer() == Layer::Terrain )

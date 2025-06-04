@@ -65,11 +65,53 @@ std::string getActionText(std::size_t actionIndex, const RareEdit::RenderAction<
             actionText += " - ";
             switch ( action.userData.descriptorIndex )
             {
-                case ActionDescriptor::ClearUnitSel: actionText += "Clear Unit Selection"; break;
-                case ActionDescriptor::UpdateUnitSel: actionText += "Update Unit Selection"; break;
-                case ActionDescriptor::CreateUnit: actionText += "Create Unit"; break;
-                case ActionDescriptor::PasteUnits: actionText += "Paste Unit"; break;
+                // Misc
+                case ActionDescriptor::BeginPaste: actionText += "Begin Paste"; break;
+                case ActionDescriptor::DeleteSelection: actionText += "Delete Selection"; break;
+                case ActionDescriptor::UpdateMiscSelection: actionText += "Update Misc Selection"; break;
+                // Terrain
                 case ActionDescriptor::BrushIsom: actionText += "Brush Isom"; break;
+                case ActionDescriptor::UpdateTileSel: actionText += "Update Tile Selection"; break;
+                case ActionDescriptor::ClearTileSel: actionText += "Clear Tile Selection"; break;
+                case ActionDescriptor::DeleteTiles: actionText += "Delete Tiles"; break;
+                case ActionDescriptor::PasteTiles: actionText += "Paste Tiles"; break;
+                case ActionDescriptor::FillPasteTiles: actionText += "Fill Paste Tiles"; break;
+                case ActionDescriptor::OpenTileProperties: actionText += "Open Tile Properties"; break;
+                // Doodads
+                case ActionDescriptor::UpdateDoodadSel: actionText += "Update Doodad Selection"; break;
+                case ActionDescriptor::ClearDoodadSel: actionText += "Clear Doodad Selection"; break;
+                case ActionDescriptor::PasteDoodad: actionText += "Paste Doodads"; break;
+                case ActionDescriptor::DeleteDoodad: actionText += "Delete Doodads"; break;
+                case ActionDescriptor::ConvertDoodad: actionText += "Convert Doodad To Terrain"; break;
+                // Fog of War
+                case ActionDescriptor::BrushFog: actionText += "Brush Fog"; break;
+                case ActionDescriptor::PasteFog: actionText += "Paste Fog"; break;
+                case ActionDescriptor::DeleteFogTiles: actionText += "Delete Fog Tiles"; break;
+                // Locations
+                case ActionDescriptor::UpdateLocationSel: actionText += "Update Location Selection"; break;
+                case ActionDescriptor::ClearLocationSel: actionText += "Clear Location Selection"; break;
+                case ActionDescriptor::CreateLocation: actionText += "Create Location"; break;
+                case ActionDescriptor::MoveLocation: actionText += "Move Location"; break;
+                case ActionDescriptor::DeleteLocations: actionText += "Delete Locations"; break;
+                // Units
+                case ActionDescriptor::UpdateUnitSel: actionText += "Update Unit Selection"; break;
+                case ActionDescriptor::ClearUnitSel: actionText += "Clear Unit Selection"; break;
+                case ActionDescriptor::CreateUnit: actionText += "Create Unit"; break;
+                case ActionDescriptor::PasteUnits: actionText += "Paste Units"; break;
+                case ActionDescriptor::DeleteUnits: actionText += "Delete Units"; break;
+                case ActionDescriptor::StackUnits: actionText += "Stack Units"; break;
+                case ActionDescriptor::CreateLocationForUnit: actionText += "Create Location For Unit"; break;
+                case ActionDescriptor::CreateInvertedLocationForUnit: actionText += "Create Inverted Location For Unit"; break;
+                case ActionDescriptor::CreateMobileInvertedLocationForUnit: actionText += "Create Mobile Inverted Location For Unit"; break;
+                // Sprites
+                case ActionDescriptor::UpdateSpriteSel: actionText += "Update Sprite Selection"; break;
+                case ActionDescriptor::ClearSpriteSel: actionText += "Clear Sprite Selection"; break;
+                case ActionDescriptor::CreateSprite: actionText += "Create Sprite"; break;
+                case ActionDescriptor::PasteSprites: actionText += "Paste Sprites"; break;
+                case ActionDescriptor::DeleteSprites: actionText += "Delete Sprites"; break;
+                case ActionDescriptor::StackSprites: actionText += "Stack Sprites"; break;
+                // Cut Copy Paste
+                // Default
                 default: actionText += "TODO: " + std::to_string(std::underlying_type_t<ActionDescriptor>(action.userData.descriptorIndex)); break;
             }
         }

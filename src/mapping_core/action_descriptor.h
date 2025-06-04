@@ -4,11 +4,52 @@
 enum class ActionDescriptor
 {
     None = 0,
+    // Misc
+    BeginPaste,
+    DeleteSelection,
+    UpdateMiscSelection,
+    // Terrain
+    BrushIsom,
+    UpdateTileSel,
+    ClearTileSel,
+    DeleteTiles,
+    PasteTiles,
+    FillPasteTiles,
+    OpenTileProperties,
+    // Doodads
+    UpdateDoodadSel,
+    ClearDoodadSel,
+    PasteDoodad,
+    DeleteDoodad,
+    ConvertDoodad,
+    // Fog of War
+    BrushFog,
+    PasteFog,
+    DeleteFogTiles,
+    // Locations
+    UpdateLocationSel,
+    ClearLocationSel,
+    CreateLocation,
+    MoveLocation,
+    DeleteLocations,
+    // Units
     UpdateUnitSel,
     ClearUnitSel,
     CreateUnit,
     PasteUnits,
-    BrushIsom
+    DeleteUnits,
+    StackUnits,
+    CreateLocationForUnit,
+    CreateInvertedLocationForUnit,
+    CreateMobileInvertedLocationForUnit,
+    // Sprites
+    UpdateSpriteSel,
+    ClearSpriteSel,
+    CreateSprite,
+    PasteSprites,
+    DeleteSprites,
+    StackSprites,
+    // Cut Copy Paste
 };
 
 struct DescriptorIndex {

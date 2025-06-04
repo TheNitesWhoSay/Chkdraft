@@ -1566,9 +1566,9 @@ void DrawTileSel(const WinLib::DeviceContext & dc, ChkdPalette & palette, u16 wi
         auto xEnd = std::min(LONG(selections.renderTiles.xEnd), rcBorder.right);
         auto yBegin = std::max(LONG(selections.renderTiles.yBegin), rcBorder.top);
         auto yEnd = std::min(LONG(selections.renderTiles.yEnd), rcBorder.bottom);
-        for ( LONG y=yBegin; y<yEnd; ++y )
+        for ( LONG y=std::max(LONG(0), yBegin); y<yEnd; ++y )
         {
-            for ( LONG x=xBegin; x<xEnd; ++x )
+            for ( LONG x=std::max(LONG(0), xBegin); x<xEnd; ++x )
             {
                 auto selTile = selTiles[y*tileWidth + x];
                 if ( selTile )

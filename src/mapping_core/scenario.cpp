@@ -7635,6 +7635,11 @@ void Scenario::deleteTriggerString(size_t stringId, Chk::Scope storageScope)
     }
 }
 
+void Scenario::setActionDescription(ActionDescriptor actionDescriptor)
+{
+    replacePendingActionUserData({actionDescriptor});
+}
+
 bool Scenario::clearTileSelChanged()
 {
     if ( tileSelChanged )
