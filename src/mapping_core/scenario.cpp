@@ -7635,19 +7635,39 @@ void Scenario::deleteTriggerString(size_t stringId, Chk::Scope storageScope)
     }
 }
 
+bool Scenario::clearTileSelChanged()
+{
+    if ( tileSelChanged )
+    {
+        tileSelChanged = false;
+        return true;
+    }
+    return false;
+}
+
+bool Scenario::clearFogSelChanged()
+{
+    if ( fogSelChanged )
+    {
+        fogSelChanged = false;
+        return true;
+    }
+    return false;
+}
+
 void Scenario::selectionsChanged(tiles_path)
 {
-    tileSelectionsChanged();
+    tileSelChanged = true;
 }
 
 void Scenario::selectionsChanged(editor_tiles_path)
 {
-    tileSelectionsChanged();
+    tileSelChanged = true;
 }
 
 void Scenario::selectionsChanged(tiles_fog_path)
 {
-    tileFogSelectionsChanged();
+    fogSelChanged = true;
 }
 
 template <class Edit>

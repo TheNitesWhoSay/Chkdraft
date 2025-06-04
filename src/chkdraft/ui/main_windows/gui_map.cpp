@@ -4092,7 +4092,6 @@ void GuiMap::windowBoundsChanged()
 
 void GuiMap::tileSelectionsChanged()
 {
-    logger.info("TileSelChanged");
     using neighbor_int = std::underlying_type_t<TileNeighbor>;
     constexpr neighbor_int no_neighbors = neighbor_int(TileNeighbor::None);
     constexpr neighbor_int left_neighbor = neighbor_int(TileNeighbor::Left);
@@ -4113,7 +4112,7 @@ void GuiMap::tileSelectionsChanged()
         for ( auto tileIndex : tileSel )
             selections.renderTiles.tiles[tileIndex] = std::make_optional(TileNeighbor::None);
 
-        for ( auto tileIndex : tileSel ) // TODO: This loop isn't fast enough
+        for ( auto tileIndex : tileSel )
         {
             std::size_t x = tileIndex % tileWidth;
             std::size_t y = tileIndex / tileWidth;

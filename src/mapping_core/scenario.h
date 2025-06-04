@@ -90,8 +90,6 @@ struct Scenario : RareEdit::Tracked<MapData, Scenario, DescriptorIndex>
     void redoAction();
     void printChangeHistory();
 
-    virtual void afterAction(std::size_t actionIndex) {}
-
     Scenario(); // Construct empty map
     
     // Construct new map
@@ -532,15 +530,17 @@ struct Scenario : RareEdit::Tracked<MapData, Scenario, DescriptorIndex>
     void removeSaveSection(Chk::SectionName sectionName); // Removes a section from save sections if present
     void updateSaveSections();
     bool changeVersionTo(Chk::Version version, bool lockAnywhere = true, bool autoDefragmentLocations = true);
-
-    virtual void tileSelectionsChanged() {} // Does nothing unless overridden
-    virtual void tileFogSelectionsChanged() {} // Does nothing unless overridden
+    
+    bool clearTileSelChanged();
+    bool clearFogSelChanged();
     using tiles_path = PATH(root->tiles);
     using editor_tiles_path = PATH(root->editorTiles);
     using tiles_fog_path = PATH(root->tileFog);
     void selectionsChanged(tiles_path);
     void selectionsChanged(editor_tiles_path);
     void selectionsChanged(tiles_fog_path);
+    virtual void afterAction(std::size_t actionIndex) {} // Does nothing unless overridden
+
 
 private:
     // ISOM helpers
@@ -599,6 +599,8 @@ private:
 
 private:
     bool mapIsProtected = false; // Flagged if map is protected (not included in tracked data)
+    bool tileSelChanged = false; // Flagged when tile sel changes
+    bool fogSelChanged = false; // Flagged when fog sel changes
 };
 
 #endif

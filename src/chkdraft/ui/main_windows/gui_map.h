@@ -265,8 +265,8 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCach
                     void refreshTileOccupationCache();
                     void windowBoundsChanged();
 
-                    void tileSelectionsChanged() override;
-                    void tileFogSelectionsChanged() override;
+                    void tileSelectionsChanged();
+                    void tileFogSelectionsChanged();
 
                     void afterAction(std::size_t actionIndex) override;
 

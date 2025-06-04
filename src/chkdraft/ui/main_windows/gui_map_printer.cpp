@@ -3,6 +3,12 @@
 
 void GuiMap::afterAction(std::size_t actionIndex)
 {
+    if ( clearTileSelChanged() )
+        this->tileSelectionsChanged();
+
+    if ( clearFogSelChanged() )
+        this->tileFogSelectionsChanged();
+
     RareEdit::RenderAction<DescriptorIndex> action {};
     Tracked::renderAction(actionIndex, action, true);
     chkd.mainPlot.leftBar.historyTree.RefreshActionHeaders(std::make_optional(actionIndex));
