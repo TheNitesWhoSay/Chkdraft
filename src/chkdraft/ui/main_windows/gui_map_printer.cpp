@@ -7,9 +7,12 @@ void GuiMap::afterAction(std::size_t actionIndex)
     Tracked::renderAction(actionIndex, action, true);
     chkd.mainPlot.leftBar.mainTree.historyTree.RefreshActionHeaders(std::make_optional(actionIndex));
     chkd.mainPlot.leftBar.mainTree.historyTree.InsertAction(actionIndex, action);
-    if ( action.isSelChangeAction() && isInNoChangeRange(lastUnelidedAction()) )
-        this->postSaveSelActionCount = actionIndex - this->lastSaveActionIndex + 1;
+    if ( nonSelChangeCursor >= Tracked::previousCursorIndex() )
+        nonSelChangeCursor = std::numeric_limits<std::size_t>::max(); // Previous nonSelChangeCursor was elided, reset indicating no change
     
+    if ( !action.isSelChangeAction() && (actionIndex > nonSelChangeCursor || nonSelChangeCursor == std::numeric_limits<std::size_t>::max()) )
+        nonSelChangeCursor = actionIndex+1; // Mark first non-selection change
+
     this->checkUnsavedChanges();
 
     if ( logger.getLogLevel() >= LogLevel::Trace )

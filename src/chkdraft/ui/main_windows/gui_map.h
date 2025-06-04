@@ -285,8 +285,8 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCach
 
                     u16 mapId = 0;
                     bool unsavedChanges = false;
-                    std::size_t lastSaveActionIndex = 0;
-                    std::size_t postSaveSelActionCount = 1;
+                    std::size_t lastSaveActionCursor = 0;
+                    std::size_t nonSelChangeCursor = std::numeric_limits<std::size_t>::max();
 
                     Layer currLayer = Layer::Terrain;
                     TerrainSubLayer currTerrainSubLayer = TerrainSubLayer::Isom;

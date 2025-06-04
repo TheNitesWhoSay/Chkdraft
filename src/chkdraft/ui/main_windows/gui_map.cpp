@@ -154,8 +154,8 @@ bool GuiMap::SaveFile(bool saveAs)
 
     if ( MapFile::save(saveAs) )
     {
-        lastSaveActionIndex = Tracked::getCursorIndex();
-        postSaveSelActionCount = 1;
+        lastSaveActionCursor = Tracked::getCursorIndex();
+        nonSelChangeCursor = std::numeric_limits<std::size_t>::max();
         notifyNoUnsavedChanges();
         return true;
     }
@@ -1835,18 +1835,15 @@ void GuiMap::redo()
 
 bool GuiMap::isInNoChangeRange(std::size_t actionIndex)
 {
-    auto noChangesBegin = this->lastSaveActionIndex;
-    auto noChangesEnd = this->lastSaveActionIndex+this->postSaveSelActionCount;
-    return actionIndex >= noChangesBegin && actionIndex <= noChangesEnd;
+    throw std::runtime_error("Remove me");
 }
 
 void GuiMap::checkUnsavedChanges()
 {
-    auto cursorActionIndex = Tracked::getCursorIndex();
-    bool inNoChangeRange = isInNoChangeRange(cursorActionIndex);
-    if ( this->unsavedChanges && inNoChangeRange )
+    auto cursorIndex = Tracked::getCursorIndex();
+    if ( cursorIndex >= lastSaveActionCursor && cursorIndex < nonSelChangeCursor )
         notifyNoUnsavedChanges();
-    else if ( !this->unsavedChanges && !inNoChangeRange )
+    else
         notifyUnsavedChanges();
 }
 
