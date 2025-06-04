@@ -108,8 +108,8 @@ set(Headers
   ui/dialog_windows/layers/location_properties.h
   ui/dialog_windows/layers/terrain_palette.h
   ui/dialog_windows/layers/tile_properties.h
-  ui/dialog_windows/layers/sprite_properties/sprite_properties.h
-  ui/dialog_windows/layers/unit_properties/unit_properties.h
+  ui/dialog_windows/layers/sprite_properties.h
+  ui/dialog_windows/layers/unit_properties.h
   ui/dialog_windows/map_protection/change_password.h
   ui/dialog_windows/map_protection/enter_password.h
   ui/dialog_windows/map_settings/color_properties.h
@@ -192,8 +192,8 @@ set(Sources
   ui/dialog_windows/layers/location_properties.cpp
   ui/dialog_windows/layers/terrain_palette.cpp
   ui/dialog_windows/layers/tile_properties.cpp
-  ui/dialog_windows/layers/sprite_properties/sprite_properties.cpp
-  ui/dialog_windows/layers/unit_properties/unit_properties.cpp
+  ui/dialog_windows/layers/sprite_properties.cpp
+  ui/dialog_windows/layers/unit_properties.cpp
   ui/dialog_windows/map_protection/change_password.cpp
   ui/dialog_windows/map_protection/enter_password.cpp
   ui/dialog_windows/map_settings/color_properties.cpp

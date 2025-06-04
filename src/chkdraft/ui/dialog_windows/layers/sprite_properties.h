@@ -3,7 +3,6 @@
 #include <common_files/common_files.h>
 #include <windows/windows_ui.h>
 #include <mapping_core/mapping_core.h>
-#include "preserved_sprite_stats.h"
 #include "ui/chkd_controls/player_dropdown.h"
 
 enum class SpriteListColumn;
