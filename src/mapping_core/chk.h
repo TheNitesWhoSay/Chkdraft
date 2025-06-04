@@ -126,9 +126,6 @@ namespace Chk {
             xResources = x16BIT_4,
             xHangar = x16BIT_5
         });
-        enum class Field { // Typeless
-            ClassId, Xc, Yc, Type, RelationFlags, ValidStateFlags, ValidFieldFlags, Owner, HitpointPercent, ShieldPercent, EnergyPercent, ResourceAmount, HangarAmount, StateFlags, Unused, RelationClassId
-        };
 
         u32 classId; // Unique number used to identify this unit for related units (may be an addon or the building that has an addon)
         u16 xc;
@@ -352,9 +349,6 @@ namespace Chk {
             OverlayFlipped_Deprecated = BIT_14, // In SC: temporary creep
             SpriteUnitDiabled = BIT_15 // If the SpriteOverlay flag is NOT set (this is a sprite-unit), then the unit is disabled
         });
-        enum class Field {
-            Type, Xc, Yc, Owner, Unused, Flags
-        };
 
         inline static u16 toPureSpriteFlags(u16 flags)
         {
@@ -519,9 +513,6 @@ namespace Chk {
             HighAir = BIT_5,
             All = LowElevation | MediumElevation | HighElevation | LowAir | MediumAir | HighAir
         });
-        enum class Field { // Typeless
-            Left, Top, Right, Bottom, StringId, ElevationFlags
-        };
 
         bool isBlank() const;
         
