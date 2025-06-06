@@ -25,7 +25,7 @@ void Chkdraft::OnLoadTest()
     }();*/
     
     mainPlot.leftBar.SetWidth(360);
-    auto actualMap = chkd.maps.NewMap();
+    //auto actualMap = chkd.maps.NewMap();
 }
 
 void Chkdraft::PreLoadTest()
