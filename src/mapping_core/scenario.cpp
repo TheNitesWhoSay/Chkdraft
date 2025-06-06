@@ -1277,8 +1277,10 @@ bool Scenario::changeVersionTo(Chk::Version version, bool lockAnywhere, bool aut
                 logger.error("Cannot save as original with over 64 locations in use!");
                 return false;
             }
-            edit->mapType = Chk::Type::RAWS;
-            edit->iVersion = Chk::IVersion::Current;
+            if ( read.mapType != Chk::Type::RAWS )
+                edit->mapType = Chk::Type::RAWS;
+            if ( read.iVersion != Chk::IVersion::Current )
+                edit->iVersion = Chk::IVersion::Current;
             removeSaveSection(SectionName::TYPE);
             removeSaveSection(SectionName::PUPx);
             removeSaveSection(SectionName::PTEx);
@@ -1288,9 +1290,12 @@ bool Scenario::changeVersionTo(Chk::Version version, bool lockAnywhere, bool aut
         }
         else
         {
-            edit->mapType = Chk::Type::RAWS;
-            edit->iVersion = Chk::IVersion::Current;
-            edit->i2Version = Chk::I2Version::StarCraft_1_04;
+            if ( read.mapType != Chk::Type::RAWS )
+                edit->mapType = Chk::Type::RAWS;
+            if ( read.iVersion != Chk::IVersion::Current )
+                edit->iVersion = Chk::IVersion::Current;
+            if ( read.i2Version != Chk::I2Version::StarCraft_1_04 )
+                edit->i2Version = Chk::I2Version::StarCraft_1_04;
             expandToScHybridOrExpansion();
         }
         addSaveSection(::MapData::Section{SectionName::IVER});
@@ -1302,9 +1307,12 @@ bool Scenario::changeVersionTo(Chk::Version version, bool lockAnywhere, bool aut
     }
     else // if ( version >= Chk::Version::StarCraft_BroodWar ) // Broodwar: No IVER or original properties
     {
-        edit->mapType = Chk::Type::RAWB;
-        edit->iVersion = Chk::IVersion::Current;
-        edit->i2Version = Chk::I2Version::StarCraft_1_04;
+        if ( read.mapType != Chk::Type::RAWB )
+            edit->mapType = Chk::Type::RAWB;
+        if ( read.iVersion != Chk::IVersion::Current )
+            edit->iVersion = Chk::IVersion::Current;
+        if ( read.i2Version != Chk::I2Version::StarCraft_1_04 )
+            edit->i2Version = Chk::I2Version::StarCraft_1_04;
         this->expandToScHybridOrExpansion();
 
         removeSaveSection(SectionName::IVER);
@@ -1317,7 +1325,8 @@ bool Scenario::changeVersionTo(Chk::Version version, bool lockAnywhere, bool aut
         
     if ( version >= Chk::Version::StarCraft_Hybrid ) // Hybrid or BroodWar: Include TYPE, IVE2, COLR, and all expansion properties
     {
-        edit->mapType = version >= Chk::Version::StarCraft_BroodWar ? Chk::Type::RAWB : Chk::Type::RAWS;
+        if ( read.mapType != (version >= Chk::Version::StarCraft_BroodWar ? Chk::Type::RAWB : Chk::Type::RAWS) )
+            edit->mapType = version >= Chk::Version::StarCraft_BroodWar ? Chk::Type::RAWB : Chk::Type::RAWS;
         addSaveSection(::MapData::Section{SectionName::TYPE});
         addSaveSection(::MapData::Section{SectionName::PUPx});
         addSaveSection(::MapData::Section{SectionName::PTEx});
@@ -1333,7 +1342,9 @@ bool Scenario::changeVersionTo(Chk::Version version, bool lockAnywhere, bool aut
         }
     }
     
-    edit->version = version;
+    if ( read.version != version )
+        edit->version = version;
+
     this->deleteUnusedStrings(Chk::Scope::Both);
     return true;
 }
@@ -2047,7 +2058,7 @@ void Scenario::deleteUnusedStrings(Chk::Scope storageScope)
         markUsedStrings(stringIdUsed, Chk::Scope::Either, Chk::Scope::Game);
         for ( size_t i=0; i<read.strings.size(); i++ )
         {
-            if ( !stringIdUsed[i] && read.strings[i] )
+            if ( !stringIdUsed[i] && read.strings[i] && !read.strings[i]->empty() )
                 edit->strings[i] = std::nullopt;
         }
     };
@@ -2056,7 +2067,7 @@ void Scenario::deleteUnusedStrings(Chk::Scope storageScope)
         markUsedStrings(stringIdUsed, Chk::Scope::Either, Chk::Scope::Editor);
         for ( size_t i=0; i<read.editorStrings.size(); i++ )
         {
-            if ( !stringIdUsed[i] && read.editorStrings[i] )
+            if ( !stringIdUsed[i] && read.editorStrings[i] && !read.editorStrings[i]->empty() )
                 edit->editorStrings[i] = std::nullopt;
         }
     };
@@ -4842,7 +4853,8 @@ bool Scenario::trimLocationsToOriginal(bool lockAnywhere, bool autoDefragment)
 
 void Scenario::expandToScHybridOrExpansion()
 {
-    createAction()->locations.append(std::vector<Chk::Location>(Chk::TotalLocations+1-read.locations.size()));
+    if ( read.locations.size() < Chk::TotalLocations )
+        createAction()->locations.append(std::vector<Chk::Location>(Chk::TotalLocations+1-read.locations.size()));
 }
 
 bool Scenario::anywhereIsStandardDimensions(u16 prevWidth, u16 prevHeight) const

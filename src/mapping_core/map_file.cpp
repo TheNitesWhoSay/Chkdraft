@@ -181,18 +181,21 @@ bool MapFile::save(bool saveAs, bool updateListFile, FileBrowserPtr<SaveType> fi
     {
         auto edit = createAction(ActionDescriptor::UpdateSaveSections);
         // If scenario changed such that save type should have changed, adjust it in advance so filter type is correct
+        SaveType newSaveType = read.saveType;
         if ( Scenario::getVersion() >= Chk::Version::StarCraft_Remastered )
-            edit->saveType = isChkSaveType(read.saveType) ? SaveType::RemasteredChk : SaveType::RemasteredScx;
+            newSaveType = isChkSaveType(read.saveType) ? SaveType::RemasteredChk : SaveType::RemasteredScx;
         else if ( Scenario::getVersion() >= Chk::Version::StarCraft_BroodWar )
-            edit->saveType = isChkSaveType(read.saveType) ? SaveType::ExpansionChk : SaveType::ExpansionScx;
+            newSaveType = isChkSaveType(read.saveType) ? SaveType::ExpansionChk : SaveType::ExpansionScx;
         else if ( Scenario::getVersion() >= Chk::Version::StarCraft_Hybrid )
-            edit->saveType = isChkSaveType(read.saveType) ? SaveType::HybridChk : SaveType::HybridScm;
+            newSaveType = isChkSaveType(read.saveType) ? SaveType::HybridChk : SaveType::HybridScm;
         else // version < Chk::Version::StarCraft_Hybrid
-            edit->saveType = isChkSaveType(read.saveType) ? SaveType::StarCraftChk : SaveType::StarCraftScm;
+            newSaveType = isChkSaveType(read.saveType) ? SaveType::StarCraftChk : SaveType::StarCraftScm;
+
+        if ( newSaveType != read.saveType )
+            edit->saveType = newSaveType;
 
         bool overwriting = false;
         std::string newMapFilePath;
-        auto newSaveType = read.saveType;
         if ( (saveAs || mapFilePath.empty()) && fileBrowser != nullptr ) // saveAs specified or filePath not yet determined, and a fileBrowser is available
         {
             if ( getSaveDetails(newSaveType, newMapFilePath, overwriting, fileBrowser) && read.saveType != newSaveType )
