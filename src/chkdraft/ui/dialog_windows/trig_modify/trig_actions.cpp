@@ -331,7 +331,7 @@ void TrigActionsWindow::ChangeActionType(std::size_t triggerIndex, std::size_t a
         const auto & action = CM->read.triggers[triggerIndex].actions[actionIndex];
         if ( action.actionType != newType )
         {
-            CM->operator()()->triggers[triggerIndex].actions[actionIndex] = Chk::Action {
+            CM->operator()(ActionDescriptor::ChangeTriggerActionType)->triggers[triggerIndex].actions[actionIndex] = Chk::Action {
                 .locationId = 0,
                 .stringId = 0,
                 .soundStringId = 0,
@@ -1102,7 +1102,7 @@ void TrigActionsWindow::ButtonEditString()
 
             if ( (result & ChkdStringInputDialog::Result::GameStringChanged) == ChkdStringInputDialog::Result::GameStringChanged )
             {
-                auto edit = CM->operator()();
+                auto edit = CM->operator()(ActionDescriptor::ChangeTriggerActionString);
                 if ( gameString )
                 {
                     size_t stringId = CM->addString<ChkdString>(*gameString);
@@ -1152,7 +1152,7 @@ void TrigActionsWindow::ButtonEditSound()
 
             if ( (result & ChkdStringInputDialog::Result::GameStringChanged) == ChkdStringInputDialog::Result::GameStringChanged )
             {
-                auto edit = CM->operator()();
+                auto edit = CM->operator()(ActionDescriptor::ChangeTriggerActionSound);
                 if ( gameString )
                 {
                     size_t stringId = CM->addString<ChkdString>(*gameString);
@@ -1199,10 +1199,10 @@ void TrigActionsWindow::ButtonEditUnitProperties()
         Chk::Cuwp newCuwp = {};
         if ( CuwpInputDialog::GetCuwp(newCuwp, initialCuwp, getHandle()) )
         {
+            auto edit = CM->operator()(ActionDescriptor::SetTriggerActionUnitProperties);
             size_t newCuwpIndex = CM->addCuwp(newCuwp, true, trigIndex, (size_t)focusedY);
             if ( newCuwpIndex < Sc::Unit::MaxCuwps )
             {
-                auto edit = CM->operator()();
                 edit->triggers[trigIndex].actions[focusedY].number = (u32)newCuwpIndex;
                 CM->setCuwpUsed(newCuwpIndex, true);
                 RefreshWindow(trigIndex);

@@ -300,7 +300,7 @@ void BriefingTrigActionsWindow::ChangeActionType(std::size_t briefingTriggerInde
         const auto & action = CM->read.briefingTriggers[briefingTriggerIndex].actions[actionIndex];
         if ( action.actionType != newType )
         {
-            CM->operator()()->briefingTriggers[briefingTriggerIndex].actions[actionIndex] = Chk::Action {
+            CM->operator()(ActionDescriptor::ChangeBriefingActionType)->briefingTriggers[briefingTriggerIndex].actions[actionIndex] = Chk::Action {
                 .locationId = 0,
                 .stringId = 0,
                 .soundStringId = 0,
@@ -867,7 +867,7 @@ void BriefingTrigActionsWindow::ButtonEditString()
 
             if ( (result & ChkdStringInputDialog::Result::GameStringChanged) == ChkdStringInputDialog::Result::GameStringChanged )
             {
-                auto edit = CM->operator()();
+                auto edit = CM->operator()(ActionDescriptor::ChangeBriefingActionString);
                 if ( gameString )
                 {
                     size_t stringId = CM->addString<ChkdString>(*gameString);
@@ -917,7 +917,7 @@ void BriefingTrigActionsWindow::ButtonEditSound()
 
             if ( (result & ChkdStringInputDialog::Result::GameStringChanged) == ChkdStringInputDialog::Result::GameStringChanged )
             {
-                auto edit = CM->operator()();
+                auto edit = CM->operator()(ActionDescriptor::ChangeBriefingActionSound);
                 if ( gameString )
                 {
                     size_t stringId = CM->addString<ChkdString>(*gameString);

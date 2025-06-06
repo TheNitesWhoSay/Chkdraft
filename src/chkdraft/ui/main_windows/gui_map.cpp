@@ -186,7 +186,7 @@ void GuiMap::setTileValue(size_t tileX, size_t tileY, uint16_t tileValue)
 {
     if ( tileX < read.dimensions.tileWidth && tileY < read.dimensions.tileHeight )
     {
-        auto edit = createAction();
+        auto edit = createAction(ActionDescriptor::UpdateTileValue);
         edit->editorTiles[tileY*read.dimensions.tileWidth + tileX] = tileValue;
         if ( !tileOccupationCache.tileOccupied(tileX, tileY, read.dimensions.tileWidth) )
             edit->tiles[tileY*read.dimensions.tileWidth + tileX] = tileValue;
@@ -218,7 +218,7 @@ void GuiMap::finalizeFogOperation()
 
 void GuiMap::validateTileOccupiers(size_t tileX, size_t tileY, uint16_t tileValue)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::ValidateTileOccupiers);
     bool cacheRefreshNeeded = false;
     bool tileOccupiedByValidDoodad = false;
     const auto & tileset = chkd.scData.terrain.get(Scenario::getTileset());
@@ -362,7 +362,7 @@ struct SimpleCache : Chk::IsomCache
         : Chk::IsomCache{tileset, tileWidth, tileHeight, tiles}, scenario(scenario) {}
 
     inline void setTileValue(size_t tileX, size_t tileY, uint16_t tileValue) final {
-        auto edit = scenario.operator()();
+        auto edit = scenario.operator()(ActionDescriptor::UpdateTileValue);
         edit->editorTiles[tileY*scenario->dimensions.tileWidth + tileX] = tileValue;
         edit->tiles[tileY*scenario->dimensions.tileWidth + tileX] = tileValue;
     }
@@ -370,7 +370,7 @@ struct SimpleCache : Chk::IsomCache
 
 void GuiMap::setDimensions(u16 newTileWidth, u16 newTileHeight, u16 sizeValidationFlags, s32 leftEdge, s32 topEdge, size_t newTerrainType)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::ResizeMap);
 
     // Selection indexes would be invalidated by a size change
     edit->tiles.clearSelections();
@@ -382,7 +382,7 @@ void GuiMap::setDimensions(u16 newTileWidth, u16 newTileHeight, u16 sizeValidati
 
     auto destMapData = std::make_unique<Scenario>(this->getTileset(), u16(this->getTileWidth()), u16(this->getTileHeight()));
     Scenario & destMap = *destMapData;
-    auto editDest = destMap.operator()();
+    auto editDest = destMap.operator()(ActionDescriptor::ResizeMap);
     SimpleCache destMapCache(destMap, read.tileset, newTileWidth, newTileHeight, chkd.scData.terrain.get(read.tileset));
     
     editDest->tiles = read.tiles;
@@ -536,7 +536,7 @@ bool GuiMap::placeIsomTerrain(Chk::IsomDiamond isomDiamond, size_t terrainType, 
 
 void GuiMap::unlinkAndDeleteSelectedUnits()
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::DeleteUnits);
     if ( view.units.sel().size() == read.units.size() )
         edit->units.reset();
     else
@@ -561,7 +561,7 @@ void GuiMap::unlinkAndDeleteSelectedUnits()
 
 void GuiMap::unlinkAndDeleteUnit(size_t unitIndex)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::DeleteUnits);
     const auto & toDelete = Scenario::getUnit(unitIndex);
     for ( size_t unitIndex = 0; unitIndex < read.units.size(); ++unitIndex )
     {
@@ -578,7 +578,7 @@ void GuiMap::unlinkAndDeleteUnit(size_t unitIndex)
 
 void GuiMap::changeUnitOwner(size_t unitIndex, u8 newPlayer)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::UpdateUnitOwner);
     const auto & toChange = Scenario::getUnit(unitIndex);
     if ( toChange.owner != newPlayer )
     {
@@ -1081,7 +1081,7 @@ void GuiMap::doubleClickLocation(s32 xPos, s32 yPos)
 
 void GuiMap::openTileProperties(s32 xClick, s32 yClick)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::OpenTileProperties);
     std::size_t tileIndex = (yClick/32)*Scenario::getTileWidth()+(xClick/32);
     if ( !(view.tiles.sel().size() == 1 && view.tiles.sel().front() == tileIndex) )
     {
@@ -1171,7 +1171,7 @@ void GuiMap::refreshScenario(bool clearSelections)
 {
     if ( clearSelections )
     {
-        auto edit = createAction();
+        auto edit = createAction(ActionDescriptor::ClearSelections);
         edit->tiles.clearSelections();
         edit->doodads.clearSelections();
         edit->units.clearSelections();
@@ -1228,7 +1228,7 @@ void GuiMap::clearSelectedSprites()
 
 void GuiMap::clearSelection()
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::ClearSelections);
     edit->tiles.clearSelections();
     edit->doodads.clearSelections();
     edit->sprites.clearSelections();
@@ -1239,7 +1239,7 @@ void GuiMap::clearSelection()
 
 void GuiMap::selectAll()
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::SelectAll);
     auto selectAllTiles = [&]() {
         edit->tiles.selectAll();
     };
@@ -1492,9 +1492,9 @@ void GuiMap::paste(s32 mapClickX, s32 mapClickY)
 
 void GuiMap::PlayerChanged(u8 newPlayer)
 {
-    auto edit = createAction();
     if ( currLayer == Layer::Units )
     {
+        auto edit = createAction(ActionDescriptor::UpdateUnitOwner);
         for ( auto unitIndex : view.units.sel() )
         {
             CM->changeUnitOwner(unitIndex, newPlayer);
@@ -1507,6 +1507,7 @@ void GuiMap::PlayerChanged(u8 newPlayer)
     }
     else if ( currLayer == Layer::Sprites )
     {
+        auto edit = createAction(ActionDescriptor::UpdateSpriteOwner);
         for ( size_t spriteIndex : view.sprites.sel() )
         {
             const Chk::Sprite & sprite = Scenario::getSprite(spriteIndex);
@@ -1532,7 +1533,6 @@ bool GuiMap::autoSwappingAddonPlayers()
 
 void GuiMap::moveSelection(Direction direction, bool useGrid)
 {
-    auto edit = createAction();
     if ( useGrid )
     {
         u16 gridOffX = 0, gridOffY = 0;
@@ -1549,6 +1549,7 @@ void GuiMap::moveSelection(Direction direction, bool useGrid)
         {
             if ( selections.hasUnits() )
             {
+                auto edit = createAction(ActionDescriptor::AdjustUnitPosition);
                 auto & firstUnit = Scenario::getUnit(selections.getFirstUnit());
                 switch ( direction )
                 {
@@ -1587,6 +1588,7 @@ void GuiMap::moveSelection(Direction direction, bool useGrid)
         case Layer::Sprites:
             if ( selections.hasSprites() )
             {
+                auto edit = createAction(ActionDescriptor::AdjustSpritePosition);
                 auto & firstSprite = Scenario::getSprite(selections.getFirstSprite());
                 switch ( direction )
                 {
@@ -1627,44 +1629,50 @@ void GuiMap::moveSelection(Direction direction, bool useGrid)
     {
         switch ( currLayer )
         {
-        case Layer::Units:
-            for ( auto unitIndex : view.units.sel() )
+            case Layer::Units:
             {
-                switch ( direction )
+                auto edit = createAction(ActionDescriptor::AdjustUnitPosition);
+                for ( auto unitIndex : view.units.sel() )
                 {
-                    case Direction::Left:
-                        edit->units[unitIndex].xc -= 1;
-                        break;
-                    case Direction::Up:
-                        edit->units[unitIndex].yc -= 1;
-                        break;
-                    case Direction::Right:
-                        edit->units[unitIndex].xc += 1;
-                        break;
-                    case Direction::Down:
-                        edit->units[unitIndex].yc += 1;
-                        break;
+                    switch ( direction )
+                    {
+                        case Direction::Left:
+                            edit->units[unitIndex].xc -= 1;
+                            break;
+                        case Direction::Up:
+                            edit->units[unitIndex].yc -= 1;
+                            break;
+                        case Direction::Right:
+                            edit->units[unitIndex].xc += 1;
+                            break;
+                        case Direction::Down:
+                            edit->units[unitIndex].yc += 1;
+                            break;
+                    }
                 }
             }
             break;
-        case Layer::Sprites:
-            for ( auto spriteIndex : view.sprites.sel() )
+            case Layer::Sprites:
             {
-                auto & sprite = Scenario::getSprite(spriteIndex);
-                switch ( direction )
+                auto edit = createAction(ActionDescriptor::AdjustSpritePosition);
+                for ( auto spriteIndex : view.sprites.sel() )
                 {
-                    case Direction::Left:
-                        edit->sprites[spriteIndex].xc -= 1;
-                        break;
-                    case Direction::Up:
-                        edit->sprites[spriteIndex].yc -= 1;
-                        break;
-                    case Direction::Right:
-                        edit->sprites[spriteIndex].xc += 1;
-                        break;
-                    case Direction::Down:
-                        edit->sprites[spriteIndex].yc += 1;
-                        break;
+                    auto & sprite = Scenario::getSprite(spriteIndex);
+                    switch ( direction )
+                    {
+                        case Direction::Left:
+                            edit->sprites[spriteIndex].xc -= 1;
+                            break;
+                        case Direction::Up:
+                            edit->sprites[spriteIndex].yc -= 1;
+                            break;
+                        case Direction::Right:
+                            edit->sprites[spriteIndex].xc += 1;
+                            break;
+                        case Direction::Down:
+                            edit->sprites[spriteIndex].yc += 1;
+                            break;
+                    }
                 }
             }
             break;

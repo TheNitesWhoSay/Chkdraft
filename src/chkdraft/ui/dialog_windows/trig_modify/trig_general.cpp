@@ -226,7 +226,7 @@ void TrigGeneralWindow::ParseRawFlagsText()
     {
         u32 triggerFlags = CM->getTrigger(trigIndex).flags;
         if ( editRawFlags.GetEditBinaryNum(triggerFlags) )
-            CM->operator()()->triggers[trigIndex].flags = triggerFlags;
+            CM->operator()(ActionDescriptor::UpdateTriggerRawFlags)->triggers[trigIndex].flags = triggerFlags;
         
         RefreshWindow(trigIndex);
     }
@@ -265,7 +265,7 @@ void TrigGeneralWindow::EditCommentFocusLost()
     bool addIfNotFound = newCommentText && !newCommentText->empty();
     if ( addIfNotFound || CM->hasTriggerExtension(trigIndex) )
     {
-        auto edit = CM->operator()();
+        auto edit = CM->operator()(ActionDescriptor::UpdateTriggerComment);
         auto extensionIndex = CM->getTriggerExtension(trigIndex, addIfNotFound);
         size_t newCommentStringId = CM->addString<ChkdString>(ChkdString(*newCommentText), Chk::Scope::Editor);
         if ( newCommentStringId != Chk::StringId::NoString )
@@ -283,7 +283,7 @@ void TrigGeneralWindow::EditNotesFocusLost()
     bool addIfNotFound = newNotesText && !newNotesText->empty();
     if ( addIfNotFound ||  CM->hasTriggerExtension(trigIndex) )
     {
-        auto edit = CM->operator()();
+        auto edit = CM->operator()(ActionDescriptor::UpdateTriggerNotes);
         auto extensionIndex = CM->getTriggerExtension(trigIndex, addIfNotFound);
         size_t newNotesStringId = CM->addString<ChkdString>(ChkdString(*newNotesText), Chk::Scope::Editor);
         if ( newNotesStringId != Chk::StringId::NoString )
@@ -303,7 +303,7 @@ void TrigGeneralWindow::ButtonCommentProperties()
 
     if ( (result & ChkdStringInputDialog::Result::EditorStringChanged) == ChkdStringInputDialog::Result::EditorStringChanged )
     {
-        auto edit = CM->operator()();
+        auto edit = CM->operator()(ActionDescriptor::UpdateTriggerComment);
         if ( extendedComment )
             CM->setExtendedComment<ChkdString>(this->trigIndex, *extendedComment);
         else
@@ -324,7 +324,7 @@ void TrigGeneralWindow::ButtonNotesProperties()
 
     if ( (result & ChkdStringInputDialog::Result::EditorStringChanged) == ChkdStringInputDialog::Result::EditorStringChanged )
     {
-        auto edit = CM->operator()();
+        auto edit = CM->operator()(ActionDescriptor::UpdateTriggerNotes);
         if ( extendedNotes )
             CM->setExtendedNotes<ChkdString>(this->trigIndex, *extendedNotes);
         else

@@ -179,7 +179,7 @@ bool MapFile::save(bool saveAs, bool updateListFile, FileBrowserPtr<SaveType> fi
         CHKD_ERR("Cannot save protected maps!");
     else
     {
-        auto edit = createAction();
+        auto edit = createAction(ActionDescriptor::UpdateSaveSections);
         // If scenario changed such that save type should have changed, adjust it in advance so filter type is correct
         if ( Scenario::getVersion() >= Chk::Version::StarCraft_Remastered )
             edit->saveType = isChkSaveType(read.saveType) ? SaveType::RemasteredChk : SaveType::RemasteredScx;
@@ -286,7 +286,7 @@ bool MapFile::openMapFile(const std::string & filePath)
                     std::copy(chkData->begin(), chkData->end(), std::ostream_iterator<u8>(chk));
                     if ( Scenario::parse(chk) )
                     {
-                        auto edit = createAction();
+                        auto edit = createAction(ActionDescriptor::UpdateSaveType);
                         if ( Scenario::isOriginal() )
                             edit->saveType = SaveType::StarCraftScm; // Vanilla
                         else if ( Scenario::isHybrid() )
@@ -319,7 +319,7 @@ bool MapFile::openMapFile(const std::string & filePath)
             std::ifstream chk(std::filesystem::path(asUtf8(filePath)), std::ios_base::binary|std::ios_base::in);
             if ( Scenario::parse(chk) )
             {
-                auto edit = createAction();
+                auto edit = createAction(ActionDescriptor::UpdateSaveType);
                 if ( Scenario::isOriginal() )
                     edit->saveType = SaveType::StarCraftChk; // Vanilla chk
                 else if ( Scenario::isHybrid() )

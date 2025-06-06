@@ -424,14 +424,14 @@ void Maps::ChangePlayer(u8 newPlayer, bool updateMapPlayers)
                         const auto & doodadDat = (Sc::Terrain::DoodadCv5 &)tileset.tileGroups[*doodadGroupIndex];
                         if ( selDoodad.owner != newPlayer )
                         {
-                            currentlyActiveMap->operator()()->doodads[doodadIndex].owner = newPlayer;
+                            currentlyActiveMap->operator()(ActionDescriptor::UpdateDoodadPlayer)->doodads[doodadIndex].owner = newPlayer;
                             if ( !currentlyActiveMap->read.sprites.empty() )
                             {
                                 for ( int i=int(currentlyActiveMap->read.sprites.size())-1; i>=0; --i )
                                 {
                                     const auto & sprite = currentlyActiveMap->read.sprites[i];
                                     if ( sprite.type == doodadDat.overlayIndex && sprite.xc == selDoodad.xc && sprite.yc == selDoodad.yc )
-                                        currentlyActiveMap->operator()()->sprites[i].owner = newPlayer;
+                                        currentlyActiveMap->operator()(ActionDescriptor::UpdateSpriteOwner)->sprites[i].owner = newPlayer;
                                 }
                             }
                         }
@@ -707,12 +707,12 @@ void Maps::endPaste()
 
 void Maps::properties()
 {
-    auto edit = currentlyActiveMap->operator()();
     if ( currentlyActiveMap->getLayer() == Layer::Terrain )
     {
         Selections & selections = currentlyActiveMap->selections;
         if ( selections.hasTiles() )
         {
+            auto edit = currentlyActiveMap->operator()(ActionDescriptor::UpdateTileSel);
             auto numSelected = currentlyActiveMap->view.tiles.sel().size();
             if ( numSelected > 1 )
             {

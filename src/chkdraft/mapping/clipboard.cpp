@@ -985,6 +985,7 @@ void Clipboard::doPaste(Layer layer, TerrainSubLayer terrainSubLayer, s32 mapCli
                 pasteUnits(mapClickX, mapClickY, map, allowStack, prevPaste);
                 pasteSprites(mapClickX, mapClickY, map, prevPaste);
                 pasteFog(mapClickX, mapClickY, map, prevPaste);
+                map.setActionDescription(ActionDescriptor::PasteMisc);
             }
             break;
     }

@@ -662,7 +662,7 @@ bool Scenario::isPassword(const std::string & password) const
 
 bool Scenario::setPassword(const std::string & oldPass, const std::string & newPass)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::SetPassword);
     if ( !hasPassword() || isPassword(oldPass) )
     {
         if ( newPass == "" )
@@ -771,7 +771,6 @@ void Scenario::parse(std::istream & is, ::MapData & mapData, Chk::SectionName se
     {
         case SectionName::MRGN: // Manual deserialization to account for zeroth location being unused
         {
-            auto edit = createAction();
             size_t numLocations = size_t(sectionSize) / ::size<Chk::Location>();
             mapData.locations.assign(numLocations+1, Chk::Location{});
             for ( size_t i=1; i<=numLocations; ++i )
@@ -780,7 +779,6 @@ void Scenario::parse(std::istream & is, ::MapData & mapData, Chk::SectionName se
         break;
         case SectionName::MTXM:
         {
-            auto edit = createAction();
             size_t totalTiles = sectionSize/2 + (sectionSize % 2 > 0 ? 1 : 0);
             mapData.tiles.assign(totalTiles, 0);
             is.read(reinterpret_cast<char*>(&mapData.tiles[0]), sectionSize);
@@ -1135,7 +1133,7 @@ std::size_t Scenario::addSaveSection(MapData::Section section)
     }
     else
     {
-        createAction()->saveSections.append(section);
+        createAction(ActionDescriptor::AddSaveSection)->saveSections.append(section);
         return read.saveSections.size()-1;
     }
 }
@@ -1156,7 +1154,7 @@ void Scenario::removeSaveSection(Chk::SectionName sectionName)
             if ( read.saveSections[i].sectionName == sectionName )
                 removedSectionIndexes.push_back(i);
         }
-        createAction()->saveSections.remove(removedSectionIndexes);
+        createAction(ActionDescriptor::RemoveSaveSection)->saveSections.remove(removedSectionIndexes);
     }
 }
 
@@ -1176,12 +1174,12 @@ void Scenario::updateSaveSections()
         addedSections.push_back(::MapData::Section{SectionName::KTGP});
 
     if ( !addedSections.empty() )
-        createAction()->saveSections.append(addedSections);
+        createAction(ActionDescriptor::UpdateSaveSections)->saveSections.append(addedSections);
 }
 
 bool Scenario::changeVersionTo(Chk::Version version, bool lockAnywhere, bool autoDefragmentLocations)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::UpdateMapVersion);
     auto oldVersion = read.version;
 
     if ( version < Chk::Version::StarCraft_BroodWar ) // Original or Hybrid: include all original properties
@@ -1307,7 +1305,7 @@ bool Scenario::hasDefaultValidation() const
 
 void Scenario::setToDefaultValidation()
 {
-    createAction()->validation = Chk::VCOD{};
+    createAction(ActionDescriptor::ResetVcod)->validation = Chk::VCOD{};
 }
 
 bool Scenario::hasExtendedStrings() const
@@ -1696,7 +1694,7 @@ void Scenario::setProperties(size_t editorStringId, const StrProp & strProp)
     if ( hasSection(Chk::SectionName::KSTR) )
     {
         if ( editorStringId < read.editorStrings.size() && read.editorStrings[editorStringId] )
-            createAction()->editorStrings[editorStringId]->properties = strProp;
+            createAction(ActionDescriptor::SetStringProperties)->editorStrings[editorStringId]->properties = strProp;
     }
 }
 
@@ -1862,7 +1860,7 @@ bool Scenario::setCapacity(size_t stringCapacity, Chk::Scope storageScope, bool 
 template <typename StringType>
 size_t Scenario::addString(const StringType & str, Chk::Scope storageScope, bool autoDefragment)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::AddString);
     if ( storageScope == Chk::Scope::Game )
     {
         RawString rawString;
@@ -1939,7 +1937,7 @@ void Scenario::replaceString(size_t stringId, const StringType & str, Chk::Scope
         convertStr<StringType, RawString>(str, rawString);
 
         if ( stringId < read.strings.size() && read.strings[stringId]->str != rawString )
-            createAction()->strings[stringId] = rawString;
+            createAction(ActionDescriptor::ReplaceString)->strings[stringId] = rawString;
     }
     else if ( storageScope == Chk::Scope::Editor )
     {
@@ -1947,7 +1945,7 @@ void Scenario::replaceString(size_t stringId, const StringType & str, Chk::Scope
         convertStr<StringType, RawString>(str, rawString);
 
         if ( stringId < read.editorStrings.size() && read.editorStrings[stringId]->str != rawString )
-            createAction()->editorStrings[stringId] = rawString;
+            createAction(ActionDescriptor::ReplaceString)->editorStrings[stringId] = rawString;
     }
 }
 template void Scenario::replaceString<RawString>(size_t stringId, const RawString & str, Chk::Scope storageScope);
@@ -1986,7 +1984,7 @@ void Scenario::deleteUnusedStrings(Chk::Scope storageScope)
 
 void Scenario::deleteString(size_t stringId, Chk::Scope storageScope, bool deleteOnlyIfUnused)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::DeleteString);
     auto deleteGameString = [&](){
         return false;
     };
@@ -2065,7 +2063,7 @@ void Scenario::deleteString(size_t stringId, Chk::Scope storageScope, bool delet
 
 void Scenario::moveString(size_t stringIdFrom, size_t stringIdTo, Chk::Scope storageScope)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::MoveString);
     if ( storageScope == Chk::Scope::Game )
     {
         size_t stringIdMin = std::min(stringIdFrom, stringIdTo);
@@ -2180,7 +2178,7 @@ void Scenario::moveString(size_t stringIdFrom, size_t stringIdTo, Chk::Scope sto
 
 size_t Scenario::rescopeString(size_t stringId, Chk::Scope changeStorageScopeTo, bool autoDefragment)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::RescopeString);
     if ( changeStorageScopeTo == Chk::Scope::Editor && stringUsed(stringId, Chk::Scope::Either, Chk::Scope::Game, Chk::StringUserFlag::All, true) )
     {
         RawString toRescope = getString<RawString>(stringId, Chk::Scope::Game).value();
@@ -2411,30 +2409,30 @@ size_t Scenario::getLocationNameStringId(size_t locationId, Chk::Scope storageSc
 void Scenario::setScenarioNameStringId(size_t scenarioNameStringId, Chk::Scope storageScope)
 {
     if ( storageScope == Chk::Scope::Editor )
-        createAction()->editorStringOverrides.scenarioName = u32(scenarioNameStringId);
+        createAction(ActionDescriptor::SetScenarioName)->editorStringOverrides.scenarioName = u32(scenarioNameStringId);
     else
-        createAction()->scenarioProperties.scenarioNameStringId = u16(scenarioNameStringId);
+        createAction(ActionDescriptor::SetScenarioName)->scenarioProperties.scenarioNameStringId = u16(scenarioNameStringId);
 }
 
 void Scenario::setScenarioDescriptionStringId(size_t scenarioDescriptionStringId, Chk::Scope storageScope)
 {
     if ( storageScope == Chk::Scope::Editor )
-        createAction()->editorStringOverrides.scenarioDescription = u32(scenarioDescriptionStringId);
+        createAction(ActionDescriptor::SetScenarioDescription)->editorStringOverrides.scenarioDescription = u32(scenarioDescriptionStringId);
     else
-        createAction()->scenarioProperties.scenarioDescriptionStringId = u16(scenarioDescriptionStringId);
+        createAction(ActionDescriptor::SetScenarioDescription)->scenarioProperties.scenarioDescriptionStringId = u16(scenarioDescriptionStringId);
 }
 
 void Scenario::setForceNameStringId(Chk::Force force, size_t forceNameStringId, Chk::Scope storageScope)
 {
     if ( storageScope == Chk::Scope::Editor )
-        createAction()->editorStringOverrides.forceName[force] = u32(forceNameStringId);
+        createAction(ActionDescriptor::UpdateForceName)->editorStringOverrides.forceName[force] = u32(forceNameStringId);
     else
-        createAction()->forces.forceString[force] = u16(forceNameStringId);
+        createAction(ActionDescriptor::UpdateForceName)->forces.forceString[force] = u16(forceNameStringId);
 }
 
 void Scenario::setUnitNameStringId(Sc::Unit::Type unitType, size_t unitNameStringId, Chk::UseExpSection useExp, Chk::Scope storageScope)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::UpdateUnitName);
     if ( unitType >= Sc::Unit::TotalTypes )
         throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS/UNIx section!");
 
@@ -2640,9 +2638,9 @@ void Scenario::setScenarioName(const StringType & scenarioNameString, Chk::Scope
         if ( newStringId != (size_t)Chk::StringId::NoString )
         {
             if ( storageScope == Chk::Scope::Game )
-                createAction()->scenarioProperties.scenarioNameStringId = u16(newStringId);
+                createAction(ActionDescriptor::SetScenarioName)->scenarioProperties.scenarioNameStringId = u16(newStringId);
             else if ( storageScope == Chk::Scope::Editor )
-                createAction()->editorStringOverrides.scenarioName = u32(newStringId);
+                createAction(ActionDescriptor::SetScenarioName)->editorStringOverrides.scenarioName = u32(newStringId);
         }
     }
 }
@@ -2660,9 +2658,9 @@ void Scenario::setScenarioDescription(const StringType & scenarioDescription, Ch
         if ( newStringId != (size_t)Chk::StringId::NoString )
         {
             if ( storageScope == Chk::Scope::Game )
-                createAction()->scenarioProperties.scenarioDescriptionStringId = u16(newStringId);
+                createAction(ActionDescriptor::SetScenarioDescription)->scenarioProperties.scenarioDescriptionStringId = u16(newStringId);
             else if ( storageScope == Chk::Scope::Editor )
-                createAction()->editorStringOverrides.scenarioDescription = u32(newStringId);
+                createAction(ActionDescriptor::SetScenarioDescription)->editorStringOverrides.scenarioDescription = u32(newStringId);
         }
     }
 }
@@ -2680,9 +2678,9 @@ void Scenario::setForceName(Chk::Force force, const StringType & forceName, Chk:
         if ( newStringId != (size_t)Chk::StringId::NoString )
         {
             if ( storageScope == Chk::Scope::Game && read.forces.forceString[force] != u16(newStringId) )
-                createAction()->forces.forceString[force] = u16(newStringId);
+                createAction(ActionDescriptor::UpdateForceName)->forces.forceString[force] = u16(newStringId);
             else if ( storageScope == Chk::Scope::Editor && read.editorStringOverrides.forceName[force] != u32(newStringId) )
-                createAction()->editorStringOverrides.forceName[force] = u32(newStringId);
+                createAction(ActionDescriptor::UpdateForceName)->editorStringOverrides.forceName[force] = u32(newStringId);
         }
     }
 }
@@ -2699,7 +2697,7 @@ void Scenario::setUnitName(Sc::Unit::Type unitType, const StringType & unitName,
         size_t newStringId = addString<StringType>(unitName, storageScope, autoDefragment);
         if ( newStringId != (size_t)Chk::StringId::NoString )
         {
-            auto edit = createAction();
+            auto edit = createAction(ActionDescriptor::UpdateUnitName);
             if ( storageScope == Chk::Scope::Game )
             {
                 if ( this->useExpansionUnitSettings(useExp) )
@@ -2744,7 +2742,7 @@ void Scenario::setSoundPath(size_t soundIndex, const StringType & soundPath, Chk
             if ( storageScope == Chk::Scope::Game )
                 setSoundStringId(soundIndex, newStringId);
             else if ( storageScope == Chk::Scope::Editor )
-                createAction()->editorStringOverrides.soundPath[soundIndex] = u32(newStringId);
+                createAction(ActionDescriptor::AddSound)->editorStringOverrides.soundPath[soundIndex] = u32(newStringId);
         }
     }
 }
@@ -2762,9 +2760,9 @@ void Scenario::setSwitchName(size_t switchIndex, const StringType & switchName, 
         if ( newStringId != (size_t)Chk::StringId::NoString )
         {
             if ( storageScope == Chk::Scope::Game )
-                createAction()->switchNames[switchIndex] = u32(newStringId);
+                createAction(ActionDescriptor::SetSwitchName)->switchNames[switchIndex] = u32(newStringId);
             else if ( storageScope == Chk::Scope::Editor )
-                createAction()->editorStringOverrides.switchName[switchIndex] = u32(newStringId);
+                createAction(ActionDescriptor::SetSwitchName)->editorStringOverrides.switchName[switchIndex] = u32(newStringId);
         }
     }
 }
@@ -2782,9 +2780,9 @@ void Scenario::setLocationName(size_t locationId, const StringType & locationNam
         if ( newStringId != (size_t)Chk::StringId::NoString )
         {
             if ( storageScope == Chk::Scope::Game )
-                createAction()->locations[locationId].stringId = (u16)newStringId;
+                createAction(ActionDescriptor::UpdateLocationName)->locations[locationId].stringId = (u16)newStringId;
             else if ( storageScope == Chk::Scope::Editor )
-                createAction()->editorStringOverrides.locationName[locationId] = u32(newStringId);
+                createAction(ActionDescriptor::UpdateLocationName)->editorStringOverrides.locationName[locationId] = u32(newStringId);
         }
     }
 }
@@ -2796,7 +2794,7 @@ template void Scenario::setLocationName<SingleLineChkdString>(size_t locationId,
 template <typename StringType>
 void Scenario::setExtendedComment(size_t triggerIndex, const StringType & comment, bool autoDefragment)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::UpdateTriggerComment);
     auto extensionIndex = getTriggerExtension(triggerIndex, true);
     size_t newStringId = addString<StringType>(comment, Chk::Scope::Editor, autoDefragment);
     if ( newStringId != (size_t)Chk::StringId::NoString )
@@ -2810,7 +2808,7 @@ template void Scenario::setExtendedComment<SingleLineChkdString>(size_t triggerI
 template <typename StringType>
 void Scenario::setExtendedNotes(size_t triggerIndex, const StringType & notes, bool autoDefragment)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::UpdateTriggerNotes);
     auto extensionIndex = getTriggerExtension(triggerIndex, true);
     size_t newStringId = addString<StringType>(notes, Chk::Scope::Editor, autoDefragment);
     if ( newStringId != (size_t)Chk::StringId::NoString )
@@ -3596,7 +3594,7 @@ Sc::Player::SlotType Scenario::getSlotType(size_t slotIndex, Chk::Scope scope) c
 
 void Scenario::setSlotType(size_t slotIndex, Sc::Player::SlotType slotType, Chk::Scope scope)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::SetSlotPlayerType);
     if ( slotIndex >= Sc::Player::Total )
         throw std::out_of_range(std::string("SlotIndex: ") + std::to_string(slotIndex) + " is out of range for the OWNR/IOWN sections!");
 
@@ -3619,7 +3617,7 @@ Chk::Race Scenario::getPlayerRace(size_t playerIndex) const
 void Scenario::setPlayerRace(size_t playerIndex, Chk::Race race)
 {
     if ( playerIndex < Sc::Player::Total )
-        createAction()->playerRaces[playerIndex] = race;
+        createAction(ActionDescriptor::SetPlayerRace)->playerRaces[playerIndex] = race;
     else
         throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the SIDE section!");
 }
@@ -3634,7 +3632,7 @@ Chk::PlayerColor Scenario::getPlayerColor(size_t slotIndex) const
 
 void Scenario::setPlayerColor(size_t slotIndex, Chk::PlayerColor color)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::SetPlayerColor);
     if ( slotIndex < Sc::Player::TotalSlots )
     {
         if ( isUsingRemasteredColors() )
@@ -3677,7 +3675,7 @@ u8 Scenario::getForceFlags(Chk::Force force) const
 void Scenario::setPlayerForce(size_t slotIndex, Chk::Force force)
 {
     if ( slotIndex < Sc::Player::TotalSlots )
-        createAction()->forces.playerForce[slotIndex] = force;
+        createAction(ActionDescriptor::SetPlayerForce)->forces.playerForce[slotIndex] = force;
     else
         throw std::out_of_range(std::string("SlotIndex: ") + std::to_string((u32)slotIndex) + " is out of range for the FORC section!");
 }
@@ -3755,7 +3753,7 @@ void Scenario::deleteForceString(size_t stringId)
     for ( size_t i=0; i<Chk::TotalForces; i++ )
     {
         if ( read.forces.forceString[i] == stringId )
-            createAction()->forces.forceString[i] = 0;
+            createAction(ActionDescriptor::UpdateForceName)->forces.forceString[i] = 0;
     }
 }
 
@@ -3793,7 +3791,7 @@ void Scenario::setPlayerColorSetting(size_t playerIndex, Chk::PlayerColorSetting
     if ( playerIndex < Sc::Player::TotalSlots )
     {
         upgradeToRemasteredColors();
-        createAction()->customColors.playerSetting[playerIndex] = setting;
+        createAction(ActionDescriptor::SetPlayerColor)->customColors.playerSetting[playerIndex] = setting;
     }
     else
         throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the CRGB section!");
@@ -3813,7 +3811,7 @@ void Scenario::setPlayerCustomColor(size_t playerIndex, Chk::Rgb rgb)
 {
     if ( playerIndex < Sc::Player::TotalSlots )
     {
-        auto edit = createAction();
+        auto edit = createAction(ActionDescriptor::SetPlayerColor);
         upgradeToRemasteredColors();
         edit->customColors.playerColor[playerIndex][0] = rgb.red;
         edit->customColors.playerColor[playerIndex][1] = rgb.green;
@@ -3830,7 +3828,7 @@ Sc::Terrain::Tileset Scenario::getTileset() const
 
 void Scenario::setTileset(Sc::Terrain::Tileset tileset)
 {
-    createAction()->tileset = tileset;
+    createAction(ActionDescriptor::ChangeTileset)->tileset = tileset;
 }
 
 size_t Scenario::getPixelWidth() const
@@ -3929,7 +3927,7 @@ void setTiledDimensions(std::vector<u16> & tiles, u16 newTileWidth, u16 newTileH
 
 void Scenario::setTileWidth(u16 newTileWidth, u16 sizeValidationFlags, s32 leftEdge)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::ResizeMap);
     u16 tileWidth = read.dimensions.tileWidth;
     u16 tileHeight = read.dimensions.tileHeight;
     // TODO: pull these inside Scenario??
@@ -3942,7 +3940,7 @@ void Scenario::setTileWidth(u16 newTileWidth, u16 sizeValidationFlags, s32 leftE
 
 void Scenario::setTileHeight(u16 newTileHeight, u16 sizeValidationFlags, s32 topEdge)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::ResizeMap);
     u16 tileWidth = read.dimensions.tileWidth;
     u16 tileHeight = read.dimensions.tileHeight;
     edit->isomRects = ::resizeAndOffsetIsom(read.isomRects, tileWidth, newTileHeight, tileWidth, tileHeight, 0, topEdge);
@@ -3954,7 +3952,7 @@ void Scenario::setTileHeight(u16 newTileHeight, u16 sizeValidationFlags, s32 top
 
 void Scenario::setDimensions(u16 newTileWidth, u16 newTileHeight, u16 sizeValidationFlags, s32 leftEdge, s32 topEdge)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::ResizeMap);
     u16 tileWidth = read.dimensions.tileWidth;
     u16 tileHeight = read.dimensions.tileHeight;
     edit->isomRects = ::resizeAndOffsetIsom(read.isomRects, newTileWidth, newTileHeight, tileWidth, tileHeight, leftEdge, topEdge);
@@ -4005,14 +4003,14 @@ void Scenario::setTile(size_t tileXc, size_t tileYc, u16 tileValue, Chk::Scope s
     if ( scope & Chk::Scope::Game )
     {
         if ( tileIndex < read.tiles.size() )
-            createAction()->tiles[tileIndex] = tileValue;
+            createAction(ActionDescriptor::UpdateTileValue)->tiles[tileIndex] = tileValue;
         else
             throw std::out_of_range(std::string("TileIndex: ") + std::to_string(tileIndex) + " is past the end of the MTXM section!");
     }
     if ( scope & Chk::Scope::Editor )
     {
         if ( tileIndex < read.editorTiles.size() )
-            createAction()->editorTiles[tileIndex] = tileValue;
+            createAction(ActionDescriptor::UpdateTileValue)->editorTiles[tileIndex] = tileValue;
         else
             throw std::out_of_range(std::string("TileIndex: ") + std::to_string(tileIndex) + " is past the end of the TILE section!");
     }
@@ -4412,7 +4410,7 @@ void Scenario::setFog(size_t tileXc, size_t tileYc, u8 fogOfWarPlayers)
     size_t tileIndex = tileWidth*tileYc + tileXc;
     
     if ( tileIndex < read.tileFog.size() )
-        createAction()->tileFog[tileIndex] = fogOfWarPlayers;
+        createAction(ActionDescriptor::UpdateTileFog)->tileFog[tileIndex] = fogOfWarPlayers;
     else
         throw std::out_of_range(std::string("TileIndex: ") + std::to_string(tileIndex) + " is past the end of the MASK section!");
 }
@@ -4434,27 +4432,27 @@ const Chk::Sprite & Scenario::getSprite(size_t spriteIndex) const
 
 size_t Scenario::addSprite(const Chk::Sprite & sprite)
 {
-    createAction()->sprites.append(sprite);
+    createAction(ActionDescriptor::CreateSprite)->sprites.append(sprite);
     return read.sprites.size()-1;
 }
 
 void Scenario::insertSprite(size_t spriteIndex, const Chk::Sprite & sprite)
 {
     if ( spriteIndex < read.sprites.size() )
-        createAction()->sprites.insert(spriteIndex, sprite);
+        createAction(ActionDescriptor::CreateSprite)->sprites.insert(spriteIndex, sprite);
     else
-        createAction()->sprites.append(sprite);
+        createAction(ActionDescriptor::CreateSprite)->sprites.append(sprite);
 }
 
 void Scenario::deleteSprite(size_t spriteIndex)
 {
     if ( spriteIndex < read.sprites.size() )
-        createAction()->sprites.remove(spriteIndex);
+        createAction(ActionDescriptor::DeleteSprites)->sprites.remove(spriteIndex);
 }
 
 void Scenario::moveSprite(size_t spriteIndexFrom, size_t spriteIndexTo)
 {
-    createAction()->sprites.moveTo(spriteIndexFrom, spriteIndexTo);
+    createAction(ActionDescriptor::MoveSprites)->sprites.moveTo(spriteIndexFrom, spriteIndexTo);
 }
 
 void Scenario::updateOutOfBoundsSprites()
@@ -4499,27 +4497,27 @@ const Chk::Doodad & Scenario::getDoodad(size_t doodadIndex) const
 
 size_t Scenario::addDoodad(const Chk::Doodad & doodad)
 {
-    createAction()->doodads.append(doodad);
+    createAction(ActionDescriptor::CreateDoodad)->doodads.append(doodad);
     return read.doodads.size()-1;
 }
 
 void Scenario::insertDoodad(size_t doodadIndex, const Chk::Doodad & doodad)
 {
     if ( doodadIndex < read.doodads.size() )
-        createAction()->doodads.insert(doodadIndex, doodad);
+        createAction(ActionDescriptor::CreateDoodad)->doodads.insert(doodadIndex, doodad);
     else
-        createAction()->doodads.append(doodad);
+        createAction(ActionDescriptor::CreateDoodad)->doodads.append(doodad);
 }
 
 void Scenario::deleteDoodad(size_t doodadIndex)
 {
     if ( doodadIndex < read.doodads.size() )
-        createAction()->doodads.remove(doodadIndex);
+        createAction(ActionDescriptor::DeleteDoodad)->doodads.remove(doodadIndex);
 }
 
 void Scenario::moveDoodad(size_t doodadIndexFrom, size_t doodadIndexTo)
 {
-    createAction()->doodads.moveTo(doodadIndexFrom, doodadIndexTo);
+    createAction(ActionDescriptor::MoveDoodad)->doodads.moveTo(doodadIndexFrom, doodadIndexTo);
 }
 
 void Scenario::removeOutOfBoundsDoodads()
@@ -4547,27 +4545,27 @@ const Chk::Unit & Scenario::getUnit(size_t unitIndex) const
 
 size_t Scenario::addUnit(const Chk::Unit & unit)
 {
-    createAction()->units.append(unit);
+    createAction(ActionDescriptor::CreateUnit)->units.append(unit);
     return read.units.size()-1;
 }
 
 void Scenario::insertUnit(size_t unitIndex, const Chk::Unit & unit)
 {
     if ( unitIndex < read.units.size() )
-        createAction()->units.insert(unitIndex, unit);
+        createAction(ActionDescriptor::CreateUnit)->units.insert(unitIndex, unit);
     else
-        createAction()->units.append(unit);
+        createAction(ActionDescriptor::CreateUnit)->units.append(unit);
 }
 
 void Scenario::deleteUnit(size_t unitIndex)
 {
     if ( unitIndex < read.units.size() )
-        createAction()->units.remove(unitIndex);
+        createAction(ActionDescriptor::DeleteUnits)->units.remove(unitIndex);
 }
 
 void Scenario::moveUnit(size_t unitIndexFrom, size_t unitIndexTo)
 {
-    createAction()->units.moveTo(unitIndexFrom, unitIndexTo);
+    createAction(ActionDescriptor::MoveUnits)->units.moveTo(unitIndexFrom, unitIndexTo);
 }
 
 void Scenario::updateOutOfBoundsUnits()
@@ -4612,7 +4610,7 @@ const Chk::Location & Scenario::getLocation(size_t locationId) const
 
 size_t Scenario::addLocation(const Chk::Location & location)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::CreateLocation);
     for ( size_t i=1; i<read.locations.size(); i++ )
     {
         if ( isBlank(i) )
@@ -4629,7 +4627,7 @@ void Scenario::replaceLocation(size_t locationId, const Chk::Location & location
     if ( locationId > 0 && locationId < read.locations.size() )
     {
         if ( isBlank(locationId) )
-            createAction()->locations[locationId] = location;
+            createAction(ActionDescriptor::ReplaceLocation)->locations[locationId] = location;
     }
     else
         throw std::out_of_range(std::string("LocationId: ") + std::to_string((u32)locationId) + " is out of range for the MRGN section!");
@@ -4641,14 +4639,14 @@ void Scenario::deleteLocation(size_t locationId, bool deleteOnlyIfUnused)
     {
         if ( locationId > 0 && locationId < read.locations.size() )
         {
-            createAction()->locations[locationId] = Chk::Location{};
+            createAction(ActionDescriptor::DeleteLocations)->locations[locationId] = Chk::Location{};
         }
     }
 }
 
 bool Scenario::moveLocation(size_t locationIdFrom, size_t locationIdTo, bool lockAnywhere)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::MoveLocation);
     size_t locationIdMin = std::min(locationIdFrom, locationIdTo);
     size_t locationIdMax = std::max(locationIdFrom, locationIdTo);
     if ( locationIdFrom > 0 && locationIdTo > 0 && locationIdMax < read.locations.size() && locationIdFrom != locationIdTo &&
@@ -4733,7 +4731,7 @@ bool Scenario::trimLocationsToOriginal(bool lockAnywhere, bool autoDefragment)
 {
     if ( read.locations.size() > Chk::TotalOriginalLocations )
     {
-        auto edit = createAction();
+        auto edit = createAction(ActionDescriptor::TrimLocationsToOriginal);
         std::bitset<Chk::TotalLocations+1> locationIdUsed;
         this->markUsedTriggerLocations(locationIdUsed);
         markNonZeroLocations(locationIdUsed);
@@ -4874,7 +4872,7 @@ void Scenario::remapLocationStringIds(const std::map<u32, u32> & stringIdRemappi
 
 void Scenario::deleteLocationString(size_t stringId)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::UpdateLocationName);
     for ( size_t i=1; i<read.locations.size(); i++ )
     {
         if ( read.locations[i].stringId == stringId )
@@ -4982,7 +4980,7 @@ void Scenario::setUnitUsesDefaultSettings(Sc::Unit::Type unitType, bool useDefau
     if ( unitType >= Sc::Unit::TotalTypes )
         throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS/UNIx section!");
 
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::ToggleUnitTypeUsesDefaultSettings);
     Chk::UseDefault value = useDefault ? Chk::UseDefault::Yes : Chk::UseDefault::No;
     switch ( useExp )
     {
@@ -5010,7 +5008,7 @@ void Scenario::setUnitHitpoints(Sc::Unit::Type unitType, u32 hitpoints, Chk::Use
     if ( unitType >= Sc::Unit::TotalTypes )
         throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS/UNIx section!");
     
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::UpdateUnitTypeHitpoints);
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
@@ -5037,7 +5035,7 @@ void Scenario::setUnitShieldPoints(Sc::Unit::Type unitType, u16 shieldPoints, Ch
     if ( unitType >= Sc::Unit::TotalTypes )
         throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS/UNIx section!");
     
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::UpdateUnitTypeShields);
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
@@ -5064,7 +5062,7 @@ void Scenario::setUnitArmorLevel(Sc::Unit::Type unitType, u8 armorLevel, Chk::Us
     if ( unitType >= Sc::Unit::TotalTypes )
         throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS/UNIx section!");
     
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::UpdateUnitTypeArmor);
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
@@ -5091,7 +5089,7 @@ void Scenario::setUnitBuildTime(Sc::Unit::Type unitType, u16 buildTime, Chk::Use
     if ( unitType >= Sc::Unit::TotalTypes )
         throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS/UNIx section!");
     
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::UpdateUnitTypeBuildTime);
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
@@ -5118,7 +5116,7 @@ void Scenario::setUnitMineralCost(Sc::Unit::Type unitType, u16 mineralCost, Chk:
     if ( unitType >= Sc::Unit::TotalTypes )
         throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS/UNIx section!");
     
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::UpdateUnitTypeMineralCost);
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
@@ -5145,7 +5143,7 @@ void Scenario::setUnitGasCost(Sc::Unit::Type unitType, u16 gasCost, Chk::UseExpS
     if ( unitType >= Sc::Unit::TotalTypes )
         throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS/UNIx section!");
     
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::UpdateUnitTypeGasCost);
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
@@ -5169,7 +5167,7 @@ void Scenario::setUnitGasCost(Sc::Unit::Type unitType, u16 gasCost, Chk::UseExpS
 
 void Scenario::setWeaponBaseDamage(Sc::Weapon::Type weaponType, u16 baseDamage, Chk::UseExpSection useExp)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::UpdateWeaponBaseDamage);
     auto checkLimit = [&weaponType](bool expansion){
         if ( (expansion && weaponType >= Sc::Weapon::Total) || (!expansion && weaponType >= Sc::Weapon::TotalOriginal) )
             throw std::out_of_range(std::string("WeaponType: ") + std::to_string((size_t)weaponType) +
@@ -5211,7 +5209,7 @@ void Scenario::setWeaponBaseDamage(Sc::Weapon::Type weaponType, u16 baseDamage, 
 
 void Scenario::setWeaponUpgradeDamage(Sc::Weapon::Type weaponType, u16 upgradeDamage, Chk::UseExpSection useExp)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::UpdateWeaponUpgradeDamage);
     auto checkLimit = [&weaponType](bool expansion){
         if ( (expansion && weaponType >= Sc::Weapon::Total) || (!expansion && weaponType >= Sc::Weapon::TotalOriginal) )
             throw std::out_of_range(std::string("WeaponType: ") + std::to_string((size_t)weaponType) +
@@ -5291,7 +5289,7 @@ void Scenario::setUnitBuildable(Sc::Unit::Type unitType, size_t playerIndex, boo
     if ( unitType < Sc::Unit::TotalTypes )
     {
         if ( playerIndex < Sc::Player::Total )
-            createAction()->unitAvailability.playerUnitBuildable[playerIndex][unitType] = unitBuildable;
+            createAction(ActionDescriptor::SetUnitTypeBuildable)->unitAvailability.playerUnitBuildable[playerIndex][unitType] = unitBuildable;
         else
             throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the PUNI section!");
     }
@@ -5303,7 +5301,7 @@ void Scenario::setUnitDefaultBuildable(Sc::Unit::Type unitType, bool buildable)
 {
     Chk::Available unitDefaultBuildable = buildable ? Chk::Available::Yes : Chk::Available::No;
     if ( unitType < Sc::Unit::TotalTypes )
-        createAction()->unitAvailability.defaultUnitBuildable[unitType] = unitDefaultBuildable;
+        createAction(ActionDescriptor::SetUnitTypeDefaultBuildable)->unitAvailability.defaultUnitBuildable[unitType] = unitDefaultBuildable;
     else
         throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the PUNI section!");
 }
@@ -5314,7 +5312,7 @@ void Scenario::setPlayerUsesDefaultUnitBuildability(Sc::Unit::Type unitType, siz
     if ( unitType < Sc::Unit::TotalTypes )
     {
         if ( playerIndex < Sc::Player::Total )
-            createAction()->unitAvailability.playerUnitUsesDefault[playerIndex][unitType] = playerUnitUsesDefault;
+            createAction(ActionDescriptor::SetPlayerUsesDefaultUnitBuildability)->unitAvailability.playerUnitUsesDefault[playerIndex][unitType] = playerUnitUsesDefault;
         else
             throw std::out_of_range(std::string("PlayerIndex: ") + std::to_string(playerIndex) + " is out of range for the PUNI section!");
     }
@@ -5324,7 +5322,7 @@ void Scenario::setPlayerUsesDefaultUnitBuildability(Sc::Unit::Type unitType, siz
 
 void Scenario::setUnitsToDefault(Chk::UseExpSection useExp)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::ResetAllUnitProperites);
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
@@ -5452,7 +5450,7 @@ u16 Scenario::getUpgradeResearchTimeFactor(Sc::Upgrade::Type upgradeType, Chk::U
 
 void Scenario::setUpgradeUsesDefaultCosts(Sc::Upgrade::Type upgradeType, bool useDefault, Chk::UseExpSection useExp)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::SetUpgradeUsesDefaultCosts);
     auto checkLimit = [&upgradeType](bool expansion){
         if ( (expansion && upgradeType >= Sc::Upgrade::TotalTypes) || (!expansion && upgradeType >= Sc::Upgrade::TotalOriginalTypes) )
             throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) +
@@ -5495,7 +5493,7 @@ void Scenario::setUpgradeUsesDefaultCosts(Sc::Upgrade::Type upgradeType, bool us
 
 void Scenario::setUpgradeBaseMineralCost(Sc::Upgrade::Type upgradeType, u16 baseMineralCost, Chk::UseExpSection useExp)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::SetUpgradeBaseMineralCost);
     auto checkLimit = [&upgradeType](bool expansion){
         if ( (expansion && upgradeType >= Sc::Upgrade::TotalTypes) || (!expansion && upgradeType >= Sc::Upgrade::TotalOriginalTypes) )
             throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) +
@@ -5537,7 +5535,7 @@ void Scenario::setUpgradeBaseMineralCost(Sc::Upgrade::Type upgradeType, u16 base
 
 void Scenario::setUpgradeMineralCostFactor(Sc::Upgrade::Type upgradeType, u16 mineralCostFactor, Chk::UseExpSection useExp)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::SetUpgradeMineralCostFactor);
     auto checkLimit = [&upgradeType](bool expansion){
         if ( (expansion && upgradeType >= Sc::Upgrade::TotalTypes) || (!expansion && upgradeType >= Sc::Upgrade::TotalOriginalTypes) )
             throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) +
@@ -5579,7 +5577,7 @@ void Scenario::setUpgradeMineralCostFactor(Sc::Upgrade::Type upgradeType, u16 mi
 
 void Scenario::setUpgradeBaseGasCost(Sc::Upgrade::Type upgradeType, u16 baseGasCost, Chk::UseExpSection useExp)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::SetUpgradeBaseGasCost);
     auto checkLimit = [&upgradeType](bool expansion){
         if ( (expansion && upgradeType >= Sc::Upgrade::TotalTypes) || (!expansion && upgradeType >= Sc::Upgrade::TotalOriginalTypes) )
             throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) +
@@ -5621,7 +5619,7 @@ void Scenario::setUpgradeBaseGasCost(Sc::Upgrade::Type upgradeType, u16 baseGasC
 
 void Scenario::setUpgradeGasCostFactor(Sc::Upgrade::Type upgradeType, u16 gasCostFactor, Chk::UseExpSection useExp)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::SetUpgradeGasCostFactor);
     auto checkLimit = [&upgradeType](bool expansion){
         if ( (expansion && upgradeType >= Sc::Upgrade::TotalTypes) || (!expansion && upgradeType >= Sc::Upgrade::TotalOriginalTypes) )
             throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) +
@@ -5663,7 +5661,7 @@ void Scenario::setUpgradeGasCostFactor(Sc::Upgrade::Type upgradeType, u16 gasCos
 
 void Scenario::setUpgradeBaseResearchTime(Sc::Upgrade::Type upgradeType, u16 baseResearchTime, Chk::UseExpSection useExp)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::SetUpgradeBaseResearchTime);
     auto checkLimit = [&upgradeType](bool expansion){
         if ( (expansion && upgradeType >= Sc::Upgrade::TotalTypes) || (!expansion && upgradeType >= Sc::Upgrade::TotalOriginalTypes) )
             throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) +
@@ -5705,7 +5703,7 @@ void Scenario::setUpgradeBaseResearchTime(Sc::Upgrade::Type upgradeType, u16 bas
 
 void Scenario::setUpgradeResearchTimeFactor(Sc::Upgrade::Type upgradeType, u16 researchTimeFactor, Chk::UseExpSection useExp)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::SetUpgradeResearchTimeFactor);
     auto checkLimit = [&upgradeType](bool expansion){
         if ( (expansion && upgradeType >= Sc::Upgrade::TotalTypes) || (!expansion && upgradeType >= Sc::Upgrade::TotalOriginalTypes) )
             throw std::out_of_range(std::string("UpgradeType: ") + std::to_string((size_t)upgradeType) +
@@ -5813,7 +5811,7 @@ bool Scenario::playerUsesDefaultUpgradeLeveling(Sc::Upgrade::Type upgradeType, s
 
 void Scenario::setMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex, size_t maxUpgradeLevel, Chk::UseExpSection useExp)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::SetMaxUpgradeLevel);
     auto checkLimit = [&upgradeType, &playerIndex](bool expansion){
         if ( (expansion && upgradeType >= Sc::Upgrade::TotalTypes) || (!expansion && upgradeType >= Sc::Upgrade::TotalOriginalTypes) )
             throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the " + (expansion ? "PUPx" : "UPGR") + " section!");
@@ -5856,7 +5854,7 @@ void Scenario::setMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIn
 
 void Scenario::setStartUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t playerIndex, size_t startUpgradeLevel, Chk::UseExpSection useExp)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::SetStartUpgradeLevel);
     auto checkLimit = [&upgradeType, &playerIndex](bool expansion){
         if ( (expansion && upgradeType >= Sc::Upgrade::TotalTypes) || (!expansion && upgradeType >= Sc::Upgrade::TotalOriginalTypes) )
             throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the " + (expansion ? "PUPx" : "UPGR") + " section!");
@@ -5899,7 +5897,7 @@ void Scenario::setStartUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t player
 
 void Scenario::setDefaultMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t maxUpgradeLevel, Chk::UseExpSection useExp)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::SetDefaultMaxUpgradeLevel);
     auto checkLimit = [&upgradeType](bool expansion){
         if ( (expansion && upgradeType >= Sc::Upgrade::TotalTypes) || (!expansion && upgradeType >= Sc::Upgrade::TotalOriginalTypes) )
             throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the " + (expansion ? "PUPx" : "UPGR") + " section!");
@@ -5940,7 +5938,7 @@ void Scenario::setDefaultMaxUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t m
 
 void Scenario::setDefaultStartUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t startUpgradeLevel, Chk::UseExpSection useExp)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::SetDefaultStartUpgradeLevel);
     auto checkLimit = [&upgradeType](bool expansion){
         if ( (expansion && upgradeType >= Sc::Upgrade::TotalTypes) || (!expansion && upgradeType >= Sc::Upgrade::TotalOriginalTypes) )
             throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the " + (expansion ? "PUPx" : "UPGR") + " section!");
@@ -5981,7 +5979,7 @@ void Scenario::setDefaultStartUpgradeLevel(Sc::Upgrade::Type upgradeType, size_t
 
 void Scenario::setPlayerUsesDefaultUpgradeLeveling(Sc::Upgrade::Type upgradeType, size_t playerIndex, bool useDefault, Chk::UseExpSection useExp)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::SetPlayerUsesDefaultUpgradeLeveling);
     auto checkLimit = [&upgradeType, &playerIndex](bool expansion){
         if ( (expansion && upgradeType >= Sc::Upgrade::TotalTypes) || (!expansion && upgradeType >= Sc::Upgrade::TotalOriginalTypes) )
             throw std::out_of_range(std::string("UpgradeType: ") + std::to_string(upgradeType) + " is out of range for the " + (expansion ? "PUPx" : "UPGR") + " section!");
@@ -6025,7 +6023,7 @@ void Scenario::setPlayerUsesDefaultUpgradeLeveling(Sc::Upgrade::Type upgradeType
 
 void Scenario::setUpgradesToDefault(Chk::UseExpSection useExp)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::ResetAllUpgradeProperties);
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
@@ -6138,7 +6136,7 @@ u16 Scenario::getTechEnergyCost(Sc::Tech::Type techType, Chk::UseExpSection useE
 
 void Scenario::setTechUsesDefaultSettings(Sc::Tech::Type techType, bool useDefault, Chk::UseExpSection useExp)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::SetTechUsesDefaultSettings);
     auto checkLimit = [&techType](bool expansion){
         if ( (expansion && techType >= Sc::Tech::TotalTypes) || (!expansion && techType >= Sc::Tech::TotalOriginalTypes) )
             throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the " + (expansion ? "TECx" : "TECS") + " section!");
@@ -6180,7 +6178,7 @@ void Scenario::setTechUsesDefaultSettings(Sc::Tech::Type techType, bool useDefau
 
 void Scenario::setTechMineralCost(Sc::Tech::Type techType, u16 mineralCost, Chk::UseExpSection useExp)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::SetTechMineralCost);
     auto checkLimit = [&techType](bool expansion){
         if ( (expansion && techType >= Sc::Tech::TotalTypes) || (!expansion && techType >= Sc::Tech::TotalOriginalTypes) )
             throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the " + (expansion ? "TECx" : "TECS") + " section!");
@@ -6221,7 +6219,7 @@ void Scenario::setTechMineralCost(Sc::Tech::Type techType, u16 mineralCost, Chk:
 
 void Scenario::setTechGasCost(Sc::Tech::Type techType, u16 gasCost, Chk::UseExpSection useExp)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::SetTechGasCost);
     auto checkLimit = [&techType](bool expansion){
         if ( (expansion && techType >= Sc::Tech::TotalTypes) || (!expansion && techType >= Sc::Tech::TotalOriginalTypes) )
             throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the " + (expansion ? "TECx" : "TECS") + " section!");
@@ -6262,7 +6260,7 @@ void Scenario::setTechGasCost(Sc::Tech::Type techType, u16 gasCost, Chk::UseExpS
 
 void Scenario::setTechResearchTime(Sc::Tech::Type techType, u16 researchTime, Chk::UseExpSection useExp)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::SetTechResearchTime);
     auto checkLimit = [&techType](bool expansion){
         if ( (expansion && techType >= Sc::Tech::TotalTypes) || (!expansion && techType >= Sc::Tech::TotalOriginalTypes) )
             throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the " + (expansion ? "TECx" : "TECS") + " section!");
@@ -6303,7 +6301,7 @@ void Scenario::setTechResearchTime(Sc::Tech::Type techType, u16 researchTime, Ch
 
 void Scenario::setTechEnergyCost(Sc::Tech::Type techType, u16 energyCost, Chk::UseExpSection useExp)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::SetTechEnergyCost);
     auto checkLimit = [&techType](bool expansion){
         if ( (expansion && techType >= Sc::Tech::TotalTypes) || (!expansion && techType >= Sc::Tech::TotalOriginalTypes) )
             throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the " + (expansion ? "TECx" : "TECS") + " section!");
@@ -6421,7 +6419,7 @@ bool Scenario::playerUsesDefaultTechSettings(Sc::Tech::Type techType, size_t pla
 
 void Scenario::setTechAvailable(Sc::Tech::Type techType, size_t playerIndex, bool available, Chk::UseExpSection useExp)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::SetTechAvailable);
     auto checkLimit = [&techType, &playerIndex](bool expansion){
         if ( (expansion && techType >= Sc::Tech::TotalTypes) || (!expansion && techType >= Sc::Tech::TotalOriginalTypes) )
             throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the " + (expansion ? "PTEx" : "PTEC") + " section!");
@@ -6465,7 +6463,7 @@ void Scenario::setTechAvailable(Sc::Tech::Type techType, size_t playerIndex, boo
 
 void Scenario::setTechResearched(Sc::Tech::Type techType, size_t playerIndex, bool researched, Chk::UseExpSection useExp)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::SetTechResearched);
     auto checkLimit = [&techType, &playerIndex](bool expansion){
         if ( (expansion && techType >= Sc::Tech::TotalTypes) || (!expansion && techType >= Sc::Tech::TotalOriginalTypes) )
             throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the " + (expansion ? "PTEx" : "PTEC") + " section!");
@@ -6509,7 +6507,7 @@ void Scenario::setTechResearched(Sc::Tech::Type techType, size_t playerIndex, bo
 
 void Scenario::setDefaultTechAvailable(Sc::Tech::Type techType, bool available, Chk::UseExpSection useExp)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::SetTechDefaultAvailable);
     auto checkLimit = [&techType](bool expansion){
         if ( (expansion && techType >= Sc::Tech::TotalTypes) || (!expansion && techType >= Sc::Tech::TotalOriginalTypes) )
             throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the " + (expansion ? "PTEx" : "PTEC") + " section!");
@@ -6551,7 +6549,7 @@ void Scenario::setDefaultTechAvailable(Sc::Tech::Type techType, bool available, 
 
 void Scenario::setDefaultTechResearched(Sc::Tech::Type techType, bool researched, Chk::UseExpSection useExp)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::SetTechDefaultResearched);
     auto checkLimit = [&techType](bool expansion){
         if ( (expansion && techType >= Sc::Tech::TotalTypes) || (!expansion && techType >= Sc::Tech::TotalOriginalTypes) )
             throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the " + (expansion ? "PTEx" : "PTEC") + " section!");
@@ -6593,7 +6591,7 @@ void Scenario::setDefaultTechResearched(Sc::Tech::Type techType, bool researched
 
 void Scenario::setPlayerUsesDefaultTechSettings(Sc::Tech::Type techType, size_t playerIndex, bool useDefault, Chk::UseExpSection useExp)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::SetPlayerUsesDefaultTechSettings);
     auto checkLimit = [&techType, &playerIndex](bool expansion){
         if ( (expansion && techType >= Sc::Tech::TotalTypes) || (!expansion && techType >= Sc::Tech::TotalOriginalTypes) )
             throw std::out_of_range(std::string("TechType: ") + std::to_string(techType) + " is out of range for the " + (expansion ? "PTEx" : "PTEC") + " section!");
@@ -6637,7 +6635,7 @@ void Scenario::setPlayerUsesDefaultTechSettings(Sc::Tech::Type techType, size_t 
 
 void Scenario::setTechsToDefault(Chk::UseExpSection useExp)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::ResetAllTechProperties);
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
@@ -6763,7 +6761,7 @@ void Scenario::remapUnitStringIds(const std::map<u32, u32> & stringIdRemappings)
 
 void Scenario::deleteUnitString(size_t stringId)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::UpdateUnitName);
     for ( size_t i=0; i<Sc::Unit::TotalTypes; i++ )
     {
         if ( read.origUnitSettings.nameStringId[i] == stringId )
@@ -6787,12 +6785,12 @@ Chk::Cuwp Scenario::getCuwp(size_t cuwpIndex) const
 void Scenario::setCuwp(size_t cuwpIndex, const Chk::Cuwp & cuwp)
 {
     if ( cuwpIndex < Sc::Unit::MaxCuwps )
-        createAction()->createUnitProperties[cuwpIndex] = cuwp;
+        createAction(ActionDescriptor::SetCuwp)->createUnitProperties[cuwpIndex] = cuwp;
 }
 
 size_t Scenario::addCuwp(const Chk::Cuwp & cuwp, bool fixUsageBeforeAdding, size_t excludedTriggerIndex, size_t excludedTriggerActionIndex)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::AddCuwp);
     for ( size_t i = 0; i < Sc::Unit::MaxCuwps; i++ )
     {
         if ( memcmp(&cuwp, &read.createUnitProperties[i], sizeof(Chk::Cuwp)) == 0 )
@@ -6846,7 +6844,7 @@ bool Scenario::cuwpUsed(size_t cuwpIndex) const
 void Scenario::setCuwpUsed(size_t cuwpIndex, bool cuwpUsed)
 {
     if ( cuwpIndex < Sc::Unit::MaxCuwps )
-        createAction()->createUnitPropertiesUsed[cuwpIndex] = cuwpUsed ? Chk::CuwpUsed::Yes : Chk::CuwpUsed::No;
+        createAction(ActionDescriptor::SetCuwpUsed)->createUnitPropertiesUsed[cuwpIndex] = cuwpUsed ? Chk::CuwpUsed::Yes : Chk::CuwpUsed::No;
     else
         throw std::out_of_range(std::string("CuwpIndex: ") + std::to_string(cuwpIndex) + " is out of range for the UPUS section!");
 }
@@ -6874,16 +6872,16 @@ const Chk::Trigger & Scenario::getTrigger(size_t triggerIndex) const
 
 size_t Scenario::addTrigger(const Chk::Trigger & trigger)
 {
-    createAction()->triggers.append(trigger);
+    createAction(ActionDescriptor::AddTrigger)->triggers.append(trigger);
     return read.triggers.size()-1;
 }
 
 void Scenario::insertTrigger(size_t triggerIndex, const Chk::Trigger & trigger)
 {
     if ( triggerIndex < read.triggers.size() )
-        createAction()->triggers.insert(triggerIndex, trigger);
+        createAction(ActionDescriptor::AddTrigger)->triggers.insert(triggerIndex, trigger);
     else
-        createAction()->triggers.append(trigger);
+        createAction(ActionDescriptor::AddTrigger)->triggers.append(trigger);
 
     fixTriggerExtensions();
 }
@@ -6893,7 +6891,7 @@ void Scenario::deleteTrigger(size_t triggerIndex)
     if ( triggerIndex < read.triggers.size() )
     {
         this->removeTriggersExtension(triggerIndex);
-        createAction()->triggers.remove(triggerIndex);
+        createAction(ActionDescriptor::DeleteTrigger)->triggers.remove(triggerIndex);
     }
     fixTriggerExtensions();
 }
@@ -6902,14 +6900,14 @@ void Scenario::moveTrigger(size_t triggerIndexFrom, size_t triggerIndexTo)
 {
     if ( triggerIndexFrom < read.triggers.size() && triggerIndexTo < read.triggers.size() )
     {
-        createAction()->triggers.moveTo(triggerIndexFrom, triggerIndexTo);
+        createAction(ActionDescriptor::MoveTrigger)->triggers.moveTo(triggerIndexFrom, triggerIndexTo);
         fixTriggerExtensions();
     }
 }
 
 std::vector<Chk::Trigger> Scenario::replaceTriggerRange(size_t beginIndex, size_t endIndex, std::vector<Chk::Trigger> & triggers)
 {
-    auto edit = createAction();
+    auto edit = createAction(ActionDescriptor::ReplaceTriggerRange);
     if ( beginIndex == 0 && endIndex == read.triggers.size() )
     {
         edit->triggers = triggers;
@@ -6952,7 +6950,7 @@ std::size_t Scenario::getTriggerExtension(size_t triggerIndex, bool addIfNotFoun
         return extendedTrigDataIndex;
     else if ( addIfNotFound )
     {
-        auto edit = createAction();
+        auto edit = createAction(ActionDescriptor::CreateExtendedTriggerData);
         std::set<u32> usedExtensionIndexes {};
         for ( const auto & trig : read.triggers )
         {
@@ -7013,12 +7011,12 @@ void Scenario::deleteTriggerExtension(size_t triggerExtensionIndex)
         for ( ; i > 0 && (((i-1) & Chk::UnusedExtendedTrigDataIndexCheck) == 0 || i-1 >= read.triggerExtensions.size()); i-- );
 
         if ( i == 0 )
-            createAction()->triggerExtensions.reset();
+            createAction(ActionDescriptor::DeleteExtendedTriggerData)->triggerExtensions.reset();
         else if ( i < read.triggerExtensions.size() )
         {
             std::vector<std::size_t> indexesErased(read.triggerExtensions.size()-i);
             std::iota(indexesErased.begin(), indexesErased.end(), i);
-            createAction()->triggerExtensions.remove(indexesErased);
+            createAction(ActionDescriptor::DeleteExtendedTriggerData)->triggerExtensions.remove(indexesErased);
         }
     }
 }
@@ -7093,7 +7091,7 @@ size_t Scenario::getExtendedCommentStringId(size_t triggerIndex) const
 void Scenario::setExtendedCommentStringId(size_t triggerIndex, size_t stringId)
 {
     auto extensionIndex = getTriggerExtension(triggerIndex, stringId != Chk::StringId::NoString);
-    createAction()->triggerExtensions[extensionIndex].commentStringId = (u32)stringId;
+    createAction(ActionDescriptor::UpdateTriggerComment)->triggerExtensions[extensionIndex].commentStringId = (u32)stringId;
     if ( stringId == Chk::StringId::NoString && read.triggerExtensions[extensionIndex].isBlank() )
         removeTriggersExtension(triggerIndex);
 }
@@ -7109,7 +7107,7 @@ size_t Scenario::getExtendedNotesStringId(size_t triggerIndex) const
 void Scenario::setExtendedNotesStringId(size_t triggerIndex, size_t stringId)
 {
     auto extensionIndex = getTriggerExtension(triggerIndex, stringId != Chk::StringId::NoString);
-    createAction()->triggerExtensions[extensionIndex].notesStringId = (u32)stringId;
+    createAction(ActionDescriptor::UpdateTriggerNotes)->triggerExtensions[extensionIndex].notesStringId = (u32)stringId;
     if ( stringId == Chk::StringId::NoString && read.triggerExtensions[extensionIndex].isBlank() )
         removeTriggersExtension(triggerIndex);
 }
@@ -7137,27 +7135,27 @@ const Chk::Trigger & Scenario::getBriefingTrigger(size_t briefingTriggerIndex) c
 
 size_t Scenario::addBriefingTrigger(const Chk::Trigger & briefingTrigger)
 {
-    createAction()->briefingTriggers.append(briefingTrigger);
+    createAction(ActionDescriptor::AddBriefingTrigger)->briefingTriggers.append(briefingTrigger);
     return read.briefingTriggers.size()-1;
 }
 
 void Scenario::insertBriefingTrigger(size_t briefingTriggerIndex, const Chk::Trigger & briefingTrigger)
 {
     if ( briefingTriggerIndex < read.briefingTriggers.size() )
-        createAction()->briefingTriggers.insert(briefingTriggerIndex, briefingTrigger);
+        createAction(ActionDescriptor::AddBriefingTrigger)->briefingTriggers.insert(briefingTriggerIndex, briefingTrigger);
     else
-        createAction()->briefingTriggers.append(briefingTrigger);
+        createAction(ActionDescriptor::AddBriefingTrigger)->briefingTriggers.append(briefingTrigger);
 }
 
 void Scenario::deleteBriefingTrigger(size_t briefingTriggerIndex)
 {
     if ( briefingTriggerIndex < read.briefingTriggers.size() )
-        createAction()->briefingTriggers.remove(briefingTriggerIndex);
+        createAction(ActionDescriptor::DeleteBriefingTrigger)->briefingTriggers.remove(briefingTriggerIndex);
 }
 
 void Scenario::moveBriefingTrigger(size_t briefingTriggerIndexFrom, size_t briefingTriggerIndexTo)
 {
-    createAction()->briefingTriggers.moveTo(briefingTriggerIndexFrom, briefingTriggerIndexTo);
+    createAction(ActionDescriptor::MoveBriefingTrigger)->briefingTriggers.moveTo(briefingTriggerIndexFrom, briefingTriggerIndexTo);
 }
 
 std::vector<Chk::Trigger> Scenario::replaceBriefingTriggerRange(size_t beginIndex, size_t endIndex, std::vector<Chk::Trigger> & briefingTriggers)
@@ -7165,7 +7163,7 @@ std::vector<Chk::Trigger> Scenario::replaceBriefingTriggerRange(size_t beginInde
     if ( beginIndex == 0 && endIndex == read.briefingTriggers.size() )
     {
         auto replacedBriefingTriggers = read.briefingTriggers;
-        createAction()->briefingTriggers = briefingTriggers;
+        createAction(ActionDescriptor::ReplaceBriefingTriggerRange)->briefingTriggers = briefingTriggers;
         return replacedBriefingTriggers;
     }
     else if ( beginIndex < endIndex && endIndex <= read.briefingTriggers.size() )
@@ -7186,7 +7184,7 @@ size_t Scenario::addSound(size_t stringId)
     {
         if ( read.soundPaths[i] == Chk::StringId::UnusedSound )
         {
-            createAction()->soundPaths[i] = (u32)stringId;
+            createAction(ActionDescriptor::AddSound)->soundPaths[i] = (u32)stringId;
             return i;
         }
     }
@@ -7215,7 +7213,7 @@ size_t Scenario::getSoundStringId(size_t soundIndex) const
 void Scenario::setSoundStringId(size_t soundIndex, size_t soundStringId)
 {
     if ( soundIndex < Chk::TotalSounds )
-        createAction()->soundPaths[soundIndex] = (u32)soundStringId;
+        createAction(ActionDescriptor::AddSound)->soundPaths[soundIndex] = (u32)soundStringId;
 }
 
 bool Scenario::triggerSwitchUsed(size_t switchId) const

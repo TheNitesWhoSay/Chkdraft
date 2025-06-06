@@ -181,7 +181,7 @@ void TrigPlayersWindow::CreateSubWindows(HWND hWnd)
 void TrigPlayersWindow::CheckBoxUpdated(u16 checkId)
 {
     const Chk::Trigger & trig = CM->getTrigger(trigIndex);
-    auto edit = CM->operator()();
+    auto edit = CM->operator()(ActionDescriptor::ToggleTriggerOwner);
     if ( checkId >= Id::CHECK_PLAYER1 && checkId <= Id::CHECK_PLAYER8 )
     {
         u8 player = u8(checkId-Id::CHECK_PLAYER1);
@@ -258,7 +258,7 @@ void TrigPlayersWindow::ParseRawPlayers()
     
     if ( editRawPlayers.GetHexByteString((u8*)(&owners[0]), Chk::Trigger::MaxOwners) )
     {
-        auto edit = CM->operator()();
+        auto edit = CM->operator()(ActionDescriptor::UpdateTriggerRawPlayers);
         for ( std::size_t i=0; i<Chk::Trigger::MaxOwners; ++i )
             edit->triggers[trigIndex].owners[i] = owners[i];
     }

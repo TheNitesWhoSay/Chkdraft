@@ -271,7 +271,7 @@ void TrigConditionsWindow::ChangeConditionType(std::size_t triggerIndex, std::si
         const auto & condition = CM->read.triggers[triggerIndex].conditions[conditionIndex];
         if ( condition.conditionType != conditionType )
         {
-            CM->operator()()->triggers[triggerIndex].conditions[conditionIndex] = Chk::Condition {
+            CM->operator()(ActionDescriptor::ChangeTriggerConditionType)->triggers[triggerIndex].conditions[conditionIndex] = Chk::Condition {
                 .locationId = u32((conditionType == Chk::Condition::Type::Command || conditionType ==  Chk::Condition::Type::Bring ||
                     conditionType ==  Chk::Condition::Type::CommandTheMostAt || conditionType ==  Chk::Condition::Type::CommandTheLeastAt)
                     ? 64 : 0),

@@ -212,7 +212,7 @@ void repairSounds()
     if ( CM == nullptr )
         return;
     
-    auto edit = CM->operator()();
+    auto edit = CM->operator()(ActionDescriptor::RepairSounds);
     std::set<u32> knownSoundPaths {};
     bool isNew = CM->getFilePath().empty();
 
@@ -361,7 +361,7 @@ void repairStrings(bool compatibilityMode)
     }
 
     auto & map = *CM;
-    auto edit = map.operator()();
+    auto edit = map.operator()(ActionDescriptor::RepairStrings);
     auto stringsBackup = map.copyStrings(Chk::Scope::Game);
     auto editorStringsBackup = map.copyStrings(Chk::Scope::Editor);
     auto locationsBackup = map->locations;
