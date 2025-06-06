@@ -224,6 +224,7 @@ enum class ActionDescriptor
     ToggleIgnoreMiscActionsOnceFlag,
     ToggleIgnoreDefeatDrawFlag,
     TogglePausedFlag,
+    CompileTextTrigs,
     // BriefingTriggers
     AddBriefingTrigger,
     DeleteBriefingTrigger,
@@ -234,6 +235,7 @@ enum class ActionDescriptor
     ChangeBriefingActionSound,
     ChangeBriefingTrigPlayers,
     UpdateBriefingActionArg,
+    CompileBriefingTextTrigs,
     // Plugins/Scripts
     RepairSounds,
     RepairStrings

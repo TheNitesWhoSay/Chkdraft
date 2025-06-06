@@ -2855,6 +2855,11 @@ void GuiMap::SetAutoBackup(bool doAutoBackups)
     GuiMap::doAutoBackups = doAutoBackups;
 }
 
+void GuiMap::skipEventRendering()
+{
+    skipEventRender = true;
+}
+
 ChkdPalette & GuiMap::getPalette()
 {
     return scGraphics.getPalette();

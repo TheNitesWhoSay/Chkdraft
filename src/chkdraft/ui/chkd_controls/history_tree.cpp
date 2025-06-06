@@ -285,6 +285,7 @@ std::string getActionText(std::size_t actionIndex, const RareEdit::RenderAction<
                 case ActionDescriptor::ToggleIgnoreMiscActionsOnceFlag: actionText += "Toggle Trig Ignore Misc Actions Once Flag"; break;
                 case ActionDescriptor::ToggleIgnoreDefeatDrawFlag: actionText += "Toggle Trig Ignore Defeat Draw Flag"; break;
                 case ActionDescriptor::TogglePausedFlag: actionText += "Toggle Trig Paused Flag"; break;
+                case ActionDescriptor::CompileTextTrigs: actionText += "Compile Text Trigs"; break;
                 // BriefingTriggers
                 case ActionDescriptor::AddBriefingTrigger: actionText += "Add Briefing Trigger"; break;
                 case ActionDescriptor::DeleteBriefingTrigger: actionText += "Delete Briefing Trigger"; break;
@@ -295,6 +296,7 @@ std::string getActionText(std::size_t actionIndex, const RareEdit::RenderAction<
                 case ActionDescriptor::ChangeBriefingActionSound: actionText += "Change Briefing Action Sound"; break;
                 case ActionDescriptor::ChangeBriefingTrigPlayers: actionText += "Change Briefing Trig Players"; break;
                 case ActionDescriptor::UpdateBriefingActionArg: actionText += "Update Briefing Action Arg"; break;
+                case ActionDescriptor::CompileBriefingTextTrigs: actionText += "Compile Briefing Text Trigs"; break;
                 // Plugins/Scripts
                 case ActionDescriptor::RepairSounds: actionText += "Repair Sounds"; break;
                 case ActionDescriptor::RepairStrings: actionText += "Repair Strings"; break;
@@ -311,9 +313,6 @@ HistAction* HistoryTree::InsertAction(std::size_t actionIndex, const RareEdit::R
 {
     if ( (u32)actionIndex <= TreeDataPortion )
     {
-        if ( action.actionStatus != RareEdit::ActionStatus::ElidedRedo && action.changeEvents.size() == 0 )
-            return nullptr; // Don't insert incomplete actions
-
         std::string text = getActionText(actionIndex, action);
         HTREEITEM hActionRoot = InsertTreeItem(parent, text, actionIndex|TreeTypeAction, !action.isElisionMarker());
         HistAction histAction {
@@ -342,6 +341,13 @@ HistAction* HistoryTree::InsertAction(std::size_t actionIndex, const RareEdit::R
                 InsertTreeItem(hActionRoot, changeEvent.summary, lParam);
                 histAction.subEvents.push_back(HistEvent{.lParam = lParam, .text = changeEvent.summary});
             }
+        }
+        if ( action.userData.descriptorIndex == ActionDescriptor::CompileTextTrigs ||
+            action.userData.descriptorIndex == ActionDescriptor::CompileBriefingTextTrigs )
+        {
+            std::string text = "  (Event rendering skipped)\n";
+            InsertTreeItem(hActionRoot, text, TreeTypeEvent);
+            histAction.subEvents.push_back(HistEvent{.lParam = TreeTypeEvent, .text = text});
         }
 
         if ( actionIndex <= 1 )

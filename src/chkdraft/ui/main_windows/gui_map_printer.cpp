@@ -5,7 +5,14 @@ void GuiMap::afterAction(std::size_t actionIndex)
 {
     checkSelChangeFlags();
     RareEdit::RenderAction<DescriptorIndex> action {};
-    Tracked::renderAction(actionIndex, action, true);
+    if ( skipEventRender )
+    {
+        Tracked::renderAction(actionIndex, action, false);
+        skipEventRender = false;
+    }
+    else
+        Tracked::renderAction(actionIndex, action, true);
+
     chkd.mainPlot.leftBar.historyTree.RefreshActionHeaders(std::make_optional(actionIndex));
     chkd.mainPlot.leftBar.historyTree.InsertAction(actionIndex, action);
     if ( nonSelChangeCursor > Tracked::previousCursorIndex() )

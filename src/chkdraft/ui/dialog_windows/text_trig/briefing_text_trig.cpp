@@ -146,6 +146,8 @@ bool BriefingTextTrigWindow::CompileEditText(Scenario & map)
     if ( auto briefingTrigText = editControl.GetWinText() )
     {
         BriefingTextTrigCompiler compiler {}; // All data for compilation is gathered on-the-fly, no need to check for updates
+        auto edit = CM->operator()(ActionDescriptor::CompileBriefingTextTrigs);
+        CM->skipEventRendering();
         if ( compiler.compileBriefingTriggers(*briefingTrigText, (Scenario &)map, chkd.scData, 0, map.numBriefingTriggers()) )
             return true;
         else

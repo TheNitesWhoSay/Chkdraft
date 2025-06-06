@@ -145,6 +145,8 @@ bool TextTrigWindow::CompileEditText(Scenario & map)
     if ( auto trigText = editControl.GetWinText() )
     {
         TextTrigCompiler compiler(Settings::useAddressesForMemory, Settings::deathTableStart); // All data for compilation is gathered on-the-fly, no need to check for updates
+        auto edit = CM->operator()(ActionDescriptor::CompileTextTrigs);
+        CM->skipEventRendering();
         if ( compiler.compileTriggers(*trigText, map, chkd.scData, 0, map.numTriggers()) )
             return true;
         else

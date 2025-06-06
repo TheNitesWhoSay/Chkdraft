@@ -207,6 +207,8 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCach
                     void ReturnKeyPress();
                     static void SetAutoBackup(bool doAutoBackups);
                     
+                    void skipEventRendering();
+
                     ChkdPalette & getPalette();
                     ChkdPalette & getStaticPalette();
 
@@ -319,6 +321,8 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCach
                     bool cutCopyPasteSprites = true;
                     bool cutCopyPasteUnits = true;
                     bool cutCopyPasteFog = false;
+
+                    bool skipEventRender = false;
 					
                     UINT_PTR panTimerID = 0;
                     int panStartX = -1;
