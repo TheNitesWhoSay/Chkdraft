@@ -215,7 +215,7 @@ struct Scenario : RareEdit::Tracked<MapData, Scenario, DescriptorIndex>
 
     size_t loadString(const std::vector<u8> & stringBytes, const size_t & stringOffset, const size_t & sectionSize, std::vector<std::optional<ScStr>> & strings);
     void loadKstring(const std::vector<u8> & stringBytes, const size_t & stringOffset, const size_t & sectionSize, std::vector<std::optional<ScStr>> & editorStrings);
-    void upgradeKstrToCurrent();
+    bool upgradeKstrToCurrent();
 
     std::vector<std::optional<ScStr>> copyStrings(Chk::Scope storageScope = Chk::Scope::Game) const;
     void swapStrings(std::vector<std::optional<ScStr>> & strings, Chk::Scope storageScope = Chk::Scope::Game);
@@ -294,7 +294,6 @@ struct Scenario : RareEdit::Tracked<MapData, Scenario, DescriptorIndex>
 
     // Layers API
     void validateSizes(u16 sizeValidationFlags, u16 prevWidth, u16 prevHeight);
-    void fixTerrainToDimensions();
 
     u8 getFog(size_t tileXc, size_t tileYc) const;
     inline u8 getFogPx(size_t pixelXc, size_t pixelYc) const;
@@ -513,7 +512,7 @@ struct Scenario : RareEdit::Tracked<MapData, Scenario, DescriptorIndex>
     bool login(const std::string & password); // Attempts to login to the map
 
     void parse(std::istream & is, ::MapData & mapData, Chk::SectionName sectionName, Chk::SectionSize sectionSize); // Parse the given section
-    bool parse(std::istream & is); // Parses supplied scenario file data
+    bool parse(std::istream & is, bool fromMpq); // Parses supplied scenario file data
     
     void writeSection(std::ostream & os, const ::MapData::Section & section, bool includeHeader = true);
     void writeSection(std::ostream & os, Chk::SectionName sectionName, bool includeHeader = true);

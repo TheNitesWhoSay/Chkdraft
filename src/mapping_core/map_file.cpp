@@ -284,18 +284,8 @@ bool MapFile::openMapFile(const std::string & filePath)
 
                     std::stringstream chk(std::ios_base::in|std::ios_base::out|std::ios_base::binary);
                     std::copy(chkData->begin(), chkData->end(), std::ostream_iterator<u8>(chk));
-                    if ( Scenario::parse(chk) )
+                    if ( Scenario::parse(chk, true) )
                     {
-                        auto edit = createAction(ActionDescriptor::UpdateSaveType);
-                        if ( Scenario::isOriginal() )
-                            edit->saveType = SaveType::StarCraftScm; // Vanilla
-                        else if ( Scenario::isHybrid() )
-                            edit->saveType = SaveType::HybridScm; // Hybrid
-                        else if ( Scenario::isExpansion() )
-                            edit->saveType = SaveType::ExpansionScx; // Expansion
-                        else if ( Scenario::isRemastered() )
-                            edit->saveType = SaveType::RemasteredScx; // Remastered
-                    
                         auto finish = std::chrono::high_resolution_clock::now();
                         logger.info() << "Map " << mapFilePath << " opened in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
                         return true;
@@ -317,18 +307,8 @@ bool MapFile::openMapFile(const std::string & filePath)
         {
             this->mapFilePath = filePath;
             std::ifstream chk(std::filesystem::path(asUtf8(filePath)), std::ios_base::binary|std::ios_base::in);
-            if ( Scenario::parse(chk) )
+            if ( Scenario::parse(chk, false) )
             {
-                auto edit = createAction(ActionDescriptor::UpdateSaveType);
-                if ( Scenario::isOriginal() )
-                    edit->saveType = SaveType::StarCraftChk; // Vanilla chk
-                else if ( Scenario::isHybrid() )
-                    edit->saveType = SaveType::HybridChk; // Hybrid chk
-                else if ( Scenario::isExpansion() )
-                    edit->saveType = SaveType::ExpansionChk; // Expansion chk
-                else
-                    edit->saveType = SaveType::RemasteredChk;
-                
                 auto finish = std::chrono::high_resolution_clock::now();
                 logger.info() << "Map " << mapFilePath << " opened in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
                 return true;

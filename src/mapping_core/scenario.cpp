@@ -828,7 +828,84 @@ void Scenario::parse(std::istream & is, ::MapData & mapData, Chk::SectionName se
     }
 }
 
-bool Scenario::parse(std::istream & is)
+
+template <typename T>
+std::vector<T> resizeAndOffset(const std::vector<T> & tiles, u16 newTileWidth, u16 newTileHeight, u16 oldTileWidth, u16 oldTileHeight, std::ptrdiff_t leftEdge, std::ptrdiff_t topEdge);
+
+void fixTerrainToDimensions(::MapData & mapData)
+{
+    auto tileWidth = mapData.dimensions.tileWidth;
+    auto tileHeight = mapData.dimensions.tileHeight;
+    auto expectedIsomSize = (size_t(mapData.dimensions.tileWidth)/2 + 1)*(size_t(mapData.dimensions.tileHeight) + 1);
+    if ( mapData.isomRects.size() != expectedIsomSize )
+        mapData.isomRects.insert(mapData.isomRects.end(), std::size_t(expectedIsomSize-mapData.isomRects.size()), Chk::IsomRect{});
+    if ( mapData.editorTiles.size() != size_t(tileWidth)*size_t(tileHeight) )
+        mapData.editorTiles = resizeAndOffset(mapData.editorTiles, tileWidth, tileHeight, tileWidth, tileHeight, 0, 0);
+    if ( mapData.tiles.size() != size_t(tileWidth)*size_t(tileHeight) )
+        mapData.tiles = resizeAndOffset(mapData.tiles, tileWidth, tileHeight, tileWidth, tileHeight, 0, 0);
+}
+
+void fixTriggerExtensions(::MapData & mapData)
+{
+    auto deleteMapDataTriggerExtension = [&](size_t triggerExtensionIndex) {
+        if ( triggerExtensionIndex < mapData.triggerExtensions.size() && triggerExtensionIndex != Chk::ExtendedTrigDataIndex::None )
+        {
+            size_t i = mapData.triggerExtensions.size();
+            for ( ; i > 0 && (((i-1) & Chk::UnusedExtendedTrigDataIndexCheck) == 0 || i-1 >= mapData.triggerExtensions.size()); i-- );
+
+            if ( i == 0 )
+                mapData.triggerExtensions.clear();
+            else if ( i < mapData.triggerExtensions.size() )
+            {
+                auto firstErased = std::next(mapData.triggerExtensions.begin(), i);
+                mapData.triggerExtensions.erase(firstErased, mapData.triggerExtensions.end());
+            }
+        }
+    };
+
+    std::set<size_t> usedExtendedTrigDataIndexes;
+    size_t numTriggers = mapData.triggers.size();
+    for ( size_t i=0; i<numTriggers; i++ )
+    {
+        auto & trigger = mapData.triggers[i];
+        size_t extendedDataIndex = trigger.getExtendedDataIndex();
+        if ( extendedDataIndex != Chk::ExtendedTrigDataIndex::None )
+        {
+            if ( extendedDataIndex >= mapData.triggerExtensions.size() )
+                trigger.clearExtendedDataIndex();
+            else if ( usedExtendedTrigDataIndexes.find(extendedDataIndex) == usedExtendedTrigDataIndexes.end() ) // Valid extension
+            {
+                mapData.triggerExtensions[extendedDataIndex].trigNum = (u32)i; // Ensure the trigNum is correct
+                usedExtendedTrigDataIndexes.insert(extendedDataIndex);
+            }
+            else // Same extension used by multiple triggers
+                trigger.clearExtendedDataIndex();
+        }
+    }
+
+    size_t numTriggerExtensions = mapData.triggerExtensions.size();
+    for ( size_t i=0; i<numTriggerExtensions; i++ )
+    {
+        const Chk::ExtendedTrigData & extension = mapData.triggerExtensions[i];
+        if ( usedExtendedTrigDataIndexes.find(i) == usedExtendedTrigDataIndexes.end() ) // Extension exists, but no trigger uses it
+        {
+            if ( extension.trigNum != Chk::ExtendedTrigData::TrigNum::None ) // Refers to a trigger
+            {
+                if ( extension.trigNum < mapData.triggers.size() && // this trigger exists without an extension
+                    mapData.triggers[extension.trigNum].getExtendedDataIndex() == Chk::ExtendedTrigDataIndex::None )
+                {
+                    mapData.triggers[extension.trigNum].setExtendedDataIndex(i); // Link up extension to the trigger
+                }
+                else // Trigger does not exist
+                    deleteMapDataTriggerExtension(i); // Delete the extension
+            }
+            else if ( extension.trigNum == Chk::ExtendedTrigData::TrigNum::None ) // Does not refer to a trigger
+                deleteMapDataTriggerExtension(i); // Delete the extension
+        }
+    }
+}
+
+bool Scenario::parse(std::istream & is, bool fromMpq)
 {
     auto parsingFailed = [&](const std::string & error)
     {
@@ -916,12 +993,21 @@ bool Scenario::parse(std::istream & is)
     
     clearHistory();
     this->mapIsProtected = makeProtected;
-    initData<false>(mapData);
 
-    // TODO: pull these changes out so they're not tracked?
-    this->fixTerrainToDimensions();
-    this->fixTriggerExtensions();
-    upgradeKstrToCurrent();
+    if ( mapData.version < Chk::Version::StarCraft_Hybrid ) // Scenario::isOriginal()
+        mapData.saveType = fromMpq ? SaveType::StarCraftScm : SaveType::StarCraftChk; // Vanilla
+    else if ( mapData.version >= Chk::Version::StarCraft_Hybrid && mapData.version < Chk::Version::StarCraft_BroodWar ) // Scenario::isHybrid()
+        mapData.saveType = fromMpq ? SaveType::HybridScm : SaveType::HybridChk; // Hybrid
+    else if ( mapData.version >= Chk::Version::StarCraft_BroodWar && mapData.version < Chk::Version::StarCraft_Remastered ) // Scenario::isExpansion()
+        mapData.saveType = fromMpq ? SaveType::ExpansionScx : SaveType::ExpansionChk; // Expansion
+    else if ( mapData.version >= Chk::Version::StarCraft_Remastered ) // Scenario::isRemastered()
+        mapData.saveType = fromMpq ? SaveType::RemasteredScx : SaveType::RemasteredChk; // Remastered
+
+    ::fixTerrainToDimensions(mapData);
+    ::fixTriggerExtensions(mapData);
+    initData<false>(mapData);
+    if ( this->upgradeKstrToCurrent() ) // Ideally not tracked in the first place but for the excessive amounts of code duplication required
+        clearHistory(); // Clear the KSTR upgrade out of hist in the rare case a KSTR upgrade occurs
 
     return true;
 }
@@ -3165,10 +3251,10 @@ void Scenario::loadKstring(const std::vector<u8> & stringBytes, const size_t & s
         editorStrings.push_back(std::nullopt);
 }
 
-void Scenario::upgradeKstrToCurrent()
+bool Scenario::upgradeKstrToCurrent()
 {
     if ( read.editorStringsVersion >= Chk::KstrVersion::Current )
-        return;
+        return false;
 
     auto ver = read.editorStringsVersion;
     if ( 0 == ver || 2 == ver )
@@ -3353,7 +3439,10 @@ void Scenario::upgradeKstrToCurrent()
             }
         }
         edit->editorStringsVersion = Chk::KstrVersion::Current;
+        return true;
     }
+    else
+        return false;
 }
 
 const std::vector<u32> compressionFlagsProgression = {
@@ -3916,16 +4005,6 @@ template std::vector<u8> resizeAndOffset<u8>(const std::vector<u8> & tiles,
 template std::vector<u16> resizeAndOffset<u16>(const std::vector<u16> & tiles,
     u16 newTileWidth, u16 newTileHeight, u16 oldTileWidth, u16 oldTileHeight, std::ptrdiff_t leftEdge, std::ptrdiff_t topEdge);
 
-void setTiledDimensions(std::vector<u8> & tiles, u16 newTileWidth, u16 newTileHeight, u16 oldTileWidth, u16 oldTileHeight, s32 leftEdge, s32 topEdge)
-{
-    resizeAndOffset(tiles, newTileWidth, newTileHeight, oldTileWidth, oldTileHeight, leftEdge, topEdge);
-}
-
-void setTiledDimensions(std::vector<u16> & tiles, u16 newTileWidth, u16 newTileHeight, u16 oldTileWidth, u16 oldTileHeight, s32 leftEdge, s32 topEdge)
-{
-    resizeAndOffset(tiles, newTileWidth, newTileHeight, oldTileWidth, oldTileHeight, leftEdge, topEdge);
-}
-
 void Scenario::setTileWidth(u16 newTileWidth, u16 sizeValidationFlags, s32 leftEdge)
 {
     auto edit = createAction(ActionDescriptor::ResizeMap);
@@ -4374,20 +4453,6 @@ void Scenario::validateSizes(u16 sizeValidationFlags, u16 prevWidth, u16 prevHei
         updateOutOfBoundsSprites();
     else if ( (sizeValidationFlags & SizeValidationFlag::RemoveOutOfBoundsSprites) == SizeValidationFlag::RemoveOutOfBoundsSprites )
         removeOutOfBoundsSprites();
-}
-
-void Scenario::fixTerrainToDimensions()
-{
-    auto edit = createAction();
-    auto tileWidth = read.dimensions.tileWidth;
-    auto tileHeight = read.dimensions.tileHeight;
-    auto expectedIsomSize = this->getIsomWidth()*this->getIsomHeight();
-    if ( read.isomRects.size() != expectedIsomSize )
-        edit->isomRects.append(std::vector<Chk::IsomRect>(expectedIsomSize-read.isomRects.size(), Chk::IsomRect{}));
-    if ( read.editorTiles.size() != size_t(tileWidth)*size_t(tileHeight) )
-        edit->editorTiles = resizeAndOffset(read.editorTiles, tileWidth, tileHeight, tileWidth, tileHeight, 0, 0);
-    if ( read.tiles.size() != size_t(tileWidth)*size_t(tileHeight) )
-        edit->tiles = resizeAndOffset(read.tiles, tileWidth, tileHeight, tileWidth, tileHeight, 0, 0);
 }
 
 u8 Scenario::getFog(size_t tileXc, size_t tileYc) const
