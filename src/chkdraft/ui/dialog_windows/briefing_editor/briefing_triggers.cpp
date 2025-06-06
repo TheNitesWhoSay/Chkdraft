@@ -374,7 +374,7 @@ std::string BriefingTriggersWindow::GetBriefingTriggerString(u32 briefingTrigNum
     u8 remainingLines = 13;
     size_t numConditions = briefingTrigger.numUsedConditions();
     size_t numActions = briefingTrigger.numUsedActions();
-    if ( numConditions == 0 && numActions == 0 )
+    if ( numActions == 0 )
         ssTrigger << "<EMPTY>" << TRIGGER_NUM_PREFACE << briefingTrigNum << "\x0C\r\n";
     else
     {

@@ -2485,9 +2485,9 @@ void Scenario::setSwitchNameStringId(size_t switchIndex, size_t switchNameString
     if ( switchIndex < Chk::TotalSwitches )
     {
         if ( storageScope == Chk::Scope::Game )
-            createAction()->switchNames[switchIndex] = u32(switchNameStringId);
+            createAction(ActionDescriptor::SetSwitchName)->switchNames[switchIndex] = u32(switchNameStringId);
         else
-            createAction()->editorStringOverrides.switchName[switchIndex] = u32(switchNameStringId);
+            createAction(ActionDescriptor::SetSwitchName)->editorStringOverrides.switchName[switchIndex] = u32(switchNameStringId);
     }
     else
         throw std::out_of_range(std::string("switchIndex: ") + std::to_string((u32)switchIndex) + " is out of range for the SWNM section!");
@@ -2496,9 +2496,9 @@ void Scenario::setSwitchNameStringId(size_t switchIndex, size_t switchNameString
 void Scenario::setLocationNameStringId(size_t locationId, size_t locationNameStringId, Chk::Scope storageScope)
 {
     if ( storageScope == Chk::Scope::Editor )
-        createAction()->editorStringOverrides.locationName[locationId] = u32(locationNameStringId);
+        createAction(ActionDescriptor::UpdateLocationName)->editorStringOverrides.locationName[locationId] = u32(locationNameStringId);
     else if ( locationId < numLocations() )
-        createAction()->locations[locationId].stringId = u16(locationNameStringId);
+        createAction(ActionDescriptor::UpdateLocationName)->locations[locationId].stringId = u16(locationNameStringId);
 }
 
 template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
@@ -3683,7 +3683,7 @@ void Scenario::setPlayerForce(size_t slotIndex, Chk::Force force)
 void Scenario::setForceStringId(Chk::Force force, u16 forceStringId)
 {
     if ( force < Chk::TotalForces )
-        createAction()->forces.forceString[(size_t)force] = forceStringId;
+        createAction(ActionDescriptor::UpdateForceName)->forces.forceString[(size_t)force] = forceStringId;
     else
         throw std::out_of_range(std::string("Force: ") + std::to_string(force) + " is out of range for the FORC section!");
 }
@@ -3691,7 +3691,7 @@ void Scenario::setForceStringId(Chk::Force force, u16 forceStringId)
 void Scenario::setForceFlags(Chk::Force force, u8 forceFlags)
 {
     if ( force < Chk::TotalForces )
-        createAction()->forces.flags[force] = Chk::ForceFlags(forceFlags);
+        createAction(ActionDescriptor::UpdateForceFlags)->forces.flags[force] = Chk::ForceFlags(forceFlags);
     else
         throw std::out_of_range(std::string("Force: ") + std::to_string(force) + " is out of range for the FORC section!");
 }
@@ -3828,7 +3828,8 @@ Sc::Terrain::Tileset Scenario::getTileset() const
 
 void Scenario::setTileset(Sc::Terrain::Tileset tileset)
 {
-    createAction(ActionDescriptor::ChangeTileset)->tileset = tileset;
+    if ( tileset != read.tileset )
+        createAction(ActionDescriptor::ChangeTileset)->tileset = tileset;
 }
 
 size_t Scenario::getPixelWidth() const
@@ -5008,6 +5009,9 @@ void Scenario::setUnitHitpoints(Sc::Unit::Type unitType, u32 hitpoints, Chk::Use
     if ( unitType >= Sc::Unit::TotalTypes )
         throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS/UNIx section!");
     
+    if ( getUnitHitpoints(unitType, useExp) == hitpoints )
+        return;
+
     auto edit = createAction(ActionDescriptor::UpdateUnitTypeHitpoints);
     switch ( useExp )
     {
@@ -5034,6 +5038,9 @@ void Scenario::setUnitShieldPoints(Sc::Unit::Type unitType, u16 shieldPoints, Ch
 {
     if ( unitType >= Sc::Unit::TotalTypes )
         throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS/UNIx section!");
+    
+    if ( getUnitShieldPoints(unitType, useExp) == shieldPoints )
+        return;
     
     auto edit = createAction(ActionDescriptor::UpdateUnitTypeShields);
     switch ( useExp )
@@ -5062,6 +5069,9 @@ void Scenario::setUnitArmorLevel(Sc::Unit::Type unitType, u8 armorLevel, Chk::Us
     if ( unitType >= Sc::Unit::TotalTypes )
         throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS/UNIx section!");
     
+    if ( getUnitArmorLevel(unitType, useExp) == armorLevel )
+        return;
+    
     auto edit = createAction(ActionDescriptor::UpdateUnitTypeArmor);
     switch ( useExp )
     {
@@ -5088,6 +5098,9 @@ void Scenario::setUnitBuildTime(Sc::Unit::Type unitType, u16 buildTime, Chk::Use
 {
     if ( unitType >= Sc::Unit::TotalTypes )
         throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS/UNIx section!");
+    
+    if ( getUnitBuildTime(unitType, useExp) == buildTime )
+        return;
     
     auto edit = createAction(ActionDescriptor::UpdateUnitTypeBuildTime);
     switch ( useExp )
@@ -5116,6 +5129,9 @@ void Scenario::setUnitMineralCost(Sc::Unit::Type unitType, u16 mineralCost, Chk:
     if ( unitType >= Sc::Unit::TotalTypes )
         throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS/UNIx section!");
     
+    if ( getUnitMineralCost(unitType, useExp) == mineralCost )
+        return;
+    
     auto edit = createAction(ActionDescriptor::UpdateUnitTypeMineralCost);
     switch ( useExp )
     {
@@ -5143,6 +5159,9 @@ void Scenario::setUnitGasCost(Sc::Unit::Type unitType, u16 gasCost, Chk::UseExpS
     if ( unitType >= Sc::Unit::TotalTypes )
         throw std::out_of_range(std::string("UnitType: ") + std::to_string(unitType) + " is out of range for the UNIS/UNIx section!");
     
+    if ( getUnitGasCost(unitType, useExp) == gasCost )
+        return;
+    
     auto edit = createAction(ActionDescriptor::UpdateUnitTypeGasCost);
     switch ( useExp )
     {
@@ -5167,12 +5186,16 @@ void Scenario::setUnitGasCost(Sc::Unit::Type unitType, u16 gasCost, Chk::UseExpS
 
 void Scenario::setWeaponBaseDamage(Sc::Weapon::Type weaponType, u16 baseDamage, Chk::UseExpSection useExp)
 {
+    if ( getWeaponBaseDamage(weaponType, useExp) == baseDamage )
+        return;
+
     auto edit = createAction(ActionDescriptor::UpdateWeaponBaseDamage);
     auto checkLimit = [&weaponType](bool expansion){
         if ( (expansion && weaponType >= Sc::Weapon::Total) || (!expansion && weaponType >= Sc::Weapon::TotalOriginal) )
             throw std::out_of_range(std::string("WeaponType: ") + std::to_string((size_t)weaponType) +
                 " is out of range for the " + (expansion ? "UNIx" : "UNIS") + " section!");
     };
+
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
@@ -5209,6 +5232,9 @@ void Scenario::setWeaponBaseDamage(Sc::Weapon::Type weaponType, u16 baseDamage, 
 
 void Scenario::setWeaponUpgradeDamage(Sc::Weapon::Type weaponType, u16 upgradeDamage, Chk::UseExpSection useExp)
 {
+    if ( getWeaponUpgradeDamage(weaponType, useExp) == upgradeDamage )
+        return;
+
     auto edit = createAction(ActionDescriptor::UpdateWeaponUpgradeDamage);
     auto checkLimit = [&weaponType](bool expansion){
         if ( (expansion && weaponType >= Sc::Weapon::Total) || (!expansion && weaponType >= Sc::Weapon::TotalOriginal) )
@@ -6784,7 +6810,7 @@ Chk::Cuwp Scenario::getCuwp(size_t cuwpIndex) const
 
 void Scenario::setCuwp(size_t cuwpIndex, const Chk::Cuwp & cuwp)
 {
-    if ( cuwpIndex < Sc::Unit::MaxCuwps )
+    if ( cuwpIndex < Sc::Unit::MaxCuwps && read.createUnitProperties[cuwpIndex] != cuwp )
         createAction(ActionDescriptor::SetCuwp)->createUnitProperties[cuwpIndex] = cuwp;
 }
 
@@ -7168,7 +7194,7 @@ std::vector<Chk::Trigger> Scenario::replaceBriefingTriggerRange(size_t beginInde
     }
     else if ( beginIndex < endIndex && endIndex <= read.briefingTriggers.size() )
     {
-        std::vector<Chk::Trigger> replacedBriefingTriggers(read.briefingTriggers.begin()+beginIndex, read.briefingTriggers.end()+endIndex);
+        std::vector<Chk::Trigger> replacedBriefingTriggers(read.briefingTriggers.begin()+beginIndex, read.briefingTriggers.begin()+endIndex);
         std::vector<std::size_t> replacedIndexes(endIndex-beginIndex);
         std::iota(replacedIndexes.begin(), replacedIndexes.end(), beginIndex);
         return replacedBriefingTriggers;

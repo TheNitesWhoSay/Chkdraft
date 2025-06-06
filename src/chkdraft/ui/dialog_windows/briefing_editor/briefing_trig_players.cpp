@@ -242,7 +242,8 @@ void BriefingTrigPlayersWindow::CheckBoxUpdated(u16 checkId)
 
 void BriefingTrigPlayersWindow::OnLeave()
 {
-    ParseRawPlayers();
+    if ( CM != nullptr && briefingTrigIndex < CM->numBriefingTriggers() )
+        ParseRawPlayers();
 }
 
 void BriefingTrigPlayersWindow::ParseRawPlayers()
@@ -255,8 +256,10 @@ void BriefingTrigPlayersWindow::ParseRawPlayers()
     {
         auto edit = CM->operator()(ActionDescriptor::ChangeBriefingTrigPlayers);
         for ( std::size_t i=0; i<Chk::Trigger::MaxOwners; ++i )
-            edit->triggers[briefingTrigIndex].owners[i] = owners[i];
-
+        {
+            if ( owners[i] != CM->read.briefingTriggers[briefingTrigIndex].owners[i] )
+                edit->briefingTriggers[briefingTrigIndex].owners[i] = owners[i];
+        }
     }
         
     RefreshWindow(briefingTrigIndex);

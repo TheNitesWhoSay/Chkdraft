@@ -54,7 +54,7 @@ void Selections::snapEndDrag(s32 xInterval, s32 yInterval)
 
 void Selections::clear()
 {
-    auto edit = map();
+    auto edit = map(ActionDescriptor::ClearSelections);
     edit->tiles.clearSelections();
     edit->doodads.clearSelections();
     edit->sprites.clearSelections();

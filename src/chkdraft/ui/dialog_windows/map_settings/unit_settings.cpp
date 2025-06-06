@@ -405,6 +405,7 @@ void UnitSettingsWindow::CheckReplaceUnitName()
     {
         if ( auto newUnitName = editUnitName.GetWinText() )
         {
+            auto edit = CM->operator()(ActionDescriptor::UpdateUnitName);
             CM->setUnitName<ChkdString>((Sc::Unit::Type)selectedUnitType, *newUnitName);
             CM->deleteUnusedStrings(Chk::Scope::Both);
             chkd.unitWindow.RepopulateList();
@@ -421,6 +422,7 @@ void UnitSettingsWindow::SetDefaultUnitProperties()
     if ( selectedUnitType != Sc::Unit::Type::NoUnit )
     {
         // Remove Custom Unit Name
+        auto edit = CM->operator()(ActionDescriptor::UpdateUnitName);
         u16 origName = (u16)CM->getUnitNameStringId(selectedUnitType, Chk::UseExpSection::No);
         u16 expName = (u16)CM->getUnitNameStringId(selectedUnitType, Chk::UseExpSection::Yes);
         CM->setUnitNameStringId(selectedUnitType, 0, Chk::UseExpSection::No);
@@ -550,15 +552,15 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             {
                 if ( state == BST_CHECKED )
                 {
+                    CM->setUnitUsesDefaultSettings(selectedUnitType, true);
                     ClearDefaultUnitProperties();
                     DisableUnitProperties();
-                    CM->setUnitUsesDefaultSettings(selectedUnitType, true);
                 }
                 else
                 {
+                    CM->setUnitUsesDefaultSettings(selectedUnitType, false);
                     SetDefaultUnitProperties();
                     EnableUnitProperties();
-                    CM->setUnitUsesDefaultSettings(selectedUnitType, false);
                 }
 
                 RefreshWindow();
@@ -576,6 +578,7 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 if ( state == BST_CHECKED )
                 {
                     editUnitName.DisableThis();
+                    auto edit = CM->operator()(ActionDescriptor::UpdateUnitName);
                     CM->setUnitNameStringId(selectedUnitType, 0, Chk::UseExpSection::Both);
                     CM->deleteUnusedStrings(Chk::Scope::Both);
                     auto unitName = CM->getUnitName<ChkdString>(selectedUnitType, true);

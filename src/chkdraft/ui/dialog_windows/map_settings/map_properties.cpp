@@ -377,7 +377,7 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
         case CBN_EDITCHANGE:
         {
             u32 player = LOWORD(wParam) - Id::CB_P1COLOR; // 0 based player
-            u8 newColor;
+            u8 newColor = 0;
             if ( dropPlayerColor[player].GetEditNum<u8>(newColor) )
             {
                 CM->setPlayerColor(player, (Chk::PlayerColor)newColor);
@@ -424,6 +424,7 @@ void MapPropertiesWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
         size_t playerIndex = size_t(idFrom)-Id::BUTTON_P1COLOR;
         if ( auto playerColor = ColorPropertiesDialog::GetCrgbColor(getHandle(), CM->getPlayerCustomColor(playerIndex)) )
         {
+            auto edit = CM->operator()(ActionDescriptor::SetPlayerColor);
             CM->setPlayerColorSetting(playerIndex, Chk::PlayerColorSetting::Custom);
             CM->setPlayerCustomColor(playerIndex, *playerColor);
             chkd.maps.UpdatePlayerStatus();
@@ -439,6 +440,7 @@ void MapPropertiesWindow::CheckReplaceMapTitle()
     {
         if ( auto newMapTitle = editMapTitle.GetWinText() )
         {
+            auto edit = CM->operator()(ActionDescriptor::SetScenarioName);
             CM->setScenarioName<ChkdString>(*newMapTitle);
             CM->deleteUnusedStrings(Chk::Scope::Both);
             possibleTitleUpdate = false;
@@ -452,6 +454,7 @@ void MapPropertiesWindow::CheckReplaceMapDescription()
     {
         if ( auto newMapDescription = editMapDescription.GetWinText() )
         {
+            auto edit = CM->operator()(ActionDescriptor::SetScenarioDescription);
             CM->setScenarioDescription<ChkdString>(*newMapDescription);
             CM->deleteUnusedStrings(Chk::Scope::Both);
             possibleDescriptionUpdate = false;

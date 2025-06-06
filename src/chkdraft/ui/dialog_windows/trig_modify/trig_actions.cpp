@@ -406,6 +406,7 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
     const Chk::Action & action = trig.action(actionNum);
     if ( action.actionType < Chk::Action::NumActionTypes )
     {
+        auto edit = CM->operator()(ActionDescriptor::UpdateTriggerActionArg);
         Chk::Action::ArgType argType = Chk::Action::getClassicArgType(action.actionType, argNum);
         SingleLineChkdString chkdNewText = ChkdString(newText);
 

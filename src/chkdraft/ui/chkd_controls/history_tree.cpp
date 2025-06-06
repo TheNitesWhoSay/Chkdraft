@@ -201,6 +201,7 @@ std::string getActionText(std::size_t actionIndex, const RareEdit::RenderAction<
                 case ActionDescriptor::SetPlayerForce: actionText += "Set Player Force"; break;
                 // Forces
                 case ActionDescriptor::UpdateForceName: actionText += "Update Force Name"; break;
+                case ActionDescriptor::UpdateForceFlags: actionText += "Update Force Flags"; break;
                 // Unit Properties
                 case ActionDescriptor::UpdateUnitName: actionText += "Update Unit Name"; break;
                 case ActionDescriptor::ToggleUnitTypeUsesDefaultSettings: actionText += "Toggle Unit Type Uses Default Settings"; break;
@@ -275,6 +276,15 @@ std::string getActionText(std::size_t actionIndex, const RareEdit::RenderAction<
                 case ActionDescriptor::UpdateTriggerNotes: actionText += "Update Trigger Notes"; break;
                 case ActionDescriptor::ToggleTriggerOwner: actionText += "Toggle Trigger Owner"; break;
                 case ActionDescriptor::UpdateTriggerRawPlayers: actionText += "Update Trigger Raw Players"; break;
+                case ActionDescriptor::UpdateTriggerConditionArg: actionText += "Update Trigger Condition Arg"; break;
+                case ActionDescriptor::UpdateTriggerActionArg: actionText += "Update Trigger Action Arg"; break;
+                case ActionDescriptor::TogglePreserveTriggerFlag: actionText += "Toggle Preserve Trigger Flag"; break;
+                case ActionDescriptor::ToggleDisabledFlag: actionText += "Toggle Trigger Disabled Flag"; break;
+                case ActionDescriptor::ToggleIgnoreConditionsOnceFlag: actionText += "Toggle Trig Ignore Conditions Once Flag"; break;
+                case ActionDescriptor::ToggleIgnoreWaitSkipOnceFlag: actionText += "Toggle Trig Ignore Wait Skip Once Flag"; break;
+                case ActionDescriptor::ToggleIgnoreMiscActionsOnceFlag: actionText += "Toggle Trig Ignore Misc Actions Once Flag"; break;
+                case ActionDescriptor::ToggleIgnoreDefeatDrawFlag: actionText += "Toggle Trig Ignore Defeat Draw Flag"; break;
+                case ActionDescriptor::TogglePausedFlag: actionText += "Toggle Trig Paused Flag"; break;
                 // BriefingTriggers
                 case ActionDescriptor::AddBriefingTrigger: actionText += "Add Briefing Trigger"; break;
                 case ActionDescriptor::DeleteBriefingTrigger: actionText += "Delete Briefing Trigger"; break;
@@ -284,6 +294,7 @@ std::string getActionText(std::size_t actionIndex, const RareEdit::RenderAction<
                 case ActionDescriptor::ChangeBriefingActionString: actionText += "Change Briefing Action String"; break;
                 case ActionDescriptor::ChangeBriefingActionSound: actionText += "Change Briefing Action Sound"; break;
                 case ActionDescriptor::ChangeBriefingTrigPlayers: actionText += "Change Briefing Trig Players"; break;
+                case ActionDescriptor::UpdateBriefingActionArg: actionText += "Update Briefing Action Arg"; break;
                 // Plugins/Scripts
                 case ActionDescriptor::RepairSounds: actionText += "Repair Sounds"; break;
                 case ActionDescriptor::RepairStrings: actionText += "Repair Strings"; break;

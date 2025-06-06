@@ -370,6 +370,9 @@ struct SimpleCache : Chk::IsomCache
 
 void GuiMap::setDimensions(u16 newTileWidth, u16 newTileHeight, u16 sizeValidationFlags, s32 leftEdge, s32 topEdge, size_t newTerrainType)
 {
+    if ( newTileWidth == getTileWidth() && newTileHeight == getTileHeight() && leftEdge == 0 && topEdge == 0)
+        return;
+
     auto edit = createAction(ActionDescriptor::ResizeMap);
 
     // Selection indexes would be invalidated by a size change

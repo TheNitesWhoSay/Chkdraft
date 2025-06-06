@@ -490,6 +490,8 @@ namespace Chk {
         u16 unitStateFlags;
         u32 unknown;
 
+        constexpr bool operator==(const Cuwp & other) const = default;
+
         REFLECT(Cuwp, validUnitStateFlags, validUnitFieldFlags, owner,
             hitpointPercent, shieldPercent, energyPercent, resourceAmount, hangarAmount, unitStateFlags, unknown)
     };

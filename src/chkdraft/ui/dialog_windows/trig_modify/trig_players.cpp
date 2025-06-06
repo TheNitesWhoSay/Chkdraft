@@ -247,7 +247,8 @@ void TrigPlayersWindow::CheckBoxUpdated(u16 checkId)
 
 void TrigPlayersWindow::OnLeave()
 {
-    ParseRawPlayers();
+    if ( CM != nullptr && trigIndex < CM->numTriggers() )
+        ParseRawPlayers();
 }
 
 void TrigPlayersWindow::ParseRawPlayers()
@@ -260,7 +261,10 @@ void TrigPlayersWindow::ParseRawPlayers()
     {
         auto edit = CM->operator()(ActionDescriptor::UpdateTriggerRawPlayers);
         for ( std::size_t i=0; i<Chk::Trigger::MaxOwners; ++i )
-            edit->triggers[trigIndex].owners[i] = owners[i];
+        {
+            if ( owners[i] != CM->read.triggers[trigIndex].owners[i] )
+                edit->triggers[trigIndex].owners[i] = owners[i];
+        }
     }
         
     RefreshWindow(trigIndex);

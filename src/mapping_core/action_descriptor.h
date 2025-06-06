@@ -140,6 +140,7 @@ enum class ActionDescriptor
     SetPlayerForce,
     // Forces
     UpdateForceName,
+    UpdateForceFlags,
     // Unit Properties
     UpdateUnitName,
     ToggleUnitTypeUsesDefaultSettings,
@@ -214,6 +215,15 @@ enum class ActionDescriptor
     UpdateTriggerNotes,
     ToggleTriggerOwner,
     UpdateTriggerRawPlayers,
+    UpdateTriggerConditionArg,
+    UpdateTriggerActionArg,
+    TogglePreserveTriggerFlag,
+    ToggleDisabledFlag,
+    ToggleIgnoreConditionsOnceFlag,
+    ToggleIgnoreWaitSkipOnceFlag,
+    ToggleIgnoreMiscActionsOnceFlag,
+    ToggleIgnoreDefeatDrawFlag,
+    TogglePausedFlag,
     // BriefingTriggers
     AddBriefingTrigger,
     DeleteBriefingTrigger,
@@ -223,6 +233,7 @@ enum class ActionDescriptor
     ChangeBriefingActionString,
     ChangeBriefingActionSound,
     ChangeBriefingTrigPlayers,
+    UpdateBriefingActionArg,
     // Plugins/Scripts
     RepairSounds,
     RepairStrings

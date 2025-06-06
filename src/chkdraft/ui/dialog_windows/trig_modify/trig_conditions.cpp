@@ -333,6 +333,7 @@ void TrigConditionsWindow::UpdateConditionArg(u8 conditionNum, u8 argNum, const 
 {
     if ( trigIndex < CM->numTriggers() && conditionNum < Chk::Trigger::MaxConditions )
     {
+        auto edit = CM->operator()(ActionDescriptor::UpdateTriggerConditionArg);
         RawString rawUpdateText, rawSuggestText;
         SuggestionItem suggestion = suggestions.Take();
         TextTrigCompiler ttc(Settings::useAddressesForMemory, Settings::deathTableStart);

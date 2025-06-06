@@ -180,42 +180,49 @@ void TrigGeneralWindow::OnLeave()
 
 void TrigGeneralWindow::SetPreserveTrigger(bool preserve)
 {
+    auto edit = CM->operator()(ActionDescriptor::TogglePreserveTriggerFlag);
     CM->editTrigger(trigIndex).setPreserveTriggerFlagged(preserve);
     RefreshWindow(trigIndex);
 }
 
 void TrigGeneralWindow::SetDisabledTrigger(bool disabled)
 {
+    auto edit = CM->operator()(ActionDescriptor::ToggleDisabledFlag);
     CM->editTrigger(trigIndex).setDisabled(disabled);
     RefreshWindow(trigIndex);
 }
 
 void TrigGeneralWindow::SetIgnoreConditionsOnce(bool ignoreConditionsOnce)
 {
+    auto edit = CM->operator()(ActionDescriptor::ToggleIgnoreConditionsOnceFlag);
     CM->editTrigger(trigIndex).setIgnoreConditionsOnce(ignoreConditionsOnce);
     RefreshWindow(trigIndex);
 }
 
 void TrigGeneralWindow::SetIgnoreWaitSkipOnce(bool ignoreWaitSkipOnce)
 {
+    auto edit = CM->operator()(ActionDescriptor::ToggleIgnoreWaitSkipOnceFlag);
     CM->editTrigger(trigIndex).setIgnoreWaitSkipOnce(ignoreWaitSkipOnce);
     RefreshWindow(trigIndex);
 }
 
 void TrigGeneralWindow::SetIgnoreMiscActionsOnce(bool ignoreMiscActionsOnce)
 {
+    auto edit = CM->operator()(ActionDescriptor::ToggleIgnoreMiscActionsOnceFlag);
     CM->editTrigger(trigIndex).setIgnoreMiscActionsOnce(ignoreMiscActionsOnce);
     RefreshWindow(trigIndex);
 }
 
 void TrigGeneralWindow::SetIgnoreDefeatDraw(bool ignoreDefeatDraw)
 {
+    auto edit = CM->operator()(ActionDescriptor::ToggleIgnoreDefeatDrawFlag);
     CM->editTrigger(trigIndex).setIgnoreDefeatDraw(ignoreDefeatDraw);
     RefreshWindow(trigIndex);
 }
 
 void TrigGeneralWindow::SetPausedTrigger(bool paused)
 {
+    auto edit = CM->operator()(ActionDescriptor::TogglePausedFlag);
     CM->editTrigger(trigIndex).setPauseFlagged(paused);
     RefreshWindow(trigIndex);
 }
@@ -225,7 +232,7 @@ void TrigGeneralWindow::ParseRawFlagsText()
     if ( trigIndex < CM->numTriggers() )
     {
         u32 triggerFlags = CM->getTrigger(trigIndex).flags;
-        if ( editRawFlags.GetEditBinaryNum(triggerFlags) )
+        if ( editRawFlags.GetEditBinaryNum(triggerFlags) && CM->read.triggers[trigIndex].flags != triggerFlags )
             CM->operator()(ActionDescriptor::UpdateTriggerRawFlags)->triggers[trigIndex].flags = triggerFlags;
         
         RefreshWindow(trigIndex);
