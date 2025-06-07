@@ -168,7 +168,6 @@ void BriefingTriggersWindow::DeleteSelection()
         CM->deleteBriefingTrigger(currBriefingTrigger);
         CM->deleteUnusedStrings(Chk::Scope::Both);
         briefingTrigModifyWindow.DestroyThis();
-        CM->notifyChange(false);
         int sel;
         RefreshGroupList();
         if ( listBriefingTriggers.GetCurSel(sel) && DeleteTrigListItem(sel) && (SelectTrigListItem(sel) || SelectTrigListItem(sel-1)) )
@@ -186,7 +185,6 @@ void BriefingTriggersWindow::CopySelection()
     {
         CM->insertBriefingTrigger(currBriefingTrigger+1, CM->getBriefingTrigger(currBriefingTrigger));
         briefingTrigModifyWindow.DestroyThis();
-        CM->notifyChange(false);
         int sel;
         if ( listBriefingTriggers.GetCurSel(sel) && CopyTrigListItem(sel) && SelectTrigListItem(sel+1) )
             RefreshTrigList();
@@ -205,7 +203,6 @@ void BriefingTriggersWindow::MoveUp()
          listBriefingTriggers.GetItemData(sel-1, prevTrigIndex) )
     {
         briefingTrigModifyWindow.DestroyThis();
-        CM->notifyChange(false);
         CM->moveBriefingTrigger(currBriefingTrigger, size_t(prevTrigIndex));
         if ( MoveUpTrigListItem(sel, u32(prevTrigIndex)) )
         {
@@ -227,7 +224,6 @@ void BriefingTriggersWindow::MoveDown()
          listBriefingTriggers.GetItemData(sel+1, nextTrigIndex) )
     {
         briefingTrigModifyWindow.DestroyThis();
-        CM->notifyChange(false);
         CM->moveBriefingTrigger(currBriefingTrigger, size_t(nextTrigIndex));
         if ( MoveDownTrigListItem(sel, u32(nextTrigIndex)) )
         {
@@ -251,7 +247,6 @@ void BriefingTriggersWindow::MoveTrigTo()
          targetTrigIndex < CM->numBriefingTriggers() )
     {
         briefingTrigModifyWindow.DestroyThis();
-        CM->notifyChange(false);
         CM->moveBriefingTrigger(currBriefingTrigger, targetTrigIndex);
         int listIndexMovedTo = -1;
         listBriefingTriggers.SetRedraw(false);
@@ -296,7 +291,6 @@ void BriefingTriggersWindow::ButtonNew()
         newTrigId = LPARAM(CM->numBriefingTriggers()-1);
     }
 
-    CM->notifyChange(false);
     currBriefingTrigger = u32(newTrigId);
     RefreshWindow(true);
     ButtonModify();
@@ -380,7 +374,7 @@ std::string BriefingTriggersWindow::GetBriefingTriggerString(u32 briefingTrigNum
     u8 remainingLines = 13;
     size_t numConditions = briefingTrigger.numUsedConditions();
     size_t numActions = briefingTrigger.numUsedActions();
-    if ( numConditions == 0 && numActions == 0 )
+    if ( numActions == 0 )
         ssTrigger << "<EMPTY>" << TRIGGER_NUM_PREFACE << briefingTrigNum << "\x0C\r\n";
     else
     {
@@ -925,7 +919,7 @@ LRESULT BriefingTriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
             break;
 
         case WinLib::LB::WM_PREMEASUREITEMS: // Measuring is time sensative, load necessary items for measuring all triggers once
-            briefingTextTrigGenerator.loadScenario(*CM);
+            briefingTextTrigGenerator.loadScenario((Scenario &)*CM);
             briefingTrigListDc.emplace(listBriefingTriggers.getHandle());
             briefingTrigListDc->setDefaultFont();
             briefingTrigLineSizeTable.clear();
@@ -975,7 +969,7 @@ LRESULT BriefingTriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
             break;
 
         case WinLib::LB::WM_PREDRAWITEMS:
-            briefingTextTrigGenerator.loadScenario(*CM);
+            briefingTextTrigGenerator.loadScenario((Scenario &)*CM);
             drawingAll = true;
             break;
 
@@ -983,7 +977,7 @@ LRESULT BriefingTriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
             if ( wParam == Id::LIST_TRIGGERS )
             {
                 if ( !drawingAll )
-                    briefingTextTrigGenerator.loadScenario(*CM);
+                    briefingTextTrigGenerator.loadScenario((Scenario &)*CM);
 
                 PDRAWITEMSTRUCT pdis = (PDRAWITEMSTRUCT)lParam;
                 bool isSelected = ((pdis->itemState&ODS_SELECTED) == ODS_SELECTED),

@@ -202,7 +202,6 @@ void CUWPsWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
         case Id::CheckCloaked: cuwp.setCloaked(checkCloaked.isChecked()); break;
     }
     CM->setCuwp(selectedCuwp, cuwp);
-    CM->notifyChange(false);
 }
 
 void CUWPsWindow::NotifyEditUpdated(int idFrom, HWND hWndFrom)
@@ -218,7 +217,6 @@ void CUWPsWindow::NotifyEditUpdated(int idFrom, HWND hWndFrom)
         case Id::EditHangar: if ( editHangar.GetEditNum(editNum) ) cuwp.hangarAmount = editNum; break;
     }
     CM->setCuwp(selectedCuwp, cuwp);
-    CM->notifyChange(false);
 }
 
 LRESULT CUWPsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)

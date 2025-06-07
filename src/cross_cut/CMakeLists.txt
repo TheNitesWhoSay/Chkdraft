@@ -11,23 +11,12 @@ set(This CrossCut)
 project(${This})
 
 set(Headers
-  commander.h
-  command_types.h
-  error_handler.h
-  generic_command.h
   logger.h
   simple_icu.h
-  test_commands.h
-  updater.h
 )
 set(Sources
-  commander.cpp
-  error_handler.cpp
-  generic_command.cpp
   logger.cpp
   simple_icu.cpp
-  test_commands.cpp
-  updater.cpp
 )
 
 add_library(${This} STATIC ${Sources} ${Headers})

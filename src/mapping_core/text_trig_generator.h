@@ -16,12 +16,12 @@ class TextTrigGenerator
         TextTrigGenerator(bool useAddressesForMemory, u32 deathTableOffset, bool useFancyNoStrings = false);
 
         // Places text trigs representative of the given TRIG section in trigString if successful
-        bool generateTextTrigs(const Scenario & map, std::string & trigString);
+        template <class MapType> bool generateTextTrigs(const MapType & map, std::string & trigString);
 
         // Places text trigs representative of the given trigger in trigString if successful
-        bool generateTextTrigs(const Scenario & map, size_t trigIndex, std::string & trigString);
+        template <class MapType> bool generateTextTrigs(const MapType & map, size_t trigIndex, std::string & trigString);
         
-        bool loadScenario(const Scenario & map); // Loads data about the given scenario for use outside text trigs
+        template <class MapType> bool loadScenario(const MapType & map); // Loads data about the given scenario for use outside text trigs
 
         void clearScenario(); // Clears loaded scenario data
 
@@ -54,12 +54,12 @@ class TextTrigGenerator
     
     protected:
 
-        bool loadScenario(const Scenario & map, bool quoteArgs, bool useCustomNames);
+        template <class MapType> bool loadScenario(const MapType & map, bool quoteArgs, bool useCustomNames);
         bool correctLineEndings(StringBuffer & buf) const; // Corrects any improperly formatted line endings
         
-        bool buildTextTrigs(const Scenario & scenario, std::string & trigString);
+        template <class MapType> bool buildTextTrigs(const MapType & scenario, std::string & trigString);
         bool buildTextTrig(const Chk::Trigger & trigger, std::string & trigString);
-        inline void appendTriggers(StringBuffer & output, const Scenario & scenario) const;
+        template <class MapType> void appendTriggers(StringBuffer & output, const MapType & scenario) const;
         inline void appendTrigger(StringBuffer & output, const Chk::Trigger & trigger) const;
         inline void appendConditionArgument(StringBuffer & output, const Chk::Condition & condition, Chk::Condition::Argument argument) const;
         inline void appendActionArgument(StringBuffer & output, const Chk::Action & action, Chk::Action::Argument argument) const;
@@ -113,12 +113,12 @@ class TextTrigGenerator
 
         bool prepConditionTable(); // Fills conditionTable
         bool prepActionTable(); // Fills actionTable
-        bool prepLocationTable(const Scenario & map, bool quoteArgs); // Fills locationTable
-        bool prepUnitTable(const Scenario & map, bool quoteArgs, bool useCustomNames); // Fills unitTable
-        bool prepSwitchTable(const Scenario & map, bool quoteArgs); // Fills switchTable
-        bool prepGroupTable(const Scenario & map, bool quoteArgs); // Fills groupTable
-        bool prepScriptTable(const Scenario & map, bool quoteArgs); // Fills scriptTable
-        bool prepStringTable(const Scenario & map, bool quoteArgs); // Fills stringTable
+        template <class MapType> bool prepLocationTable(const MapType & map, bool quoteArgs); // Fills locationTable
+        template <class MapType> bool prepUnitTable(const MapType & map, bool quoteArgs, bool useCustomNames); // Fills unitTable
+        template <class MapType> bool prepSwitchTable(const MapType & map, bool quoteArgs); // Fills switchTable
+        template <class MapType> bool prepGroupTable(const MapType & map, bool quoteArgs); // Fills groupTable
+        template <class MapType> bool prepScriptTable(const MapType & map, bool quoteArgs); // Fills scriptTable
+        template <class MapType> bool prepStringTable(const MapType & map, bool quoteArgs); // Fills stringTable
 };
 
 class BriefingTextTrigGenerator : private TextTrigGenerator
@@ -127,12 +127,12 @@ public:
     BriefingTextTrigGenerator(bool useFancyNoStrings = false);
 
     // Places briefing text trigs representative of the given MBRF section in briefingTrigString if successful
-    bool generateBriefingTextTrigs(const Scenario & map, std::string & briefingTrigString);
+    template <class MapType> bool generateBriefingTextTrigs(const MapType & map, std::string & briefingTrigString);
 
     // Places briefing text trigs representative of the given briefing trigger in briefingTrigString if successful
-    bool generateBriefingTextTrigs(const Scenario & map, size_t briefingTrigIndex, std::string & briefingTrigString);
+    template <class MapType> bool generateBriefingTextTrigs(const MapType & map, size_t briefingTrigIndex, std::string & briefingTrigString);
         
-    bool loadScenario(const Scenario & map); // Loads data about the given scenario for use outside briefing text trigs
+    template <class MapType> bool loadScenario(const MapType & map); // Loads data about the given scenario for use outside briefing text trigs
 
     void clearScenario(); // Clears loaded scenario data
 
@@ -148,11 +148,11 @@ public:
     std::string getBriefingTrigNumber(u32 number) const;
 
 private:
-    bool loadScenario(const Scenario & map, bool quoteArgs, bool useCustomNames);
+    template <class MapType> bool loadScenario(const MapType & map, bool quoteArgs, bool useCustomNames);
 
-    bool buildBriefingTextTrigs(const Scenario & scenario, std::string & briefingTrigString);
+    template <class MapType> bool buildBriefingTextTrigs(const MapType & scenario, std::string & briefingTrigString);
     bool buildBriefingTextTrig(const Chk::Trigger & trigger, std::string & briefingTrigString);
-    inline void appendBriefingTriggers(StringBuffer & output, const Scenario & scenario) const;
+    template <class MapType> void appendBriefingTriggers(StringBuffer & output, const MapType & scenario) const;
     inline void appendBriefingTrigger(StringBuffer & output, const Chk::Trigger & briefingTrigger) const;
     inline void appendBriefingActionArgument(StringBuffer & output, const Chk::Action & action, Chk::Action::Argument argument) const;
     inline void appendBriefingSlot(StringBuffer & output, const size_t & slotIndex) const;

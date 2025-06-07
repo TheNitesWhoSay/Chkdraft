@@ -180,37 +180,38 @@ void TrigPlayersWindow::CreateSubWindows(HWND hWnd)
 
 void TrigPlayersWindow::CheckBoxUpdated(u16 checkId)
 {
-    Chk::Trigger & trig = CM->getTrigger(trigIndex);
+    const Chk::Trigger & trig = CM->getTrigger(trigIndex);
+    auto edit = CM->operator()(ActionDescriptor::ToggleTriggerOwner);
     if ( checkId >= Id::CHECK_PLAYER1 && checkId <= Id::CHECK_PLAYER8 )
     {
         u8 player = u8(checkId-Id::CHECK_PLAYER1);
         if ( checkMainPlayers[player].isChecked() )
-            trig.owners[player+Sc::Player::Id::Player1] = Chk::Trigger::Owned::Yes;
+            edit->triggers[trigIndex].owners[player+Sc::Player::Id::Player1] = Chk::Trigger::Owned::Yes;
         else
-            trig.owners[player+Sc::Player::Id::Player1] = Chk::Trigger::Owned::No;
+            edit->triggers[trigIndex].owners[player+Sc::Player::Id::Player1] = Chk::Trigger::Owned::No;
     }
     else if ( checkId >= Id::CHECK_FORCE1 && checkId <= Id::CHECK_FORCE4 )
     {
         u8 force = u8(checkId-Id::CHECK_FORCE1);
         if ( checkForces[force].isChecked() )
-            trig.owners[force+Sc::Player::Id::Force1] = Chk::Trigger::Owned::Yes;
+            edit->triggers[trigIndex].owners[force+Sc::Player::Id::Force1] = Chk::Trigger::Owned::Yes;
         else
-            trig.owners[force+Sc::Player::Id::Force1] = Chk::Trigger::Owned::No;
+            edit->triggers[trigIndex].owners[force+Sc::Player::Id::Force1] = Chk::Trigger::Owned::No;
     }
     else if ( checkId == Id::CHECK_ALL_PLAYERS )
     {
         if ( checkAllPlayers.isChecked() )
-            trig.owners[Sc::Player::Id::AllPlayers] = Chk::Trigger::Owned::Yes;
+            edit->triggers[trigIndex].owners[Sc::Player::Id::AllPlayers] = Chk::Trigger::Owned::Yes;
         else
-            trig.owners[Sc::Player::Id::AllPlayers] = Chk::Trigger::Owned::No;
+            edit->triggers[trigIndex].owners[Sc::Player::Id::AllPlayers] = Chk::Trigger::Owned::No;
     }
     else if ( checkId >= Id::CHECK_PLAYER9 && checkId <= Id::CHECK_NEUTRALPLAYERS )
     {
         u8 lowerNonExecutingPlayersId = u8(checkId-Id::CHECK_PLAYER9);
         if ( checkNonExecutingPlayers[lowerNonExecutingPlayersId].isChecked() )
-            trig.owners[checkId-Id::CHECK_PLAYER1] = Chk::Trigger::Owned::Yes;
+            edit->triggers[trigIndex].owners[checkId-Id::CHECK_PLAYER1] = Chk::Trigger::Owned::Yes;
         else
-            trig.owners[checkId-Id::CHECK_PLAYER1] = Chk::Trigger::Owned::No;
+            edit->triggers[trigIndex].owners[checkId-Id::CHECK_PLAYER1] = Chk::Trigger::Owned::No;
     }
     else if ( checkId >= Id::CHECK_UNUSED1 && checkId <= Id::CHECK_NONAVPLAYERS )
     {
@@ -218,16 +219,19 @@ void TrigPlayersWindow::CheckBoxUpdated(u16 checkId)
         if ( checkNonExecutingPlayers[upperNonExecutingPlayersId].isChecked() )
         {
             if ( trig.getExtendedDataIndex() != Chk::ExtendedTrigDataIndex::None )
-                (u8 &)trig.owners[checkId-Id::CHECK_PLAYER1] |= Chk::Trigger::Owned::Yes;
+            {
+                edit->triggers[trigIndex].owners[checkId-Id::CHECK_PLAYER1] =
+                    Chk::Trigger::Owned(((u8 &)(CM->read.triggers[trigIndex].owners[checkId-Id::CHECK_PLAYER1])) |= Chk::Trigger::Owned::Yes);
+            }
             else
-                trig.owners[checkId-Id::CHECK_PLAYER1] = Chk::Trigger::Owned::Yes;
+                edit->triggers[trigIndex].owners[checkId-Id::CHECK_PLAYER1] = Chk::Trigger::Owned::Yes;
         }
         else
         {
-            if ( trig.getExtendedDataIndex() != Chk::ExtendedTrigDataIndex::None )
+            if ( CM->read.triggers[trigIndex].getExtendedDataIndex() != Chk::ExtendedTrigDataIndex::None )
                 (u8 &)trig.owners[checkId-Id::CHECK_PLAYER1] &= ~Chk::Trigger::Owned::Yes;
             else
-                trig.owners[checkId-Id::CHECK_PLAYER1] = Chk::Trigger::Owned::No;
+                edit->triggers[trigIndex].owners[checkId-Id::CHECK_PLAYER1] = Chk::Trigger::Owned::No;
         }
     }
     else if ( checkId == Id::CHECK_ALLOWRAWEDIT )
@@ -243,14 +247,25 @@ void TrigPlayersWindow::CheckBoxUpdated(u16 checkId)
 
 void TrigPlayersWindow::OnLeave()
 {
-    ParseRawPlayers();
+    if ( CM != nullptr && trigIndex < CM->numTriggers() )
+        ParseRawPlayers();
 }
 
 void TrigPlayersWindow::ParseRawPlayers()
 {
-    Chk::Trigger & trigger = CM->getTrigger(trigIndex);
-    if ( editRawPlayers.GetHexByteString((u8*)&trigger.owners[0], 27) )
-        CM->notifyChange(false);
+    Chk::Trigger::Owned owners[Chk::Trigger::MaxOwners] {};
+    for ( std::size_t i=0; i<Chk::Trigger::MaxOwners; ++i )
+        owners[i] = CM->read.triggers[trigIndex].owners[i];
+    
+    if ( editRawPlayers.GetHexByteString((u8*)(&owners[0]), Chk::Trigger::MaxOwners) )
+    {
+        auto edit = CM->operator()(ActionDescriptor::UpdateTriggerRawPlayers);
+        for ( std::size_t i=0; i<Chk::Trigger::MaxOwners; ++i )
+        {
+            if ( owners[i] != CM->read.triggers[trigIndex].owners[i] )
+                edit->triggers[trigIndex].owners[i] = owners[i];
+        }
+    }
         
     RefreshWindow(trigIndex);
 }

@@ -46,10 +46,7 @@ void ChangePasswordDialog::ButtonApply()
     if ( CM != nullptr )
     {
         if ( CM->setPassword(*oldPass, *newPass) )
-        {
-            CM->notifyChange(false);
             mb("Password Set Successfully.");
-        }
         else
             mb("Password Change Failed!");
     }

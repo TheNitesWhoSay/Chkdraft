@@ -1,6 +1,6 @@
 #include <cross_cut/logger.h>
 #include <cross_cut/simple_icu.h>
-#include "map_file.h"
+#include "lite_map_file.h"
 #include "system_io.h"
 #include "escape_strings.h"
 #include <cstdio>
@@ -14,55 +14,55 @@ extern Logger logger;
 
 #undef PlaySound
 
-std::map<size_t, std::string> MapFile::virtualSoundTable;
-u64 MapFile::nextAssetFileId(0);
+std::map<size_t, std::string> LiteMapFile::virtualSoundTable;
+u64 LiteMapFile::nextAssetFileId(0);
 
-FileBrowserPtr<SaveType> MapFile::getDefaultOpenMapBrowser()
+FileBrowserPtr<SaveType> LiteMapFile::getDefaultOpenMapBrowser()
 {
     return FileBrowserPtr<SaveType>(new FileBrowser<SaveType>(getOpenMapFilters(), "Open Map", true, false));
 }
 
-FileBrowserPtr<SaveType> MapFile::getDefaultSaveMapBrowser()
+FileBrowserPtr<SaveType> LiteMapFile::getDefaultSaveMapBrowser()
 {
     return FileBrowserPtr<SaveType>(new FileBrowser<SaveType>(getSaveMapFilters(), "Save Map", false, true));
 }
 
-MapFile::MapFile(const std::string & filePath) : temporaryMpqPath(""), temporaryMpq(true, true)
+LiteMapFile::LiteMapFile(const std::string & filePath) : temporaryMpqPath(""), temporaryMpq(true, true)
 {
     initializeVirtualSoundTable();
     load(filePath);
 }
 
-MapFile::MapFile(FileBrowserPtr<SaveType> fileBrowser) : temporaryMpqPath(""), temporaryMpq(true, true)
+LiteMapFile::LiteMapFile(FileBrowserPtr<SaveType> fileBrowser) : temporaryMpqPath(""), temporaryMpq(true, true)
 {
     initializeVirtualSoundTable();
     load(fileBrowser);
 }
 
-MapFile::MapFile(Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex, const Sc::Terrain::Tiles* tilesetData)
-    : Scenario(tileset, width, height, terrainTypeIndex, tilesetData), temporaryMpqPath(""), temporaryMpq(true, true)
+LiteMapFile::LiteMapFile(Sc::Terrain::Tileset tileset, u16 width, u16 height)
+    : LiteScenario(tileset, width, height), temporaryMpqPath(""), temporaryMpq(true, true)
 {
     initializeVirtualSoundTable();
 }
 
-MapFile::MapFile() : Scenario(), temporaryMpqPath(""), temporaryMpq(true, true)
+LiteMapFile::LiteMapFile() : LiteScenario(), temporaryMpqPath(""), temporaryMpq(true, true)
 {
 
 }
 
-bool MapFile::load(const std::string & filePath)
+bool LiteMapFile::load(const std::string & filePath)
 {
     return !filePath.empty() && openMapFile(filePath);
 }
 
-bool MapFile::load(FileBrowserPtr<SaveType> fileBrowser)
+bool LiteMapFile::load(FileBrowserPtr<SaveType> fileBrowser)
 {
     std::string browseFilePath = "";
     SaveType saveType = SaveType::Unknown;
     return fileBrowser != nullptr && fileBrowser->browseForOpenPath(browseFilePath, saveType) && openMapFile(browseFilePath);
 }
 
-bool MapFile::save(const std::string & saveFilePath, bool overwriting, bool updateListFile, bool lockAnywhere, bool autoDefragmentLocations)
+bool LiteMapFile::save(const std::string & saveFilePath, bool overwriting, bool updateListFile, bool lockAnywhere, bool autoDefragmentLocations)
 {
     bool savePathChanged = saveFilePath.compare(mapFilePath) != 0;
     bool saveAs = !mapFilePath.empty() && savePathChanged;
@@ -71,17 +71,17 @@ bool MapFile::save(const std::string & saveFilePath, bool overwriting, bool upda
         CHKD_ERR("Cannot save protected maps!");
     else if ( !saveFilePath.empty() )
     {
-        logger.info() << "Saving to: " << saveFilePath << " with saveType: \"" << saveTypeToStr(read.saveType) << "\"" << std::endl;
+        logger.info() << "Saving to: " << saveFilePath << " with saveType: \"" << saveTypeToStr(saveType) << "\"" << std::endl;
         auto start = std::chrono::high_resolution_clock::now();
         bool versionCorrect = true;
-        if ( read.saveType == SaveType::StarCraftScm || read.saveType == SaveType::StarCraftChk ) // StarCraft Map, edit to match
-            versionCorrect = Scenario::changeVersionTo(Chk::Version::StarCraft_Original);
-        else if ( read.saveType == SaveType::HybridScm || read.saveType == SaveType::HybridChk ) // Hybrid Map, edit to match
-            versionCorrect = Scenario::changeVersionTo(Chk::Version::StarCraft_Hybrid);
-        else if ( read.saveType == SaveType::ExpansionScx || read.saveType == SaveType::ExpansionChk || read.saveType == SaveType::AllMaps ) // BroodWar Map, edit to match
-            versionCorrect = Scenario::changeVersionTo(Chk::Version::StarCraft_BroodWar);
-        else if ( read.saveType == SaveType::RemasteredScx || read.saveType == SaveType::RemasteredChk || read.saveType == SaveType::AllMaps ) // Remastered Map, edit to match
-            versionCorrect = Scenario::changeVersionTo(Chk::Version::StarCraft_Remastered);
+        if ( saveType == SaveType::StarCraftScm || saveType == SaveType::StarCraftChk ) // StarCraft Map, edit to match
+            versionCorrect = LiteScenario::changeVersionTo(Chk::Version::StarCraft_Original);
+        else if ( saveType == SaveType::HybridScm || saveType == SaveType::HybridChk ) // Hybrid Map, edit to match
+            versionCorrect = LiteScenario::changeVersionTo(Chk::Version::StarCraft_Hybrid);
+        else if ( saveType == SaveType::ExpansionScx || saveType == SaveType::ExpansionChk || saveType == SaveType::AllMaps ) // BroodWar Map, edit to match
+            versionCorrect = LiteScenario::changeVersionTo(Chk::Version::StarCraft_BroodWar);
+        else if ( saveType == SaveType::RemasteredScx || saveType == SaveType::RemasteredChk || saveType == SaveType::AllMaps ) // Remastered Map, edit to match
+            versionCorrect = LiteScenario::changeVersionTo(Chk::Version::StarCraft_Remastered);
 
         if ( !versionCorrect )
         {
@@ -91,8 +91,8 @@ bool MapFile::save(const std::string & saveFilePath, bool overwriting, bool upda
 
         updateSaveSections();
 
-        if ( (read.saveType == SaveType::StarCraftScm || read.saveType == SaveType::HybridScm ||
-              read.saveType == SaveType::ExpansionScx || read.saveType == SaveType::RemasteredScx) || read.saveType == SaveType::AllMaps ) // Must be packed into an MPQ
+        if ( (saveType == SaveType::StarCraftScm || saveType == SaveType::HybridScm ||
+              saveType == SaveType::ExpansionScx || saveType == SaveType::RemasteredScx) || saveType == SaveType::AllMaps ) // Must be packed into an MPQ
         {
             if ( savePathChanged && overwriting && !::removeFile(saveFilePath) )
             {
@@ -103,7 +103,7 @@ bool MapFile::save(const std::string & saveFilePath, bool overwriting, bool upda
             if ( !saveAs || (saveAs && (!MpqFile::isValid(mapFilePath) || makeFileCopy(mapFilePath, saveFilePath))) ) // If using save-as and existing is mpq, copy mpq to the new location
             {
                 std::stringstream chk(std::ios_base::in|std::ios_base::out|std::ios_base::binary);
-                Scenario::write(chk);
+                LiteScenario::write(chk);
                 if ( chk.good() )
                 {
                     if ( MpqFile::open(saveFilePath, false, true) )
@@ -125,7 +125,7 @@ bool MapFile::save(const std::string & saveFilePath, bool overwriting, bool upda
                         mapFilePath = saveFilePath;
                         
                         auto finish = std::chrono::high_resolution_clock::now();
-                        logger.info() << "Successfully saved to: " << saveFilePath << " with saveType: \"" << saveTypeToStr(read.saveType) << "\" in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
+                        logger.info() << "Successfully saved to: " << saveFilePath << " with saveType: \"" << saveTypeToStr(saveType) << "\" in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
                         return success;
                     }
                     else
@@ -142,12 +142,12 @@ bool MapFile::save(const std::string & saveFilePath, bool overwriting, bool upda
                 std::ofstream outFile(icux::toFilestring(saveFilePath).c_str(), std::ios_base::out|std::ios_base::binary);
                 if ( outFile.is_open() )
                 {
-                    Scenario::write(outFile);
+                    LiteScenario::write(outFile);
                     if ( outFile.good() )
                     {
                         mapFilePath = saveFilePath;
                         auto finish = std::chrono::high_resolution_clock::now();
-                        logger.info() << "Successfully saved to: " << saveFilePath << " with saveType: \"" << saveTypeToStr(read.saveType) << "\" in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
+                        logger.info() << "Successfully saved to: " << saveFilePath << " with saveType: \"" << saveTypeToStr(saveType) << "\" in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
                         return true;
                     }
                     else
@@ -163,14 +163,14 @@ bool MapFile::save(const std::string & saveFilePath, bool overwriting, bool upda
     return false;
 }
 
-bool isChkSaveType(SaveType saveType)
+bool liteIsChkSaveType(SaveType saveType)
 {
     return saveType == SaveType::AllChk || saveType == SaveType::RemasteredChk ||
         saveType == SaveType::ExpansionChk || saveType == SaveType::HybridChk ||
         saveType == SaveType::StarCraftChk;
 }
 
-bool MapFile::save(bool saveAs, bool updateListFile, FileBrowserPtr<SaveType> fileBrowser, bool lockAnywhere, bool autoDefragmentLocations)
+bool LiteMapFile::save(bool saveAs, bool updateListFile, FileBrowserPtr<SaveType> fileBrowser, bool lockAnywhere, bool autoDefragmentLocations)
 {
     if ( saveAs && mapFilePath.empty() )
         saveAs = false; // This is a new map or a map without a path, use regular save operation
@@ -179,28 +179,20 @@ bool MapFile::save(bool saveAs, bool updateListFile, FileBrowserPtr<SaveType> fi
         CHKD_ERR("Cannot save protected maps!");
     else
     {
-        auto edit = createAction(ActionDescriptor::UpdateSaveSections);
         // If scenario changed such that save type should have changed, adjust it in advance so filter type is correct
-        SaveType newSaveType = read.saveType;
-        if ( Scenario::getVersion() >= Chk::Version::StarCraft_Remastered )
-            newSaveType = isChkSaveType(read.saveType) ? SaveType::RemasteredChk : SaveType::RemasteredScx;
-        else if ( Scenario::getVersion() >= Chk::Version::StarCraft_BroodWar )
-            newSaveType = isChkSaveType(read.saveType) ? SaveType::ExpansionChk : SaveType::ExpansionScx;
-        else if ( Scenario::getVersion() >= Chk::Version::StarCraft_Hybrid )
-            newSaveType = isChkSaveType(read.saveType) ? SaveType::HybridChk : SaveType::HybridScm;
+        if ( LiteScenario::getVersion() >= Chk::Version::StarCraft_Remastered )
+            saveType = liteIsChkSaveType(saveType) ? SaveType::RemasteredChk : SaveType::RemasteredScx;
+        else if ( LiteScenario::getVersion() >= Chk::Version::StarCraft_BroodWar )
+            saveType = liteIsChkSaveType(saveType) ? SaveType::ExpansionChk : SaveType::ExpansionScx;
+        else if ( LiteScenario::getVersion() >= Chk::Version::StarCraft_Hybrid )
+            saveType = liteIsChkSaveType(saveType) ? SaveType::HybridChk : SaveType::HybridScm;
         else // version < Chk::Version::StarCraft_Hybrid
-            newSaveType = isChkSaveType(read.saveType) ? SaveType::StarCraftChk : SaveType::StarCraftScm;
-
-        if ( newSaveType != read.saveType )
-            edit->saveType = newSaveType;
+            saveType = liteIsChkSaveType(saveType) ? SaveType::StarCraftChk : SaveType::StarCraftScm;
 
         bool overwriting = false;
         std::string newMapFilePath;
         if ( (saveAs || mapFilePath.empty()) && fileBrowser != nullptr ) // saveAs specified or filePath not yet determined, and a fileBrowser is available
-        {
-            if ( getSaveDetails(newSaveType, newMapFilePath, overwriting, fileBrowser) && read.saveType != newSaveType )
-                edit->saveType = newSaveType;
-        }
+            getSaveDetails(saveType, newMapFilePath, overwriting, fileBrowser);
         else if ( !saveAs )
             newMapFilePath = mapFilePath;
 
@@ -210,7 +202,7 @@ bool MapFile::save(bool saveAs, bool updateListFile, FileBrowserPtr<SaveType> fi
     return false;
 }
 
-bool MapFile::openTemporaryMpq()
+bool LiteMapFile::openTemporaryMpq()
 {
     if ( temporaryMpq.isOpen() )
         return true;
@@ -269,7 +261,7 @@ bool MapFile::openTemporaryMpq()
     return false;
 }
 
-bool MapFile::openMapFile(const std::string & filePath)
+bool LiteMapFile::openMapFile(const std::string & filePath)
 {
     logger.info() << "Opening map file: " << filePath << std::endl;
     auto start = std::chrono::high_resolution_clock::now();
@@ -287,8 +279,17 @@ bool MapFile::openMapFile(const std::string & filePath)
 
                     std::stringstream chk(std::ios_base::in|std::ios_base::out|std::ios_base::binary);
                     std::copy(chkData->begin(), chkData->end(), std::ostream_iterator<u8>(chk));
-                    if ( Scenario::parse(chk, true) )
+                    if ( LiteScenario::parse(chk) )
                     {
+                        if ( LiteScenario::isOriginal() )
+                            saveType = SaveType::StarCraftScm; // Vanilla
+                        else if ( LiteScenario::isHybrid() )
+                            saveType = SaveType::HybridScm; // Hybrid
+                        else if ( LiteScenario::isExpansion() )
+                            saveType = SaveType::ExpansionScx; // Expansion
+                        else if ( LiteScenario::isRemastered() )
+                            saveType = SaveType::RemasteredScx; // Remastered
+                    
                         auto finish = std::chrono::high_resolution_clock::now();
                         logger.info() << "Map " << mapFilePath << " opened in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
                         return true;
@@ -310,8 +311,17 @@ bool MapFile::openMapFile(const std::string & filePath)
         {
             this->mapFilePath = filePath;
             std::ifstream chk(std::filesystem::path(asUtf8(filePath)), std::ios_base::binary|std::ios_base::in);
-            if ( Scenario::parse(chk, false) )
+            if ( LiteScenario::parse(chk) )
             {
+                if ( LiteScenario::isOriginal() )
+                    saveType = SaveType::StarCraftChk; // Vanilla chk
+                else if ( LiteScenario::isHybrid() )
+                    saveType = SaveType::HybridChk; // Hybrid chk
+                else if ( LiteScenario::isExpansion() )
+                    saveType = SaveType::ExpansionChk; // Expansion chk
+                else
+                    saveType = SaveType::RemasteredChk;
+                
                 auto finish = std::chrono::high_resolution_clock::now();
                 logger.info() << "Map " << mapFilePath << " opened in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
                 return true;
@@ -325,7 +335,7 @@ bool MapFile::openMapFile(const std::string & filePath)
     return false;
 }
 
-bool MapFile::processModifiedAssets(bool updateListFile)
+bool LiteMapFile::processModifiedAssets(bool updateListFile)
 {
     std::vector<std::vector<ModifiedAsset>::iterator> processedAssets;
     if ( openTemporaryMpq() )
@@ -375,9 +385,9 @@ bool MapFile::processModifiedAssets(bool updateListFile)
     }
 }
 
-void MapFile::initializeVirtualSoundTable()
+void LiteMapFile::initializeVirtualSoundTable()
 {
-    if ( MapFile::virtualSoundTable.size() == 0 )
+    if ( LiteMapFile::virtualSoundTable.size() == 0 )
     {
         size_t numVirtualSounds = Sc::Sound::virtualSoundPaths.size();
         for ( size_t i=0; i<numVirtualSounds; i++ )
@@ -389,12 +399,12 @@ void MapFile::initializeVirtualSoundTable()
     }
 }
 
-std::string MapFile::GetStandardSoundDir()
+std::string LiteMapFile::GetStandardSoundDir()
 {
     return "staredit\\wav\\";
 }
 
-bool MapFile::addMpqAsset(const std::string & assetSystemFilePath, const std::string & assetMpqFilePath, WavQuality wavQuality)
+bool LiteMapFile::addMpqAsset(const std::string & assetSystemFilePath, const std::string & assetMpqFilePath, WavQuality wavQuality)
 {
     bool success = false;
     if ( ::findFile(assetSystemFilePath) )
@@ -423,7 +433,7 @@ bool MapFile::addMpqAsset(const std::string & assetSystemFilePath, const std::st
     return success;
 }
 
-bool MapFile::addMpqAsset(const std::string & assetMpqFilePath, const std::vector<u8> & asset, WavQuality wavQuality)
+bool LiteMapFile::addMpqAsset(const std::string & assetMpqFilePath, const std::vector<u8> & asset, WavQuality wavQuality)
 {
     bool success = false;
     if ( openTemporaryMpq() )
@@ -452,7 +462,7 @@ bool MapFile::addMpqAsset(const std::string & assetMpqFilePath, const std::vecto
     return success;
 }
 
-void MapFile::removeMpqAsset(const std::string & assetMpqFilePath)
+void LiteMapFile::removeMpqAsset(const std::string & assetMpqFilePath)
 {
     auto recentlyAddedAsset = modifiedAssets.end();
     for ( auto asset = modifiedAssets.begin(); asset != modifiedAssets.end(); asset++ )
@@ -485,7 +495,7 @@ void MapFile::removeMpqAsset(const std::string & assetMpqFilePath)
         modifiedAssets.push_back(ModifiedAsset(assetMpqFilePath, AssetAction::Remove));
 }
 
-std::optional<std::vector<u8>> MapFile::getMpqAsset(const std::string & assetMpqFilePath)
+std::optional<std::vector<u8>> LiteMapFile::getMpqAsset(const std::string & assetMpqFilePath)
 {
     bool success = false;
     for ( auto & asset : modifiedAssets ) // Check if it's a recently added asset
@@ -504,7 +514,7 @@ std::optional<std::vector<u8>> MapFile::getMpqAsset(const std::string & assetMpq
     return std::nullopt;
 }
 
-bool MapFile::extractMpqAsset(const std::string & assetMpqFilePath, const std::string & systemFilePath)
+bool LiteMapFile::extractMpqAsset(const std::string & assetMpqFilePath, const std::string & systemFilePath)
 {
     if ( auto asset = getMpqAsset(assetMpqFilePath) )
     {
@@ -516,49 +526,49 @@ bool MapFile::extractMpqAsset(const std::string & assetMpqFilePath, const std::s
     return false;
 }
 
-std::optional<std::vector<u8>> MapFile::getSound(size_t stringId)
+std::optional<std::vector<u8>> LiteMapFile::getSound(size_t stringId)
 {
-    if ( auto soundString = Scenario::getString<RawString>(stringId) )
+    if ( auto soundString = LiteScenario::getString<RawString>(stringId) )
         return getMpqAsset(*soundString);
     else
         return std::nullopt;
 }
 
-bool MapFile::addSound(size_t stringId)
+bool LiteMapFile::addSound(size_t stringId)
 {
-    auto soundString = Scenario::getString<RawString>(stringId, Chk::Scope::Game);
+    auto soundString = LiteScenario::getString<RawString>(stringId, Chk::Scope::Game);
     if ( soundString && MpqFile::findFile(mapFilePath, *soundString) )
     {
-        Scenario::addSound(stringId);
+        LiteScenario::addSound(stringId);
         return true;
     }
     return false;
 }
 
-bool MapFile::addSound(const std::string & srcFilePath, WavQuality wavQuality, bool virtualFile)
+bool LiteMapFile::addSound(const std::string & srcFilePath, WavQuality wavQuality, bool virtualFile)
 {
     std::string mpqSoundDirectory = GetStandardSoundDir();
     std::string mpqFilePath = makeArchiveFilePath(mpqSoundDirectory, getSystemFileName(srcFilePath));
     return addSound(srcFilePath, mpqFilePath, wavQuality, virtualFile);
 }
 
-bool MapFile::addSound(const std::string & srcFilePath, const std::string & destMpqPath, WavQuality wavQuality, bool virtualFile)
+bool LiteMapFile::addSound(const std::string & srcFilePath, const std::string & destMpqPath, WavQuality wavQuality, bool virtualFile)
 {
     if ( virtualFile )
     {
-        size_t soundStringId = Scenario::addString(RawString(srcFilePath), Chk::Scope::Game);
+        size_t soundStringId = LiteScenario::addString(RawString(srcFilePath), Chk::Scope::Game);
         if ( soundStringId != Chk::StringId::NoString )
         {
-            Scenario::addSound(soundStringId);
+            LiteScenario::addSound(soundStringId);
             return true;
         }
     }
     else if ( addMpqAsset(srcFilePath, destMpqPath, wavQuality) ) // Add, Register
     {
-        size_t soundStringId = Scenario::addString(RawString(destMpqPath), Chk::Scope::Game);
+        size_t soundStringId = LiteScenario::addString(RawString(destMpqPath), Chk::Scope::Game);
         if ( soundStringId != Chk::StringId::NoString )
         {
-            Scenario::addSound(soundStringId);
+            LiteScenario::addSound(soundStringId);
             return true;
         }
         else
@@ -567,15 +577,15 @@ bool MapFile::addSound(const std::string & srcFilePath, const std::string & dest
     return false;
 }
 
-bool MapFile::addSound(const std::string & destMpqPath, const std::vector<u8> & soundContents, WavQuality wavQuality)
+bool LiteMapFile::addSound(const std::string & destMpqPath, const std::vector<u8> & soundContents, WavQuality wavQuality)
 {
     bool success = false;
     if ( addMpqAsset(destMpqPath, soundContents, wavQuality) )
     {
-        size_t soundStringId = Scenario::addString(RawString(destMpqPath), Chk::Scope::Game);
+        size_t soundStringId = LiteScenario::addString(RawString(destMpqPath), Chk::Scope::Game);
         if ( soundStringId != Chk::StringId::NoString )
         {
-            Scenario::addSound(soundStringId);
+            LiteScenario::addSound(soundStringId);
             return true;
         }
         else
@@ -584,16 +594,16 @@ bool MapFile::addSound(const std::string & destMpqPath, const std::vector<u8> & 
     return false;
 }
 
-bool MapFile::removeSoundBySoundIndex(u16 soundIndex, bool removeIfUsed)
+bool LiteMapFile::removeSoundBySoundIndex(u16 soundIndex, bool removeIfUsed)
 {
-    size_t soundStringId = Scenario::getSoundStringId(soundIndex);
+    size_t soundStringId = LiteScenario::getSoundStringId(soundIndex);
     if ( soundStringId != Chk::StringId::UnusedSound )
     {
-        auto soundString = Scenario::getString<RawString>(soundStringId, Chk::Scope::Game);
-        Scenario::setSoundStringId(soundIndex, 0);
+        auto soundString = LiteScenario::getString<RawString>(soundStringId, Chk::Scope::Game);
+        LiteScenario::setSoundStringId(soundIndex, 0);
         if ( soundString )
         {
-            Scenario::deleteString(soundStringId);
+            LiteScenario::deleteString(soundStringId);
             removeMpqAsset(*soundString);
         }
         return true;
@@ -601,12 +611,12 @@ bool MapFile::removeSoundBySoundIndex(u16 soundIndex, bool removeIfUsed)
     return false;
 }
 
-bool MapFile::removeSoundByStringId(size_t soundStringId, bool removeIfUsed)
+bool LiteMapFile::removeSoundByStringId(size_t soundStringId, bool removeIfUsed)
 {
     if ( soundStringId != Chk::StringId::UnusedSound )
     {
-        auto soundString = Scenario::getString<RawString>(soundStringId, Chk::Scope::Game);
-        Scenario::deleteString(soundStringId);
+        auto soundString = LiteScenario::getString<RawString>(soundStringId, Chk::Scope::Game);
+        LiteScenario::deleteString(soundStringId);
         if ( soundString )
             removeMpqAsset(*soundString);
 
@@ -615,14 +625,14 @@ bool MapFile::removeSoundByStringId(size_t soundStringId, bool removeIfUsed)
     return false;
 }
 
-SoundStatus MapFile::getSoundStatus(size_t soundStringId)
+SoundStatus LiteMapFile::getSoundStatus(size_t soundStringId)
 {
-    if ( Scenario::stringUsed(soundStringId, Chk::Scope::Either, Chk::Scope::Editor) &&
-        !Scenario::stringUsed(soundStringId, Chk::Scope::Either, Chk::Scope::Game) )
+    if ( LiteScenario::stringUsed(soundStringId, Chk::Scope::Either, Chk::Scope::Editor) &&
+        !LiteScenario::stringUsed(soundStringId, Chk::Scope::Either, Chk::Scope::Game) )
         return SoundStatus::NoMatch; // Extended strings are not used in SC and therefore never match
     else
     {
-        auto soundString = Scenario::getString<RawString>(soundStringId, Chk::Scope::Game);
+        auto soundString = LiteScenario::getString<RawString>(soundStringId, Chk::Scope::Game);
         if ( soundString )
         {
             for ( const ModifiedAsset & modifiedAsset : modifiedAssets )
@@ -651,14 +661,14 @@ SoundStatus MapFile::getSoundStatus(size_t soundStringId)
     return SoundStatus::Unknown;
 }
 
-bool MapFile::getSoundStatuses(std::map<size_t/*stringId*/, SoundStatus> & outSoundStatus, bool includePureStringSounds)
+bool LiteMapFile::getSoundStatuses(std::map<size_t/*stringId*/, SoundStatus> & outSoundStatus, bool includePureStringSounds)
 {
     std::map<size_t/*stringId*/, u16/*soundIndex*/> soundMap;
     for ( size_t i=0; i<Chk::TotalSounds; i++ )
-        soundMap.insert(std::pair<size_t, u16>(i, (u16)Scenario::getSoundStringId(i)));
-    for ( size_t i=0; i<Scenario::numTriggers(); i++ )
+        soundMap.insert(std::pair<size_t, u16>(i, (u16)LiteScenario::getSoundStringId(i)));
+    for ( size_t i=0; i<LiteScenario::numTriggers(); i++ )
     {
-        const auto & trigger = Scenario::getTrigger(i);
+        const auto & trigger = LiteScenario::getTrigger(i);
         for ( size_t actionIndex = 0; actionIndex < Chk::Trigger::MaxActions; actionIndex++ )
         {
             if ( (trigger.actions[actionIndex].actionType == Chk::Action::Type::PlaySound ||
@@ -669,9 +679,9 @@ bool MapFile::getSoundStatuses(std::map<size_t/*stringId*/, SoundStatus> & outSo
             }
         }
     }
-    for ( size_t i=0; i<Scenario::numBriefingTriggers(); i++ )
+    for ( size_t i=0; i<LiteScenario::numBriefingTriggers(); i++ )
     {
-        const auto & trigger = Scenario::getBriefingTrigger(i);
+        const auto & trigger = LiteScenario::getBriefingTrigger(i);
         for ( size_t actionIndex = 0; actionIndex < Chk::Trigger::MaxActions; actionIndex++ )
         {
             if ( (trigger.actions[actionIndex].actionType == Chk::Action::Type::BriefingPlaySound ||
@@ -687,12 +697,12 @@ bool MapFile::getSoundStatuses(std::map<size_t/*stringId*/, SoundStatus> & outSo
     {
         size_t soundStringId = entry.first;
         
-        if ( Scenario::stringUsed(soundStringId, Chk::Scope::Either, Chk::Scope::Editor) &&
-            !Scenario::stringUsed(soundStringId, Chk::Scope::Either, Chk::Scope::Game) )
+        if ( LiteScenario::stringUsed(soundStringId, Chk::Scope::Either, Chk::Scope::Editor) &&
+            !LiteScenario::stringUsed(soundStringId, Chk::Scope::Either, Chk::Scope::Game) )
         { // Extended strings are not used in SC and therefore never match
             outSoundStatus.insert(std::pair<size_t, SoundStatus>(soundStringId, SoundStatus::NoMatchExtended));
         }
-        else if ( auto soundString = Scenario::getString<RawString>(soundStringId) )
+        else if ( auto soundString = LiteScenario::getString<RawString>(soundStringId) )
         {
             for ( const ModifiedAsset & modifiedAsset : modifiedAssets )
             {
@@ -703,14 +713,14 @@ bool MapFile::getSoundStatuses(std::map<size_t/*stringId*/, SoundStatus> & outSo
                 }
             }
 
-            if ( MapFile::open(mapFilePath, true, false) )
+            if ( LiteMapFile::open(mapFilePath, true, false) )
             {
-                if ( MapFile::findFile(*soundString) )
+                if ( LiteMapFile::findFile(*soundString) )
                     outSoundStatus.insert(std::pair<size_t, SoundStatus>(soundStringId, SoundStatus::CurrentMatch));
                 else
                     outSoundStatus.insert(std::pair<size_t, SoundStatus>(soundStringId, SoundStatus::NoMatch));
 
-                MapFile::close();
+                LiteMapFile::close();
             }
             else
                 outSoundStatus.insert(std::pair<size_t, SoundStatus>(soundStringId, SoundStatus::FileInUse));
@@ -719,19 +729,19 @@ bool MapFile::getSoundStatuses(std::map<size_t/*stringId*/, SoundStatus> & outSo
     return true;
 }
 
-bool MapFile::isInVirtualSoundList(const std::string & soundMpqPath) const
+bool LiteMapFile::isInVirtualSoundList(const std::string & soundMpqPath) const
 {
     size_t hash = std::hash<std::string>{}(soundMpqPath);
-    size_t numMatching = MapFile::virtualSoundTable.count(hash);
+    size_t numMatching = LiteMapFile::virtualSoundTable.count(hash);
     if ( numMatching == 1 )
     {
-        std::string & tableSoundPath = MapFile::virtualSoundTable.find(hash)->second;
+        std::string & tableSoundPath = LiteMapFile::virtualSoundTable.find(hash)->second;
         if ( soundMpqPath.compare(tableSoundPath) == 0 )
             return true;
     }
     else if ( numMatching > 1 )
     {
-        auto range = MapFile::virtualSoundTable.equal_range(hash);
+        auto range = LiteMapFile::virtualSoundTable.equal_range(hash);
         for ( auto pair = range.first; pair != range.second; ++ pair)
         {
             if ( soundMpqPath.compare(pair->second) == 0 )
@@ -741,17 +751,17 @@ bool MapFile::isInVirtualSoundList(const std::string & soundMpqPath) const
     return false;
 }
 
-std::string MapFile::getFileName() const
+std::string LiteMapFile::getFileName() const
 {
     return getSystemFileName(mapFilePath);
 }
 
-const std::string & MapFile::getFilePath() const
+const std::string & LiteMapFile::getFilePath() const
 {
     return mapFilePath;
 }
 
-bool MapFile::getSaveDetails(SaveType & saveType, std::string & saveFilePath, bool & overwriting, FileBrowserPtr<SaveType> fileBrowser) const
+bool LiteMapFile::getSaveDetails(SaveType & saveType, std::string & saveFilePath, bool & overwriting, FileBrowserPtr<SaveType> fileBrowser) const
 {
     if ( fileBrowser != nullptr )
     {
@@ -816,71 +826,4 @@ bool MapFile::getSaveDetails(SaveType & saveType, std::string & saveFilePath, bo
         }
     }
     return false;
-}
-
-std::string saveTypeToStr(const SaveType & saveType)
-{
-    switch ( saveType )
-    {
-        case SaveType::StarCraftScm: return "StarCraft Map(*.scm)"; break;
-        case SaveType::HybridScm: return "StarCraft Hybrid Map(*.scm)"; break;
-        case SaveType::ExpansionScx: return "BroodWar Map(*.scx)"; break;
-        case SaveType::RemasteredScx: return "StarCraft Remastered Map(*.scx)"; break;
-        case SaveType::StarCraftChk: return "Raw StarCraft Map(*.chk)"; break;
-        case SaveType::HybridChk: return "Raw StarCraft Hybrid Map(*.chk)"; break;
-        case SaveType::ExpansionChk: return "Raw BroodWar Map(*.chk)"; break;
-        case SaveType::RemasteredChk: return "Raw StarCraft Remastered Map(*.chk)"; break;
-        case SaveType::AllScm: return "All Scm"; break;
-        case SaveType::AllScx: return "All Scx"; break;
-        case SaveType::AllChk: return "All Chk"; break;
-        case SaveType::AllMaps: return "All Maps"; break;
-        case SaveType::AllFiles: return "All Files"; break;
-        default: return "Unknown"; break;
-    }
-}
-
-std::vector<FilterEntry<SaveType>> getOpenMapFilters()
-{
-    return std::vector<FilterEntry<SaveType>> {
-        FilterEntry<SaveType>(SaveType::AllScm, "*.scm", "StarCraft Maps"),
-        FilterEntry<SaveType>(SaveType::AllScx, "*.scx", "BroodWar Maps"),
-        FilterEntry<SaveType>(SaveType::AllChk, "*.chk", "Raw Scenario Files"),
-        FilterEntry<SaveType>(SaveType::AllMaps, "*.scm;*.scx;*.chk", "All Maps")
-    };
-}
-std::vector<FilterEntry<SaveType>> getSaveMapFilters()
-{
-    return std::vector<FilterEntry<SaveType>> {
-        FilterEntry<SaveType>(SaveType::StarCraftScm, "*.scm", "StarCraft Map(*.scm)", ".scm"),
-        FilterEntry<SaveType>(SaveType::HybridScm, "*.scm", "StarCraft Hybrid Map(*.scm)", ".scm"),
-        FilterEntry<SaveType>(SaveType::ExpansionScx, "*.scx", "BroodWar Map(*.scx)", ".scx"),
-        FilterEntry<SaveType>(SaveType::RemasteredScx, "*.scx", "StarCraft Remastered Map(*.scx)", ".scx"),
-        FilterEntry<SaveType>(SaveType::StarCraftChk, "*.chk", "Raw StarCraft Map(*.chk)", ".chk"),
-        FilterEntry<SaveType>(SaveType::HybridChk, "*.chk", "Raw StarCraft Hybrid Map(*.chk)", ".chk"),
-        FilterEntry<SaveType>(SaveType::ExpansionChk, "*.chk", "Raw BroodWar Map(*.chk)", ".chk"),
-        FilterEntry<SaveType>(SaveType::RemasteredChk, "*.chk", "Raw StarCraft Remastered Map(*.chk)", ".chk"),
-        FilterEntry<SaveType>(SaveType::AllMaps, "*.scm;*.scx;*.chk", "All Maps", ".scx"),
-        FilterEntry<SaveType>(SaveType::AllFiles, "*", "All Files")
-    };
-}
-std::vector<FilterEntry<u32>> getSaveTextFilters()
-{
-    return std::vector<FilterEntry<u32>> {
-        FilterEntry<u32>("*.txt", "Text Documents(*.txt)", ".txt"),
-        FilterEntry<u32>("*", "All Files")
-    };
-}
-std::vector<FilterEntry<u32>> getSoundFilters()
-{
-    return std::vector<FilterEntry<u32>> {
-        FilterEntry<u32>("*.wav", "Waveform Audio(*.wav)"),
-        FilterEntry<u32>("*.ogg", "Ogg Audio(*.ogg)")
-    };
-}
-std::vector<FilterEntry<u32>> getSaveSoundFilters()
-{
-    return std::vector<FilterEntry<u32>> {
-        FilterEntry<u32>("*.wav", "Waveform Audio(*.wav)", ".wav"),
-        FilterEntry<u32>("*.ogg", "Ogg Audio(*.ogg)", ".ogg")
-    };
 }

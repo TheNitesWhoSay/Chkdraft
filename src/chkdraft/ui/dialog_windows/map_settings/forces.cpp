@@ -172,8 +172,6 @@ LRESULT ForcesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                     CM->setForceFlags(force, CM->getForceFlags(force) | Chk::ForceFlags::RandomAllies);
                 else
                     CM->setForceFlags(force, CM->getForceFlags(force) & Chk::ForceFlags::xRandomAllies);
-
-                CM->notifyChange(false);
             }
             break;
 
@@ -184,8 +182,6 @@ LRESULT ForcesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                     CM->setForceFlags(force, CM->getForceFlags(force) | Chk::ForceFlags::SharedVision);
                 else
                     CM->setForceFlags(force, CM->getForceFlags(force) & Chk::ForceFlags::xSharedVision);
-
-                CM->notifyChange(false);
             }
             break;
 
@@ -196,8 +192,6 @@ LRESULT ForcesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                     CM->setForceFlags(force, CM->getForceFlags(force) | Chk::ForceFlags::RandomizeStartLocation);
                 else
                     CM->setForceFlags(force, CM->getForceFlags(force) & Chk::ForceFlags::xRandomizeStartLocation);
-
-                CM->notifyChange(false);
             }
             break;
 
@@ -208,8 +202,6 @@ LRESULT ForcesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                     CM->setForceFlags(force, CM->getForceFlags(force) | Chk::ForceFlags::AlliedVictory);
                 else
                     CM->setForceFlags(force, CM->getForceFlags(force) & Chk::ForceFlags::xAlliedVictory);
-
-                CM->notifyChange(false);
             }
             break;
             }
@@ -310,7 +302,6 @@ LRESULT ForcesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                                             std::stringstream ssPlayer;
                                             ssPlayer << "Player " << playerBeingDragged+1;
                                             SendMessage(GetDlgItem(hWnd, Id::LB_F1PLAYERS+force), LB_SELECTSTRING, -1, (LPARAM)icux::toUistring(ssPlayer.str()).c_str());
-                                            CM->notifyChange(false);
                                             chkd.trigEditorWindow.RefreshWindow();
                                             chkd.briefingTrigEditorWindow.RefreshWindow();
                                             SetFocus(getHandle());
@@ -342,9 +333,11 @@ void ForcesWindow::CheckReplaceForceName(Chk::Force force)
         auto newMapForce = editForceName[size_t(force)].GetWinText();
         if ( newMapForce && newMapForce->length() > 0 )
         {
-            CM->setForceName<ChkdString>(force, *newMapForce);
-            CM->deleteUnusedStrings(Chk::Scope::Both);
-            CM->notifyChange(false);
+            {
+                auto edit = CM->operator()(ActionDescriptor::UpdateForceName);
+                CM->setForceName<ChkdString>(force, *newMapForce);
+                CM->deleteUnusedStrings(Chk::Scope::Both);
+            }
             CM->refreshScenario();
             possibleForceNameUpdate[(size_t)force] = false;
         }

@@ -67,7 +67,7 @@ void MapAnimations::initialize(const Scenario & scenario)
     unitActors.clear();
 
     auto currentTick = chkd.gameClock.currentTick();
-    for ( const auto & unit : scenario.units )
+    for ( const auto & unit : scenario->units )
     {
         auto & actor = unitActors.emplace_back(images);
         actor.initialize(currentTick, iscriptIdFromUnit(unit.type));
@@ -79,7 +79,7 @@ void MapAnimations::initialize(const Scenario & scenario)
         image.yc = unit.yc;
     }
 
-    for ( const auto & sprite : scenario.sprites )
+    for ( const auto & sprite : scenario->sprites )
     {
         auto & actor = spriteActors.emplace_back(images);
         actor.initialize(currentTick, iscriptIdFromSprite(sprite.type));

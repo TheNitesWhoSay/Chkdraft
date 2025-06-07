@@ -2277,12 +2277,12 @@ void Scr::MapGraphics::drawTerrain()
     auto endOff = -.1f/(128*renderDat->tiles->tilesetGrp.width);
 
     tileVertices.clear();
-    auto tiles = scData.terrain.get(Sc::Terrain::Tileset(map.tileset));
+    auto tiles = scData.terrain.get(Sc::Terrain::Tileset(map->tileset));
     for ( s32 y=mapTileBounds.top; y<=mapTileBounds.bottom; ++y )
     {
         for ( s32 x=mapTileBounds.left; x<=mapTileBounds.right; ++x )
         {
-            u16 tileIndex = map.tiles[size_t(y) * size_t(map.dimensions.tileWidth) + size_t(x)];
+            u16 tileIndex = map->tiles[size_t(y) * size_t(map->dimensions.tileWidth) + size_t(x)];
             size_t groupIndex = Sc::Terrain::Tiles::getGroupIndex(tileIndex);
             if ( groupIndex < tiles.tileGroups.size() )
             {
@@ -2311,7 +2311,7 @@ void Scr::MapGraphics::drawTilesetIndexed(s32 left, s32 top, s32 width, s32 heig
     auto & tilesetGrp = renderDat->tiles->tilesetGrp;
 
     tileVertices.clear();
-    auto & tiles = scData.terrain.get(Sc::Terrain::Tileset(map.tileset));
+    auto & tiles = scData.terrain.get(Sc::Terrain::Tileset(map->tileset));
 
     s32 topRow = scrollY/33;
     s32 bottomRow = (scrollY + height)/33;
@@ -2524,55 +2524,73 @@ void Scr::MapGraphics::drawTilesetIndexed(s32 left, s32 top, s32 width, s32 heig
 
 void Scr::MapGraphics::drawTileSelection()
 {
-    const Sc::Terrain::Tiles & tiles = scData.terrain.get(map.tileset);
+    const Sc::Terrain::Tiles & tiles = scData.terrain.get(map->tileset);
     triangleVertices.clear();
     lineVertices.clear();
-    for ( auto & tile : map.selections.tiles )
+    
+    auto selTiles = map.selections.renderTiles.tiles;
+    if ( !map.view.tiles.sel().empty() )
     {
-        gl::Rect2D<GLfloat> rect {
-            GLfloat(32*tile.xc),
-            GLfloat(32*tile.yc),
-            GLfloat(32*tile.xc+32),
-            GLfloat(32*tile.yc+32),
-        };
-        triangleVertices.vertices.insert(triangleVertices.vertices.end(), {
-            rect.left, rect.top,
-            rect.right, rect.top,
-            rect.left, rect.bottom,
-            rect.left, rect.bottom,
-            rect.right, rect.bottom,
-            rect.right, rect.top
-        });
-
-        if ( tile.neighbors != TileNeighbor::None ) // Need to draw tile edge line
+        auto tileWidth = map.getTileWidth();
+        auto xBegin = map.selections.renderTiles.xBegin;
+        auto xEnd = map.selections.renderTiles.xEnd;
+        auto yBegin = map.selections.renderTiles.yBegin;
+        auto yEnd = map.selections.renderTiles.yEnd;
+        for ( std::size_t y=yBegin; y<yEnd; ++y )
         {
-            if ( (tile.neighbors & TileNeighbor::Top) == TileNeighbor::Top )
+            for ( std::size_t x=xBegin; x<xEnd; ++x )
             {
-                lineVertices.vertices.insert(lineVertices.vertices.end(), {
-                    rect.left, rect.top,
-                    rect.right, rect.top,
-                });
-            }
-            if ( (tile.neighbors & TileNeighbor::Right) == TileNeighbor::Right )
-            {
-                lineVertices.vertices.insert(lineVertices.vertices.end(), {
-                    rect.right, rect.top,
-                    rect.right, rect.bottom,
-                });
-            }
-            if ( (tile.neighbors & TileNeighbor::Bottom) == TileNeighbor::Bottom )
-            {
-                lineVertices.vertices.insert(lineVertices.vertices.end(), {
-                    rect.right, rect.bottom,
-                    rect.left, rect.bottom,
-                });
-            }
-            if ( (tile.neighbors & TileNeighbor::Left) == TileNeighbor::Left )
-            {
-                lineVertices.vertices.insert(lineVertices.vertices.end(), {
-                    rect.left, rect.bottom,
-                    rect.left, rect.top,
-                });
+                auto selTile = selTiles[y*tileWidth + x];
+                if ( selTile )
+                {
+                    auto neighbors = *selTile;
+                    gl::Rect2D<GLfloat> rect {
+                        GLfloat(32*x),
+                        GLfloat(32*y),
+                        GLfloat(32*x+32),
+                        GLfloat(32*y+32),
+                    };
+                    triangleVertices.vertices.insert(triangleVertices.vertices.end(), {
+                        rect.left, rect.top,
+                        rect.right, rect.top,
+                        rect.left, rect.bottom,
+                        rect.left, rect.bottom,
+                        rect.right, rect.bottom,
+                        rect.right, rect.top
+                    });
+
+                    if ( neighbors != TileNeighbor::None ) // Need to draw tile edge line
+                    {
+                        if ( (neighbors & TileNeighbor::Top) == TileNeighbor::Top )
+                        {
+                            lineVertices.vertices.insert(lineVertices.vertices.end(), {
+                                rect.left, rect.top,
+                                rect.right, rect.top,
+                            });
+                        }
+                        if ( (neighbors & TileNeighbor::Right) == TileNeighbor::Right )
+                        {
+                            lineVertices.vertices.insert(lineVertices.vertices.end(), {
+                                rect.right, rect.top,
+                                rect.right, rect.bottom,
+                            });
+                        }
+                        if ( (neighbors & TileNeighbor::Bottom) == TileNeighbor::Bottom )
+                        {
+                            lineVertices.vertices.insert(lineVertices.vertices.end(), {
+                                rect.right, rect.bottom,
+                                rect.left, rect.bottom,
+                            });
+                        }
+                        if ( (neighbors & TileNeighbor::Left) == TileNeighbor::Left )
+                        {
+                            lineVertices.vertices.insert(lineVertices.vertices.end(), {
+                                rect.left, rect.bottom,
+                                rect.left, rect.top,
+                            });
+                        }
+                    }
+                }
             }
         }
     }
@@ -2762,20 +2780,20 @@ void Scr::MapGraphics::drawImageSelections()
     ScopedPaletteRemap<0, 8> remapped {palette, (void*)&scData.tselect.rgbaPalette[0], prevMappedColor}; // For SC:R this does nothing
     prevMappedColor = Chk::PlayerColor::Red; // Use one unchanging value for player color here to prevent remappings
 
-    for ( auto unitIndex : map.selections.units )
+    for ( auto unitIndex : map.view.units.sel() )
     {
-        if ( unitIndex < map.units.size() )
+        if ( unitIndex < map->units.size() )
         {
-            auto & unit = map.units[unitIndex];
+            auto & unit = map->units[unitIndex];
             drawUnitSelection(unit.type, unit.xc, unit.yc);
         }
     }
 
-    for ( auto spriteIndex : map.selections.sprites )
+    for ( auto spriteIndex : map.view.sprites.sel() )
     {
-        if ( spriteIndex < map.sprites.size() )
+        if ( spriteIndex < map->sprites.size() )
         {
-            auto & sprite = map.sprites[spriteIndex];
+            auto & sprite = map->sprites[spriteIndex];
             drawSpriteSelection(sprite.type, sprite.xc, sprite.yc, sprite.isDrawnAsSprite());
         }
     }
@@ -2820,10 +2838,10 @@ void Scr::MapGraphics::drawImages()
     auto & palette = renderDat->tiles->tilesetGrp.palette; // For SC:R there is no palette/this is std::nullopt
     ScopedPaletteRestore<8, 8> remapped {palette, prevMappedColor}; // For SC:R this does nothing
 
-    //for ( const auto & unit : map.units )
+    //for ( const auto & unit : map->units )
     //    drawUnit(unit);
 
-    //for ( const auto & sprite : map.sprites )
+    //for ( const auto & sprite : map->sprites )
     //    drawSprite(sprite);
 
     /*for ( size_t i=1; i<map.animations.images.size(); ++i )
@@ -2842,12 +2860,12 @@ void Scr::MapGraphics::drawLocations()
     lineVertices.clear();
     triangleVertices.clear();
     triangleVertices2.clear();
-    for ( size_t i=0; i<map.locations.size(); ++i )
+    for ( size_t i=0; i<map->locations.size(); ++i )
     {
         if ( i == Chk::LocationId::Anywhere && map.LockAnywhere() )
             continue;
 
-        const auto & location = map.locations[i];
+        const auto & location = map->locations[i];
         auto & triVertices = location.right < location.left || location.bottom < location.top ?
             triangleVertices2.vertices : triangleVertices.vertices;
 
@@ -2926,12 +2944,12 @@ void Scr::MapGraphics::drawLocations()
         textFont->clippedTextShader.textPosToNdc.setMat4(gameToNdc);
         textFont->setColor(255, 255, 0);
 
-        for ( size_t i=0; i<map.locations.size(); ++i )
+        for ( size_t i=0; i<map->locations.size(); ++i )
         {
             if ( i == Chk::LocationId::Anywhere && map.LockAnywhere() )
                 continue;
 
-            const auto & location = map.locations[i];
+            const auto & location = map->locations[i];
 
             auto locationName = map.getLocationName<RawString>(i);
             if ( locationName )
@@ -2958,9 +2976,9 @@ void Scr::MapGraphics::drawLocations()
         textFont->textShader.glyphScaling.setMat2(glyphScaling);
         textFont->textShader.textPosToNdc.setMat4(gameToNdc);
         textFont->setColor(255, 255, 0);
-        for ( size_t i=0; i<map.locations.size(); ++i )
+        for ( size_t i=0; i<map->locations.size(); ++i )
         {
-            const auto & location = map.locations[i];
+            const auto & location = map->locations[i];
             auto locationName = map.getLocationName<RawString>(i);
             if ( locationName )
             {
@@ -3096,52 +3114,70 @@ void Scr::MapGraphics::drawFogTileSelection()
     lineVertices.vertices.clear();
     u8 currPlayer = map.getCurrPlayer();
     u8 currPlayerMask = u8Bits[currPlayer];
-    for ( auto & tile : map.selections.fogTiles )
-    {
-        gl::Rect2D<GLfloat> rect {
-            GLfloat(tile.xc*32),
-            GLfloat(tile.yc*32),
-            GLfloat(tile.xc*32+32),
-            GLfloat(tile.yc*32+32),
-        };
-        triangleVertices.vertices.insert(triangleVertices.vertices.begin(), {
-            rect.left, rect.top,
-            rect.right, rect.top,
-            rect.left, rect.bottom,
-            rect.left, rect.bottom,
-            rect.right, rect.bottom,
-            rect.right, rect.top
-        });
 
-        if ( tile.neighbors != TileNeighbor::None ) // Some edges need to be drawn
+    auto selFogTiles = map.selections.renderFogTiles.tiles;
+    if ( !map.view.tileFog.sel().empty() )
+    {
+        auto tileWidth = map.getTileWidth();
+        auto xBegin = map.selections.renderFogTiles.xBegin;
+        auto xEnd = map.selections.renderFogTiles.xEnd;
+        auto yBegin = map.selections.renderFogTiles.yBegin;
+        auto yEnd = map.selections.renderFogTiles.yEnd;
+        for ( std::size_t y=yBegin; y<yEnd; ++y )
         {
-            if ( (tile.neighbors & TileNeighbor::Top) == TileNeighbor::Top )
+            for ( std::size_t x=xBegin; x<xEnd; ++x )
             {
-                lineVertices.vertices.insert(lineVertices.vertices.end(), {
-                    rect.left, rect.top,
-                    rect.right, rect.top,
-                });
-            }
-            if ( (tile.neighbors & TileNeighbor::Right) == TileNeighbor::Right )
-            {
-                lineVertices.vertices.insert(lineVertices.vertices.end(), {
-                    rect.right, rect.top,
-                    rect.right, rect.bottom,
-                });
-            }
-            if ( (tile.neighbors & TileNeighbor::Bottom) == TileNeighbor::Bottom )
-            {
-                lineVertices.vertices.insert(lineVertices.vertices.end(), {
-                    rect.right, rect.bottom,
-                    rect.left, rect.bottom,
-                });
-            }
-            if ( (tile.neighbors & TileNeighbor::Left) == TileNeighbor::Left )
-            {
-                lineVertices.vertices.insert(lineVertices.vertices.end(), {
-                    rect.left, rect.bottom,
-                    rect.left, rect.top,
-                });
+                auto selTile = selFogTiles[y*tileWidth + x];
+                if ( selTile )
+                {
+                    auto neighbors = *selTile;
+                    gl::Rect2D<GLfloat> rect {
+                        GLfloat(x*32),
+                        GLfloat(y*32),
+                        GLfloat(x*32+32),
+                        GLfloat(y*32+32),
+                    };
+                    triangleVertices.vertices.insert(triangleVertices.vertices.begin(), {
+                        rect.left, rect.top,
+                        rect.right, rect.top,
+                        rect.left, rect.bottom,
+                        rect.left, rect.bottom,
+                        rect.right, rect.bottom,
+                        rect.right, rect.top
+                    });
+
+                    if ( neighbors != TileNeighbor::None ) // Some edges need to be drawn
+                    {
+                        if ( (neighbors & TileNeighbor::Top) == TileNeighbor::Top )
+                        {
+                            lineVertices.vertices.insert(lineVertices.vertices.end(), {
+                                rect.left, rect.top,
+                                rect.right, rect.top,
+                            });
+                        }
+                        if ( (neighbors & TileNeighbor::Right) == TileNeighbor::Right )
+                        {
+                            lineVertices.vertices.insert(lineVertices.vertices.end(), {
+                                rect.right, rect.top,
+                                rect.right, rect.bottom,
+                            });
+                        }
+                        if ( (neighbors & TileNeighbor::Bottom) == TileNeighbor::Bottom )
+                        {
+                            lineVertices.vertices.insert(lineVertices.vertices.end(), {
+                                rect.right, rect.bottom,
+                                rect.left, rect.bottom,
+                            });
+                        }
+                        if ( (neighbors & TileNeighbor::Left) == TileNeighbor::Left )
+                        {
+                            lineVertices.vertices.insert(lineVertices.vertices.end(), {
+                                rect.left, rect.bottom,
+                                rect.left, rect.top,
+                            });
+                        }
+                    }
+                }
             }
         }
     }
@@ -3169,8 +3205,8 @@ void Scr::MapGraphics::drawFogTileSelection()
 void Scr::MapGraphics::drawDoodadSelection()
 {
     lineVertices.vertices.clear();
-    const auto & tileset = scData.terrain.get(map.tileset);
-    for ( auto index : map.selections.doodads )
+    const auto & tileset = scData.terrain.get(map->tileset);
+    for ( auto index : map.view.doodads.sel() )
     {
         const auto & selDoodad = map.getDoodad(index);
         if ( auto doodadGroupIndex = tileset.getDoodadGroupIndex(selDoodad.type) )
@@ -3249,7 +3285,7 @@ void Scr::MapGraphics::drawPastes()
         else if ( subLayer == TerrainSubLayer::Rectangular || layer == Layer::CutCopyPaste )
         {
             point center { paste.x+16, paste.y+16 };
-            const Sc::Terrain::Tiles & tiles = scData.terrain.get(map.tileset);
+            const Sc::Terrain::Tiles & tiles = scData.terrain.get(map->tileset);
             auto & pasteTiles = map.clipboard.getTiles();
             tileVertices.vertices.clear();
             lineVertices.vertices.clear();
@@ -3408,7 +3444,7 @@ void Scr::MapGraphics::drawPastes()
         const auto & doodads = map.clipboard.getDoodads();
         if ( !doodads.empty() )
         {
-            const Sc::Terrain::Tiles & tiles = scData.terrain.get(map.tileset);
+            const Sc::Terrain::Tiles & tiles = scData.terrain.get(map->tileset);
             point center { paste.x, paste.y };
             tileVertices.vertices.clear();
             triangleVertices.clear();
@@ -3456,7 +3492,7 @@ void Scr::MapGraphics::drawPastes()
                                 {
                                     size_t tileXc = xTileStart + x;
                                     size_t tileYc = yTileStart + y;
-                                    if ( tileXc < map.dimensions.tileWidth && tileYc < map.dimensions.tileHeight )
+                                    if ( tileXc < map->dimensions.tileWidth && tileYc < map->dimensions.tileHeight )
                                     {
                                         u16 existingTileGroup = map.getTile(tileXc, tileYc) / 16;
                                         bool placeable = existingTileGroup == placability.tileGroup[y*tileWidth+x] || allowIllegalDoodads;
