@@ -5,8 +5,8 @@
 #include <mapping_core/mapping_core.h>
 #include <chrono>
 #include <string>
+
 class GuiMap;
-class Undos;
 
 using TileNeighbor = Sc::Terrain::TileNeighbor;
 
@@ -119,13 +119,13 @@ class Clipboard
 
     void ClearQuickItems();
 
-    void pasteTerrain(TerrainSubLayer terrainSubLayer, s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos);
-    void pasteDoodads(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos);
-    void fillPasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos);
-    void pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos, bool allowStack);
-    void pasteSprites(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos);
-    void pasteBrushFog(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos);
-    void pasteFog(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos);
+    void pasteTerrain(TerrainSubLayer terrainSubLayer, s32 mapClickX, s32 mapClickY, GuiMap & map, point prevPaste);
+    void pasteDoodads(s32 mapClickX, s32 mapClickY, GuiMap & map, point prevPaste);
+    void fillPasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap & map, point prevPaste);
+    void pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap & map, bool allowStack, point prevPaste);
+    void pasteSprites(s32 mapClickX, s32 mapClickY, GuiMap & map, point prevPaste);
+    void pasteBrushFog(s32 mapClickX, s32 mapClickY, GuiMap & map, point prevPaste);
+    void pasteFog(s32 mapClickX, s32 mapClickY, GuiMap & map, point prevPaste);
         
     void updateTileMiddle(point middle);
     void updateDoodadMiddle(point middle);
@@ -162,7 +162,7 @@ public:
     void beginPasting(bool isQuickPaste);
     void endPasting();
 
-    void doPaste(Layer layer, TerrainSubLayer terrainSubLayer, s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos, bool allowStack);
+    void doPaste(Layer layer, TerrainSubLayer terrainSubLayer, s32 mapClickX, s32 mapClickY, GuiMap & map, bool allowStack);
         
     bool getFillSimilarTiles();
     void toggleFillSimilarTiles();

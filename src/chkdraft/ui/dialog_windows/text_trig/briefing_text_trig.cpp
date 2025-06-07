@@ -27,7 +27,7 @@ void BriefingTextTrigWindow::RefreshWindow()
     updateMenus();
     std::string briefingTrigString;
     BriefingTextTrigGenerator briefingTextTrigs {};
-    if ( briefingTextTrigs.generateBriefingTextTrigs(*CM, briefingTrigString) )
+    if ( briefingTextTrigs.generateBriefingTextTrigs((Scenario &)*CM, briefingTrigString) )
     {
         auto start = std::chrono::high_resolution_clock::now();
         SetDialogItemText(IDC_EDIT_TRIGTEXT, briefingTrigString);
@@ -68,10 +68,7 @@ BOOL BriefingTextTrigWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 if ( chkd.maps.SaveCurr(false) )
                     WinLib::Message("Success", "Compiler");
                 else
-                {
                     WinLib::Message("Compile Succeeded, Save Failed", "Compiler");
-                    CM->notifyChange(false);
-                }
             }
         }
         else
@@ -82,7 +79,6 @@ BOOL BriefingTextTrigWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
         {
             if ( CompileEditText(*CM) )
             {
-                CM->notifyChange(false);
                 CM->refreshScenario();
                 RefreshWindow();
                 WinLib::Message("Success", "Compiler");
@@ -150,7 +146,9 @@ bool BriefingTextTrigWindow::CompileEditText(Scenario & map)
     if ( auto briefingTrigText = editControl.GetWinText() )
     {
         BriefingTextTrigCompiler compiler {}; // All data for compilation is gathered on-the-fly, no need to check for updates
-        if ( compiler.compileBriefingTriggers(*briefingTrigText, map, chkd.scData, 0, map.numBriefingTriggers()) )
+        auto edit = CM->operator()(ActionDescriptor::CompileBriefingTextTrigs);
+        CM->skipEventRendering();
+        if ( compiler.compileBriefingTriggers(*briefingTrigText, (Scenario &)map, chkd.scData, 0, map.numBriefingTriggers()) )
             return true;
         else
             WinLib::Message("Compilation failed.", "Error!");

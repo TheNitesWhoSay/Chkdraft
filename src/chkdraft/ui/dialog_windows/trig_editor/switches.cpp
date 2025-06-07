@@ -152,12 +152,12 @@ void SwitchesWindow::ToggleUseDefaultString()
 {
     if ( checkUseDefaultName.isChecked() )
     {
+        auto edit = CM->operator()(ActionDescriptor::SetSwitchName);
         size_t switchNameStringId = CM->getSwitchNameStringId(selectedSwitch);
         if ( switchNameStringId != Chk::StringId::NoString )
         {
             CM->setSwitchNameStringId(selectedSwitch, switchNameStringId);
             CM->deleteString(switchNameStringId);
-            CM->notifyChange(false);
         }
 
         textSwitchName.DisableThis();
@@ -178,6 +178,7 @@ void SwitchesWindow::ButtonSwitchNameProperties()
 {
     if ( selectedSwitch >= 0 && selectedSwitch < Chk::TotalSwitches )
     {
+        auto edit = CM->operator()(ActionDescriptor::SetSwitchName);
         auto gameString = CM->getSwitchName<ChkdString>(selectedSwitch, Chk::Scope::Game);
         auto editorString = CM->getSwitchName<ChkdString>(selectedSwitch, Chk::Scope::Editor);
         ChkdStringInputDialog::Result result = ChkdStringInputDialog::GetChkdString(getHandle(), gameString, editorString, Chk::StringUserFlag::Switch, selectedSwitch);
@@ -218,7 +219,6 @@ void SwitchesWindow::EditSwitchNameFocusLost()
             CM->setSwitchName(selectedSwitch, temp);
             CM->deleteUnusedStrings(Chk::Scope::Both);
             chkd.mapSettingsWindow.RefreshWindow();
-            CM->notifyChange(false);
         }
     }
 }

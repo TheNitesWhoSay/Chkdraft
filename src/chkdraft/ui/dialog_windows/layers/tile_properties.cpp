@@ -18,9 +18,11 @@ bool TilePropWindow::DestroyThis()
 
 void TilePropWindow::UpdateTile()
 {
-    TileNode tile = CM->selections.getFirstTile();
-    SetWinText("Tile Properties (" + std::to_string(tile.xc) + ", " + std::to_string(tile.yc) +")");
-    editTileValue.SetEditNum<u16>(tile.value);
+    auto firstTileIndex = CM->view.tiles.sel().front();
+    auto firstTileX = firstTileIndex % CM->getTileWidth();
+    auto firstTileY = firstTileIndex / CM->getTileWidth();
+    SetWinText("Tile Properties (" + std::to_string(firstTileX) + ", " + std::to_string(firstTileY) +")");
+    editTileValue.SetEditNum<u16>(CM->getTile(firstTileX, firstTileY));
 }
 
 BOOL TilePropWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
@@ -40,10 +42,11 @@ BOOL TilePropWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
         if ( tile > 65535 )
             tile %= 65536;
 
-        TileNode tileNode = CM->selections.getFirstTile();
-        tileNode.value = tile;
+        auto firstTileIndex = CM->view.tiles.sel().front();
+        auto firstTileX = firstTileIndex % CM->getTileWidth();
+        auto firstTileY = firstTileIndex / CM->getTileWidth();
         CM->beginTerrainOperation();
-        CM->setTileValue(tileNode.xc, tileNode.yc, tile);
+        CM->setTileValue(firstTileX, firstTileY, tile);
         CM->finalizeTerrainOperation();
         EndDialog(hWnd, IDOK);
         break;

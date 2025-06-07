@@ -2,20 +2,6 @@
 #include "chkdraft/chkdraft.h"
 #include "ui/chkd_controls/move_to.h"
 #include "mapping/data_file_browsers.h"
-#include "mapping/undos/chkd_undos/cut_copy_paste_change.h"
-#include "mapping/undos/chkd_undos/isom_change.h"
-#include "mapping/undos/chkd_undos/tile_change.h"
-#include "mapping/undos/chkd_undos/mtxm_change.h"
-#include "mapping/undos/chkd_undos/unit_change.h"
-#include "mapping/undos/chkd_undos/unit_create_del.h"
-#include "mapping/undos/chkd_undos/location_create_del.h"
-#include "mapping/undos/chkd_undos/location_move.h"
-#include "mapping/undos/chkd_undos/location_change.h"
-#include "mapping/undos/chkd_undos/doodad_change.h"
-#include "mapping/undos/chkd_undos/doodad_create_del.h"
-#include "mapping/undos/chkd_undos/sprite_change.h"
-#include "mapping/undos/chkd_undos/sprite_create_del.h"
-#include "mapping/undos/chkd_undos/fog_change.h"
 #include "mapping/scr_graphics.h"
 #include <cross_cut/logger.h>
 #include <WindowsX.h>
@@ -23,7 +9,7 @@
 bool GuiMap::doAutoBackups = false;
 
 GuiMap::GuiMap(Clipboard & clipboard, const std::string & filePath) : MapFile(filePath),
-    Chk::IsomCache(Scenario::tileset, Scenario::dimensions.tileWidth, Scenario::dimensions.tileHeight, chkd.scData.terrain.get(Scenario::tileset)),
+    Chk::IsomCache(read.tileset, read.dimensions.tileWidth, read.dimensions.tileHeight, chkd.scData.terrain.get(read.tileset)),
     clipboard(clipboard), scrGraphics{std::make_unique<Scr::MapGraphics>(chkd.scData, *this)}
 {
     SetWinText(MapFile::getFileName());
@@ -33,7 +19,7 @@ GuiMap::GuiMap(Clipboard & clipboard, const std::string & filePath) : MapFile(fi
 }
 
 GuiMap::GuiMap(Clipboard & clipboard, FileBrowserPtr<SaveType> fileBrowser) : MapFile(fileBrowser),
-    Chk::IsomCache(Scenario::tileset, Scenario::dimensions.tileWidth, Scenario::dimensions.tileHeight, chkd.scData.terrain.get(Scenario::tileset)),
+    Chk::IsomCache(read.tileset, read.dimensions.tileWidth, read.dimensions.tileHeight, chkd.scData.terrain.get(read.tileset)),
     clipboard(clipboard), scrGraphics{std::make_unique<Scr::MapGraphics>(chkd.scData, *this)}
 {
     SetWinText(MapFile::getFileName());
@@ -43,15 +29,11 @@ GuiMap::GuiMap(Clipboard & clipboard, FileBrowserPtr<SaveType> fileBrowser) : Ma
 }
 
 GuiMap::GuiMap(Clipboard & clipboard, Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex, DefaultTriggers defaultTriggers)
-    : MapFile(tileset, width, height),
-    Chk::IsomCache(Scenario::tileset, Scenario::dimensions.tileWidth, Scenario::dimensions.tileHeight, chkd.scData.terrain.get(Scenario::tileset)),
+    : MapFile(tileset, width, height, terrainTypeIndex, &chkd.scData.terrain.get(tileset)),
+    Chk::IsomCache(read.tileset, read.dimensions.tileWidth, read.dimensions.tileHeight, chkd.scData.terrain.get(read.tileset)),
     clipboard(clipboard), scrGraphics{std::make_unique<Scr::MapGraphics>(chkd.scData, *this)}
 {
-    uint16_t val = ((Chk::IsomCache::getTerrainTypeIsomValue(terrainTypeIndex) << 4) | Chk::IsomRect::EditorFlag::Modified);
-    Scenario::isomRects.assign(Scenario::getIsomWidth()*Scenario::getIsomHeight(), Chk::IsomRect{val, val, val, val});
-    Chk::IsomCache::setAllChanged();
     refreshTileOccupationCache();
-    Scenario::updateTilesFromIsom(*this);
 
     scGraphics.updatePalette();
     int layerSel = chkd.mainToolbar.layerBox.GetSel();
@@ -172,13 +154,9 @@ bool GuiMap::SaveFile(bool saveAs)
 
     if ( MapFile::save(saveAs) )
     {
-        changeLock = false;
-        if ( unsavedChanges )
-        {
-            unsavedChanges = false;
-            removeAsterisk();
-            undos.ResetChangeCount();
-        }
+        lastSaveActionCursor = Tracked::getCursorIndex();
+        nonSelChangeCursor = std::numeric_limits<std::size_t>::max();
+        notifyNoUnsavedChanges();
         return true;
     }
     else
@@ -206,17 +184,12 @@ bool GuiMap::setDoodadTile(size_t x, size_t y, u16 tileNum)
 
 void GuiMap::setTileValue(size_t tileX, size_t tileY, uint16_t tileValue)
 {
-    if ( tileX < Scenario::dimensions.tileWidth && tileY < Scenario::dimensions.tileHeight )
+    if ( tileX < read.dimensions.tileWidth && tileY < read.dimensions.tileHeight )
     {
-        if ( tileChanges != nullptr )
-        {
-            tileChanges->Insert(TileChange::Make(uint16_t(tileX), uint16_t(tileY), Scenario::getTile(tileX, tileY, Chk::Scope::Editor)));
-            tileChanges->Insert(MtxmChange::Make(uint16_t(tileX), uint16_t(tileY), Scenario::getTile(tileX, tileY, Chk::Scope::Game)));
-        }
-
-        Scenario::editorTiles[tileY*Scenario::dimensions.tileWidth + tileX] = tileValue;
-        if ( !tileOccupationCache.tileOccupied(tileX, tileY, Scenario::dimensions.tileWidth) )
-            Scenario::tiles[tileY*Scenario::dimensions.tileWidth + tileX] = tileValue;
+        auto edit = createAction(ActionDescriptor::UpdateTileValue);
+        edit->editorTiles[tileY*read.dimensions.tileWidth + tileX] = tileValue;
+        if ( !tileOccupationCache.tileOccupied(tileX, tileY, read.dimensions.tileWidth) )
+            edit->tiles[tileY*read.dimensions.tileWidth + tileX] = tileValue;
         else
             validateTileOccupiers(tileX, tileY, tileValue);
     }
@@ -224,62 +197,36 @@ void GuiMap::setTileValue(size_t tileX, size_t tileY, uint16_t tileValue)
 
 void GuiMap::setFogValue(size_t tileX, size_t tileY, u8 fogValue)
 {
-    if ( tileX < Scenario::dimensions.tileWidth && tileY < Scenario::dimensions.tileHeight )
-    {
-        if ( fogChanges != nullptr )
-            fogChanges->Insert(FogChange::Make(uint16_t(tileX), uint16_t(tileY), Scenario::getFog(tileX, tileY)));
-
+    if ( tileX < read.dimensions.tileWidth && tileY < read.dimensions.tileHeight )
         Scenario::setFog(tileX, tileY, fogValue);
-    }
 }
 
 void GuiMap::beginTerrainOperation()
 {
     refreshTileOccupationCache();
-    if ( this->tileChanges == nullptr )
-        tileChanges = ReversibleActions::Make();
 }
 
 void GuiMap::finalizeTerrainOperation()
 {
     clipboard.clearPreviousPasteLoc();
-    if ( tileChanges != nullptr )
-    {
-        if ( currLayer == Layer::CutCopyPaste )
-            cutCopyPasteChanges->Insert(tileChanges);
-        else
-        {
-            undos.AddUndo(tileChanges);
-            Chk::IsomCache::finalizeUndoableOperation();
-        }
-        tileChanges = nullptr;
-    }
 }
 
 void GuiMap::finalizeFogOperation()
 {
     clipboard.clearPreviousPasteLoc();
-    if ( fogChanges != nullptr )
-    {
-        if ( currLayer == Layer::CutCopyPaste )
-            cutCopyPasteChanges->Insert(fogChanges);
-        else
-            undos.AddUndo(fogChanges);
-
-        fogChanges = nullptr;
-    }
 }
 
 void GuiMap::validateTileOccupiers(size_t tileX, size_t tileY, uint16_t tileValue)
 {
+    auto edit = createAction(ActionDescriptor::ValidateTileOccupiers);
     bool cacheRefreshNeeded = false;
     bool tileOccupiedByValidDoodad = false;
     const auto & tileset = chkd.scData.terrain.get(Scenario::getTileset());
     if ( !allowIllegalDoodads )
     {
-        for ( int doodadIndex=int(doodads.size())-1; doodadIndex>=0; --doodadIndex )
+        for ( int doodadIndex=int(read.doodads.size())-1; doodadIndex>=0; --doodadIndex )
         {
-            const auto & doodad = doodads[doodadIndex];
+            const auto & doodad = read.doodads[doodadIndex];
             if ( auto doodadGroupIndex = tileset.getDoodadGroupIndex(doodad.type) )
             {
                 const auto & doodadDat = (Sc::Terrain::DoodadCv5 &)tileset.tileGroups[*doodadGroupIndex];
@@ -302,12 +249,11 @@ void GuiMap::validateTileOccupiers(size_t tileX, size_t tileY, uint16_t tileValu
                         auto doodadTilePlacability = placability.tileGroup[y*doodadDat.tileWidth+x];
                         if ( doodadTilePlacability != 0 && tileValue/16 != doodadTilePlacability ) // This doodad tile is illegal given the new tileValue
                         {
-                            tileChanges->Insert(DoodadCreateDel::Make(u16(doodadIndex), doodad));
-                            if ( !sprites.empty() )
+                            if ( !read.sprites.empty() )
                             {
-                                for ( int i=int(sprites.size())-1; i>=0; --i )
+                                for ( int i=int(read.sprites.size())-1; i>=0; --i )
                                 {
-                                    const auto & sprite = sprites[i];
+                                    const auto & sprite = read.sprites[i];
                                     if ( sprite.type == doodadDat.overlayIndex && sprite.xc == doodad.xc && sprite.yc == doodad.yc )
                                         Scenario::deleteSprite(i);
                                 }
@@ -315,7 +261,7 @@ void GuiMap::validateTileOccupiers(size_t tileX, size_t tileY, uint16_t tileValu
                             for ( y=top; y<bottom; ++y )
                             {
                                 for ( x=left; x<right; ++x )
-                                    Scenario::tiles[y*size_t(dimensions.tileWidth)+x] = Scenario::editorTiles[y*size_t(dimensions.tileWidth)+x];
+                                    edit->tiles[y*size_t(read.dimensions.tileWidth)+x] = read.editorTiles[y*size_t(read.dimensions.tileWidth)+x];
                             }
                             Scenario::deleteDoodad(doodadIndex);
                             cacheRefreshNeeded = true;
@@ -329,13 +275,13 @@ void GuiMap::validateTileOccupiers(size_t tileX, size_t tileY, uint16_t tileValu
     }
 
     if ( !tileOccupiedByValidDoodad )
-        Scenario::tiles[tileY*size_t(dimensions.tileWidth)+tileX] = tileValue;
+        edit->tiles[tileY*size_t(read.dimensions.tileWidth)+tileX] = tileValue;
     
     if ( !placeUnitsAnywhere || !placeBuildingsAnywhere )
     {
-        for ( int unitIndex=int(units.size())-1; unitIndex>=0; --unitIndex )
+        for ( int unitIndex=int(read.units.size())-1; unitIndex>=0; --unitIndex )
         {
-            const auto & unit = units[unitIndex];
+            const auto & unit = read.units[unitIndex];
             if ( unit.type < Sc::Unit::TotalTypes )
             {
                 const auto & unitDat = chkd.scData.units.getUnit(unit.type);
@@ -378,7 +324,7 @@ void GuiMap::validateTileOccupiers(size_t tileX, size_t tileY, uint16_t tileValu
                                     {
                                         if ( !tileset.tileFlags[megaTileIndex].miniTileFlags[yMiniTile][xMiniTile].isWalkable() ) // Unit is invalidated
                                         {
-                                            unlinkAndDeleteUnit(unitIndex, tileChanges);
+                                            unlinkAndDeleteUnit(unitIndex);
                                             cacheRefreshNeeded = true;
                                             return;
                                         }
@@ -400,12 +346,11 @@ void GuiMap::setTileset(Sc::Terrain::Tileset tileset)
 {
     Scenario::setTileset(tileset);
     scGraphics.updatePalette();
-    (Chk::IsomCache &)(*this) = {Scenario::tileset, Scenario::getTileWidth(), Scenario::getTileHeight(), chkd.scData.terrain.get(Scenario::tileset)};
+    (Chk::IsomCache &)(*this) = {read.tileset, Scenario::getTileWidth(), Scenario::getTileHeight(), chkd.scData.terrain.get(read.tileset)};
 }
 
 // From Scenario.cpp
-void setTiledDimensions(std::vector<u8> & tiles, u16 newTileWidth, u16 newTileHeight, u16 oldTileWidth, u16 oldTileHeight, s32 leftEdge, s32 topEdge);
-void setTiledDimensions(std::vector<u16> & tiles, u16 newTileWidth, u16 newTileHeight, u16 oldTileWidth, u16 oldTileHeight, s32 leftEdge, s32 topEdge);
+template <typename T> std::vector<T> resizeAndOffset(const std::vector<T> & tiles, u16 newTileWidth, u16 newTileHeight, u16 oldTileWidth, u16 oldTileHeight, std::ptrdiff_t leftEdge, std::ptrdiff_t topEdge);
 
 struct SimpleCache : Chk::IsomCache
 {
@@ -415,29 +360,45 @@ struct SimpleCache : Chk::IsomCache
         : Chk::IsomCache{tileset, tileWidth, tileHeight, tiles}, scenario(scenario) {}
 
     inline void setTileValue(size_t tileX, size_t tileY, uint16_t tileValue) final {
-        scenario.editorTiles[tileY*scenario.dimensions.tileWidth + tileX] = tileValue;
-        scenario.tiles[tileY*scenario.dimensions.tileWidth + tileX] = tileValue;
+        auto edit = scenario.operator()(ActionDescriptor::UpdateTileValue);
+        edit->editorTiles[tileY*scenario->dimensions.tileWidth + tileX] = tileValue;
+        edit->tiles[tileY*scenario->dimensions.tileWidth + tileX] = tileValue;
     }
 };
 
 void GuiMap::setDimensions(u16 newTileWidth, u16 newTileHeight, u16 sizeValidationFlags, s32 leftEdge, s32 topEdge, size_t newTerrainType)
 {
+    if ( newTileWidth == getTileWidth() && newTileHeight == getTileHeight() && leftEdge == 0 && topEdge == 0)
+        return;
+
+    auto edit = createAction(ActionDescriptor::ResizeMap);
+
+    // Selection indexes would be invalidated by a size change
+    edit->tiles.clearSelections();
+    edit->editorTiles.clearSelections();
+    edit->isomRects.clearSelections();
+    edit->tileFog.clearSelections();
+
     bool anywhereWasStandardDimensions = Scenario::anywhereIsStandardDimensions();
 
-    Scenario destMap(this->getTileset(), u16(this->getTileWidth()), u16(this->getTileHeight()));
-    SimpleCache destMapCache(destMap, Scenario::tileset, newTileWidth, newTileHeight, chkd.scData.terrain.get(Scenario::tileset));
+    auto destMapData = std::make_unique<Scenario>(this->getTileset(), u16(this->getTileWidth()), u16(this->getTileHeight()));
+    Scenario & destMap = *destMapData;
+    auto editDest = destMap.operator()(ActionDescriptor::ResizeMap);
+    SimpleCache destMapCache(destMap, read.tileset, newTileWidth, newTileHeight, chkd.scData.terrain.get(read.tileset));
+    
+    editDest->tiles = read.tiles;
+    editDest->editorTiles = read.editorTiles;
+    editDest->tileFog = read.tileFog;
 
-    destMap.editorTiles = this->editorTiles;
-    destMap.tiles = this->tiles;
-    setTiledDimensions(destMap.tiles, newTileWidth, newTileHeight, (uint16_t)this->getTileWidth(), (uint16_t)this->getTileHeight(), 0, 0);
-    setTiledDimensions(destMap.editorTiles, newTileWidth, newTileHeight, (uint16_t)this->getTileWidth(), (uint16_t)this->getTileHeight(), 0, 0);
-    setTiledDimensions(destMap.tileFog, newTileWidth, newTileHeight, (uint16_t)this->getTileWidth(), (uint16_t)this->getTileHeight(), 0, 0);
+    editDest->tiles = ::resizeAndOffset(destMap->tiles, newTileWidth, newTileHeight, read.dimensions.tileWidth, read.dimensions.tileHeight, 0, 0);
+    editDest->editorTiles = ::resizeAndOffset(destMap->editorTiles, newTileWidth, newTileHeight, read.dimensions.tileWidth, read.dimensions.tileHeight, 0, 0);
+    editDest->tileFog = ::resizeAndOffset(destMap->tileFog, newTileWidth, newTileHeight, read.dimensions.tileWidth, read.dimensions.tileHeight, 0, 0);
     uint16_t isomValue = ((Chk::IsomCache::getTerrainTypeIsomValue(newTerrainType) << 4) | Chk::IsomRect::EditorFlag::Modified);
 
-    destMap.dimensions = {newTileWidth, newTileHeight};
-    destMap.isomRects.assign((newTileWidth/2+1)*(newTileHeight+1), Chk::IsomRect{ isomValue, isomValue, isomValue, isomValue });
+    editDest->dimensions = Chk::DIM{newTileWidth, newTileHeight};
+    editDest->isomRects.assign((newTileWidth/2+1)*(newTileHeight+1), Chk::IsomRect{ isomValue, isomValue, isomValue, isomValue });
     
-    destMap.copyIsomFrom(*this, leftEdge, topEdge, false, destMapCache);
+    destMap.copyIsomFrom(*this, leftEdge, topEdge, destMapCache);
     destMap.resizeIsom(leftEdge, topEdge, this->getTileWidth(), this->getTileHeight(), false, destMapCache);
     destMap.updateTilesFromIsom(destMapCache);
 
@@ -455,110 +416,113 @@ void GuiMap::setDimensions(u16 newTileWidth, u16 newTileHeight, u16 sizeValidati
     {
         for ( size_t x=0; x<copyWidth; ++x )
         {
-            destMap.editorTiles[(y+destStartY)*newTileWidth+(x+destStartX)] = this->editorTiles[(y+tileRect.top)*this->getTileWidth()+(x+tileRect.left)];
-            destMap.tiles[(y+destStartY)*newTileWidth+(x+destStartX)] = this->tiles[(y+tileRect.top)*this->getTileWidth()+(x+tileRect.left)];
+            editDest->editorTiles[(y+destStartY)*newTileWidth+(x+destStartX)] = read.editorTiles[(y+tileRect.top)*this->getTileWidth()+(x+tileRect.left)];
+            editDest->tiles[(y+destStartY)*newTileWidth+(x+destStartX)] = read.tiles[(y+tileRect.top)*this->getTileWidth()+(x+tileRect.left)];
         }
     }
-    
-    std::swap(this->dimensions, destMap.dimensions);
-    std::swap(this->isomRects, destMap.isomRects);
-    std::swap(this->editorTiles, destMap.editorTiles);
-    std::swap(this->tiles, destMap.tiles);
+
+    edit->dimensions = destMap->dimensions;
+    edit->isomRects = destMap->isomRects;
+    edit->editorTiles = destMap->editorTiles;
+    edit->tiles = destMap->tiles;
+    edit->tileFog = destMap->tileFog;
+
     u16 pixelWidth = u16(Scenario::getPixelWidth());
     u16 pixelHeight = u16(Scenario::getPixelHeight());
-    for ( int i=int(this->doodads.size()-1); i>=0; --i )
+    for ( int i=int(read.doodads.size()-1); i>=0; --i )
     {
-        auto & doodad = this->doodads[i];
+        const auto & doodad = read.doodads[i];
         if ( u16(s32(doodad.xc) + 32*leftEdge) > pixelWidth || u16(s32(doodad.yc) + 32*topEdge) > pixelHeight )
             ((Scenario*)(this))->deleteDoodad(i);
         else
         {
-            doodad.xc += 32*leftEdge;
-            doodad.yc += 32*topEdge;
+            edit->doodads[i].xc += 32*leftEdge;
+            edit->doodads[i].yc += 32*topEdge;
         }
     }
-    for ( int i=int(this->sprites.size()-1); i>=0; --i )
+    for ( int i=int(read.sprites.size()-1); i>=0; --i )
     {
-        auto & sprite = this->sprites[i];
+        const auto & sprite = read.sprites[i];
         if ( u16(s32(sprite.xc) + 32*leftEdge) > pixelWidth || u16(s32(sprite.yc) + 32*topEdge) > pixelHeight )
             ((Scenario*)(this))->deleteSprite(i);
         else
         {
-            sprite.xc += 32*leftEdge;
-            sprite.yc += 32*topEdge;
+            edit->sprites[i].xc += 32*leftEdge;
+            edit->sprites[i].yc += 32*topEdge;
         }
     }
-    for ( int i=int(this->units.size()-1); i>=0; --i )
+    for ( int i=int(read.units.size()-1); i>=0; --i )
     {
-        auto & unit = this->units[i];
+        const auto & unit = read.units[i];
         if ( u16(s32(unit.xc) + 32*leftEdge) > pixelWidth || u16(s32(unit.yc) + 32*topEdge) > pixelHeight )
             ((Scenario*)(this))->deleteUnit(i);
         else
         {
-            unit.xc += 32*leftEdge;
-            unit.yc += 32*topEdge;
+            edit->units[i].xc += 32*leftEdge;
+            edit->units[i].yc += 32*topEdge;
         }
     }
-    for ( auto & location : this->locations )
+    for ( std::size_t i=0; i<read.locations.size(); ++i )
     {
+        const auto & location = read.locations[i];
         if ( location.isBlank() )
             continue;
 
         if ( leftEdge < 0 ) // Moving leftwards
         {
             if ( location.left + 32*leftEdge > location.left )
-                location.left = 0;
+                edit->locations[i].left = 0;
             else
-                location.left += 32*leftEdge;
+                edit->locations[i].left += 32*leftEdge;
 
             if ( location.right + 32*leftEdge > location.right )
-                location.right = 0;
+                edit->locations[i].right = 0;
             else
-                location.right += 32*leftEdge;
+                edit->locations[i].right += 32*leftEdge;
         }
         else // Moving rightwards
         {
             if ( location.left + 32*leftEdge > pixelWidth )
-                location.left = pixelWidth;
+                edit->locations[i].left = pixelWidth;
             else
-                location.left += 32*leftEdge;
+                edit->locations[i].left += 32*leftEdge;
 
             if ( location.right + 32*leftEdge > pixelWidth )
-                location.right = pixelWidth;
+                edit->locations[i].right = pixelWidth;
             else
-                location.right += 32*leftEdge;
+                edit->locations[i].right += 32*leftEdge;
         }
 
         if ( topEdge < 0 ) // Moving upwards
         {
             if ( location.top + 32*topEdge > location.top )
-                location.top = 0;
+                edit->locations[i].top = 0;
             else
-                location.top += 32*topEdge;
+                edit->locations[i].top += 32*topEdge;
 
             if ( location.bottom + 32*topEdge > location.bottom )
-                location.bottom = 0;
+                edit->locations[i].bottom = 0;
             else
-                location.bottom += 32*topEdge;
+                edit->locations[i].bottom += 32*topEdge;
         }
         else // Moving downwards
         {
             if ( location.top + 32*topEdge > pixelHeight )
-                location.top = pixelHeight;
+                edit->locations[i].top = pixelHeight;
             else
-                location.top += 32*topEdge;
+                edit->locations[i].top += 32*topEdge;
 
             if ( location.bottom + 32*topEdge > pixelHeight )
-                location.bottom = pixelHeight;
+                edit->locations[i].bottom = pixelHeight;
             else
-                location.bottom += 32*topEdge;
+                edit->locations[i].bottom += 32*topEdge;
         }
     }
 
     if ( anywhereWasStandardDimensions )
         Scenario::matchAnywhereToDimensions();
 
-    (Chk::IsomCache &)(*this) = {Scenario::tileset, Scenario::getTileWidth(), Scenario::getTileHeight(), chkd.scData.terrain.get(Scenario::tileset)};
+    (Chk::IsomCache &)(*this) = {read.tileset, Scenario::getTileWidth(), Scenario::getTileHeight(), chkd.scData.terrain.get(read.tileset)};
 }
 
 bool GuiMap::placeIsomTerrain(Chk::IsomDiamond isomDiamond, size_t terrainType, size_t brushExtent)
@@ -571,32 +535,55 @@ bool GuiMap::placeIsomTerrain(Chk::IsomDiamond isomDiamond, size_t terrainType, 
     return false;
 }
 
-void GuiMap::unlinkAndDeleteUnit(size_t unitIndex, std::shared_ptr<ReversibleActions> opUndos)
+void GuiMap::unlinkAndDeleteSelectedUnits()
 {
-    const auto & toDelete = Scenario::getUnit(unitIndex);
-    for ( size_t unitIndex = 0; unitIndex < units.size(); ++unitIndex )
+    auto edit = createAction(ActionDescriptor::DeleteUnits);
+    if ( view.units.sel().size() == read.units.size() )
+        edit->units.reset();
+    else
     {
-        auto & unit = units[unitIndex];
+        for ( auto unitIndex : view.units.sel() )
+        {
+            const auto & toDelete = Scenario::getUnit(unitIndex);
+            for ( size_t unitIndex = 0; unitIndex < read.units.size(); ++unitIndex )
+            {
+                const auto & unit = read.units[unitIndex];
+                if ( unit.relationClassId == toDelete.classId )
+                {
+                    edit->units[unitIndex].relationClassId = 0;
+                    edit->units[unitIndex].relationFlags = 0;
+                    logger.info() << "Unit at index " << unitIndex << " unlinked from deleted unit" << std::endl;
+                }
+            }
+        }
+        edit->units.removeSelection();
+    }
+}
+
+void GuiMap::unlinkAndDeleteUnit(size_t unitIndex)
+{
+    auto edit = createAction(ActionDescriptor::DeleteUnits);
+    const auto & toDelete = Scenario::getUnit(unitIndex);
+    for ( size_t unitIndex = 0; unitIndex < read.units.size(); ++unitIndex )
+    {
+        const auto & unit = read.units[unitIndex];
         if ( unit.relationClassId == toDelete.classId )
         {
-            opUndos->Insert(UnitChange::Make(u16(unitIndex), Chk::Unit::Field::RelationClassId, unit.relationClassId));
-            opUndos->Insert(UnitChange::Make(u16(unitIndex), Chk::Unit::Field::RelationFlags, unit.relationFlags));
-            unit.relationClassId = 0;
-            unit.relationFlags = 0;
+            edit->units[unitIndex].relationClassId = 0;
+            edit->units[unitIndex].relationFlags = 0;
             logger.info() << "Unit at index " << unitIndex << " unlinked from deleted unit" << std::endl;
         }
     }
-    opUndos->Insert(UnitCreateDel::Make(u16(unitIndex), toDelete));
     Scenario::deleteUnit(unitIndex);
 }
 
-void GuiMap::changeUnitOwner(size_t unitIndex, u8 newPlayer, std::shared_ptr<ReversibleActions> opUndos)
+void GuiMap::changeUnitOwner(size_t unitIndex, u8 newPlayer)
 {
-    auto & toChange = Scenario::getUnit(unitIndex);
+    auto edit = createAction(ActionDescriptor::UpdateUnitOwner);
+    const auto & toChange = Scenario::getUnit(unitIndex);
     if ( toChange.owner != newPlayer )
     {
-        opUndos->Insert(UnitChange::Make(u16(unitIndex), Chk::Unit::Field::Owner, toChange.owner));
-        toChange.owner = newPlayer;
+        edit->units[unitIndex].owner = newPlayer;
 
         if ( toChange.relationClassId != 0 && addonAutoPlayerSwap )
         {
@@ -606,14 +593,13 @@ void GuiMap::changeUnitOwner(size_t unitIndex, u8 newPlayer, std::shared_ptr<Rev
 
             if ( mayHaveAddon )
             {
-                for ( size_t unitIndex = 0; unitIndex < units.size(); ++unitIndex )
+                for ( size_t unitIndex = 0; unitIndex < read.units.size(); ++unitIndex )
                 {
-                    auto & unit = units[unitIndex];
+                    const auto & unit = read.units[unitIndex];
                     if ( toChange.relationClassId == unit.classId )
                     {
-                        opUndos->Insert(UnitChange::Make(u16(unitIndex), Chk::Unit::Field::Owner, unit.owner));
-                        unit.owner = newPlayer;
-                        unit.validFieldFlags |= Chk::Unit::ValidField::Owner;
+                        edit->units[unitIndex].owner = newPlayer;
+                        edit->units[unitIndex].validFieldFlags |= Chk::Unit::ValidField::Owner;
                     }
                 }
             }
@@ -742,55 +728,51 @@ void GuiMap::setDragging(bool bDragging)
 
 void GuiMap::convertSelectionToTerrain()
 {
-    std::vector<size_t> selectedDoodads = selections.doodads;
-    selections.removeDoodads();
-    
-    auto undoDoodadConversion = ReversibleActions::Make();
-    std::sort(selectedDoodads.begin(), selectedDoodads.end(), [&](size_t lhs, size_t rhs) { return lhs > rhs; }); // Highest index to lowest
-    for ( size_t doodadIndex : selectedDoodads ) {
-        Chk::Doodad doodad = this->getDoodad(doodadIndex);
-        undoDoodadConversion->Insert(DoodadCreateDel::Make(u16(doodadIndex), doodad, true));
-        Scenario::deleteDoodad(doodadIndex);
+    if ( !view.doodads.sel().empty() )
+    {
+        auto edit = createAction(ActionDescriptor::ConvertDoodad);
+        std::vector<size_t> selectedDoodads = view.doodads.sel();
+        edit->doodads.clearSelections();
 
-        const auto & tileset = chkd.scData.terrain.get(Scenario::getTileset());
-        if ( auto doodadGroupIndex = tileset.getDoodadGroupIndex(doodad.type) )
-        {
-            const auto & doodadDat = (Sc::Terrain::DoodadCv5 &)tileset.tileGroups[*doodadGroupIndex];
-            bool evenWidth = doodadDat.tileWidth%2 == 0;
-            bool evenHeight = doodadDat.tileHeight%2 == 0;
-            auto xStart = evenWidth ? (doodad.xc+16)/32 - doodadDat.tileWidth/2 : doodad.xc/32 - (doodadDat.tileWidth-1)/2;
-            auto yStart = evenHeight ? (doodad.yc+16)/32 - doodadDat.tileHeight/2 : doodad.yc/32 - (doodadDat.tileHeight-1)/2;
+        std::sort(selectedDoodads.begin(), selectedDoodads.end(), [&](size_t lhs, size_t rhs) { return lhs > rhs; }); // Highest index to lowest
+        for ( size_t doodadIndex : selectedDoodads ) {
+            Chk::Doodad doodad = this->getDoodad(doodadIndex);
+            Scenario::deleteDoodad(doodadIndex);
 
-            for ( u16 y=0; y<doodadDat.tileHeight; ++y )
+            const auto & tileset = chkd.scData.terrain.get(Scenario::getTileset());
+            if ( auto doodadGroupIndex = tileset.getDoodadGroupIndex(doodad.type) )
             {
-                auto yc = yStart+y;
-                u16 tileGroupIndex = *doodadGroupIndex + y;
-                const auto & tileGroup = tileset.tileGroups[tileGroupIndex];
-                for ( u16 x=0; x<doodadDat.tileWidth; ++x )
+                const auto & doodadDat = (Sc::Terrain::DoodadCv5 &)tileset.tileGroups[*doodadGroupIndex];
+                bool evenWidth = doodadDat.tileWidth%2 == 0;
+                bool evenHeight = doodadDat.tileHeight%2 == 0;
+                auto xStart = evenWidth ? (doodad.xc+16)/32 - doodadDat.tileWidth/2 : doodad.xc/32 - (doodadDat.tileWidth-1)/2;
+                auto yStart = evenHeight ? (doodad.yc+16)/32 - doodadDat.tileHeight/2 : doodad.yc/32 - (doodadDat.tileHeight-1)/2;
+
+                for ( u16 y=0; y<doodadDat.tileHeight; ++y )
                 {
-                    auto xc = xStart+x;
-                    if ( tileGroup.megaTileIndex[x] != 0 )
+                    auto yc = yStart+y;
+                    u16 tileGroupIndex = *doodadGroupIndex + y;
+                    const auto & tileGroup = tileset.tileGroups[tileGroupIndex];
+                    for ( u16 x=0; x<doodadDat.tileWidth; ++x )
                     {
-                        auto currDoodadTile = 16*tileGroupIndex + x;
-                        auto currFinalTile = Scenario::getTile(xc, yc, Chk::Scope::Game);
-                        auto underlyingTile = Scenario::getTile(xc, yc, Chk::Scope::Editor);
-                        if ( currDoodadTile != underlyingTile ) // TILE
+                        auto xc = xStart+x;
+                        if ( tileGroup.megaTileIndex[x] != 0 )
                         {
-                            undoDoodadConversion->Insert(TileChange::Make(xc, yc, underlyingTile));
-                            Scenario::setTile(xc, yc, currDoodadTile, Chk::Scope::Editor);
-                        }
-                        if ( currDoodadTile != currFinalTile ) // MTXM
-                        {
-                            undoDoodadConversion->Insert(TileChange::Make(xc, yc, currFinalTile));
-                            Scenario::setTile(xc, yc, currDoodadTile, Chk::Scope::Game);
+                            auto currDoodadTile = 16*tileGroupIndex + x;
+                            auto currFinalTile = Scenario::getTile(xc, yc, Chk::Scope::Game);
+                            auto underlyingTile = Scenario::getTile(xc, yc, Chk::Scope::Editor);
+                            if ( currDoodadTile != underlyingTile ) // TILE
+                                Scenario::setTile(xc, yc, currDoodadTile, Chk::Scope::Editor);
+
+                            if ( currDoodadTile != currFinalTile ) // MTXM
+                                Scenario::setTile(xc, yc, currDoodadTile, Chk::Scope::Game);
                         }
                     }
                 }
             }
         }
+        refreshTileOccupationCache();
     }
-    AddUndo(undoDoodadConversion);
-    refreshTileOccupationCache();
 }
 
 void GuiMap::stackSelected()
@@ -800,38 +782,39 @@ void GuiMap::stackSelected()
     if ( stackSize <= 0 )
         return;
 
-    auto stackUndos = ReversibleActions::Make();
     if ( currLayer == Layer::Units && selections.hasUnits() && Scenario::numUnits() + (size_t(stackSize)*selections.numUnits()) < 4000 )
     {
-        auto & selectedUnits = selections.units;
-        for ( auto & selectedUnit : selectedUnits )
+        auto edit = createAction(ActionDescriptor::StackUnits);
+        for ( auto selectedUnit : view.units.sel() )
         {
             auto unit = CM->getUnit(selectedUnit);
-            for ( int i=0; i<stackSize-1; ++i )
-                stackUndos->Insert(UnitCreateDel::Make(u16(Scenario::addUnit(unit))));
+            std::vector<Chk::Unit> addedUnits(stackSize, unit);
+            edit->units.append(addedUnits);
         }
+
         if ( chkd.unitWindow.getHandle() != nullptr )
             chkd.unitWindow.RepopulateList();
     }
     else if ( currLayer == Layer::Sprites && selections.hasSprites() && Scenario::numSprites() + (size_t(stackSize)*selections.numSprites()) < 4000 )
     {
-        auto & selectedSprites = selections.sprites;
-        for ( auto & selectedSprite : selectedSprites )
+        auto edit = createAction(ActionDescriptor::StackSprites);
+        for ( auto selectedSprite : view.sprites.sel() )
         {
             auto sprite = CM->getSprite(selectedSprite);
-            for ( int i=0; i<stackSize-1; ++i )
-                stackUndos->Insert(SpriteCreateDel::Make(Scenario::addSprite(sprite)));
+            std::vector<Chk::Sprite> addedSprites(stackSize, sprite);
+            edit->sprites.append(addedSprites);
         }
+
         if ( chkd.spriteWindow.getHandle() != nullptr )
             chkd.spriteWindow.RepopulateList();
     }
-    CM->AddUndo(stackUndos);
 }
 
 void GuiMap::createLocation()
 {
     if ( selections.hasUnits() )
     {
+        auto edit = createAction(ActionDescriptor::CreateLocationForUnit);
         u16 firstUnitId = selections.getFirstUnit();
         const Chk::Unit & unit = Scenario::getUnit(firstUnitId);
         const auto & unitDat = chkd.scData.units.getUnit(unit.type);
@@ -849,7 +832,6 @@ void GuiMap::createLocation()
             CM->setLayer(Layer::Locations);
             Scenario::setLocationName<RawString>(newLocationId, "Location " + std::to_string(newLocationId), Chk::Scope::Game);
             Scenario::deleteUnusedStrings(Chk::Scope::Both);
-            undos.AddUndo(LocationCreateDel::Make((u16)newLocationId));
             selections.selectLocation(u16(newLocationId));
             chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree(true);
             refreshScenario();
@@ -865,6 +847,7 @@ void GuiMap::createInvertedLocation()
 {
     if ( selections.hasUnits() )
     {
+        auto edit = createAction(ActionDescriptor::CreateInvertedLocationForUnit);
         u16 firstUnitId = selections.getFirstUnit();
         const Chk::Unit & unit = Scenario::getUnit(firstUnitId);
         const auto & unitDat = chkd.scData.units.getUnit(unit.type);
@@ -882,7 +865,6 @@ void GuiMap::createInvertedLocation()
             CM->setLayer(Layer::Locations);
             Scenario::setLocationName<RawString>(newLocationId, "Location " + std::to_string(newLocationId), Chk::Scope::Game);
             Scenario::deleteUnusedStrings(Chk::Scope::Both);
-            undos.AddUndo(LocationCreateDel::Make((u16)newLocationId));
             selections.selectLocation(u16(newLocationId));
             chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree(true);
             refreshScenario();
@@ -898,6 +880,7 @@ void GuiMap::createMobileInvertedLocation()
 {
     if ( selections.hasUnits() )
     {
+        auto edit = createAction(ActionDescriptor::CreateMobileInvertedLocationForUnit);
         u16 firstUnitId = selections.getFirstUnit();
         const Chk::Unit & unit = Scenario::getUnit(firstUnitId);
         const auto & unitDat = chkd.scData.units.getUnit(unit.type);
@@ -919,7 +902,6 @@ void GuiMap::createMobileInvertedLocation()
             CM->setLayer(Layer::Locations);
             Scenario::setLocationName<RawString>(newLocationId, "Location " + std::to_string(newLocationId), Chk::Scope::Game);
             Scenario::deleteUnusedStrings(Chk::Scope::Both);
-            undos.AddUndo(LocationCreateDel::Make((u16)newLocationId));
             selections.selectLocation(u16(newLocationId));
             chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree(true);
             refreshScenario();
@@ -1100,13 +1082,14 @@ void GuiMap::doubleClickLocation(s32 xPos, s32 yPos)
 
 void GuiMap::openTileProperties(s32 xClick, s32 yClick)
 {
-    u16 xSize = (u16)Scenario::getTileWidth();
-    u16 currTile = Scenario::getTile(xClick/32, yClick/32);
-    
-    if ( selections.hasTiles() )
-        selections.removeTiles();
-                            
-    selections.addTile(currTile, u16(xClick/32), u16(yClick/32), TileNeighbor::All);
+    auto edit = createAction(ActionDescriptor::OpenTileProperties);
+    std::size_t tileIndex = (yClick/32)*Scenario::getTileWidth()+(xClick/32);
+    if ( !(view.tiles.sel().size() == 1 && view.tiles.sel().front() == tileIndex) )
+    {
+        edit->tiles.clearSelections();
+        edit->tiles.select(tileIndex);
+    }
+
     RedrawWindow(getHandle(), NULL, NULL, RDW_INVALIDATE);
     if ( chkd.tilePropWindow.getHandle() != NULL )
         chkd.tilePropWindow.UpdateTile();
@@ -1185,13 +1168,17 @@ u8 GuiMap::GetPlayerOwnerStringId(u8 player)
     return 0; // Unused
 }
 
-void GuiMap::refreshScenario()
+void GuiMap::refreshScenario(bool clearSelections)
 {
-    selections.removeTiles();
-    selections.removeDoodads();
-    selections.removeUnits();
-    selections.removeSprites();
-    selections.removeFog();
+    if ( clearSelections )
+    {
+        auto edit = createAction(ActionDescriptor::ClearSelections);
+        edit->tiles.clearSelections();
+        edit->doodads.clearSelections();
+        edit->units.clearSelections();
+        edit->sprites.clearSelections();
+        edit->tileFog.clearSelections();
+    }
     chkd.mainPlot.leftBar.blockSelections = true;
     chkd.mainPlot.leftBar.mainTree.isomTree.UpdateIsomTree();
     chkd.mainPlot.leftBar.mainTree.doodadTree.UpdateDoodadTree();
@@ -1222,78 +1209,40 @@ void GuiMap::refreshScenario()
 
 void GuiMap::clearSelectedTiles()
 {
-    selections.removeTiles();
+    createAction(ActionDescriptor::ClearTileSel)->tiles.clearSelections();
 }
 
 void GuiMap::clearSelectedDoodads()
 {
-    selections.removeDoodads();
+    createAction(ActionDescriptor::ClearDoodadSel)->doodads.clearSelections();
 }
 
 void GuiMap::clearSelectedUnits()
 {
-    selections.removeUnits();
+    createAction(ActionDescriptor::ClearUnitSel)->units.clearSelections();
 }
 
 void GuiMap::clearSelectedSprites()
 {
-    selections.removeUnits();
+    createAction(ActionDescriptor::ClearSpriteSel)->sprites.clearSelections();
 }
 
 void GuiMap::clearSelection()
 {
-    selections.removeTiles();
-    selections.removeDoodads();
-    selections.removeSprites();
-    selections.removeUnits();
-    selections.removeFog();
+    auto edit = createAction(ActionDescriptor::ClearSelections);
+    edit->tiles.clearSelections();
+    edit->doodads.clearSelections();
+    edit->sprites.clearSelections();
+    edit->units.clearSelections();
+    edit->tileFog.clearSelections();
+    selections.removeLocations();
 }
 
 void GuiMap::selectAll()
 {
+    auto edit = createAction(ActionDescriptor::SelectAll);
     auto selectAllTiles = [&]() {
-        if ( selections.hasTiles() )
-            selections.removeTiles();
-
-        u16 tileValue,
-            width = (u16)Scenario::getTileWidth(),
-            height = (u16)Scenario::getTileHeight(),
-            x=0, y=0;
-                
-        tileValue = Scenario::getTile(0, 0);
-        selections.addTile(tileValue, 0, 0, TileNeighbor(TileNeighbor::Left|TileNeighbor::Top));
-        for ( x=1; x<width-1; x++ ) // Add the top row
-        {
-            tileValue = Scenario::getTile(x, 0);
-            selections.addTile(tileValue, x, y, TileNeighbor::Top);
-        }
-        tileValue = Scenario::getTile(0, width-1);
-        selections.addTile(tileValue, width-1, 0, TileNeighbor(TileNeighbor::Right|TileNeighbor::Top));
-
-        for ( y=1; y<height-1; y++ ) // Add the middle rows
-        {
-            tileValue = Scenario::getTile(0, y);
-            selections.addTile(tileValue, 0, y, TileNeighbor::Left); // Add the left tile
-
-            for ( x=1; x<width-1; x++ )
-            {
-                tileValue = Scenario::getTile(x, y);
-                selections.addTile(tileValue, x, y, TileNeighbor::None); // Add the middle portion of the row
-            }
-            tileValue = Scenario::getTile(width-1, y);
-            selections.addTile(tileValue, width-1, y, TileNeighbor::Right); // Add the right tile
-        }
-
-        tileValue = Scenario::getTile(0, height-1);
-        selections.addTile(tileValue, 0, height-1, TileNeighbor(TileNeighbor::Left|TileNeighbor::Bottom));
-
-        for ( x=1; x<width-1; x++ ) // Add the bottom row
-        {
-            tileValue = Scenario::getTile(x, height-1);
-            selections.addTile(tileValue, x, height-1, TileNeighbor::Bottom);
-        }
-        tileValue = Scenario::getTile(width-1, height-1);
-        selections.addTile(tileValue, width-1, height-1, TileNeighbor(TileNeighbor::Right|TileNeighbor::Bottom));
+        edit->tiles.selectAll();
     };
     auto selectAllUnits = [&]() {
         chkd.unitWindow.SetChangeHighlightOnly(true);
@@ -1301,11 +1250,11 @@ void GuiMap::selectAll()
         {
             if ( !selections.unitIsSelected(i) )
             {
-                selections.addUnit(i);
                 if ( chkd.unitWindow.getHandle() != nullptr )
                     chkd.unitWindow.FocusAndSelectIndex(i);
             }
         }
+        edit->units.selectAll();
         chkd.unitWindow.SetChangeHighlightOnly(false);
         Redraw(true);
     };
@@ -1313,16 +1262,17 @@ void GuiMap::selectAll()
         for ( size_t i=0; i<Scenario::numDoodads(); ++i )
         {
             if ( !selections.doodadIsSelected(i) )
-                selections.addDoodad(i);
+                edit->doodads.select(i);
         }
     };
     auto selectAllSprites = [&]() {
         chkd.spriteWindow.SetChangeHighlightOnly(true);
+
         for ( size_t i=0; i<Scenario::numSprites(); ++i )
         {
             if ( !selections.spriteIsSelected(i) )
             {
-                selections.addSprite(i);
+                edit->sprites.select(i);
                 if ( chkd.spriteWindow.getHandle() != nullptr )
                     chkd.spriteWindow.FocusAndSelectIndex(u16(i));
             }
@@ -1330,33 +1280,7 @@ void GuiMap::selectAll()
         chkd.spriteWindow.SetChangeHighlightOnly(false);
     };
     auto selectAllFog = [&]() {
-        selections.removeFog();
-        u16 width = (u16)Scenario::getTileWidth(),
-            height = (u16)Scenario::getTileHeight(),
-            x=0, y=0;
-                    
-        selections.addFogTile(0, 0, TileNeighbor(TileNeighbor::Left|TileNeighbor::Top));
-        for ( x=1; x<width-1; x++ ) // Add the top row
-            selections.addFogTile(x, y, TileNeighbor::Top);
-                    
-        selections.addFogTile(width-1, 0, TileNeighbor(TileNeighbor::Right|TileNeighbor::Top));
-
-        for ( y=1; y<height-1; y++ ) // Add the middle rows
-        {
-            selections.addFogTile(0, y, TileNeighbor::Left); // Add the left tile
-
-            for ( x=1; x<width-1; x++ )
-                selections.addFogTile(x, y, TileNeighbor::None); // Add the middle portion of the row
-
-            selections.addFogTile(width-1, y, TileNeighbor::Right); // Add the right tile
-        }
-
-        selections.addFogTile(0, height-1, TileNeighbor(TileNeighbor::Left|TileNeighbor::Bottom));
-
-        for ( x=1; x<width-1; x++ ) // Add the bottom row
-            selections.addFogTile(x, height-1, TileNeighbor::Bottom);
-
-        selections.addFogTile(width-1, height-1, TileNeighbor(TileNeighbor::Right|TileNeighbor::Bottom));
+        edit->tileFog.selectAll();
     };
     switch ( currLayer )
     {
@@ -1395,22 +1319,28 @@ void GuiMap::selectAll()
 
 void GuiMap::deleteSelection()
 {
+    auto edit = createAction();
     auto deleteTerrainSelection = [&]() {
-        u16 xSize = (u16)Scenario::getTileWidth();
-
-        auto & selTiles = selections.tiles;
-        for ( auto & tile : selTiles )
-            setTileValue(tile.xc, tile.yc, Scenario::getTile(tile.xc, tile.yc, Chk::Scope::Both));
-
-        selections.removeTiles();
+        setActionDescription(ActionDescriptor::DeleteTiles);
+        auto tileWidth = Scenario::getTileWidth();
+        for ( auto tileIndex : view.tiles.sel() )
+        {
+            auto x = tileIndex % tileWidth;
+            auto y = tileIndex / tileWidth;
+            if ( read.tiles[tileIndex] != 0 )
+                edit->tiles[tileIndex] = 0;
+            if ( read.editorTiles[tileIndex] != 0 )
+                edit->editorTiles[tileIndex] = 0;
+        }
+        edit->tiles.clearSelections();
+        edit->editorTiles.clearSelections();
     };
     auto deleteDoodadSelection = [&]() {
-        auto doodadsUndo = ReversibleActions::Make();
-        for ( int i=0; i<selections.doodads.size(); ++i )
+        setActionDescription(ActionDescriptor::DeleteDoodad);
+        for ( int i=0; i<view.doodads.sel().size(); ++i )
         {
-            auto selDoodad = selections.doodads[i];
-            const auto & doodad = doodads[selDoodad];
-            doodadsUndo->Insert(DoodadCreateDel::Make(u16(selDoodad), doodad));
+            auto selDoodad = view.doodads.sel()[i];
+            const auto & doodad = read.doodads[selDoodad];
 
             const auto & tileset = chkd.scData.terrain.get(Scenario::getTileset());
             if ( auto doodadGroupIndex = tileset.getDoodadGroupIndex(doodad.type) )
@@ -1443,58 +1373,45 @@ void GuiMap::deleteSelection()
                     }
                 }
 
-                if ( !sprites.empty() )
+                if ( !read.sprites.empty() )
                 {
-                    for ( int i=int(sprites.size())-1; i>=0; --i )
+                    for ( int i=int(read.sprites.size())-1; i>=0; --i )
                     {
-                        const auto & sprite = sprites[i];
+                        const auto & sprite = read.sprites[i];
                         if ( sprite.type == doodadDat.overlayIndex && sprite.xc == doodad.xc && sprite.yc == doodad.yc )
                             Scenario::deleteSprite(i);
                     }
                 }
             }
-            Scenario::deleteDoodad(selDoodad);
         }
-
-        selections.removeDoodads();
-        AddUndo(doodadsUndo);
+        edit->doodads.removeSelection();
     };
     auto deleteUnitSelection = [&]() {
+        setActionDescription(ActionDescriptor::DeleteUnits);
         if ( chkd.unitWindow.getHandle() != nullptr )
             SendMessage(chkd.unitWindow.getHandle(), WM_COMMAND, MAKEWPARAM(IDC_BUTTON_DELETE, NULL), 0);
         else
-        {
-            auto deletes = ReversibleActions::Make();
-            while ( selections.hasUnits() )
-            {
-                // Get the highest index in the selection
-                u16 index = selections.getHighestUnitIndex();
-                selections.removeUnit(index);
-
-                unlinkAndDeleteUnit(index, deletes);
-            }
-            AddUndo(deletes);
-        }
+            unlinkAndDeleteSelectedUnits();
     };
     auto deleteLocationSelection = [&]() {
+        setActionDescription(ActionDescriptor::DeleteLocations);
         if ( chkd.locationWindow.getHandle() != NULL )
             chkd.locationWindow.DestroyThis();
                 
         u16 index = selections.getSelectedLocation();
         if ( index != NO_LOCATION && index < Scenario::numLocations() )
         {
-            Chk::Location & loc = Scenario::getLocation(index);
-            AddUndo(LocationCreateDel::Make(index));
+            const Chk::Location & loc = Scenario::getLocation(index);
 
             chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
 
-            loc.elevationFlags = 0;
-            loc.left = 0;
-            loc.right = 0;
-            loc.top = 0;
-            loc.bottom = 0;
+            edit->locations[index].elevationFlags = 0;
+            edit->locations[index].left = 0;
+            edit->locations[index].right = 0;
+            edit->locations[index].top = 0;
+            edit->locations[index].bottom = 0;
             u16 stringNum = loc.stringId;
-            loc.stringId = 0;
+            edit->locations[index].stringId = 0;
             if ( stringNum > 0 )
             {
                 Scenario::deleteString(stringNum);
@@ -1505,37 +1422,23 @@ void GuiMap::deleteSelection()
         }
     };
     auto deleteSpriteSelection = [&]() {
+        setActionDescription(ActionDescriptor::DeleteSprites);
         if ( chkd.spriteWindow.getHandle() != nullptr )
             SendMessage(chkd.spriteWindow.getHandle(), WM_COMMAND, MAKEWPARAM(IDC_BUTTON_DELETE, NULL), 0);
-        else
-        {
-            auto deletes = ReversibleActions::Make();
-            while ( selections.hasSprites() )
-            {
-                // Get the highest index in the selection
-                auto index = selections.getHighestSpriteIndex();
-                selections.removeSprite(index);
-
-                const Chk::Sprite & delSprite = Scenario::getSprite(index);
-                deletes->Insert(SpriteCreateDel::Make(index, delSprite));
-                Scenario::deleteSprite(index);
-            }
-            AddUndo(deletes);
-        }
+        else if ( selections.hasSprites() )
+            edit->sprites.removeSelection();
     };
     auto deleteFogTileSelection = [&]() {
-        auto deletes = ReversibleActions::Make();
-
-        u16 xSize = (u16)Scenario::getTileWidth();
-        auto & selFogTiles = selections.fogTiles;
-        for ( auto & fogTile : selFogTiles )
+        setActionDescription(ActionDescriptor::DeleteFogTiles);
+        auto tileWidth = Scenario::getTileWidth();
+        for ( auto tileIndex : view.tileFog.sel() )
         {
-            deletes->Insert(FogChange::Make(fogTile.xc, fogTile.yc, getFog(fogTile.xc, fogTile.yc)));
-            setFogValue(fogTile.xc, fogTile.yc, 0);
+            auto x = tileIndex % tileWidth;
+            auto y = tileIndex / tileWidth;
+            if ( read.tileFog[tileIndex] != 0 )
+                edit->tileFog[tileIndex] = 0;
         }
-
-        selections.removeTiles();
-        AddUndo(deletes);
+        edit->tileFog.clearSelections();
     };
    switch ( currLayer )
     {
@@ -1557,11 +1460,8 @@ void GuiMap::deleteSelection()
             deleteSpriteSelection();
             break;
         case Layer::CutCopyPaste:
+            setActionDescription(ActionDescriptor::DeleteSelection);
             refreshTileOccupationCache();
-            tileChanges = ReversibleActions::Make();
-            fogChanges = ReversibleActions::Make();
-            cutCopyPasteChanges = ReversibleActions::Make();
-            cutCopyPasteChanges->Insert(CutCopyPasteChange::Make());
             deleteTerrainSelection();
             deleteDoodadSelection();
             deleteUnitSelection();
@@ -1569,11 +1469,6 @@ void GuiMap::deleteSelection()
             deleteFogTileSelection();
             finalizeTerrainOperation();
             finalizeFogOperation();
-            if ( cutCopyPasteChanges != nullptr )
-            {
-                undos.AddUndo(cutCopyPasteChanges);
-                cutCopyPasteChanges = nullptr;
-            }
             break;
     }
 
@@ -1584,13 +1479,14 @@ void GuiMap::deleteSelection()
 
 void GuiMap::paste(s32 mapClickX, s32 mapClickY)
 {
-    selections.removeTiles();
+    auto edit = createAction();
+    edit->tiles.clearSelections();
     s32 xc = mapClickX, yc = mapClickY;
     selections.endDrag = {xc, yc};
     SnapSelEndDrag();
     xc = selections.endDrag.x;
     yc = selections.endDrag.y;
-    clipboard.doPaste(currLayer, currTerrainSubLayer, xc, yc, *this, undos, stackUnits);
+    clipboard.doPaste(currLayer, currTerrainSubLayer, xc, yc, *this, stackUnits);
 
     Redraw(true);
 }
@@ -1599,35 +1495,29 @@ void GuiMap::PlayerChanged(u8 newPlayer)
 {
     if ( currLayer == Layer::Units )
     {
-        auto unitChanges = ReversibleActions::Make();
-        auto & selUnits = selections.units;
-        for ( u16 unitIndex : selUnits )
+        auto edit = createAction(ActionDescriptor::UpdateUnitOwner);
+        for ( auto unitIndex : view.units.sel() )
         {
-            Chk::Unit & unit = Scenario::getUnit(unitIndex);
-            CM->changeUnitOwner(unitIndex, newPlayer, unitChanges);
+            CM->changeUnitOwner(unitIndex, newPlayer);
 
             if ( chkd.unitWindow.getHandle() != nullptr )
                 chkd.unitWindow.ChangeUnitsDisplayedOwner(unitIndex, newPlayer);
         }
         chkd.unitWindow.ChangeDropdownPlayer(newPlayer);
-        undos.AddUndo(unitChanges);
         Redraw(true);
     }
     else if ( currLayer == Layer::Sprites )
     {
-        auto spriteChanges = ReversibleActions::Make();
-        auto & selSprites = selections.sprites;
-        for ( size_t spriteIndex : selSprites )
+        auto edit = createAction(ActionDescriptor::UpdateSpriteOwner);
+        for ( size_t spriteIndex : view.sprites.sel() )
         {
-            Chk::Sprite & sprite = Scenario::getSprite(spriteIndex);
-            spriteChanges->Insert(SpriteChange::Make(spriteIndex, sprite));
-            sprite.owner = newPlayer;
+            const Chk::Sprite & sprite = Scenario::getSprite(spriteIndex);
+            edit->sprites[spriteIndex].owner = newPlayer;
 
             if ( chkd.spriteWindow.getHandle() != nullptr )
                 chkd.spriteWindow.ChangeSpritesDisplayedOwner(int(spriteIndex), newPlayer);
         }
         chkd.spriteWindow.ChangeDropdownPlayer(newPlayer);
-        undos.AddUndo(spriteChanges);
         Redraw(true);
     }
 }
@@ -1660,47 +1550,36 @@ void GuiMap::moveSelection(Direction direction, bool useGrid)
         {
             if ( selections.hasUnits() )
             {
+                auto edit = createAction(ActionDescriptor::AdjustUnitPosition);
                 auto & firstUnit = Scenario::getUnit(selections.getFirstUnit());
                 switch ( direction )
                 {
                     case Direction::Left:
                     {
-                        PreservedUnitStats preservedStats {};
-                        preservedStats.AddStats(selections, Chk::Unit::Field::Xc);
                         auto diff = ((firstUnit.xc-gridOffX) % gridWidth) > 0 ? ((firstUnit.xc-gridOffX) % gridWidth) : gridWidth;
-                        for ( auto unitIndex : selections.units )
-                            Scenario::getUnit(unitIndex).xc -= diff;
-                        preservedStats.convertToUndo();
+                        for ( auto unitIndex : view.units.sel() )
+                            edit->units[unitIndex].xc -= diff;
                     }
                     break;
                     case Direction::Up:
                     {
-                        PreservedUnitStats preservedStats {};
-                        preservedStats.AddStats(selections, Chk::Unit::Field::Yc);
                         auto diff = ((firstUnit.yc-gridOffY) % gridHeight) > 0 ? ((firstUnit.yc-gridOffY) % gridHeight) : gridHeight;
-                        for ( auto unitIndex : selections.units )
-                            Scenario::getUnit(unitIndex).yc -= diff;
-                        preservedStats.convertToUndo();
+                        for ( auto unitIndex : view.units.sel() )
+                            edit->units[unitIndex].yc -= diff;
                     }
                     break;
                     case Direction::Right:
                     {
-                        PreservedUnitStats preservedStats {};
-                        preservedStats.AddStats(selections, Chk::Unit::Field::Xc);
                         auto diff = ((firstUnit.xc-gridOffX) % gridWidth) > 0 ? (gridWidth-((firstUnit.xc-gridOffX) % gridWidth)) : gridWidth;
-                        for ( auto unitIndex : selections.units )
-                            Scenario::getUnit(unitIndex).xc += diff;
-                        preservedStats.convertToUndo();
+                        for ( auto unitIndex : view.units.sel() )
+                            edit->units[unitIndex].xc += diff;
                     }
                     break;
                     case Direction::Down:
                     {
-                        PreservedUnitStats preservedStats {};
-                        preservedStats.AddStats(selections, Chk::Unit::Field::Yc);
                         auto diff = ((firstUnit.yc-gridOffY) % gridHeight) > 0 ? (gridHeight-((firstUnit.yc-gridOffY) % gridHeight)) : gridHeight;
-                        for ( auto unitIndex : selections.units )
-                            Scenario::getUnit(unitIndex).yc += diff;
-                        preservedStats.convertToUndo();
+                        for ( auto unitIndex : view.units.sel() )
+                            edit->units[unitIndex].yc += diff;
                     }
                     break;
                 }
@@ -1710,47 +1589,36 @@ void GuiMap::moveSelection(Direction direction, bool useGrid)
         case Layer::Sprites:
             if ( selections.hasSprites() )
             {
+                auto edit = createAction(ActionDescriptor::AdjustSpritePosition);
                 auto & firstSprite = Scenario::getSprite(selections.getFirstSprite());
                 switch ( direction )
                 {
                     case Direction::Left:
                     {
-                        PreservedSpriteStats preservedStats {};
-                        preservedStats.AddStats(selections, Chk::Sprite::Field::Xc);
                         auto diff = ((firstSprite.xc-gridOffX) % gridWidth) > 0 ? ((firstSprite.xc-gridOffX) % gridWidth) : gridWidth;
-                        for ( auto spriteIndex : selections.sprites )
-                            Scenario::getSprite(spriteIndex).xc -= diff;
-                        preservedStats.convertToUndo();
+                        for ( auto spriteIndex : view.sprites.sel() )
+                            edit->sprites[spriteIndex].xc -= diff;
                     }
                     break;
                     case Direction::Up:
                     {
-                        PreservedSpriteStats preservedStats {};
-                        preservedStats.AddStats(selections, Chk::Sprite::Field::Yc);
                         auto diff = ((firstSprite.yc-gridOffY) % gridHeight) > 0 ? ((firstSprite.yc-gridOffY) % gridHeight) : gridHeight;
-                        for ( auto spriteIndex : selections.sprites )
-                            Scenario::getSprite(spriteIndex).yc -= diff;
-                        preservedStats.convertToUndo();
+                        for ( auto spriteIndex : view.sprites.sel() )
+                            edit->sprites[spriteIndex].yc -= diff;
                     }
                     break;
                     case Direction::Right:
                     {
-                        PreservedSpriteStats preservedStats {};
-                        preservedStats.AddStats(selections, Chk::Sprite::Field::Xc);
                         auto diff = ((firstSprite.xc-gridOffX) % gridWidth) > 0 ? (gridWidth-((firstSprite.xc-gridOffX) % gridWidth)) : gridWidth;
-                        for ( auto spriteIndex : selections.sprites )
-                            Scenario::getSprite(spriteIndex).xc += diff;
-                        preservedStats.convertToUndo();
+                        for ( auto spriteIndex : view.sprites.sel() )
+                            edit->sprites[spriteIndex].xc += diff;
                     }
                     break;
                     case Direction::Down:
                     {
-                        PreservedSpriteStats preservedStats {};
-                        preservedStats.AddStats(selections, Chk::Sprite::Field::Yc);
                         auto diff = ((firstSprite.yc-gridOffY) % gridHeight) > 0 ? (gridHeight-((firstSprite.yc-gridOffY) % gridHeight)) : gridHeight;
-                        for ( auto spriteIndex : selections.sprites )
-                            Scenario::getSprite(spriteIndex).yc += diff;
-                        preservedStats.convertToUndo();
+                        for ( auto spriteIndex : view.sprites.sel() )
+                            edit->sprites[spriteIndex].yc += diff;
                     }
                     break;
                 }
@@ -1762,85 +1630,50 @@ void GuiMap::moveSelection(Direction direction, bool useGrid)
     {
         switch ( currLayer )
         {
-        case Layer::Units:
-            for ( auto unitIndex : selections.units )
+            case Layer::Units:
             {
-                auto & unit = Scenario::getUnit(unitIndex);
-                switch ( direction )
+                auto edit = createAction(ActionDescriptor::AdjustUnitPosition);
+                for ( auto unitIndex : view.units.sel() )
                 {
-                    case Direction::Left:
+                    switch ( direction )
                     {
-                        PreservedUnitStats preservedStats {};
-                        preservedStats.AddStats(selections, Chk::Unit::Field::Xc);
-                        unit.xc -= 1;
-                        preservedStats.convertToUndo();
+                        case Direction::Left:
+                            edit->units[unitIndex].xc -= 1;
+                            break;
+                        case Direction::Up:
+                            edit->units[unitIndex].yc -= 1;
+                            break;
+                        case Direction::Right:
+                            edit->units[unitIndex].xc += 1;
+                            break;
+                        case Direction::Down:
+                            edit->units[unitIndex].yc += 1;
+                            break;
                     }
-                    break;
-                    case Direction::Up:
-                    {
-                        PreservedUnitStats preservedStats {};
-                        preservedStats.AddStats(selections, Chk::Unit::Field::Yc);
-                        unit.yc -= 1;
-                        preservedStats.convertToUndo();
-                    }
-                    break;
-                    case Direction::Right:
-                    {
-                        PreservedUnitStats preservedStats {};
-                        preservedStats.AddStats(selections, Chk::Unit::Field::Xc);
-                        unit.xc += 1;
-                        preservedStats.convertToUndo();
-                    }
-                    break;
-                    case Direction::Down:
-                    {
-                        PreservedUnitStats preservedStats {};
-                        preservedStats.AddStats(selections, Chk::Unit::Field::Yc);
-                        unit.yc += 1;
-                        preservedStats.convertToUndo();
-                    }
-                    break;
                 }
             }
             break;
-        case Layer::Sprites:
-            for ( auto spriteIndex : selections.sprites )
+            case Layer::Sprites:
             {
-                auto & sprite = Scenario::getSprite(spriteIndex);
-                switch ( direction )
+                auto edit = createAction(ActionDescriptor::AdjustSpritePosition);
+                for ( auto spriteIndex : view.sprites.sel() )
                 {
-                    case Direction::Left:
+                    auto & sprite = Scenario::getSprite(spriteIndex);
+                    switch ( direction )
                     {
-                        PreservedSpriteStats preservedStats {};
-                        preservedStats.AddStats(selections, Chk::Sprite::Field::Xc);
-                        sprite.xc -= 1;
-                        preservedStats.convertToUndo();
+                        case Direction::Left:
+                            edit->sprites[spriteIndex].xc -= 1;
+                            break;
+                        case Direction::Up:
+                            edit->sprites[spriteIndex].yc -= 1;
+                            break;
+                        case Direction::Right:
+                            edit->sprites[spriteIndex].xc += 1;
+                            break;
+                        case Direction::Down:
+                            edit->sprites[spriteIndex].yc += 1;
+                            break;
                     }
-                    break;
-                    case Direction::Up:
-                    {
-                        PreservedSpriteStats preservedStats {};
-                        preservedStats.AddStats(selections, Chk::Sprite::Field::Yc);
-                        sprite.yc -= 1;
-                        preservedStats.convertToUndo();
-                    }
-                    break;
-                    case Direction::Right:
-                    {
-                        PreservedSpriteStats preservedStats {};
-                        preservedStats.AddStats(selections, Chk::Sprite::Field::Xc);
-                        sprite.xc += 1;
-                        preservedStats.convertToUndo();
-                    }
-                    break;
-                    case Direction::Down:
-                    {
-                        PreservedSpriteStats preservedStats {};
-                        preservedStats.AddStats(selections, Chk::Sprite::Field::Yc);
-                        sprite.yc += 1;
-                        preservedStats.convertToUndo();
-                    }
-                    break;
                 }
             }
             break;
@@ -1865,116 +1698,31 @@ bool GuiMap::pastingToGrid()
     return false;
 }
 
-void GuiMap::AddUndo(ReversiblePtr action)
-{
-    if ( currLayer == Layer::CutCopyPaste )
-        cutCopyPasteChanges->Insert(action);
-    else
-        undos.AddUndo(action);
-}
-
 void GuiMap::undo()
 {
-    
-    switch ( currLayer )
-    {
-        case Layer::Terrain:
-        case Layer::Doodads:
-            selections.removeTiles();
-            selections.removeDoodads();
-            undos.doUndo(UndoTypes::TerrainChange, this);
-            break;
-        case Layer::Units:
-            selections.removeUnits();
-            undos.doUndo(UndoTypes::UnitChange, this);
-            if ( chkd.unitWindow.getHandle() != nullptr )
-                chkd.unitWindow.RepopulateList();
-            break;
-        case Layer::Locations:
-            {
-                undos.doUndo(UndoTypes::LocationChange, this);
-                if ( chkd.locationWindow.getHandle() != NULL )
-                {
-                    if ( CM->numLocations() > 0 )
-                        chkd.locationWindow.RefreshLocationInfo();
-                    else
-                        chkd.locationWindow.DestroyThis();
-                }
-                refreshScenario();
-                chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
-            }
-            break;
-        case Layer::Sprites:
-            selections.removeSprites();
-            undos.doUndo(UndoTypes::SpriteChange, this);
-            if ( chkd.spriteWindow.getHandle() != nullptr )
-                chkd.spriteWindow.RepopulateList();
-            break;
-        case Layer::FogEdit:
-            selections.removeFog();
-            undos.doUndo(UndoTypes::FogChange, this);
-            break;
-        case Layer::CutCopyPaste:
-            selections.clear();
-            undos.doUndo(UndoTypes::CutCopyPaste, this);
-            break;
-    }
-    Redraw(true);
+    Scenario::undoAction();
+    checkSelChangeFlags();
+    checkUnsavedChanges();
+    chkd.mainPlot.leftBar.historyTree.RefreshActionHeaders();
+    refreshScenario(false); // TODO: rely on change notifications instead of using hard refreshes
 }
 
 void GuiMap::redo()
 {
-    switch ( currLayer )
-    {
-        case Layer::Terrain:
-        case Layer::Doodads:
-            selections.removeTiles();
-            selections.removeDoodads();
-            undos.doRedo(UndoTypes::TerrainChange, this);
-            break;
-        case Layer::Units:
-            selections.removeUnits();
-            undos.doRedo(UndoTypes::UnitChange, this);
-            if ( chkd.unitWindow.getHandle() != nullptr )
-                chkd.unitWindow.RepopulateList();
-            break;
-        case Layer::Locations:
-            undos.doRedo(UndoTypes::LocationChange, this);
-            if ( chkd.locationWindow.getHandle() != NULL )
-            {
-                if ( CM->numLocations() == 0 )
-                    chkd.locationWindow.DestroyThis();
-                else
-                    chkd.locationWindow.RefreshLocationInfo();
-            }
-            refreshScenario();
-            break;
-        case Layer::Sprites:
-            selections.removeSprites();
-            undos.doRedo(UndoTypes::SpriteChange, this);
-            if ( chkd.spriteWindow.getHandle() != nullptr )
-                chkd.spriteWindow.RepopulateList();
-            break;
-        case Layer::FogEdit:
-            selections.removeFog();
-            undos.doRedo(UndoTypes::FogChange, this);
-            break;
-        case Layer::CutCopyPaste:
-            selections.clear();
-            undos.doRedo(UndoTypes::CutCopyPaste, this);
-            break;
-    }
-    Redraw(true);
+    Scenario::redoAction();
+    checkSelChangeFlags();
+    checkUnsavedChanges();
+    chkd.mainPlot.leftBar.historyTree.RefreshActionHeaders();
+    refreshScenario(false); // TODO: rely on change notifications instead of using hard refreshes
 }
 
-void GuiMap::ChangesMade()
+void GuiMap::checkUnsavedChanges()
 {
-    notifyChange(true);
-}
-
-void GuiMap::ChangesReversed()
-{
-    changesUndone();
+    auto cursorIndex = Tracked::getCursorIndex();
+    if ( cursorIndex >= lastSaveActionCursor && cursorIndex < nonSelChangeCursor )
+        notifyNoUnsavedChanges();
+    else
+        notifyUnsavedChanges();
 }
 
 float GuiMap::MiniMapScale(u16 xSize, u16 ySize)
@@ -2326,7 +2074,7 @@ void GuiMap::ToggleDisplayFps()
 u32 GuiMap::getNextClassId()
 {
     u32 maxClassId = 0;
-    for ( const auto & unit : units ) {
+    for ( const auto & unit : read.units ) {
         if ( unit.classId > maxClassId )
             maxClassId = unit.classId;
     }
@@ -2365,22 +2113,22 @@ bool GuiMap::isValidUnitPlacement(Sc::Unit::Type unitType, s32 x, s32 y)
                  placementTop < 0 ||
                  placementRight > s32(Scenario::getPixelWidth()) ||
                  placementBottom > s32(Scenario::getPixelHeight()) ||
-                 placementLeft >= 32*s32(dimensions.tileWidth) ||
-                 placementTop >= 32*s32(dimensions.tileHeight) )
+                 placementLeft >= 32*s32(read.dimensions.tileWidth) ||
+                 placementTop >= 32*s32(read.dimensions.tileHeight) )
             {
                 return false;
             }
 
             const auto & tileset = chkd.scData.terrain.get(this->getTileset());
             s32 xTileMin = std::max(0, placementLeft/32);
-            s32 xTileMax = std::min(s32(dimensions.tileWidth-1), placementRight/32);
+            s32 xTileMax = std::min(s32(read.dimensions.tileWidth-1), placementRight/32);
             s32 yTileMin = std::max(0, placementTop/32);
-            s32 yTileMax = std::min(s32(dimensions.tileHeight-1), placementBottom/32);
+            s32 yTileMax = std::min(s32(read.dimensions.tileHeight-1), placementBottom/32);
             for ( s32 yTile = yTileMin; yTile <= yTileMax; ++yTile )
             {
                 for ( s32 xTile = xTileMin; xTile <= xTileMax; ++xTile )
                 {
-                    auto tileValue = tiles[size_t(yTile)*size_t(dimensions.tileWidth)+xTile];
+                    auto tileValue = read.tiles[size_t(yTile)*size_t(read.dimensions.tileWidth)+xTile];
                     size_t groupIndex = Sc::Terrain::Tiles::getGroupIndex(tileValue);
                     if ( groupIndex < tileset.tileGroups.size() )
                     {
@@ -2412,7 +2160,7 @@ bool GuiMap::isValidUnitPlacement(Sc::Unit::Type unitType, s32 x, s32 y)
         }
         if ( validateNotStacked )
         {
-            for ( const auto & unit : units )
+            for ( const auto & unit : read.units )
             {
                 if ( unit.type < Sc::Unit::TotalTypes )
                 {
@@ -2442,11 +2190,11 @@ bool GuiMap::isValidUnitPlacement(Sc::Unit::Type unitType, s32 x, s32 y)
         {
             const auto & placementDat = chkd.scData.units.getUnit(unitType);
             s32 xPlacementTileMin = std::max(0, (x - s32(placementDat.unitSizeLeft))/32),
-                xPlacementTileMax = std::min(s32(dimensions.tileWidth-1), (x + s32(placementDat.unitSizeRight))/32),
+                xPlacementTileMax = std::min(s32(read.dimensions.tileWidth-1), (x + s32(placementDat.unitSizeRight))/32),
                 yPlacementTileMin = std::max(0, (y - s32(placementDat.unitSizeUp))/32),
-                yPlacementTileMax = std::min(s32(dimensions.tileHeight-1), (y + s32(placementDat.unitSizeDown))/32);
+                yPlacementTileMax = std::min(s32(read.dimensions.tileHeight-1), (y + s32(placementDat.unitSizeDown))/32);
 
-            for ( const auto & unit : units )
+            for ( const auto & unit : read.units )
             {
                 if ( unit.type < Sc::Unit::TotalTypes )
                 {
@@ -2456,9 +2204,9 @@ bool GuiMap::isValidUnitPlacement(Sc::Unit::Type unitType, s32 x, s32 y)
                     if ( isResource )
                     {
                         s32 xTileMin = std::max(0, (s32(unit.xc) - s32(unitDat.unitSizeLeft))/32-3);
-                        s32 xTileMax = std::min(s32(dimensions.tileWidth-1), (s32(unit.xc) + s32(unitDat.unitSizeRight))/32+3);
+                        s32 xTileMax = std::min(s32(read.dimensions.tileWidth-1), (s32(unit.xc) + s32(unitDat.unitSizeRight))/32+3);
                         s32 yTileMin = std::max(0, (s32(unit.yc) - s32(unitDat.unitSizeUp))/32-3);
-                        s32 yTileMax = std::min(s32(dimensions.tileHeight-1), (s32(unit.yc) + s32(unitDat.unitSizeDown))/32+3);
+                        s32 yTileMax = std::min(s32(read.dimensions.tileHeight-1), (s32(unit.yc) + s32(unitDat.unitSizeDown))/32+3);
 
                         if ( xPlacementTileMax >= xTileMin && xPlacementTileMin <= xTileMax && yPlacementTileMax >= yTileMin && yPlacementTileMin <= yTileMax )
                             return false; // Placement violates mineral distance
@@ -2536,7 +2284,7 @@ std::optional<u16> GuiMap::getLinkableUnitIndex(Sc::Unit::Type unitType, s32 x, 
     const auto & checkDat = chkd.scData.units.getUnit(unitType);
     for ( size_t unitIndex = 0; unitIndex < numUnits(); ++unitIndex )
     {
-        const auto & unit = units[unitIndex];
+        const auto & unit = read.units[unitIndex];
         if ( unit.relationClassId == 0 && (unit.type == unitTypeToLocate || unit.type == otherUnitTypeToLocate ) )
         { // Correct unit type which doesn't already have a relation
             const auto & dat = chkd.scData.units.getUnit(unit.type);
@@ -2718,6 +2466,37 @@ bool GuiMap::SnapLocationDimensions(u32 & x1, u32 & y1, u32 & x2, u32 & y2, LocS
             x2 = xEndIntervalNum*lengthX + startSnapX;
         if ( (locSnapFlags & LocSnapFlags::SnapY2) == LocSnapFlags::SnapY2 )
             y2 = yEndIntervalNum*lengthY + startSnapY;
+
+        return locSnapFlags != LocSnapFlags::None;
+    }
+    else
+        return false;
+}
+
+bool GuiMap::SnapLocationDimensions(std::size_t locationIndex, LocSnapFlags locSnapFlags)
+{
+    auto edit = createAction();
+    u32 lengthX, lengthY, startSnapX, startSnapY;
+    if ( GetSnapIntervals(lengthX, lengthY, startSnapX, startSnapY) )
+    {
+        const auto & loc = read.locations[locationIndex];
+        double intervalNum = (double(loc.left-startSnapX))/lengthX;
+        u32 xStartIntervalNum = (u32)round(intervalNum);
+        intervalNum = (double(loc.top-startSnapY))/lengthY;
+        u32 yStartIntervalNum = (u32)round(intervalNum);
+        intervalNum = (double(loc.right-startSnapX))/lengthX;
+        u32 xEndIntervalNum = (u32)round(intervalNum);
+        intervalNum = (double(loc.bottom-startSnapY))/lengthY;
+        u32 yEndIntervalNum = (u32)round(intervalNum);
+
+        if ( (locSnapFlags & LocSnapFlags::SnapX1) == LocSnapFlags::SnapX1 )
+            edit->locations[locationIndex].left = xStartIntervalNum*lengthX + startSnapX;
+        if ( (locSnapFlags & LocSnapFlags::SnapY1) == LocSnapFlags::SnapY1 )
+            edit->locations[locationIndex].top = yStartIntervalNum*lengthY + startSnapY;
+        if ( (locSnapFlags & LocSnapFlags::SnapX2) == LocSnapFlags::SnapX2 )
+            edit->locations[locationIndex].right = xEndIntervalNum*lengthX + startSnapX;
+        if ( (locSnapFlags & LocSnapFlags::SnapY2) == LocSnapFlags::SnapY2 )
+            edit->locations[locationIndex].bottom = yEndIntervalNum*lengthY + startSnapY;
 
         return locSnapFlags != LocSnapFlags::None;
     }
@@ -2971,46 +2750,28 @@ u16 GuiMap::getMapId()
     return this->mapId;
 }
 
-void GuiMap::notifyChange(bool undoable)
+void GuiMap::notifyUnsavedChanges()
 {
-    if ( changeLock == false && undoable == false )
-        changeLock = true;
-
     if ( !unsavedChanges )
     {
         unsavedChanges = true;
-        addAsterisk();
+        if ( auto windowTitle = WindowsItem::GetWinText() )
+            WindowsItem::SetWinText(*windowTitle + "*");
     }
 }
 
-void GuiMap::changesUndone()
+void GuiMap::notifyNoUnsavedChanges()
 {
-    if ( !changeLock )
+    if ( unsavedChanges )
     {
         unsavedChanges = false;
-        removeAsterisk();
-    }
-}
-
-bool GuiMap::changesLocked()
-{
-    return changeLock;
-}
-
-void GuiMap::addAsterisk()
-{
-    if ( auto windowTitle = WindowsItem::GetWinText() )
-        WindowsItem::SetWinText(*windowTitle + "*");
-}
-
-void GuiMap::removeAsterisk()
-{
-    if ( auto windowTitle = WindowsItem::GetWinText() )
-    {
-        if ( windowTitle->back() == '*' )
+        if ( auto windowTitle = WindowsItem::GetWinText() )
         {
-            windowTitle->pop_back();
-            WindowsItem::SetWinText(*windowTitle);
+            if ( windowTitle->back() == '*' )
+            {
+                windowTitle->pop_back();
+                WindowsItem::SetWinText(*windowTitle);
+            }
         }
     }
 }
@@ -3055,7 +2816,7 @@ bool GuiMap::CreateThis(HWND hClient, const std::string & title)
 void GuiMap::ReturnKeyPress()
 {
     if ( currLayer == Layer::Terrain && selections.hasTiles() )
-        openTileProperties(selections.getFirstTile().xc*32, selections.getFirstTile().yc*32);
+        openTileProperties((view.tiles.sel().front()%getTileWidth())*32, (view.tiles.sel().front()/getTileWidth())*32);
     else if ( currLayer == Layer::Units )
     {
         if ( selections.hasUnits() )
@@ -3094,6 +2855,11 @@ void GuiMap::SetAutoBackup(bool doAutoBackups)
     GuiMap::doAutoBackups = doAutoBackups;
 }
 
+void GuiMap::skipEventRendering()
+{
+    skipEventRender = true;
+}
+
 ChkdPalette & GuiMap::getPalette()
 {
     return scGraphics.getPalette();
@@ -3110,12 +2876,13 @@ LRESULT GuiMap::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     {
         case WM_CONTEXTMENU: ContextMenu(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)); break;
         case WM_PAINT: PaintMap(CM, chkd.maps.clipboard.isPasting()); break;
-        case WM_MDIACTIVATE: ActivateMap((HWND)lParam); return ClassWindow::WndProc(hWnd, msg, wParam, lParam); break;
+        case WM_MDIACTIVATE: ActivateMap((HWND)wParam, (HWND)lParam); return ClassWindow::WndProc(hWnd, msg, wParam, lParam); break;
         case WM_ERASEBKGND: return 1; break; // Prevent background from showing
         case WM_HSCROLL: return HorizontalScroll(hWnd, msg, wParam, lParam); break;
         case WM_VSCROLL: return VerticalScroll(hWnd, msg, wParam, lParam); break;
         case WM_CHAR: return 0; break;
         case WM_SIZE: return DoSize(hWnd, wParam, lParam); break;
+        case WM_KILLFOCUS: destroyBrush(); break;
         case WM_CLOSE: return ConfirmWindowClose(hWnd); break;
         case WM_DESTROY: return DestroyWindow(hWnd); break;
         case WM_RBUTTONUP: RButtonUp(hWnd, wParam, lParam); break;
@@ -3187,8 +2954,11 @@ LRESULT GuiMap::VerticalScroll(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
     return 0;
 }
 
-void GuiMap::ActivateMap(HWND hWnd)
+void GuiMap::ActivateMap(HWND deactivate, HWND activate)
 {
+    if ( getHandle() == deactivate )
+        destroyBrush();
+
     chkd.tilePropWindow.DestroyThis();
     chkd.unitWindow.DestroyThis();
     chkd.spriteWindow.DestroyThis();
@@ -3198,9 +2968,9 @@ void GuiMap::ActivateMap(HWND hWnd)
     chkd.trigEditorWindow.DestroyThis();
     chkd.briefingTrigEditorWindow.DestroyThis();
     
-    if ( hWnd != NULL )
+    if ( activate != NULL )
     {
-        chkd.maps.Focus(hWnd);
+        chkd.maps.Focus(activate);
         Redraw(true);
         chkd.maps.UpdateTreeView();
     }
@@ -3224,6 +2994,9 @@ LRESULT GuiMap::DoSize(HWND hWnd, WPARAM wParam, LPARAM lParam)
 
 LRESULT GuiMap::DestroyWindow(HWND hWnd)
 {
+    if ( brushAction )
+        brushAction = std::nullopt;
+
     if ( panTimerID != 0 ) {
         KillTimer(hWnd, panTimerID);
         panTimerID = 0;
@@ -3274,6 +3047,7 @@ void GuiMap::ContextMenu(int x, int y)
 
 void GuiMap::RButtonUp(HWND hWnd, WPARAM wParam, LPARAM lParam)
 {
+    ScopedBrushDestructor destroyBrush{brushAction};
     bool wasPasting = clipboard.isPasting();
     if ( wasPasting )
         chkd.maps.endPaste();
@@ -3295,124 +3069,87 @@ void GuiMap::LButtonDoubleClick(int x, int y, WPARAM wParam)
 
 void GuiMap::LButtonDown(int x, int y, WPARAM wParam)
 {
+    if ( brushAction )
+        brushAction = std::nullopt;
+
+    if ( (wParam & MK_LBUTTON) != MK_LBUTTON )
+        return; // LButton not down
+
     FocusThis();
     selections.moved = false;
+    u16 gridWidth = 32, gridHeight = 32;
     u32 mapClickX = (s32(((double)x)/getZoom()) + screenLeft),
         mapClickY = (s32(((double)y)/getZoom()) + screenTop);
+    
+    bool shift = (wParam & MK_SHIFT) == MK_SHIFT;
+    bool ctrl = (wParam & MK_CONTROL) == MK_CONTROL;
+    bool shiftOrCtrl = shift || ctrl;
+    bool shiftLeftClick = shift && !ctrl;
+    bool ctrlLeftClick = ctrl && !shift;
+    bool nonZeroDragSnap = ctrlLeftClick;
+    
+    brushAction.emplace(std::move(createAction()));
+    auto & edit = *brushAction;
 
+    if ( shiftLeftClick && currLayer == Layer::Terrain )
+    {
+        setActionDescription(ActionDescriptor::OpenTileProperties);
+        openTileProperties(mapClickX, mapClickY);
+        return;
+    }
+
+    chkd.tilePropWindow.DestroyThis();
+    
     if ( currLayer == Layer::FogEdit )
     {
-        switch ( wParam )
+        selections.setDrags(mapClickX, mapClickY);
+        setActionDescription(ActionDescriptor::BrushFog);
+        clipboard.initFogBrush(mapClickX, mapClickY, *this, shiftOrCtrl);
+        clipboard.doPaste(currLayer, currTerrainSubLayer, mapClickX, mapClickY, *this, false);
+    }
+    if ( chkd.maps.clipboard.isPasting() )
+    {
+        if ( currLayer == Layer::Terrain || currLayer == Layer::CutCopyPaste )
+            refreshTileOccupationCache();
+
+        paste(mapClickX, mapClickY);
+    }
+    else if ( currLayer == Layer::Terrain )
+    {
+        selections.setDrags((mapClickX+16)/32*32, (mapClickY+16)/32*32);
+        if ( !ctrl )
         {
-        case MK_SHIFT|MK_LBUTTON: // Shift + LClick
-        case MK_CONTROL|MK_LBUTTON: // Ctrl + LClick
-            clipboard.initFogBrush(mapClickX, mapClickY, *this, true);
-            setDragging(true);
-            this->fogChanges = ReversibleActions::Make();
-            clipboard.doPaste(currLayer, currTerrainSubLayer, mapClickX, mapClickY, *this, undos, false);
-            LockCursor();
-            TrackMouse(defaultHoverTime);
-            break;
-        case MK_LBUTTON: // LClick
-            clipboard.initFogBrush(mapClickX, mapClickY, *this, false);
-            setDragging(true);
-            this->fogChanges = ReversibleActions::Make();
-            clipboard.doPaste(currLayer, currTerrainSubLayer, mapClickX, mapClickY, *this, undos, false);
-            LockCursor();
-            TrackMouse(defaultHoverTime);
-            break;
+            setActionDescription(ActionDescriptor::ClearTileSel);
+            edit->tiles.clearSelections();
         }
     }
     else
     {
-        switch ( wParam )
+        selections.setDrags(mapClickX, mapClickY);
+        if ( currLayer == Layer::CutCopyPaste )
         {
-            case MK_SHIFT|MK_LBUTTON: // Shift + LClick
-                if ( currLayer == Layer::Terrain )
-                    openTileProperties(mapClickX, mapClickY);
-                break;
-    
-            case MK_CONTROL|MK_LBUTTON: // Ctrl + LClick
-                {
-                    chkd.tilePropWindow.DestroyThis();
-                    if ( !chkd.maps.clipboard.isPasting() )
-                    {
-                        if ( currLayer == Layer::Terrain ) // Ctrl + Click tile
-                            selections.setDrags( (mapClickX+16)/32*32, (mapClickY+16)/32*32 );
-                        else if ( currLayer == Layer::CutCopyPaste )
-                        {
-                            selections.setDrags(mapClickX, mapClickY);
-                            if ( snapCutCopyPasteSel )
-                            {
-                                u16 gridWidth = 32, gridHeight = 32;
-                                if ( cutCopyPasteSnapTileOverGrid || scGraphics.GetGridSize(0, gridWidth, gridHeight) )
-                                    selections.snapDrags(gridWidth, gridHeight, true);
-                            }
-                        }
-                        else if ( currLayer == Layer::Doodads || currLayer == Layer::Units || currLayer == Layer::Sprites )
-                            selections.setDrags(mapClickX, mapClickY);
-
-                        LockCursor();
-                        TrackMouse(defaultHoverTime);
-                        setDragging(true);
-                    }
-                }
-                break;
-    
-            case MK_LBUTTON: // LClick
-                {
-                    chkd.tilePropWindow.DestroyThis();
-                    if ( chkd.maps.clipboard.isPasting() )
-                    {
-                        if ( currLayer == Layer::Terrain )
-                        {
-                            refreshTileOccupationCache();
-                            tileChanges = ReversibleActions::Make();
-                        }
-                        else if ( currLayer == Layer::CutCopyPaste )
-                        {
-                            refreshTileOccupationCache();
-                            tileChanges = ReversibleActions::Make();
-                            this->fogChanges = ReversibleActions::Make();
-                            this->cutCopyPasteChanges = ReversibleActions::Make();
-                            cutCopyPasteChanges->Insert(CutCopyPasteChange::Make());
-                        }
-                        paste(mapClickX, mapClickY);
-                    }
-                    else
-                    {
-                        if ( selections.hasTiles() )
-                            selections.removeTiles();
-
-                        selections.setDrags(mapClickX, mapClickY);
-                        if ( currLayer == Layer::Terrain )
-                            selections.setDrags( (mapClickX+16)/32*32, (mapClickY+16)/32*32 );
-                        else if ( currLayer == Layer::CutCopyPaste )
-                        {
-                            u16 gridWidth = 32, gridHeight = 32;
-                            if ( cutCopyPasteSnapTileOverGrid || scGraphics.GetGridSize(0, gridWidth, gridHeight) )
-                                selections.snapDrags(gridWidth, gridHeight, false);
-                        }
-                        else if ( currLayer == Layer::Locations )
-                        {
-                            u32 x1 = mapClickX, y1 = mapClickY;
-                            if ( SnapLocationDimensions(x1, y1, x1, y1, LocSnapFlags(LocSnapFlags::SnapX1|LocSnapFlags::SnapY1)) )
-                                selections.setDrags(x1, y1);
-
-                            selections.setLocationFlags(getLocSelFlags(mapClickX, mapClickY));
-                            if ( selections.getSelectedLocation() != Chk::LocationId::NoLocation && !selections.selFlagsIndicateInside() )
-                                selections.clear();
-                        }
-                    }
-
-                    SetCapture(getHandle());
-                    TrackMouse(defaultHoverTime);
-                    setDragging(true);
-                    Redraw(false);
-                }
-                break;
+            setActionDescription(ActionDescriptor::UpdateMiscSelection);
+            if ( snapCutCopyPasteSel && (cutCopyPasteSnapTileOverGrid || scGraphics.GetGridSize(0, gridWidth, gridHeight)) )
+                selections.snapDrags(gridWidth, gridHeight, nonZeroDragSnap);
         }
+        else if ( currLayer == Layer::Locations )
+        {
+            u32 x1 = mapClickX, y1 = mapClickY;
+            if ( SnapLocationDimensions(x1, y1, x1, y1, LocSnapFlags(LocSnapFlags::SnapX1|LocSnapFlags::SnapY1)) )
+                selections.setDrags(x1, y1);
+
+            selections.setLocationFlags(getLocSelFlags(mapClickX, mapClickY));
+            if ( selections.getSelectedLocation() != Chk::LocationId::NoLocation && !selections.selFlagsIndicateInside() )
+                selections.clear();
+        }
+        else if ( currLayer == Layer::Doodads )
+            setActionDescription(ActionDescriptor::UpdateDoodadSel);
     }
+
+    SetCapture(getHandle());
+    TrackMouse(defaultHoverTime);
+    setDragging(true);
+    Redraw(false);
 }
 
 void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
@@ -3425,7 +3162,10 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
     s32 mapHoverX = (s32(((double)x)/getZoom())) + screenLeft,
         mapHoverY = (s32(((double)y)/getZoom())) + screenTop;
 
-    if ( wParam & MK_LBUTTON ) // If click and dragging
+    bool lButtonDown = (wParam & MK_LBUTTON) == MK_LBUTTON;
+    bool ctrl = (wParam & MK_CONTROL) == MK_CONTROL;
+
+    if ( lButtonDown ) // If click and dragging
     {
         chkd.maps.stickCursor(); // Stop cursor from reverting
         selections.moved = true;
@@ -3440,156 +3180,102 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
 
     lastMousePosition = {mapHoverX, mapHoverY};
     
-    if ( (wParam & MK_LBUTTON) && (wParam & MK_CONTROL) && currLayer == Layer::Terrain && chkd.terrainPalWindow.getHandle() != nullptr )
+    if ( lButtonDown && ctrl && currLayer == Layer::Terrain && chkd.terrainPalWindow.getHandle() != nullptr )
         chkd.terrainPalWindow.SelectTile(Scenario::getTilePx((std::size_t)mapHoverX, (std::size_t)mapHoverY));
     
     if ( currLayer == Layer::FogEdit )
     {
         selections.endDrag = {mapHoverX, mapHoverY};
         if ( dragging )
-            clipboard.doPaste(currLayer, currTerrainSubLayer, mapHoverX, mapHoverY, *this, undos, false);
+            clipboard.doPaste(currLayer, currTerrainSubLayer, mapHoverX, mapHoverY, *this, false);
         
         Redraw(dragging);
     }
-    else
+    else if ( lButtonDown && isDragging() )
     {
-        switch ( wParam )
+        RECT rcMap {};
+        GetClientRect(hWnd, &rcMap);
+
+        // If pasting, move paste
+        if ( chkd.maps.clipboard.isPasting() )
         {
-            case MK_CONTROL|MK_LBUTTON:
-                {
-                    RECT rcMap;
-                    GetClientRect(hWnd, &rcMap);
+            s32 xc = mapHoverX, yc = mapHoverY;
+            if ( panCurrentX <= rcMap.left )
+                xc = s32(rcMap.left/zoom) + screenLeft;
+            else if ( panCurrentX > rcMap.right-2 )
+                xc = s32((double(rcMap.right)-2)/zoom) + screenLeft;
+            if ( panCurrentY <= rcMap.top )
+                yc = s32(rcMap.top/zoom) + screenTop;
+            else if ( panCurrentY > rcMap.bottom-2 )
+                yc = s32((double(rcMap.bottom)-2)/zoom) + screenTop;
 
-                    if ( x <= 0 || y <= 0 || x >= rcMap.right-2 || y >= rcMap.bottom-2 )
-                    {
-                        if ( std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now()-lastMoveEdgeDrag).count() > 20 )
-                        {
-                            lastMoveEdgeDrag = std::chrono::system_clock::now();
-                            EdgeDrag(hWnd, x, y);
-                        }
-                    }
-
-                    selections.endDrag = {mapHoverX, mapHoverY};
-                    if ( currLayer == Layer::Locations )
-                    {
-                        u32 x2 = mapHoverX, y2 = mapHoverY;
-                        if ( SnapLocationDimensions(x2, y2, x2, y2, LocSnapFlags(LocSnapFlags::SnapX2|LocSnapFlags::SnapY2)) )
-                            selections.endDrag = {s32(x2), s32(y2)};
-                    }
-                    else if ( currLayer == Layer::CutCopyPaste && snapCutCopyPasteSel )
-                    {
-                        u16 gridWidth = 32, gridHeight = 32;
-                        if ( cutCopyPasteSnapTileOverGrid || scGraphics.GetGridSize(0, gridWidth, gridHeight) )
-                            selections.snapDrags(gridWidth, gridHeight, true);
-                    }
-                    else if ( currLayer == Layer::Units )
-                    {
-                        s32 xc = mapHoverX, yc = mapHoverY;
-                        selections.endDrag = {xc, yc};
-                        SnapSelEndDrag();
-                    }
-                    
-                    PaintMap(nullptr, chkd.maps.clipboard.isPasting());
-                }
-                break;
-
-            case MK_LBUTTON:
-                {
-
-                    if ( isDragging() )
-                    {
-                        RECT rcMap {};
-                        GetClientRect(hWnd, &rcMap);
-
-                        // If pasting, move paste
-                        if ( chkd.maps.clipboard.isPasting() )
-                        {
-                            s32 xc = mapHoverX, yc = mapHoverY;
-                            if ( panCurrentX <= rcMap.left )
-                                xc = s32(rcMap.left/zoom) + screenLeft;
-                            else if ( panCurrentX > rcMap.right-2 )
-                                xc = s32((double(rcMap.right)-2)/zoom) + screenLeft;
-                            if ( panCurrentY <= rcMap.top )
-                                yc = s32(rcMap.top/zoom) + screenTop;
-                            else if ( panCurrentY > rcMap.bottom-2 )
-                                yc = s32((double(rcMap.bottom)-2)/zoom) + screenTop;
-
-                            selections.endDrag = {xc, yc};
-                            SnapSelEndDrag();
-                            if ( !chkd.maps.clipboard.isPreviousPasteLoc(u16(xc), u16(yc)) )
-                                paste((s16)xc, (s16)yc);
-                        }
-
-                        if ( x <= 0 || y <= 0 || x >= rcMap.right-2 || y >= rcMap.bottom-2 )
-                        {
-                            if ( std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now()-lastMoveEdgeDrag).count() > 20 )
-                            {
-                                lastMoveEdgeDrag = std::chrono::system_clock::now();
-                                EdgeDrag(hWnd, x, y);
-                            }
-                        }
-
-                        selections.endDrag = { mapHoverX, mapHoverY };
-                        if ( currLayer == Layer::Terrain && !chkd.maps.clipboard.isPasting() )
-                            selections.endDrag = { (mapHoverX+16)/32*32, (mapHoverY+16)/32*32 };
-                        else if ( currLayer == Layer::Locations )
-                        {
-                            u32 x2 = mapHoverX, y2 = mapHoverY;
-                            if ( SnapLocationDimensions(x2, y2, x2, y2, LocSnapFlags(LocSnapFlags::SnapX2|LocSnapFlags::SnapY2)) )
-                                selections.endDrag = {s32(x2), s32(y2)};
-                        }
-                        else if ( currLayer == Layer::CutCopyPaste && snapCutCopyPasteSel )
-                        {
-                            u16 gridWidth = 32, gridHeight = 32;
-                            if ( cutCopyPasteSnapTileOverGrid || scGraphics.GetGridSize(0, gridWidth, gridHeight) )
-                                selections.snapDrags(gridWidth, gridHeight, false);
-                        }
-                        else if ( currLayer == Layer::Units )
-                        {
-                            s32 xc = mapHoverX, yc = mapHoverY;
-                            selections.endDrag = {xc, yc};
-                            SnapSelEndDrag();
-                        }
-                    }
-                    PaintMap(nullptr, chkd.maps.clipboard.isPasting());
-                }
-                break;
-
-            default:
-                {
-                    if ( chkd.maps.clipboard.isPasting() == true )
-                    {
-                        if ( GetKeyState(VK_SPACE) & 0x8000 )
-                        {
-                            RECT rcMap;
-                            GetClientRect(hWnd, &rcMap);
-    
-                            if ( x <= 0 || x <= rcMap.right-2 || y >= 0 || y >= rcMap.bottom-2 )
-                            {
-                                Scroll(true, true, true,
-                                    (x <= 0 ? screenLeft-32 : (x >= rcMap.right-2 ? screenLeft+32 : -1)),
-                                    (y <= 0 ? screenTop-32 : (y >= rcMap.bottom-2 ? screenTop+32 : -1)));
-                            }
-                        }
-                        
-                        if ( currLayer == Layer::CutCopyPaste )
-                        {
-                            selections.endDrag = {mapHoverX, mapHoverY};
-                            u16 gridWidth = 32, gridHeight = 32;
-                            if ( snapCutCopyPasteSel && (cutCopyPasteSnapTileOverGrid || scGraphics.GetGridSize(0, gridWidth, gridHeight))
-                                && gridWidth > 0 && gridHeight > 0 )
-                            {
-                                selections.snapDrags(gridWidth, gridHeight, false);
-                            }
-                        }
-                        else
-                            selections.endDrag = {mapHoverX, mapHoverY};
-                        
-                        PaintMap(nullptr, chkd.maps.clipboard.isPasting());
-                    }
-                }
-                break;
+            selections.endDrag = {xc, yc};
+            SnapSelEndDrag();
+            if ( !chkd.maps.clipboard.isPreviousPasteLoc(u16(xc), u16(yc)) )
+                paste((s16)xc, (s16)yc);
         }
+
+        if ( x <= 0 || y <= 0 || x >= rcMap.right-2 || y >= rcMap.bottom-2 )
+        {
+            if ( std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now()-lastMoveEdgeDrag).count() > 20 )
+            {
+                lastMoveEdgeDrag = std::chrono::system_clock::now();
+                EdgeDrag(hWnd, x, y);
+            }
+        }
+
+        selections.endDrag = { mapHoverX, mapHoverY };
+        if ( currLayer == Layer::Terrain && !chkd.maps.clipboard.isPasting() )
+            selections.endDrag = { (mapHoverX+16)/32*32, (mapHoverY+16)/32*32 };
+        else if ( currLayer == Layer::Locations )
+        {
+            u32 x2 = mapHoverX, y2 = mapHoverY;
+            if ( SnapLocationDimensions(x2, y2, x2, y2, LocSnapFlags(LocSnapFlags::SnapX2|LocSnapFlags::SnapY2)) )
+                selections.endDrag = {s32(x2), s32(y2)};
+        }
+        else if ( currLayer == Layer::CutCopyPaste && snapCutCopyPasteSel )
+        {
+            u16 gridWidth = 32, gridHeight = 32;
+            if ( cutCopyPasteSnapTileOverGrid || scGraphics.GetGridSize(0, gridWidth, gridHeight) )
+                selections.snapDrags(gridWidth, gridHeight, false);
+        }
+        else if ( currLayer == Layer::Units )
+        {
+            s32 xc = mapHoverX, yc = mapHoverY;
+            selections.endDrag = {xc, yc};
+            SnapSelEndDrag();
+        }
+        PaintMap(nullptr, chkd.maps.clipboard.isPasting());
+    }
+    else if ( chkd.maps.clipboard.isPasting() == true ) // Not fog, and lButton is not down
+    {
+        if ( GetKeyState(VK_SPACE) & 0x8000 )
+        {
+            RECT rcMap;
+            GetClientRect(hWnd, &rcMap);
+    
+            if ( x <= 0 || x <= rcMap.right-2 || y >= 0 || y >= rcMap.bottom-2 )
+            {
+                Scroll(true, true, true,
+                    (x <= 0 ? screenLeft-32 : (x >= rcMap.right-2 ? screenLeft+32 : -1)),
+                    (y <= 0 ? screenTop-32 : (y >= rcMap.bottom-2 ? screenTop+32 : -1)));
+            }
+        }
+                        
+        if ( currLayer == Layer::CutCopyPaste )
+        {
+            selections.endDrag = {mapHoverX, mapHoverY};
+            u16 gridWidth = 32, gridHeight = 32;
+            if ( snapCutCopyPasteSel && (cutCopyPasteSnapTileOverGrid || scGraphics.GetGridSize(0, gridWidth, gridHeight))
+                && gridWidth > 0 && gridHeight > 0 )
+            {
+                selections.snapDrags(gridWidth, gridHeight, false);
+            }
+        }
+        else
+            selections.endDrag = {mapHoverX, mapHoverY};
+                        
+        PaintMap(nullptr, chkd.maps.clipboard.isPasting());
     }
 }
 
@@ -3603,22 +3289,20 @@ void GuiMap::MouseHover(HWND hWnd, int x, int y, WPARAM wParam)
             break;
     
         default:
+            if ( chkd.maps.clipboard.isPasting() == true || (CM->getLayer() == Layer::FogEdit && dragging) )
             {
-                if ( chkd.maps.clipboard.isPasting() == true || (CM->getLayer() == Layer::FogEdit && dragging) )
-                {
-                    RECT rcMap;
-                    GetClientRect(hWnd, &rcMap);
+                RECT rcMap;
+                GetClientRect(hWnd, &rcMap);
 
-                    Scroll(true, true, true,
-                        (x <= 0 ? screenLeft-8 : (x >= rcMap.right-2 ? screenLeft+8 : -1)),
-                        (y <= 0 ? screenTop-8 : (y >= rcMap.bottom-2 ? screenTop+8 : -1)));
-                    RedrawWindow(getHandle(), NULL, NULL, RDW_INVALIDATE);
+                Scroll(true, true, true,
+                    (x <= 0 ? screenLeft-8 : (x >= rcMap.right-2 ? screenLeft+8 : -1)),
+                    (y <= 0 ? screenTop-8 : (y >= rcMap.bottom-2 ? screenTop+8 : -1)));
+                RedrawWindow(getHandle(), NULL, NULL, RDW_INVALIDATE);
 
-                    x = (s32(((double)x)/getZoom())) + screenLeft,
-                    y = (s32(((double)y)/getZoom())) + screenTop;
-                    selections.endDrag = {x, y};
-                    TrackMouse(100);
-                }
+                x = (s32(((double)x)/getZoom())) + screenLeft,
+                y = (s32(((double)y)/getZoom())) + screenTop;
+                selections.endDrag = {x, y};
+                TrackMouse(100);
             }
             break;
     }
@@ -3626,23 +3310,31 @@ void GuiMap::MouseHover(HWND hWnd, int x, int y, WPARAM wParam)
 
 void GuiMap::MouseWheel(HWND hWnd, int x, int y, int z, WPARAM wParam)
 {
-    if ( !(GetKeyState(VK_CONTROL) & 0x8000) ) return;
+    if ( !(GetKeyState(VK_CONTROL) & 0x8000) )
+        return;
+
     double scale = getZoom();
     u32 scaleIndex = -1;
     for ( u32 i = 0; i < defaultZooms.size(); i++ )
     {
-        if ( scale == defaultZooms[i] ) {
-            if ( z > 0 && i > 0 ) scaleIndex = i - 1;
-            else if ( z < 0 && i < defaultZooms.size() - 1 ) scaleIndex = i + 1;
+        if ( scale == defaultZooms[i] )
+        {
+            if ( z > 0 && i > 0 )
+                scaleIndex = i - 1;
+            else if ( z < 0 && i < defaultZooms.size() - 1 )
+                scaleIndex = i + 1;
+
             break;
         }
     }
-    if ( scaleIndex == -1 ) return;
-    setZoom(defaultZooms[scaleIndex]);
+
+    if ( scaleIndex != -1 )
+        setZoom(defaultZooms[scaleIndex]);
 }
 
 void GuiMap::LButtonUp(HWND hWnd, int x, int y, WPARAM wParam)
 {
+    ScopedBrushDestructor destroyBrush{brushAction};
     finalizeTerrainOperation();
     ReleaseCapture();
     if ( x < 0 ) x = 0;
@@ -3674,18 +3366,11 @@ void GuiMap::LButtonUp(HWND hWnd, int x, int y, WPARAM wParam)
                 FinalizeCutCopyPasteSelection(hWnd, x, y, wParam);
         }
         else if ( currLayer == Layer::CutCopyPaste )
-        {
             finalizeFogOperation();
-            if ( cutCopyPasteChanges != nullptr )
-            {
-                undos.AddUndo(cutCopyPasteChanges);
-                cutCopyPasteChanges = nullptr;
-            }
-        }
 
         if ( currLayer == Layer::FogEdit )
         {
-            clipboard.doPaste(currLayer, currTerrainSubLayer, x, y,*this, undos, false);
+            clipboard.doPaste(currLayer, currTerrainSubLayer, x, y,*this, false);
             finalizeFogOperation();
         }
 
@@ -3728,16 +3413,16 @@ void GuiMap::PanTimerTimeout()
 
 void GuiMap::FinalizeTerrainSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 {
+    auto edit = createAction();
     selections.endDrag = {(mapX+16)/32, (mapY+16)/32};
     selections.startDrag = {selections.startDrag.x/32, selections.startDrag.y/32};
     u16 width = (u16)Scenario::getTileWidth();
                     
     if ( wParam == MK_CONTROL && selections.startEqualsEndDrag() ) // Add/remove single tile to/front existing selection
     {
+        setActionDescription(ActionDescriptor::UpdateTileSel);
         selections.endDrag = {mapX/32, mapY/32};
-                            
-        u16 tileValue = Scenario::getTile((u16)selections.endDrag.x, (u16)selections.endDrag.y);
-        selections.addTile(tileValue, (u16)selections.endDrag.x, (u16)selections.endDrag.y);
+        edit->tiles.toggleSelected(selections.endDrag.y * getTileWidth() + selections.endDrag.x);
     }
     else // Add/remove multiple tiles from selection
     {
@@ -3746,6 +3431,7 @@ void GuiMap::FinalizeTerrainSelection(HWND hWnd, int mapX, int mapY, WPARAM wPar
         if ( selections.startDrag.y < selections.endDrag.y &&
              selections.startDrag.x < selections.endDrag.x )
         {
+            setActionDescription(ActionDescriptor::UpdateTileSel);
             if ( selections.endDrag.x > LONG(Scenario::getTileWidth()) )
                 selections.endDrag = {(s32)Scenario::getTileWidth(), selections.endDrag.y};
             if ( selections.endDrag.y > LONG(Scenario::getTileHeight()) )
@@ -3754,10 +3440,7 @@ void GuiMap::FinalizeTerrainSelection(HWND hWnd, int mapX, int mapY, WPARAM wPar
             for ( int yRow = selections.startDrag.y; yRow < selections.endDrag.y; yRow++ )
             {
                 for ( int xRow = selections.startDrag.x; xRow < selections.endDrag.x; xRow++ )
-                {
-                    u16 tileValue = Scenario::getTile(xRow, yRow);
-                    selections.addTile(tileValue, xRow, yRow);
-                }
+                    edit->tiles.toggleSelected(yRow * getTileWidth() + xRow);
             }
         }
     }
@@ -3765,6 +3448,7 @@ void GuiMap::FinalizeTerrainSelection(HWND hWnd, int mapX, int mapY, WPARAM wPar
 
 void GuiMap::FinalizeLocationDrag(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 {
+    auto edit = createAction();
     if ( selections.moved ) // attempt to move, resize, or create location
     {
         u32 startX = selections.startDrag.x,
@@ -3776,6 +3460,7 @@ void GuiMap::FinalizeLocationDrag(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 
         if ( selections.getLocationFlags() == LocSelFlags::None ) // Create location
         {
+            setActionDescription(ActionDescriptor::CreateLocation);
             ascendingOrder(startX, endX);
             ascendingOrder(startY, endY);
             SnapLocationDimensions(startX, startY, endX, endY, LocSnapFlags::SnapAll);
@@ -3795,7 +3480,6 @@ void GuiMap::FinalizeLocationDrag(HWND hWnd, int mapX, int mapY, WPARAM wParam)
                 {
                     Scenario::setLocationName<RawString>(newLocationId, "Location " + std::to_string(newLocationId), Chk::Scope::Game);
                     Scenario::deleteUnusedStrings(Chk::Scope::Both);
-                    undos.AddUndo(LocationCreateDel::Make((u16)newLocationId));
                     selections.selectLocation(u16(newLocationId));
                     chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree(true);
                     refreshScenario();
@@ -3807,10 +3491,11 @@ void GuiMap::FinalizeLocationDrag(HWND hWnd, int mapX, int mapY, WPARAM wParam)
         }
         else // Move or resize location
         {
+            setActionDescription(ActionDescriptor::MoveLocation);
             u16 selectedLocation = selections.getSelectedLocation();
             if ( selectedLocation != NO_LOCATION && selectedLocation < Scenario::numLocations() )
             {
-                Chk::Location & loc = Scenario::getLocation(selectedLocation);
+                const Chk::Location & loc = Scenario::getLocation(selectedLocation);
                 LocSelFlags selFlags = selections.getLocationFlags();
                 if ( selFlags == LocSelFlags::Middle ) // Move location
                 {
@@ -3819,34 +3504,34 @@ void GuiMap::FinalizeLocationDrag(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 
                     if ( s32(loc.left + dragX) < 0 && !xInverted )
                     {
-                        loc.right = loc.right-loc.left;
-                        loc.left = 0;
+                        edit->locations[selectedLocation].right -= loc.left;
+                        edit->locations[selectedLocation].left = 0;
                     }
                     else if ( s32(loc.right + dragX) < 0 && xInverted )
                     {
-                        loc.left = loc.left-loc.right;
-                        loc.right = 0;
+                        edit->locations[selectedLocation].left -= loc.right;
+                        edit->locations[selectedLocation].right = 0;
                     }
                     else
                     {
-                        loc.left += dragX;
-                        loc.right += dragX;
+                        edit->locations[selectedLocation].left += dragX;
+                        edit->locations[selectedLocation].right += dragX;
                     }
 
                     if ( s32(loc.top + dragY) < 0 && !yInverted )
                     {
-                        loc.bottom = loc.bottom-loc.top;
-                        loc.top = 0;
+                        edit->locations[selectedLocation].bottom -= loc.top;
+                        edit->locations[selectedLocation].top = 0;
                     }
                     else if ( s32(loc.bottom + dragY) < 0 && yInverted )
                     {
-                        loc.top = loc.top-loc.bottom;
-                        loc.bottom = 0;
+                        edit->locations[selectedLocation].top -= loc.bottom;
+                        edit->locations[selectedLocation].bottom = 0;
                     }
                     else
                     {
-                        loc.top += dragY;
-                        loc.bottom += dragY;
+                        edit->locations[selectedLocation].top += dragY;
+                        edit->locations[selectedLocation].bottom += dragY;
                     }
                     
                     s32 xc1Preserve = loc.left,
@@ -3856,34 +3541,31 @@ void GuiMap::FinalizeLocationDrag(HWND hWnd, int mapX, int mapY, WPARAM wParam)
                                         
                     if ( xInverted )
                     {
-                        if ( SnapLocationDimensions(loc.left, loc.top, loc.right, loc.bottom, LocSnapFlags::SnapX2) )
+                        if ( SnapLocationDimensions(selectedLocation, LocSnapFlags::SnapX2) )
                         {
-                            loc.left += loc.right - xc2Preserve; // Maintain location width
+                            edit->locations[selectedLocation].left += loc.right - xc2Preserve; // Maintain location width
                             dragX += loc.left - xc1Preserve;
                         }
                     }
-                    else if ( SnapLocationDimensions(loc.left, loc.top, loc.right, loc.bottom, LocSnapFlags::SnapX1) )
+                    else if ( SnapLocationDimensions(selectedLocation, LocSnapFlags::SnapX1) )
                     {
-                        loc.right += loc.left - xc1Preserve; // Maintain location width
+                        edit->locations[selectedLocation].right += loc.left - xc1Preserve; // Maintain location width
                         dragX += loc.right - xc2Preserve;
                     }
 
                     if ( yInverted )
                     {
-                        if ( SnapLocationDimensions(loc.left, loc.top, loc.right, loc.bottom, LocSnapFlags::SnapY2) )
+                        if ( SnapLocationDimensions(selectedLocation, LocSnapFlags::SnapY2) )
                         {
-                            loc.top += loc.bottom - yc2Preserve; // Maintain location height
+                            edit->locations[selectedLocation].top += loc.bottom - yc2Preserve; // Maintain location height
                             dragY += loc.top - yc1Preserve;
                         }
                     }
-                    else if ( SnapLocationDimensions(loc.left, loc.top, loc.right, loc.bottom, LocSnapFlags::SnapY1) )
+                    else if ( SnapLocationDimensions(selectedLocation, LocSnapFlags::SnapY1) )
                     {
-                        loc.bottom += loc.top - yc1Preserve; // Maintain location height
+                        edit->locations[selectedLocation].bottom += loc.top - yc1Preserve; // Maintain location height
                         dragY += loc.bottom - yc2Preserve;
                     }
-                                        
-                    //undos().addUndoLocationMove(selectedLocation, dragX, dragY);
-                    undos.AddUndo(LocationMove::Make(selectedLocation, -dragX, -dragY));
                 }
                 else // Resize location
                 {
@@ -3891,15 +3573,13 @@ void GuiMap::FinalizeLocationDrag(HWND hWnd, int mapX, int mapY, WPARAM wParam)
                     {
                         if ( loc.top <= loc.bottom ) // Standard yc
                         {
-                            undos.AddUndo(LocationChange::Make(selectedLocation, Chk::Location::Field::Top, loc.top));
-                            loc.top += dragY;
-                            SnapLocationDimensions(loc.left, loc.top, loc.right, loc.bottom, LocSnapFlags::SnapY1);
+                            edit->locations[selectedLocation].top += dragY;
+                            SnapLocationDimensions(selectedLocation, LocSnapFlags::SnapY1);
                         }
                         else // Inverted yc
                         {
-                            undos.AddUndo(LocationChange::Make(selectedLocation, Chk::Location::Field::Bottom, loc.bottom));
-                            loc.bottom += dragY;
-                            SnapLocationDimensions(loc.left, loc.top, loc.right, loc.bottom, LocSnapFlags::SnapY2);
+                            edit->locations[selectedLocation].bottom += dragY;
+                            SnapLocationDimensions(selectedLocation, LocSnapFlags::SnapY2);
                         }
                                     
                     }
@@ -3907,15 +3587,13 @@ void GuiMap::FinalizeLocationDrag(HWND hWnd, int mapX, int mapY, WPARAM wParam)
                     {
                         if ( loc.top <= loc.bottom ) // Standard yc
                         {
-                            undos.AddUndo(LocationChange::Make(selectedLocation, Chk::Location::Field::Bottom, loc.bottom));
-                            loc.bottom += dragY;
-                            SnapLocationDimensions(loc.left, loc.top, loc.right, loc.bottom, LocSnapFlags::SnapY2);
+                            edit->locations[selectedLocation].bottom += dragY;
+                            SnapLocationDimensions(selectedLocation, LocSnapFlags::SnapY2);
                         }
                         else // Inverted yc
                         {
-                            undos.AddUndo(LocationChange::Make(selectedLocation, Chk::Location::Field::Top, loc.top));
-                            loc.top += dragY;
-                            SnapLocationDimensions(loc.left, loc.top, loc.right, loc.bottom, LocSnapFlags::SnapY1);
+                            edit->locations[selectedLocation].top += dragY;
+                            SnapLocationDimensions(selectedLocation, LocSnapFlags::SnapY1);
                         }
                     }
     
@@ -3923,34 +3601,29 @@ void GuiMap::FinalizeLocationDrag(HWND hWnd, int mapX, int mapY, WPARAM wParam)
                     {
                         if ( loc.left <= loc.right ) // Standard xc
                         {
-                            undos.AddUndo(LocationChange::Make(selectedLocation, Chk::Location::Field::Left, loc.left));
-                            loc.left += dragX;
-                            SnapLocationDimensions(loc.left, loc.top, loc.right, loc.bottom, LocSnapFlags::SnapX1);
+                            edit->locations[selectedLocation].left += dragX;
+                            SnapLocationDimensions(selectedLocation, LocSnapFlags::SnapX1);
                         }
                         else // Inverted xc
                         {
-                            undos.AddUndo(LocationChange::Make(selectedLocation, Chk::Location::Field::Right, loc.right));
-                            loc.right += dragX;
-                            SnapLocationDimensions(loc.left, loc.top, loc.right, loc.bottom, LocSnapFlags::SnapX2);
+                            edit->locations[selectedLocation].right += dragX;
+                            SnapLocationDimensions(selectedLocation, LocSnapFlags::SnapX2);
                         }
                     }
                     else if ( (selFlags & LocSelFlags::East) == LocSelFlags::East )
                     {
                         if ( loc.left <= loc.right ) // Standard xc
                         {
-                            undos.AddUndo(LocationChange::Make(selectedLocation, Chk::Location::Field::Right, loc.right));
-                            loc.right += dragX;
-                            SnapLocationDimensions(loc.left, loc.top, loc.right, loc.bottom, LocSnapFlags::SnapX2);
+                            edit->locations[selectedLocation].right += dragX;
+                            SnapLocationDimensions(selectedLocation, LocSnapFlags::SnapX2);
                         }
                         else // Inverted xc
                         {
-                            undos.AddUndo(LocationChange::Make(selectedLocation, Chk::Location::Field::Left, loc.left));
-                            loc.left += dragX;
-                            SnapLocationDimensions(loc.left, loc.top, loc.right, loc.bottom, LocSnapFlags::SnapX1);
+                            edit->locations[selectedLocation].left += dragX;
+                            SnapLocationDimensions(selectedLocation, LocSnapFlags::SnapX1);
                         }
                     }
                 }
-                //undos().submitUndo();
                 Redraw(false);
                 if ( chkd.locationWindow.getHandle() != NULL )
                     chkd.locationWindow.RefreshLocationInfo();
@@ -3973,6 +3646,7 @@ void GuiMap::FinalizeLocationDrag(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 
 void GuiMap::FinalizeUnitSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 {
+    auto edit = createAction(ActionDescriptor::UpdateUnitSel);
     selections.endDrag = {mapX, mapY};
     selections.sortDragPoints();
     if ( wParam != MK_CONTROL )
@@ -3981,13 +3655,12 @@ void GuiMap::FinalizeUnitSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam)
         if ( chkd.unitWindow.getHandle() != nullptr )
         {
             chkd.unitWindow.SetChangeHighlightOnly(true);
-            auto & selUnits = selections.units;
-            for ( u16 unitIndex : selUnits )
+            for ( auto unitIndex : view.units.sel() )
                 chkd.unitWindow.DeselectIndex(unitIndex);
             
             chkd.unitWindow.SetChangeHighlightOnly(false);
         }
-        selections.removeUnits();
+        edit->units.clearSelections();
         chkd.unitWindow.UpdateEnabledState();
     }
         
@@ -4019,9 +3692,9 @@ void GuiMap::FinalizeUnitSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam)
         {
             bool wasSelected = selections.unitIsSelected((u16)i);
             if ( wasSelected )
-                selections.removeUnit((u16)i);
+                edit->units.deselect(i);
             else
-                selections.addUnit((u16)i);
+                edit->units.select(i);
 
             if ( chkd.unitWindow.getHandle() != nullptr )
             {
@@ -4040,10 +3713,11 @@ void GuiMap::FinalizeUnitSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 
 void GuiMap::FinalizeDoodadSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 {
+    auto edit = createAction(ActionDescriptor::UpdateDoodadSel);
     selections.endDrag = {mapX, mapY};
     selections.sortDragPoints();
     if ( wParam != MK_CONTROL ) // Remove selected doodads
-        selections.removeDoodads();
+        edit->doodads.clearSelections();
         
     size_t numDoodads = Scenario::numDoodads();
     for ( size_t i=0; i<numDoodads; i++ )
@@ -4066,15 +3740,19 @@ void GuiMap::FinalizeDoodadSelection(HWND hWnd, int mapX, int mapY, WPARAM wPara
             s32 selBottom = selections.endDrag.y;
             bool inBounds = left <= selRight && top <= selBottom && right >= selLeft && bottom >= selTop;
             if ( inBounds )
-                selections.addDoodad(i);
-            else if ( selections.doodadIsSelected(i) && wParam != MK_CONTROL )
-                selections.removeDoodad(i);
+            {
+                if ( selections.doodadIsSelected(i) )
+                    edit->doodads.deselect(i);
+                else
+                    edit->doodads.select(i);
+            }
         }
     }
 }
 
 void GuiMap::FinalizeSpriteSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 {
+    auto edit = createAction(ActionDescriptor::UpdateSpriteSel);
     selections.endDrag = {mapX, mapY};
     selections.sortDragPoints();
     if ( wParam != MK_CONTROL )
@@ -4082,13 +3760,12 @@ void GuiMap::FinalizeSpriteSelection(HWND hWnd, int mapX, int mapY, WPARAM wPara
         if ( chkd.spriteWindow.getHandle() != nullptr )
         {
             chkd.spriteWindow.SetChangeHighlightOnly(true);
-            auto & selSprites = selections.sprites;
-            for ( auto spriteIndex : selSprites )
+            for ( auto spriteIndex : view.sprites.sel() )
                 chkd.spriteWindow.DeselectIndex(u16(spriteIndex));
             
             chkd.spriteWindow.SetChangeHighlightOnly(false);
         }
-        selections.removeSprites();
+        edit->sprites.clearSelections();
         chkd.spriteWindow.UpdateEnabledState();
     }
 
@@ -4104,9 +3781,9 @@ void GuiMap::FinalizeSpriteSelection(HWND hWnd, int mapX, int mapY, WPARAM wPara
         {
             bool wasSelected = selections.spriteIsSelected(i);
             if ( wasSelected )
-                selections.removeSprite(i);
+                edit->sprites.deselect(i);
             else
-                selections.addSprite(i);
+                edit->sprites.select(i);
 
             if ( chkd.spriteWindow.getHandle() != nullptr )
             {
@@ -4125,6 +3802,7 @@ void GuiMap::FinalizeSpriteSelection(HWND hWnd, int mapX, int mapY, WPARAM wPara
 
 void GuiMap::FinalizeFogSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 {
+    auto edit = createAction();
     s32 startTileX = (selections.startDrag.x+16)/32;
     s32 startTileY =  (selections.startDrag.y+16)/32;
     s32 endTileX = (selections.endDrag.x+16)/32;
@@ -4135,7 +3813,7 @@ void GuiMap::FinalizeFogSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam)
     {
         s32 endTileX = (selections.endDrag.x)/32;
         s32 endTileY =  (selections.endDrag.y)/32;
-        selections.addFogTile(endTileX, endTileY);
+        edit->tileFog.toggleSelected(endTileY * getTileWidth() + endTileX);
     }
     else if ( startTileX < endTileX && startTileY < endTileY ) // Add/remove multiple fog tiles from selection
     {
@@ -4147,13 +3825,14 @@ void GuiMap::FinalizeFogSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam)
         for ( int yRow = startTileY; yRow < endTileY; yRow++ )
         {
             for ( int xRow = startTileX; xRow < endTileX; xRow++ )
-                selections.addFogTile(xRow, yRow);
+                edit->tileFog.toggleSelected(yRow * getTileWidth() + xRow);
         }
     }
 }
 
 void GuiMap::FinalizeCutCopyPasteSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam)
 {
+    auto edit = createAction();
     bool snapped = false;
     selections.endDrag = {mapX, mapY};
     if ( snapCutCopyPasteSel )
@@ -4168,11 +3847,11 @@ void GuiMap::FinalizeCutCopyPasteSelection(HWND hWnd, int mapX, int mapY, WPARAM
     selections.sortDragPoints();
     if ( (wParam & MK_CONTROL) != MK_CONTROL )
     {
-        selections.removeTiles();
-        selections.removeDoodads();
-        selections.removeSprites();
-        selections.removeUnits();
-        selections.removeFog();
+        edit->tiles.clearSelections();
+        edit->doodads.clearSelections();
+        edit->sprites.clearSelections();
+        edit->units.clearSelections();
+        edit->tileFog.clearSelections();
     }
 
     if ( cutCopyPasteTerrain )
@@ -4184,10 +3863,7 @@ void GuiMap::FinalizeCutCopyPasteSelection(HWND hWnd, int mapX, int mapY, WPARAM
 
         bool startEqualsEnd = startTileX == endTileX && startTileY == endTileY;
         if ( wParam == MK_CONTROL && startEqualsEnd ) // Add/remove single tile to/front existing selection
-        {
-            u16 tileValue = Scenario::getTile(startTileX, startTileY);
-            selections.addTile(tileValue, startTileX, startTileY);
-        }
+            edit->tiles.toggleSelected(startTileY*getTileWidth()+startTileX);
         else if ( startTileX < endTileX && startTileY < endTileY ) // Add/remove multiple tiles from selection
         {
             if ( endTileX > LONG(Scenario::getTileWidth()) )
@@ -4198,10 +3874,7 @@ void GuiMap::FinalizeCutCopyPasteSelection(HWND hWnd, int mapX, int mapY, WPARAM
             for ( int yRow = startTileY; yRow < endTileY; yRow++ )
             {
                 for ( int xRow = startTileX; xRow < endTileX; xRow++ )
-                {
-                    u16 tileValue = Scenario::getTile(xRow, yRow);
-                    selections.addTile(tileValue, xRow, yRow);
-                }
+                    edit->tiles.toggleSelected(yRow*getTileWidth()+xRow);
             }
         }
     }
@@ -4398,10 +4071,10 @@ void GuiMap::SetSkin(GuiMap::Skin skin)
         chkd.terrainPalWindow.RedrawThis();
 }
 
-void GuiMap::addIsomUndo(const Chk::IsomRectUndo & isomUndo)
+void GuiMap::destroyBrush()
 {
-    if ( tileChanges != nullptr )
-        tileChanges->Insert(IsomChange::Make(isomUndo));
+    if ( brushAction )
+        brushAction = std::nullopt;
 }
 
 void GuiMap::refreshTileOccupationCache()
@@ -4420,4 +4093,107 @@ void GuiMap::windowBoundsChanged()
         .right = screenLeft + cliRect.right-cliRect.left,
         .bottom = screenTop + cliRect.bottom-cliRect.top
     });
+}
+
+void GuiMap::tileSelectionsChanged()
+{
+    using neighbor_int = std::underlying_type_t<TileNeighbor>;
+    constexpr neighbor_int no_neighbors = neighbor_int(TileNeighbor::None);
+    constexpr neighbor_int left_neighbor = neighbor_int(TileNeighbor::Left);
+    constexpr neighbor_int top_neighbor = neighbor_int(TileNeighbor::Top);
+    constexpr neighbor_int right_neighbor = neighbor_int(TileNeighbor::Right);
+    constexpr neighbor_int bottom_neighbor = neighbor_int(TileNeighbor::Bottom);
+
+    std::size_t tileWidth = getTileWidth();
+    std::size_t tileHeight = getTileHeight();
+    selections.renderTiles.xBegin = std::numeric_limits<std::size_t>::max();
+    selections.renderTiles.xEnd = 0;
+    selections.renderTiles.yBegin = std::numeric_limits<std::size_t>::max();
+    selections.renderTiles.yEnd = 0;
+    selections.renderTiles.tiles.assign(tileWidth * tileHeight, std::nullopt);
+    const auto & tileSel = view.tiles.sel();
+    if ( !tileSel.empty() )
+    {
+        for ( auto tileIndex : tileSel )
+            selections.renderTiles.tiles[tileIndex] = std::make_optional(TileNeighbor::None);
+
+        for ( auto tileIndex : tileSel )
+        {
+            std::size_t x = tileIndex % tileWidth;
+            std::size_t y = tileIndex / tileWidth;
+            selections.renderTiles.tiles[tileIndex] = TileNeighbor(
+                (y > 0 && !selections.renderTiles.tiles[(y-1)*tileWidth + x] ? top_neighbor : no_neighbors) |
+                (y+1 < tileHeight && !selections.renderTiles.tiles[(y+1)*tileWidth + x] ? bottom_neighbor : no_neighbors) |
+                (x > 0 && !selections.renderTiles.tiles[y*tileWidth + x - 1] ? left_neighbor : no_neighbors) |
+                (x+1 < tileWidth && !selections.renderTiles.tiles[y*tileWidth + x + 1] ? right_neighbor : no_neighbors)
+            );
+            if ( x < selections.renderTiles.xBegin )
+                selections.renderTiles.xBegin = x;
+            if ( x > selections.renderTiles.xEnd )
+                selections.renderTiles.xEnd = x;
+            if ( y < selections.renderTiles.yBegin )
+                selections.renderTiles.yBegin = y;
+            if ( y > selections.renderTiles.yEnd )
+                selections.renderTiles.yEnd = y;
+        }
+
+        ++(selections.renderTiles.xEnd);
+        ++(selections.renderTiles.yEnd);
+    }
+}
+
+void GuiMap::tileFogSelectionsChanged()
+{
+    using neighbor_int = std::underlying_type_t<TileNeighbor>;
+    constexpr neighbor_int no_neighbors = neighbor_int(TileNeighbor::None);
+    constexpr neighbor_int left_neighbor = neighbor_int(TileNeighbor::Left);
+    constexpr neighbor_int top_neighbor = neighbor_int(TileNeighbor::Top);
+    constexpr neighbor_int right_neighbor = neighbor_int(TileNeighbor::Right);
+    constexpr neighbor_int bottom_neighbor = neighbor_int(TileNeighbor::Bottom);
+
+    std::size_t tileWidth = getTileWidth();
+    std::size_t tileHeight = getTileHeight();
+    selections.renderFogTiles.xBegin = std::numeric_limits<std::size_t>::max();
+    selections.renderFogTiles.xEnd = 0;
+    selections.renderFogTiles.yBegin = std::numeric_limits<std::size_t>::max();
+    selections.renderFogTiles.yEnd = 0;
+    selections.renderFogTiles.tiles.assign(tileWidth * tileHeight, std::nullopt);
+    const auto & tileFogSel = view.tileFog.sel();
+    if ( !tileFogSel.empty() )
+    {
+        for ( auto tileIndex : tileFogSel )
+            selections.renderFogTiles.tiles[tileIndex] = std::make_optional(TileNeighbor::None);
+
+        for ( auto tileIndex : tileFogSel )
+        {
+            std::size_t x = tileIndex % tileWidth;
+            std::size_t y = tileIndex / tileWidth;
+            selections.renderFogTiles.tiles[tileIndex] = TileNeighbor(
+                (y > 0 && !selections.renderFogTiles.tiles[(y-1)*tileWidth + x] ? top_neighbor : no_neighbors) |
+                (y+1 < tileHeight && !selections.renderFogTiles.tiles[(y+1)*tileWidth + x] ? bottom_neighbor : no_neighbors) |
+                (x > 0 && !selections.renderFogTiles.tiles[y*tileWidth + x - 1] ? left_neighbor : no_neighbors) |
+                (x+1 < tileWidth && !selections.renderFogTiles.tiles[y*tileWidth + x + 1] ? right_neighbor : no_neighbors)
+            );
+            if ( x < selections.renderFogTiles.xBegin )
+                selections.renderFogTiles.xBegin = x;
+            if ( x > selections.renderFogTiles.xEnd )
+                selections.renderFogTiles.xEnd = x;
+            if ( y < selections.renderFogTiles.yBegin )
+                selections.renderFogTiles.yBegin = y;
+            if ( y > selections.renderFogTiles.yEnd )
+                selections.renderFogTiles.yEnd = y;
+        }
+
+        ++(selections.renderFogTiles.xEnd);
+        ++(selections.renderFogTiles.yEnd);
+    }
+}
+
+void GuiMap::checkSelChangeFlags()
+{
+    if ( clearTileSelChanged() )
+        this->tileSelectionsChanged();
+
+    if ( clearFogSelChanged() )
+        this->tileFogSelectionsChanged();
 }

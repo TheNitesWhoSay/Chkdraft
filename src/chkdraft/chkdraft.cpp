@@ -1,6 +1,4 @@
 #include "chkdraft.h"
-#include <cross_cut/logger.h>
-#include <cross_cut/test_commands.h>
 #include "mapping/data_file_browsers.h"
 #include "mapping/settings.h"
 #include "mapping/scr_graphics.h"
@@ -25,6 +23,14 @@ void Chkdraft::OnLoadTest()
         map->setSlotType(1, Sc::Player::SlotType::Computer);
         _Pragma("warning(suppress: 26716)") return *map;
     }();*/
+    
+    mainPlot.leftBar.SetWidth(360);
+    //auto actualMap = chkd.maps.NewMap();
+}
+
+void Chkdraft::PreLoadTest()
+{
+
 }
 
 enum_t(Id, u32, {
@@ -38,7 +44,7 @@ enum_t(Id, u32, {
 
 #define ifmapopen(dothis) if ( CM != nullptr ) dothis;
 
-Chkdraft::Chkdraft() : currDialog(NULL), editFocused(false), mainCommander(std::shared_ptr<Logger>(&logger, [](Logger*){})), logFile(nullptr, nullptr, logger.getLogLevel())
+Chkdraft::Chkdraft() : currDialog(NULL), editFocused(false), logFile(nullptr, nullptr, logger.getLogLevel())
 {
     
 }
@@ -50,6 +56,7 @@ Chkdraft::~Chkdraft()
 
 int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
 {
+    PreLoadTest();
     SetupLogging();
     if ( !CreateThis() )
         return 1;
@@ -164,12 +171,6 @@ bool Chkdraft::CreateThis()
     HMENU id = NULL;
 
     return ClassWindow::CreateClassWindow(exStyle, windowName, style, windowX, windowY, windowWidth, windowHeight, NULL, id) && Chkdraft::CreateSubWindows();
-}
-
-bool Chkdraft::ChangesLocked(u16 mapId)
-{
-    GuiMapPtr map = maps.GetMap(mapId);
-    return map != nullptr && map->changesLocked();
 }
 
 bool Chkdraft::EditFocused()
@@ -408,6 +409,7 @@ void Chkdraft::KeyListener(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                     case VK_DELETE: if ( CM != nullptr ) CM->deleteSelection(); return; break;
                     case VK_ESCAPE: if ( CM != nullptr ) { maps.endPaste(); CM->clearSelection(); } return; break;
                     case VK_RETURN: if ( CM != nullptr ) CM->ReturnKeyPress(); return; break;
+                    case VK_F5: if ( CM != nullptr ) CM->printChangeHistory(); return; break;
                 }
 
                 if ( GetKeyState(VK_CONTROL) & 0x8000 ) // Control is down

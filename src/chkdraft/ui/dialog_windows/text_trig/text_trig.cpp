@@ -26,7 +26,7 @@ void TextTrigWindow::RefreshWindow()
     updateMenus();
     std::string trigString;
     TextTrigGenerator textTrigs(Settings::useAddressesForMemory, Settings::deathTableStart);
-    if ( textTrigs.generateTextTrigs(*CM, trigString) )
+    if ( textTrigs.generateTextTrigs((Scenario &)*CM, trigString) )
     {
         auto start = std::chrono::high_resolution_clock::now();
         SetDialogItemText(IDC_EDIT_TRIGTEXT, trigString);
@@ -67,10 +67,7 @@ BOOL TextTrigWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 if ( chkd.maps.SaveCurr(false) )
                     WinLib::Message("Success", "Compiler");
                 else
-                {
                     WinLib::Message("Compile Succeeded, Save Failed", "Compiler");
-                    CM->notifyChange(false);
-                }
             }
         }
         else
@@ -81,7 +78,6 @@ BOOL TextTrigWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
         {
             if ( CompileEditText(*CM) )
             {
-                CM->notifyChange(false);
                 CM->refreshScenario();
                 RefreshWindow();
                 WinLib::Message("Success", "Compiler");
@@ -149,6 +145,8 @@ bool TextTrigWindow::CompileEditText(Scenario & map)
     if ( auto trigText = editControl.GetWinText() )
     {
         TextTrigCompiler compiler(Settings::useAddressesForMemory, Settings::deathTableStart); // All data for compilation is gathered on-the-fly, no need to check for updates
+        auto edit = CM->operator()(ActionDescriptor::CompileTextTrigs);
+        CM->skipEventRendering();
         if ( compiler.compileTriggers(*trigText, map, chkd.scData, 0, map.numTriggers()) )
             return true;
         else

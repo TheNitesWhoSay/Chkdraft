@@ -1,13 +1,7 @@
 #include "clipboard.h"
 #include "chkdraft/chkdraft.h"
-#include "mapping/undos/chkd_undos/tile_change.h"
-#include "mapping/undos/chkd_undos/mtxm_change.h"
-#include "mapping/undos/chkd_undos/unit_create_del.h"
-#include "mapping/undos/chkd_undos/unit_change.h"
-#include "mapping/undos/chkd_undos/doodad_create_del.h"
-#include "mapping/undos/chkd_undos/sprite_create_del.h"
-#include "mapping/undos/chkd_undos/fog_change.h"
 #include <set>
+#include <stack>
 
 extern Logger logger;
 
@@ -161,7 +155,7 @@ void Clipboard::ClearQuickItems()
     quickSprites.clear();
 }
 
-void Clipboard::pasteTerrain(TerrainSubLayer terrainSubLayer, s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos)
+void Clipboard::pasteTerrain(TerrainSubLayer terrainSubLayer, s32 mapClickX, s32 mapClickY, GuiMap & map, point prevPaste)
 {
     if ( terrainSubLayer == TerrainSubLayer::Isom && map.getLayer() != Layer::CutCopyPaste )
     {
@@ -174,17 +168,18 @@ void Clipboard::pasteTerrain(TerrainSubLayer terrainSubLayer, s32 mapClickX, s32
     }
     else if ( fillSimilarTiles && getTiles().size() == 1 && map.getLayer() != Layer::CutCopyPaste )
     {
-        fillPasteTerrain(mapClickX, mapClickY, map, undos);
+        fillPasteTerrain(mapClickX, mapClickY, map, prevPaste);
     }
     else
     {
+        map.setActionDescription(ActionDescriptor::PasteTiles);
         mapClickX += 16;
         mapClickY += 16;
 
         if ( mapClickX/16 != prevPaste.x || mapClickY/16 != prevPaste.y )
         {
-            prevPaste.x = mapClickX/16;
-            prevPaste.y = mapClickY/16;
+            this->prevPaste.x = mapClickX/16;
+            this->prevPaste.y = mapClickY/16;
             u16 xSize = (u16)map.getTileWidth();
             u16 ySize = (u16)map.getTileHeight();
 
@@ -210,11 +205,13 @@ void Clipboard::pasteTerrain(TerrainSubLayer terrainSubLayer, s32 mapClickX, s32
     }
 }
 
-void Clipboard::pasteDoodads(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos)
+void Clipboard::pasteDoodads(s32 mapClickX, s32 mapClickY, GuiMap & map, point prevPaste)
 {
     const auto & doodads = getDoodads();
     if ( !doodads.empty() )
     {
+        map.setActionDescription(ActionDescriptor::PasteDoodad);
+        auto edit = map.operator()();
         const auto & first = doodads[0];
         bool firstEvenWidth = first.tileWidth%2 == 0;
         bool firstEvenHeight = first.tileHeight%2 == 0;
@@ -224,8 +221,7 @@ void Clipboard::pasteDoodads(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos &
         auto firstCenterY = 32*secondYStart + 16*first.tileHeight;
         if ( firstCenterX != prevPaste.x || firstCenterY != prevPaste.y )
         {
-            prevPaste = {firstCenterX, firstCenterY};
-            auto doodadsUndo = ReversibleActions::Make();
+            this->prevPaste = {firstCenterX, firstCenterY};
             for ( const auto & doodad : doodads )
             {
                 auto tileWidth = doodad.tileWidth;
@@ -241,7 +237,6 @@ void Clipboard::pasteDoodads(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos &
                 {
                     if ( xStart >= 0 && yStart >= 0 && xStart+int(tileWidth) <= int(map.getTileWidth()) && yStart+int(tileHeight) <= int(map.getTileHeight()) )
                     {
-                        doodadsUndo->Insert(DoodadCreateDel::Make(u16(map.numDoodads()), Sc::Terrain::Doodad::Type(doodad.doodadId), xStart, yStart, &map));
                         map.addDoodad(Chk::Doodad{Sc::Terrain::Doodad::Type(doodad.doodadId), u16(centerX), u16(centerY), doodad.owner, Chk::Doodad::Enabled::Enabled});
                         if ( doodad.overlayIndex != 0 )
                         {
@@ -259,20 +254,20 @@ void Clipboard::pasteDoodads(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos &
                     }
                 }
             }
-            map.AddUndo(doodadsUndo);
         }
     }
 }
 
-void Clipboard::fillPasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos)
+void Clipboard::fillPasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap & map, point prevPaste)
 {
+    map.setActionDescription(ActionDescriptor::FillPasteTiles);
     mapClickX += 16;
     mapClickY += 16;
 
     if ( !( mapClickX/16 == prevPaste.x && mapClickY/16 == prevPaste.y ) )
     {
-        prevPaste.x = mapClickX/16;
-        prevPaste.y = mapClickY/16;
+        this->prevPaste.x = mapClickX/16;
+        this->prevPaste.y = mapClickY/16;
         u16 xSize = (u16)map.getTileWidth();
         u16 ySize = (u16)map.getTileHeight();
 
@@ -325,8 +320,9 @@ void Clipboard::fillPasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap & map, Und
     }
 }
 
-void Clipboard::pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos, bool allowStack)
+void Clipboard::pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap & map, bool allowStack, point prevPaste)
 {
+    auto edit = map.operator()(isQuickPasting() ? ActionDescriptor::CreateUnit : ActionDescriptor::PasteUnits);
     auto currPasteTime = std::chrono::steady_clock::now();
     if ( allowStack && std::chrono::duration_cast<std::chrono::milliseconds>(currPasteTime - this->lastPasteTime).count() < 250 && isNearPrevPaste(mapClickX, mapClickY) )
         return; // Prevent unintentional repeat-pastes
@@ -335,7 +331,6 @@ void Clipboard::pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & u
     else
         this->lastPasteTime = currPasteTime;
 
-    auto unitCreates = ReversibleActions::Make();
     auto & pasteUnits = getUnits();
     auto nextClassId = map.getNextClassId();
     std::vector<size_t> pastedAddons {};
@@ -346,8 +341,8 @@ void Clipboard::pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & u
         if ( mapClickX + (s32(pasteUnit.xc)) >= 0 && mapClickY + (s32(pasteUnit.yc)) >= 0 &&
              map.isValidUnitPlacement(pasteUnit.unit.type, s32(pasteUnit.unit.xc), s32(pasteUnit.unit.yc)) )
         {
-            prevPaste.x = pasteUnit.unit.xc;
-            prevPaste.y = pasteUnit.unit.yc;
+            this->prevPaste.x = pasteUnit.unit.xc;
+            this->prevPaste.y = pasteUnit.unit.yc;
             size_t numUnits = map.numUnits();
             pasteUnit.unit.classId = nextClassId;
             ++nextClassId;
@@ -368,15 +363,13 @@ void Clipboard::pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & u
                 {
                     if ( lastPasteNydus )
                     {
-                        auto & lastNydus = map.getUnit(*lastPasteNydus);
+                        const auto & lastNydus = map.getUnit(*lastPasteNydus);
                         if ( pasteUnit.unit.owner == lastNydus.owner )
                         {
-                            unitCreates->Insert(UnitChange::Make(*lastPasteNydus, Chk::Unit::Field::RelationClassId, lastNydus.relationClassId));
-                            unitCreates->Insert(UnitChange::Make(*lastPasteNydus, Chk::Unit::Field::RelationFlags, lastNydus.relationFlags));
                             pasteUnit.unit.relationClassId = lastNydus.classId;
                             pasteUnit.unit.relationFlags = Chk::Unit::RelationFlag::NydusLink;
-                            lastNydus.relationClassId = pasteUnit.unit.classId;
-                            lastNydus.relationFlags = Chk::Unit::RelationFlag::NydusLink;
+                            edit->units[*lastPasteNydus].relationClassId = pasteUnit.unit.classId;
+                            edit->units[*lastPasteNydus].relationFlags = Chk::Unit::RelationFlag::NydusLink;
                             logger.info() << "Nydus at index " << numUnits << " linked to nydus at index " << *lastPasteNydus << std::endl;
                             lastPasteNydus = std::nullopt;
                         }
@@ -390,7 +383,6 @@ void Clipboard::pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & u
                     lastPasteNydus = std::nullopt;
             }
             map.addUnit(pasteUnit.unit);
-            unitCreates->Insert(UnitCreateDel::Make((u16)numUnits));
             if ( chkd.unitWindow.getHandle() != nullptr )
                 chkd.unitWindow.AddUnitItem((u16)numUnits, pasteUnit.unit);
         }
@@ -399,41 +391,33 @@ void Clipboard::pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & u
     {
         for ( auto pastedAddonIndex : pastedAddons )
         {
-            auto & pastedAddon = map.getUnit(pastedAddonIndex);
+            const auto & pastedAddon = map.getUnit(pastedAddonIndex);
             if ( auto buildingOpt = map.getLinkableUnitIndex(pastedAddon.type, pastedAddon.xc, pastedAddon.yc) )
             {
-                auto & building = map.getUnit(*buildingOpt);
+                const auto & building = map.getUnit(*buildingOpt);
                 if ( pastedAddon.owner == building.owner || map.autoSwappingAddonPlayers() )
                 {
                     if ( map.autoSwappingAddonPlayers() && building.owner != pastedAddon.owner )
                     {
                         if ( (chkd.scData.units.getUnit(pastedAddon.type).flags & Sc::Unit::Flags::Addon) == Sc::Unit::Flags::Addon )
-                        {
-                            unitCreates->Insert(UnitChange::Make(u16(pastedAddonIndex), Chk::Unit::Field::Owner, pastedAddon.owner));
-                            pastedAddon.owner = building.owner;
-                        }
+                            edit->units[pastedAddonIndex].owner = building.owner;
                         else
-                        {
-                            unitCreates->Insert(UnitChange::Make(*buildingOpt, Chk::Unit::Field::Owner, building.owner));
-                            building.owner = pastedAddon.owner;
-                        }
+                            edit->units[*buildingOpt].owner = pastedAddon.owner;
                     }
-                    unitCreates->Insert(UnitChange::Make(*buildingOpt, Chk::Unit::Field::RelationClassId, building.relationClassId));
-                    unitCreates->Insert(UnitChange::Make(*buildingOpt, Chk::Unit::Field::RelationFlags, building.relationFlags));
-                    pastedAddon.relationClassId = building.classId;
-                    pastedAddon.relationFlags = Chk::Unit::RelationFlag::AddonLink;
-                    building.relationClassId = pastedAddon.classId;
-                    building.relationFlags = Chk::Unit::RelationFlag::AddonLink;
+                    edit->units[pastedAddonIndex].relationClassId = building.classId;
+                    edit->units[pastedAddonIndex].relationFlags = Chk::Unit::RelationFlag::AddonLink;
+                    edit->units[*buildingOpt].relationClassId = pastedAddon.classId;
+                    edit->units[*buildingOpt].relationFlags = Chk::Unit::RelationFlag::AddonLink;
                     logger.info() << "Addon pasted at index " << pastedAddonIndex << " linked to building at index " << *buildingOpt << std::endl;
                 }
             }
         }
     }
-    CM->AddUndo(unitCreates);
 }
 
-void Clipboard::pasteSprites(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos)
+void Clipboard::pasteSprites(s32 mapClickX, s32 mapClickY, GuiMap & map, point prevPaste)
 {
+    auto edit = map.operator()(isQuickPasting() ? ActionDescriptor::CreateSprite : ActionDescriptor::PasteSprites);
     auto currPasteTime = std::chrono::steady_clock::now();
     if ( std::chrono::duration_cast<std::chrono::milliseconds>(currPasteTime - this->lastPasteTime).count() < 250 && isNearPrevPaste(mapClickX, mapClickY) )
         return; // Prevent unintentional repeat-pastes
@@ -442,7 +426,6 @@ void Clipboard::pasteSprites(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos &
     else
         this->lastPasteTime = currPasteTime;
 
-    auto spriteCreates = ReversibleActions::Make();
     auto & pasteSprites = getSprites();
     for ( auto & pasteSprite : pasteSprites )
     {
@@ -450,19 +433,17 @@ void Clipboard::pasteSprites(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos &
         pasteSprite.sprite.yc = u16(mapClickY + pasteSprite.yc);
         if ( mapClickX + (s32(pasteSprite.xc)) >= 0 && mapClickY + (s32(pasteSprite.yc)) >= 0 )
         {
-            prevPaste.x = pasteSprite.sprite.xc;
-            prevPaste.y = pasteSprite.sprite.yc;
+            this->prevPaste.x = pasteSprite.sprite.xc;
+            this->prevPaste.y = pasteSprite.sprite.yc;
             size_t numSprites = map.numSprites();
             map.addSprite(pasteSprite.sprite);
-            spriteCreates->Insert(SpriteCreateDel::Make((u16)numSprites));
             if ( chkd.spriteWindow.getHandle() != nullptr )
                 chkd.spriteWindow.AddSpriteItem((u16)numSprites, pasteSprite.sprite);
         }
     }
-    CM->AddUndo(spriteCreates);
 }
 
-void Clipboard::pasteBrushFog(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos)
+void Clipboard::pasteBrushFog(s32 mapClickX, s32 mapClickY, GuiMap & map, point prevPaste)
 {
     const auto width = this->fogBrush.width;
     const auto height = this->fogBrush.height;
@@ -470,8 +451,8 @@ void Clipboard::pasteBrushFog(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos 
     mapClickY += height % 2 == 0 ? 16 : 0;
     if ( mapClickX/16 != prevPaste.x || mapClickY/16 != prevPaste.y )
     {
-        prevPaste.x = mapClickX/16;
-        prevPaste.y = mapClickY/16;
+        this->prevPaste.x = mapClickX/16;
+        this->prevPaste.y = mapClickY/16;
 
         bool setFog = this->fogBrush.setFog;
         bool allPlayers = this->fogBrush.allPlayers;
@@ -523,15 +504,16 @@ void Clipboard::pasteBrushFog(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos 
     }
 }
 
-void Clipboard::pasteFog(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos)
+void Clipboard::pasteFog(s32 mapClickX, s32 mapClickY, GuiMap & map, point prevPaste)
 {
+    map.setActionDescription(ActionDescriptor::PasteFog);
     mapClickX += 16;
     mapClickY += 16;
 
     if ( mapClickX/16 != prevPaste.x || mapClickY/16 != prevPaste.y )
     {
-        prevPaste.x = mapClickX/16;
-        prevPaste.y = mapClickY/16;
+        this->prevPaste.x = mapClickX/16;
+        this->prevPaste.y = mapClickY/16;
         u16 xSize = (u16)map.getTileWidth();
         u16 ySize = (u16)map.getTileHeight();
 
@@ -629,26 +611,43 @@ void Clipboard::copy(GuiMap & map, Layer layer)
         {
             if ( !initializedEdges )
             {
-                TileNode firstTile = selections.getFirstTile();
-                edges.left = firstTile.xc * 32;
-                edges.right = firstTile.xc * 32 + 32;
-                edges.top = firstTile.yc * 32;
-                edges.bottom = firstTile.yc * 32 + 32;
+                auto firstTileIndex = map.view.tiles.sel().front();
+                auto firstTileX = firstTileIndex % map.getTileWidth();
+                auto firstTileY = firstTileIndex / map.getTileWidth();
+                edges.left = firstTileX * 32;
+                edges.right = firstTileX * 32 + 32;
+                edges.top = firstTileY * 32;
+                edges.bottom = firstTileY * 32 + 32;
                 initializedEdges = true;
             }
 
-            auto & selTiles = selections.tiles;
-            for ( auto & selTile : selTiles ) // Traverse through all tiles
+            auto & selTiles = selections.renderTiles.tiles;
+            if ( !map.view.tiles.sel().empty() )
             {
-                PasteTileNode tile(selTile.value, selTile.xc * 32, selTile.yc * 32, selTile.neighbors);
+                auto tileWidth = map.getTileWidth();
+                auto xBegin = map.selections.renderTiles.xBegin;
+                auto xEnd = map.selections.renderTiles.xEnd;
+                auto yBegin = map.selections.renderTiles.yBegin;
+                auto yEnd = map.selections.renderTiles.yEnd;
+                for ( std::size_t y=yBegin; y<yEnd; ++y )
+                {
+                    for ( std::size_t x=xBegin; x<xEnd; ++x )
+                    {
+                        auto selTile = selTiles[y*tileWidth + x];
+                        if ( selTile )
+                        {
+                            PasteTileNode tile(map.getTile(x, y), x * 32, y * 32, *selTile);
 
-                // Record the outermost tile positions for determining their relation to the cursor
-                if      ( tile.xc      < edges.left   ) edges.left   = tile.xc;
-                else if ( tile.xc + 32 > edges.right  ) edges.right  = tile.xc + 32;
-                if      ( tile.yc      < edges.top    ) edges.top    = tile.yc;
-                else if ( tile.yc + 32 > edges.bottom ) edges.bottom = tile.yc + 32;
+                            // Record the outermost tile positions for determining their relation to the cursor
+                            if      ( tile.xc      < edges.left   ) edges.left   = tile.xc;
+                            else if ( tile.xc + 32 > edges.right  ) edges.right  = tile.xc + 32;
+                            if      ( tile.yc      < edges.top    ) edges.top    = tile.yc;
+                            else if ( tile.yc + 32 > edges.bottom ) edges.bottom = tile.yc + 32;
 
-                copyTiles.insert(copyTiles.end(), tile);
+                            copyTiles.insert(copyTiles.end(), tile);
+                        }
+                    }
+                }
             }
         }
     };
@@ -667,8 +666,7 @@ void Clipboard::copy(GuiMap & map, Layer layer)
                 initializedEdges = true;
             }
 
-            const auto & selectedDoodads = selections.doodads;
-            for ( size_t doodadIndex : selectedDoodads )
+            for ( size_t doodadIndex : map.view.doodads.sel() )
             {
                 const Chk::Doodad & currDoodad = map.getDoodad(doodadIndex);
                 PasteDoodadNode add(currDoodad);
@@ -697,8 +695,7 @@ void Clipboard::copy(GuiMap & map, Layer layer)
                 initializedEdges = true;
             }
 
-            auto & selectedUnits = selections.units;
-            for ( u16 & unitIndex : selectedUnits )
+            for ( auto unitIndex : map.view.units.sel() )
             {
                 const Chk::Unit & currUnit = map.getUnit(unitIndex);
                 PasteUnitNode add(currUnit);
@@ -727,8 +724,7 @@ void Clipboard::copy(GuiMap & map, Layer layer)
                 initializedEdges = true;
             }
 
-            auto & selectedSprites = selections.sprites;
-            for ( size_t spriteIndex : selectedSprites )
+            for ( size_t spriteIndex : map.view.sprites.sel() )
             {
                 const Chk::Sprite & currSprite = map.getSprite(spriteIndex);
                 PasteSpriteNode add(currSprite);
@@ -746,28 +742,45 @@ void Clipboard::copy(GuiMap & map, Layer layer)
         this->copyFogTiles.clear(); // Clear whatever was previously copied
         if ( selections.hasFogTiles() )
         {
-            auto & selFogTiles = selections.fogTiles;
             if ( !initializedEdges )
             {
-                FogTile firstTile = selFogTiles.front();
-                edges.left = firstTile.xc * 32;
-                edges.right = firstTile.xc * 32 + 32;
-                edges.top = firstTile.yc * 32;
-                edges.bottom = firstTile.yc * 32 + 32;
+                auto firstFogTileIndex = map.view.tileFog.sel().front();
+                auto firstFogTileX = firstFogTileIndex % map.getTileWidth();
+                auto firstFogTileY = firstFogTileIndex / map.getTileWidth();
+                edges.left = firstFogTileX * 32;
+                edges.right = firstFogTileX * 32 + 32;
+                edges.top = firstFogTileY * 32;
+                edges.bottom = firstFogTileY * 32 + 32;
             }
-
-            for ( auto selFogTile : selFogTiles ) // Traverse through all selected fog tiles
+            
+            auto & selFogTiles = selections.renderFogTiles.tiles;
+            if ( !map.view.tileFog.sel().empty() )
             {
-                u8 value = map.getFog(selFogTile.xc, selFogTile.yc);
-                PasteFogTileNode fogTile(value, selFogTile.xc * 32, selFogTile.yc * 32, selFogTile.neighbors);
+                auto tileWidth = map.getTileWidth();
+                auto xBegin = map.selections.renderFogTiles.xBegin;
+                auto xEnd = map.selections.renderFogTiles.xEnd;
+                auto yBegin = map.selections.renderFogTiles.yBegin;
+                auto yEnd = map.selections.renderFogTiles.yEnd;
+                for ( std::size_t y=yBegin; y<yEnd; ++y )
+                {
+                    for ( std::size_t x=xBegin; x<xEnd; ++x )
+                    {
+                        auto selFogTile = selFogTiles[y*tileWidth + x];
+                        if ( selFogTile )
+                        {
+                            u8 value = map.getFog(x, y);
+                            PasteFogTileNode fogTile(value, x * 32, y * 32, *selFogTile);
 
-                // Record the outermost fog tile positions for determining their relation to the cursor
-                if      ( fogTile.xc      < edges.left   ) edges.left   = fogTile.xc;
-                else if ( fogTile.xc + 32 > edges.right  ) edges.right  = fogTile.xc + 32;
-                if      ( fogTile.yc      < edges.top    ) edges.top    = fogTile.yc;
-                else if ( fogTile.yc + 32 > edges.bottom ) edges.bottom = fogTile.yc + 32;
+                            // Record the outermost fog tile positions for determining their relation to the cursor
+                            if      ( fogTile.xc      < edges.left   ) edges.left   = fogTile.xc;
+                            else if ( fogTile.xc + 32 > edges.right  ) edges.right  = fogTile.xc + 32;
+                            if      ( fogTile.yc      < edges.top    ) edges.top    = fogTile.yc;
+                            else if ( fogTile.yc + 32 > edges.bottom ) edges.bottom = fogTile.yc + 32;
 
-                copyFogTiles.push_back(fogTile);
+                            copyFogTiles.push_back(fogTile);
+                        }
+                    }
+                }
             }
         }
     };
@@ -936,24 +949,24 @@ void Clipboard::endPasting()
     }
 }
 
-void Clipboard::doPaste(Layer layer, TerrainSubLayer terrainSubLayer, s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos, bool allowStack)
+void Clipboard::doPaste(Layer layer, TerrainSubLayer terrainSubLayer, s32 mapClickX, s32 mapClickY, GuiMap & map, bool allowStack)
 {
     switch ( layer )
     {
         case Layer::Terrain:
-            pasteTerrain(terrainSubLayer, mapClickX, mapClickY, map, undos);
+            pasteTerrain(terrainSubLayer, mapClickX, mapClickY, map, this->prevPaste);
             break;
         case Layer::Doodads:
-            pasteDoodads(mapClickX, mapClickY, map, undos);
+            pasteDoodads(mapClickX, mapClickY, map, this->prevPaste);
             break;
         case Layer::Units:
-            pasteUnits(mapClickX, mapClickY, map, undos, allowStack);
+            pasteUnits(mapClickX, mapClickY, map, allowStack, this->prevPaste);
             break;
         case Layer::Sprites:
-            pasteSprites(mapClickX, mapClickY, map, undos);
+            pasteSprites(mapClickX, mapClickY, map, this->prevPaste);
             break;
         case Layer::FogEdit:
-            pasteBrushFog(mapClickX, mapClickY, map, undos);
+            pasteBrushFog(mapClickX, mapClickY, map, this->prevPaste);
             break;
         case Layer::CutCopyPaste:
             {
@@ -965,12 +978,14 @@ void Clipboard::doPaste(Layer layer, TerrainSubLayer terrainSubLayer, s32 mapCli
                     mapClickX = (mapClickX+16)/32*32;
                     mapClickY = (mapClickY+16)/32*32;
                 }
-                pasteTerrain(terrainSubLayer, mapClickX, mapClickY, map, undos);
+                auto prevPaste = this->prevPaste;
+                pasteTerrain(terrainSubLayer, mapClickX, mapClickY, map, prevPaste);
                 
-                pasteDoodads(mapClickX, mapClickY, map, undos);
-                pasteUnits(mapClickX, mapClickY, map, undos, allowStack);
-                pasteSprites(mapClickX, mapClickY, map, undos);
-                pasteFog(mapClickX, mapClickY, map, undos);
+                pasteDoodads(mapClickX, mapClickY, map, prevPaste);
+                pasteUnits(mapClickX, mapClickY, map, allowStack, prevPaste);
+                pasteSprites(mapClickX, mapClickY, map, prevPaste);
+                pasteFog(mapClickX, mapClickY, map, prevPaste);
+                map.setActionDescription(ActionDescriptor::PasteMisc);
             }
             break;
     }

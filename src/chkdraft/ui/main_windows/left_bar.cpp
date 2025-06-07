@@ -5,7 +5,8 @@
 enum_t(Id, u32, {
     IDR_MAIN_TREE,
     IDR_LEFT_BAR,
-    IDR_MINIMAP
+    IDR_MINIMAP,
+    IDR_HISTORY_TREE
 });
 
 LeftBar::~LeftBar()
@@ -217,9 +218,16 @@ LRESULT LeftBar::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 // Fit the minimap to the center of the top part of the left bar
                 SetWindowPos(miniMap.getHandle(), NULL, (rcLeftBar.right-rcLeftBar.left-(132+2*(xBorder+1)))/2-3, 5, 132, 132, SWP_NOZORDER);
 
-                // Fit the tree to the bottom part of the left bar
+                // Fit the history tree to the bottom part of the left bar
+                int totalTreeHeight = rcLeftBar.bottom-rcLeftBar.top-146;
+                int historyTreeHeight = int((rcLeftBar.bottom-rcLeftBar.top-146)*historyTreeSize);
+                int mainTreeHeight = totalTreeHeight-historyTreeHeight;
                 GetClientRect(hWnd, &rcLeftBar);
-                SetWindowPos(mainTree.getHandle(), NULL, -2, 145, rcLeftBar.right-rcLeftBar.left+2, rcLeftBar.bottom-rcLeftBar.top-146, SWP_NOZORDER);
+                SetWindowPos(historyTree.getHandle(), NULL, -2, 145+mainTreeHeight, rcLeftBar.right-rcLeftBar.left+2, historyTreeHeight, SWP_NOZORDER);
+
+                // Fit the main tree to the middle part of the left bar
+                GetClientRect(hWnd, &rcLeftBar);
+                SetWindowPos(mainTree.getHandle(), NULL, -2, 145, rcLeftBar.right-rcLeftBar.left+2, mainTreeHeight, SWP_NOZORDER);
             }
             break;
 
@@ -234,13 +242,19 @@ LRESULT LeftBar::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
             {
                 miniMap.CreateThis(hWnd, Id::IDR_MINIMAP);
 
-                if ( mainTree.CreateThis(hWnd, -2, 14, 162, 150, true, Id::IDR_MAIN_TREE) )
+                if ( mainTree.CreateThis(hWnd, -2, 14, 162, 36, true, Id::IDR_MAIN_TREE) )
                 {
                     mainTree.setDefaultFont();
                     mainTree.unitTree.UpdateUnitNames(Sc::Unit::defaultDisplayNames);
                     this->blockSelections = true;
                     mainTree.BuildMainTree();
                     this->blockSelections = false;
+                }
+
+                if ( historyTree.CreateThis(hWnd, -2, 50, 162, 114, true, Id::IDR_HISTORY_TREE) )
+                {
+                    historyTree.setDefaultFont();
+                    historyTree.createRoot();
                 }
             }
             break;

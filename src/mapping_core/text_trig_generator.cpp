@@ -3,6 +3,9 @@
 #include "math.h"
 #include <string>
 #include <chrono>
+#ifdef INCLUDE_LITE_SCENARIO
+#include "lite_scenario.h"
+#endif
 
 extern Logger logger;
 
@@ -24,7 +27,7 @@ TextTrigGenerator::TextTrigGenerator(bool useAddressesForMemory, u32 deathTableO
 
 }
 
-bool TextTrigGenerator::generateTextTrigs(const Scenario & map, std::string & trigString)
+template <class MapType> bool TextTrigGenerator::generateTextTrigs(const MapType & map, std::string & trigString)
 {
     logger.info() << "Starting text trig generation..." << std::endl;
     auto start = std::chrono::high_resolution_clock::now();
@@ -36,16 +39,28 @@ bool TextTrigGenerator::generateTextTrigs(const Scenario & map, std::string & tr
     }
     return false;
 }
+template bool TextTrigGenerator::generateTextTrigs<Scenario>(const Scenario & map, std::string & trigString);
+#ifdef INCLUDE_LITE_SCENARIO
+template bool TextTrigGenerator::generateTextTrigs<LiteScenario>(const LiteScenario & map, std::string & trigString);
+#endif
 
-bool TextTrigGenerator::generateTextTrigs(const Scenario & map, size_t trigIndex, std::string & trigString)
+template <class MapType> bool TextTrigGenerator::generateTextTrigs(const MapType & map, size_t trigIndex, std::string & trigString)
 {
     return trigIndex < map.numTriggers() && loadScenario(map, true, false) && buildTextTrig(map.getTrigger(trigIndex), trigString);
 }
+template bool TextTrigGenerator::generateTextTrigs<Scenario>(const Scenario & map, size_t trigIndex, std::string & trigString);
+#ifdef INCLUDE_LITE_SCENARIO
+template bool TextTrigGenerator::generateTextTrigs<LiteScenario>(const LiteScenario & map, size_t trigIndex, std::string & trigString);
+#endif
 
-bool TextTrigGenerator::loadScenario(const Scenario & map)
+template <class MapType> bool TextTrigGenerator::loadScenario(const MapType & map)
 {
     return loadScenario(map, false, true);
 }
+template bool TextTrigGenerator::loadScenario<Scenario>(const Scenario & map);
+#ifdef INCLUDE_LITE_SCENARIO
+template bool TextTrigGenerator::loadScenario<LiteScenario>(const LiteScenario & map);
+#endif
 
 void TextTrigGenerator::clearScenario()
 {
@@ -277,7 +292,7 @@ std::string TextTrigGenerator::getTrigTextFlags(Chk::Action::Flags textFlags) co
 
 // protected
 
-bool TextTrigGenerator::loadScenario(const Scenario & map, bool quoteArgs, bool useCustomNames)
+template <class MapType> bool TextTrigGenerator::loadScenario(const MapType & map, bool quoteArgs, bool useCustomNames)
 {
     return prepConditionTable() &&
            prepActionTable() &&
@@ -288,6 +303,10 @@ bool TextTrigGenerator::loadScenario(const Scenario & map, bool quoteArgs, bool 
            prepScriptTable(map, quoteArgs) &&
            prepStringTable(map, quoteArgs);
 }
+template bool TextTrigGenerator::loadScenario<Scenario>(const Scenario & map, bool quoteArgs, bool useCustomNames);
+#ifdef INCLUDE_LITE_SCENARIO
+template bool TextTrigGenerator::loadScenario<LiteScenario>(const LiteScenario & map, bool quoteArgs, bool useCustomNames);
+#endif
 
 bool TextTrigGenerator::correctLineEndings(StringBuffer & buf) const
 {
@@ -321,7 +340,7 @@ bool TextTrigGenerator::correctLineEndings(StringBuffer & buf) const
     return true;
 }
 
-bool TextTrigGenerator::buildTextTrigs(const Scenario & scenario, std::string & trigString)
+template <class MapType> bool TextTrigGenerator::buildTextTrigs(const MapType & scenario, std::string & trigString)
 {
     StringBuffer output;
     appendTriggers(output, scenario);
@@ -330,6 +349,10 @@ bool TextTrigGenerator::buildTextTrigs(const Scenario & scenario, std::string & 
     clearScenario();
     return true;
 }
+template bool TextTrigGenerator::buildTextTrigs<Scenario>(const Scenario & scenario, std::string & trigString);
+#ifdef INCLUDE_LITE_SCENARIO
+template bool TextTrigGenerator::buildTextTrigs<LiteScenario>(const LiteScenario & scenario, std::string & trigString);
+#endif
 
 bool TextTrigGenerator::buildTextTrig(const Chk::Trigger & trigger, std::string & trigString)
 {
@@ -341,11 +364,15 @@ bool TextTrigGenerator::buildTextTrig(const Chk::Trigger & trigger, std::string 
     return true;
 }
 
-inline void TextTrigGenerator::appendTriggers(StringBuffer & output, const Scenario & scenario) const
+template <class MapType> inline void TextTrigGenerator::appendTriggers(StringBuffer & output, const MapType & scenario) const
 {
-    for ( const auto & trigger : scenario.triggers )
+    for ( const auto & trigger : scenario->triggers )
         appendTrigger(output, trigger);
 }
+template void TextTrigGenerator::appendTriggers<Scenario>(StringBuffer & output, const Scenario & scenario) const;
+#ifdef INCLUDE_LITE_SCENARIO
+template void TextTrigGenerator::appendTriggers<LiteScenario>(StringBuffer & output, const LiteScenario & scenario) const;
+#endif
 
 inline void TextTrigGenerator::appendTrigger(StringBuffer & output, const Chk::Trigger & trigger) const
 {
@@ -849,7 +876,7 @@ bool TextTrigGenerator::prepActionTable()
     return true;
 }
 
-bool TextTrigGenerator::prepLocationTable(const Scenario & map, bool quoteArgs)
+template <class MapType> bool TextTrigGenerator::prepLocationTable(const MapType & map, bool quoteArgs)
 {
     locationTable.clear();
     locationTable.push_back(EscString("No Location"));
@@ -880,8 +907,12 @@ bool TextTrigGenerator::prepLocationTable(const Scenario & map, bool quoteArgs)
 
     return true;
 }
+template bool TextTrigGenerator::prepLocationTable<Scenario>(const Scenario & map, bool quoteArgs);
+#ifdef INCLUDE_LITE_SCENARIO
+template bool TextTrigGenerator::prepLocationTable<LiteScenario>(const LiteScenario & map, bool quoteArgs);
+#endif
 
-bool TextTrigGenerator::prepUnitTable(const Scenario & map, bool quoteArgs, bool useCustomNames)
+template <class MapType> bool TextTrigGenerator::prepUnitTable(const MapType & map, bool quoteArgs, bool useCustomNames)
 {
     unitTable.clear();
 
@@ -910,8 +941,12 @@ bool TextTrigGenerator::prepUnitTable(const Scenario & map, bool quoteArgs, bool
     }
     return true;
 }
+template bool TextTrigGenerator::prepUnitTable<Scenario>(const Scenario & map, bool quoteArgs, bool useCustomNames);
+#ifdef INCLUDE_LITE_SCENARIO
+template bool TextTrigGenerator::prepUnitTable<LiteScenario>(const LiteScenario & map, bool quoteArgs, bool useCustomNames);
+#endif
 
-bool TextTrigGenerator::prepSwitchTable(const Scenario & map, bool quoteArgs)
+template <class MapType> bool TextTrigGenerator::prepSwitchTable(const MapType & map, bool quoteArgs)
 {
     switchTable.clear();
 
@@ -934,8 +969,12 @@ bool TextTrigGenerator::prepSwitchTable(const Scenario & map, bool quoteArgs)
     }
     return true;
 }
+template bool TextTrigGenerator::prepSwitchTable<Scenario>(const Scenario & map, bool quoteArgs);
+#ifdef INCLUDE_LITE_SCENARIO
+template bool TextTrigGenerator::prepSwitchTable<LiteScenario>(const LiteScenario & map, bool quoteArgs);
+#endif
 
-bool TextTrigGenerator::prepGroupTable(const Scenario & map, bool quoteArgs)
+template <class MapType> bool TextTrigGenerator::prepGroupTable(const MapType & map, bool quoteArgs)
 {
     groupTable.clear();
 
@@ -1005,14 +1044,18 @@ bool TextTrigGenerator::prepGroupTable(const Scenario & map, bool quoteArgs)
 
     return true;
 }
+template bool TextTrigGenerator::prepGroupTable<Scenario>(const Scenario & map, bool quoteArgs);
+#ifdef INCLUDE_LITE_SCENARIO
+template bool TextTrigGenerator::prepGroupTable<LiteScenario>(const LiteScenario & map, bool quoteArgs);
+#endif
 
-bool TextTrigGenerator::prepScriptTable(const Scenario & map, bool quoteArgs)
+template <class MapType> bool TextTrigGenerator::prepScriptTable(const MapType & map, bool quoteArgs)
 {
     scriptTable.clear();
 
     scriptTable.insert(std::pair<Sc::Ai::ScriptId, std::string>(Sc::Ai::ScriptId::NoScript, "No Script"));
 
-    for ( const auto & trigger : map.triggers )
+    for ( const auto & trigger : map->triggers )
     {
         for ( size_t actionNum = 0; actionNum < Chk::Trigger::MaxActions; actionNum++ )
         {
@@ -1041,8 +1084,12 @@ bool TextTrigGenerator::prepScriptTable(const Scenario & map, bool quoteArgs)
     }
     return true;
 }
+template bool TextTrigGenerator::prepScriptTable<Scenario>(const Scenario & map, bool quoteArgs);
+#ifdef INCLUDE_LITE_SCENARIO
+template bool TextTrigGenerator::prepScriptTable<LiteScenario>(const LiteScenario & map, bool quoteArgs);
+#endif
 
-bool TextTrigGenerator::prepStringTable(const Scenario & map, bool quoteArgs)
+template <class MapType> bool TextTrigGenerator::prepStringTable(const MapType & map, bool quoteArgs)
 {
     stringTable.clear();
     extendedStringTable.clear();
@@ -1107,6 +1154,10 @@ bool TextTrigGenerator::prepStringTable(const Scenario & map, bool quoteArgs)
 
     return true;
 }
+template bool TextTrigGenerator::prepStringTable<Scenario>(const Scenario & map, bool quoteArgs);
+#ifdef INCLUDE_LITE_SCENARIO
+template bool TextTrigGenerator::prepStringTable<LiteScenario>(const LiteScenario & map, bool quoteArgs);
+#endif
 
 BriefingTextTrigGenerator::BriefingTextTrigGenerator(bool useFancyNoStrings)
     : TextTrigGenerator(false, 0x58A364, useFancyNoStrings), // These parameters aren't actually used for briefing triggers which have no EUDs
@@ -1115,7 +1166,7 @@ BriefingTextTrigGenerator::BriefingTextTrigGenerator(bool useFancyNoStrings)
 
 }
 
-bool BriefingTextTrigGenerator::generateBriefingTextTrigs(const Scenario & map, std::string & briefingTrigString)
+template <class MapType> bool BriefingTextTrigGenerator::generateBriefingTextTrigs(const MapType & map, std::string & briefingTrigString)
 {
     logger.info() << "Starting briefing text trig generation..." << std::endl;
     auto start = std::chrono::high_resolution_clock::now();
@@ -1127,16 +1178,28 @@ bool BriefingTextTrigGenerator::generateBriefingTextTrigs(const Scenario & map, 
     }
     return false;
 }
+template bool BriefingTextTrigGenerator::generateBriefingTextTrigs<Scenario>(const Scenario & map, std::string & briefingTrigString);
+#ifdef INCLUDE_LITE_SCENARIO
+template bool BriefingTextTrigGenerator::generateBriefingTextTrigs<LiteScenario>(const LiteScenario & map, std::string & briefingTrigString);
+#endif
 
-bool BriefingTextTrigGenerator::generateBriefingTextTrigs(const Scenario & map, size_t briefingTrigIndex, std::string & briefingTrigString)
+template <class MapType> bool BriefingTextTrigGenerator::generateBriefingTextTrigs(const MapType & map, size_t briefingTrigIndex, std::string & briefingTrigString)
 {
     return briefingTrigIndex < map.numBriefingTriggers() && loadScenario(map, true, false) && buildBriefingTextTrig(map.getBriefingTrigger(briefingTrigIndex), briefingTrigString);
 }
+template bool BriefingTextTrigGenerator::generateBriefingTextTrigs<Scenario>(const Scenario & map, size_t briefingTrigIndex, std::string & briefingTrigString);
+#ifdef INCLUDE_LITE_SCENARIO
+template bool BriefingTextTrigGenerator::generateBriefingTextTrigs<LiteScenario>(const LiteScenario & map, size_t briefingTrigIndex, std::string & briefingTrigString);
+#endif
 
-bool BriefingTextTrigGenerator::loadScenario(const Scenario & map)
+template <class MapType> bool BriefingTextTrigGenerator::loadScenario(const MapType & map)
 {
     return loadScenario(map, false, true);
 }
+template bool BriefingTextTrigGenerator::loadScenario<Scenario>(const Scenario & map);
+#ifdef INCLUDE_LITE_SCENARIO
+template bool BriefingTextTrigGenerator::loadScenario<LiteScenario>(const LiteScenario & map);
+#endif
 
 void BriefingTextTrigGenerator::clearScenario()
 {
@@ -1198,12 +1261,16 @@ std::string BriefingTextTrigGenerator::getBriefingTrigNumber(u32 number) const
     return TextTrigGenerator::getTrigNumber(number);
 }
 
-bool BriefingTextTrigGenerator::loadScenario(const Scenario & map, bool quoteArgs, bool useCustomNames)
+template <class MapType> bool BriefingTextTrigGenerator::loadScenario(const MapType & map, bool quoteArgs, bool useCustomNames)
 {
     return prepSlotTable(quoteArgs) && prepBriefingActionTable() && TextTrigGenerator::loadScenario(map, quoteArgs, useCustomNames);
 }
+template bool BriefingTextTrigGenerator::loadScenario<Scenario>(const Scenario & map, bool quoteArgs, bool useCustomNames);
+#ifdef INCLUDE_LITE_SCENARIO
+template bool BriefingTextTrigGenerator::loadScenario<LiteScenario>(const LiteScenario & map, bool quoteArgs, bool useCustomNames);
+#endif
 
-bool BriefingTextTrigGenerator::buildBriefingTextTrigs(const Scenario & scenario, std::string & briefingTrigString)
+template <class MapType> bool BriefingTextTrigGenerator::buildBriefingTextTrigs(const MapType & scenario, std::string & briefingTrigString)
 {
     StringBuffer output;
     appendBriefingTriggers(output, scenario);
@@ -1212,6 +1279,10 @@ bool BriefingTextTrigGenerator::buildBriefingTextTrigs(const Scenario & scenario
     clearScenario();
     return true;
 }
+template bool BriefingTextTrigGenerator::buildBriefingTextTrigs<Scenario>(const Scenario & scenario, std::string & briefingTrigString);
+#ifdef INCLUDE_LITE_SCENARIO
+template bool BriefingTextTrigGenerator::buildBriefingTextTrigs<LiteScenario>(const LiteScenario & scenario, std::string & briefingTrigString);
+#endif
 
 bool BriefingTextTrigGenerator::buildBriefingTextTrig(const Chk::Trigger & trigger, std::string & briefingTrigString)
 {
@@ -1223,11 +1294,15 @@ bool BriefingTextTrigGenerator::buildBriefingTextTrig(const Chk::Trigger & trigg
     return true;
 }
 
-void BriefingTextTrigGenerator::appendBriefingTriggers(StringBuffer & output, const Scenario & scenario) const
+template <class MapType> void BriefingTextTrigGenerator::appendBriefingTriggers(StringBuffer & output, const MapType & scenario) const
 {
-    for ( const auto & briefingTrigger : scenario.briefingTriggers )
+    for ( const auto & briefingTrigger : scenario->briefingTriggers )
         appendBriefingTrigger(output, briefingTrigger);
 }
+template void BriefingTextTrigGenerator::appendBriefingTriggers<Scenario>(StringBuffer & output, const Scenario & scenario) const;
+#ifdef INCLUDE_LITE_SCENARIO
+template void BriefingTextTrigGenerator::appendBriefingTriggers<LiteScenario>(StringBuffer & output, const LiteScenario & scenario) const;
+#endif
 
 void BriefingTextTrigGenerator::appendBriefingTrigger(StringBuffer & output, const Chk::Trigger & briefingTrigger) const
 {

@@ -3,7 +3,6 @@
 #include <common_files/common_files.h>
 #include <windows/windows_ui.h>
 #include <mapping_core/mapping_core.h>
-#include "preserved_unit_stats.h"
 #include "ui/chkd_controls/player_dropdown.h"
 
 enum class UnitListColumn;
@@ -114,7 +113,6 @@ class UnitPropertiesWindow : public WinLib::ClassDialog
         bool flipSort;
         bool initilizing;
         bool changeHighlightOnly;
-        PreservedUnitStats preservedStats;
 
         WinLib::GroupBoxControl groupUnitProperties;
         WinLib::ListViewControl listUnits;
