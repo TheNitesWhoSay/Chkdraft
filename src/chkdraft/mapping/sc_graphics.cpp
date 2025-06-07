@@ -1559,7 +1559,7 @@ void DrawTileSel(const WinLib::DeviceContext & dc, ChkdPalette & palette, u16 wi
     rcBorder.bottom = (height + screenTop)/32 + 1;
 
     auto selTiles = selections.renderTiles.tiles;
-    if ( !map.view.tiles.sel().empty() )
+    if ( !selTiles.empty() )
     {
         LONG tileWidth = LONG(map.getTileWidth());
         auto xBegin = std::max(LONG(selections.renderTiles.xBegin), rcBorder.left);
@@ -1642,7 +1642,7 @@ void DrawFogTileSel(const WinLib::DeviceContext & dc, ChkdPalette & palette, u16
     rcBorder.bottom = (height + screenTop)/32 + 1;
 
     auto selFogTiles = selections.renderFogTiles.tiles;
-    if ( !map.view.tileFog.sel().empty() )
+    if ( !selFogTiles.empty() )
     {
         LONG tileWidth = LONG(map.getTileWidth());
         auto xBegin = std::max(LONG(selections.renderFogTiles.xBegin), rcBorder.left);

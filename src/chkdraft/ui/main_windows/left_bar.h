@@ -2,6 +2,7 @@
 #define LEFTBAR_H
 #include <windows/windows_ui.h>
 #include "ui/chkd_controls/main_tree.h"
+#include "ui/chkd_controls/history_tree.h"
 #include "mini_map.h"
 
 class LeftBar : public WinLib::ClassWindow
