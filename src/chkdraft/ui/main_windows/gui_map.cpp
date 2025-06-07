@@ -4109,6 +4109,72 @@ void GuiMap::windowBoundsChanged()
     });
 }
 
+void GuiMap::elementAdded(units_path, std::size_t index)
+{
+    logger.info() << "TODO: unit added at index: " << index << '\n';
+}
+
+void GuiMap::elementRemoved(units_path, std::size_t index)
+{
+    logger.info() << "TODO: unit removed at index: " << index << '\n';
+}
+
+void GuiMap::elementMoved(units_path, std::size_t oldIndex, std::size_t newIndex)
+{
+    logger.info() << "TODO: unit moved from index " << oldIndex << " to " << newIndex << '\n';
+}
+
+void GuiMap::valueChanged(unit_type_path, Sc::Unit::Type oldType, Sc::Unit::Type newType)
+{
+    logger.info() << "TODO: unit type changed from " << oldType << " to " << newType << '\n';
+}
+
+void GuiMap::valueChanged(unit_xc_path, u16 oldXc, u16 newXc)
+{
+    logger.info() << "TODO: unit xc changed from " << oldXc << " to " << newXc << '\n';
+}
+
+void GuiMap::valueChanged(unit_yc_path, u16 oldYc, u16 newYc)
+{
+    logger.info() << "TODO: unit yc changed from " << oldYc << " to " << newYc << '\n';
+}
+
+void GuiMap::elementAdded(sprites_path, std::size_t index)
+{
+    logger.info() << "TODO: sprite added at index: " << index << '\n';
+}
+
+void GuiMap::elementRemoved(sprites_path, std::size_t index)
+{
+    logger.info() << "TODO: sprite removed at index: " << index << '\n';
+}
+
+void GuiMap::elementMoved(sprites_path, std::size_t oldIndex, std::size_t newIndex)
+{
+    logger.info() << "TODO: sprite moved from index " << oldIndex << " to " << newIndex << '\n';
+}
+
+void GuiMap::valueChanged(sprite_type_path, Sc::Sprite::Type oldType, Sc::Sprite::Type newType)
+{
+    logger.info() << "TODO: sprite type changed from " << oldType << " to " << newType << '\n';
+}
+
+void GuiMap::valueChanged(sprite_flags_path, u16 oldFlags, u16 newFlags)
+{
+    logger.info() << "TODO: sprite flags changed from " << oldFlags << " to " << newFlags << '\n';
+}
+
+void GuiMap::valueChanged(sprite_xc_path, u16 oldXc, u16 newXc)
+{
+    logger.info() << "TODO: sprite xc changed from " << oldXc << " to " << newXc << '\n';
+}
+
+void GuiMap::valueChanged(sprite_yc_path, u16 oldYc, u16 newYc)
+{
+    logger.info() << "TODO: sprite yc changed from " << oldYc << " to " << newYc << '\n';
+}
+
+
 void GuiMap::tileSelectionsChanged()
 {
     using neighbor_int = std::underlying_type_t<TileNeighbor>;
