@@ -369,7 +369,6 @@ bool StringEditorWindow::updateString(u32 stringNum)
         if ( auto editStr = editString.GetWinText() )
         {
             CM->replaceString<ChkdString>((size_t)stringNum, *editStr);
-            CM->notifyChange(false);
             if ( CM->locationStringUsed(currSelString, Chk::Scope::EditorOverGame) )
                 chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
 

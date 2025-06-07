@@ -1,8 +1,5 @@
 #include "maps.h"
 #include "chkdraft/chkdraft.h"
-#include "mapping/undos/chkd_undos/unit_change.h"
-#include "mapping/undos/chkd_undos/doodad_change.h"
-#include "mapping/undos/chkd_undos/sprite_change.h"
 #include <memory>
 #include <string>
 #include <utility>
@@ -52,6 +49,7 @@ bool Maps::Focus(std::shared_ptr<GuiMap> guiMap)
         chkd.mainPlot.leftBar.mainTree.isomTree.UpdateIsomTree();
         chkd.mainPlot.leftBar.mainTree.doodadTree.UpdateDoodadTree();
         chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
+        chkd.mainPlot.leftBar.historyTree.RebuildHistoryTree();
         currentlyActiveMap->updateMenu();
         return true;
     }
@@ -417,32 +415,28 @@ void Maps::ChangePlayer(u8 newPlayer, bool updateMapPlayers)
             }
             else if ( currentlyActiveMap->selections.hasDoodads() )
             {
-                auto doodadPlayerChangeUndo = ReversibleActions::Make();
                 const auto & tileset = chkd.scData.terrain.get(currentlyActiveMap->getTileset());
-                auto & selDoodads = currentlyActiveMap->selections.doodads;
-                for ( auto doodadIndex : selDoodads )
+                for ( auto doodadIndex : currentlyActiveMap->view.doodads.sel() )
                 {
-                    auto & selDoodad = currentlyActiveMap->getDoodad(doodadIndex);
+                    const auto & selDoodad = currentlyActiveMap->getDoodad(doodadIndex);
                     if ( auto doodadGroupIndex = tileset.getDoodadGroupIndex(selDoodad.type) )
                     {
                         const auto & doodadDat = (Sc::Terrain::DoodadCv5 &)tileset.tileGroups[*doodadGroupIndex];
                         if ( selDoodad.owner != newPlayer )
                         {
-                            doodadPlayerChangeUndo->Insert(DoodadChange::Make(u16(doodadIndex), selDoodad.owner, selDoodad.enabled));
-                            selDoodad.owner = newPlayer;
-                            if ( !currentlyActiveMap->sprites.empty() )
+                            currentlyActiveMap->operator()(ActionDescriptor::UpdateDoodadPlayer)->doodads[doodadIndex].owner = newPlayer;
+                            if ( !currentlyActiveMap->read.sprites.empty() )
                             {
-                                for ( int i=int(currentlyActiveMap->sprites.size())-1; i>=0; --i )
+                                for ( int i=int(currentlyActiveMap->read.sprites.size())-1; i>=0; --i )
                                 {
-                                    auto & sprite = currentlyActiveMap->sprites[i];
+                                    const auto & sprite = currentlyActiveMap->read.sprites[i];
                                     if ( sprite.type == doodadDat.overlayIndex && sprite.xc == selDoodad.xc && sprite.yc == selDoodad.yc )
-                                        sprite.owner = newPlayer;
+                                        currentlyActiveMap->operator()(ActionDescriptor::UpdateSpriteOwner)->sprites[i].owner = newPlayer;
                                 }
                             }
                         }
                     }
                 }
-                currentlyActiveMap->AddUndo(doodadPlayerChangeUndo);
             }
             else if ( currentlyActiveMap->selections.hasSprites() )
             {
@@ -622,6 +616,7 @@ void Maps::SetGridColor(u8 red, u8 green, u8 blue)
 
 void Maps::startPaste(bool isQuickPaste)
 {
+    auto edit = currentlyActiveMap->operator()(ActionDescriptor::BeginPaste);
     if ( currentlyActiveMap == nullptr )
         return;
     else if ( currentlyActiveMap->getLayer() == Layer::Terrain )
@@ -717,9 +712,14 @@ void Maps::properties()
         Selections & selections = currentlyActiveMap->selections;
         if ( selections.hasTiles() )
         {
-            TileNode tile = selections.getFirstTile();
-            selections.removeTiles();
-            selections.addTile(tile.value, tile.xc, tile.yc, TileNeighbor::All);
+            auto edit = currentlyActiveMap->operator()(ActionDescriptor::UpdateTileSel);
+            auto numSelected = currentlyActiveMap->view.tiles.sel().size();
+            if ( numSelected > 1 )
+            {
+                std::vector<std::size_t> indexesRemoved(numSelected-1, 0);
+                std::iota(indexesRemoved.begin(), indexesRemoved.end(), 1);
+                edit->tiles.deselect(indexesRemoved);
+            }
 
             RedrawWindow(currentlyActiveMap->getHandle(), NULL, NULL, RDW_INVALIDATE);
             if ( chkd.tilePropWindow.getHandle() != NULL )

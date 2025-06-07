@@ -2,7 +2,7 @@
 #include <chkdraft/mapping/settings.h>
 
 #ifdef _DEBUG
-Logger logger(LogLevel::All); // The primary logger
+Logger logger(LogLevel::Debug); // The primary logger
 #else
 Logger logger((LogLevel)Settings::getLogLevel()); // The primary logger
 #endif

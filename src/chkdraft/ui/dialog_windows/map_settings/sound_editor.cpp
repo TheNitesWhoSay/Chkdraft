@@ -361,7 +361,6 @@ void SoundEditorWindow::AddFileButtonPressed()
     if ( addedSound )
     {
         editFileName.SetText("");
-        CM->notifyChange(false);
         CM->refreshScenario();
     }
 }
@@ -520,7 +519,6 @@ void SoundEditorWindow::DeleteSoundButtonPressed()
             {
                 selectedSoundListIndex = -1;
                 CM->removeSoundByStringId(size_t(soundStringId), true);
-                CM->notifyChange(false);
                 CM->refreshScenario();
             }
             else
@@ -540,7 +538,6 @@ void SoundEditorWindow::DeleteSoundButtonPressed()
                 {
                     selectedSoundListIndex = -1;
                     CM->removeSoundByStringId(size_t(soundStringId), true);
-                    CM->notifyChange(false);
                     CM->refreshScenario();
                 }
             }
@@ -549,7 +546,6 @@ void SoundEditorWindow::DeleteSoundButtonPressed()
         {
             selectedSoundListIndex = -1;
             CM->removeSoundByStringId(size_t(soundStringId), false);
-            CM->notifyChange(false);
             CM->refreshScenario();
         }
         CM->deleteUnusedStrings(Chk::Scope::Both);

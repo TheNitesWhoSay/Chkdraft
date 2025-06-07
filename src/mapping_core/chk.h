@@ -5,6 +5,7 @@
 #include "escape_strings.h"
 #include "sc.h"
 #include <bitset>
+#include <iosfwd>
 #include <map>
 
 #undef PlaySound
@@ -125,9 +126,6 @@ namespace Chk {
             xResources = x16BIT_4,
             xHangar = x16BIT_5
         });
-        enum class Field { // Typeless
-            ClassId, Xc, Yc, Type, RelationFlags, ValidStateFlags, ValidFieldFlags, Owner, HitpointPercent, ShieldPercent, EnergyPercent, ResourceAmount, HangarAmount, StateFlags, Unused, RelationClassId
-        };
 
         u32 classId; // Unique number used to identify this unit for related units (may be an addon or the building that has an addon)
         u16 xc;
@@ -351,9 +349,6 @@ namespace Chk {
             OverlayFlipped_Deprecated = BIT_14, // In SC: temporary creep
             SpriteUnitDiabled = BIT_15 // If the SpriteOverlay flag is NOT set (this is a sprite-unit), then the unit is disabled
         });
-        enum class Field {
-            Type, Xc, Yc, Owner, Unused, Flags
-        };
 
         inline static u16 toPureSpriteFlags(u16 flags)
         {
@@ -495,6 +490,8 @@ namespace Chk {
         u16 unitStateFlags;
         u32 unknown;
 
+        constexpr bool operator==(const Cuwp & other) const = default;
+
         REFLECT(Cuwp, validUnitStateFlags, validUnitFieldFlags, owner,
             hitpointPercent, shieldPercent, energyPercent, resourceAmount, hangarAmount, unitStateFlags, unknown)
     };
@@ -518,20 +515,15 @@ namespace Chk {
             HighAir = BIT_5,
             All = LowElevation | MediumElevation | HighElevation | LowAir | MediumAir | HighAir
         });
-        enum class Field { // Typeless
-            Left, Top, Right, Bottom, StringId, ElevationFlags
-        };
-
-        Location();
 
         bool isBlank() const;
         
-        u32 left;
-        u32 top;
-        u32 right;
-        u32 bottom;
-        u16 stringId;
-        u16 elevationFlags;
+        u32 left = 0;
+        u32 top = 0;
+        u32 right = 0;
+        u32 bottom = 0;
+        u16 stringId = 0;
+        u16 elevationFlags = 0;
 
         REFLECT(Location, left, top, right, bottom, stringId, elevationFlags)
     };
@@ -691,15 +683,15 @@ namespace Chk {
             Argument arguments[MaxArguments];
         };
 
-        u32 locationId; // 1 based, is also the bitmask for deaths
-        u32 player;
-        u32 amount;
-        Sc::Unit::Type unitType;
-        Comparison comparison;
-        Type conditionType;
-        u8 typeIndex; // Resource type/score type/switch num
-        u8 flags;
-        MaskFlag maskFlag; // Set to "SC" (0x53, 0x43) for masked deaths; leave as zero otherwise
+        u32 locationId = 0; // 1 based, is also the bitmask for deaths
+        u32 player = 0;
+        u32 amount = 0;
+        Sc::Unit::Type unitType = Sc::Unit::Type::TerranMarine;
+        Comparison comparison = Comparison::AtLeast;
+        Type conditionType = Type::NoCondition;
+        u8 typeIndex = 0; // Resource type/score type/switch num
+        u8 flags = 0;
+        MaskFlag maskFlag = MaskFlag::Disabled; // Set to "SC" (0x53, 0x43) for masked deaths; leave as zero otherwise
 
         REFLECT(Condition, locationId, player, amount, unitType, comparison, conditionType, typeIndex, flags, maskFlag)
 
@@ -987,18 +979,18 @@ namespace Chk {
             Argument arguments[MaxArguments];
         };
 
-        u32 locationId; // 1 based, is also the bitmask for deaths
+        u32 locationId = 0; // 1 based, is also the bitmask for deaths
         u32 stringId;
         u32 soundStringId;
-        u32 time;
-        u32 group; // Group/ZeroBasedBriefingSlot
-        u32 number; // Amount/Group2/LocDest/UnitPropNum/ScriptNum/SwitchIndex
-        u16 type; // Unit/score/resource type/alliance status
-        Type actionType; // u8
-        u8 type2; // Num units/switch action/unit order/modify type
-        u8 flags;
-        u8 padding;
-        MaskFlag maskFlag; // u16, set to "SC" (0x53, 0x43) for masked deaths
+        u32 time = 0;
+        u32 group = 0; // Group/ZeroBasedBriefingSlot
+        u32 number = 0; // Amount/Group2/LocDest/UnitPropNum/ScriptNum/SwitchIndex
+        u16 type = 0; // Unit/score/resource type/alliance status
+        Type actionType = Type::NoAction; // u8
+        u8 type2 = 0; // Num units/switch action/unit order/modify type
+        u8 flags = 0;
+        u8 padding = 0;
+        MaskFlag maskFlag = MaskFlag::Disabled; // u16, set to "SC" (0x53, 0x43) for masked deaths
 
         REFLECT(Action, locationId, stringId, soundStringId, time, group, number, type, actionType, type2, flags, padding, maskFlag)
 
@@ -1529,6 +1521,8 @@ namespace Chk {
         };
         u16 forceString[TotalForces] {4, 5, 6, 7};
         u8 flags[TotalForces] {Chk::ForceFlags::All, Chk::ForceFlags::All, Chk::ForceFlags::All, Chk::ForceFlags::All};
+
+        REFLECT(FORC, playerForce, forceString, flags)
     }; // Size <= 20 (validated)
     
     __declspec(align(1)) struct WAV {
@@ -1995,89 +1989,45 @@ namespace Chk {
             MaximumOffsetAndCharsExceeded(); // Disallow ctor
     };
 
-    class StrProp {
-        public:
-            u8 red;
-            u8 green;
-            u8 blue;
-            u32 size;
-            bool isUsed;
-            bool hasPriority;
-            bool isBold;
-            bool isUnderlined;
-            bool isItalics;
-    
-            StrProp();
-            StrProp(Chk::StringProperties stringProperties);
-            StrProp(u8 red, u8 green, u8 blue, u32 size, bool isUsed, bool hasPriority, bool isBold, bool isUnderlined, bool isItalics);
+    struct StrProp {
+        u8 red = 0;
+        u8 green = 0;
+        u8 blue = 0;
+        u32 size = Chk::baseFontSize;
+        bool isUsed = false;
+        bool hasPriority = false;
+        bool isBold = false;
+        bool isUnderlined = false;
+        bool isItalics = false;
+
+        StrProp() = default;
+        StrProp(Chk::StringProperties stringProperties);
+
+        REFLECT(StrProp, red, green, blue, size, isUsed, hasPriority, isBold, isUnderlined, isItalics)
     };
 
-    class ScStr
+    struct ScStr
     {
-        public:
-            const char* str; // The content of this string (RawString/no formatting)
-        
-            ScStr();
-            ScStr(const std::string & str);
-            ScStr(const std::string & str, const StrProp & strProp);
-            ScStr(const char* str);
-            ScStr(const u8* str);
-            ScStr(const u8* str, size_t length);
-            ScStr(const std::vector<u8> & strBytes);
-            template <size_t N> ScStr(const char (&str)[N]) : ScStr(std::string(str)) {}
+        std::string str {};
+        StrProp properties {};
 
-            bool empty() const;
-            size_t length() const;
-        
-            StrProp & properties();
-            const StrProp & properties() const;
+        ScStr() = default;
+        ScStr(const std::string & str) : str(str) {}
+        ScStr(const std::string & str, const StrProp & properties) : str(str), properties(properties) {}
+        template <size_t N> ScStr(const char (&str)[N]) : ScStr(std::string(str, N-1)) {}
 
-            template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkdString (Editor <01>Style)
-            int compare(const StringType & str) const;
+        bool empty() const;
+        size_t length() const;
 
-            template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkdString (Editor <01>Style)
-            StringType toString() const;
+        template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkdString (Editor <01>Style)
+        int compare(const StringType & str) const;
 
-            ScStr* getParentStr() const;
-            ScStr* getChildStr() const;
-            static bool adopt(ScStr* lhs, ScStr* rhs); // Make lhs the parent of rhs if possible, or vice-versa
-            void disown(); // Break any connections with parent and child strings
+        template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkdString (Editor <01>Style)
+        StringType toString() const;
 
-        private:
-            ScStr* parentStr = nullptr; // The larger string inside which this string fits, if null then this is a root string
-            ScStr* childStr = nullptr; // The next largest string that fits inside this string
-            std::vector<char> allocation; // If parentStr is null, then this is the actual string data and str points to the first character
-                                          // else str points to first character of this string within the allocation of the highest-order parent
-            StrProp strProp; // Additional color and font details, if this string is extended and gets stored
+        inline friend auto & operator<<(std::ostream & os, const ScStr & s) { os << s.str; return os; }
 
-            static void adopt(ScStr* parent, ScStr* child, size_t parentLength, size_t childLength, const char* parentSubString);
-    };
-
-    struct IsomRectUndo {
-        Chk::IsomDiamond diamond {};
-        Chk::IsomRect oldValue {};
-        Chk::IsomRect newValue {};
-
-        constexpr void setOldValue(const Chk::IsomRect & oldValue) {
-            this->oldValue.left = oldValue.left & Chk::IsomRect::EditorFlag::ClearAll;
-            this->oldValue.right = oldValue.right & Chk::IsomRect::EditorFlag::ClearAll;
-            this->oldValue.top = oldValue.top & Chk::IsomRect::EditorFlag::ClearAll;
-            this->oldValue.bottom = oldValue.bottom & Chk::IsomRect::EditorFlag::ClearAll;
-        }
-
-        constexpr void setNewValue(const Chk::IsomRect & newValue) {
-            this->newValue.left = newValue.left & Chk::IsomRect::EditorFlag::ClearAll;
-            this->newValue.right = newValue.right & Chk::IsomRect::EditorFlag::ClearAll;
-            this->newValue.top = newValue.top & Chk::IsomRect::EditorFlag::ClearAll;
-            this->newValue.bottom = newValue.bottom & Chk::IsomRect::EditorFlag::ClearAll;
-        }
-
-        IsomRectUndo(Chk::IsomDiamond diamond, const Chk::IsomRect & oldValue, const Chk::IsomRect & newValue)
-            : diamond(diamond)
-        {
-            setOldValue(oldValue);
-            setNewValue(newValue);
-        }
+        REFLECT(ScStr, str, properties)
     };
 
     // IsomCache holds all the data required to edit isometric terrain which is not a part of scenario; as well as methods that operate on said data exclusively
@@ -2087,8 +2037,6 @@ namespace Chk {
         size_t isomWidth; // This is a sort of isometric width, not tileWidth
         size_t isomHeight; // This is a sort of isometric height, not tileHeight
         Sc::BoundingBox changedArea {};
-
-        std::vector<std::optional<IsomRectUndo>> undoMap {}; // Undo per x, y coordinate
 
         Span<Sc::Terrain::TileGroup> tileGroups {};
         Span<Sc::Isom::ShapeLinks> isomLinks {};
@@ -2103,8 +2051,7 @@ namespace Chk {
             isomLinks(&tilesetData.isomLinks[0], tilesetData.isomLinks.size()),
             terrainTypes(&tilesetData.terrainTypes[0], tilesetData.terrainTypes.size()),
             terrainTypeMap(&tilesetData.terrainTypeMap[0], tilesetData.terrainTypeMap.size()),
-            hashToTileGroup(&tilesetData.hashToTileGroup),
-            undoMap(isomWidth*isomHeight, std::nullopt)
+            hashToTileGroup(&tilesetData.hashToTileGroup)
         {
             resetChangedArea();
         }
@@ -2148,16 +2095,6 @@ namespace Chk {
         }
 
         virtual inline void setTileValue(size_t tileX, size_t tileY, uint16_t tileValue) {} // Does nothing unless overridden
-
-        virtual inline void addIsomUndo(const IsomRectUndo & /*isomUndo*/) {} // Does nothing unless overridden
-
-        // Call when one undoable operation is complete, e.g. resize a map, or mouse up after pasting/brushing some terrain
-        // When changing lots of terrain (e.g. by holding the mouse button and moving around), undos are blocked from being added to the same tiles multiple times
-        // Calling this method clears out said blockers
-        inline void finalizeUndoableOperation()
-        {
-            undoMap.assign(isomWidth*isomHeight, std::nullopt); // Clears out the undoMap so new entries can be set
-        }
     };
 
     // When tiles change... doodads, units, and possibly other things may be invalidated and need to be removed (depending on editor configuration settings)

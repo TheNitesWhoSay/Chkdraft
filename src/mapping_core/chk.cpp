@@ -1771,11 +1771,6 @@ void Chk::Cuwp::setInvincible(bool invincible)
     unitStateFlags = invincible ? unitStateFlags | State::Invincible : unitStateFlags & State::xInvincible;
 }
 
-Chk::Location::Location() : left(0), top(0), right(0), bottom(0), stringId(0), elevationFlags(0)
-{
-
-}
-
 bool Chk::Location::isBlank() const
 {
     return left == 0 && top == 0 && right == 0 && bottom == 0 && stringId == 0 && elevationFlags == 0;
@@ -1834,11 +1829,6 @@ Chk::MaximumOffsetAndCharsExceeded::MaximumOffsetAndCharsExceeded(std::string se
 
 }
 
-StrProp::StrProp() : red(0), green(0), blue(0), isUsed(false), hasPriority(false), isBold(false), isUnderlined(false), isItalics(false), size(Chk::baseFontSize)
-{
-
-}
-
 StrProp::StrProp(Chk::StringProperties stringProperties) :
     red(stringProperties.red), green(stringProperties.green), blue(stringProperties.blue),
     isUsed((stringProperties.flags & Chk::StrFlags::isUsed) == Chk::StrFlags::isUsed), hasPriority((stringProperties.flags & Chk::StrFlags::hasPriority) == Chk::StrFlags::hasPriority),
@@ -1852,78 +1842,14 @@ StrProp::StrProp(Chk::StringProperties stringProperties) :
     
 }
 
-StrProp::StrProp(u8 red, u8 green, u8 blue, u32 size, bool isUsed, bool hasPriority, bool isBold, bool isUnderlined, bool isItalics)
-    : red(red), green(green), blue(blue), size(size), isUsed(isUsed), hasPriority(hasPriority), isBold(isBold), isUnderlined(isUnderlined), isItalics(isItalics)
-{
-
-}
-
-ScStr::ScStr() : strProp()
-{
-    allocation.push_back('\0');
-    this->str = &allocation[0];
-}
-
-ScStr::ScStr(const std::string & str) : strProp()
-{
-    for ( const char & c : str )
-        allocation.push_back(c);
-
-    if ( allocation.size() == 0 || allocation.back() != '\0' )
-        allocation.push_back('\0');
-
-    this->str = &allocation[0];
-}
-
-ScStr::ScStr(const std::string & str, const StrProp & strProp) : strProp(strProp)
-{
-    for ( const char & c : str )
-        allocation.push_back(c);
-
-    if ( allocation.size() == 0 || allocation.back() != '\0' )
-        allocation.push_back('\0');
-
-    this->str = &allocation[0];
-}
-
-ScStr::ScStr(const char* str) : ScStr(std::string(str))
-{
-
-}
-
-ScStr::ScStr(const u8* str) : ScStr(std::string((const char*)str))
-{
-
-}
-
-ScStr::ScStr(const u8* str, size_t length) : ScStr(std::string((const char*)str, length))
-{
-
-}
-
-ScStr::ScStr(const std::vector<u8> & strBytes) : ScStr(std::string((const char*)&strBytes[0], strBytes.size()))
-{
-
-}
-
 bool ScStr::empty() const
 {
-    return parentStr == nullptr ? allocation.size() <= 1 : parentStr->empty();
+    return str.empty();
 }
 
 size_t ScStr::length() const
 {
-    return parentStr == nullptr ? (allocation.size() > 0 ? allocation.size()-1 : 0) : strlen(str);
-}
-
-StrProp & ScStr::properties()
-{
-    return strProp;
-}
-
-const StrProp & ScStr::properties() const
-{
-    return strProp;
+    return str.length();
 }
 
 template <typename StringType>
@@ -1931,7 +1857,7 @@ int ScStr::compare(const StringType & str) const
 {
     RawString rawStr;
     convertStr<StringType, RawString>(str, rawStr);
-    return strcmp(this->str, rawStr.c_str());
+    return this->str.compare(rawStr);
 }
 template int ScStr::compare<RawString>(const RawString & str) const;
 template int ScStr::compare<EscString>(const EscString & str) const;
@@ -1949,71 +1875,3 @@ template RawString ScStr::toString<RawString>() const;
 template EscString ScStr::toString<EscString>() const;
 template ChkdString ScStr::toString<ChkdString>() const;
 template SingleLineChkdString ScStr::toString<SingleLineChkdString>() const;
-
-ScStr* ScStr::getParentStr() const
-{
-    return parentStr;
-}
-
-ScStr* ScStr::getChildStr() const
-{
-    return childStr;
-}
-
-bool ScStr::adopt(ScStr* lhs, ScStr* rhs)
-{
-    if ( rhs != nullptr && lhs != nullptr && rhs->parentStr == nullptr || lhs->parentStr == nullptr )
-    {
-        size_t lhsLength = lhs->parentStr == nullptr ? lhs->allocation.size()-1 : strlen(lhs->str);
-        size_t rhsLength = rhs->parentStr == nullptr ? rhs->allocation.size()-1 : strlen(rhs->str);
-        if ( rhsLength > lhsLength ) // The length of rhs is greater
-        {
-            const char* rhsSubString = &rhs->str[rhsLength-lhsLength];
-            if ( strcmp(lhs->str, rhsSubString) == 0 ) // rhs can adopt lhs
-                ScStr::adopt(rhs, lhs, rhsLength, lhsLength, rhsSubString);
-        }
-        else // lhsLength >= rhsLength - the length of lhs is greater or equal to rhs
-        {
-            const char* lhsSubString = &lhs->str[lhsLength-rhsLength];
-            if ( strcmp(rhs->str, lhsSubString) == 0 ) // lhs can adopt rhs
-                ScStr::adopt(lhs, rhs, lhsLength, rhsLength, lhsSubString);
-        }
-    }
-    return false;
-}
-
-void ScStr::disown()
-{
-    if ( childStr != nullptr )
-    {
-        childStr->parentStr = parentStr; // Make child's parent its grandparent (or nullptr if none)
-        childStr = nullptr;
-    }
-    if ( parentStr != nullptr )
-    {
-        parentStr->childStr = childStr; // Make parent's child its grandchild (or nullptr if none)
-        parentStr = nullptr;
-    }
-}
-
-void ScStr::adopt(ScStr* parent, ScStr* child, size_t parentLength, size_t childLength, const char* parentSubString)
-{
-    ScStr* nextChild = parent->childStr; // Some descendent of parent may be a more suitable parent for this child
-    while ( nextChild != nullptr && nextChild->length() > childLength )
-    {
-        parent = nextChild;
-        nextChild = parent->childStr;
-    }
-    if ( nextChild != nullptr ) // There are more children smaller than this one that this child should adopt
-    {
-        child->childStr = parent->childStr; // Make child's child the smaller child
-        child->childStr->parentStr = child; // Make parent for that same smaller child this child
-        child->parentStr = parent; // Make child's parent the smallest suitable parent selected above
-        parent->childStr = child; // Assign the child as child to the parent
-    }
-    else // nextChild == nullptr, there are no more children smaller than this one
-    {
-        child->parentStr = parent; // Make child's parent the smallest suitable parent selected above
-        parent->childStr = child; // Assign the child as child to the parent
-    }
-}

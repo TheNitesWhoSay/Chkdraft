@@ -40,8 +40,8 @@ class TrigConditionsWindow : public WinLib::ClassWindow, public ICndActGridUser
 
         LRESULT MeasureItem(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
         LRESULT EraseBackground(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-        void ChangeConditionType(Chk::Condition & condition, Chk::Condition::Type newType);
-        bool TransformCondition(Chk::Condition & condition, Chk::Condition::Type newType, bool refreshImmediately);
+        void ChangeConditionType(std::size_t triggerIndex, std::size_t conditionIndex, Chk::Condition::Type newType);
+        bool TransformCondition(std::size_t triggerIndex, std::size_t conditionIndex, Chk::Condition::Type newType, bool refreshImmediately);
         void RefreshConditionAreas();
         void UpdateConditionName(u8 conditionNum, const std::string & newText, bool refreshImmediately);
         void UpdateConditionArg(u8 conditionNum, u8 argNum, const std::string & newText, bool refreshImmediately);

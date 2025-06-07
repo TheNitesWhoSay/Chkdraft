@@ -1,6 +1,5 @@
 #include "location_properties.h"
 #include "chkdraft/chkdraft.h"
-#include "mapping/undos/chkd_undos/location_change.h"
 #include "ui/chkd_controls/chkd_string_input.h"
 #include <exception>
 #include <string>
@@ -148,12 +147,11 @@ void LocationWindow::InvertXc()
 {
     if ( currentLocationId != NO_LOCATION && currentLocationId < CM->numLocations() )
     {
-        Chk::Location & locRef = CM->getLocation(currentLocationId);
-        auto locationChanges = ReversibleActions::Make();
-        locationChanges->Insert(LocationChange::Make(currentLocationId, Chk::Location::Field::Left, locRef.left));
-        locationChanges->Insert(LocationChange::Make(currentLocationId, Chk::Location::Field::Right, locRef.right));
-        CM->AddUndo(locationChanges);
-        std::swap(locRef.left, locRef.right);
+        auto edit = CM->operator()(ActionDescriptor::InvertLocationXc);
+        const Chk::Location & locRef = CM->getLocation(currentLocationId);
+        auto temp = locRef.left;
+        edit->locations[currentLocationId].left = locRef.right;
+        edit->locations[currentLocationId].right = temp;
         RefreshLocationInfo();
         CM->Redraw(false);
     }
@@ -163,12 +161,11 @@ void LocationWindow::InvertYc()
 {
     if ( currentLocationId != NO_LOCATION && currentLocationId < CM->numLocations() )
     {
-        Chk::Location & locRef = CM->getLocation(currentLocationId);
-        auto locationChanges = ReversibleActions::Make();
-        locationChanges->Insert(LocationChange::Make(currentLocationId, Chk::Location::Field::Top, locRef.top));
-        locationChanges->Insert(LocationChange::Make(currentLocationId, Chk::Location::Field::Bottom, locRef.bottom));
-        CM->AddUndo(locationChanges);
-        std::swap(locRef.top, locRef.bottom);
+        auto edit = CM->operator()(ActionDescriptor::InvertLocationYc);
+        const Chk::Location & locRef = CM->getLocation(currentLocationId);
+        auto temp = locRef.top;
+        edit->locations[currentLocationId].top = locRef.bottom;
+        edit->locations[currentLocationId].bottom = temp;
         RefreshLocationInfo();
         CM->Redraw(false);
     }
@@ -178,15 +175,14 @@ void LocationWindow::InvertXY()
 {
     if ( currentLocationId != NO_LOCATION && currentLocationId < CM->numLocations() )
     {
-        Chk::Location & locRef = CM->getLocation(currentLocationId);
-        auto locationChanges = ReversibleActions::Make();
-        locationChanges->Insert(LocationChange::Make(currentLocationId, Chk::Location::Field::Left, locRef.left));
-        locationChanges->Insert(LocationChange::Make(currentLocationId, Chk::Location::Field::Right, locRef.right));
-        locationChanges->Insert(LocationChange::Make(currentLocationId, Chk::Location::Field::Top, locRef.top));
-        locationChanges->Insert(LocationChange::Make(currentLocationId, Chk::Location::Field::Bottom, locRef.bottom));
-        CM->AddUndo(locationChanges);
-        std::swap(locRef.left, locRef.right);
-        std::swap(locRef.top, locRef.bottom);
+        auto edit = CM->operator()(ActionDescriptor::InvertLocationXcYc);
+        const Chk::Location & locRef = CM->getLocation(currentLocationId);
+        auto prevLeft = locRef.left;
+        auto prevTop = locRef.top;
+        edit->locations[currentLocationId].left = locRef.right;
+        edit->locations[currentLocationId].top = locRef.bottom;
+        edit->locations[currentLocationId].right = prevLeft;
+        edit->locations[currentLocationId].bottom = prevTop;
         RefreshLocationInfo();
         CM->Redraw(false);
     }
@@ -196,13 +192,13 @@ void LocationWindow::NotifyLowGroundClicked()
 {
     if ( currentLocationId != NO_LOCATION && currentLocationId < CM->numLocations() )
     {
-        Chk::Location & locRef = CM->getLocation(currentLocationId);
-        CM->AddUndo(LocationChange::Make(currentLocationId, Chk::Location::Field::ElevationFlags, locRef.elevationFlags));
+        auto edit = CM->operator()(ActionDescriptor::ToggleLocationLowGround);
+        const Chk::Location & locRef = CM->getLocation(currentLocationId);
 
         if ( checkLowGround.isChecked() )
-            locRef.elevationFlags &= ~Chk::Location::Elevation::LowElevation;
+            edit->locations[currentLocationId].elevationFlags &= ~Chk::Location::Elevation::LowElevation;
         else
-            locRef.elevationFlags |= Chk::Location::Elevation::LowElevation;
+            edit->locations[currentLocationId].elevationFlags |= Chk::Location::Elevation::LowElevation;
 
         RefreshLocationInfo();
     }
@@ -212,13 +208,13 @@ void LocationWindow::NotifyMedGroundClicked()
 {
     if ( currentLocationId != NO_LOCATION && currentLocationId < CM->numLocations() )
     {
-        Chk::Location & locRef = CM->getLocation(currentLocationId);
-        CM->AddUndo(LocationChange::Make(currentLocationId, Chk::Location::Field::ElevationFlags, locRef.elevationFlags));
+        auto edit = CM->operator()(ActionDescriptor::ToggleLocationMedGround);
+        const Chk::Location & locRef = CM->getLocation(currentLocationId);
 
         if ( checkMedGround.isChecked() )
-            locRef.elevationFlags &= ~Chk::Location::Elevation::MediumElevation;
+            edit->locations[currentLocationId].elevationFlags &= ~Chk::Location::Elevation::MediumElevation;
         else
-            locRef.elevationFlags |= Chk::Location::Elevation::MediumElevation;
+            edit->locations[currentLocationId].elevationFlags |= Chk::Location::Elevation::MediumElevation;
 
         RefreshLocationInfo();
     }
@@ -228,13 +224,13 @@ void LocationWindow::NotifyHighGroundClicked()
 {
     if ( currentLocationId != NO_LOCATION && currentLocationId < CM->numLocations() )
     {
-        Chk::Location & locRef = CM->getLocation(currentLocationId);
-        CM->AddUndo(LocationChange::Make(currentLocationId, Chk::Location::Field::ElevationFlags, locRef.elevationFlags));
+        auto edit = CM->operator()(ActionDescriptor::ToggleLocationHighGround);
+        const Chk::Location & locRef = CM->getLocation(currentLocationId);
 
         if ( checkHighGround.isChecked() )
-            locRef.elevationFlags &= ~Chk::Location::Elevation::HighElevation;
+            edit->locations[currentLocationId].elevationFlags &= ~Chk::Location::Elevation::HighElevation;
         else
-            locRef.elevationFlags |= Chk::Location::Elevation::HighElevation;
+            edit->locations[currentLocationId].elevationFlags |= Chk::Location::Elevation::HighElevation;
 
         RefreshLocationInfo();
     }
@@ -244,13 +240,13 @@ void LocationWindow::NotifyLowAirClicked()
 {
     if ( currentLocationId != NO_LOCATION && currentLocationId < CM->numLocations() )
     {
-        Chk::Location & locRef = CM->getLocation(currentLocationId);
-        CM->AddUndo(LocationChange::Make(currentLocationId, Chk::Location::Field::ElevationFlags, locRef.elevationFlags));
+        auto edit = CM->operator()(ActionDescriptor::ToggleLocationLowAir);
+        const Chk::Location & locRef = CM->getLocation(currentLocationId);
 
         if ( checkLowAir.isChecked() )
-            locRef.elevationFlags &= ~Chk::Location::Elevation::LowAir;
+            edit->locations[currentLocationId].elevationFlags &= ~Chk::Location::Elevation::LowAir;
         else
-            locRef.elevationFlags |= Chk::Location::Elevation::LowAir;
+            edit->locations[currentLocationId].elevationFlags |= Chk::Location::Elevation::LowAir;
 
         RefreshLocationInfo();
     }
@@ -260,13 +256,13 @@ void LocationWindow::NotifyMedAirClicked()
 {
     if ( currentLocationId != NO_LOCATION && currentLocationId < CM->numLocations() )
     {
-        Chk::Location & locRef = CM->getLocation(currentLocationId);
-        CM->AddUndo(LocationChange::Make(currentLocationId, Chk::Location::Field::ElevationFlags, locRef.elevationFlags));
+        auto edit = CM->operator()(ActionDescriptor::ToggleLocationMedAir);
+        const Chk::Location & locRef = CM->getLocation(currentLocationId);
 
         if ( checkMedAir.isChecked() )
-            locRef.elevationFlags &= ~Chk::Location::Elevation::MediumAir;
+            edit->locations[currentLocationId].elevationFlags &= ~Chk::Location::Elevation::MediumAir;
         else
-            locRef.elevationFlags |= Chk::Location::Elevation::MediumAir;
+            edit->locations[currentLocationId].elevationFlags |= Chk::Location::Elevation::MediumAir;
 
         RefreshLocationInfo();
     }
@@ -276,13 +272,13 @@ void LocationWindow::NotifyHighAirClicked()
 {
     if ( currentLocationId != NO_LOCATION && currentLocationId < CM->numLocations() )
     {
-        Chk::Location & locRef = CM->getLocation(currentLocationId);
-        CM->AddUndo(LocationChange::Make(currentLocationId, Chk::Location::Field::ElevationFlags, locRef.elevationFlags));
+        auto edit = CM->operator()(ActionDescriptor::ToggleLocationHighAir);
+        const Chk::Location & locRef = CM->getLocation(currentLocationId);
 
         if ( checkHighAir.isChecked() )
-            locRef.elevationFlags &= ~Chk::Location::Elevation::HighAir;
+            edit->locations[currentLocationId].elevationFlags &= ~Chk::Location::Elevation::HighAir;
         else
-            locRef.elevationFlags |= Chk::Location::Elevation::HighAir;
+            edit->locations[currentLocationId].elevationFlags |= Chk::Location::Elevation::HighAir;
 
         RefreshLocationInfo();
     }
@@ -292,6 +288,7 @@ void LocationWindow::NotifyLocNamePropertiesClicked()
 {
     if ( currentLocationId != NO_LOCATION && currentLocationId < CM->numLocations() )
     {
+        auto edit = CM->operator()(ActionDescriptor::UpdateLocationName);
         auto gameString = CM->getLocationName<ChkdString>(currentLocationId, Chk::Scope::Game);
         auto editorString = CM->getLocationName<ChkdString>(currentLocationId, Chk::Scope::Editor);
         ChkdStringInputDialog::Result result = ChkdStringInputDialog::GetChkdString(getHandle(), gameString, editorString, Chk::StringUserFlag::Location, currentLocationId);
@@ -326,9 +323,13 @@ void LocationWindow::RawFlagsUpdated()
     u16 newVal = 0;
     if ( currentLocationId != NO_LOCATION && currentLocationId < CM->numLocations() && editRawFlags.GetEditBinaryNum(newVal) && preservedStat != newVal )
     {
-        Chk::Location & locRef = CM->getLocation(currentLocationId);
-        locRef.elevationFlags = newVal;
-        RefreshLocationElevationFlags();
+        auto edit = CM->operator()(ActionDescriptor::UpdateLocationRawFlags);
+        const Chk::Location & locRef = CM->getLocation(currentLocationId);
+        if ( CM->read.locations[currentLocationId].elevationFlags != newVal )
+        {
+            edit->locations[currentLocationId].elevationFlags = newVal;
+            RefreshLocationElevationFlags();
+        }
     }
 }
 
@@ -337,9 +338,13 @@ void LocationWindow::LocationLeftUpdated()
     int newVal = 0;
     if ( currentLocationId != NO_LOCATION && currentLocationId < CM->numLocations() && editLocLeft.GetEditNum<int>(newVal) )
     {
-        Chk::Location & locRef = CM->getLocation(currentLocationId);
-        locRef.left = newVal;
-        CM->Redraw(false);
+        auto edit = CM->operator()(ActionDescriptor::AdjustLocationLeft);
+        const Chk::Location & locRef = CM->getLocation(currentLocationId);
+        if ( CM->read.locations[currentLocationId].left != newVal )
+        {
+            edit->locations[currentLocationId].left = newVal;
+            CM->Redraw(false);
+        }
     }
 }
 
@@ -348,9 +353,13 @@ void LocationWindow::LocationTopUpdated()
     int newVal = 0;
     if ( currentLocationId != NO_LOCATION && currentLocationId < CM->numLocations() && editLocTop.GetEditNum<int>(newVal) )
     {
-        Chk::Location & locRef = CM->getLocation(currentLocationId);
-        locRef.top = newVal;
-        CM->Redraw(false);
+        auto edit = CM->operator()(ActionDescriptor::AdjustLocationTop);
+        const Chk::Location & locRef = CM->getLocation(currentLocationId);
+        if ( CM->read.locations[currentLocationId].top != newVal )
+        {
+            edit->locations[currentLocationId].top = newVal;
+            CM->Redraw(false);
+        }
     }
 }
 
@@ -359,9 +368,13 @@ void LocationWindow::LocationRightUpdated()
     int newVal = 0;
     if ( currentLocationId != NO_LOCATION && currentLocationId < CM->numLocations() && editLocRight.GetEditNum<int>(newVal) )
     {
-        Chk::Location & locRef = CM->getLocation(currentLocationId);
-        locRef.right = newVal;
-        CM->Redraw(false);
+        auto edit = CM->operator()(ActionDescriptor::AdjustLocationRight);
+        const Chk::Location & locRef = CM->getLocation(currentLocationId);
+        if ( CM->read.locations[currentLocationId].right != newVal )
+        {
+            edit->locations[currentLocationId].right = newVal;
+            CM->Redraw(false);
+        }
     }
 }
 
@@ -370,9 +383,13 @@ void LocationWindow::LocationBottomUpdated()
     int newVal = 0;
     if ( currentLocationId != NO_LOCATION && currentLocationId < CM->numLocations() && editLocBottom.GetEditNum<int>(newVal) )
     {
-        Chk::Location & locRef = CM->getLocation(currentLocationId);
-        locRef.bottom = newVal;
-        CM->Redraw(false);
+        auto edit = CM->operator()(ActionDescriptor::AdjustLocationBottom);
+        const Chk::Location & locRef = CM->getLocation(currentLocationId);
+        if ( CM->read.locations[currentLocationId].bottom != newVal )
+        {
+            edit->locations[currentLocationId].bottom = newVal;
+            CM->Redraw(false);
+        }
     }
 }
 
@@ -383,9 +400,9 @@ void LocationWindow::LocationNameFocusLost()
         const Chk::Location & locRef = CM->getLocation(currentLocationId);
         if ( auto locationName = editLocName.GetWinText() )
         {
+            auto edit = CM->operator()(ActionDescriptor::UpdateLocationName);
             CM->replaceString<ChkdString>(locRef.stringId, *locationName);
             CM->deleteUnusedStrings(Chk::Scope::Both);
-            CM->notifyChange(false);
             CM->refreshScenario();
         }
     }
@@ -396,10 +413,13 @@ void LocationWindow::RawFlagsFocusLost()
     u16 newVal = 0;
     if ( currentLocationId != NO_LOCATION && currentLocationId < CM->numLocations() && editRawFlags.GetEditBinaryNum(newVal) && preservedStat != newVal )
     {
-        Chk::Location & locRef = CM->getLocation(currentLocationId);
-        locRef.elevationFlags = newVal;
-        CM->AddUndo(LocationChange::Make(currentLocationId, Chk::Location::Field::ElevationFlags, preservedStat));
-        RefreshLocationInfo();
+        auto edit = CM->operator()(ActionDescriptor::UpdateLocationRawFlags);
+        const Chk::Location & locRef = CM->getLocation(currentLocationId);
+        if ( CM->read.locations[currentLocationId].elevationFlags != newVal )
+        {
+            edit->locations[currentLocationId].elevationFlags = newVal;
+            RefreshLocationInfo();
+        }
     }
 }
 
@@ -408,12 +428,13 @@ void LocationWindow::LocationLeftFocusLost()
     int newVal = 0;
     if ( currentLocationId != NO_LOCATION && currentLocationId < CM->numLocations() && editLocLeft.GetEditNum<int>(newVal) )
     {
-        Chk::Location & locRef = CM->getLocation(currentLocationId);
-        locRef.left = newVal;
-        if ( newVal != preservedStat )
-            CM->AddUndo(LocationChange::Make(currentLocationId, Chk::Location::Field::Left, preservedStat));
-            
-        CM->Redraw(false);
+        auto edit = CM->operator()(ActionDescriptor::AdjustLocationLeft);
+        const Chk::Location & locRef = CM->getLocation(currentLocationId);
+        if ( CM->read.locations[currentLocationId].left != newVal )
+        {
+            edit->locations[currentLocationId].left = newVal;
+            CM->Redraw(false);
+        }
     }
 }
 
@@ -422,12 +443,13 @@ void LocationWindow::LocationTopFocusLost()
     int newVal = 0;
     if ( currentLocationId != NO_LOCATION && currentLocationId < CM->numLocations() && editLocTop.GetEditNum<int>(newVal) )
     {
-        Chk::Location & locRef = CM->getLocation(currentLocationId);
-        locRef.top = newVal;
-        if ( newVal != preservedStat )
-            CM->AddUndo(LocationChange::Make(currentLocationId, Chk::Location::Field::Top, preservedStat));
-            
-        CM->Redraw(false);
+        auto edit = CM->operator()(ActionDescriptor::AdjustLocationTop);
+        const Chk::Location & locRef = CM->getLocation(currentLocationId);
+        if ( CM->read.locations[currentLocationId].top != newVal )
+        {
+            edit->locations[currentLocationId].top = newVal;
+            CM->Redraw(false);
+        }
     }
 }
 
@@ -436,12 +458,13 @@ void LocationWindow::LocationRightFocusLost()
     int newVal = 0;
     if ( currentLocationId != NO_LOCATION && currentLocationId < CM->numLocations() && editLocRight.GetEditNum<int>(newVal) )
     {
-        Chk::Location & locRef = CM->getLocation(currentLocationId);
-        locRef.right = newVal;
-        if ( newVal != preservedStat )
-            CM->AddUndo(LocationChange::Make(currentLocationId, Chk::Location::Field::Right, preservedStat));
-            
-        CM->Redraw(false);
+        auto edit = CM->operator()(ActionDescriptor::AdjustLocationRight);
+        const Chk::Location & locRef = CM->getLocation(currentLocationId);
+        if ( CM->read.locations[currentLocationId].right != newVal )
+        {
+            edit->locations[currentLocationId].right = newVal;
+            CM->Redraw(false);
+        }
     }
 }
 
@@ -450,12 +473,13 @@ void LocationWindow::LocationBottomFocusLost()
     int newVal = 0;
     if ( currentLocationId != NO_LOCATION && currentLocationId < CM->numLocations() && editLocBottom.GetEditNum<int>(newVal) )
     {
-        Chk::Location & locRef = CM->getLocation(currentLocationId);
-        locRef.bottom = newVal;
-        if ( newVal != preservedStat )
-            CM->AddUndo(LocationChange::Make(currentLocationId, Chk::Location::Field::Bottom, preservedStat));
-            
-        CM->Redraw(false);
+        auto edit = CM->operator()(ActionDescriptor::AdjustLocationBottom);
+        const Chk::Location & locRef = CM->getLocation(currentLocationId);
+        if ( CM->read.locations[currentLocationId].bottom != newVal )
+        {
+            edit->locations[currentLocationId].bottom = newVal;
+            CM->Redraw(false);
+        }
     }
 }
 

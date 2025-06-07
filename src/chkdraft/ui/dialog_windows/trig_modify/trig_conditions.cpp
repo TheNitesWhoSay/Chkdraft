@@ -61,7 +61,7 @@ void TrigConditionsWindow::RefreshWindow(u32 trigIndex)
     this->trigIndex = trigIndex;
     const Chk::Trigger & trig = CM->getTrigger(trigIndex);
     TextTrigGenerator ttg(Settings::useAddressesForMemory, Settings::deathTableStart, true);
-    if ( ttg.loadScenario(*CM) )
+    if ( ttg.loadScenario((Scenario &)*CM) )
     {
         for ( u8 y=0; y<Chk::Trigger::MaxConditions; y++ )
         {
@@ -126,19 +126,17 @@ void TrigConditionsWindow::HideSuggestions()
 
 void TrigConditionsWindow::CndActEnableToggled(u8 conditionNum)
 {
-    Chk::Trigger & trig = CM->getTrigger(trigIndex);
     if ( conditionNum >= 0 && conditionNum < 16 )
     {
-        Chk::Condition & condition = trig.condition(conditionNum);
-        if ( condition.conditionType != Chk::Condition::Type::NoCondition )
+        auto editCondition = CM->editTrigger(trigIndex).editCondition(conditionNum);
+        if ( editCondition->conditionType != Chk::Condition::Type::NoCondition )
         {
-            condition.toggleDisabled();
+            editCondition.toggleDisabled();
 
-            CM->notifyChange(false);
             RefreshWindow(trigIndex);
             chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
 
-            gridConditions.SetEnabledCheck(conditionNum, !condition.isDisabled());
+            gridConditions.SetEnabledCheck(conditionNum, !editCondition->isDisabled());
         }
     }
 }
@@ -266,40 +264,36 @@ LRESULT TrigConditionsWindow::EraseBackground(HWND hWnd, UINT msg, WPARAM wParam
     return result;
 }
 
-void TrigConditionsWindow::ChangeConditionType(Chk::Condition & condition, Chk::Condition::Type conditionType)
+void TrigConditionsWindow::ChangeConditionType(std::size_t triggerIndex, std::size_t conditionIndex, Chk::Condition::Type conditionType)
 {
-    if ( condition.conditionType != conditionType )
+    if ( triggerIndex < CM->numTriggers() && conditionIndex < Chk::Trigger::MaxConditions )
     {
-        if ( conditionType == Chk::Condition::Type::Command || conditionType ==  Chk::Condition::Type::Bring ||
-            conditionType ==  Chk::Condition::Type::CommandTheMostAt || conditionType ==  Chk::Condition::Type::CommandTheLeastAt )
+        const auto & condition = CM->read.triggers[triggerIndex].conditions[conditionIndex];
+        if ( condition.conditionType != conditionType )
         {
-            condition.locationId = 64;
+            CM->operator()(ActionDescriptor::ChangeTriggerConditionType)->triggers[triggerIndex].conditions[conditionIndex] = Chk::Condition {
+                .locationId = u32((conditionType == Chk::Condition::Type::Command || conditionType ==  Chk::Condition::Type::Bring ||
+                    conditionType ==  Chk::Condition::Type::CommandTheMostAt || conditionType ==  Chk::Condition::Type::CommandTheLeastAt)
+                    ? 64 : 0),
+                .player = 0,
+                .amount = 0,
+                .unitType = Sc::Unit::Type::TerranMarine,
+                .comparison = conditionType == Chk::Condition::Type::Switch ? Chk::Condition::Comparison::NotSet : Chk::Condition::Comparison::AtLeast,
+                .conditionType = conditionType,
+                .typeIndex = 0,
+                .flags = Chk::Condition::getDefaultFlags(conditionType),
+                .maskFlag = Chk::Condition::MaskFlag::Disabled
+            };
         }
-        else
-            condition.locationId = 0;
-
-        condition.player = 0;
-        condition.amount = 0;
-        condition.unitType = Sc::Unit::Type::TerranMarine;
-
-        if ( conditionType == Chk::Condition::Type::Switch )
-            condition.comparison = Chk::Condition::Comparison::NotSet;
-        else
-            condition.comparison = Chk::Condition::Comparison::AtLeast;
-
-        condition.conditionType = conditionType;
-        condition.typeIndex = 0;
-        condition.flags = Chk::Condition::getDefaultFlags(conditionType);
-        condition.maskFlag = Chk::Condition::MaskFlag::Disabled;
     }
     DrawSelectedCondition();
 }
 
-bool TrigConditionsWindow::TransformCondition(Chk::Condition & condition, Chk::Condition::Type conditionType, bool refreshImmediately)
+bool TrigConditionsWindow::TransformCondition(std::size_t triggerIndex, std::size_t conditionIndex, Chk::Condition::Type conditionType, bool refreshImmediately)
 {
-    if ( condition.conditionType != conditionType )
+    if ( CM->read.triggers[triggerIndex].conditions[conditionIndex].conditionType != conditionType )
     {
-        ChangeConditionType(condition, conditionType);
+        ChangeConditionType(triggerIndex, conditionIndex, conditionType);
         if ( refreshImmediately )
             RefreshConditionAreas();
 
@@ -310,32 +304,25 @@ bool TrigConditionsWindow::TransformCondition(Chk::Condition & condition, Chk::C
 
 void TrigConditionsWindow::RefreshConditionAreas()
 {
-    CM->notifyChange(false);
     RefreshWindow(trigIndex);
     chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
 }
 
 void TrigConditionsWindow::UpdateConditionName(u8 conditionNum, const std::string & newText, bool refreshImmediately)
 {
-    Chk::Trigger & trig = CM->getTrigger(trigIndex);
+    const Chk::Trigger & trig = CM->getTrigger(trigIndex);
     TextTrigCompiler ttc(Settings::useAddressesForMemory, Settings::deathTableStart);
     Chk::Condition::Type conditionType = Chk::Condition::Type::NoCondition;
     SuggestionItem suggestion = suggestions.Take();
     if ( suggestion.data )
-    {
-        Chk::Condition & condition = trig.condition(conditionNum);
-        TransformCondition(condition, Chk::Condition::Type(suggestion.data.value()), refreshImmediately);
-    }
+        TransformCondition(trigIndex, conditionNum, Chk::Condition::Type(suggestion.data.value()), refreshImmediately);
     else if ( ttc.parseConditionName(newText, conditionType) || ttc.parseConditionName(suggestion.str, conditionType) )
-    {
-        Chk::Condition & condition = trig.condition(conditionNum);
-        TransformCondition(condition, conditionType, refreshImmediately);
-    }
+        TransformCondition(trigIndex, conditionNum, conditionType, refreshImmediately);
     else if ( newText.length() == 0 )
     {
         if ( trig.condition(conditionNum).conditionType != conditionType )
         {
-            trig.deleteCondition(conditionNum);
+            CM->editTrigger(trigIndex).deleteCondition(conditionNum);
             if ( refreshImmediately )
                 RefreshConditionAreas();
         }
@@ -344,38 +331,77 @@ void TrigConditionsWindow::UpdateConditionName(u8 conditionNum, const std::strin
 
 void TrigConditionsWindow::UpdateConditionArg(u8 conditionNum, u8 argNum, const std::string & newText, bool refreshImmediately)
 {
-    RawString rawUpdateText, rawSuggestText;
-    SuggestionItem suggestion = suggestions.Take();
-    Chk::Trigger & trig = CM->getTrigger(trigIndex);
-    TextTrigCompiler ttc(Settings::useAddressesForMemory, Settings::deathTableStart);
-    Chk::Condition::Argument argument = Chk::Condition::getClassicArg(trig.condition(conditionNum).conditionType, argNum);
-    if ( suggestion.data )
+    if ( trigIndex < CM->numTriggers() && conditionNum < Chk::Trigger::MaxConditions )
     {
-        Chk::Condition & condition = trig.condition(conditionNum);
-        switch ( argument.field )
-        {
-            case Chk::Condition::ArgField::LocationId: condition.locationId = suggestion.data.value(); break;
-            case Chk::Condition::ArgField::Player: condition.player = suggestion.data.value(); break;
-            case Chk::Condition::ArgField::Amount: condition.amount = suggestion.data.value(); break;
-            case Chk::Condition::ArgField::UnitType: condition.unitType = Sc::Unit::Type(suggestion.data.value()); break;
-            case Chk::Condition::ArgField::Comparison: condition.comparison = Chk::Condition::Comparison(suggestion.data.value()); break;
-            case Chk::Condition::ArgField::ConditionType: condition.conditionType = Chk::Condition::Type(suggestion.data.value()); break;
-            case Chk::Condition::ArgField::TypeIndex: condition.typeIndex = u8(suggestion.data.value()); break;
-            case Chk::Condition::ArgField::Flags: condition.flags = u8(suggestion.data.value()); break;
-            case Chk::Condition::ArgField::MaskFlag: condition.maskFlag = Chk::Condition::MaskFlag(suggestion.data.value()); break;
-            default: logger.error() << "Unknown condition arg field encountered" << std::endl; break;
-        }
+        auto edit = CM->operator()(ActionDescriptor::UpdateTriggerConditionArg);
+        RawString rawUpdateText, rawSuggestText;
+        SuggestionItem suggestion = suggestions.Take();
+        TextTrigCompiler ttc(Settings::useAddressesForMemory, Settings::deathTableStart);
 
-        if ( refreshImmediately )
-            RefreshConditionAreas();
-    }
-    else if ( (parseChkdStr(ChkdString(newText), rawUpdateText) &&
-        ttc.parseConditionArg(rawUpdateText, argument, trig.condition(conditionNum), *CM, chkd.scData, trigIndex, !suggestion.str.empty()) ) ||
-        ( !suggestion.str.empty() && parseChkdStr(ChkdString(suggestion.str), rawSuggestText) &&
-            ttc.parseConditionArg(rawSuggestText, argument, trig.condition(conditionNum), *CM, chkd.scData, trigIndex, false) ) )
-    {
-        if ( refreshImmediately )
-            RefreshConditionAreas();
+        const Chk::Trigger & trig = CM->getTrigger(trigIndex);
+        Chk::Condition::Argument argument = Chk::Condition::getClassicArg(trig.condition(conditionNum).conditionType, argNum);
+
+        auto editedCondition = CM->editTrigger(trigIndex).editCondition(conditionNum);
+        auto editCondition = editedCondition.edit;
+
+        if ( suggestion.data )
+        {
+            switch ( argument.field )
+            {
+                case Chk::Condition::ArgField::LocationId: editCondition.locationId = suggestion.data.value(); break;
+                case Chk::Condition::ArgField::Player: editCondition.player = suggestion.data.value(); break;
+                case Chk::Condition::ArgField::Amount: editCondition.amount = suggestion.data.value(); break;
+                case Chk::Condition::ArgField::UnitType: editCondition.unitType = Sc::Unit::Type(suggestion.data.value()); break;
+                case Chk::Condition::ArgField::Comparison: editCondition.comparison = Chk::Condition::Comparison(suggestion.data.value()); break;
+                case Chk::Condition::ArgField::ConditionType: editCondition.conditionType = Chk::Condition::Type(suggestion.data.value()); break;
+                case Chk::Condition::ArgField::TypeIndex: editCondition.typeIndex = u8(suggestion.data.value()); break;
+                case Chk::Condition::ArgField::Flags: editCondition.flags = u8(suggestion.data.value()); break;
+                case Chk::Condition::ArgField::MaskFlag: editCondition.maskFlag = Chk::Condition::MaskFlag(suggestion.data.value()); break;
+                default: logger.error() << "Unknown condition arg field encountered" << std::endl; break;
+            }
+
+            if ( refreshImmediately )
+                RefreshConditionAreas();
+        }
+        else
+        {
+            auto copyArg = [&](Chk::Condition::ArgField argField, const Chk::Condition & srcCondition) {
+                switch ( argField )
+                {
+                    case Chk::Condition::ArgField::LocationId: editCondition.locationId = srcCondition.locationId; break;
+                    case Chk::Condition::ArgField::Player: editCondition.player = srcCondition.player; break;
+                    case Chk::Condition::ArgField::Amount: editCondition.amount = srcCondition.amount; break;
+                    case Chk::Condition::ArgField::UnitType: editCondition.unitType = srcCondition.unitType; break;
+                    case Chk::Condition::ArgField::Comparison: editCondition.comparison = srcCondition.comparison; break;
+                    case Chk::Condition::ArgField::ConditionType: editCondition.conditionType = srcCondition.conditionType; break;
+                    case Chk::Condition::ArgField::TypeIndex: editCondition.typeIndex = srcCondition.typeIndex; break;
+                    case Chk::Condition::ArgField::Flags: editCondition.flags = srcCondition.flags; break;
+                    case Chk::Condition::ArgField::MaskFlag: editCondition.maskFlag = srcCondition.maskFlag; break;
+                }
+            };
+
+            bool madeChanges = false;
+            if ( parseChkdStr(ChkdString(newText), rawUpdateText) )
+            {
+                Chk::Condition tempCondition {};
+                if ( auto result = ttc.parseConditionArg(rawUpdateText, argument, tempCondition, (Scenario &)*CM, chkd.scData, trigIndex, !suggestion.str.empty()) )
+                {
+                    madeChanges = true;
+                    copyArg(*result, tempCondition);
+                }
+            }
+            if ( !madeChanges && !suggestion.str.empty() && parseChkdStr(ChkdString(suggestion.str), rawSuggestText) )
+            {
+                Chk::Condition tempCondition {};
+                if ( auto result = ttc.parseConditionArg(rawSuggestText, argument, tempCondition, (Scenario &)*CM, chkd.scData, trigIndex, false) )
+                {
+                    madeChanges = true;
+                    copyArg(*result, tempCondition);
+                }
+            }
+            if ( madeChanges && refreshImmediately )
+                RefreshConditionAreas();
+        }
     }
 }
 
@@ -399,7 +425,7 @@ BOOL TrigConditionsWindow::GridItemChanging(u16 gridItemX, u16 gridItemY, const 
 
 BOOL TrigConditionsWindow::GridItemDeleting(u16 gridItemX, u16 gridItemY)
 {
-    Chk::Trigger & trig = CM->getTrigger(trigIndex);
+    const Chk::Trigger & trig = CM->getTrigger(trigIndex);
     if ( gridItemY >= 0 && gridItemY < Chk::Trigger::MaxConditions )
     {
         u8 conditionNum = (u8)gridItemY;
@@ -407,7 +433,7 @@ BOOL TrigConditionsWindow::GridItemDeleting(u16 gridItemX, u16 gridItemY)
         if ( gridItemX == 1 && // Condition Name
              trig.condition(conditionNum).conditionType != Chk::Condition::Type::NoCondition )
         {
-            ChangeConditionType(trig.condition(conditionNum), Chk::Condition::Type::NoCondition);
+            ChangeConditionType(trigIndex, conditionNum, Chk::Condition::Type::NoCondition);
         }
         else if ( gridItemX > 1 ) // Condition Arg
         {
@@ -421,7 +447,7 @@ void TrigConditionsWindow::DrawSelectedCondition()
 {
     if ( auto dc = this->getDeviceContext() )
     {
-        Chk::Trigger & trig = CM->getTrigger(trigIndex);
+        const Chk::Trigger & trig = CM->getTrigger(trigIndex);
         int focusedX = -1,
             focusedY = -1;
 
@@ -430,7 +456,7 @@ void TrigConditionsWindow::DrawSelectedCondition()
             u8 conditionNum = (u8)focusedY;
             TextTrigGenerator ttg(Settings::useAddressesForMemory, Settings::deathTableStart, true);
             std::string str;
-            ttg.loadScenario(*CM);
+            ttg.loadScenario((Scenario &)*CM);
             str = chkd.trigEditorWindow.triggersWindow.GetConditionString(conditionNum, trig, ttg);
             ttg.clearScenario();
 
@@ -720,8 +746,8 @@ void TrigConditionsWindow::SuggestMaskFlag(Chk::Condition::MaskFlag maskFlag)
 
 void TrigConditionsWindow::GridEditStart(u16 gridItemX, u16 gridItemY)
 {
-    Chk::Trigger & trig = CM->getTrigger(trigIndex);
-    Chk::Condition & condition = trig.condition((u8)gridItemY);
+    const Chk::Trigger & trig = CM->getTrigger(trigIndex);
+    const Chk::Condition & condition = trig.condition((u8)gridItemY);
     Chk::Condition::Argument arg = Chk::Condition::noArg;
     if ( gridItemX == 1 ) // Condition Name
     {

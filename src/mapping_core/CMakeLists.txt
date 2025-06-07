@@ -28,12 +28,13 @@ include(FetchContent)
 FetchContent_Declare(
   rarecpp
   GIT_REPOSITORY https://github.com/TheNitesWhoSay/RareCpp.git
-  GIT_TAG 21ba359 # release-2.3.3
+  GIT_TAG de85a05 # release-2.5.0TODO
 )
 FetchContent_MakeAvailable(rarecpp)
 include_directories(${rarecpp_SOURCE_DIR}/include)
 
 set(Headers
+  action_descriptor.h
   archive_cluster.h
   archive_file.h
   basics.h
@@ -41,6 +42,7 @@ set(Headers
   chk.h
   escape_strings.h
   file_browser.h
+  map_data.h
   map_file.h
   mapping_core.h
   mpq_file.h
@@ -63,6 +65,9 @@ set(Sources
   mpq_file.cpp
   sc.cpp
   scenario.cpp
+  scenario_print.cpp
+  scenario_redo.cpp
+  scenario_undo.cpp
   sha256.cpp
   system_io.cpp
   text_trig_compiler.cpp
