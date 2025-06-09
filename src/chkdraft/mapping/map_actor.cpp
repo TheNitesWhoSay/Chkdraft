@@ -86,6 +86,14 @@ void MapActor::animate(std::uint64_t currentTick)
                     case Sc::Sprite::Op::playfram:
                         mapImages[usedImages[0]]->frame = iscript[currOffset];
                         break;
+                    case Sc::Sprite::Op::playframtile: // TODO
+                        break;
+                    case Sc::Sprite::Op::sethorpos: // TODO
+                        break;
+                    case Sc::Sprite::Op::setvertpos: // TODO
+                        break;
+                    case Sc::Sprite::Op::setpos: // TODO
+                        break;
                     case Sc::Sprite::Op::wait:
                         waitUntil = currentTick + uint64_t(iscript[currOffset]);
                         if ( Sc::Sprite::Op(iscript[currOffset+1]) == Sc::Sprite::Op::goto_ && (u16 &)iscript[currOffset+2] == currOffset-1 )
@@ -124,11 +132,97 @@ void MapActor::animate(std::uint64_t currentTick)
                             }
                         }
                         break;
+                    case Sc::Sprite::Op::imgol: // TODO
+                        break;
+                    case Sc::Sprite::Op::imgul: // TODO
+                        break;
+                    case Sc::Sprite::Op::imgolorig: // TODO
+                        break;
+                    case Sc::Sprite::Op::switchul: // TODO
+                        break;
+                    case Sc::Sprite::Op::unknown_0c: // TODO
+                        break;
+                    case Sc::Sprite::Op::imgoluselo: // TODO
+                        break;
+                    case Sc::Sprite::Op::imguluselo: // TODO
+                        break;
+                    case Sc::Sprite::Op::sprol: // TODO
+                        break;
+                    case Sc::Sprite::Op::highsprol: // TODO
+                        break;
+                    case Sc::Sprite::Op::lowsprul: // TODO
+                        break;
+                    case Sc::Sprite::Op::uflunstable: // TODO
+                        break;
+                    case Sc::Sprite::Op::spruluselo: // TODO
+                        break;
+                    case Sc::Sprite::Op::sprul: // TODO
+                        break;
+                    case Sc::Sprite::Op::sproluselo: // TODO
+                        break;
                     case Sc::Sprite::Op::end:
                         // TODO: this is called for a non-main image to destroy said image
                         return;
                     case Sc::Sprite::Op::setflipstate:
                         mapImages[usedImages[0]]->flipped = (iscript[currOffset] != 0);
+                        break;
+                    case Sc::Sprite::Op::playsnd: // TODO
+                        break;
+                    case Sc::Sprite::Op::playsndrand: // TODO
+                        break;
+                    case Sc::Sprite::Op::playsndbtwn: // TODO
+                        break;
+                    case Sc::Sprite::Op::domissiledmg: // TODO
+                        break;
+                    case Sc::Sprite::Op::attackmelee: // TODO
+                        break;
+                    case Sc::Sprite::Op::followmaingraphic: // TODO
+                        break;
+                    case Sc::Sprite::Op::randcondjmp: // TODO
+                        break;
+                    case Sc::Sprite::Op::turnccwise: // TODO
+                        break;
+                    case Sc::Sprite::Op::turncwise: // TODO
+                        break;
+                    case Sc::Sprite::Op::turn1cwise: // TODO
+                        break;
+                    case Sc::Sprite::Op::turnrand: // TODO
+                        break;
+                    case Sc::Sprite::Op::setspawnframe: // TODO
+                        break;
+                    case Sc::Sprite::Op::sigorder: // TODO
+                        break;
+                    case Sc::Sprite::Op::attackwith: // TODO
+                        break;
+                    case Sc::Sprite::Op::attack: // TODO
+                        break;
+                    case Sc::Sprite::Op::castspell: // TODO
+                        break;
+                    case Sc::Sprite::Op::useweapon: // TODO
+                        break;
+                    case Sc::Sprite::Op::move: // TODO
+                        break;
+                    case Sc::Sprite::Op::gotorepeatattk: // TODO
+                        break;
+                    case Sc::Sprite::Op::engframe: // TODO
+                        break;
+                    case Sc::Sprite::Op::engset: // TODO
+                        break;
+                    case Sc::Sprite::Op::unknown_2d: // TODO
+                        break;
+                    case Sc::Sprite::Op::nobrkcodestart: // TODO
+                        break;
+                    case Sc::Sprite::Op::nobrkcodeend: // TODO
+                        break;
+                    case Sc::Sprite::Op::ignorerest: // TODO
+                        break;
+                    case Sc::Sprite::Op::attkshiftproj: // TODO
+                        break;
+                    case Sc::Sprite::Op::tmprmgraphicstart: // TODO
+                        break;
+                    case Sc::Sprite::Op::tmprmgraphicend: // TODO
+                        break;
+                    case Sc::Sprite::Op::setfldirect: // TODO
                         break;
                     case Sc::Sprite::Op::call:
                         {
@@ -142,6 +236,34 @@ void MapActor::animate(std::uint64_t currentTick)
                     case Sc::Sprite::Op::return_:
                         currOffset = this->returnOffset;
                         this->animation = (Sc::Sprite::IScriptAnimation*)&iscript[currOffset];
+                        break;
+                    case Sc::Sprite::Op::setflspeed: // TODO
+                        break;
+                    case Sc::Sprite::Op::creategasoverlays: // TODO
+                        break;
+                    case Sc::Sprite::Op::pwrupcondjmp: // TODO
+                        break;
+                    case Sc::Sprite::Op::trgtrangecondjmp: // TODO
+                        break;
+                    case Sc::Sprite::Op::trgtarccondjmp: // TODO
+                        break;
+                    case Sc::Sprite::Op::curdirectcondjmp: // TODO
+                        break;
+                    case Sc::Sprite::Op::imgulnextid: // TODO
+                        break;
+                    case Sc::Sprite::Op::unknown_3e: // TODO
+                        break;
+                    case Sc::Sprite::Op::liftoffcondjmp: // TODO
+                        break;
+                    case Sc::Sprite::Op::warpoverlay: // TODO
+                        break;
+                    case Sc::Sprite::Op::orderdone: // TODO
+                        break;
+                    case Sc::Sprite::Op::grdsprol: // TODO
+                        break;
+                    case Sc::Sprite::Op::unknown_43: // TODO
+                        break;
+                    case Sc::Sprite::Op::dogrddamage: // TODO
                         break;
                     default:
                         break;
