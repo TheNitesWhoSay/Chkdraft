@@ -54,17 +54,43 @@ size_t getImageId(const Chk::Sprite & sprite)
         getImageId(Sc::Unit::Type(sprite.type));
 }
 
-MapAnimations::MapAnimations()
-    : images {MapImage{}} // Image 0 is unused
+u16 MapAnimations::createImage()
+{
+    if ( availableImages.empty() )
+    {
+        images.emplace_back(MapImage{});
+        return static_cast<u16>(images.size()-1);
+    }
+    else
+    {
+        auto imageIndex = availableImages.back();
+        availableImages.pop_back();
+        images[static_cast<std::size_t>(imageIndex)] = MapImage{};
+        return imageIndex;
+    }
+}
+
+void MapAnimations::removeImage(u16 imageIndex)
+{
+    if ( imageIndex == 0 )
+        return;
+
+    images[imageIndex] = std::nullopt;
+    availableImages.push_back(imageIndex);
+}
+
+MapAnimations::MapAnimations(const Scenario & scenario)
+    : scenario(scenario), images{MapImage{}} // Image 0 is unused
 {
 
 }
 
-void MapAnimations::initialize(const Scenario & scenario)
+void MapAnimations::initialize()
 {
     images = {MapImage{}};
     spriteActors.clear();
     unitActors.clear();
+    availableImages.clear();
 
     auto currentTick = chkd.gameClock.currentTick();
     for ( const auto & unit : scenario->units )
@@ -72,7 +98,7 @@ void MapAnimations::initialize(const Scenario & scenario)
         auto & actor = unitActors.emplace_back(images);
         actor.initialize(currentTick, iscriptIdFromUnit(unit.type));
         actor.usedImages[0] = images.size();
-        auto & image = images.emplace_back();
+        auto & image = *images.emplace_back(MapImage{});
         image.imageId = getImageId(unit);
         image.owner = unit.owner;
         image.xc = unit.xc;
@@ -84,12 +110,58 @@ void MapAnimations::initialize(const Scenario & scenario)
         auto & actor = spriteActors.emplace_back(images);
         actor.initialize(currentTick, iscriptIdFromSprite(sprite.type));
         actor.usedImages[0] = images.size();
-        auto & image = images.emplace_back();
+        auto & image = *images.emplace_back(MapImage{});
         image.imageId = getImageId(sprite);
         image.owner = sprite.owner;
         image.xc = sprite.xc;
         image.yc = sprite.yc;
     }
+}
+
+void MapAnimations::addUnit(std::size_t unitIndex)
+{
+    const auto & unit = scenario.getUnit(unitIndex);
+    auto & actor = unitActors.emplace_back(images);
+    actor.initialize(chkd.gameClock.currentTick(), iscriptIdFromUnit(unit.type));
+    u16 imageIndex = createImage();
+    actor.usedImages[0] = imageIndex;
+    MapImage & image = images[imageIndex].value();
+    image.imageId = getImageId(unit);
+    image.owner = unit.owner;
+    image.xc = unit.xc;
+    image.yc = unit.yc;
+}
+
+void MapAnimations::addSprite(std::size_t spriteIndex)
+{
+    const auto & sprite = scenario.getSprite(spriteIndex);
+    auto & actor = spriteActors.emplace_back(images);
+    actor.initialize(chkd.gameClock.currentTick(), iscriptIdFromSprite(sprite.type));
+    u16 imageIndex = createImage();
+    actor.usedImages[0] = imageIndex;
+    MapImage & image = images[imageIndex].value();
+    image.imageId = getImageId(sprite);
+    image.owner = sprite.owner;
+    image.xc = sprite.xc;
+    image.yc = sprite.yc;
+}
+
+void MapAnimations::removeUnit(std::size_t unitIndex)
+{
+    auto removedActor = std::next(unitActors.begin(), unitIndex);
+    for ( auto usedImage : removedActor->usedImages )
+        removeImage(usedImage);
+
+    unitActors.erase(removedActor);
+}
+
+void MapAnimations::removeSprite(std::size_t spriteIndex)
+{
+    auto removedActor = std::next(spriteActors.begin(), spriteIndex);
+    for ( auto usedImage : removedActor->usedImages )
+        removeImage(usedImage);
+
+    spriteActors.erase(removedActor);
 }
 
 void MapAnimations::animate(uint64_t currentTick)

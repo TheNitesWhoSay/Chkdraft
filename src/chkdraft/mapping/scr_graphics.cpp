@@ -2844,14 +2844,17 @@ void Scr::MapGraphics::drawImages()
     //for ( const auto & sprite : map->sprites )
     //    drawSprite(sprite);
 
-    /*for ( size_t i=1; i<map.animations.images.size(); ++i )
+    for ( size_t i=1; i<map.animations.images.size(); ++i )
     {
-        const auto & image = map.animations.images[i];
-        if ( loadSettings.skinId == Scr::Skin::Id::Classic )
-            drawClassicImage(*renderDat->tiles->tilesetGrp.palette, image.xc, image.yc, image.frame, image.imageId, (Chk::PlayerColor)image.owner, image.flipped);
-        else
-            drawImage(getImage(image.imageId), image.xc, image.yc, image.frame, 0xFFFFFFFF, getPlayerColor(image.owner), false, image.flipped);
-    }*/
+        const std::optional<MapImage> & image = map.animations.images[i];
+        if ( image )
+        {
+            if ( loadSettings.skinId == Scr::Skin::Id::Classic )
+                drawClassicImage(*renderDat->tiles->tilesetGrp.palette, image->xc, image->yc, image->frame, image->imageId, (Chk::PlayerColor)image->owner, image->flipped);
+            else
+                drawImage(getImage(image->imageId), image->xc, image->yc, image->frame, 0xFFFFFFFF, getPlayerColor(image->owner), false, image->flipped);
+        }
+    }
 }
 
 void Scr::MapGraphics::drawLocations()
@@ -3676,7 +3679,7 @@ void Scr::MapGraphics::drawPastes()
                 for ( auto & pasteSprite : sprites )
                 {
                     drawImage(getImage(pasteSprite.sprite), paste.x+pasteSprite.xc/*+pasteSprite.anim.xOffset*/, paste.y+pasteSprite.yc/*+pasteSprite.anim.yOffset*/,
-                        pasteSprite.testAnim.mapImages[0].frame, 0xFFFFFFFF, getPlayerColor(pasteSprite.sprite.owner), false);
+                        pasteSprite.testAnim.mapImages[0]->frame, 0xFFFFFFFF, getPlayerColor(pasteSprite.sprite.owner), false);
                 }
             }
         }

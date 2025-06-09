@@ -3,16 +3,28 @@
 #include "mapping/map_actor.h"
 #include "mapping/map_image.h"
 #include "mapping_core/mapping_core.h"
+#include <optional>
 
-struct MapAnimations
+class MapAnimations
 {
+    const Scenario & scenario;
+    std::vector<u16> availableImages {};
+
+    u16 createImage();
+    void removeImage(u16 imageIndex);
+
+public:
     std::vector<MapActor> unitActors; // animatable units, parallel array to Scenario::units
     std::vector<MapActor> spriteActors; // animatable sprites, parallel array to Scenario::sprites
-    std::vector<MapImage> images; // contains the images associated with unitActors and spriteActors
+    std::vector<std::optional<MapImage>> images; // contains the images associated with unitActors and spriteActors
 
-    MapAnimations();
+    MapAnimations(const Scenario & scenario);
 
-    void initialize(const Scenario & scenario);
+    void initialize();
+    void addUnit(std::size_t unitIndex);
+    void addSprite(std::size_t spriteIndex);
+    void removeUnit(std::size_t unitIndex);
+    void removeSprite(std::size_t spriteIndex);
 
     void animate(uint64_t currentTick);
 };

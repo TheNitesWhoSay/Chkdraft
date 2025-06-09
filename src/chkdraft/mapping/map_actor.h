@@ -9,7 +9,7 @@
 // An extension to a Chk::Unit or Chk::Sprite focusing on animation and linking up with associated images
 struct MapActor
 {
-    std::vector<MapImage> & mapImages;
+    std::vector<std::optional<MapImage>> & mapImages;
     u16 returnOffset = 0;
     size_t iScriptId = 0;
     //size_t frame = 0;
@@ -19,6 +19,8 @@ struct MapActor
     //s32 yOffset = 0;
     std::uint64_t waitUntil {};
     u16 usedImages[10] {};
+
+    MapActor & operator=(const MapActor & other);
     
     void initialize(std::uint64_t currentTick, size_t iScriptId);
     bool end();

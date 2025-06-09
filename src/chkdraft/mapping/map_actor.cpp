@@ -1,6 +1,17 @@
 #include "map_actor.h"
 #include "../chkdraft.h"
 
+MapActor & MapActor::operator=(const MapActor & other)
+{
+    this->mapImages = other.mapImages;
+    this->returnOffset = other.returnOffset;
+    this->iScriptId = other.iScriptId;
+    this->animation = other.animation;
+    this->waitUntil = other.waitUntil;
+    std::copy(std::begin(other.usedImages), std::end(other.usedImages), this->usedImages);
+    return *this;
+}
+
 void MapActor::initialize(std::uint64_t currentTick, size_t iScriptId)
 {
     this->iScriptId = iScriptId;
@@ -73,10 +84,10 @@ void MapActor::animate(std::uint64_t currentTick)
                 switch ( code )
                 {
                     case Sc::Sprite::Op::playfram:
-                        mapImages[usedImages[0]].frame = iscript[currOffset];
+                        mapImages[usedImages[0]]->frame = iscript[currOffset];
                         break;
                     case Sc::Sprite::Op::setflipstate:
-                        mapImages[usedImages[0]].flipped = (iscript[currOffset] != 0);
+                        mapImages[usedImages[0]]->flipped = (iscript[currOffset] != 0);
                         break;
                     case Sc::Sprite::Op::sprol:
                         //this->xOffset = s32(s8(iscript[currOffset+2]));
@@ -104,7 +115,7 @@ void MapActor::animate(std::uint64_t currentTick)
                         {
                             // wait-looped, you don't necessarily want to end here but it permits restarting
                             // TODO: Just because you're wait-looped doesn't mean restarting is appropriate...
-                            mapImages[usedImages[0]].frame = 0;
+                            mapImages[usedImages[0]]->frame = 0;
                             end();
                             return;
                         }
