@@ -12,7 +12,7 @@ MapActor & MapActor::operator=(const MapActor & other)
     return *this;
 }
 
-void MapActor::initialize(std::uint64_t currentTick, size_t iScriptId)
+void MapActor::initialize(std::uint64_t currentTick, size_t iScriptId, bool isUnit)
 {
     this->iScriptId = iScriptId;
     animation = chkd.scData.sprites.getAnimationHeader(iScriptId);
@@ -21,7 +21,7 @@ void MapActor::initialize(std::uint64_t currentTick, size_t iScriptId)
     else
     {
         waitUntil = currentTick;
-        animate(currentTick); // Advance until the first wait such that the image starts on the correct frame and all
+        animate(currentTick, isUnit); // Advance until the first wait such that the image starts on the correct frame and all
     }
 }
 
@@ -37,10 +37,10 @@ void MapActor::error(std::string_view message)
     end();
 }
 
-void MapActor::restartIfEnded(std::uint64_t currentTick)
+void MapActor::restartIfEnded(std::uint64_t currentTick, bool isUnit)
 {
     if ( waitUntil == std::numeric_limits<uint64_t>::max() )
-        initialize(currentTick, this->iScriptId);
+        initialize(currentTick, this->iScriptId, isUnit);
 }
 
 void MapActor::advanceBy(size_t numBytes)
@@ -48,7 +48,7 @@ void MapActor::advanceBy(size_t numBytes)
     ((u8* &)animation) += numBytes;
 }
 
-void MapActor::animate(std::uint64_t currentTick)
+void MapActor::animate(std::uint64_t currentTick, bool isUnit)
 {
     auto & iscript = chkd.scData.sprites.iscript;
     size_t currOffset = std::distance((const u8*)&iscript[0], (const u8*)animation);
@@ -84,7 +84,7 @@ void MapActor::animate(std::uint64_t currentTick)
                 switch ( code )
                 {
                     case Sc::Sprite::Op::playfram:
-                        mapImages[usedImages[0]]->frame = iscript[currOffset];
+                        mapImages[usedImages[0]]->playFrame(iscript[currOffset]);
                         break;
                     case Sc::Sprite::Op::playframtile: // TODO
                         break;
@@ -96,10 +96,12 @@ void MapActor::animate(std::uint64_t currentTick)
                         break;
                     case Sc::Sprite::Op::wait:
                         waitUntil = currentTick + uint64_t(iscript[currOffset]);
+                        //waitUntil = currentTick;
                         if ( Sc::Sprite::Op(iscript[currOffset+1]) == Sc::Sprite::Op::goto_ && (u16 &)iscript[currOffset+2] == currOffset-1 )
                         {
                             // wait-looped, you don't necessarily want to end here but it permits restarting
                             // TODO: Just because you're wait-looped doesn't mean restarting is appropriate...
+                            //logger.info() << "WaitLoopRestart\n";
                             mapImages[usedImages[0]]->frame = 0;
                             end();
                             return;
@@ -113,6 +115,7 @@ void MapActor::animate(std::uint64_t currentTick)
                             auto min = std::min(first, second);
                             auto max = std::max(first, second);
                             waitUntil = currentTick + uint64_t(min + (std::rand() % (max-min)));
+                            //waitUntil = currentTick;
                             advancePastParams();
                             return;
                         }
@@ -121,12 +124,13 @@ void MapActor::animate(std::uint64_t currentTick)
                             u16 dest = (u16 &)iscript[currOffset];
                             if ( dest > iscript.size() )
                             {
-                                logger.error() << dest << iscript.size() << '\n';
+                                //logger.error() << dest << iscript.size() << '\n';
                                 return error("IScript Overflow");
                             }
                             else
                             {
                                 currOffset = dest;
+                                //logger.info() << "Goto " << currOffset << '\n';
                                 this->animation = (Sc::Sprite::IScriptAnimation*)&iscript[dest];
                                 continue;
                             }
@@ -179,10 +183,32 @@ void MapActor::animate(std::uint64_t currentTick)
                     case Sc::Sprite::Op::followmaingraphic: // TODO
                         break;
                     case Sc::Sprite::Op::randcondjmp: // TODO
+                        {
+                            auto chance = iscript[currOffset];
+                            //logger.info() << "Randcondjmp " << (u16 &)iscript[currOffset+1];
+                            if ( std::rand() % 255 <= chance )
+                            {
+                                auto label = (u16 &)iscript[currOffset+1];
+                                currOffset = label;
+                                //logger << " taken\n";
+                                this->animation = (Sc::Sprite::IScriptAnimation*)&iscript[label];
+                                continue;
+                            }
+                        }
                         break;
                     case Sc::Sprite::Op::turnccwise: // TODO
+                        if ( isUnit )
+                        {
+                            //logger.info("turn counter-clockwise");
+                            setDirection(this->direction-8*iscript[currOffset]);
+                        }
                         break;
                     case Sc::Sprite::Op::turncwise: // TODO
+                        if ( isUnit )
+                        {
+                            //logger.info("turn clockwise");
+                            setDirection(this->direction+8*iscript[currOffset]);
+                        }
                         break;
                     case Sc::Sprite::Op::turn1cwise: // TODO
                         break;
@@ -230,6 +256,7 @@ void MapActor::animate(std::uint64_t currentTick)
                             advancePastParams();
                             this->returnOffset = currOffset;
                             currOffset = label;
+                            //logger.info() << "Call " << currOffset << '\n';
                             this->animation = (Sc::Sprite::IScriptAnimation*)&iscript[label];
                         }
                         break;
@@ -272,4 +299,10 @@ void MapActor::animate(std::uint64_t currentTick)
             }
         }
     }
+}
+
+void MapActor::setDirection(u8 direction)
+{
+    this->direction = direction;
+    mapImages[usedImages[0]]->setDirection(direction);
 }

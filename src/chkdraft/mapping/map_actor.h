@@ -17,18 +17,21 @@ struct MapActor
     // TODO: More fields such as a flipped indicator, offsets and whatnot
     //s32 xOffset = 0;
     //s32 yOffset = 0;
+    u8 direction = 0;
     std::uint64_t waitUntil {};
     u16 usedImages[10] {};
 
     MapActor & operator=(const MapActor & other);
     
-    void initialize(std::uint64_t currentTick, size_t iScriptId);
+    void initialize(std::uint64_t currentTick, size_t iScriptId, bool isUnit);
     bool end();
     void error(std::string_view message);
-    void restartIfEnded(std::uint64_t currentTick);
+    void restartIfEnded(std::uint64_t currentTick, bool isUnit);
 
     void advanceBy(size_t numBytes);
-    void animate(std::uint64_t currentTick);
+    void animate(std::uint64_t currentTick, bool isUnit);
+
+    void setDirection(u8 direction);
 };
 
 #endif

@@ -483,7 +483,8 @@ namespace Scr {
                     "    vec2 frameTexFlipper = image[6];"
 
                     "    vec2 flippedNormalTex = vec2(frameTexFlipper.x*normalTex.x + frameTexFlipper.y, normalTex.y);"
-                    "    vec2 imageOriginOffset = -animSize/2.0 + framePosOffset;"
+                    "    vec2 imageOriginOffset = vec2(-frameTexFlipper.x*animSize.x/2.0 + frameTexFlipper.x*framePosOffset.x - frameTexFlipper.y*frameSize.x,"
+                    "                                  -animSize.y/2.0 + framePosOffset.y);"
                     "    gl_Position = posToNdc * vec4(centerPos + imageScale*(imageOriginOffset + normalPos*frameSize), 0.0, 1.0);"
                     "    texCoord = animTexScale * (frameTexOffset + flippedNormalTex*frameSize);"
                     "};";

@@ -17,7 +17,12 @@ void Chkdraft::OnLoadTest()
 
     auto & map = []() -> GuiMap & {
         auto map = chkd.maps.NewMap(Sc::Terrain::Tileset::SpacePlatform, 64, 64, Sc::Isom::Brush::Space::Platform);
-        //map->addUnit(Chk::Unit {map->getNextClassId(), 64, 64, Sc::Unit::Type::StartLocation, 0, 0, 0, Sc::Player::Id::Player1});
+        for ( std::size_t i=0; i<Sc::Unit::TotalTypes; ++i )
+        {
+            int x = i%20;
+            int y = i/20;
+            map->addUnit(Chk::Unit {map->getNextClassId(), u16(x*64+64), u16(y*64+64), Sc::Unit::Type(i), 0, 0, 0, Sc::Player::Id::Player1});
+        }
         //map->addUnit(Chk::Unit {map->getNextClassId(), 192, 64, Sc::Unit::Type::StartLocation, 0, 0, 0, Sc::Player::Id::Player2});
         map->setForceFlags(Chk::Force::Force1, Chk::ForceFlags::All & Chk::ForceFlags::xRandomizeStartLocation);
         map->setForceFlags(Chk::Force::Force2, Chk::ForceFlags::All & Chk::ForceFlags::xRandomizeStartLocation);

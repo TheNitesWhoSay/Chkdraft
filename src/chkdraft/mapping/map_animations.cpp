@@ -96,7 +96,7 @@ void MapAnimations::initialize()
     for ( const auto & unit : scenario->units )
     {
         auto & actor = unitActors.emplace_back(images);
-        actor.initialize(currentTick, iscriptIdFromUnit(unit.type));
+        actor.initialize(currentTick, iscriptIdFromUnit(unit.type), true);
         actor.usedImages[0] = images.size();
         auto & image = *images.emplace_back(MapImage{});
         image.imageId = getImageId(unit);
@@ -108,7 +108,7 @@ void MapAnimations::initialize()
     for ( const auto & sprite : scenario->sprites )
     {
         auto & actor = spriteActors.emplace_back(images);
-        actor.initialize(currentTick, iscriptIdFromSprite(sprite.type));
+        actor.initialize(currentTick, iscriptIdFromSprite(sprite.type), false);
         actor.usedImages[0] = images.size();
         auto & image = *images.emplace_back(MapImage{});
         image.imageId = getImageId(sprite);
@@ -122,7 +122,7 @@ void MapAnimations::addUnit(std::size_t unitIndex)
 {
     const auto & unit = scenario.getUnit(unitIndex);
     auto & actor = unitActors.emplace_back(images);
-    actor.initialize(chkd.gameClock.currentTick(), iscriptIdFromUnit(unit.type));
+    actor.initialize(chkd.gameClock.currentTick(), iscriptIdFromUnit(unit.type), true);
     u16 imageIndex = createImage();
     actor.usedImages[0] = imageIndex;
     MapImage & image = images[imageIndex].value();
@@ -136,7 +136,7 @@ void MapAnimations::addSprite(std::size_t spriteIndex)
 {
     const auto & sprite = scenario.getSprite(spriteIndex);
     auto & actor = spriteActors.emplace_back(images);
-    actor.initialize(chkd.gameClock.currentTick(), iscriptIdFromSprite(sprite.type));
+    actor.initialize(chkd.gameClock.currentTick(), iscriptIdFromSprite(sprite.type), false);
     u16 imageIndex = createImage();
     actor.usedImages[0] = imageIndex;
     MapImage & image = images[imageIndex].value();
@@ -167,11 +167,11 @@ void MapAnimations::removeSprite(std::size_t spriteIndex)
 void MapAnimations::animate(uint64_t currentTick)
 {
     for ( auto & clipboardSprite : CM->clipboard.getSprites() )
-        clipboardSprite.testAnim.animate(currentTick);
+        clipboardSprite.testAnim.animate(currentTick, false);
 
     for ( auto & actor : unitActors )
-        actor.animate(currentTick);
+        actor.animate(currentTick, true);
 
     for ( auto & actor : spriteActors )
-        actor.animate(currentTick);
+        actor.animate(currentTick, false);
 }
