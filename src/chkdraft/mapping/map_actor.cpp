@@ -86,25 +86,6 @@ void MapActor::animate(std::uint64_t currentTick)
                     case Sc::Sprite::Op::playfram:
                         mapImages[usedImages[0]]->frame = iscript[currOffset];
                         break;
-                    case Sc::Sprite::Op::setflipstate:
-                        mapImages[usedImages[0]]->flipped = (iscript[currOffset] != 0);
-                        break;
-                    case Sc::Sprite::Op::call:
-                        {
-                            auto label = (u16 &)iscript[currOffset];
-                            advancePastParams();
-                            this->returnOffset = currOffset;
-                            currOffset = label;
-                            this->animation = (Sc::Sprite::IScriptAnimation*)&iscript[label];
-                        }
-                        break;
-                    case Sc::Sprite::Op::return_:
-                        currOffset = this->returnOffset;
-                        this->animation = (Sc::Sprite::IScriptAnimation*)&iscript[currOffset];
-                        break;
-                    case Sc::Sprite::Op::end:
-                        // TODO: this is called for a non-main image to destroy said image
-                        return;
                     case Sc::Sprite::Op::wait:
                         waitUntil = currentTick + uint64_t(iscript[currOffset]);
                         if ( Sc::Sprite::Op(iscript[currOffset+1]) == Sc::Sprite::Op::goto_ && (u16 &)iscript[currOffset+2] == currOffset-1 )
@@ -142,6 +123,25 @@ void MapActor::animate(std::uint64_t currentTick)
                                 continue;
                             }
                         }
+                        break;
+                    case Sc::Sprite::Op::end:
+                        // TODO: this is called for a non-main image to destroy said image
+                        return;
+                    case Sc::Sprite::Op::setflipstate:
+                        mapImages[usedImages[0]]->flipped = (iscript[currOffset] != 0);
+                        break;
+                    case Sc::Sprite::Op::call:
+                        {
+                            auto label = (u16 &)iscript[currOffset];
+                            advancePastParams();
+                            this->returnOffset = currOffset;
+                            currOffset = label;
+                            this->animation = (Sc::Sprite::IScriptAnimation*)&iscript[label];
+                        }
+                        break;
+                    case Sc::Sprite::Op::return_:
+                        currOffset = this->returnOffset;
+                        this->animation = (Sc::Sprite::IScriptAnimation*)&iscript[currOffset];
                         break;
                     default:
                         break;
