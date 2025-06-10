@@ -27,6 +27,8 @@ public:
     void removeSprite(std::size_t spriteIndex);
 
     void animate(uint64_t currentTick);
+
+    friend struct MapActor;
 };
 
 #endif

@@ -2852,7 +2852,17 @@ void Scr::MapGraphics::drawImages()
             if ( loadSettings.skinId == Scr::Skin::Id::Classic )
                 drawClassicImage(*renderDat->tiles->tilesetGrp.palette, image->xc, image->yc, image->frame, image->imageId, (Chk::PlayerColor)image->owner, image->flipped);
             else
-                drawImage(getImage(image->imageId), image->xc, image->yc, image->frame, 0xFFFFFFFF, getPlayerColor(image->owner), false, image->flipped);
+            {
+                switch ( image->drawFunction )
+                {
+                case MapImage::DrawFunction::Shadow:
+                    drawImage(getImage(image->imageId), image->xc, image->yc, image->frame, 0x80000000, getPlayerColor(image->owner), false, image->flipped);
+                    break;
+                default:
+                    drawImage(getImage(image->imageId), image->xc, image->yc, image->frame, 0xFFFFFFFF, getPlayerColor(image->owner), false, image->flipped);
+                    break;
+                }
+            }
         }
     }
 }
@@ -3257,6 +3267,7 @@ void Scr::MapGraphics::drawFps()
 
 void Scr::MapGraphics::drawPastes()
 {
+    const auto & images = map.animations.images;
     auto layer = map.getLayer();
     auto subLayer = map.getSubLayer();
     auto drawPasteTerrain = [&](point paste) {
@@ -3679,7 +3690,7 @@ void Scr::MapGraphics::drawPastes()
                 for ( auto & pasteSprite : sprites )
                 {
                     drawImage(getImage(pasteSprite.sprite), paste.x+pasteSprite.xc/*+pasteSprite.anim.xOffset*/, paste.y+pasteSprite.yc/*+pasteSprite.anim.yOffset*/,
-                        pasteSprite.testAnim.mapImages[0]->frame, 0xFFFFFFFF, getPlayerColor(pasteSprite.sprite.owner), false);
+                        images[pasteSprite.testAnim.usedImages[0]]->frame, 0xFFFFFFFF, getPlayerColor(pasteSprite.sprite.owner), false);
                 }
             }
         }

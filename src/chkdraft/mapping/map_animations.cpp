@@ -95,34 +95,33 @@ void MapAnimations::initialize()
     auto currentTick = chkd.gameClock.currentTick();
     for ( const auto & unit : scenario->units )
     {
-        auto & actor = unitActors.emplace_back(images);
-        actor.initialize(currentTick, iscriptIdFromUnit(unit.type), true);
+        auto & actor = unitActors.emplace_back();
         actor.usedImages[0] = images.size();
         auto & image = *images.emplace_back(MapImage{});
         image.imageId = getImageId(unit);
         image.owner = unit.owner;
         image.xc = unit.xc;
         image.yc = unit.yc;
+        actor.initialize(currentTick, iscriptIdFromUnit(unit.type), true, *this);
     }
 
     for ( const auto & sprite : scenario->sprites )
     {
-        auto & actor = spriteActors.emplace_back(images);
-        actor.initialize(currentTick, iscriptIdFromSprite(sprite.type), false);
+        auto & actor = spriteActors.emplace_back();
         actor.usedImages[0] = images.size();
         auto & image = *images.emplace_back(MapImage{});
         image.imageId = getImageId(sprite);
         image.owner = sprite.owner;
         image.xc = sprite.xc;
         image.yc = sprite.yc;
+        actor.initialize(currentTick, iscriptIdFromSprite(sprite.type), false, *this);
     }
 }
 
 void MapAnimations::addUnit(std::size_t unitIndex)
 {
     const auto & unit = scenario.getUnit(unitIndex);
-    auto & actor = unitActors.emplace_back(images);
-    actor.initialize(chkd.gameClock.currentTick(), iscriptIdFromUnit(unit.type), true);
+    auto & actor = unitActors.emplace_back();
     u16 imageIndex = createImage();
     actor.usedImages[0] = imageIndex;
     MapImage & image = images[imageIndex].value();
@@ -130,13 +129,13 @@ void MapAnimations::addUnit(std::size_t unitIndex)
     image.owner = unit.owner;
     image.xc = unit.xc;
     image.yc = unit.yc;
+    actor.initialize(chkd.gameClock.currentTick(), iscriptIdFromUnit(unit.type), true, *this);
 }
 
 void MapAnimations::addSprite(std::size_t spriteIndex)
 {
     const auto & sprite = scenario.getSprite(spriteIndex);
-    auto & actor = spriteActors.emplace_back(images);
-    actor.initialize(chkd.gameClock.currentTick(), iscriptIdFromSprite(sprite.type), false);
+    auto & actor = spriteActors.emplace_back();
     u16 imageIndex = createImage();
     actor.usedImages[0] = imageIndex;
     MapImage & image = images[imageIndex].value();
@@ -144,6 +143,7 @@ void MapAnimations::addSprite(std::size_t spriteIndex)
     image.owner = sprite.owner;
     image.xc = sprite.xc;
     image.yc = sprite.yc;
+    actor.initialize(chkd.gameClock.currentTick(), iscriptIdFromSprite(sprite.type), false, *this);
 }
 
 void MapAnimations::removeUnit(std::size_t unitIndex)
@@ -167,11 +167,11 @@ void MapAnimations::removeSprite(std::size_t spriteIndex)
 void MapAnimations::animate(uint64_t currentTick)
 {
     for ( auto & clipboardSprite : CM->clipboard.getSprites() )
-        clipboardSprite.testAnim.animate(currentTick, false);
+        clipboardSprite.testAnim.animate(currentTick, false, *this);
 
     for ( auto & actor : unitActors )
-        actor.animate(currentTick, true);
+        actor.animate(currentTick, true, *this);
 
     for ( auto & actor : spriteActors )
-        actor.animate(currentTick, false);
+        actor.animate(currentTick, false, *this);
 }

@@ -1,18 +1,17 @@
 #include "map_actor.h"
 #include "../chkdraft.h"
 
-MapActor & MapActor::operator=(const MapActor & other)
+u16 & MapActor::nextImageSlot()
 {
-    this->mapImages = other.mapImages;
-    this->returnOffset = other.returnOffset;
-    this->iScriptId = other.iScriptId;
-    this->animation = other.animation;
-    this->waitUntil = other.waitUntil;
-    std::copy(std::begin(other.usedImages), std::end(other.usedImages), this->usedImages);
-    return *this;
+    for ( u16 & usedImage : usedImages )
+    {
+        if ( usedImage == 0 )
+            return usedImage;
+    }
+    return usedImages[0];
 }
 
-void MapActor::initialize(std::uint64_t currentTick, size_t iScriptId, bool isUnit)
+void MapActor::initialize(std::uint64_t currentTick, size_t iScriptId, bool isUnit, MapAnimations & animations)
 {
     this->iScriptId = iScriptId;
     animation = chkd.scData.sprites.getAnimationHeader(iScriptId);
@@ -21,7 +20,7 @@ void MapActor::initialize(std::uint64_t currentTick, size_t iScriptId, bool isUn
     else
     {
         waitUntil = currentTick;
-        animate(currentTick, isUnit); // Advance until the first wait such that the image starts on the correct frame and all
+        animate(currentTick, isUnit, animations); // Advance until the first wait such that the image starts on the correct frame and all
     }
 }
 
@@ -37,10 +36,10 @@ void MapActor::error(std::string_view message)
     end();
 }
 
-void MapActor::restartIfEnded(std::uint64_t currentTick, bool isUnit)
+void MapActor::restartIfEnded(std::uint64_t currentTick, bool isUnit, MapAnimations & animations)
 {
     if ( waitUntil == std::numeric_limits<uint64_t>::max() )
-        initialize(currentTick, this->iScriptId, isUnit);
+        initialize(currentTick, this->iScriptId, isUnit, animations);
 }
 
 void MapActor::advanceBy(size_t numBytes)
@@ -48,8 +47,9 @@ void MapActor::advanceBy(size_t numBytes)
     ((u8* &)animation) += numBytes;
 }
 
-void MapActor::animate(std::uint64_t currentTick, bool isUnit)
+void MapActor::animate(std::uint64_t currentTick, bool isUnit, MapAnimations & animations)
 {
+    auto & images = animations.images;
     auto & iscript = chkd.scData.sprites.iscript;
     size_t currOffset = std::distance((const u8*)&iscript[0], (const u8*)animation);
     if ( currentTick >= waitUntil )
@@ -84,7 +84,7 @@ void MapActor::animate(std::uint64_t currentTick, bool isUnit)
                 switch ( code )
                 {
                     case Sc::Sprite::Op::playfram:
-                        mapImages[usedImages[0]]->playFrame(iscript[currOffset]);
+                        images[usedImages[0]]->playFrame(iscript[currOffset]);
                         break;
                     case Sc::Sprite::Op::playframtile: // TODO
                         break;
@@ -102,7 +102,7 @@ void MapActor::animate(std::uint64_t currentTick, bool isUnit)
                             // wait-looped, you don't necessarily want to end here but it permits restarting
                             // TODO: Just because you're wait-looped doesn't mean restarting is appropriate...
                             //logger.info() << "WaitLoopRestart\n";
-                            mapImages[usedImages[0]]->frame = 0;
+                            images[usedImages[0]]->frame = 0;
                             end();
                             return;
                         }
@@ -136,9 +136,11 @@ void MapActor::animate(std::uint64_t currentTick, bool isUnit)
                             }
                         }
                         break;
-                    case Sc::Sprite::Op::imgol: // TODO
+                    case Sc::Sprite::Op::imgol:
+                        createOverlay((u16 &)iscript[currOffset], s8(iscript[currOffset+2])+xOffset, s8(iscript[currOffset+3])+yOffset, animations);
                         break;
-                    case Sc::Sprite::Op::imgul: // TODO
+                    case Sc::Sprite::Op::imgul:
+                        createOverlay((u16 &)iscript[currOffset], s8(iscript[currOffset+2])+xOffset, s8(iscript[currOffset+3])+yOffset, animations);
                         break;
                     case Sc::Sprite::Op::imgolorig: // TODO
                         break;
@@ -168,7 +170,7 @@ void MapActor::animate(std::uint64_t currentTick, bool isUnit)
                         // TODO: this is called for a non-main image to destroy said image
                         return;
                     case Sc::Sprite::Op::setflipstate:
-                        mapImages[usedImages[0]]->flipped = (iscript[currOffset] != 0);
+                        images[usedImages[0]]->flipped = (iscript[currOffset] != 0);
                         break;
                     case Sc::Sprite::Op::playsnd: // TODO
                         break;
@@ -200,14 +202,14 @@ void MapActor::animate(std::uint64_t currentTick, bool isUnit)
                         if ( isUnit )
                         {
                             //logger.info("turn counter-clockwise");
-                            setDirection(this->direction-8*iscript[currOffset]);
+                            setDirection(images[usedImages[0]].value(), this->direction-8*iscript[currOffset]);
                         }
                         break;
                     case Sc::Sprite::Op::turncwise: // TODO
                         if ( isUnit )
                         {
                             //logger.info("turn clockwise");
-                            setDirection(this->direction+8*iscript[currOffset]);
+                            setDirection(images[usedImages[0]].value(), this->direction+8*iscript[currOffset]);
                         }
                         break;
                     case Sc::Sprite::Op::turn1cwise: // TODO
@@ -301,8 +303,27 @@ void MapActor::animate(std::uint64_t currentTick, bool isUnit)
     }
 }
 
-void MapActor::setDirection(u8 direction)
+void MapActor::setDirection(MapImage & image, u8 direction)
 {
     this->direction = direction;
-    mapImages[usedImages[0]]->setDirection(direction);
+    image.setDirection(direction);
+}
+
+void MapActor::createOverlay(u16 imageId, s8 x, s8 y, MapAnimations & animations)
+{
+    auto & overlayImageIndex = nextImageSlot();
+    if ( overlayImageIndex != 0 )
+    {
+        logger.warn("CreateOverlay called but no image slots were available for the actor.");
+        return;
+    }
+    overlayImageIndex = animations.createImage();
+    auto & primaryImage = animations.images[usedImages[0]].value();
+    //logger.info() << "PrimaryImage: " << usedImages[0] << ", " << primaryImage.xc << ", " << primaryImage.yc << '\n';
+    auto & overlayImage = animations.images[overlayImageIndex].value();
+    overlayImage.imageId = imageId;
+    overlayImage.xc = primaryImage.xc + s32(x);
+    overlayImage.yc = primaryImage.yc + s32(y);
+    overlayImage.drawFunction = (MapImage::DrawFunction)chkd.scData.sprites.getImage(imageId).drawFunction;
+    //logger.info() << "CreateOverlay: " << overlayImageIndex << ", " << imageId << ", " << "(" << overlayImage.xc << ", " << overlayImage.yc << ")\n";
 }

@@ -6,32 +6,32 @@
 #include <string_view>
 #include <vector>
 
+class MapAnimations;
+
 // An extension to a Chk::Unit or Chk::Sprite focusing on animation and linking up with associated images
 struct MapActor
 {
-    std::vector<std::optional<MapImage>> & mapImages;
     u16 returnOffset = 0;
     size_t iScriptId = 0;
-    //size_t frame = 0;
     const Sc::Sprite::IScriptAnimation* animation = nullptr;
-    // TODO: More fields such as a flipped indicator, offsets and whatnot
-    //s32 xOffset = 0;
-    //s32 yOffset = 0;
+    s8 xOffset = 0;
+    s8 yOffset = 0;
     u8 direction = 0;
     std::uint64_t waitUntil {};
     u16 usedImages[10] {};
 
-    MapActor & operator=(const MapActor & other);
+    u16 & nextImageSlot(); // If result is non-zero, no image slots are available
     
-    void initialize(std::uint64_t currentTick, size_t iScriptId, bool isUnit);
+    void initialize(std::uint64_t currentTick, size_t iScriptId, bool isUnit, MapAnimations & animations);
     bool end();
     void error(std::string_view message);
-    void restartIfEnded(std::uint64_t currentTick, bool isUnit);
+    void restartIfEnded(std::uint64_t currentTick, bool isUnit, MapAnimations & animations);
 
     void advanceBy(size_t numBytes);
-    void animate(std::uint64_t currentTick, bool isUnit);
+    void animate(std::uint64_t currentTick, bool isUnit, MapAnimations & animations);
 
-    void setDirection(u8 direction);
+    void setDirection(MapImage & image, u8 direction);
+    void createOverlay(u16 imageId, s8 x, s8 y, MapAnimations & animations);
 };
 
 #endif
