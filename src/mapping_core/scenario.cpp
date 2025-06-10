@@ -594,7 +594,7 @@ Scenario::Scenario(Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t t
         mapData->strings.push_back(std::nullopt);
 
      // Note: Location index 0 is unused
-    mapData->locations.assign(this->isHybridOrAbove() ? Chk::TotalLocations : Chk::TotalOriginalLocations, Chk::Location{});
+    mapData->locations.assign(this->isHybridOrAbove() ? 1+Chk::TotalLocations : 1+Chk::TotalOriginalLocations, Chk::Location{});
     mapData->locations[Chk::LocationId::Anywhere] = Chk::Location{.right = (u32)width*32, .bottom = (u32)height*32, .stringId = 3};
 
     if ( this->isHybridOrAbove() )
