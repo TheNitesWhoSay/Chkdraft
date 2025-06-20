@@ -37,7 +37,7 @@ struct MapImage
 
     void playFrame(u8 frame);
     void setDirection(u8 direction);
-    void createOverlay(u16 imageId, s8 x, s8 y, MapAnimations & animations, MapActor & actor, bool above);
+    void createOverlay(u16 imageId, s8 x, s8 y, MapAnimations & animations, MapActor & actor, bool isUnit, bool above);
 
     void advanceBy(size_t numBytes);
     void animate(std::uint64_t currentTick, MapAnimations & animations, MapActor & actor, bool isUnit);

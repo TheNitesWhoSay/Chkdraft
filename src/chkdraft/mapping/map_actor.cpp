@@ -3,6 +3,14 @@
 
 u16 & MapActor::getNewImageSlot(bool above, MapImage & image, MapAnimations & animations)
 {
+    u16 primaryImageImageIndex = usedImages[primaryImageIndex];
+    auto updatePrimaryImageIndex = [&]() {
+        for ( std::size_t j=0; j<MaxSlots; ++j )
+        {
+            if ( usedImages[j] == primaryImageImageIndex )
+                primaryImageIndex = j;
+        }
+    };
     defragmentNonZeroes(usedImages);
     for ( std::size_t i=0; i<MaxSlots; ++i )
     {
@@ -16,19 +24,23 @@ u16 & MapActor::getNewImageSlot(bool above, MapImage & image, MapAnimations & an
                     if ( above ) // Draw after image/use slot after image
                     {
                         std::rotate(&usedImages[i+1], &usedImages[nextAvailable], &usedImages[nextAvailable+1]); // Move available slot after images slot
+                        updatePrimaryImageIndex();
                         return usedImages[i+1];
                     }
                     else // Draw before image/use slot before image
                     {
                         std::rotate(&usedImages[i], &usedImages[nextAvailable], &usedImages[nextAvailable+1]); // Move available slot before images slot
+                        updatePrimaryImageIndex();
                         return usedImages[i];
                     }
                 }
             }
+            updatePrimaryImageIndex();
             return usedImages[0]; // No slot was available
         }
     }
     logger.error("Image was not present in usedImages and/or the image list");
+    updatePrimaryImageIndex();
     return usedImages[0];
 }
 

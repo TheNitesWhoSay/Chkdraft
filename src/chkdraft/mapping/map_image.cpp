@@ -1,6 +1,11 @@
 #include <mapping_core/map_image.h>
 #include "../chkdraft.h" // TODO: recheck whether there's a way this file could go in mapping_core too
 
+u32 iscriptIdFromImage(u32 imageId)
+{
+    return chkd.scData.sprites.getImage(imageId).iScriptId;
+}
+
 void MapImage::error(std::string_view message)
 {
     logger.error(message);
@@ -52,7 +57,7 @@ void MapImage::setDirection(u8 direction)
     frame = baseFrame + this->direction;
 }
 
-void MapImage::createOverlay(u16 imageId, s8 x, s8 y, MapAnimations & animations, MapActor & actor, bool above)
+void MapImage::createOverlay(u16 imageId, s8 x, s8 y, MapAnimations & animations, MapActor & actor, bool isUnit, bool above)
 {
     MapImage* primaryImage = actor.primaryImage(animations);
     if ( primaryImage == nullptr )
@@ -73,6 +78,7 @@ void MapImage::createOverlay(u16 imageId, s8 x, s8 y, MapAnimations & animations
     overlayImage.xc = primaryImage->xc + s32(x);
     overlayImage.yc = primaryImage->yc + s32(y);
     overlayImage.drawFunction = (MapImage::DrawFunction)chkd.scData.sprites.getImage(imageId).drawFunction;
+    overlayImage.initialize(chkd.gameClock.currentTick(), iscriptIdFromImage(imageId), animations, actor, isUnit);
     //logger.info() << "CreateOverlay: " << overlayImageIndex << ", " << imageId << ", " << "(" << overlayImage.xc << ", " << overlayImage.yc << ")\n";
 }
 
@@ -92,12 +98,15 @@ void MapImage::animate(std::uint64_t currentTick, MapAnimations & animations, Ma
         for ( ; ; )
         {
             if ( currOffset >= iscript.size() )
-                return error("IScript Overflow");
+            {
+                logger.info() << "  " << this << '\n';
+                return error("Unknown IScript Overflow");
+            }
 
             Sc::Sprite::Op code = Sc::Sprite::Op(animation->code);
             ++currOffset; // 1-byte code
             std::string opName = code < Sc::Sprite::OpName.size() ? std::string(Sc::Sprite::OpName[code]) : std::to_string(int(code));
-            //logger.info() << "  " << opName << ", \n";
+            //logger.info() << "  " << this << ", " << opName << ", \n";
 
             if ( code < Sc::Sprite::OpParams.size() )
             {
@@ -130,6 +139,7 @@ void MapImage::animate(std::uint64_t currentTick, MapAnimations & animations, Ma
                         break;
                     case Sc::Sprite::Op::wait:
                         waitUntil = currentTick + uint64_t(iscript[currOffset]);
+                        
                         //waitUntil = currentTick;
                         if ( Sc::Sprite::Op(iscript[currOffset+1]) == Sc::Sprite::Op::goto_ && (u16 &)iscript[currOffset+2] == currOffset-1 )
                         {
@@ -159,7 +169,7 @@ void MapImage::animate(std::uint64_t currentTick, MapAnimations & animations, Ma
                             if ( dest > iscript.size() )
                             {
                                 //logger.error() << dest << iscript.size() << '\n';
-                                return error("IScript Overflow");
+                                return error("goto IScript Overflow");
                             }
                             else
                             {
@@ -171,10 +181,10 @@ void MapImage::animate(std::uint64_t currentTick, MapAnimations & animations, Ma
                         }
                         break;
                     case Sc::Sprite::Op::imgol:
-                        createOverlay((u16 &)iscript[currOffset], s8(iscript[currOffset+2])+xOffset, s8(iscript[currOffset+3])+yOffset, animations, actor, true);
+                        createOverlay((u16 &)iscript[currOffset], s8(iscript[currOffset+2])+xOffset, s8(iscript[currOffset+3])+yOffset, animations, actor, isUnit, true);
                         break;
                     case Sc::Sprite::Op::imgul:
-                        createOverlay((u16 &)iscript[currOffset], s8(iscript[currOffset+2])+xOffset, s8(iscript[currOffset+3])+yOffset, animations, actor, false);
+                        createOverlay((u16 &)iscript[currOffset], s8(iscript[currOffset+2])+xOffset, s8(iscript[currOffset+3])+yOffset, animations, actor, isUnit, false);
                         break;
                     case Sc::Sprite::Op::imgolorig: // TODO
                         break;
@@ -217,6 +227,16 @@ void MapImage::animate(std::uint64_t currentTick, MapAnimations & animations, Ma
                     case Sc::Sprite::Op::attackmelee: // TODO
                         break;
                     case Sc::Sprite::Op::followmaingraphic: // TODO
+                        {
+                            MapImage* primaryImage = actor.primaryImage(animations);
+                            if ( primaryImage != nullptr && (this->baseFrame != primaryImage->baseFrame || this->flipped != primaryImage->flipped) )
+                            {
+                                this->baseFrame = primaryImage->baseFrame;
+                                this->flipped = primaryImage->flipped;
+                                this->direction = primaryImage->direction;
+                                this->setDirection(this->direction);
+                            }
+                        }
                         break;
                     case Sc::Sprite::Op::randcondjmp: // TODO
                         {
