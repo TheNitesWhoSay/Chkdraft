@@ -2592,8 +2592,8 @@ const Sc::Sprite::IScriptAnimation* Sc::Sprite::getAnimationHeader(size_t iScrip
         return nullptr;
     }
     IScriptAnimationHeader* iScriptAnimationHeader = (IScriptAnimationHeader*)&iscript[animationsOffset];
-    //size_t totalAnimations = size_t(iScriptAnimationHeader->animationCount & 0xFFFE) + 2;
-    size_t animationIndex = 0; // TODO: Where are other animationIndexes coming from?
+    size_t totalAnimations = size_t(iScriptAnimationHeader->animationCount & 0xFFFE) + 2;
+    size_t animationIndex = totalAnimations >= 23 && iScriptAnimationHeader->animationsOffset[23] != 0 ? 23 : 0; // TODO: 23 StarEditInit, 0 Init enum...
     size_t animationOffset = iScriptAnimationHeader->animationsOffset[animationIndex];
     if ( animationOffset > 0 )
     {

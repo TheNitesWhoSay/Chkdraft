@@ -2883,18 +2883,22 @@ void Scr::MapGraphics::drawActors()
         std::uint64_t drawEntry = map.animations.drawList[i];
         if ( drawEntry == MapAnimations::UnusedDrawEntry )
             break;
-        else if ( drawEntry & MapAnimations::FlagIsClipboard )
-        {
-            point paste = map.selections.endDrag;
-            if ( drawEntry & MapAnimations::FlagUnitActor )
-                drawActor(clipboardUnitActors[std::size_t(drawEntry & MapAnimations::MaskIndex)], paste.x, paste.y);
-            else
-                drawActor(clipboardSpriteActors[std::size_t(drawEntry & MapAnimations::MaskIndex)], paste.x, paste.y);
-        }
-        else if ( drawEntry & MapAnimations::FlagUnitActor )
-            drawActor(unitActors[std::size_t(drawEntry & MapAnimations::MaskIndex)], 0, 0);
         else
-            drawActor(spriteActors[std::size_t(drawEntry & MapAnimations::MaskIndex)], 0, 0);
+        {
+            std::size_t index = static_cast<std::size_t>(drawEntry & MapAnimations::MaskIndex);
+            if ( drawEntry & MapAnimations::FlagIsClipboard )
+            {
+                point paste = map.selections.endDrag;
+                if ( drawEntry & MapAnimations::FlagUnitActor )
+                    drawActor(clipboardUnitActors[index], paste.x, paste.y);
+                else
+                    drawActor(clipboardSpriteActors[index], paste.x, paste.y);
+            }
+            else if ( drawEntry & MapAnimations::FlagUnitActor )
+                drawActor(unitActors[index], 0, 0);
+            else
+                drawActor(spriteActors[index], 0, 0);
+        }
     }
 }
 

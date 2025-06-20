@@ -78,6 +78,7 @@ void MapImage::createOverlay(u16 imageId, s8 x, s8 y, MapAnimations & animations
     overlayImage.xc = primaryImage->xc + s32(x);
     overlayImage.yc = primaryImage->yc + s32(y);
     overlayImage.drawFunction = (MapImage::DrawFunction)chkd.scData.sprites.getImage(imageId).drawFunction;
+    logger.info() << this << " creating overlay: " << &overlayImage << '\n';
     overlayImage.initialize(chkd.gameClock.currentTick(), iscriptIdFromImage(imageId), animations, actor, isUnit);
     //logger.info() << "CreateOverlay: " << overlayImageIndex << ", " << imageId << ", " << "(" << overlayImage.xc << ", " << overlayImage.yc << ")\n";
 }
@@ -146,7 +147,7 @@ void MapImage::animate(std::uint64_t currentTick, MapAnimations & animations, Ma
                             // wait-looped, you don't necessarily want to end here but it permits restarting
                             // TODO: Just because you're wait-looped doesn't mean restarting is appropriate...
                             //logger.info() << "WaitLoopRestart\n";
-                            frame = 0;
+                            //frame = 0;
                             end();
                             return;
                         }
@@ -193,6 +194,7 @@ void MapImage::animate(std::uint64_t currentTick, MapAnimations & animations, Ma
                     case Sc::Sprite::Op::unknown_0c: // TODO
                         break;
                     case Sc::Sprite::Op::imgoluselo: // TODO
+                        createOverlay((u16 &)iscript[currOffset], 0+xOffset, 0+yOffset, animations, actor, isUnit, true);
                         break;
                     case Sc::Sprite::Op::imguluselo: // TODO
                         break;

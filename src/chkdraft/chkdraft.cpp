@@ -27,7 +27,9 @@ void Chkdraft::OnLoadTest()
     auto edit = CM->operator()();
     for ( std::size_t i=0; i<Sc::Unit::TotalTypes; ++i )
     {
-        //if ( i != Sc::Unit::Type::TerranVulture )
+        //if ( i != Sc::Unit::Type::TerranSiegeTank_SiegeMode )
+        //    continue;
+        //if ( scData.units.getUnit(Sc::Unit::Type(i)).subunit1 == 228 )
         //    continue;
         int x = i%20;
         int y = i/20;
