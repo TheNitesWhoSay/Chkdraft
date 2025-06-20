@@ -3,6 +3,7 @@
 #include "basics.h"
 #include "chk.h"
 #include "escape_strings.h"
+#include "map_actor.h"
 #include <rarecpp/editor.h>
 #include <array>
 #include <optional>
@@ -73,11 +74,11 @@ struct MapData
         Sc::Player::SlotType::Inactive, Sc::Player::SlotType::Inactive, Sc::Player::SlotType::Inactive, Sc::Player::SlotType::Inactive
     };
 
-    std::vector<Chk::Sprite> sprites {};
+    std::vector<Chk::Sprite> sprites {}; NOTE(sprites, RareEdit::AttachData<MapActor>, RareEdit::IndexSize<u32>) // Auto-maintains parallel-array of MapActors
     std::vector<Chk::Doodad> doodads {};
-    std::vector<Chk::Unit> units {};
+    std::vector<Chk::Unit> units {}; NOTE(units, RareEdit::AttachData<MapActor>, RareEdit::IndexSize<u32>) // Auto-maintains parallel-array of MapActors
     std::vector<Chk::Location> locations {};
-        
+
     Chk::DIM dimensions {};
     Sc::Terrain::Tileset tileset {Sc::Terrain::Tileset::Badlands};
     std::vector<u16> tiles {};
@@ -147,8 +148,6 @@ struct MapData
         }
     }
 
-    NOTE(sprites, RareEdit::IndexSize<u32>)
-    NOTE(units, RareEdit::IndexSize<u32>)
     REFLECT(MapData, version, mapType, iVersion, i2Version, validation, strings, editorStrings, editorStringsVersion, editorStringOverrides,
         scenarioProperties, playerRaces, playerColors, customColors, forces, slotTypes, iownSlotTypes, sprites, doodads, units, locations,
         dimensions, tileset, tileFog, tiles, editorTiles, isomRects,

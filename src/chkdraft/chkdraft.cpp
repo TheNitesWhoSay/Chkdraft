@@ -425,8 +425,6 @@ bool Chkdraft::DlgKeyListener(HWND hWnd, UINT & msg, WPARAM wParam, LPARAM lPara
                 UnlockCursor();
                 return true;
             }
-            if ( wParam == VK_SPACE && CM != nullptr )
-                CM->animations.initialize();
             break;
     }
     return false;

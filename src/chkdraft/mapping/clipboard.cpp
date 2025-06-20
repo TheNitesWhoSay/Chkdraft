@@ -138,10 +138,9 @@ bool PasteDoodadNode::isPlaceable(const Scenario & scenario, s32 xTileStart, s32
     return true;
 }
 
-PasteSpriteNode::PasteSpriteNode(const Chk::Sprite & sprite) : sprite(sprite), xc(sprite.xc), yc(sprite.yc), testAnim()
+PasteSpriteNode::PasteSpriteNode(const Chk::Sprite & sprite) : sprite(sprite), xc(sprite.xc), yc(sprite.yc)
 {
-    CM->animations.images[0]->imageId = chkd.scData.sprites.getSprite(sprite.type).imageFile;
-    testAnim.initialize(chkd.gameClock.currentTick(), chkd.scData.sprites.getImage(chkd.scData.sprites.getSprite(sprite.type).imageFile).iScriptId, false, CM->animations);
+
 }
 
 bool Clipboard::isNearPrevPaste(s32 mapClickX, s32 mapClickY)
@@ -592,12 +591,12 @@ void Clipboard::updateFogMiddle(point middle)
     }
 }
 
-bool Clipboard::hasTiles()
+bool Clipboard::hasTiles() const
 {
     return copyTiles.size() > 0;
 }
 
-bool Clipboard::hasDoodads()
+bool Clipboard::hasDoodads() const
 {
     return copyDoodads.size() > 0;
 }
@@ -929,16 +928,24 @@ void Clipboard::initFogBrush(s32 mapClickX, s32 mapClickY, const GuiMap & map, b
     quickPaste = true;
 }
 
-void Clipboard::beginPasting(bool isQuickPaste)
+void Clipboard::beginPasting(bool isQuickPaste, GuiMap & map)
 {
     quickPaste = isQuickPaste;
     pasting = true;
+    switch ( map.getLayer() )
+    {
+        case Layer::Units: map.animations.initClipboardUnits(); break;
+        case Layer::Sprites: map.animations.initClipboardSprites(); break;
+    }
 }
 
-void Clipboard::endPasting()
+void Clipboard::endPasting(GuiMap* map)
 {
     if ( pasting )
     {
+        if ( map != nullptr )
+            map->animations.clearClipboardActors();
+
         if ( quickPaste )
         {
             ClearQuickItems();
@@ -997,7 +1004,7 @@ void Clipboard::doPaste(Layer layer, TerrainSubLayer terrainSubLayer, s32 mapCli
     }
 }
 
-bool Clipboard::getFillSimilarTiles()
+bool Clipboard::getFillSimilarTiles() const
 {
     return fillSimilarTiles;
 }
@@ -1041,6 +1048,43 @@ std::vector<PasteSpriteNode> & Clipboard::getSprites()
 }
 
 std::vector<PasteFogTileNode> & Clipboard::getFogTiles()
+{
+    return copyFogTiles;
+}
+
+const std::vector<PasteTileNode> & Clipboard::getTiles() const
+{
+    if ( quickPaste )
+        return quickTiles;
+    else
+        return copyTiles;
+}
+
+const std::vector<PasteDoodadNode> & Clipboard::getDoodads() const
+{
+    if ( quickPaste )
+        return quickDoodads;
+    else
+        return copyDoodads;
+}
+
+const std::vector<PasteUnitNode> & Clipboard::getUnits() const
+{
+    if ( quickPaste )
+        return quickUnits;
+    else
+        return copyUnits;
+}
+
+const std::vector<PasteSpriteNode> & Clipboard::getSprites() const
+{
+    if ( quickPaste )
+        return quickSprites;
+    else
+        return copySprites;
+}
+
+const std::vector<PasteFogTileNode> & Clipboard::getFogTiles() const
 {
     return copyFogTiles;
 }

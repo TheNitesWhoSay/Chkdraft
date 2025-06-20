@@ -624,7 +624,7 @@ void Maps::startPaste(bool isQuickPaste)
         if ( clipboard.hasTiles() || clipboard.hasQuickTiles() )
         {
             currentlyActiveMap->clearSelectedTiles();
-            clipboard.beginPasting(isQuickPaste);
+            clipboard.beginPasting(isQuickPaste, *currentlyActiveMap);
 
             RedrawWindow(currentlyActiveMap->getHandle(), NULL, NULL, RDW_INVALIDATE);
 
@@ -641,7 +641,7 @@ void Maps::startPaste(bool isQuickPaste)
         if ( clipboard.hasDoodads() )
         {
             currentlyActiveMap->clearSelectedDoodads();
-            clipboard.beginPasting(isQuickPaste);
+            clipboard.beginPasting(isQuickPaste, *currentlyActiveMap);
 
             RedrawWindow(currentlyActiveMap->getHandle(), NULL, NULL, RDW_INVALIDATE);
 
@@ -658,7 +658,7 @@ void Maps::startPaste(bool isQuickPaste)
         if ( clipboard.hasUnits() || clipboard.hasQuickUnits() )
         {
             currentlyActiveMap->clearSelectedUnits();
-            clipboard.beginPasting(isQuickPaste);
+            clipboard.beginPasting(isQuickPaste, *currentlyActiveMap);
 
             TRACKMOUSEEVENT tme;
             tme.cbSize = sizeof(TRACKMOUSEEVENT);
@@ -673,7 +673,7 @@ void Maps::startPaste(bool isQuickPaste)
         if ( clipboard.hasSprites() || clipboard.hasQuickSprites() )
         {
             currentlyActiveMap->clearSelectedSprites();
-            clipboard.beginPasting(isQuickPaste);
+            clipboard.beginPasting(isQuickPaste, *currentlyActiveMap);
 
             TRACKMOUSEEVENT tme;
             tme.cbSize = sizeof(TRACKMOUSEEVENT);
@@ -686,7 +686,7 @@ void Maps::startPaste(bool isQuickPaste)
     else if ( currentlyActiveMap->getLayer() == Layer::CutCopyPaste && !isQuickPaste )
     {
         currentlyActiveMap->clearSelection();
-        clipboard.beginPasting(false);
+        clipboard.beginPasting(false, *currentlyActiveMap);
         RedrawWindow(currentlyActiveMap->getHandle(), NULL, NULL, RDW_INVALIDATE);
 
         TRACKMOUSEEVENT tme;
@@ -700,7 +700,7 @@ void Maps::startPaste(bool isQuickPaste)
 
 void Maps::endPaste()
 {
-    clipboard.endPasting();
+    clipboard.endPasting(currentlyActiveMap.get());
     if ( currentlyActiveMap != nullptr )
         currentlyActiveMap->Redraw(false);
 }

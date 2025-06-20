@@ -1,0 +1,28 @@
+#ifndef MAPACTOR_H
+#define MAPACTOR_H
+#include <cstdint>
+#include <string_view>
+#include <vector>
+#include "map_image.h"
+#include "sc.h"
+
+class MapAnimations;
+
+// An extension to a Chk::Unit or Chk::Sprite focusing on animation and linking up with associated images
+struct MapActor
+{
+    static constexpr std::size_t MaxSlots = 10;
+
+    u8 direction = 0;
+    u16 drawListIndex = 0; // TODO: Change to yc, elevation, or unitType, actor index -> update drawList[drawListIndex] & mark dirty
+    u16 primaryImageIndex = 0;
+    u16 usedImages[MaxSlots] {}; // Only leftmost indexes are used
+
+    u16 & getNewImageSlot(bool above, MapImage & image, MapAnimations & animations); // If result is non-zero, no image slots are available
+
+    MapImage* primaryImage(MapAnimations & animations);
+
+    void animate(std::uint64_t currentTick, bool isUnit, MapAnimations & animations);
+};
+
+#endif

@@ -10,32 +10,28 @@ bool GuiMap::doAutoBackups = false;
 
 GuiMap::GuiMap(Clipboard & clipboard, const std::string & filePath) : MapFile(filePath),
     Chk::IsomCache(read.tileset, read.dimensions.tileWidth, read.dimensions.tileHeight, chkd.scData.terrain.get(read.tileset)),
-    clipboard(clipboard), scrGraphics{std::make_unique<Scr::MapGraphics>(chkd.scData, *this)}, animations((const Scenario &)*this)
+    clipboard(clipboard), scrGraphics{std::make_unique<Scr::MapGraphics>(chkd.scData, *this)}, animations((const Scenario &)*this, clipboard)
 {
     SetWinText(MapFile::getFileName());
     int layerSel = chkd.mainToolbar.layerBox.GetSel();
     if ( layerSel != CB_ERR )
         currLayer = (Layer)layerSel;
-
-    animations.initialize();
 }
 
 GuiMap::GuiMap(Clipboard & clipboard, FileBrowserPtr<SaveType> fileBrowser) : MapFile(fileBrowser),
     Chk::IsomCache(read.tileset, read.dimensions.tileWidth, read.dimensions.tileHeight, chkd.scData.terrain.get(read.tileset)),
-    clipboard(clipboard), scrGraphics{std::make_unique<Scr::MapGraphics>(chkd.scData, *this)}, animations((const Scenario &)*this)
+    clipboard(clipboard), scrGraphics{std::make_unique<Scr::MapGraphics>(chkd.scData, *this)}, animations((const Scenario &)*this, clipboard)
 {
     SetWinText(MapFile::getFileName());
     int layerSel = chkd.mainToolbar.layerBox.GetSel();
     if ( layerSel != CB_ERR )
         currLayer = (Layer)layerSel;
-
-    animations.initialize();
 }
 
 GuiMap::GuiMap(Clipboard & clipboard, Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex, DefaultTriggers defaultTriggers)
     : MapFile(tileset, width, height, terrainTypeIndex, &chkd.scData.terrain.get(tileset)),
     Chk::IsomCache(read.tileset, read.dimensions.tileWidth, read.dimensions.tileHeight, chkd.scData.terrain.get(read.tileset)),
-    clipboard(clipboard), scrGraphics{std::make_unique<Scr::MapGraphics>(chkd.scData, *this)}, animations((const Scenario &)*this)
+    clipboard(clipboard), scrGraphics{std::make_unique<Scr::MapGraphics>(chkd.scData, *this)}, animations((const Scenario &)*this, clipboard)
 {
     refreshTileOccupationCache();
 
@@ -123,8 +119,6 @@ GuiMap::GuiMap(Clipboard & clipboard, Sc::Terrain::Tileset tileset, u16 width, u
         addSharedVision(Sc::Player::Id::Force2);
         break;
     }
-
-    animations.initialize();
 }
 
 GuiMap::~GuiMap()
@@ -1810,12 +1804,6 @@ void GuiMap::SnapSelEndDrag()
             break;
     }
 }
-
-/*void GuiMap::Animate(std::uint64_t currentTick)
-{
-    for ( auto & pasteSprite : clipboard.getSprites() )
-        pasteSprite.anim.animate(currentTick);
-}*/
 
 bool GuiMap::UpdateGlGraphics()
 {
@@ -4081,8 +4069,6 @@ void GuiMap::SetSkin(GuiMap::Skin skin)
     this->Redraw(true);
     if ( chkd.terrainPalWindow.getHandle() != NULL )
         chkd.terrainPalWindow.RedrawThis();
-
-    animations.initialize(); // TODO: Temporary/doesn't belong here
 }
 
 void GuiMap::destroyBrush()
@@ -4111,12 +4097,12 @@ void GuiMap::windowBoundsChanged()
 
 void GuiMap::elementAdded(units_path, std::size_t index)
 {
-    animations.addUnit(index);
+    animations.addUnit(index, view.units.attachedData(index));
 }
 
 void GuiMap::elementRemoved(units_path, std::size_t index)
 {
-    animations.removeUnit(index);
+    animations.removeUnit(index, view.units.attachedData(index));
 }
 
 void GuiMap::elementMoved(units_path, std::size_t oldIndex, std::size_t newIndex)
@@ -4141,12 +4127,12 @@ void GuiMap::valueChanged(unit_yc_path, u16 oldYc, u16 newYc)
 
 void GuiMap::elementAdded(sprites_path, std::size_t index)
 {
-    animations.addSprite(index);
+    animations.addSprite(index, view.sprites.attachedData(index));
 }
 
 void GuiMap::elementRemoved(sprites_path, std::size_t index)
 {
-    animations.removeSprite(index);
+    animations.removeSprite(index, view.sprites.attachedData(index));
 }
 
 void GuiMap::elementMoved(sprites_path, std::size_t oldIndex, std::size_t newIndex)

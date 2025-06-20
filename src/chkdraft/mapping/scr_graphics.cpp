@@ -2832,7 +2832,35 @@ void Scr::MapGraphics::drawSprite(const Chk::Sprite & sprite)
         drawImage(getImage(sprite.type, sprite.isDrawnAsSprite()), sprite.xc, sprite.yc, 0, 0xFFFFFFFF, getPlayerColor(sprite.owner), false);
 }
 
-void Scr::MapGraphics::drawImages()
+void Scr::MapGraphics::drawActor(const MapActor & mapActor, s32 xOffset, s32 yOffset)
+{
+    for ( u16 imageIndex : mapActor.usedImages )
+    {
+        if ( imageIndex == 0 )
+            break;
+
+        const std::optional<MapImage> & image = map.animations.images[imageIndex];
+        if ( image )
+        {
+            if ( loadSettings.skinId == Scr::Skin::Id::Classic )
+                drawClassicImage(*renderDat->tiles->tilesetGrp.palette, image->xc+xOffset, image->yc+yOffset, image->frame, image->imageId, (Chk::PlayerColor)image->owner, image->flipped);
+            else
+            {
+                switch ( image->drawFunction )
+                {
+                case MapImage::DrawFunction::Shadow:
+                    drawImage(getImage(image->imageId), image->xc+xOffset, image->yc+yOffset, image->frame, 0x80000000, getPlayerColor(image->owner), false, image->flipped);
+                    break;
+                default:
+                    drawImage(getImage(image->imageId), image->xc+xOffset, image->yc+yOffset, image->frame, 0xFFFFFFFF, getPlayerColor(image->owner), false, image->flipped);
+                    break;
+                }
+            }
+        }
+    }
+}
+
+void Scr::MapGraphics::drawActors()
 {
     prepareImageRendering();
     auto & palette = renderDat->tiles->tilesetGrp.palette; // For SC:R there is no palette/this is std::nullopt
@@ -2843,27 +2871,30 @@ void Scr::MapGraphics::drawImages()
 
     //for ( const auto & sprite : map->sprites )
     //    drawSprite(sprite);
-
-    for ( size_t i=1; i<map.animations.images.size(); ++i )
+    
+    const auto & clipboardUnitActors = map.clipboard.unitActors;
+    const auto & clipboardSpriteActors = map.clipboard.spriteActors;
+    const auto & unitActors = map.view.units.readAttachedData();
+    const auto & spriteActors = map.view.sprites.readAttachedData();
+    map.animations.cleanDrawList();
+    std::size_t drawListSize = map.animations.drawList.size();
+    for ( std::size_t i=1; i<drawListSize; ++i )
     {
-        const std::optional<MapImage> & image = map.animations.images[i];
-        if ( image )
+        std::uint64_t drawEntry = map.animations.drawList[i];
+        if ( drawEntry == MapAnimations::UnusedDrawEntry )
+            break;
+        else if ( drawEntry & MapAnimations::FlagIsClipboard )
         {
-            if ( loadSettings.skinId == Scr::Skin::Id::Classic )
-                drawClassicImage(*renderDat->tiles->tilesetGrp.palette, image->xc, image->yc, image->frame, image->imageId, (Chk::PlayerColor)image->owner, image->flipped);
+            point paste = map.selections.endDrag;
+            if ( drawEntry & MapAnimations::FlagUnitActor )
+                drawActor(clipboardUnitActors[std::size_t(drawEntry & MapAnimations::MaskIndex)], paste.x, paste.y);
             else
-            {
-                switch ( image->drawFunction )
-                {
-                case MapImage::DrawFunction::Shadow:
-                    drawImage(getImage(image->imageId), image->xc, image->yc, image->frame, 0x80000000, getPlayerColor(image->owner), false, image->flipped);
-                    break;
-                default:
-                    drawImage(getImage(image->imageId), image->xc, image->yc, image->frame, 0xFFFFFFFF, getPlayerColor(image->owner), false, image->flipped);
-                    break;
-                }
-            }
+                drawActor(clipboardSpriteActors[std::size_t(drawEntry & MapAnimations::MaskIndex)], paste.x, paste.y);
         }
+        else if ( drawEntry & MapAnimations::FlagUnitActor )
+            drawActor(unitActors[std::size_t(drawEntry & MapAnimations::MaskIndex)], 0, 0);
+        else
+            drawActor(spriteActors[std::size_t(drawEntry & MapAnimations::MaskIndex)], 0, 0);
     }
 }
 
@@ -3644,8 +3675,8 @@ void Scr::MapGraphics::drawPastes()
             }
             else
             {
-                for ( auto & pasteUnit : units )
-                    drawImage(getImage(pasteUnit.unit), paste.x+pasteUnit.xc, paste.y+pasteUnit.yc, 0, 0xFFFFFFFF, getPlayerColor(pasteUnit.unit.owner), false);
+                //for ( auto & pasteUnit : units )
+                //    drawImage(getImage(pasteUnit.unit), paste.x+pasteUnit.xc, paste.y+pasteUnit.yc, 0, 0xFFFFFFFF, getPlayerColor(pasteUnit.unit.owner), false);
             }
 
             auto & solidColorShader = renderDat->shaders->solidColorShader;
@@ -3687,11 +3718,11 @@ void Scr::MapGraphics::drawPastes()
             }
             else
             {
-                for ( auto & pasteSprite : sprites )
-                {
-                    drawImage(getImage(pasteSprite.sprite), paste.x+pasteSprite.xc/*+pasteSprite.anim.xOffset*/, paste.y+pasteSprite.yc/*+pasteSprite.anim.yOffset*/,
-                        images[pasteSprite.testAnim.usedImages[0]]->frame, 0xFFFFFFFF, getPlayerColor(pasteSprite.sprite.owner), false);
-                }
+                //for ( auto & pasteSprite : sprites )
+                //{
+                //    drawImage(getImage(pasteSprite.sprite), paste.x+pasteSprite.xc/*+pasteSprite.anim.xOffset*/, paste.y+pasteSprite.yc/*+pasteSprite.anim.yOffset*/,
+                //        images[pasteSprite.testAnim.usedImages[0]]->frame, 0xFFFFFFFF, getPlayerColor(pasteSprite.sprite.owner), false);
+                //}
             }
         }
     };
@@ -3779,7 +3810,7 @@ void Scr::MapGraphics::render()
 
     drawGrid();
     drawImageSelections();
-    drawImages();
+    drawActors();
 
     switch ( layer ) {
         case Layer::Locations: drawLocations(); break;
