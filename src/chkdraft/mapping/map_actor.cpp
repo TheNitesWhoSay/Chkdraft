@@ -63,6 +63,9 @@ MapImage* MapActor::primaryImage(MapAnimations & animations)
 
 void MapActor::animate(std::uint64_t currentTick, bool isUnit, MapAnimations & animations)
 {
-    for ( u16 i=0; i<u16(std::size(usedImages)) && usedImages[std::size_t(i)] != 0; ++i )
-        animations.images[std::size_t(usedImages[i])]->animate(currentTick, animations, *this, isUnit);
+    for ( std::ptrdiff_t i=std::size(usedImages)-1; i>=0 ; --i )
+    {
+        if ( usedImages[i] != 0 )
+            animations.images[std::size_t(usedImages[i])]->animate(currentTick, animations, *this, isUnit);
+    }
 }
