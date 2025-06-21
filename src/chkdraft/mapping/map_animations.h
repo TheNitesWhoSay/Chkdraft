@@ -18,6 +18,7 @@ protected:
 
     u16 createImage();
     void removeImage(u16 imageIndex);
+    void initializeImage(u32 iScriptId, std::uint64_t currentTick, MapActor & actor, bool isUnit, std::size_t imageIndex);
 
 public:
     static constexpr std::uint64_t UnusedDrawEntry  = 0xFFFFFFFFFFFFFFFFull;
@@ -56,6 +57,7 @@ public:
     
     friend struct MapActor;
     friend struct MapImage;
+    friend struct Animator;
 };
 
 #endif

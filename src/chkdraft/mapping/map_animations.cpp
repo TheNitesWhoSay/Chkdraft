@@ -79,6 +79,21 @@ void MapAnimations::removeImage(u16 imageIndex)
     availableImages.push_back(imageIndex);
 }
 
+void MapAnimations::initializeImage(u32 iScriptId, std::uint64_t currentTick, MapActor & actor, bool isUnit, std::size_t imageIndex)
+{
+    AnimationContext context {
+        .currentTick = currentTick,
+        .animations = *this,
+        .actor = actor,
+        .isUnit = isUnit
+    };
+    Animator {
+        .context = context,
+        .currImageIndex = imageIndex,
+        .currImage = &images[imageIndex].value()
+    }.initializeImage(iScriptId);
+}
+
 MapAnimations::MapAnimations(const Scenario & scenario, Clipboard & clipboard)
     : scenario(scenario), clipboard(clipboard), images{MapImage{}} // Image 0 is unused
 {
@@ -108,12 +123,12 @@ void MapAnimations::initClipboardUnits()
 
         u16 imageIndex = createImage();
         actor.usedImages[0] = imageIndex;
-        MapImage & image = images[imageIndex].value();
-        image.imageId = getImageId(pasteUnit.unit);
-        image.owner = pasteUnit.unit.owner;
-        image.xc = pasteUnit.xc;
-        image.yc = pasteUnit.yc;
-        image.initialize(chkd.gameClock.currentTick(), iscriptIdFromUnit(pasteUnit.unit.type), *this, actor, true);
+        MapImage* image = &images[imageIndex].value();
+        image->imageId = getImageId(pasteUnit.unit);
+        image->owner = pasteUnit.unit.owner;
+        image->xc = pasteUnit.xc;
+        image->yc = pasteUnit.yc;
+        initializeImage(iscriptIdFromUnit(pasteUnit.unit.type), chkd.gameClock.currentTick(), actor, true, imageIndex);
     }
 }
 
@@ -140,12 +155,12 @@ void MapAnimations::initClipboardSprites()
 
         u16 imageIndex = createImage();
         actor.usedImages[0] = imageIndex;
-        MapImage & image = images[imageIndex].value();
-        image.imageId = getImageId(pasteSprite.sprite);
-        image.owner = pasteSprite.sprite.owner;
-        image.xc = pasteSprite.xc;
-        image.yc = pasteSprite.yc;
-        image.initialize(chkd.gameClock.currentTick(), iscriptIdFromSprite(pasteSprite.sprite.type), *this, actor, true);
+        MapImage* image = &images[imageIndex].value();
+        image->imageId = getImageId(pasteSprite.sprite);
+        image->owner = pasteSprite.sprite.owner;
+        image->xc = pasteSprite.xc;
+        image->yc = pasteSprite.yc;
+        initializeImage(iscriptIdFromSprite(pasteSprite.sprite.type), chkd.gameClock.currentTick(), actor, false, imageIndex);
     }
 }
 
@@ -197,15 +212,19 @@ void MapAnimations::addUnit(std::size_t unitIndex, MapActor & actor)
         std::uint64_t(unitIndex) | FlagDrawUnit | FlagUnitActor | (isSubUnit ? FlagIsTurret : 0) |
         (std::uint64_t(unit.yc) << ShiftY) | (elevation << ShiftElevation)
     );
+    if ( unitDat.unitDirection == 32 )
+        actor.direction = (std::rand() & 31) << 3;
+    else
+        actor.direction = unitDat.unitDirection << 3;
 
     u16 imageIndex = createImage();
     actor.usedImages[0] = imageIndex;
-    MapImage & image = images[imageIndex].value();
-    image.imageId = getImageId(unit);
-    image.owner = unit.owner;
-    image.xc = unit.xc;
-    image.yc = unit.yc;
-    image.initialize(chkd.gameClock.currentTick(), iscriptIdFromUnit(unit.type), *this, actor, true);
+    MapImage* image = &images[imageIndex].value();
+    image->imageId = getImageId(unit);
+    image->owner = unit.owner;
+    image->xc = unit.xc;
+    image->yc = unit.yc;
+    initializeImage(iscriptIdFromUnit(unit.type), chkd.gameClock.currentTick(), actor, true, imageIndex);
 }
 
 void MapAnimations::addSprite(std::size_t spriteIndex, MapActor & actor)
@@ -227,12 +246,12 @@ void MapAnimations::addSprite(std::size_t spriteIndex, MapActor & actor)
     );
     u16 imageIndex = createImage();
     actor.usedImages[0] = imageIndex;
-    MapImage & image = images[imageIndex].value();
-    image.imageId = getImageId(sprite);
-    image.owner = sprite.owner;
-    image.xc = sprite.xc;
-    image.yc = sprite.yc;
-    image.initialize(chkd.gameClock.currentTick(), iscriptIdFromSprite(sprite.type), *this, actor, false);
+    MapImage* image = &images[imageIndex].value();
+    image->imageId = getImageId(sprite);
+    image->owner = sprite.owner;
+    image->xc = sprite.xc;
+    image->yc = sprite.yc;
+    initializeImage(iscriptIdFromSprite(sprite.type), chkd.gameClock.currentTick(), actor, false, imageIndex);
 }
 
 void MapAnimations::removeUnit(std::size_t unitIndex, MapActor & actor)

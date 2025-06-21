@@ -2383,18 +2383,38 @@ std::vector<size_t> Sc::Sprite::ParamSize {
     /* short_ */ 2
 };
 
+bool Sc::Sprite::LoFile::load(ArchiveCluster & archiveCluster, const std::string & archiveFileName)
+{
+    auto loFile = Sc::Data::GetAsset(archiveCluster, archiveFileName);
+    if ( !loFile )
+    {
+        logger.error("Failed to find " + archiveFileName);
+        return false;
+    }
+
+    this->loData = loFile.value();
+    if ( this->loData.size() < 8 )
+    {
+        this->loData.assign(12, 0); // Create a header indicating an empty lo file
+        logger.error("Invalid .lo* headerfor " + archiveFileName);
+        return false;
+    }
+    return true;
+}
+
 bool Sc::Sprite::load(ArchiveCluster & archiveCluster, Sc::TblFilePtr imagesTbl)
 {
     logger.debug("Loading Sprites...");
     auto start = std::chrono::high_resolution_clock::now();
-
+    
+    size_t numStrings = imagesTbl->numStrings();
     this->imagesTbl = imagesTbl;
+    this->loFiles.assign(numStrings, LoFile{});
 
     Sc::Sprite::Grp blankGrp;
     blankGrp.makeBlank();
     
     grps.push_back(blankGrp);
-    size_t numStrings = imagesTbl->numStrings();
     for ( size_t i=1; i<=numStrings; i++ )
     {
         const std::string & imageFilePath = imagesTbl->getString(i);
@@ -2409,8 +2429,15 @@ bool Sc::Sprite::load(ArchiveCluster & archiveCluster, Sc::TblFilePtr imagesTbl)
                 return false;
             }
         }
-        else
+        else if ( getArchiveFileExtension(imageFilePath).starts_with(".lo") )
+        {
             grps.push_back(blankGrp);
+            loFiles[i].load(archiveCluster, "unit\\" + imageFilePath);
+        }
+        else
+        {
+            grps.push_back(blankGrp);
+        }
     }
 
     if ( numStrings == 0 )

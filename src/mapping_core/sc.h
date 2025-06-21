@@ -878,6 +878,42 @@ namespace Sc {
             inline bool framesAreValid(const std::string & archiveFileName) const;
         };
 
+        struct LoOffset
+        {
+            s8 xOffset = 0;
+            s8 yOffset = 0;
+        };
+
+        enum OverlayType : u8 {
+            Attack = 0,
+            Damage = 1,
+            Special = 2,
+            Landing = 3,
+            Liftoff = 4,
+            Max = 5
+        };
+
+        struct LoFile
+        {
+            struct LoFileHeader {
+                u32 frameCount = 0;
+                u32 overlayCount = 0;
+                u32 frameOffsets[1] {};
+            };
+            bool load(ArchiveCluster & archiveCluster, const std::string & archiveFileName);
+            LoOffset xyOffset(std::size_t frame, u8 direction) const {
+                LoFileHeader* header = (LoFileHeader*)&loData[0];
+                std::size_t fileOffset = std::size_t(header->frameOffsets[frame]) + std::size_t(2)*std::size_t(direction);
+                if ( fileOffset+1 < loData.size() )
+                    return *((LoOffset*)(&loData[fileOffset]));
+                else
+                    throw std::out_of_range("LoOffset does not exist for frame " + std::to_string(frame) + " and direction " + std::to_string(int(direction)));
+            }
+
+        private:
+            std::vector<u8> loData {};
+        };
+
         bool load(ArchiveCluster & archiveCluster, Sc::TblFilePtr imagesTbl);
         bool loadAnimation(u16 id, IScriptAnimation* animation, size_t currOffset, bool & idIncludesFlip, bool & idIncludesUnflip, std::set<size_t> & visitedOffsets);
         const IScriptAnimation* getAnimationHeader(size_t iScriptId) const;
@@ -890,6 +926,7 @@ namespace Sc {
         bool imageFlipped(u16 imageId) const; // TODO: Temp solution
         std::vector<u8> iscript;
         std::vector<u16> iscriptOffsets;
+        std::vector<LoFile> loFiles;
 
     private:
         std::vector<Grp> grps;

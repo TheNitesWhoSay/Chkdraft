@@ -12,25 +12,6 @@ void MapImage::error(std::string_view message)
     end();
 }
 
-void MapImage::initialize(std::uint64_t currentTick, size_t iScriptId, MapAnimations & animations, MapActor & actor, bool isUnit)
-{
-    this->iScriptId = iScriptId;
-    animation = chkd.scData.sprites.getAnimationHeader(iScriptId);
-    if ( animation == nullptr )
-        end();
-    else
-    {
-        waitUntil = currentTick;
-        animate(currentTick, animations, actor, isUnit); // Advance until the first wait such that the image starts on the correct frame and all
-    }
-}
-
-void MapImage::restartIfEnded(std::uint64_t currentTick, MapAnimations & animations, MapActor & actor, bool isUnit)
-{
-    if ( waitUntil == std::numeric_limits<uint64_t>::max() )
-        initialize(currentTick, this->iScriptId, animations, actor, isUnit);
-}
-
 bool MapImage::end()
 {
     waitUntil = std::numeric_limits<uint64_t>::max();
@@ -49,38 +30,15 @@ void MapImage::playFrame(u8 frame)
 
 void MapImage::setDirection(u8 direction)
 {
-    this->direction = (direction+4)/8;
-    this->flipped = this->direction > 16;
-    if ( flipped )
-        this->direction = 32-this->direction;
-
-    frame = baseFrame + this->direction;
-}
-
-void MapImage::createOverlay(u16 imageId, s8 x, s8 y, MapAnimations & animations, MapActor & actor, bool isUnit, bool above)
-{
-    MapImage* primaryImage = actor.primaryImage(animations);
-    if ( primaryImage == nullptr )
+    if ( rotation )
     {
-        logger.warn("CreateOverlay called but there was no primary image for the actor.");
-        return;
+        this->direction = direction;
+        this->flipped = this->direction > 16;
+        if ( flipped )
+            this->direction = 32-this->direction;
+
+        frame = baseFrame + this->direction;
     }
-    auto & overlayImageIndex = actor.getNewImageSlot(above, *this, animations);
-    if ( overlayImageIndex != 0 )
-    {
-        logger.warn("CreateOverlay called but no image slots were available for the actor.");
-        return;
-    }
-    overlayImageIndex = animations.createImage();
-    //logger.info() << "PrimaryImage: " << usedImages[0] << ", " << primaryImage.xc << ", " << primaryImage.yc << '\n';
-    auto & overlayImage = animations.images[overlayImageIndex].value();
-    overlayImage.imageId = imageId;
-    overlayImage.xc = primaryImage->xc + s32(x);
-    overlayImage.yc = primaryImage->yc + s32(y);
-    overlayImage.drawFunction = (MapImage::DrawFunction)chkd.scData.sprites.getImage(imageId).drawFunction;
-    logger.info() << this << " creating overlay: " << &overlayImage << '\n';
-    overlayImage.initialize(chkd.gameClock.currentTick(), iscriptIdFromImage(imageId), animations, actor, isUnit);
-    //logger.info() << "CreateOverlay: " << overlayImageIndex << ", " << imageId << ", " << "(" << overlayImage.xc << ", " << overlayImage.yc << ")\n";
 }
 
 void MapImage::advanceBy(size_t numBytes)
@@ -88,23 +46,86 @@ void MapImage::advanceBy(size_t numBytes)
     ((u8* &)animation) += numBytes;
 }
 
-void MapImage::animate(std::uint64_t currentTick, MapAnimations & animations, MapActor & actor, bool isUnit)
+void Animator::setActorDirection(u8 direction)
 {
-    auto & images = animations.images;
+    context.actor.direction = direction;
+    for ( std::ptrdiff_t i=std::size(context.actor.usedImages)-1; i>=0 ; --i )
+    {
+        if ( context.actor.usedImages[i] != 0 )
+            context.animations.images[context.actor.usedImages[i]]->setDirection((context.actor.direction+4)/8);
+    }
+}
+
+void Animator::initializeImage(std::size_t iScriptId)
+{
+    currImage->iScriptId = iScriptId;
+    currImage->animation = chkd.scData.sprites.getAnimationHeader(iScriptId);
+    currImage->rotation = chkd.scData.sprites.getImage(currImage->imageId).graphicTurns != 0;
+    if ( currImage->animation == nullptr )
+        currImage->end();
+    else
+    {
+        currImage->waitUntil = context.currentTick;
+        animate(); // Advance until the first wait such that the image starts on the correct frame and all
+        currImage->setDirection((context.actor.direction+4)/8);
+    }
+}
+
+void Animator::restartIfEnded()
+{
+    if ( currImage->waitUntil == std::numeric_limits<uint64_t>::max() )
+        initializeImage(currImage->iScriptId);
+}
+
+void Animator::createOverlay(u16 imageId, s8 x, s8 y, bool above)
+{
+    MapImage* primaryImage = context.actor.primaryImage(context.animations);
+    if ( primaryImage == nullptr )
+    {
+        logger.warn("CreateOverlay called but there was no primary image for the actor.");
+        return;
+    }
+    auto & overlayImageIndex = context.actor.getNewImageSlot(above, *currImage, context.animations);
+    if ( overlayImageIndex != 0 )
+    {
+        logger.warn("CreateOverlay called but no image slots were available for the actor.");
+        return;
+    }
+    overlayImageIndex = context.animations.createImage();
+    this->currImage = &context.animations.images[this->currImageIndex].value(); // Ensure currImage still valid if images was resized
+    primaryImage = context.actor.primaryImage(context.animations); // Ensure primaryImage still valid if images was resized
+    //logger.info() << "PrimaryImage: " << usedImages[0] << ", " << primaryImage.xc << ", " << primaryImage.yc << '\n';
+    auto & overlayImage = context.animations.images[overlayImageIndex].value();
+    overlayImage.imageId = imageId;
+    overlayImage.xc = primaryImage->xc + s32(x);
+    overlayImage.yc = primaryImage->yc + s32(y);
+    overlayImage.drawFunction = (MapImage::DrawFunction)chkd.scData.sprites.getImage(imageId).drawFunction;
+    //logger.info() << this << " creating overlay: " << &overlayImage << '\n';
+    Animator {
+        .context = this->context,
+        .currImageIndex = overlayImageIndex,
+        .currImage = &overlayImage
+    }.initializeImage(iscriptIdFromImage(imageId));
+    //logger.info() << "CreateOverlay: " << overlayImageIndex << ", " << imageId << ", " << "(" << overlayImage.xc << ", " << overlayImage.yc << ")\n";
+}
+
+void Animator::animate()
+{
+    auto & images = context.animations.images;
     auto & iscript = chkd.scData.sprites.iscript;
-    size_t currOffset = std::distance((const u8*)&iscript[0], (const u8*)animation);
-    if ( currentTick >= waitUntil )
+    size_t currOffset = std::distance((const u8*)&iscript[0], (const u8*)currImage->animation);
+    if ( context.currentTick >= currImage->waitUntil )
     {
         // Step into the next or couple next iscript ops
         for ( ; ; )
         {
             if ( currOffset >= iscript.size() )
             {
-                logger.info() << "  " << this << '\n';
-                return error("Unknown IScript Overflow");
+                logger.info() << "  " << currImage << '\n';
+                return currImage->error("Unknown IScript Overflow");
             }
 
-            Sc::Sprite::Op code = Sc::Sprite::Op(animation->code);
+            Sc::Sprite::Op code = Sc::Sprite::Op(currImage->animation->code);
             ++currOffset; // 1-byte code
             std::string opName = code < Sc::Sprite::OpName.size() ? std::string(Sc::Sprite::OpName[code]) : std::to_string(int(code));
             //logger.info() << "  " << this << ", " << opName << ", \n";
@@ -123,12 +144,12 @@ void MapImage::animate(std::uint64_t currentTick, MapAnimations & animations, Ma
                         currOffset += paramSize;
                     }
                     if ( currOffset < iscript.size() )
-                        animation = (Sc::Sprite::IScriptAnimation*)&iscript[currOffset];
+                        currImage->animation = (Sc::Sprite::IScriptAnimation*)&iscript[currOffset];
                 };
                 switch ( code )
                 {
                     case Sc::Sprite::Op::playfram:
-                        playFrame(iscript[currOffset]);
+                        currImage->playFrame(iscript[currOffset]);
                         break;
                     case Sc::Sprite::Op::playframtile: // TODO
                         break;
@@ -139,7 +160,7 @@ void MapImage::animate(std::uint64_t currentTick, MapAnimations & animations, Ma
                     case Sc::Sprite::Op::setpos: // TODO
                         break;
                     case Sc::Sprite::Op::wait:
-                        waitUntil = currentTick + uint64_t(iscript[currOffset]);
+                        currImage->waitUntil = context.currentTick + uint64_t(iscript[currOffset]);
                         
                         //waitUntil = currentTick;
                         if ( Sc::Sprite::Op(iscript[currOffset+1]) == Sc::Sprite::Op::goto_ && (u16 &)iscript[currOffset+2] == currOffset-1 )
@@ -148,7 +169,7 @@ void MapImage::animate(std::uint64_t currentTick, MapAnimations & animations, Ma
                             // TODO: Just because you're wait-looped doesn't mean restarting is appropriate...
                             //logger.info() << "WaitLoopRestart\n";
                             //frame = 0;
-                            end();
+                            currImage->end();
                             return;
                         }
                         advancePastParams();
@@ -159,7 +180,7 @@ void MapImage::animate(std::uint64_t currentTick, MapAnimations & animations, Ma
                             auto second = iscript[currOffset+2];
                             auto min = std::min(first, second);
                             auto max = std::max(first, second);
-                            waitUntil = currentTick + uint64_t(min + (std::rand() % (max-min)));
+                            currImage->waitUntil = context.currentTick + uint64_t(min + (std::rand() % (max-min)));
                             //waitUntil = currentTick;
                             advancePastParams();
                             return;
@@ -170,22 +191,22 @@ void MapImage::animate(std::uint64_t currentTick, MapAnimations & animations, Ma
                             if ( dest > iscript.size() )
                             {
                                 //logger.error() << dest << iscript.size() << '\n';
-                                return error("goto IScript Overflow");
+                                return currImage->error("goto IScript Overflow");
                             }
                             else
                             {
                                 currOffset = dest;
                                 //logger.info() << "Goto " << currOffset << '\n';
-                                this->animation = (Sc::Sprite::IScriptAnimation*)&iscript[dest];
+                                currImage->animation = (Sc::Sprite::IScriptAnimation*)&iscript[dest];
                                 continue;
                             }
                         }
                         break;
                     case Sc::Sprite::Op::imgol:
-                        createOverlay((u16 &)iscript[currOffset], s8(iscript[currOffset+2])+xOffset, s8(iscript[currOffset+3])+yOffset, animations, actor, isUnit, true);
+                        createOverlay((u16 &)iscript[currOffset], s8(iscript[currOffset+2])+currImage->xOffset, s8(iscript[currOffset+3])+currImage->yOffset, true);
                         break;
                     case Sc::Sprite::Op::imgul:
-                        createOverlay((u16 &)iscript[currOffset], s8(iscript[currOffset+2])+xOffset, s8(iscript[currOffset+3])+yOffset, animations, actor, isUnit, false);
+                        createOverlay((u16 &)iscript[currOffset], s8(iscript[currOffset+2])+currImage->xOffset, s8(iscript[currOffset+3])+currImage->yOffset, false);
                         break;
                     case Sc::Sprite::Op::imgolorig: // TODO
                         break;
@@ -194,7 +215,22 @@ void MapImage::animate(std::uint64_t currentTick, MapAnimations & animations, Ma
                     case Sc::Sprite::Op::unknown_0c: // TODO
                         break;
                     case Sc::Sprite::Op::imgoluselo: // TODO
-                        createOverlay((u16 &)iscript[currOffset], 0+xOffset, 0+yOffset, animations, actor, isUnit, true);
+                        {
+                            u16 newImage = (u16 &)iscript[currOffset];
+                            u8 overlayType = iscript[currOffset+2];
+                            u8 direction = iscript[currOffset+3];
+                            Sc::Sprite::LoOffset offset {};
+                            const auto & loFiles = chkd.scData.sprites.loFiles;
+                            const auto & imageDat = chkd.scData.sprites.getImage(currImage->imageId);
+                            switch ( overlayType ) {
+                                case Sc::Sprite::OverlayType::Attack: offset = loFiles[imageDat.attackOverlay].xyOffset(currImage->frame, direction); break;
+                                case Sc::Sprite::OverlayType::Damage: offset = loFiles[imageDat.damageOverlay].xyOffset(currImage->frame, direction); break;
+                                case Sc::Sprite::OverlayType::Special: offset = loFiles[imageDat.specialOverlay].xyOffset(currImage->frame, direction); break;
+                                case Sc::Sprite::OverlayType::Landing: offset = loFiles[imageDat.landingDustOverlay].xyOffset(currImage->frame, direction); break;
+                                case Sc::Sprite::OverlayType::Liftoff: offset = loFiles[imageDat.liftOffOverlay].xyOffset(currImage->frame, direction); break;
+                            }
+                            createOverlay(newImage, offset.xOffset+currImage->xOffset, offset.yOffset+currImage->yOffset, true);
+                        }
                         break;
                     case Sc::Sprite::Op::imguluselo: // TODO
                         break;
@@ -216,7 +252,7 @@ void MapImage::animate(std::uint64_t currentTick, MapAnimations & animations, Ma
                         // TODO: this is called for a non-main image to destroy said image
                         return;
                     case Sc::Sprite::Op::setflipstate:
-                        this->flipped = (iscript[currOffset] != 0);
+                        currImage->flipped = (iscript[currOffset] != 0);
                         break;
                     case Sc::Sprite::Op::playsnd: // TODO
                         break;
@@ -230,13 +266,13 @@ void MapImage::animate(std::uint64_t currentTick, MapAnimations & animations, Ma
                         break;
                     case Sc::Sprite::Op::followmaingraphic: // TODO
                         {
-                            MapImage* primaryImage = actor.primaryImage(animations);
-                            if ( primaryImage != nullptr && (this->baseFrame != primaryImage->baseFrame || this->flipped != primaryImage->flipped) )
+                            MapImage* primaryImage = context.actor.primaryImage(context.animations);
+                            if ( primaryImage != nullptr && (currImage->baseFrame != primaryImage->baseFrame || currImage->flipped != primaryImage->flipped) )
                             {
-                                this->baseFrame = primaryImage->baseFrame;
-                                this->flipped = primaryImage->flipped;
-                                this->direction = primaryImage->direction;
-                                this->setDirection(this->direction);
+                                currImage->flipped = primaryImage->flipped;
+                                currImage->baseFrame = primaryImage->baseFrame;
+                                currImage->direction = primaryImage->direction;
+                                currImage->frame = currImage->baseFrame + currImage->direction;
                             }
                         }
                         break;
@@ -249,24 +285,18 @@ void MapImage::animate(std::uint64_t currentTick, MapAnimations & animations, Ma
                                 auto label = (u16 &)iscript[currOffset+1];
                                 currOffset = label;
                                 //logger << " taken\n";
-                                this->animation = (Sc::Sprite::IScriptAnimation*)&iscript[label];
+                                currImage->animation = (Sc::Sprite::IScriptAnimation*)&iscript[label];
                                 continue;
                             }
                         }
                         break;
-                    case Sc::Sprite::Op::turnccwise: // TODO
-                        if ( isUnit )
-                        {
-                            //logger.info("turn counter-clockwise");
-                            setDirection(this->direction-8*iscript[currOffset]);
-                        }
+                    case Sc::Sprite::Op::turnccwise:
+                        if ( context.isUnit )
+                            setActorDirection(context.actor.direction-8*iscript[currOffset]);
                         break;
-                    case Sc::Sprite::Op::turncwise: // TODO
-                        if ( isUnit )
-                        {
-                            //logger.info("turn clockwise");
-                            setDirection(this->direction+8*iscript[currOffset]);
-                        }
+                    case Sc::Sprite::Op::turncwise:
+                        if ( context.isUnit )
+                            setActorDirection(context.actor.direction+8*iscript[currOffset]);
                         break;
                     case Sc::Sprite::Op::turn1cwise: // TODO
                         break;
@@ -307,20 +337,22 @@ void MapImage::animate(std::uint64_t currentTick, MapAnimations & animations, Ma
                     case Sc::Sprite::Op::tmprmgraphicend: // TODO
                         break;
                     case Sc::Sprite::Op::setfldirect: // TODO
+                        if ( context.isUnit )
+                            setActorDirection(iscript[currOffset]);
                         break;
                     case Sc::Sprite::Op::call:
                         {
                             auto label = (u16 &)iscript[currOffset];
                             advancePastParams();
-                            this->returnOffset = currOffset;
+                            currImage->returnOffset = currOffset;
                             currOffset = label;
                             //logger.info() << "Call " << currOffset << '\n';
-                            this->animation = (Sc::Sprite::IScriptAnimation*)&iscript[label];
+                            currImage->animation = (Sc::Sprite::IScriptAnimation*)&iscript[label];
                         }
                         break;
                     case Sc::Sprite::Op::return_:
-                        currOffset = this->returnOffset;
-                        this->animation = (Sc::Sprite::IScriptAnimation*)&iscript[currOffset];
+                        currOffset = currImage->returnOffset;
+                        currImage->animation = (Sc::Sprite::IScriptAnimation*)&iscript[currOffset];
                         break;
                     case Sc::Sprite::Op::setflspeed: // TODO
                         break;

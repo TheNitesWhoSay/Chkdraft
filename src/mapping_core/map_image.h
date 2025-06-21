@@ -22,6 +22,7 @@ struct MapImage
     size_t baseFrame = 0;
     size_t frame = 0;
     bool flipped = false;
+    bool rotation = false;
     DrawFunction drawFunction = DrawFunction::Normal;
 
     u16 returnOffset = 0;
@@ -30,17 +31,35 @@ struct MapImage
     std::uint64_t waitUntil {};
 
     void error(std::string_view message);
-
-    void initialize(std::uint64_t currentTick, size_t iScriptId, MapAnimations & animations, MapActor & actor, bool isUnit);
-    void restartIfEnded(std::uint64_t currentTick, MapAnimations & animations, MapActor & actor, bool isUnit);
     bool end();
-
     void playFrame(u8 frame);
     void setDirection(u8 direction);
-    void createOverlay(u16 imageId, s8 x, s8 y, MapAnimations & animations, MapActor & actor, bool isUnit, bool above);
-
     void advanceBy(size_t numBytes);
-    void animate(std::uint64_t currentTick, MapAnimations & animations, MapActor & actor, bool isUnit);
+};
+
+struct AnimationContext
+{
+    std::uint64_t currentTick;
+    MapAnimations & animations;
+    MapActor & actor;
+    bool isUnit;
+};
+
+struct Animator
+{
+    AnimationContext & context;
+    std::size_t currImageIndex; // Does not change
+    MapImage* currImage; // May be updated when new images are added
+
+    void setActorDirection(u8 direction);
+
+    void initializeImage(size_t iScriptId);
+
+    void restartIfEnded();
+
+    void createOverlay(u16 imageId, s8 x, s8 y, bool above);
+
+    void animate();
 };
 
 #endif
