@@ -32,12 +32,12 @@ void MapImage::setDirection(u8 direction)
 {
     if ( rotation )
     {
-        this->direction = direction;
+        this->direction = (direction + 4) / 8;
         this->flipped = this->direction > 16;
-        if ( flipped )
-            this->direction = 32-this->direction;
+        if ( this->flipped )
+            this->direction = 32 - this->direction;
 
-        frame = baseFrame + this->direction;
+        this->frame = this->baseFrame + this->direction;
     }
 }
 
@@ -52,14 +52,17 @@ void Animator::setActorDirection(u8 direction)
     for ( std::ptrdiff_t i=std::size(context.actor.usedImages)-1; i>=0 ; --i )
     {
         if ( context.actor.usedImages[i] != 0 )
-            context.animations.images[context.actor.usedImages[i]]->setDirection((context.actor.direction+4)/8);
+            context.animations.images[context.actor.usedImages[i]]->setDirection(context.actor.direction);
     }
 }
 
 void Animator::initializeImage(std::size_t iScriptId)
 {
     currImage->iScriptId = iScriptId;
-    currImage->animation = chkd.scData.sprites.getAnimationHeader(iScriptId);
+    currImage->animation = chkd.scData.sprites.getAnimationHeader(iScriptId, Sc::Sprite::AnimHeader::StarEditInit);
+    if ( currImage->animation == nullptr )
+        currImage->animation = chkd.scData.sprites.getAnimationHeader(iScriptId, Sc::Sprite::AnimHeader::Init);
+
     currImage->rotation = chkd.scData.sprites.getImage(currImage->imageId).graphicTurns != 0;
     if ( currImage->animation == nullptr )
         currImage->end();
@@ -67,7 +70,15 @@ void Animator::initializeImage(std::size_t iScriptId)
     {
         currImage->waitUntil = context.currentTick;
         animate(); // Advance until the first wait such that the image starts on the correct frame and all
-        currImage->setDirection((context.actor.direction+4)/8);
+        currImage->setDirection(context.actor.direction);
+        const Sc::Sprite::IScriptAnimation* built = chkd.scData.sprites.getAnimationHeader(iScriptId, Sc::Sprite::AnimHeader::Built);
+        if ( built )
+        {
+            currImage->waitUntil = context.currentTick;
+            currImage->animation = built;
+            currImage->returnOffset = 0;
+            animate();
+        }
     }
 }
 
@@ -96,6 +107,7 @@ void Animator::createOverlay(u16 imageId, s8 x, s8 y, bool above)
     primaryImage = context.actor.primaryImage(context.animations); // Ensure primaryImage still valid if images was resized
     //logger.info() << "PrimaryImage: " << usedImages[0] << ", " << primaryImage.xc << ", " << primaryImage.yc << '\n';
     auto & overlayImage = context.animations.images[overlayImageIndex].value();
+    overlayImage.rotation = chkd.scData.sprites.getImage(imageId).graphicTurns != 0;
     overlayImage.imageId = imageId;
     overlayImage.xc = primaryImage->xc + s32(x);
     overlayImage.yc = primaryImage->yc + s32(y);
@@ -128,7 +140,7 @@ void Animator::animate()
             Sc::Sprite::Op code = Sc::Sprite::Op(currImage->animation->code);
             ++currOffset; // 1-byte code
             std::string opName = code < Sc::Sprite::OpName.size() ? std::string(Sc::Sprite::OpName[code]) : std::to_string(int(code));
-            //logger.info() << "  " << this << ", " << opName << ", \n";
+            //logger.info() << "  " << this->currImage->imageId << ", " << opName << ", \n";
 
             if ( code < Sc::Sprite::OpParams.size() )
             {
@@ -154,8 +166,10 @@ void Animator::animate()
                     case Sc::Sprite::Op::playframtile: // TODO
                         break;
                     case Sc::Sprite::Op::sethorpos: // TODO
+                        currImage->xOffset = s8(iscript[currOffset]);
                         break;
                     case Sc::Sprite::Op::setvertpos: // TODO
+                        currImage->yOffset = s8(iscript[currOffset]);
                         break;
                     case Sc::Sprite::Op::setpos: // TODO
                         break;
@@ -264,10 +278,10 @@ void Animator::animate()
                         break;
                     case Sc::Sprite::Op::attackmelee: // TODO
                         break;
-                    case Sc::Sprite::Op::followmaingraphic: // TODO
+                    case Sc::Sprite::Op::followmaingraphic:
                         {
                             MapImage* primaryImage = context.actor.primaryImage(context.animations);
-                            if ( primaryImage != nullptr && (currImage->baseFrame != primaryImage->baseFrame || currImage->flipped != primaryImage->flipped) )
+                            if ( primaryImage != nullptr && (currImage->frame != primaryImage->frame || currImage->flipped != primaryImage->flipped) )
                             {
                                 currImage->flipped = primaryImage->flipped;
                                 currImage->baseFrame = primaryImage->baseFrame;
@@ -299,6 +313,8 @@ void Animator::animate()
                             setActorDirection(context.actor.direction+8*iscript[currOffset]);
                         break;
                     case Sc::Sprite::Op::turn1cwise: // TODO
+                        if ( context.isUnit )
+                            setActorDirection(context.actor.direction+8);
                         break;
                     case Sc::Sprite::Op::turnrand: // TODO
                         break;
@@ -338,7 +354,7 @@ void Animator::animate()
                         break;
                     case Sc::Sprite::Op::setfldirect: // TODO
                         if ( context.isUnit )
-                            setActorDirection(iscript[currOffset]);
+                            setActorDirection(iscript[currOffset]*8);
                         break;
                     case Sc::Sprite::Op::call:
                         {

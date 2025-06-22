@@ -2843,16 +2843,16 @@ void Scr::MapGraphics::drawActor(const MapActor & mapActor, s32 xOffset, s32 yOf
         if ( image )
         {
             if ( loadSettings.skinId == Scr::Skin::Id::Classic )
-                drawClassicImage(*renderDat->tiles->tilesetGrp.palette, image->xc+xOffset, image->yc+yOffset, image->frame, image->imageId, (Chk::PlayerColor)image->owner, image->flipped);
+                drawClassicImage(*renderDat->tiles->tilesetGrp.palette, image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, image->imageId, (Chk::PlayerColor)image->owner, image->flipped);
             else
             {
                 switch ( image->drawFunction )
                 {
                 case MapImage::DrawFunction::Shadow:
-                    drawImage(getImage(image->imageId), image->xc+xOffset, image->yc+yOffset, image->frame, 0x80000000, getPlayerColor(image->owner), false, image->flipped);
+                    drawImage(getImage(image->imageId), image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, 0x80000000, getPlayerColor(image->owner), false, image->flipped);
                     break;
                 default:
-                    drawImage(getImage(image->imageId), image->xc+xOffset, image->yc+yOffset, image->frame, 0xFFFFFFFF, getPlayerColor(image->owner), false, image->flipped);
+                    drawImage(getImage(image->imageId), image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, 0xFFFFFFFF, getPlayerColor(image->owner), false, image->flipped);
                     break;
                 }
             }

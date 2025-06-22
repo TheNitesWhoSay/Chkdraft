@@ -2609,7 +2609,7 @@ bool Sc::Sprite::loadAnimation(u16 id, IScriptAnimation* animation, size_t currO
     return true;
 }
 
-const Sc::Sprite::IScriptAnimation* Sc::Sprite::getAnimationHeader(size_t iScriptId) const
+const Sc::Sprite::IScriptAnimation* Sc::Sprite::getAnimationHeader(size_t iScriptId, AnimHeader animHeader) const
 {
     IScriptDatFileHeader* scriptHeader = (IScriptDatFileHeader*)&iscript[0];
     size_t animationsOffset = iscriptOffsets[iScriptId];
@@ -2620,8 +2620,10 @@ const Sc::Sprite::IScriptAnimation* Sc::Sprite::getAnimationHeader(size_t iScrip
     }
     IScriptAnimationHeader* iScriptAnimationHeader = (IScriptAnimationHeader*)&iscript[animationsOffset];
     size_t totalAnimations = size_t(iScriptAnimationHeader->animationCount & 0xFFFE) + 2;
-    size_t animationIndex = totalAnimations >= 23 && iScriptAnimationHeader->animationsOffset[23] != 0 ? 23 : 0; // TODO: 23 StarEditInit, 0 Init enum...
-    size_t animationOffset = iScriptAnimationHeader->animationsOffset[animationIndex];
+    if ( std::size_t(animHeader) >= totalAnimations )
+        return nullptr;
+
+    size_t animationOffset = iScriptAnimationHeader->animationsOffset[std::size_t(animHeader)];
     if ( animationOffset > 0 )
     {
         size_t currOffset = animationOffset;

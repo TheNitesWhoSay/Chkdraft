@@ -914,9 +914,39 @@ namespace Sc {
             std::vector<u8> loData {};
         };
 
+        enum class AnimHeader {
+            Init = 0,
+            Death = 1,
+            GroundAttackInit = 2,
+            AirAttackInit = 3,
+            Unused1 = 4,
+            GroundAttackRepeat = 5,
+            AirAttackRepeat = 6,
+            CastSpell = 7,
+            GroundAttackToIdle = 8,
+            AirAttackToIdle = 9,
+            Unused2 = 10,
+            Walking = 11,
+            WalkingToIdle = 12,
+            SpecialState1 = 13,
+            SpecialState2 = 14,
+            AlmostBuilt = 15,
+            Built = 16,
+            Landing = 17,
+            LiftOff = 18,
+            IsWorking = 19,
+            WorkingToIdle = 20,
+            WarpIn = 21,
+            Unused3 = 22,
+            StarEditInit = 23,
+            Disable = 24,
+            Unburrow = 25,
+            Enable = 26
+        };
+
         bool load(ArchiveCluster & archiveCluster, Sc::TblFilePtr imagesTbl);
         bool loadAnimation(u16 id, IScriptAnimation* animation, size_t currOffset, bool & idIncludesFlip, bool & idIncludesUnflip, std::set<size_t> & visitedOffsets);
-        const IScriptAnimation* getAnimationHeader(size_t iScriptId) const;
+        const IScriptAnimation* getAnimationHeader(size_t iScriptId, AnimHeader animHeader) const;
         const Grp & getGrp(size_t grpIndex);
         const ImageDatEntry & getImage(size_t imageIndex) const;
         const DatEntry & getSprite(size_t spriteIndex) const;
