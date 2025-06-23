@@ -20,6 +20,7 @@ struct MapActor
     u16 usedImages[MaxSlots] {}; // Only leftmost indexes are used
 
     u16 & getNewImageSlot(bool above, MapImage & image, MapAnimations & animations); // If result is non-zero, no image slots are available
+    void removeImage(std::size_t imageIndex);
 
     MapImage* primaryImage(MapAnimations & animations);
 

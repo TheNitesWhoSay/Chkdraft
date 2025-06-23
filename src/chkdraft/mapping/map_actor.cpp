@@ -44,6 +44,26 @@ u16 & MapActor::getNewImageSlot(bool above, MapImage & image, MapAnimations & an
     return usedImages[0];
 }
 
+void MapActor::removeImage(std::size_t imageIndex)
+{
+    u16 primaryImageImageIndex = usedImages[primaryImageIndex];
+    auto updatePrimaryImageIndex = [&]() {
+        for ( std::size_t j=0; j<MaxSlots; ++j )
+        {
+            if ( usedImages[j] == primaryImageImageIndex )
+                primaryImageIndex = j;
+        }
+    };
+    for ( auto & usedImage : usedImages )
+    {
+        if ( usedImage == imageIndex )
+            usedImage = 0;
+    }
+    defragmentNonZeroes(usedImages);
+    primaryImageIndex = 0;
+    updatePrimaryImageIndex();
+}
+
 MapImage* MapActor::primaryImage(MapAnimations & animations)
 {
     if ( primaryImageIndex > std::size(usedImages) )
@@ -82,7 +102,9 @@ void MapActor::animate(std::uint64_t currentTick, bool isUnit, MapAnimations & a
             }
             else
             {
-                allEnded = false;
+                if ( !image->hiddenLeader )
+                    allEnded = false;
+
                 Animator {
                     .context = context,
                     .currImageIndex = usedImages[i],

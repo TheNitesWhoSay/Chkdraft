@@ -86,6 +86,17 @@ void Animator::initializeImage(std::size_t iScriptId)
     }
 }
 
+void Animator::endImage()
+{
+    if ( currImageIndex == context.actor.usedImages[context.actor.primaryImageIndex] )
+        currImage->end();
+    else
+    {
+        context.actor.removeImage(currImageIndex);
+        context.animations.removeImage(currImageIndex);
+    }
+}
+
 void Animator::createOverlay(u16 imageId, s8 x, s8 y, bool above)
 {
     MapImage* primaryImage = context.actor.primaryImage(context.animations);
@@ -119,6 +130,13 @@ void Animator::createOverlay(u16 imageId, s8 x, s8 y, bool above)
     //logger.info() << "CreateOverlay: " << overlayImageIndex << ", " << imageId << ", " << "(" << overlayImage.xc << ", " << overlayImage.yc << ")\n";
 }
 
+void Animator::createSpriteOverlay(u16 spriteId, s8 x, s8 y, bool above)
+{
+    u16 imageId = chkd.scData.sprites.getSprite(spriteId).imageFile;
+    //logger.info() << "createSpriteOverlay " << imageId << ", " << x << ", " << y << '\n';
+    createOverlay(imageId, x, y, above);
+}
+
 void Animator::animate()
 {
     auto & images = context.animations.images;
@@ -138,7 +156,7 @@ void Animator::animate()
             Sc::Sprite::Op code = Sc::Sprite::Op(currImage->animation->code);
             ++currOffset; // 1-byte code
             std::string opName = code < Sc::Sprite::OpName.size() ? std::string(Sc::Sprite::OpName[code]) : std::to_string(int(code));
-            //logger.info() << "  " << this->currImage->imageId << ", " << opName << ", \n";
+            //logger.info() << "  " << this->currImage->iScriptId << ", " << this->currImage->imageId << ", " << opName << ", \n";
 
             if ( code < Sc::Sprite::OpParams.size() )
             {
@@ -170,6 +188,8 @@ void Animator::animate()
                         currImage->yOffset = s8(iscript[currOffset]);
                         break;
                     case Sc::Sprite::Op::setpos: // TODO
+                        currImage->xOffset = s8(iscript[currOffset]);
+                        currImage->yOffset = s8(iscript[currOffset+1]);
                         break;
                     case Sc::Sprite::Op::wait:
                         currImage->waitUntil = context.currentTick + uint64_t(iscript[currOffset]);
@@ -241,6 +261,7 @@ void Animator::animate()
                     case Sc::Sprite::Op::imguluselo: // TODO
                         break;
                     case Sc::Sprite::Op::sprol: // TODO
+                        createSpriteOverlay((u16 &)iscript[currOffset], iscript[currOffset+2], iscript[currOffset+3], true);
                         break;
                     case Sc::Sprite::Op::highsprol: // TODO
                         break;
@@ -255,8 +276,7 @@ void Animator::animate()
                     case Sc::Sprite::Op::sproluselo: // TODO
                         break;
                     case Sc::Sprite::Op::end:
-                        currImage->end();
-                        // TODO: this is called for a non-main image to destroy said image
+                        endImage();
                         return;
                     case Sc::Sprite::Op::setflipstate:
                         currImage->flipped = (iscript[currOffset] != 0);

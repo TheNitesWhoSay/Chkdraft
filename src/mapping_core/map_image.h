@@ -24,6 +24,7 @@ struct MapImage
     size_t frame = 0;
     bool flipped = false;
     bool rotation = false;
+    bool hiddenLeader = false;
     DrawFunction drawFunction = DrawFunction::Normal;
 
     u16 returnOffset = 0;
@@ -56,8 +57,10 @@ struct Animator
     void setActorDirection(u8 direction);
 
     void initializeImage(size_t iScriptId);
+    void endImage();
 
     void createOverlay(u16 imageId, s8 x, s8 y, bool above);
+    void createSpriteOverlay(u16 spriteId, s8 x, s8 y, bool above);
 
     void animate();
 };

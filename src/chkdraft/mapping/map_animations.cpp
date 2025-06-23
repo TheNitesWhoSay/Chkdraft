@@ -186,14 +186,18 @@ void MapAnimations::restartActor(AnimationContext & context)
         auto owner = primaryImage.owner;
         auto xc = primaryImage.xc;
         auto yc = primaryImage.yc;
+        bool hiddenLeader = primaryImage.hiddenLeader;
         auto iScriptId = primaryImage.iScriptId;
         primaryImage = MapImage {
             .imageId = imageId,
             .owner = owner,
             .xc = xc,
             .yc = yc,
+            .hiddenLeader = hiddenLeader
         };
         initializeImage(iScriptId, chkd.gameClock.currentTick(), actor, context.isUnit, actor.usedImages[0]);
+        if ( hiddenLeader )
+            primaryImage.drawFunction = MapImage::DrawFunction::None;
     }
     else
     {
@@ -220,6 +224,27 @@ void MapAnimations::initializeActor(MapActor & actor, u8 direction, u16 imageId,
     initializeImage(iScriptId, chkd.gameClock.currentTick(), actor, isUnit, imageIndex);
 }
 
+void MapAnimations::initSpecialCases(MapActor & actor, std::size_t type, bool isUnit, bool isSpriteUnit)
+{
+    if ( ((isUnit || isSpriteUnit) && type == Sc::Unit::Type::ScannerSweep) || (!isUnit && type == 237 /*TODO: enum sprites, this is scanner sweep sprite*/) )
+    {
+        MapImage* primaryImage = actor.primaryImage(*this);
+        primaryImage->hiddenLeader = true; // Mark this as a "hidden leader" image so auto-restarts can proceed smoothly
+        primaryImage->drawFunction = MapImage::DrawFunction::None; // Don't draw the primary image for scanner sweep (a terran marine)
+        actor.autoRestart = true; // Always auto-restart a scanner sweep
+    }
+    else if ( !isUnit && !isSpriteUnit && type == 339 /*TODO: enum sprites, this is psionic storm sprite*/ )
+    {
+        MapImage* primaryImage = actor.primaryImage(*this);
+        const Sc::Sprite::IScriptAnimation* specialState2 = chkd.scData.sprites.getAnimationHeader(primaryImage->iScriptId, Sc::Sprite::AnimHeader::SpecialState2);
+        if ( specialState2 != nullptr )
+        {
+            primaryImage->animation = specialState2;
+            primaryImage->waitUntil = chkd.gameClock.currentTick();
+        }
+    }
+}
+
 void MapAnimations::initializeUnitActor(MapActor & actor, bool isClipboard, std::size_t unitIndex, const Chk::Unit & unit, s32 xc, s32 yc)
 {
     const auto & unitDat = chkd.scData.units.getUnit(unit.type);
@@ -238,6 +263,7 @@ void MapAnimations::initializeUnitActor(MapActor & actor, bool isClipboard, std:
             (std::uint64_t(yc) << ShiftY) | (elevation << ShiftElevation));
 
     initializeActor(actor, direction, getImageId(unit), unit.owner, xc, yc, iScriptId, true, false, drawListValue);
+    initSpecialCases(actor, std::size_t(unit.type), true);
 }
 
 void MapAnimations::initializeSpriteActor(MapActor & actor, bool isClipboard, std::size_t spriteIndex, const Chk::Sprite & sprite, s32 xc, s32 yc)
@@ -256,6 +282,7 @@ void MapAnimations::initializeSpriteActor(MapActor & actor, bool isClipboard, st
             (std::uint64_t(yc) << ShiftY) | (elevation << ShiftElevation));
 
     initializeActor(actor, 0, getImageId(sprite), sprite.owner, xc, yc, iScriptId, false, autoRestart, drawListValue);
+    initSpecialCases(actor, std::size_t(sprite.type), false, isSpriteUnit);
 }
 
 void MapAnimations::addUnit(std::size_t unitIndex, MapActor & actor)
