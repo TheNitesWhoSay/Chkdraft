@@ -110,25 +110,7 @@ void MapAnimations::initClipboardUnits()
     for ( std::size_t i=0; i<pasteUnits.size(); ++i ) // TODO: should sort pasteUnits by draw order first
     {
         const auto & pasteUnit = pasteUnits[i];
-        auto & actor = clipboard.unitActors.emplace_back();
-        bool isSubUnit = chkd.scData.units.getUnit(pasteUnit.unit.type).flags & Sc::Unit::Flags::Subunit;
-        bool isFlyerOrLifted = chkd.scData.units.getUnit(pasteUnit.unit.type).flags & Sc::Unit::Flags::Flyer ||
-            (chkd.scData.units.getUnit(pasteUnit.unit.type).flags & Sc::Unit::Flags::FlyingBuilding && pasteUnit.unit.isLifted());
-        std::uint64_t elevation = isFlyerOrLifted ? 1 : 0; // TODO: tile elevations
-        actor.drawListIndex = drawList.size();
-        drawList.push_back(
-            std::uint64_t(i) | FlagDrawUnit | FlagIsClipboard | FlagUnitActor | (isSubUnit ? FlagIsTurret : 0) |
-            MaskY | (elevation << ShiftElevation)
-        );
-
-        u16 imageIndex = createImage();
-        actor.usedImages[0] = imageIndex;
-        MapImage* image = &images[imageIndex].value();
-        image->imageId = getImageId(pasteUnit.unit);
-        image->owner = pasteUnit.unit.owner;
-        image->xc = pasteUnit.xc;
-        image->yc = pasteUnit.yc;
-        initializeImage(iscriptIdFromUnit(pasteUnit.unit.type), chkd.gameClock.currentTick(), actor, true, imageIndex);
+        initializeUnitActor(clipboard.unitActors.emplace_back(), true, i, pasteUnit.unit, pasteUnit.xc, pasteUnit.yc);
     }
 }
 
@@ -142,25 +124,7 @@ void MapAnimations::initClipboardSprites()
     for ( std::size_t i=0; i<pasteSprites.size(); ++i ) // TODO: should sort pasteSprites by draw order first
     {
         const auto & pasteSprite = pasteSprites[i];
-        auto & actor = clipboard.spriteActors.emplace_back();
-        bool isSpriteUnit = pasteSprite.sprite.isUnit();
-        bool isSubUnit = isSpriteUnit && chkd.scData.units.getUnit(Sc::Unit::Type(pasteSprite.sprite.type)).flags & Sc::Unit::Flags::Subunit;
-        bool isFlyer = isSpriteUnit && chkd.scData.units.getUnit(Sc::Unit::Type(pasteSprite.sprite.type)).flags & Sc::Unit::Flags::Flyer;
-        std::uint64_t elevation = isFlyer ? 1 : 0; // TODO: tile elevations
-        actor.drawListIndex = drawList.size();
-        drawList.push_back(
-            std::uint64_t(i) | FlagIsClipboard | (isSubUnit ? FlagIsTurret : 0) |
-            MaskY | (elevation << ShiftElevation)
-        );
-
-        u16 imageIndex = createImage();
-        actor.usedImages[0] = imageIndex;
-        MapImage* image = &images[imageIndex].value();
-        image->imageId = getImageId(pasteSprite.sprite);
-        image->owner = pasteSprite.sprite.owner;
-        image->xc = pasteSprite.xc;
-        image->yc = pasteSprite.yc;
-        initializeImage(iscriptIdFromSprite(pasteSprite.sprite.type), chkd.gameClock.currentTick(), actor, false, imageIndex);
+        initializeSpriteActor(clipboard.spriteActors.emplace_back(), true, i, pasteSprite.sprite, pasteSprite.xc, pasteSprite.yc);
     }
 }
 
@@ -194,6 +158,106 @@ void MapAnimations::clearClipboardActors()
     clearClipboardSprites();
 }
 
+void MapAnimations::restartActor(AnimationContext & context)
+{
+    auto & actor = context.actor;
+    for ( std::size_t i=0; i<std::size(actor.usedImages); ++i ) // Remove all non-primary actors
+    {
+        if ( i != actor.primaryImageIndex )
+        {
+            removeImage(actor.usedImages[i]);
+            actor.usedImages[i] = 0;
+        }
+    }
+    if ( actor.primaryImageIndex < std::size(actor.usedImages) )
+    {
+        actor.usedImages[0] = actor.usedImages[actor.primaryImageIndex];
+        actor.primaryImageIndex = 0;
+        std::size_t imageIndex = static_cast<std::size_t>(actor.usedImages[0]);
+        if ( imageIndex >= images.size() || images[imageIndex] == std::nullopt )
+        {
+            logger.error("While restarting a sprite an invalid primary image was found!");
+            actor.autoRestart = false;
+            actor.usedImages[0] = 0;
+            return;
+        }
+        auto & primaryImage = images[actor.usedImages[0]].value();
+        auto imageId = primaryImage.imageId;
+        auto owner = primaryImage.owner;
+        auto xc = primaryImage.xc;
+        auto yc = primaryImage.yc;
+        auto iScriptId = primaryImage.iScriptId;
+        primaryImage = MapImage {
+            .imageId = imageId,
+            .owner = owner,
+            .xc = xc,
+            .yc = yc,
+        };
+        initializeImage(iScriptId, chkd.gameClock.currentTick(), actor, context.isUnit, actor.usedImages[0]);
+    }
+    else
+    {
+        logger.error("While restarting a sprite no primary image was found!");
+        actor.autoRestart = false;
+        return;
+    }
+}
+
+void MapAnimations::initializeActor(MapActor & actor, u8 direction, u16 imageId, u8 owner, s32 xc, s32 yc, u32 iScriptId, bool isUnit, bool autoRestart, std::uint64_t drawListValue)
+{
+    actor.drawListIndex = drawList.size();
+    drawList.push_back(drawListValue);
+    actor.direction = direction;
+
+    u16 imageIndex = createImage();
+    actor.usedImages[0] = imageIndex;
+    actor.autoRestart = autoRestart;
+    MapImage* image = &images[imageIndex].value();
+    image->imageId = imageId;
+    image->owner = owner;
+    image->xc = xc;
+    image->yc = yc;
+    initializeImage(iScriptId, chkd.gameClock.currentTick(), actor, isUnit, imageIndex);
+}
+
+void MapAnimations::initializeUnitActor(MapActor & actor, bool isClipboard, std::size_t unitIndex, const Chk::Unit & unit, s32 xc, s32 yc)
+{
+    const auto & unitDat = chkd.scData.units.getUnit(unit.type);
+    bool isSubUnit = unitDat.flags & Sc::Unit::Flags::Subunit;
+    bool isFlyerOrLifted = unitDat.flags & Sc::Unit::Flags::Flyer ||
+        unitDat.flags & Sc::Unit::Flags::FlyingBuilding && unit.isLifted();
+
+    std::uint64_t elevation = isFlyerOrLifted ? 1 : 0; // TODO: tile elevations
+    u8 direction = unitDat.unitDirection == 32 ? ((std::rand() & 31) << 3) : (unitDat.unitDirection << 3);
+    u32 iScriptId = iscriptIdFromUnit(unit.type);
+
+    std::size_t drawListValue = isClipboard ?
+        (std::uint64_t(unitIndex) | FlagDrawUnit | FlagIsClipboard | FlagUnitActor | (isSubUnit ? FlagIsTurret : 0) |
+            MaskY | (elevation << ShiftElevation)) :
+        (std::uint64_t(unitIndex) | FlagDrawUnit | FlagUnitActor | (isSubUnit ? FlagIsTurret : 0) |
+            (std::uint64_t(yc) << ShiftY) | (elevation << ShiftElevation));
+
+    initializeActor(actor, direction, getImageId(unit), unit.owner, xc, yc, iScriptId, true, false, drawListValue);
+}
+
+void MapAnimations::initializeSpriteActor(MapActor & actor, bool isClipboard, std::size_t spriteIndex, const Chk::Sprite & sprite, s32 xc, s32 yc)
+{
+    bool isSpriteUnit = sprite.isUnit();
+    bool isSubUnit = isSpriteUnit && chkd.scData.units.getUnit(Sc::Unit::Type(sprite.type)).flags & Sc::Unit::Flags::Subunit;
+    bool isFlyer = isSpriteUnit && chkd.scData.units.getUnit(Sc::Unit::Type(sprite.type)).flags & Sc::Unit::Flags::Flyer;
+
+    std::uint64_t elevation = isFlyer ? 1 : 0; // TODO: tile elevations
+    u32 iScriptId = iscriptIdFromSprite(sprite.type);
+    bool autoRestart = sprite.type < chkd.scData.sprites.spriteAutoRestart.size() ? chkd.scData.sprites.spriteAutoRestart[sprite.type] : true;
+    std::size_t drawListValue = isClipboard ?
+        (std::uint64_t(spriteIndex) | FlagIsClipboard | (isSubUnit ? FlagIsTurret : 0) |
+            MaskY | (elevation << ShiftElevation)) :
+        (std::uint64_t(spriteIndex) | (isSpriteUnit ? FlagDrawUnit : 0) | (isSubUnit ? FlagIsTurret : 0) |
+            (std::uint64_t(yc) << ShiftY) | (elevation << ShiftElevation));
+
+    initializeActor(actor, 0, getImageId(sprite), sprite.owner, xc, yc, iScriptId, false, autoRestart, drawListValue);
+}
+
 void MapAnimations::addUnit(std::size_t unitIndex, MapActor & actor)
 {
     drawListDirty = true;
@@ -202,29 +266,7 @@ void MapAnimations::addUnit(std::size_t unitIndex, MapActor & actor)
         ++drawList[unitActors[i].drawListIndex]; // Increment affected unit indexes in draw list
 
     const auto & unit = scenario.getUnit(unitIndex);
-    const auto & unitDat = chkd.scData.units.getUnit(unit.type);
-    bool isSubUnit = unitDat.flags & Sc::Unit::Flags::Subunit;
-    bool isFlyerOrLifted = unitDat.flags & Sc::Unit::Flags::Flyer ||
-        unitDat.flags & Sc::Unit::Flags::FlyingBuilding && unit.isLifted();
-    std::uint64_t elevation = isFlyerOrLifted ? 1 : 0; // TODO: tile elevations
-    actor.drawListIndex = drawList.size();
-    drawList.push_back(
-        std::uint64_t(unitIndex) | FlagDrawUnit | FlagUnitActor | (isSubUnit ? FlagIsTurret : 0) |
-        (std::uint64_t(unit.yc) << ShiftY) | (elevation << ShiftElevation)
-    );
-    if ( unitDat.unitDirection == 32 )
-        actor.direction = (std::rand() & 31) << 3;
-    else
-        actor.direction = unitDat.unitDirection << 3;
-
-    u16 imageIndex = createImage();
-    actor.usedImages[0] = imageIndex;
-    MapImage* image = &images[imageIndex].value();
-    image->imageId = getImageId(unit);
-    image->owner = unit.owner;
-    image->xc = unit.xc;
-    image->yc = unit.yc;
-    initializeImage(iscriptIdFromUnit(unit.type), chkd.gameClock.currentTick(), actor, true, imageIndex);
+    initializeUnitActor(actor, false, unitIndex, unit, unit.xc, unit.yc);
 }
 
 void MapAnimations::addSprite(std::size_t spriteIndex, MapActor & actor)
@@ -235,23 +277,7 @@ void MapAnimations::addSprite(std::size_t spriteIndex, MapActor & actor)
         ++drawList[spriteActors[i].drawListIndex]; // Increment affected sprite indexes in draw list
 
     const auto & sprite = scenario.getSprite(spriteIndex);
-    bool isSpriteUnit = sprite.isUnit();
-    bool isSubUnit = isSpriteUnit && chkd.scData.units.getUnit(Sc::Unit::Type(sprite.type)).flags & Sc::Unit::Flags::Subunit;
-    bool isFlyer = isSpriteUnit && chkd.scData.units.getUnit(Sc::Unit::Type(sprite.type)).flags & Sc::Unit::Flags::Flyer;
-    actor.drawListIndex = drawList.size();
-    std::uint64_t elevation = isFlyer ? 1 : 0; // TODO: tile elevations
-    drawList.push_back(
-        std::uint64_t(spriteIndex) | (isSpriteUnit ? FlagDrawUnit : 0) | (isSubUnit ? FlagIsTurret : 0) |
-        (std::uint64_t(sprite.yc) << ShiftY) | (elevation << ShiftElevation)
-    );
-    u16 imageIndex = createImage();
-    actor.usedImages[0] = imageIndex;
-    MapImage* image = &images[imageIndex].value();
-    image->imageId = getImageId(sprite);
-    image->owner = sprite.owner;
-    image->xc = sprite.xc;
-    image->yc = sprite.yc;
-    initializeImage(iscriptIdFromSprite(sprite.type), chkd.gameClock.currentTick(), actor, false, imageIndex);
+    initializeSpriteActor(actor, false, spriteIndex, sprite, sprite.xc, sprite.yc);
 }
 
 void MapAnimations::removeUnit(std::size_t unitIndex, MapActor & actor)
@@ -324,7 +350,7 @@ void MapAnimations::animate(uint64_t currentTick)
         unitActor.animate(currentTick, true, *this);
 
     for ( auto & spriteActor : clipboard.spriteActors )
-        spriteActor.animate(currentTick, true, *this);
+        spriteActor.animate(currentTick, false, *this);
 
     cleanDrawList();
 }

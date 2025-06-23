@@ -16,7 +16,7 @@ void Chkdraft::OnLoadTest()
     mainPlot.leftBar.SetWidth(360);
 
     auto & map = []() -> GuiMap & {
-        auto map = chkd.maps.NewMap(Sc::Terrain::Tileset::SpacePlatform, 64, 64, Sc::Isom::Brush::Space::Platform);
+        auto map = chkd.maps.NewMap(Sc::Terrain::Tileset::SpacePlatform, 96, 96, Sc::Isom::Brush::Space::Platform);
         //map->addUnit(Chk::Unit {map->getNextClassId(), 192, 64, Sc::Unit::Type::StartLocation, 0, 0, 0, Sc::Player::Id::Player2});
         map->setForceFlags(Chk::Force::Force1, Chk::ForceFlags::All & Chk::ForceFlags::xRandomizeStartLocation);
         map->setForceFlags(Chk::Force::Force2, Chk::ForceFlags::All & Chk::ForceFlags::xRandomizeStartLocation);
@@ -25,18 +25,29 @@ void Chkdraft::OnLoadTest()
         _Pragma("warning(suppress: 26716)") return *map;
     }();
     auto edit = CM->operator()();
-    for ( std::size_t i=0; i<Sc::Unit::TotalTypes; ++i )
+    /*for ( std::size_t i=0; i<Sc::Unit::TotalTypes; ++i )
     {
-        //if ( i != Sc::Unit::Type::ProtossDarkArchon )
+        //if ( i != Sc::Unit::Type::TerranWraith )
         //    continue;
         //if ( scData.units.getUnit(Sc::Unit::Type(i)).subunit1 == 228 )
         //    continue;
         int x = i%20;
         int y = i/20;
         CM->addUnit(Chk::Unit {CM->getNextClassId(), u16(x*64+64), u16(y*64+64), Sc::Unit::Type(i), 0, 0, 0, Sc::Player::Id::Player1});
+    }*/
+    for ( std::size_t i=0; i<Sc::Sprite::TotalSprites; ++i )
+    {
+        //if ( i != Sc::Unit::Type::TerranWraith )
+        //    continue;
+        //if ( scData.units.getUnit(Sc::Unit::Type(i)).subunit1 == 228 )
+        //    continue;
+        int x = i%32;
+        int y = i/32;
+        CM->addSprite(Chk::Sprite {Sc::Sprite::Type(i), u16(x*64+64), u16(y*64+64), Sc::Player::Id::Player1, 0, Chk::Sprite::SpriteFlags::DrawAsSprite});
+        //CM->addUnit(Chk::Unit {CM->getNextClassId(), u16(x*64+64), u16(y*64+64), Sc::Unit::Type(i), 0, 0, 0, Sc::Player::Id::Player1});
     }
     CM->SetSkin(GuiMap::Skin::ScrSD);
-    maps.ChangeLayer(Layer::Units);
+    maps.ChangeLayer(Layer::Sprites);
     //maps.ChangeLayer(Layer::Sprites);
 
     /*for ( std::size_t i=0; i<Sc::Unit::TotalTypes; ++i )
@@ -48,7 +59,7 @@ void Chkdraft::OnLoadTest()
     //CM->addSprite(Chk::Sprite{.type = Sc::Sprite::Type(65), .xc = 200, .yc = 200, .flags = Chk::Sprite::SpriteFlags::DrawAsSprite});
     //CM->addSprite(Chk::Sprite{.type = Sc::Sprite::Type(65), .xc = 250, .yc = 250, .flags = Chk::Sprite::SpriteFlags::DrawAsSprite});
     //CM->clipboard.addQuickSprite(Chk::Sprite{.type = Sc::Sprite::Type(65), .flags = Chk::Sprite::SpriteFlags::DrawAsSprite});
-    //CM->clipboard.beginPasting(true);
+    //CM->clipboard.beginPasting(true, *CM);
 }
 
 void Chkdraft::PreLoadTest()

@@ -978,6 +978,7 @@ namespace Sc {
             std::vector<TreeSprite> memberSprites;
         };
 
+        std::vector<bool> spriteAutoRestart;
         std::vector<SpriteGroup> spriteGroups;
         std::vector<std::string> spriteNames;
         Sc::TblFilePtr imagesTbl;

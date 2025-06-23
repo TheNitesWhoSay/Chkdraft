@@ -4243,6 +4243,7 @@ bool Sc::Data::loadSpriteGroups(Sc::TblFilePtr imagesTbl)
 {
     constexpr auto totalSprites = Sc::Sprite::TotalSprites;
 
+    sprites.spriteAutoRestart.assign(totalSprites, true);
     auto & doodads = sprites.spriteGroups.emplace_back(Sc::Sprite::SpriteGroup{"Doodads"});
     for ( u16 tilesetIndex = Sc::Terrain::Tileset::Badlands; tilesetIndex < Sc::Terrain::NumTilesets; ++tilesetIndex )
     {
@@ -4326,6 +4327,10 @@ bool Sc::Data::loadSpriteGroups(Sc::TblFilePtr imagesTbl)
             {
                 std::sort(tilesetDoodads.subGroups.back().memberSprites.begin(), tilesetDoodads.subGroups.back().memberSprites.end(),
                     [](const auto & l, const auto & r) { return l.spriteIndex < r.spriteIndex; });
+
+                for ( const auto & sprite : doodadGroupSprites.memberSprites ) {
+                    sprites.spriteAutoRestart[sprite.spriteIndex] = false;
+                }
             }
         }
     }
@@ -4341,6 +4346,7 @@ bool Sc::Data::loadSpriteGroups(Sc::TblFilePtr imagesTbl)
         std::string imageFileName = getSystemFileName(imageFileStr);
 
         unitSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{flingyDat.sprite, units.defaultDisplayNames[i]});
+        sprites.spriteAutoRestart[flingyDat.sprite] = false;
     }
     
     auto & remains = sprites.spriteGroups.emplace_back(Sc::Sprite::SpriteGroup{"Remains"});
@@ -4370,6 +4376,8 @@ bool Sc::Data::loadSpriteGroups(Sc::TblFilePtr imagesTbl)
     auto & construction = sprites.spriteGroups.emplace_back(Sc::Sprite::SpriteGroup{"Construction"});
     construction.memberSprites.push_back(Sc::Sprite::TreeSprite{270, "Terran Construction - Large"});
     construction.memberSprites.push_back(Sc::Sprite::TreeSprite{271, "Terran Construction - Small"});
+    sprites.spriteAutoRestart[270] = false;
+    sprites.spriteAutoRestart[271] = false;
     construction.memberSprites.push_back(Sc::Sprite::TreeSprite{182, "Zergling Building Spawn - Small"});
     construction.memberSprites.push_back(Sc::Sprite::TreeSprite{183, "Zergling Building Spawn - Medium"});
     construction.memberSprites.push_back(Sc::Sprite::TreeSprite{184, "Zergling Building Spawn - Large"});
@@ -4459,6 +4467,7 @@ bool Sc::Data::loadSpriteGroups(Sc::TblFilePtr imagesTbl)
     misc.memberSprites.push_back(Sc::Sprite::TreeSprite{318, "Cursor"});
     misc.memberSprites.push_back(Sc::Sprite::TreeSprite{320, "High Templar Glow"});
     misc.memberSprites.push_back(Sc::Sprite::TreeSprite{321, "Psi Field - Right Upper"});
+    sprites.spriteAutoRestart[321] = false;
     misc.memberSprites.push_back(Sc::Sprite::TreeSprite{344, "Magna Pulse"});
     misc.memberSprites.push_back(Sc::Sprite::TreeSprite{300, "White Circle"});
     misc.memberSprites.push_back(Sc::Sprite::TreeSprite{504, "White Circle"});
@@ -4470,7 +4479,7 @@ bool Sc::Data::loadSpriteGroups(Sc::TblFilePtr imagesTbl)
     misc.memberSprites.push_back(Sc::Sprite::TreeSprite{313, "Vespene Puff 3"});
     misc.memberSprites.push_back(Sc::Sprite::TreeSprite{314, "Vespene Puff 4"});
     misc.memberSprites.push_back(Sc::Sprite::TreeSprite{315, "Vespene Puff 5"});
-
+    
     sprites.spriteNames.assign(517, "");
     for ( auto & spriteGroup : sprites.spriteGroups )
         loadSpriteNames(spriteGroup);

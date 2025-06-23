@@ -18,6 +18,10 @@ bool MapImage::end()
     return true;
 }
 
+bool MapImage::hasEnded() const
+{
+    return waitUntil == std::numeric_limits<uint64_t>::max();
+}
 
 void MapImage::playFrame(u8 frame)
 {
@@ -80,12 +84,6 @@ void Animator::initializeImage(std::size_t iScriptId)
             animate();
         }
     }
-}
-
-void Animator::restartIfEnded()
-{
-    if ( currImage->waitUntil == std::numeric_limits<uint64_t>::max() )
-        initializeImage(currImage->iScriptId);
 }
 
 void Animator::createOverlay(u16 imageId, s8 x, s8 y, bool above)
@@ -175,16 +173,10 @@ void Animator::animate()
                         break;
                     case Sc::Sprite::Op::wait:
                         currImage->waitUntil = context.currentTick + uint64_t(iscript[currOffset]);
-                        
-                        //waitUntil = currentTick;
-                        if ( Sc::Sprite::Op(iscript[currOffset+1]) == Sc::Sprite::Op::goto_ && (u16 &)iscript[currOffset+2] == currOffset-1 )
+                        if ( Sc::Sprite::Op(iscript[currOffset+1]) == Sc::Sprite::Op::goto_ && (u16 &)iscript[currOffset+2] == currOffset-1 ) // Wait-looped
                         {
-                            // wait-looped, you don't necessarily want to end here but it permits restarting
-                            // TODO: Just because you're wait-looped doesn't mean restarting is appropriate...
-                            //logger.info() << "WaitLoopRestart\n";
-                            //frame = 0;
-                            currImage->end();
-                            return;
+                            if ( !context.isUnit )
+                                currImage->end(); // "End" the image allowing sprites to auto-restart
                         }
                         advancePastParams();
                         return;
@@ -263,6 +255,7 @@ void Animator::animate()
                     case Sc::Sprite::Op::sproluselo: // TODO
                         break;
                     case Sc::Sprite::Op::end:
+                        currImage->end();
                         // TODO: this is called for a non-main image to destroy said image
                         return;
                     case Sc::Sprite::Op::setflipstate:

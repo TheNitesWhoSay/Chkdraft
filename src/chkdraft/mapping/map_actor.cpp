@@ -69,15 +69,28 @@ void MapActor::animate(std::uint64_t currentTick, bool isUnit, MapAnimations & a
         .actor = *this,
         .isUnit = isUnit,
     };
+    bool allEnded = true;
     for ( std::ptrdiff_t i=std::size(usedImages)-1; i>=0 ; --i )
     {
         if ( usedImages[i] != 0 )
         {
-            Animator {
-                .context = context,
-                .currImageIndex = usedImages[i],
-                .currImage = &animations.images[std::size_t(usedImages[i])].value()
-            }.animate();
+            MapImage* image = &animations.images[std::size_t(usedImages[i])].value();
+            if ( image->hasEnded() )
+            {
+                if ( autoRestart )
+                    image->drawFunction = MapImage::DrawFunction::None;
+            }
+            else
+            {
+                allEnded = false;
+                Animator {
+                    .context = context,
+                    .currImageIndex = usedImages[i],
+                    .currImage = image
+                }.animate();
+            }
         }
     }
+    if ( allEnded && autoRestart )
+        animations.restartActor(context);
 }
