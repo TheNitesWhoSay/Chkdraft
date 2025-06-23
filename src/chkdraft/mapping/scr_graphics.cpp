@@ -2851,6 +2851,8 @@ void Scr::MapGraphics::drawActor(const MapActor & mapActor, s32 xOffset, s32 yOf
                 case MapImage::DrawFunction::Shadow:
                     drawImage(getImage(image->imageId), image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, 0x80000000, getPlayerColor(image->owner), false, image->flipped);
                     break;
+                case MapImage::DrawFunction::None:
+                    break;
                 default:
                     drawImage(getImage(image->imageId), image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, 0xFFFFFFFF, getPlayerColor(image->owner), false, image->flipped);
                     break;

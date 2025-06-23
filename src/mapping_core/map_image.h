@@ -10,6 +10,7 @@ struct MapImage
     enum class DrawFunction : u8 {
         Normal = 0,
         Shadow = 10,
+        None
     };
     
     u16 imageId = 0;
