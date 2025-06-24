@@ -181,13 +181,13 @@ void Animator::animate()
                         break;
                     case Sc::Sprite::Op::playframtile: // TODO
                         break;
-                    case Sc::Sprite::Op::sethorpos: // TODO
+                    case Sc::Sprite::Op::sethorpos:
                         currImage->xOffset = s8(iscript[currOffset]);
                         break;
-                    case Sc::Sprite::Op::setvertpos: // TODO
+                    case Sc::Sprite::Op::setvertpos:
                         currImage->yOffset = s8(iscript[currOffset]);
                         break;
-                    case Sc::Sprite::Op::setpos: // TODO
+                    case Sc::Sprite::Op::setpos:
                         currImage->xOffset = s8(iscript[currOffset]);
                         currImage->yOffset = s8(iscript[currOffset+1]);
                         break;
@@ -260,7 +260,7 @@ void Animator::animate()
                         break;
                     case Sc::Sprite::Op::imguluselo: // TODO
                         break;
-                    case Sc::Sprite::Op::sprol: // TODO
+                    case Sc::Sprite::Op::sprol:
                         createSpriteOverlay((u16 &)iscript[currOffset], iscript[currOffset+2], iscript[currOffset+3], true);
                         break;
                     case Sc::Sprite::Op::highsprol: // TODO
@@ -325,7 +325,7 @@ void Animator::animate()
                         if ( context.isUnit )
                             setActorDirection(context.actor.direction+8*iscript[currOffset]);
                         break;
-                    case Sc::Sprite::Op::turn1cwise: // TODO
+                    case Sc::Sprite::Op::turn1cwise:
                         if ( context.isUnit )
                             setActorDirection(context.actor.direction+8);
                         break;
@@ -365,7 +365,7 @@ void Animator::animate()
                         break;
                     case Sc::Sprite::Op::tmprmgraphicend: // TODO
                         break;
-                    case Sc::Sprite::Op::setfldirect: // TODO
+                    case Sc::Sprite::Op::setfldirect:
                         if ( context.isUnit )
                             setActorDirection(iscript[currOffset]*8);
                         break;

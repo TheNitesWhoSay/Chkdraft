@@ -226,14 +226,14 @@ void MapAnimations::initializeActor(MapActor & actor, u8 direction, u16 imageId,
 
 void MapAnimations::initSpecialCases(MapActor & actor, std::size_t type, bool isUnit, bool isSpriteUnit)
 {
-    if ( ((isUnit || isSpriteUnit) && type == Sc::Unit::Type::ScannerSweep) || (!isUnit && type == 237 /*TODO: enum sprites, this is scanner sweep sprite*/) )
+    if ( ((isUnit || isSpriteUnit) && type == Sc::Unit::Type::ScannerSweep) || (!isUnit && type == Sc::Sprite::Type::ScannerSweep) )
     {
         MapImage* primaryImage = actor.primaryImage(*this);
         primaryImage->hiddenLeader = true; // Mark this as a "hidden leader" image so auto-restarts can proceed smoothly
         primaryImage->drawFunction = MapImage::DrawFunction::None; // Don't draw the primary image for scanner sweep (a terran marine)
         actor.autoRestart = true; // Always auto-restart a scanner sweep
     }
-    else if ( !isUnit && !isSpriteUnit && type == 339 /*TODO: enum sprites, this is psionic storm sprite*/ )
+    else if ( !isUnit && !isSpriteUnit && type == Sc::Sprite::Type::PsionicStorm )
     {
         MapImage* primaryImage = actor.primaryImage(*this);
         const Sc::Sprite::IScriptAnimation* specialState2 = chkd.scData.sprites.getAnimationHeader(primaryImage->iScriptId, Sc::Sprite::AnimHeader::SpecialState2);

@@ -4233,13 +4233,24 @@ bool Sc::Data::loadSpriteNames(const Sc::Sprite::SpriteGroup & spriteGroup)
     for ( const auto & subGroup : spriteGroup.subGroups )
         loadSpriteNames(subGroup);
     
-    for ( auto memberSprite : spriteGroup.memberSprites )
+    for ( const auto & memberSprite : spriteGroup.memberSprites )
         sprites.spriteNames[memberSprite.spriteIndex] = memberSprite.spriteName;
 
     return true;
 }
 
-bool Sc::Data::loadSpriteGroups(Sc::TblFilePtr imagesTbl)
+#ifdef _DEBUG
+void appendSpriteIndexes(std::set<u16> & indexes, const Sc::Sprite::SpriteGroup & spriteGroup)
+{
+    for ( const auto & subGroup : spriteGroup.subGroups )
+        appendSpriteIndexes(indexes, subGroup);
+    
+    for ( const auto & memberSprite : spriteGroup.memberSprites )
+        indexes.insert(memberSprite.spriteIndex);
+}
+#endif
+
+bool Sc::Data::loadSpriteGroups(Sc::TblFilePtr imagesTbl, Sc::TblFilePtr statTxt)
 {
     constexpr auto totalSprites = Sc::Sprite::TotalSprites;
 
@@ -4350,19 +4361,19 @@ bool Sc::Data::loadSpriteGroups(Sc::TblFilePtr imagesTbl)
     }
     
     auto & remains = sprites.spriteGroups.emplace_back(Sc::Sprite::SpriteGroup{"Remains"});
-    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{230, "Ghost Remains"});
     remains.memberSprites.push_back(Sc::Sprite::TreeSprite{236, "Marine Remains"});
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{230, "Ghost Remains"});
     remains.memberSprites.push_back(Sc::Sprite::TreeSprite{490, "Medic Remains"});
-
-    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{134, "Broodling Remains"});
-    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{139, "Defiler Remains"});
-    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{141, "Drone Remains"});
-    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{143, "Egg Remains"});
-    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{147, "Hydralisk Remains"});
+    
     remains.memberSprites.push_back(Sc::Sprite::TreeSprite{150, "Larva Remains"});
-    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{158, "Ultralisk Remains"});
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{143, "Egg Remains"});
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{141, "Drone Remains"});
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{134, "Broodling Remains"});
     remains.memberSprites.push_back(Sc::Sprite::TreeSprite{160, "Zergling Remains"});
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{147, "Hydralisk Remains"});
     remains.memberSprites.push_back(Sc::Sprite::TreeSprite{484, "Lurker Remains"});
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{158, "Ultralisk Remains"});
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{139, "Defiler Remains"});
 
     remains.memberSprites.push_back(Sc::Sprite::TreeSprite{192, "Dragoon Remains"});
     
@@ -4398,48 +4409,82 @@ bool Sc::Data::loadSpriteGroups(Sc::TblFilePtr imagesTbl)
     explosions.memberSprites.push_back(Sc::Sprite::TreeSprite{154, "Overlord Death"});
     explosions.memberSprites.push_back(Sc::Sprite::TreeSprite{156, "Queen Death"});
     explosions.memberSprites.push_back(Sc::Sprite::TreeSprite{483, "Devourer Death"});
+    explosions.memberSprites.push_back(Sc::Sprite::TreeSprite{374, "Hallucination Death 1"});
+    explosions.memberSprites.push_back(Sc::Sprite::TreeSprite{375, "Hallucination Death 2"});
+    explosions.memberSprites.push_back(Sc::Sprite::TreeSprite{376, "Hallucination Death 3"});
     
+    auto removeWeaponLabelHotkey = [](const std::string & label) -> std::string {
+        if ( label.size() >= 2 && label[1] == '\3' )
+        {
+            std::string newLabel {};
+            for ( std::size_t i=2; i<label.size(); ++i )
+            {
+                if ( label[i] != '\1' && label[i] != '\3' )
+                    newLabel += label[i];
+            }
+            return newLabel;
+        }
+        else
+            return label;
+    };
+
     std::set<u16> knownWeaponSprites {};
-    auto & weaponSprites = sprites.spriteGroups.emplace_back(Sc::Sprite::SpriteGroup{"Weapons"});
+    sprites.spriteGroups.emplace_back(Sc::Sprite::SpriteGroup{"Weapons"});
+    auto & abilities = sprites.spriteGroups.emplace_back(Sc::Sprite::SpriteGroup{"Abilities"});
+    auto & weaponSprites = sprites.spriteGroups[sprites.spriteGroups.size()-2];
     for ( size_t i=0; i<Weapon::Total; ++i )
     {
         const auto & weapon = weapons.get(Sc::Weapon::Type(i));
         const auto & flingyDat = units.getFlingy(weapon.graphics);
         if ( knownWeaponSprites.find(flingyDat.sprite) == knownWeaponSprites.end() )
         {
+            if ( flingyDat.sprite == Sprite::Type::ZergScourge || flingyDat.sprite == Sprite::Type::WhiteCircle370 ||
+                flingyDat.sprite == Sprite::Type::ZergBeaconOverlay ) {
+                continue; // Duplicate of scourge sprite from unit group, or otherwise poorly grouped white circle/zerg marker
+            }
+
             knownWeaponSprites.insert(flingyDat.sprite);
             const auto & spriteDat = sprites.getSprite(flingyDat.sprite);
             const auto & imageDat = sprites.getImage(spriteDat.imageFile);
             const auto & imageFileStr = imagesTbl->getString(imageDat.grpFile);
             std::string imageFileName = getSystemFileName(imageFileStr);
+            std::string weaponLabel = removeWeaponLabelHotkey(statTxt->getString(weapon.label));
+            if ( flingyDat.sprite == Sprite::Type::DualPhotonBlastersHit )
+                weaponLabel = "Dual Photon Blasters Hit"; // Fix poor name: "Unused"
+            else if ( flingyDat.sprite == Sprite::Type::NeedleSpineHit )
+                weaponLabel = "Needle Spine Hit"; // Fix repeated name: "Needle Spine"
 
-            weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{flingyDat.sprite, imageFileName});
+            if ( flingyDat.sprite == Sprite::Type::PsionicStorm || flingyDat.sprite == Sprite::Type::YamatoGun ||
+                flingyDat.sprite == Sprite::Type::EmpShockwave || flingyDat.sprite == Sprite::Type::Parasite || flingyDat.sprite == Sprite::Type::Plague ||
+                flingyDat.sprite == Sprite::Type::Consume || flingyDat.sprite == Sprite::Type::OpticalFlare )
+            {
+                abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{flingyDat.sprite, weaponLabel}); // Better grouped under abilities than weapons
+            }
+            else
+                weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{flingyDat.sprite, weaponLabel});
         }
     }
-    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{309, "smoke.grp"});
-    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{310, "GreSmoke.grp"});
-    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{332, "spooge.grp"});
-    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{365, "SporeHit.grp"});
-    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{367, "SpoTrail.grp"});
-    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{368, "gSmoke.grp"});
-    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{371, "plasma.grp"});
-    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{372, "PlasDrip.grp"});
-    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{373, "HKTrail.grp"});
-    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{374, "ehaMed.grp"});
-    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{375, "ehaMed.grp"});
-    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{376, "ehaMed.grp"});
-    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{378, "flamer.grp"});
-    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{505, "bsmoke.grp"});
-    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{513, "ZDvHit.grp"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{309, "Smoke Trail"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{310, "Smoke Grenade"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{332, "Needle Spines"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{365, "Spore Hit"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{367, "Spore Trail"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{368, "Spore Smoke"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{371, "Acid Spray"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{372, "Plasma Drip"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{373, "Protoss Trail"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{378, "Flamethrower"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{505, "Halo Rocket Trail"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{507, "Neutron Flare Overlay"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{513, "Corrosive Acid Hit"});
     
-    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{354, "PDripHit.grp"});
-    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{369, "dragbull.grp (unused)"});
-    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{511, "Spike.grp"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{354, "Plasma Drip Hit (unused)"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{369, "Phase Distruptor (unused)"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{511, "Subterranean Spines"});
 
     std::sort(weaponSprites.memberSprites.begin(), weaponSprites.memberSprites.end(),
-        [](const auto & l, const auto & r) { return l.spriteIndex < r.spriteIndex; });
+        [](const auto & l, const auto & r) { return l.spriteName < r.spriteName; });
 
-    auto & abilities = sprites.spriteGroups.emplace_back(Sc::Sprite::SpriteGroup{"Abilities"});
     abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{231, "Nuke Target Dot"});
     abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{322, "Burrowing Dust"});
     abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{361, "Stasis"});
@@ -4449,9 +4494,11 @@ bool Sc::Data::loadSpriteGroups(Sc::TblFilePtr imagesTbl)
     abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{500, "Feedback - Small"});
     abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{501, "Feedback - Medium"});
     abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{502, "Feedback - Large"});
-    abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{507, "Neutron Flare"});
     abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{514, "Maelstrom Hit"});
-    abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{351, "Yamato Gun"});
+    abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{351, "Yamato Gun Trail"});
+
+    std::sort(abilities.memberSprites.begin(), abilities.memberSprites.end(),
+        [](const auto & l, const auto & r) { return l.spriteIndex < r.spriteIndex; });
 
     abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{323, "Building Landing Dust 1"});
     abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{324, "Building Landing Dust 2"});
@@ -4470,9 +4517,11 @@ bool Sc::Data::loadSpriteGroups(Sc::TblFilePtr imagesTbl)
     sprites.spriteAutoRestart[321] = false;
     misc.memberSprites.push_back(Sc::Sprite::TreeSprite{344, "Magna Pulse"});
     misc.memberSprites.push_back(Sc::Sprite::TreeSprite{300, "White Circle"});
+    misc.memberSprites.push_back(Sc::Sprite::TreeSprite{370, "White Circle"});
     misc.memberSprites.push_back(Sc::Sprite::TreeSprite{504, "White Circle"});
     misc.memberSprites.push_back(Sc::Sprite::TreeSprite{247, "Science Vessel Turret"});
     misc.memberSprites.push_back(Sc::Sprite::TreeSprite{377, "Bunker Overlay"});
+    misc.memberSprites.push_back(Sc::Sprite::TreeSprite{510, "Zerg Beacon Overlay"});
 
     misc.memberSprites.push_back(Sc::Sprite::TreeSprite{311, "Vespene Puff 1"});
     misc.memberSprites.push_back(Sc::Sprite::TreeSprite{312, "Vespene Puff 2"});
@@ -4480,9 +4529,22 @@ bool Sc::Data::loadSpriteGroups(Sc::TblFilePtr imagesTbl)
     misc.memberSprites.push_back(Sc::Sprite::TreeSprite{314, "Vespene Puff 4"});
     misc.memberSprites.push_back(Sc::Sprite::TreeSprite{315, "Vespene Puff 5"});
     
-    sprites.spriteNames.assign(517, "");
+    sprites.spriteNames.assign(Sc::Sprite::TotalSprites, "");
     for ( auto & spriteGroup : sprites.spriteGroups )
         loadSpriteNames(spriteGroup);
+
+    #ifdef _DEBUG
+    // Validate that every sprite is included
+    std::set<u16> treeSpriteIndexes {};
+    for ( const auto & spriteGroup : sprites.spriteGroups )
+        appendSpriteIndexes(treeSpriteIndexes, spriteGroup);
+
+    for ( std::size_t i=0; i<Sc::Sprite::TotalSprites; ++i )
+    {
+        if ( !treeSpriteIndexes.contains(u16(i)) )
+            throw std::logic_error("All sprites not included!");
+    }
+    #endif
 
     return true;
 }
@@ -4549,7 +4611,7 @@ bool Sc::Data::load(Sc::DataFile::BrowserPtr dataFileBrowser, const std::vector<
     if ( !tselect.load(*archiveCluster, "game\\tselect.pcx") )
         CHKD_ERR("Failed to load tselect.pcx");
 
-    if ( !loadSpriteGroups(imagesTbl) )
+    if ( !loadSpriteGroups(imagesTbl, statTxt) )
         CHKD_ERR("Failed to load sprite groups");
     
     auto finish = std::chrono::high_resolution_clock::now();

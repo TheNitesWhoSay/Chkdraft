@@ -25,7 +25,7 @@ void Chkdraft::OnLoadTest()
         _Pragma("warning(suppress: 26716)") return *map;
     }();
     auto edit = CM->operator()();
-    for ( std::size_t i=0; i<Sc::Unit::TotalTypes; ++i )
+    /*for ( std::size_t i=0; i<Sc::Unit::TotalTypes; ++i )
     {
         //if ( i != Sc::Unit::Type::TerranWraith )
         //    continue;
@@ -34,8 +34,8 @@ void Chkdraft::OnLoadTest()
         int x = i%20;
         int y = i/20;
         CM->addUnit(Chk::Unit {CM->getNextClassId(), u16(x*64+64), u16(y*64+64), Sc::Unit::Type(i), 0, 0, 0, Sc::Player::Id::Player1});
-    }
-    /*for ( std::size_t i=0; i<Sc::Sprite::TotalSprites; ++i )
+    }*/
+    for ( std::size_t i=0; i<Sc::Sprite::TotalSprites; ++i )
     {
         //if ( i != 321 )
         //    continue;
@@ -45,7 +45,7 @@ void Chkdraft::OnLoadTest()
         int y = i/32;
         CM->addSprite(Chk::Sprite {Sc::Sprite::Type(i), u16(x*64+64), u16(y*64+64), Sc::Player::Id::Player1, 0, Chk::Sprite::SpriteFlags::DrawAsSprite});
         //CM->addUnit(Chk::Unit {CM->getNextClassId(), u16(x*64+64), u16(y*64+64), Sc::Unit::Type(i), 0, 0, 0, Sc::Player::Id::Player1});
-    }*/
+    }
     CM->SetSkin(GuiMap::Skin::ScrSD);
     maps.ChangeLayer(Layer::Sprites);
     //maps.ChangeLayer(Layer::Sprites);
