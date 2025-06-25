@@ -47,7 +47,7 @@ void Chkdraft::OnLoadTest()
         //CM->addUnit(Chk::Unit {CM->getNextClassId(), u16(x*64+64), u16(y*64+64), Sc::Unit::Type(i), 0, 0, 0, Sc::Player::Id::Player1});
     }
     CM->SetSkin(GuiMap::Skin::ScrSD);
-    maps.ChangeLayer(Layer::Sprites);
+    maps.ChangeLayer(Layer::Units);
     //maps.ChangeLayer(Layer::Sprites);
 
     /*for ( std::size_t i=0; i<Sc::Unit::TotalTypes; ++i )

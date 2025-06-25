@@ -158,6 +158,14 @@ void MapAnimations::clearClipboardActors()
     clearClipboardSprites();
 }
 
+void MapAnimations::clearActor(MapActor & actor)
+{
+    for ( auto usedImageIndex : actor.usedImages )
+        removeImage(usedImageIndex);
+
+    actor = {};
+}
+
 void MapAnimations::restartActor(AnimationContext & context)
 {
     auto & actor = context.actor;
@@ -331,6 +339,98 @@ void MapAnimations::removeSprite(std::size_t spriteIndex, MapActor & actor)
     actor.drawListIndex = 0;
     for ( auto usedImage : actor.usedImages )
         removeImage(usedImage);
+}
+
+void MapAnimations::updateUnitType(std::size_t unitIndex, Sc::Unit::Type newUnitType)
+{
+    const auto & unit = scenario.read.units[unitIndex];
+    auto & unitActor = scenario.view.units.attachedData(unitIndex);
+    clearActor(unitActor);
+    initializeUnitActor(unitActor, false, unitIndex, unit, unit.xc, unit.yc);
+}
+
+void MapAnimations::updateSpriteType(std::size_t spriteIndex, Sc::Sprite::Type newSpriteType)
+{
+    const auto & sprite = scenario.read.sprites[spriteIndex];
+    auto & spriteActor = scenario.view.sprites.attachedData(spriteIndex);
+    clearActor(spriteActor);
+    initializeSpriteActor(spriteActor, false, spriteIndex, sprite, sprite.xc, sprite.yc);
+}
+
+void MapAnimations::updateUnitIndex(std::size_t unitIndexFrom, std::size_t unitIndexTo)
+{
+    auto & unitActor = scenario.view.units.attachedData(unitIndexTo);
+    std::uint64_t & drawListEntry = drawList[unitActor.drawListIndex];
+    drawListEntry = unitIndexTo | (drawListEntry & MaskNonIndexDrawList);
+}
+
+void MapAnimations::updateSpriteIndex(std::size_t spriteIndexFrom, std::size_t spriteIndexTo)
+{
+    auto & spriteActor = scenario.view.sprites.attachedData(spriteIndexTo);
+    std::uint64_t & drawListEntry = drawList[spriteActor.drawListIndex];
+    drawListEntry = spriteIndexTo | (drawListEntry & MaskNonIndexDrawList);
+}
+
+void MapAnimations::updateUnitXc(std::size_t unitIndex, u16 oldXc, u16 newXc)
+{
+    auto & actor = scenario.view.units.attachedData(unitIndex);
+    s32 difference = s32(newXc) - s32(oldXc);
+    for ( auto usedImageIndex : actor.usedImages )
+    {
+        if ( usedImageIndex != 0 )
+            images[usedImageIndex]->xc += difference;
+    }
+}
+
+void MapAnimations::updateUnitYc(std::size_t unitIndex, u16 oldYc, u16 newYc)
+{
+    auto & actor = scenario.view.units.attachedData(unitIndex);
+    s32 difference = s32(newYc) - s32(oldYc);
+    for ( auto usedImageIndex : actor.usedImages )
+    {
+        if ( usedImageIndex != 0 )
+            images[usedImageIndex]->yc += difference;
+    }
+}
+
+void MapAnimations::updateSpriteXc(std::size_t spriteIndex, u16 oldXc, u16 newXc)
+{
+    auto & actor = scenario.view.sprites.attachedData(spriteIndex);
+    s32 difference = s32(newXc) - s32(oldXc);
+    for ( auto usedImageIndex : actor.usedImages )
+    {
+        if ( usedImageIndex != 0 )
+            images[usedImageIndex]->xc += difference;
+    }
+}
+
+void MapAnimations::updateSpriteYc(std::size_t spriteIndex, u16 oldYc, u16 newYc)
+{
+    auto & actor = scenario.view.sprites.attachedData(spriteIndex);
+    s32 difference = s32(newYc) - s32(oldYc);
+    for ( auto usedImageIndex : actor.usedImages )
+    {
+        if ( usedImageIndex != 0 )
+            images[usedImageIndex]->yc += difference;
+    }
+}
+
+void MapAnimations::updateUnitStateFlags(std::size_t unitIndex, u16 oldStateFlags, u16 newStateFlags)
+{
+    const auto & unit = scenario.read.units[unitIndex];
+    auto & actor = scenario.view.units.attachedData(unitIndex);
+    // TODO
+}
+
+void MapAnimations::updateSpriteFlags(std::size_t spriteIndex, u16 oldSpriteFlags, u16 newSpriteFlags)
+{
+    const auto & sprite = scenario.read.sprites[spriteIndex];
+    auto & actor = scenario.view.sprites.attachedData(spriteIndex);
+    if ( (oldSpriteFlags & Chk::Sprite::SpriteFlags::DrawAsSprite) != (newSpriteFlags & Chk::Sprite::SpriteFlags::DrawAsSprite) )
+    {
+        clearActor(actor);
+        initializeSpriteActor(actor, false, spriteIndex, sprite, sprite.xc, sprite.yc);
+    }
 }
 
 void MapAnimations::cleanDrawList()

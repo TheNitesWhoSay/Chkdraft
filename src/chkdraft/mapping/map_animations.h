@@ -35,6 +35,7 @@ public:
     static constexpr std::uint64_t ShiftY           = 35;
     static constexpr std::uint64_t ShiftElevation   = 48;
 
+    static constexpr std::uint64_t MaskNonIndexDrawList = 0xFFFFFFFF00000000;
     // unitOrSpriteIndex | isUnit << 32 | isTurret << 33 | y << 34 | elevation << 47
     bool drawListDirty = true; // If true at the end of an anim tick, sort the draw list, then go through all entries to give the new drawListIndexes to actors
     std::vector<std::uint64_t> drawList { 0ull }; // Index 0 of drawList is unused, a value of 0xFFFFFFFF in a drawList entry indicates an unused index
@@ -47,6 +48,7 @@ public:
     void clearClipboardUnits();
     void clearClipboardSprites();
     void clearClipboardActors();
+    void clearActor(MapActor & actor);
     void restartActor(AnimationContext & context);
     void initializeActor(MapActor & actor, u8 direction, u16 imageId, u8 owner, s32 xc, s32 yc, u32 iScriptId, bool isUnit, bool autoRestart, std::uint64_t drawListValue);
     void initSpecialCases(MapActor & actor, std::size_t type, bool isUnit, bool isSpriteUnit = false);
@@ -56,6 +58,16 @@ public:
     void addSprite(std::size_t spriteIndex, MapActor & actor);
     void removeUnit(std::size_t unitIndex, MapActor & actor);
     void removeSprite(std::size_t spriteIndex, MapActor & actor);
+    void updateUnitType(std::size_t unitIndex, Sc::Unit::Type newUnitType);
+    void updateSpriteType(std::size_t spriteIndex, Sc::Sprite::Type newSpriteType);
+    void updateUnitIndex(std::size_t unitIndexFrom, std::size_t unitIndexTo);
+    void updateSpriteIndex(std::size_t spriteIndexFrom, std::size_t spriteIndexTo);
+    void updateUnitXc(std::size_t unitIndex, u16 oldXc, u16 newXc);
+    void updateUnitYc(std::size_t unitIndex, u16 oldYc, u16 newYc);
+    void updateSpriteXc(std::size_t spriteIndex, u16 oldXc, u16 newXc);
+    void updateSpriteYc(std::size_t spriteIndex, u16 oldYc, u16 newYc);
+    void updateUnitStateFlags(std::size_t unitIndex, u16 oldStateFlags, u16 newStateFlags);
+    void updateSpriteFlags(std::size_t spriteIndex, u16 oldSpriteFlags, u16 newSpriteFlags);
     void cleanDrawList();
 
     void animate(uint64_t currentTick);

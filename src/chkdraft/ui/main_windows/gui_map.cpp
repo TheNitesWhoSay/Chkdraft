@@ -16,6 +16,12 @@ GuiMap::GuiMap(Clipboard & clipboard, const std::string & filePath) : MapFile(fi
     int layerSel = chkd.mainToolbar.layerBox.GetSel();
     if ( layerSel != CB_ERR )
         currLayer = (Layer)layerSel;
+    
+    for ( std::size_t i=0; i<numSprites(); ++i )
+        this->elementAdded(Scenario::sprites_path{}, i);
+
+    for ( std::size_t i=0; i<numUnits(); ++i )
+        this->elementAdded(Scenario::units_path{}, i);
 }
 
 GuiMap::GuiMap(Clipboard & clipboard, FileBrowserPtr<SaveType> fileBrowser) : MapFile(fileBrowser),
@@ -26,6 +32,12 @@ GuiMap::GuiMap(Clipboard & clipboard, FileBrowserPtr<SaveType> fileBrowser) : Ma
     int layerSel = chkd.mainToolbar.layerBox.GetSel();
     if ( layerSel != CB_ERR )
         currLayer = (Layer)layerSel;
+    
+    for ( std::size_t i=0; i<numSprites(); ++i )
+        this->elementAdded(Scenario::sprites_path{}, i);
+
+    for ( std::size_t i=0; i<numUnits(); ++i )
+        this->elementAdded(Scenario::units_path{}, i);
 }
 
 GuiMap::GuiMap(Clipboard & clipboard, Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex, DefaultTriggers defaultTriggers)
@@ -4107,22 +4119,35 @@ void GuiMap::elementRemoved(units_path, std::size_t index)
 
 void GuiMap::elementMoved(units_path, std::size_t oldIndex, std::size_t newIndex)
 {
-    logger.info() << "TODO: unit moved from index " << oldIndex << " to " << newIndex << '\n';
+    if ( oldIndex != newIndex )
+        animations.updateUnitIndex(oldIndex, newIndex);
 }
 
-void GuiMap::valueChanged(unit_type_path, Sc::Unit::Type oldType, Sc::Unit::Type newType)
+void GuiMap::valueChanged(unit_type_path path, Sc::Unit::Type oldType, Sc::Unit::Type newType)
 {
-    logger.info() << "TODO: unit type changed from " << oldType << " to " << newType << '\n';
+    if ( oldType != newType )
+    {
+        std::size_t unitIndex = static_cast<std::size_t>(path.template index<0>());
+        animations.updateUnitType(unitIndex, newType);
+    }
 }
 
-void GuiMap::valueChanged(unit_xc_path, u16 oldXc, u16 newXc)
+void GuiMap::valueChanged(unit_xc_path path, u16 oldXc, u16 newXc)
 {
-    logger.info() << "TODO: unit xc changed from " << oldXc << " to " << newXc << '\n';
+    if ( oldXc != newXc )
+    {
+        std::size_t unitIndex = static_cast<std::size_t>(path.template index<0>());
+        animations.updateUnitXc(unitIndex, oldXc, newXc);
+    }
 }
 
-void GuiMap::valueChanged(unit_yc_path, u16 oldYc, u16 newYc)
+void GuiMap::valueChanged(unit_yc_path path, u16 oldYc, u16 newYc)
 {
-    logger.info() << "TODO: unit yc changed from " << oldYc << " to " << newYc << '\n';
+    if ( oldYc != newYc )
+    {
+        std::size_t unitIndex = static_cast<std::size_t>(path.template index<0>());
+        animations.updateUnitYc(unitIndex, oldYc, newYc);
+    }
 }
 
 void GuiMap::elementAdded(sprites_path, std::size_t index)
@@ -4137,27 +4162,44 @@ void GuiMap::elementRemoved(sprites_path, std::size_t index)
 
 void GuiMap::elementMoved(sprites_path, std::size_t oldIndex, std::size_t newIndex)
 {
-    logger.info() << "TODO: sprite moved from index " << oldIndex << " to " << newIndex << '\n';
+    if ( oldIndex != newIndex )
+        animations.updateSpriteIndex(oldIndex, newIndex);
 }
 
-void GuiMap::valueChanged(sprite_type_path, Sc::Sprite::Type oldType, Sc::Sprite::Type newType)
+void GuiMap::valueChanged(sprite_type_path path, Sc::Sprite::Type oldType, Sc::Sprite::Type newType)
 {
-    logger.info() << "TODO: sprite type changed from " << oldType << " to " << newType << '\n';
+    if ( oldType != newType )
+    {
+        std::size_t spriteIndex = static_cast<std::size_t>(path.template index<0>());
+        animations.updateSpriteType(spriteIndex, newType);
+    }
 }
 
-void GuiMap::valueChanged(sprite_flags_path, u16 oldFlags, u16 newFlags)
+void GuiMap::valueChanged(sprite_flags_path path, u16 oldFlags, u16 newFlags)
 {
-    logger.info() << "TODO: sprite flags changed from " << oldFlags << " to " << newFlags << '\n';
+    if ( oldFlags != newFlags )
+    {
+        std::size_t spriteIndex = static_cast<std::size_t>(path.template index<0>());
+        animations.updateSpriteFlags(spriteIndex, oldFlags, newFlags);
+    }
 }
 
-void GuiMap::valueChanged(sprite_xc_path, u16 oldXc, u16 newXc)
+void GuiMap::valueChanged(sprite_xc_path path, u16 oldXc, u16 newXc)
 {
-    logger.info() << "TODO: sprite xc changed from " << oldXc << " to " << newXc << '\n';
+    if ( oldXc != newXc )
+    {
+        std::size_t spriteIndex = static_cast<std::size_t>(path.template index<0>());
+        animations.updateSpriteXc(spriteIndex, oldXc, newXc);
+    }
 }
 
-void GuiMap::valueChanged(sprite_yc_path, u16 oldYc, u16 newYc)
+void GuiMap::valueChanged(sprite_yc_path path, u16 oldYc, u16 newYc)
 {
-    logger.info() << "TODO: sprite yc changed from " << oldYc << " to " << newYc << '\n';
+    if ( oldYc != newYc )
+    {
+        std::size_t spriteIndex = static_cast<std::size_t>(path.template index<0>());
+        animations.updateSpriteYc(spriteIndex, oldYc, newYc);
+    }
 }
 
 

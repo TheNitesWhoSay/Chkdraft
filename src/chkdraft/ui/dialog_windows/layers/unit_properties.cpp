@@ -1170,7 +1170,9 @@ void UnitPropertiesWindow::NotifyIdEditUpdated()
     {
         for ( auto unitIndex : CM->view.units.sel() )
         {
-            edit->units[unitIndex].type = (Sc::Unit::Type)unitID;
+            if ( CM->read.units[unitIndex].type != (Sc::Unit::Type)unitID )
+                edit->units[unitIndex].type = (Sc::Unit::Type)unitID;
+
             int row = listUnits.GetItemRow(unitIndex);
 
             auto unitName = CM->getUnitName<ChkdString>((Sc::Unit::Type)unitID, true);
