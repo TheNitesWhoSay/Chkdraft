@@ -35,6 +35,7 @@ void LeftBar::NotifyTreeItemSelected(LPARAM newValue)
         case TreeTypeUnit: if ( CM->getLayer() != Layer::Units ) chkd.maps.ChangeLayer(Layer::Units); break;
         case TreeTypeLocation: if ( CM->getLayer() != Layer::Locations ) chkd.maps.ChangeLayer(Layer::Locations); break;
         case TreeTypeSprite: if ( CM->getLayer() != Layer::Sprites ) chkd.maps.ChangeLayer(Layer::Sprites); break;
+        case TreeTypeSpriteUnit: if ( CM->getLayer() != Layer::Sprites ) chkd.maps.ChangeLayer(Layer::Sprites); break;
         case TreeTypeDoodad: if ( CM->getLayer() != Layer::Doodads ) chkd.maps.ChangeLayer(Layer::Doodads); break;
         }
 
@@ -124,18 +125,37 @@ void LeftBar::NotifyTreeItemSelected(LPARAM newValue)
             break;
 
         case TreeTypeSprite: // itemData = sprite index
-            CM->clearSelectedSprites();
-            chkd.maps.endPaste();
-            if ( CM->getLayer() != Layer::Sprites )
-                chkd.maps.ChangeLayer(Layer::Sprites);
+            {
+                CM->clearSelectedSprites();
+                chkd.maps.endPaste();
+                if ( CM->getLayer() != Layer::Sprites )
+                    chkd.maps.ChangeLayer(Layer::Sprites);
 
-            Chk::Sprite sprite {};
-            sprite.type = (Sc::Sprite::Type)itemData;
-            sprite.owner = CM->getCurrPlayer();
-            sprite.flags = Chk::Sprite::toPureSpriteFlags(chkd.scData.terrain.doodadSpriteFlags[itemData]); // TODO: sprite-units?
+                Chk::Sprite sprite {};
+                sprite.type = (Sc::Sprite::Type)itemData;
+                sprite.owner = CM->getCurrPlayer();
+                sprite.flags = Chk::Sprite::toPureSpriteFlags(chkd.scData.terrain.doodadSpriteFlags[itemData]);
 
-            chkd.maps.clipboard.addQuickSprite(sprite);
-            chkd.maps.startPaste(true);
+                chkd.maps.clipboard.addQuickSprite(sprite);
+                chkd.maps.startPaste(true);
+            }
+            break;
+
+        case TreeTypeSpriteUnit: // itemData = sprite index
+            {
+                CM->clearSelectedSprites();
+                chkd.maps.endPaste();
+                if ( CM->getLayer() != Layer::Sprites )
+                    chkd.maps.ChangeLayer(Layer::Sprites);
+
+                Chk::Sprite sprite {};
+                sprite.type = (Sc::Sprite::Type)itemData;
+                sprite.owner = CM->getCurrPlayer();
+                sprite.flags = Chk::Sprite::toSpriteUnitFlags(chkd.scData.terrain.doodadSpriteFlags[itemData]);
+
+                chkd.maps.clipboard.addQuickSprite(sprite);
+                chkd.maps.startPaste(true);
+            }
             break;
         }
     }

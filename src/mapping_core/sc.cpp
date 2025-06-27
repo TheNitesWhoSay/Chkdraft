@@ -4502,19 +4502,32 @@ bool Sc::Data::loadSpriteGroups(Sc::TblFilePtr imagesTbl, Sc::TblFilePtr statTxt
         }
     }
     
-    auto & unitSprites = sprites.spriteGroups.emplace_back(Sc::Sprite::SpriteGroup{"Units"});
-    for ( size_t i=0; i<Sc::Unit::TotalTypes; ++i )
-    {
-        const auto & unitDat = units.getUnit(Sc::Unit::Type(i));
-        const auto & flingyDat = units.getFlingy(unitDat.graphics);
-        const auto & spriteDat = sprites.getSprite(flingyDat.sprite);
-        const auto & imageDat = sprites.getImage(spriteDat.imageFile);
-        const auto & imageFileStr = imagesTbl->getString(imageDat.grpFile);
-        std::string imageFileName = getSystemFileName(imageFileStr);
+    sprites.spriteGroups.emplace_back(Sc::Sprite::SpriteGroup{"Unit Pure Sprites"});
+    auto & spriteUnits = sprites.spriteGroups.emplace_back(Sc::Sprite::SpriteGroup{"Sprite Units"});
+    auto & unitPureSprites = sprites.spriteGroups[sprites.spriteGroups.size()-2];
+    RareTs::forIndexes<std::tuple_size_v<UnitGroups>>([&](auto i) {
+        constexpr std::size_t I = decltype(i)::value;
+        using UnitGroup = std::tuple_element_t<I, UnitGroups>;
 
-        unitSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{flingyDat.sprite, units.defaultDisplayNames[i]});
-        sprites.spriteAutoRestart[flingyDat.sprite] = false;
-    }
+        auto groupName = RareTs::Notes<UnitGroup>::template getNote<Json::Name>().value;
+        auto & pureSpriteUnitGroup = unitPureSprites.subGroups.emplace_back(Sc::Sprite::SpriteGroup{std::string(groupName)});
+        auto & spriteUnitsUnitGroup = spriteUnits.subGroups.emplace_back(Sc::Sprite::SpriteGroup{std::string(groupName)});
+
+        RareTs::Members<UnitGroup>::forEach([&](auto member) {
+            auto subGroupName = member.template getNote<Json::Name>().value;
+            auto & values = member.value();
+            auto & subPureSpriteUnitGroup = pureSpriteUnitGroup.subGroups.emplace_back(Sc::Sprite::SpriteGroup{std::string(subGroupName)});
+            auto & subSpriteUnitsUnitGroup = spriteUnitsUnitGroup.subGroups.emplace_back(Sc::Sprite::SpriteGroup{std::string(subGroupName)});
+            for ( u16 unitId : values )
+            {
+                const auto & unitDat = units.getUnit(Sc::Unit::Type(unitId));
+                const auto & flingyDat = units.getFlingy(unitDat.graphics);
+                subPureSpriteUnitGroup.memberSprites.push_back(Sc::Sprite::TreeSprite{flingyDat.sprite, units.defaultDisplayNames[unitId]});
+                subSpriteUnitsUnitGroup.memberSprites.push_back(Sc::Sprite::TreeSprite{unitId, units.defaultDisplayNames[unitId], true});
+                sprites.spriteAutoRestart[flingyDat.sprite] = false;
+            }
+        });
+    });
     
     auto & remains = sprites.spriteGroups.emplace_back(Sc::Sprite::SpriteGroup{"Remains"});
     remains.memberSprites.push_back(Sc::Sprite::TreeSprite{236, "Marine Remains"});

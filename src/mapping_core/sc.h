@@ -1496,6 +1496,7 @@ namespace Sc {
         {
             size_t spriteIndex;
             std::string spriteName;
+            bool isUnit = false;
         };
 
         struct SpriteGroup

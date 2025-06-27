@@ -358,6 +358,14 @@ namespace Chk {
             return flags;
         }
 
+        inline static u16 toSpriteUnitFlags(u16 flags)
+        {
+            flags &= (~SpriteFlags::DrawAsSprite);
+            flags |= (SpriteFlags::IsUnit);
+            flags &= (~SpriteFlags::SpriteUnitDiabled);
+            return flags;
+        }
+
         bool isDrawnAsSprite() const;
         bool isUnit() const;
 

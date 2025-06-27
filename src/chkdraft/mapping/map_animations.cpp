@@ -281,7 +281,7 @@ void MapAnimations::initializeSpriteActor(MapActor & actor, bool isClipboard, st
     bool isFlyer = isSpriteUnit && chkd.scData.units.getUnit(Sc::Unit::Type(sprite.type)).flags & Sc::Unit::Flags::Flyer;
 
     std::uint64_t elevation = isFlyer ? 1 : 0; // TODO: tile elevations
-    u32 iScriptId = iscriptIdFromSprite(sprite.type);
+    u32 iScriptId = isSpriteUnit ? iscriptIdFromUnit(Sc::Unit::Type(sprite.type)) : iscriptIdFromSprite(sprite.type);
     bool autoRestart = sprite.type < chkd.scData.sprites.spriteAutoRestart.size() ? chkd.scData.sprites.spriteAutoRestart[sprite.type] : true;
     std::size_t drawListValue = isClipboard ?
         (std::uint64_t(spriteIndex) | FlagIsClipboard | (isSubUnit ? FlagIsTurret : 0) |

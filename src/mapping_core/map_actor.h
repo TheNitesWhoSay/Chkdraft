@@ -15,7 +15,7 @@ struct MapActor
 
     bool autoRestart = false;
     u8 direction = 0;
-    u16 drawListIndex = 0; // TODO: Change to yc, elevation, or unitType, actor index -> update drawList[drawListIndex] & mark dirty
+    u16 drawListIndex = 0;
     u16 primaryImageIndex = 0;
     u16 usedImages[MaxSlots] {}; // Only leftmost indexes are used
 
