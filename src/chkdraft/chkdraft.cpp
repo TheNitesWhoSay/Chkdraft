@@ -106,6 +106,7 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
     UpdateWindow();
 
     scData.load(Sc::DataFile::BrowserPtr(new ChkdDataFileBrowser()), ChkdDataFileBrowser::getDataFileDescriptors(), ChkdDataFileBrowser::getExpectedStarCraftDirectory());
+    mainPlot.leftBar.mainTree.unitTree.UpdateUnitTree();
     mainPlot.leftBar.mainTree.spriteTree.UpdateSpriteTree();
     ParseCmdLine(lpCmdLine);
     GuiMap::SetAutoBackup(true);

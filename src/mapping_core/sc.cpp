@@ -1,10 +1,12 @@
 #include "sc.h"
+#include <rarecpp/json.h>
 #include <cross_cut/logger.h>
 #include "mpq_file.h"
 #include "casc_archive.h"
 #include <algorithm>
 #include <chrono>
 #include <set>
+#include <tuple>
 
 extern Logger logger;
 
@@ -4227,6 +4229,160 @@ void Sc::Isom::TerrainTypeShapes::populateLinkIdsToSolidBrushes(Span<TileGroup> 
     }
 }
 
+NOTE(ZergUnits, Json::Name{"Zerg"})
+struct ZergUnits
+{
+    NOTE(misc, Json::Name{"*"})
+    static constexpr u16 misc[] { 59, 36, 35, 97 };
+
+    NOTE(air, Json::Name{"Air Units"})
+    static constexpr u16 air[] { 62, 44, 43, 42, 45, 47 };
+
+    NOTE(buildings, Json::Name{"Buildings"})
+    static constexpr u16 buildings[] { 130, 143, 136, 139, 149, 137, 131, 133, 135, 132, 134, 138, 142, 141, 144, 146, 140 };
+
+    NOTE(ground, Json::Name{"Ground Units"})
+    static constexpr u16 ground[] { 50, 40, 46, 41, 38, 103, 39, 37 };
+
+    NOTE(heroes, Json::Name{"Heroes"})
+    static constexpr u16 heroes[] { 54, 53, 104, 51, 56, 55, 49, 48, 52, 57 };
+
+    NOTE(special, Json::Name{"Special"})
+    static constexpr u16 special[] { 194, 197, 191 };
+
+    NOTE(specialBuildings, Json::Name{"Special Buildings"})
+    static constexpr u16 specialBuildings[] { 150, 201, 151, 152, 148, 147 };
+
+    NOTE(zerg, Json::Name{"Zerg"})
+    static constexpr u16 zerg[] { 145, 153 };
+
+    REFLECT_NOTED(ZergUnits, misc, air, buildings, ground, heroes, special, specialBuildings, zerg)
+};
+
+NOTE(TerranUnits, Json::Name{"Terran"})
+struct TerranUnits
+{
+    NOTE(misc, Json::Name{"*"})
+    static constexpr u16 misc[] { 18, 24, 26, 4, 33, 6, 31, 91, 92, 119 };
+
+    NOTE(addons, Json::Name{"Addons"})
+    static constexpr u16 addons[] { 107, 115, 117, 120, 108, 118 };
+
+    NOTE(air, Json::Name{"Air Units"})
+    static constexpr u16 air[] { 12, 11, 9, 58, 8 };
+
+    NOTE(buildings, Json::Name{"Buildings"})
+    static constexpr u16 buildings[] { 112, 123, 111, 125, 106, 122, 113, 124, 110, 116, 114, 109 };
+
+    NOTE(ground, Json::Name{"Ground Units"})
+    static constexpr u16 ground[] { 32, 1, 3, 0, 34, 7, 30, 5, 2 };
+
+    NOTE(heroes, Json::Name{"Heroes"})
+    static constexpr u16 heroes[] { 17, 100, 27, 25, 23, 102, 10, 28, 20, 19, 22, 29, 99, 16, 15, 21 };
+
+    NOTE(special, Json::Name{"Special"})
+    static constexpr u16 special[] { 14, 195, 198, 192, 13 };
+
+    NOTE(specialBuildings, Json::Name{"Special Buildings"})
+    static constexpr u16 specialBuildings[] { 127, 126, 200, 190 };
+
+    NOTE(terran, Json::Name{"Terran"})
+    static constexpr u16 terran[] { 121 };
+
+    REFLECT_NOTED(TerranUnits, misc, addons, air, buildings, ground, heroes, special, specialBuildings, terran)
+};
+
+NOTE(ProtossUnits, Json::Name{"Protoss"})
+struct ProtossUnits
+{
+    NOTE(air, Json::Name{"Air Units"})
+    static constexpr u16 air[] { 71, 72, 60, 73, 84, 70, 69 };
+
+    NOTE(buildings, Json::Name{"Buildings"})
+    static constexpr u16 buildings[] { 170, 157, 163, 164, 169, 166, 160, 154, 159, 162, 156, 155, 171, 172, 167, 165 };
+
+    NOTE(ground, Json::Name{"Ground Units"})
+    static constexpr u16 ground[] { 68, 63, 61, 66, 67, 64, 83, 85, 65 };
+
+    NOTE(heroes, Json::Name{"Heroes"})
+    static constexpr u16 heroes[] { 87, 88, 86, 74, 78, 77, 82, 80, 98, 79, 76, 81, 75 };
+
+    NOTE(protoss, Json::Name{"Protoss"})
+    static constexpr u16 protoss[] { 158, 161 };
+
+    NOTE(special, Json::Name{"Special"})
+    static constexpr u16 special[] { 196, 199, 193 };
+
+    NOTE(specialBuildings, Json::Name{"Special Buildings"})
+    static constexpr u16 specialBuildings[] { 173, 174, 168, 189, 175 };
+
+    REFLECT_NOTED(ProtossUnits, air, buildings, ground, heroes, protoss, special, specialBuildings)
+};
+
+NOTE(NeutralUnits, Json::Name{"Neutral"})
+struct NeutralUnits
+{
+    NOTE(critters, Json::Name{"Critters"})
+    static constexpr u16 critters[] { 90, 94, 95, 89, 93, 96 };
+
+    NOTE(doodads, Json::Name{"Doodads"})
+    static constexpr u16 doodads[] { 209, 204, 203, 207, 205, 211, 210, 208, 206, 213, 212 };
+
+    NOTE(neutral, Json::Name{"Neutral"})
+    static constexpr u16 neutral[] { 181, 179, 180, 185, 187, 182, 186 };
+
+    NOTE(powerups, Json::Name{"Powerups"})
+    static constexpr u16 powerups[] { 218, 129, 219, 217, 128, 216 };
+
+    NOTE(protoss, Json::Name{"Protoss"})
+    static constexpr u16 protoss[] { 105 };
+
+    NOTE(resources, Json::Name{"Resources"})
+    static constexpr u16 resources[] { 220, 221, 176, 177, 178, 188, 222, 223, 224, 225, 226, 227 };
+
+    NOTE(special, Json::Name{"Special"})
+    static constexpr u16 special[] { 215, 101 };
+
+    NOTE(startLocation, Json::Name{"Start Location"})
+    static constexpr u16 startLocation[] { 214 };
+
+    NOTE(zerg, Json::Name{"Zerg"})
+    static constexpr u16 zerg[] { 202 };
+
+    REFLECT_NOTED(NeutralUnits, critters, doodads, neutral, powerups, protoss, resources, special, startLocation, zerg)
+};
+
+NOTE(UndefinedUnits, Json::Name{"Undefined"})
+struct UndefinedUnits
+{
+    NOTE(independent, Json::Name{"Independent"})
+    static constexpr u16 independent[] {183, 184};
+
+    REFLECT_NOTED(UndefinedUnits, independent)
+};
+
+using UnitGroups = std::tuple<ZergUnits, TerranUnits, ProtossUnits, NeutralUnits, UndefinedUnits>;
+
+bool Sc::Data::loadUnitGroups()
+{
+    RareTs::forIndexes<std::tuple_size_v<UnitGroups>>([&](auto i) {
+        constexpr std::size_t I = decltype(i)::value;
+        using UnitGroup = std::tuple_element_t<I, UnitGroups>;
+
+        auto groupName = RareTs::Notes<UnitGroup>::template getNote<Json::Name>().value;
+        auto & unitGroup = units.unitGroups.emplace_back(Sc::Unit::UnitGroup{std::string(groupName)});
+
+        RareTs::Members<UnitGroup>::forEach([&](auto member) {
+            auto subGroupName = member.template getNote<Json::Name>().value;
+            auto & values = member.value();
+            auto & subUnitGroup = unitGroup.subGroups.emplace_back(Sc::Unit::UnitGroup{std::string(subGroupName)});
+            subUnitGroup.memberUnits = std::vector<u16>(std::begin(values), std::end(values));
+        });
+    });
+    
+    return true;
+}
+
 bool Sc::Data::loadSpriteNames(const Sc::Sprite::SpriteGroup & spriteGroup)
 {
     auto & spriteGroups = sprites.spriteGroups;
@@ -4610,6 +4766,9 @@ bool Sc::Data::load(Sc::DataFile::BrowserPtr dataFileBrowser, const std::vector<
 
     if ( !tselect.load(*archiveCluster, "game\\tselect.pcx") )
         CHKD_ERR("Failed to load tselect.pcx");
+
+    if ( !loadUnitGroups() )
+        CHKD_ERR("Failed to load unit groups");
 
     if ( !loadSpriteGroups(imagesTbl, statTxt) )
         CHKD_ERR("Failed to load sprite groups");

@@ -593,6 +593,14 @@ namespace Sc {
         const DatEntry & getUnit(Type unitType) const;
         const FlingyDatEntry & getFlingy(size_t flingyIndex) const;
 
+        struct UnitGroup
+        {
+            std::string groupName;
+            std::vector<UnitGroup> subGroups;
+            std::vector<u16> memberUnits;
+        };
+        std::vector<UnitGroup> unitGroups;
+
     private:
         std::vector<DatEntry> units;
         std::vector<FlingyDatEntry> flingies;
@@ -3980,6 +3988,7 @@ namespace Sc {
         e.g. StarCraft asset files like "arr\\units.dat" or "tileset\badlands.cv5"
     */
     class Data {
+        bool loadUnitGroups();
         bool loadSpriteNames(const Sc::Sprite::SpriteGroup & spriteGroup);
         bool loadSpriteGroups(Sc::TblFilePtr imagesTbl, Sc::TblFilePtr statTxt);
 
