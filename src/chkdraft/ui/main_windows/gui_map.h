@@ -274,6 +274,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCach
                     void elementRemoved(units_path, std::size_t index) override;
                     void elementMoved(units_path, std::size_t oldIndex, std::size_t newIndex) override;
                     void valueChanged(unit_type_path, Sc::Unit::Type oldType, Sc::Unit::Type newType) override;
+                    void valueChanged(unit_owner_path, u8 oldOwner, u8 newOwner) override;
                     void valueChanged(unit_xc_path, u16 oldXc, u16 newXc) override;
                     void valueChanged(unit_yc_path, u16 oldYc, u16 newYc) override;
 
@@ -281,6 +282,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCach
                     void elementRemoved(sprites_path, std::size_t index) override;
                     void elementMoved(sprites_path, std::size_t oldIndex, std::size_t newIndex) override;
                     void valueChanged(sprite_type_path, Sc::Sprite::Type oldType, Sc::Sprite::Type newType) override;
+                    void valueChanged(sprite_owner_path, u8 oldOwner, u8 newOwner) override;
                     void valueChanged(sprite_flags_path, u16 oldFlags, u16 newFlags) override;
                     void valueChanged(sprite_xc_path, u16 oldXc, u16 newXc) override;
                     void valueChanged(sprite_yc_path, u16 oldYc, u16 newYc) override;

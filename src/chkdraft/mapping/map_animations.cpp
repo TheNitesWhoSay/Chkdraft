@@ -357,6 +357,26 @@ void MapAnimations::updateSpriteType(std::size_t spriteIndex, Sc::Sprite::Type n
     initializeSpriteActor(spriteActor, false, spriteIndex, sprite, sprite.xc, sprite.yc);
 }
 
+void MapAnimations::updateUnitOwner(std::size_t unitIndex, u8 newUnitOwner)
+{
+    auto & unitActor = scenario.view.units.attachedData(unitIndex);
+    for ( auto usedImageIndex : unitActor.usedImages )
+    {
+        if ( usedImageIndex != 0 )
+            images[usedImageIndex]->owner = newUnitOwner;
+    }
+}
+
+void MapAnimations::updateSpriteOwner(std::size_t spriteIndex, u8 newSpriteOwner)
+{
+    auto & spriteActor = scenario.view.sprites.attachedData(spriteIndex);
+    for ( auto usedImageIndex : spriteActor.usedImages )
+    {
+        if ( usedImageIndex != 0 )
+            images[usedImageIndex]->owner = newSpriteOwner;
+    }
+}
+
 void MapAnimations::updateUnitIndex(std::size_t unitIndexFrom, std::size_t unitIndexTo)
 {
     auto & unitActor = scenario.view.units.attachedData(unitIndexTo);

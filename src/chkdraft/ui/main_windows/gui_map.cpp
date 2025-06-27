@@ -4158,6 +4158,15 @@ void GuiMap::valueChanged(unit_type_path path, Sc::Unit::Type oldType, Sc::Unit:
     }
 }
 
+void GuiMap::valueChanged(unit_owner_path path, u8 oldOwner, u8 newOwner)
+{
+    if ( oldOwner != newOwner )
+    {
+        std::size_t unitIndex = static_cast<std::size_t>(path.template index<0>());
+        animations.updateUnitOwner(unitIndex, newOwner);
+    }
+}
+
 void GuiMap::valueChanged(unit_xc_path path, u16 oldXc, u16 newXc)
 {
     if ( oldXc != newXc )
@@ -4198,6 +4207,15 @@ void GuiMap::valueChanged(sprite_type_path path, Sc::Sprite::Type oldType, Sc::S
     {
         std::size_t spriteIndex = static_cast<std::size_t>(path.template index<0>());
         animations.updateSpriteType(spriteIndex, newType);
+    }
+}
+
+void GuiMap::valueChanged(sprite_owner_path path, u8 oldOwner, u8 newOwner)
+{
+    if ( oldOwner != newOwner )
+    {
+        std::size_t spriteIndex = static_cast<std::size_t>(path.template index<0>());
+        animations.updateSpriteOwner(spriteIndex, newOwner);
     }
 }
 
