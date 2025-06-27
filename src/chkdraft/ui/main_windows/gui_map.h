@@ -127,6 +127,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCach
                     bool EnsureBitmapSize(u32 desiredWidth, u32 desiredHeight);
                     void SnapSelEndDrag();
                     bool UpdateGlGraphics();
+                    bool Animate();
                     void PaintMap(GuiMapPtr currMap, bool pasting);
                     void PaintMiniMap(const WinLib::DeviceContext & dc);
                     void Redraw(bool includeMiniMap);

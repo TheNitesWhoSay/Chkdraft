@@ -145,22 +145,8 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
         }
 
 
-        if ( CM != nullptr )
-        {
-            if ( CM->GetSkin() == GuiMap::Skin::ClassicGDI )
-            {
-                if ( colorCycler.cycleColors(GetTickCount64(), CM->getTileset(), CM->getPalette()) )
-                    CM->Redraw(false);
-            }
-            else if ( gameClock.tick() )
-            {
-                CM->animations.animate(gameClock.currentTick()); //CM->Animate(gameClock.currentTick());
-                CM->UpdateGlGraphics(); // Color cycling or HD water
-                CM->Redraw(false);
-            }
-            else if ( CM->UpdateGlGraphics() )
-                CM->Redraw(false);
-        }
+        if ( CM != nullptr && CM->Animate() )
+            CM->Redraw(false);
 
         std::this_thread::sleep_for(std::chrono::milliseconds(1)); // Avoid consuming a core
 

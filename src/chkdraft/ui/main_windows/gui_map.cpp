@@ -1829,6 +1829,22 @@ bool GuiMap::UpdateGlGraphics()
     return false;
 }
 
+bool GuiMap::Animate()
+{
+    if ( skin == GuiMap::Skin::ClassicGDI )
+        return chkd.colorCycler.cycleColors(GetTickCount64(), read.tileset, scGraphics.getPalette());
+    else if ( chkd.gameClock.tick() )
+    {
+        animations.animate(chkd.gameClock.currentTick());
+        UpdateGlGraphics();
+        return true;
+    }
+    else if ( CM->UpdateGlGraphics() )
+        return true;
+    else
+        return false;
+}
+
 void GuiMap::PaintMap(GuiMapPtr currMap, bool pasting)
 {
     if ( CM.get() == this && this->skin != GuiMap::Skin::ClassicGDI )
@@ -1945,6 +1961,14 @@ void GuiMap::PaintMiniMap(const WinLib::DeviceContext & dc)
 
 void GuiMap::Redraw(bool includeMiniMap)
 {
+    if ( skin == GuiMap::Skin::ClassicGDI )
+        chkd.colorCycler.cycleColors(GetTickCount64(), read.tileset, scGraphics.getPalette());
+    else if ( chkd.gameClock.tick() )
+    {
+        CM->animations.animate(chkd.gameClock.currentTick());
+        CM->UpdateGlGraphics(); // Color cycling or HD water
+    }
+
     RedrawMap = true;
     if ( includeMiniMap )
         RedrawMiniMap = true;
@@ -3257,6 +3281,7 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
             selections.endDrag = {xc, yc};
             SnapSelEndDrag();
         }
+        Animate();
         PaintMap(nullptr, chkd.maps.clipboard.isPasting());
     }
     else if ( chkd.maps.clipboard.isPasting() == true ) // Not fog, and lButton is not down
@@ -3286,7 +3311,8 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
         }
         else
             selections.endDrag = {mapHoverX, mapHoverY};
-                        
+                   
+        Animate();     
         PaintMap(nullptr, chkd.maps.clipboard.isPasting());
     }
 }
