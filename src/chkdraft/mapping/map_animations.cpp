@@ -435,11 +435,28 @@ void MapAnimations::updateSpriteYc(std::size_t spriteIndex, u16 oldYc, u16 newYc
     }
 }
 
+void MapAnimations::updateUnitResourceAmount(std::size_t unitIndex, u32 oldResourceAmount, u32 newResourceAmount)
+{
+    const auto & unit = scenario.read.units[unitIndex];
+    auto & actor = scenario.view.units.attachedData(unitIndex);
+    // TODO
+    logger.info() << "TODO: unit[" << unitIndex << "].resourceAmount changed from " << oldResourceAmount << " to " << newResourceAmount << '\n';
+}
+
 void MapAnimations::updateUnitStateFlags(std::size_t unitIndex, u16 oldStateFlags, u16 newStateFlags)
 {
     const auto & unit = scenario.read.units[unitIndex];
     auto & actor = scenario.view.units.attachedData(unitIndex);
     // TODO
+    logger.info() << "TODO: unit[" << unitIndex << "].stateFlags changed from " << oldStateFlags << " to " << newStateFlags << '\n';
+}
+
+void MapAnimations::updateUnitRelationFlags(std::size_t unitIndex, u16 oldRelationFlags, u16 newRelationFlags)
+{
+    const auto & unit = scenario.read.units[unitIndex];
+    auto & actor = scenario.view.units.attachedData(unitIndex);
+    // TODO
+    logger.info() << "TODO: unit[" << unitIndex << "].relationFlags changed from " << oldRelationFlags << " to " << newRelationFlags << '\n';
 }
 
 void MapAnimations::updateSpriteFlags(std::size_t spriteIndex, u16 oldSpriteFlags, u16 newSpriteFlags)

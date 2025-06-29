@@ -4185,6 +4185,33 @@ void GuiMap::valueChanged(unit_yc_path path, u16 oldYc, u16 newYc)
     }
 }
 
+void GuiMap::valueChanged(unit_resource_path path, u32 oldResourceAmount, u32 newResourceAmount)
+{
+    if ( oldResourceAmount != newResourceAmount )
+    {
+        std::size_t unitIndex = static_cast<std::size_t>(path.template index<0>());
+        animations.updateUnitResourceAmount(unitIndex, oldResourceAmount, newResourceAmount);
+    }
+}
+
+void GuiMap::valueChanged(unit_state_path path, u16 oldStateFlags, u16 newStateFlags)
+{
+    if ( oldStateFlags != newStateFlags )
+    {
+        std::size_t unitIndex = static_cast<std::size_t>(path.template index<0>());
+        animations.updateUnitStateFlags(unitIndex, oldStateFlags, newStateFlags);
+    }
+}
+
+void GuiMap::valueChanged(unit_relation_flags_path path, u16 oldRelationFlags, u16 newRelationFlags)
+{
+    if ( oldRelationFlags != newRelationFlags )
+    {
+        std::size_t unitIndex = static_cast<std::size_t>(path.template index<0>());
+        animations.updateUnitRelationFlags(unitIndex, oldRelationFlags, newRelationFlags);
+    }
+}
+
 void GuiMap::elementAdded(sprites_path, std::size_t index)
 {
     animations.addSprite(index, view.sprites.attachedData(index));

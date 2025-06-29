@@ -68,7 +68,9 @@ public:
     void updateUnitYc(std::size_t unitIndex, u16 oldYc, u16 newYc);
     void updateSpriteXc(std::size_t spriteIndex, u16 oldXc, u16 newXc);
     void updateSpriteYc(std::size_t spriteIndex, u16 oldYc, u16 newYc);
+    void updateUnitResourceAmount(std::size_t unitIndex, u32 oldResourceAmount, u32 newResourceAmount);
     void updateUnitStateFlags(std::size_t unitIndex, u16 oldStateFlags, u16 newStateFlags);
+    void updateUnitRelationFlags(std::size_t unitIndex, u16 oldRelationFlags, u16 newRelationFlags);
     void updateSpriteFlags(std::size_t spriteIndex, u16 oldSpriteFlags, u16 newSpriteFlags);
     void cleanDrawList();
 

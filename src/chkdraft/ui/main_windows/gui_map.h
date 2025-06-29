@@ -277,6 +277,9 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCach
                     void valueChanged(unit_owner_path, u8 oldOwner, u8 newOwner) override;
                     void valueChanged(unit_xc_path, u16 oldXc, u16 newXc) override;
                     void valueChanged(unit_yc_path, u16 oldYc, u16 newYc) override;
+                    void valueChanged(unit_resource_path, u32 oldResourceAmount, u32 newResourceAmount) override;
+                    void valueChanged(unit_state_path, u16 oldStateFlags, u16 newStateFlags) override;
+                    void valueChanged(unit_relation_flags_path, u16 oldRelationFlags, u16 newRelationFlags) override;
 
                     void elementAdded(sprites_path, std::size_t index) override;
                     void elementRemoved(sprites_path, std::size_t index) override;

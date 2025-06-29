@@ -537,6 +537,9 @@ struct Scenario : RareEdit::Tracked<MapData, Scenario, DescriptorIndex>
     using unit_owner_path = PATH(root->units[0].owner);
     using unit_xc_path = PATH(root->units[0].xc);
     using unit_yc_path = PATH(root->units[0].yc);
+    using unit_resource_path = PATH(root->units[0].resourceAmount);
+    using unit_state_path = PATH(root->units[0].stateFlags);
+    using unit_relation_flags_path = PATH(root->units[0].relationFlags);
     virtual void elementAdded(units_path, std::size_t index) {}
     virtual void elementRemoved(units_path, std::size_t index) {}
     virtual void elementMoved(units_path, std::size_t oldIndex, std::size_t newIndex) {}
@@ -544,6 +547,9 @@ struct Scenario : RareEdit::Tracked<MapData, Scenario, DescriptorIndex>
     virtual void valueChanged(unit_owner_path, u8 oldOwner, u8 newOwner) {}
     virtual void valueChanged(unit_xc_path, u16 oldXc, u16 newXc) {}
     virtual void valueChanged(unit_yc_path, u16 oldYc, u16 newYc) {}
+    virtual void valueChanged(unit_resource_path, u32 oldResourceAmount, u32 newResourceAmount) {}
+    virtual void valueChanged(unit_state_path, u16 oldStateFlags, u16 newStateFlags) {}
+    virtual void valueChanged(unit_relation_flags_path, u16 oldRelationFlags, u16 newRelationFlags) {}
 
     using sprites_path = PATH(root->sprites);
     using sprite_type_path = PATH(root->sprites[0].type);
