@@ -124,6 +124,26 @@ void MapActor::setAnim(Sc::Sprite::AnimHeader animHeader, std::uint64_t currentT
     }
 }
 
+void MapActor::setDrawFunction(MapImage::DrawFunction drawFunc, MapAnimations & animations)
+{
+    for ( std::ptrdiff_t i=std::size(usedImages)-1; i>=0 ; --i )
+    {
+        if ( usedImages[i] != 0 )
+        {
+            MapImage* image = &animations.images[std::size_t(usedImages[i])].value();
+            switch ( image->drawFunction )
+            {
+            case MapImage::DrawFunction::Shadow:
+            case MapImage::DrawFunction::None:
+                break; // Don't change the draw function for shadows or invisible images
+            default:
+                image->drawFunction = drawFunc;
+                break;
+            }
+        }
+    }
+}
+
 void MapActor::animate(std::uint64_t currentTick, bool isUnit, MapAnimations & animations, bool unbreak)
 {
     AnimationContext context {

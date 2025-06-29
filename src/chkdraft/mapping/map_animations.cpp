@@ -486,8 +486,7 @@ void MapAnimations::updateUnitStateFlags(std::size_t unitIndex, u16 oldStateFlag
     const auto & unit = scenario.read.units[unitIndex];
     const auto & unitDat = chkd.scData.units.getUnit(unit.type);
     auto & actor = scenario.view.units.attachedData(unitIndex);
-    // TODO
-    //logger.info() << "TODO: unit[" << unitIndex << "].stateFlags changed from " << oldStateFlags << " to " << newStateFlags << '\n';
+
     bool wasLifted = oldStateFlags & Chk::Unit::State::InTransit;
     bool isLifted = newStateFlags & Chk::Unit::State::InTransit;
     if ( wasLifted != isLifted && unitDat.flags & Sc::Unit::Flags::FlyingBuilding )
@@ -514,7 +513,19 @@ void MapAnimations::updateUnitStateFlags(std::size_t unitIndex, u16 oldStateFlag
             actor.setAnim(Sc::Sprite::AnimHeader::Unburrow, chkd.gameClock.currentTick(), true, *this);
     }
 
-    // TODO: Hallu, cloak
+    bool wasHallucinated = oldStateFlags & Chk::Unit::State::Hallucinated;
+    bool isHallucinated = newStateFlags & Chk::Unit::State::Hallucinated;
+    bool wasCloaked = oldStateFlags & Chk::Unit::State::Cloak;
+    bool isCloaked = newStateFlags & Chk::Unit::State::Cloak;
+    if ( wasHallucinated != isHallucinated )
+    {
+        if ( isHallucinated )
+            actor.setDrawFunction(MapImage::DrawFunction::Hallucination, *this);
+        else
+            actor.setDrawFunction(isCloaked ? MapImage::DrawFunction::Cloaked : MapImage::DrawFunction::Normal, *this);
+    }
+    else if ( !isHallucinated && wasCloaked != isCloaked )
+        actor.setDrawFunction(isCloaked ? MapImage::DrawFunction::Cloaked : MapImage::DrawFunction::Normal, *this);
 }
 
 void MapAnimations::updateUnitRelationFlags(std::size_t unitIndex, u16 oldRelationFlags, u16 newRelationFlags)
@@ -522,7 +533,6 @@ void MapAnimations::updateUnitRelationFlags(std::size_t unitIndex, u16 oldRelati
     const auto & unit = scenario.read.units[unitIndex];
     const auto & unitDat = chkd.scData.units.getUnit(unit.type);
     auto & actor = scenario.view.units.attachedData(unitIndex);
-    //logger.info() << "TODO: unit[" << unitIndex << "].relationFlags changed from " << oldRelationFlags << " to " << newRelationFlags << '\n';
 
     bool wasAttached = oldRelationFlags & Chk::Unit::RelationFlag::AddonLink;
     bool isAttached = newRelationFlags & Chk::Unit::RelationFlag::AddonLink;

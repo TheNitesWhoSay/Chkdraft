@@ -9,7 +9,11 @@ struct MapImage
 {
     enum class DrawFunction : u8 {
         Normal = 0,
+        Cloak = 5,
+        Cloaked = 6,
+        Decloak = 7,
         Shadow = 10,
+        Hallucination = 16,
         None
     };
     

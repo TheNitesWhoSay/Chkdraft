@@ -27,6 +27,7 @@ struct MapActor
     MapImage* primaryImage(MapAnimations & animations);
 
     void setAnim(Sc::Sprite::AnimHeader animHeader, std::uint64_t currentTick, bool isUnit, MapAnimations & animations);
+    void setDrawFunction(MapImage::DrawFunction drawFunc, MapAnimations & animations);
     void animate(std::uint64_t currentTick, bool isUnit, MapAnimations & animations, bool unbreak = false);
 };
 
