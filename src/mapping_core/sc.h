@@ -1467,8 +1467,9 @@ namespace Sc {
             Unused3 = 22,
             StarEditInit = 23,
             Disable = 24,
-            Unburrow = 25,
-            Enable = 26
+            Burrow = 25,
+            Unburrow = 26,
+            Enable = 27
         };
 
         bool load(ArchiveCluster & archiveCluster, Sc::TblFilePtr imagesTbl);

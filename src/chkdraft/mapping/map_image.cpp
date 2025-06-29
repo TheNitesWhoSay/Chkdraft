@@ -23,12 +23,12 @@ bool MapImage::hasEnded() const
     return waitUntil == std::numeric_limits<uint64_t>::max();
 }
 
-void MapImage::playFrame(u8 frame)
+void MapImage::playFrame(std::size_t frame)
 {
     if ( this->baseFrame != frame )
     {
         this->baseFrame = frame;
-        this->frame = this->baseFrame + this->direction;
+        this->frame = this->baseFrame + std::size_t(this->direction);
     }
 }
 
@@ -156,7 +156,8 @@ void Animator::animate()
             Sc::Sprite::Op code = Sc::Sprite::Op(currImage->animation->code);
             ++currOffset; // 1-byte code
             std::string opName = code < Sc::Sprite::OpName.size() ? std::string(Sc::Sprite::OpName[code]) : std::to_string(int(code));
-            //logger.info() << "  " << this->currImage->iScriptId << ", " << this->currImage->imageId << ", " << opName << ", \n";
+            //if ( context.actor.usedImages[context.actor.primaryImageIndex] == currImageIndex )
+            //    logger.info() << "  " << this->currImage->iScriptId << ", " << this->currImage->imageId << ", " << opName << ", \n";
 
             if ( code < Sc::Sprite::OpParams.size() )
             {
@@ -177,7 +178,7 @@ void Animator::animate()
                 switch ( code )
                 {
                     case Sc::Sprite::Op::playfram:
-                        currImage->playFrame(iscript[currOffset]);
+                        currImage->playFrame((u16 &)iscript[currOffset]);
                         break;
                     case Sc::Sprite::Op::playframtile: // TODO
                         break;
@@ -192,7 +193,12 @@ void Animator::animate()
                         currImage->yOffset = s8(iscript[currOffset+1]);
                         break;
                     case Sc::Sprite::Op::wait:
-                        currImage->waitUntil = context.currentTick + uint64_t(iscript[currOffset]);
+                        if ( unbreak )
+                        {
+                            advancePastParams();
+                            return;
+                        }
+                        currImage->waitUntil = context.currentTick + std::uint64_t(iscript[currOffset]);
                         if ( Sc::Sprite::Op(iscript[currOffset+1]) == Sc::Sprite::Op::goto_ && (u16 &)iscript[currOffset+2] == currOffset-1 ) // Wait-looped
                         {
                             if ( !context.isUnit )
@@ -202,11 +208,16 @@ void Animator::animate()
                         return;
                     case Sc::Sprite::Op::waitrand:
                         {
+                            if ( unbreak )
+                            {
+                                advancePastParams();
+                                return;
+                            }
                             auto first = iscript[currOffset+1];
                             auto second = iscript[currOffset+2];
                             auto min = std::min(first, second);
                             auto max = std::max(first, second);
-                            currImage->waitUntil = context.currentTick + uint64_t(min + (std::rand() % (max-min)));
+                            currImage->waitUntil = context.currentTick + std::uint64_t(min + (std::rand() % (max-min)));
                             //waitUntil = currentTick;
                             advancePastParams();
                             return;
@@ -353,9 +364,12 @@ void Animator::animate()
                         break;
                     case Sc::Sprite::Op::unknown_2d: // TODO
                         break;
-                    case Sc::Sprite::Op::nobrkcodestart: // TODO
+                    case Sc::Sprite::Op::nobrkcodestart:
+                        context.actor.noBreakSection = true;
                         break;
-                    case Sc::Sprite::Op::nobrkcodeend: // TODO
+                    case Sc::Sprite::Op::nobrkcodeend:
+                        context.actor.noBreakSection = false;
+                        unbreak = false;
                         break;
                     case Sc::Sprite::Op::ignorerest: // TODO
                         break;

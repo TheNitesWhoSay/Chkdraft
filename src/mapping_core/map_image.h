@@ -35,7 +35,7 @@ struct MapImage
     void error(std::string_view message);
     bool end();
     bool hasEnded() const;
-    void playFrame(u8 frame);
+    void playFrame(std::size_t frame);
     void setDirection(u8 direction);
     void advanceBy(size_t numBytes);
 };
@@ -53,6 +53,7 @@ struct Animator
     AnimationContext & context;
     std::size_t currImageIndex; // Does not change
     MapImage* currImage; // May be updated when new images are added
+    bool unbreak = false; // If true, animation will skip waits till reaching nobrkcodeend
 
     void setActorDirection(u8 direction);
 

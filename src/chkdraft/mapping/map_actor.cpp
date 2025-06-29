@@ -81,7 +81,50 @@ MapImage* MapActor::primaryImage(MapAnimations & animations)
         return &(animations.images[usedImages[primaryImageIndex]].value());
 }
 
-void MapActor::animate(std::uint64_t currentTick, bool isUnit, MapAnimations & animations)
+void MapActor::setAnim(Sc::Sprite::AnimHeader animHeader, std::uint64_t currentTick, bool isUnit, MapAnimations & animations)
+{
+    for ( int i=0; noBreakSection; ++i )
+    {
+        animate(currentTick, isUnit, animations, true);
+        if ( i == 100 ) // No apparent noBreakSection end
+        {
+            AnimationContext context { .currentTick = currentTick, .animations = animations, .actor = *this, .isUnit = isUnit };
+            animations.restartActor(context); // Try restarting the actor
+            for ( int j=0; noBreakSection; ++j )
+            {
+                animate(currentTick, isUnit, animations, true);
+                if ( j == 100 ) // No apparent noBreakSection end
+                {
+                    logger.error("Could not set anim, stuck in unrecoverable noBreakSection state");
+                    return;
+                }
+            }
+            break;
+        }
+    }
+
+    for ( std::ptrdiff_t i=std::size(usedImages)-1; i>=0 ; --i )
+    {
+        if ( usedImages[i] != 0 )
+        {
+            MapImage* image = &animations.images[std::size_t(usedImages[i])].value();
+            const Sc::Sprite::IScriptAnimation* anim = chkd.scData.sprites.getAnimationHeader(image->iScriptId, animHeader);
+            if ( anim == nullptr )
+            {
+                if ( i == primaryImageIndex )
+                    logger.error("Could not set anim, header not found");
+
+                continue;
+            }
+
+            image->animation = anim;
+            image->waitUntil = currentTick;
+            animate(currentTick, isUnit, animations, false);
+        }
+    }
+}
+
+void MapActor::animate(std::uint64_t currentTick, bool isUnit, MapAnimations & animations, bool unbreak)
 {
     AnimationContext context {
         .currentTick = currentTick,
@@ -105,10 +148,22 @@ void MapActor::animate(std::uint64_t currentTick, bool isUnit, MapAnimations & a
                 if ( !image->hiddenLeader )
                     allEnded = false;
 
+                if ( unbreak )
+                    image->waitUntil = currentTick;
+
+                if ( image->yOffset != transitShadowTarget && image->drawFunction == MapImage::DrawFunction::Shadow )
+                {
+                    if ( image->yOffset < transitShadowTarget )
+                        image->yOffset += 2;
+                    else if ( image->yOffset > transitShadowTarget )
+                        image->yOffset -= 1;
+                }
+
                 Animator {
                     .context = context,
                     .currImageIndex = usedImages[i],
-                    .currImage = image
+                    .currImage = image,
+                    .unbreak = unbreak
                 }.animate();
             }
         }

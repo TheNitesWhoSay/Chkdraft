@@ -13,6 +13,8 @@ struct MapActor
 {
     static constexpr std::size_t MaxSlots = 10;
 
+    s8 transitShadowTarget = 0;
+    bool noBreakSection = false;
     bool autoRestart = false;
     u8 direction = 0;
     u16 drawListIndex = 0;
@@ -24,7 +26,8 @@ struct MapActor
 
     MapImage* primaryImage(MapAnimations & animations);
 
-    void animate(std::uint64_t currentTick, bool isUnit, MapAnimations & animations);
+    void setAnim(Sc::Sprite::AnimHeader animHeader, std::uint64_t currentTick, bool isUnit, MapAnimations & animations);
+    void animate(std::uint64_t currentTick, bool isUnit, MapAnimations & animations, bool unbreak = false);
 };
 
 #endif

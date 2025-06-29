@@ -169,6 +169,7 @@ void MapAnimations::clearActor(MapActor & actor)
 void MapAnimations::restartActor(AnimationContext & context)
 {
     auto & actor = context.actor;
+    actor.noBreakSection = false;
     for ( std::size_t i=0; i<std::size(actor.usedImages); ++i ) // Remove all non-primary actors
     {
         if ( i != actor.primaryImageIndex )
@@ -438,25 +439,100 @@ void MapAnimations::updateSpriteYc(std::size_t spriteIndex, u16 oldYc, u16 newYc
 void MapAnimations::updateUnitResourceAmount(std::size_t unitIndex, u32 oldResourceAmount, u32 newResourceAmount)
 {
     const auto & unit = scenario.read.units[unitIndex];
+    const auto & unitDat = chkd.scData.units.getUnit(unit.type);
     auto & actor = scenario.view.units.attachedData(unitIndex);
-    // TODO
-    logger.info() << "TODO: unit[" << unitIndex << "].resourceAmount changed from " << oldResourceAmount << " to " << newResourceAmount << '\n';
+    
+    if ( unitDat.flags & Sc::Unit::Flags::ResourceContainer )
+    {
+        int oldResourceLevel = 0;
+        if ( oldResourceAmount >= 750 )
+            oldResourceLevel = 3;
+        else if ( oldResourceAmount >= 500 )
+            oldResourceLevel = 2;
+        else if ( oldResourceAmount >= 250 )
+            oldResourceLevel = 1;
+
+        int newResourceLevel = 0;
+        if ( newResourceAmount >= 750 )
+            newResourceLevel = 3;
+        else if ( newResourceAmount >= 500 )
+            newResourceLevel = 2;
+        else if ( newResourceAmount >= 250 )
+            newResourceLevel = 1;
+
+        if ( oldResourceLevel != newResourceLevel )
+        {
+            switch ( newResourceLevel )
+            {
+                case 0: // [,250)
+                    actor.setAnim(Sc::Sprite::AnimHeader::SpecialState1, chkd.gameClock.currentTick(), true, *this);
+                    break;
+                case 1: // [250,500)
+                    actor.setAnim(Sc::Sprite::AnimHeader::SpecialState2, chkd.gameClock.currentTick(), true, *this);
+                    break;
+                case 2: // [500,750)
+                    actor.setAnim(Sc::Sprite::AnimHeader::AlmostBuilt, chkd.gameClock.currentTick(), true, *this);
+                    break;
+                case 3: // [750,)
+                    actor.setAnim(Sc::Sprite::AnimHeader::WorkingToIdle, chkd.gameClock.currentTick(), true, *this);
+                    break;
+            }
+        }
+    }
 }
 
 void MapAnimations::updateUnitStateFlags(std::size_t unitIndex, u16 oldStateFlags, u16 newStateFlags)
 {
     const auto & unit = scenario.read.units[unitIndex];
+    const auto & unitDat = chkd.scData.units.getUnit(unit.type);
     auto & actor = scenario.view.units.attachedData(unitIndex);
     // TODO
-    logger.info() << "TODO: unit[" << unitIndex << "].stateFlags changed from " << oldStateFlags << " to " << newStateFlags << '\n';
+    //logger.info() << "TODO: unit[" << unitIndex << "].stateFlags changed from " << oldStateFlags << " to " << newStateFlags << '\n';
+    bool wasLifted = oldStateFlags & Chk::Unit::State::InTransit;
+    bool isLifted = newStateFlags & Chk::Unit::State::InTransit;
+    if ( wasLifted != isLifted && unitDat.flags & Sc::Unit::Flags::FlyingBuilding )
+    {
+        if ( isLifted )
+        {
+            actor.transitShadowTarget = 42;
+            actor.setAnim(Sc::Sprite::AnimHeader::LiftOff, chkd.gameClock.currentTick(), true, *this);
+        }
+        else
+        {
+            actor.transitShadowTarget = 0;
+            actor.setAnim(Sc::Sprite::AnimHeader::Landing, chkd.gameClock.currentTick(), true, *this);
+        }
+    }
+
+    bool wasBurrowed = oldStateFlags & Chk::Unit::State::Burrow;
+    bool isBurrowed = newStateFlags & Chk::Unit::State::Burrow;
+    if ( wasBurrowed != isBurrowed && unitDat.flags & Sc::Unit::Flags::Burrowable )
+    {
+        if ( isBurrowed )
+            actor.setAnim(Sc::Sprite::AnimHeader::Burrow, chkd.gameClock.currentTick(), true, *this);
+        else
+            actor.setAnim(Sc::Sprite::AnimHeader::Unburrow, chkd.gameClock.currentTick(), true, *this);
+    }
+
+    // TODO: Hallu, cloak
 }
 
 void MapAnimations::updateUnitRelationFlags(std::size_t unitIndex, u16 oldRelationFlags, u16 newRelationFlags)
 {
     const auto & unit = scenario.read.units[unitIndex];
+    const auto & unitDat = chkd.scData.units.getUnit(unit.type);
     auto & actor = scenario.view.units.attachedData(unitIndex);
-    // TODO
-    logger.info() << "TODO: unit[" << unitIndex << "].relationFlags changed from " << oldRelationFlags << " to " << newRelationFlags << '\n';
+    //logger.info() << "TODO: unit[" << unitIndex << "].relationFlags changed from " << oldRelationFlags << " to " << newRelationFlags << '\n';
+
+    bool wasAttached = oldRelationFlags & Chk::Unit::RelationFlag::AddonLink;
+    bool isAttached = newRelationFlags & Chk::Unit::RelationFlag::AddonLink;
+    if ( wasAttached != isAttached && (unitDat.flags & Sc::Unit::Flags::Addon) )
+    {
+        if ( isAttached )
+            actor.setAnim(Sc::Sprite::AnimHeader::Landing, chkd.gameClock.currentTick(), true, *this);
+        else
+            actor.setAnim(Sc::Sprite::AnimHeader::LiftOff, chkd.gameClock.currentTick(), true, *this);
+    }
 }
 
 void MapAnimations::updateSpriteFlags(std::size_t spriteIndex, u16 oldSpriteFlags, u16 newSpriteFlags)
