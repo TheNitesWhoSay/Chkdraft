@@ -28,6 +28,8 @@ struct MapActor
 
     void setAnim(Sc::Sprite::AnimHeader animHeader, std::uint64_t currentTick, bool isUnit, MapAnimations & animations);
     void setDrawFunction(MapImage::DrawFunction drawFunc, MapAnimations & animations);
+    void hideNonCloakImages(MapAnimations & animations);
+    void showNonCloakImages(MapAnimations & animations);
     void animate(std::uint64_t currentTick, bool isUnit, MapAnimations & animations, bool unbreak = false);
 };
 

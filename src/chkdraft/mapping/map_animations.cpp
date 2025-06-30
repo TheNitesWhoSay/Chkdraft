@@ -202,7 +202,8 @@ void MapAnimations::restartActor(AnimationContext & context)
             .owner = owner,
             .xc = xc,
             .yc = yc,
-            .hiddenLeader = hiddenLeader
+            .hiddenLeader = hiddenLeader,
+            .drawIfCloaked = primaryImage.drawIfCloaked
         };
         initializeImage(iScriptId, chkd.gameClock.currentTick(), actor, context.isUnit, actor.usedImages[0]);
         if ( hiddenLeader )

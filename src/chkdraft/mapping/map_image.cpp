@@ -62,6 +62,9 @@ void Animator::setActorDirection(u8 direction)
 
 void Animator::initializeImage(std::size_t iScriptId)
 {
+    auto & imageDat = chkd.scData.sprites.getImage(currImage->imageId);
+
+    currImage->drawIfCloaked = imageDat.drawIfCloaked != 0;
     currImage->iScriptId = iScriptId;
     currImage->animation = chkd.scData.sprites.getAnimationHeader(iScriptId, Sc::Sprite::AnimHeader::StarEditInit);
     if ( currImage->animation == nullptr )

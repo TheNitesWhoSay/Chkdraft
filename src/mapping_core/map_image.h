@@ -29,6 +29,8 @@ struct MapImage
     bool flipped = false;
     bool rotation = false;
     bool hiddenLeader = false;
+    bool drawIfCloaked = false;
+    bool hidden = false;
     DrawFunction drawFunction = DrawFunction::Normal;
 
     u16 returnOffset = 0;

@@ -2840,7 +2840,7 @@ void Scr::MapGraphics::drawActor(const MapActor & mapActor, s32 xOffset, s32 yOf
             break;
 
         const std::optional<MapImage> & image = map.animations.images[imageIndex];
-        if ( image )
+        if ( image && !image->hidden )
         {
             if ( loadSettings.skinId == Scr::Skin::Id::Classic )
                 drawClassicImage(*renderDat->tiles->tilesetGrp.palette, image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, image->imageId, (Chk::PlayerColor)image->owner, image->flipped);

@@ -137,10 +137,38 @@ void MapActor::setDrawFunction(MapImage::DrawFunction drawFunc, MapAnimations & 
             case MapImage::DrawFunction::None:
                 break; // Don't change the draw function for shadows or invisible images
             default:
-                image->drawFunction = drawFunc;
+                if ( image->drawFunction != drawFunc )
+                {
+                    if ( image->drawFunction == MapImage::DrawFunction::Cloaked ) // Decloaking
+                        showNonCloakImages(animations); // Restore shadows and such
+                    else if ( drawFunc == MapImage::DrawFunction::Cloaked ) // Cloaking
+                        hideNonCloakImages(animations); // Hide shadows and such)
+
+                    image->drawFunction = drawFunc;
+                }
                 break;
             }
         }
+    }
+}
+
+void MapActor::hideNonCloakImages(MapAnimations & animations)
+{
+    for ( std::size_t i=0; i<std::size(usedImages) && usedImages[i] != 0; ++i )
+    {
+        auto & image = animations.images[usedImages[i]].value();
+        if ( !image.drawIfCloaked && !image.hidden )
+            image.hidden = true;
+    }
+}
+
+void MapActor::showNonCloakImages(MapAnimations & animations)
+{
+    for ( std::size_t i=0; i<std::size(usedImages) && usedImages[i] != 0; ++i )
+    {
+        auto & image = animations.images[usedImages[i]].value();
+        if ( !image.drawIfCloaked && image.hidden )
+            image.hidden = false;
     }
 }
 
