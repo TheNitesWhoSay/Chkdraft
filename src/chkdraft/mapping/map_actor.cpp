@@ -81,7 +81,7 @@ MapImage* MapActor::primaryImage(MapAnimations & animations)
         return &(animations.images[usedImages[primaryImageIndex]].value());
 }
 
-void MapActor::setAnim(Sc::Sprite::AnimHeader animHeader, std::uint64_t currentTick, bool isUnit, MapAnimations & animations)
+void MapActor::setAnim(Sc::Sprite::AnimHeader animHeader, std::uint64_t currentTick, bool isUnit, MapAnimations & animations, bool silent)
 {
     for ( int i=0; noBreakSection; ++i )
     {
@@ -111,7 +111,7 @@ void MapActor::setAnim(Sc::Sprite::AnimHeader animHeader, std::uint64_t currentT
             const Sc::Sprite::IScriptAnimation* anim = chkd.scData.sprites.getAnimationHeader(image->iScriptId, animHeader);
             if ( anim == nullptr )
             {
-                if ( i == primaryImageIndex )
+                if ( i == primaryImageIndex && !silent )
                     logger.error("Could not set anim, header not found");
 
                 continue;
@@ -142,7 +142,7 @@ void MapActor::setDrawFunction(MapImage::DrawFunction drawFunc, MapAnimations & 
                     if ( image->drawFunction == MapImage::DrawFunction::Cloaked ) // Decloaking
                         showNonCloakImages(animations); // Restore shadows and such
                     else if ( drawFunc == MapImage::DrawFunction::Cloaked ) // Cloaking
-                        hideNonCloakImages(animations); // Hide shadows and such)
+                        hideNonCloakImages(animations); // Hide shadows and such
 
                     image->drawFunction = drawFunc;
                 }

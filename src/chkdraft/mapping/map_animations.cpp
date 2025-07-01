@@ -54,6 +54,39 @@ size_t getImageId(const Chk::Sprite & sprite)
         getImageId(Sc::Unit::Type(sprite.type));
 }
 
+struct ResourceLevel
+{
+    enum type {
+        Low, // [,250)
+        Med, // [250,500)
+        MedHigh, // [500,750)
+        High // [750,)
+    };
+
+    static constexpr auto get(u32 resourceAmount)
+    {
+        if ( resourceAmount >= 750 )
+            return ResourceLevel::High; // [750,)
+        else if ( resourceAmount >= 500 )
+            return ResourceLevel::MedHigh; // [500,750)
+        else if ( resourceAmount >= 250 )
+            return ResourceLevel::Med; // [250,500)
+        else
+            return ResourceLevel::Low; // [,250)
+    }
+
+    static constexpr auto animHeader(ResourceLevel::type resourceLevel)
+    {
+        switch ( resourceLevel )
+        {
+            case ResourceLevel::Low: return Sc::Sprite::AnimHeader::SpecialState1;
+            case ResourceLevel::Med: return Sc::Sprite::AnimHeader::SpecialState2;
+            case ResourceLevel::MedHigh: return Sc::Sprite::AnimHeader::AlmostBuilt;
+            case ResourceLevel::High: default: return Sc::Sprite::AnimHeader::WorkingToIdle;
+        }
+    }
+};
+
 u16 MapAnimations::createImage()
 {
     if ( availableImages.empty() )
@@ -180,8 +213,11 @@ void MapAnimations::restartActor(AnimationContext & context)
     }
     if ( actor.primaryImageIndex < std::size(actor.usedImages) )
     {
-        actor.usedImages[0] = actor.usedImages[actor.primaryImageIndex];
-        actor.primaryImageIndex = 0;
+        if ( actor.primaryImageIndex != 0 )
+        {
+            std::swap(actor.usedImages[0], actor.usedImages[actor.primaryImageIndex]);
+            actor.primaryImageIndex = 0;
+        }
         std::size_t imageIndex = static_cast<std::size_t>(actor.usedImages[0]);
         if ( imageIndex >= images.size() || images[imageIndex] == std::nullopt )
         {
@@ -262,18 +298,37 @@ void MapAnimations::initializeUnitActor(MapActor & actor, bool isClipboard, std:
     bool isFlyerOrLifted = unitDat.flags & Sc::Unit::Flags::Flyer ||
         unitDat.flags & Sc::Unit::Flags::FlyingBuilding && unit.isLifted();
 
-    std::uint64_t elevation = isFlyerOrLifted ? 1 : 0; // TODO: tile elevations
+    actor.elevation = unitDat.elevationLevel;
     u8 direction = unitDat.unitDirection == 32 ? ((std::rand() & 31) << 3) : (unitDat.unitDirection << 3);
     u32 iScriptId = iscriptIdFromUnit(unit.type);
 
-    std::size_t drawListValue = isClipboard ?
+    std::uint64_t drawListValue = isClipboard ?
         (std::uint64_t(unitIndex) | FlagDrawUnit | FlagIsClipboard | FlagUnitActor | (isSubUnit ? FlagIsTurret : 0) |
-            MaskY | (elevation << ShiftElevation)) :
+            MaskY | (std::uint64_t(actor.elevation) << ShiftElevation)) :
         (std::uint64_t(unitIndex) | FlagDrawUnit | FlagUnitActor | (isSubUnit ? FlagIsTurret : 0) |
-            (std::uint64_t(yc) << ShiftY) | (elevation << ShiftElevation));
+            (std::uint64_t(yc) << ShiftY) | (std::uint64_t(actor.elevation) << ShiftElevation));
 
     initializeActor(actor, direction, getImageId(unit), unit.owner, xc, yc, iScriptId, true, false, drawListValue);
     initSpecialCases(actor, std::size_t(unit.type), true);
+
+    // Update draw func if applicable
+    if ( unit.stateFlags & Chk::Unit::State::Hallucinated )
+        actor.setDrawFunction(MapImage::DrawFunction::Hallucination, *this);
+    else if ( unit.stateFlags & Chk::Unit::State::Cloak )
+        actor.setDrawFunction(MapImage::DrawFunction::Cloaked, *this);
+
+    // Update anim if applicable
+    if ( unitDat.flags & Sc::Unit::Flags::ResourceContainer )
+        actor.setAnim(ResourceLevel::animHeader(ResourceLevel::get(unit.resourceAmount)), chkd.gameClock.currentTick(), true, *this, true);
+    else if ( unitDat.flags & Sc::Unit::Flags::FlyingBuilding && unit.isLifted() )
+    {
+        actor.transitShadowTarget = 42;
+        actor.setAnim(Sc::Sprite::AnimHeader::LiftOff, chkd.gameClock.currentTick(), true, *this);
+    }
+    else if ( unitDat.flags & Sc::Unit::Flags::Burrowable && unit.stateFlags & Chk::Unit::State::Burrow )
+        actor.setAnim(Sc::Sprite::AnimHeader::Burrow, chkd.gameClock.currentTick(), true, *this);
+    else if ( unitDat.flags & Sc::Unit::Flags::Addon && unit.relationFlags & Chk::Unit::RelationFlag::AddonLink )
+        actor.setAnim(Sc::Sprite::AnimHeader::Landing, chkd.gameClock.currentTick(), true, *this);
 }
 
 void MapAnimations::initializeSpriteActor(MapActor & actor, bool isClipboard, std::size_t spriteIndex, const Chk::Sprite & sprite, s32 xc, s32 yc)
@@ -282,17 +337,34 @@ void MapAnimations::initializeSpriteActor(MapActor & actor, bool isClipboard, st
     bool isSubUnit = isSpriteUnit && chkd.scData.units.getUnit(Sc::Unit::Type(sprite.type)).flags & Sc::Unit::Flags::Subunit;
     bool isFlyer = isSpriteUnit && chkd.scData.units.getUnit(Sc::Unit::Type(sprite.type)).flags & Sc::Unit::Flags::Flyer;
 
-    std::uint64_t elevation = isFlyer ? 1 : 0; // TODO: tile elevations
+    actor.elevation = 4;
+    if ( isSpriteUnit )
+    {
+        if ( sprite.flags & Chk::Sprite::SpriteFlags::SpriteUnitDiabled )
+            actor.elevation = 1;
+        else
+            actor.elevation = chkd.scData.units.getUnit(Sc::Unit::Type(sprite.type)).elevationLevel;
+    }
+
     u32 iScriptId = isSpriteUnit ? iscriptIdFromUnit(Sc::Unit::Type(sprite.type)) : iscriptIdFromSprite(sprite.type);
     bool autoRestart = sprite.type < chkd.scData.sprites.spriteAutoRestart.size() ? chkd.scData.sprites.spriteAutoRestart[sprite.type] : true;
-    std::size_t drawListValue = isClipboard ?
+    std::uint64_t drawListValue = isClipboard ?
         (std::uint64_t(spriteIndex) | FlagIsClipboard | (isSubUnit ? FlagIsTurret : 0) |
-            MaskY | (elevation << ShiftElevation)) :
+            MaskY | (std::uint64_t(actor.elevation) << ShiftElevation)) :
         (std::uint64_t(spriteIndex) | (isSpriteUnit ? FlagDrawUnit : 0) | (isSubUnit ? FlagIsTurret : 0) |
-            (std::uint64_t(yc) << ShiftY) | (elevation << ShiftElevation));
+            (std::uint64_t(yc) << ShiftY) | (std::uint64_t(actor.elevation) << ShiftElevation));
 
     initializeActor(actor, 0, getImageId(sprite), sprite.owner, xc, yc, iScriptId, false, autoRestart, drawListValue);
     initSpecialCases(actor, std::size_t(sprite.type), false, isSpriteUnit);
+
+    // Update anim if applicable
+    if ( isSpriteUnit )
+    {
+        if ( sprite.flags & Chk::Sprite::SpriteFlags::SpriteUnitDiabled )
+            actor.setAnim(Sc::Sprite::AnimHeader::Disable, chkd.gameClock.currentTick(), false, *this, true);
+        else
+            actor.setAnim(Sc::Sprite::AnimHeader::Enable, chkd.gameClock.currentTick(), false, *this, true);
+    }
 }
 
 void MapAnimations::addUnit(std::size_t unitIndex, MapActor & actor)
@@ -445,40 +517,9 @@ void MapAnimations::updateUnitResourceAmount(std::size_t unitIndex, u32 oldResou
     
     if ( unitDat.flags & Sc::Unit::Flags::ResourceContainer )
     {
-        int oldResourceLevel = 0;
-        if ( oldResourceAmount >= 750 )
-            oldResourceLevel = 3;
-        else if ( oldResourceAmount >= 500 )
-            oldResourceLevel = 2;
-        else if ( oldResourceAmount >= 250 )
-            oldResourceLevel = 1;
-
-        int newResourceLevel = 0;
-        if ( newResourceAmount >= 750 )
-            newResourceLevel = 3;
-        else if ( newResourceAmount >= 500 )
-            newResourceLevel = 2;
-        else if ( newResourceAmount >= 250 )
-            newResourceLevel = 1;
-
-        if ( oldResourceLevel != newResourceLevel )
-        {
-            switch ( newResourceLevel )
-            {
-                case 0: // [,250)
-                    actor.setAnim(Sc::Sprite::AnimHeader::SpecialState1, chkd.gameClock.currentTick(), true, *this);
-                    break;
-                case 1: // [250,500)
-                    actor.setAnim(Sc::Sprite::AnimHeader::SpecialState2, chkd.gameClock.currentTick(), true, *this);
-                    break;
-                case 2: // [500,750)
-                    actor.setAnim(Sc::Sprite::AnimHeader::AlmostBuilt, chkd.gameClock.currentTick(), true, *this);
-                    break;
-                case 3: // [750,)
-                    actor.setAnim(Sc::Sprite::AnimHeader::WorkingToIdle, chkd.gameClock.currentTick(), true, *this);
-                    break;
-            }
-        }
+        auto newResourceLevel = ResourceLevel::get(newResourceAmount);
+        if ( ResourceLevel::get(oldResourceAmount) != newResourceLevel )
+            actor.setAnim(ResourceLevel::animHeader(newResourceLevel), chkd.gameClock.currentTick(), true, *this, true);
     }
 }
 
@@ -554,6 +595,27 @@ void MapAnimations::updateSpriteFlags(std::size_t spriteIndex, u16 oldSpriteFlag
     {
         clearActor(actor);
         initializeSpriteActor(actor, false, spriteIndex, sprite, sprite.xc, sprite.yc);
+    }
+    if ( sprite.isUnit() && (oldSpriteFlags & Chk::Sprite::SpriteFlags::SpriteUnitDiabled) != (newSpriteFlags & Chk::Sprite::SpriteFlags::SpriteUnitDiabled) )
+    {
+        auto oldElevation = actor.elevation;
+        if ( newSpriteFlags & Chk::Sprite::SpriteFlags::SpriteUnitDiabled )
+        {
+            actor.elevation = 1;
+            actor.setAnim(Sc::Sprite::AnimHeader::Disable, chkd.gameClock.currentTick(), false, *this, true);
+        }
+        else
+        {
+            actor.elevation = chkd.scData.units.getUnit(Sc::Unit::Type(sprite.type)).elevationLevel;
+            actor.setAnim(Sc::Sprite::AnimHeader::Enable, chkd.gameClock.currentTick(), false, *this, true);
+        }
+
+        if ( actor.elevation != oldElevation )
+        {
+            std::uint64_t & drawListValue = drawList[actor.drawListIndex];
+            drawListValue = (drawListValue & (~MaskElevation)) | (std::uint64_t(actor.elevation) << ShiftElevation);
+            drawListDirty = true;
+        }
     }
 }
 

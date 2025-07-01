@@ -33,9 +33,10 @@ void Chkdraft::OnLoadTest()
         //    continue;
         int x = i%20;
         int y = i/20;
-        CM->addUnit(Chk::Unit {CM->getNextClassId(), u16(x*64+64), u16(y*64+64), Sc::Unit::Type(i), 0, 0, 0, Sc::Player::Id::Player1});
+        //CM->addUnit(Chk::Unit {CM->getNextClassId(), u16(x*64+64), u16(y*64+64), Sc::Unit::Type(i), 0, 0, 0, Sc::Player::Id::Player1});
+        //CM->addSprite(Chk::Sprite {Sc::Sprite::Type(i), u16(x*64+64), u16(y*64+64), Sc::Player::Id::Player1, 0, Chk::Sprite::SpriteFlags::IsUnit});
     }
-    /*for ( std::size_t i=0; i<Sc::Sprite::TotalSprites; ++i )
+    for ( std::size_t i=0; i<Sc::Sprite::TotalSprites; ++i )
     {
         //if ( i != 321 )
         //    continue;
@@ -43,9 +44,8 @@ void Chkdraft::OnLoadTest()
         //    continue;
         int x = i%32;
         int y = i/32;
-        CM->addSprite(Chk::Sprite {Sc::Sprite::Type(i), u16(x*64+64), u16(y*64+64), Sc::Player::Id::Player1, 0, Chk::Sprite::SpriteFlags::DrawAsSprite});
-        //CM->addUnit(Chk::Unit {CM->getNextClassId(), u16(x*64+64), u16(y*64+64), Sc::Unit::Type(i), 0, 0, 0, Sc::Player::Id::Player1});
-    }*/
+        //CM->addSprite(Chk::Sprite {Sc::Sprite::Type(i), u16(x*64+64), u16(y*64+64), Sc::Player::Id::Player1, 0, Chk::Sprite::SpriteFlags::DrawAsSprite});
+    }
     CM->SetSkin(GuiMap::Skin::ScrSD);
     maps.ChangeLayer(Layer::Units);
     //maps.ChangeLayer(Layer::Sprites);

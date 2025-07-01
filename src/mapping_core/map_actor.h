@@ -17,6 +17,7 @@ struct MapActor
     bool noBreakSection = false;
     bool autoRestart = false;
     u8 direction = 0;
+    u8 elevation = 0;
     u16 drawListIndex = 0;
     u16 primaryImageIndex = 0;
     u16 usedImages[MaxSlots] {}; // Only leftmost indexes are used
@@ -26,7 +27,7 @@ struct MapActor
 
     MapImage* primaryImage(MapAnimations & animations);
 
-    void setAnim(Sc::Sprite::AnimHeader animHeader, std::uint64_t currentTick, bool isUnit, MapAnimations & animations);
+    void setAnim(Sc::Sprite::AnimHeader animHeader, std::uint64_t currentTick, bool isUnit, MapAnimations & animations, bool silent = false);
     void setDrawFunction(MapImage::DrawFunction drawFunc, MapAnimations & animations);
     void hideNonCloakImages(MapAnimations & animations);
     void showNonCloakImages(MapAnimations & animations);
