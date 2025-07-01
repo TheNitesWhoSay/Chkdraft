@@ -792,7 +792,10 @@ void UnitPropertiesWindow::LvItemChanged(NMHDR* nmhdr)
         else if ( itemInfo->uOldState & LVIS_SELECTED ) // From selected to not selected
                                                         // Remove item from selection
         {
-            edit->units.deselect(index);
+            const auto & sel = CM->view.units.sel();
+            if ( std::find(sel.begin(), sel.end(), u32(index)) != sel.end() )
+                edit->units.deselect(index);
+
             if ( CM->selections.hasUnits() && CM->selections.getFirstUnit() < CM->numUnits() )
             {
                 initilizing = true;
@@ -966,7 +969,8 @@ void UnitPropertiesWindow::NotifyJumpToPressed()
     size_t numUnits = CM->numUnits();
     if ( CM == nullptr || !CM->selections.hasUnits() || CM->selections.getFirstUnit() >= numUnits )
         return;
-
+    
+    const auto & sel = CM->view.units.sel();
     size_t currUnitIndex = size_t(CM->selections.getFirstUnit());
     auto & unit = CM->getUnit(currUnitIndex);
     if ( unit.isLinked() )
@@ -977,7 +981,9 @@ void UnitPropertiesWindow::NotifyJumpToPressed()
             if ( unit.relationClassId == otherUnit.classId && i != currUnitIndex )
             {
                 edit->units.clearSelections();
-                edit->units.select(i);
+                if ( std::find(sel.begin(), sel.end(), u32(i)) == sel.end() )
+                    edit->units.select(i);
+
                 this->RepopulateList();
                 CM->viewUnit(i);
                 return;

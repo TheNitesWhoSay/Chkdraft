@@ -98,7 +98,17 @@ void LeftBar::NotifyTreeItemSelected(LPARAM newValue)
                 unit.validFieldFlags |= Chk::Unit::ValidField::Shields;
 
             if ( (unitDat.flags & Sc::Unit::Flags::ResourceContainer) == Sc::Unit::Flags::ResourceContainer )
+            {
                 unit.validFieldFlags |= Chk::Unit::ValidField::Resources;
+                switch ( unit.type )
+                {
+                case Sc::Unit::Type::VespeneGeyser: unit.resourceAmount = 5000; break;
+                case Sc::Unit::Type::TerranRefinery: unit.resourceAmount = 5000; break;
+                case Sc::Unit::Type::ZergExtractor: unit.resourceAmount = 5000; break;
+                case Sc::Unit::Type::ProtossAssimilator: unit.resourceAmount = 5000; break;
+                default: unit.resourceAmount = 1500; break;
+                }
+            }
 
             if ( unit.type == Sc::Unit::Type::ProtossCarrier || unit.type == Sc::Unit::Type::Gantrithor_Carrier ||
                  unit.type == Sc::Unit::Type::ProtossReaver || unit.type == Sc::Unit::Type::Warbringer_Reaver )
