@@ -770,6 +770,8 @@ namespace Scr {
                 {
                     Grp tileMask {};
                     Grp tilesetGrp {};
+                    std::optional<gl::Palette> halluPalette {};
+                    std::optional<gl::Palette> shadowPalette {};
                     std::vector<u16> maskIds {};
 
                     void load(ArchiveCluster & archiveCluster, const LoadSettings & loadSettings, ByteBuffer & fileData);
@@ -785,6 +787,7 @@ namespace Scr {
                 void loadClassicTiles(Sc::Data & scData, const LoadSettings & loadSettings);
                 void loadTiles(ArchiveCluster & archiveCluster, const LoadSettings & loadSettings, ByteBuffer & fileData);
                 
+                void loadClassicImageFrame(std::size_t frameIndex, std::size_t imageIndex, Sc::Data & scData, std::vector<u8> & bitmapData);
                 void loadClassicImages(Sc::Data & scData);
                 void loadImages(Sc::Data & scData, ArchiveCluster & archiveCluster, std::filesystem::path texPrefix, const LoadSettings & loadSettings, ByteBuffer & fileData, gl::ContextSemaphore* contextSemaphore = nullptr);
             };
@@ -800,6 +803,8 @@ namespace Scr {
 
         struct RenderData // Data required for rendering a given map with a given visual quality, skin, and tileset
         {
+            std::vector<u8> bitmapData {};
+            std::shared_ptr<Data::Skin> skin = nullptr;
             std::shared_ptr<Shaders> shaders = nullptr;
             std::shared_ptr<SpkData> spk = nullptr;
             std::shared_ptr<Data::Skin::Tileset> tiles = nullptr;
@@ -908,6 +913,7 @@ namespace Scr {
 
         MapGraphics(Sc::Data & data, GuiMap & guiMap);
 
+        void resetFps();
         void updateGrid(); // Occurs when the map view, grid size or grid color changes
         void mapViewChanged(); // Occurs when the window bounds, zoom-level or skin changes
         void windowBoundsChanged(gl::Rect2D<s32> windowBounds);

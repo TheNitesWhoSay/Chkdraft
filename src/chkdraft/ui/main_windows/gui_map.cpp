@@ -2103,6 +2103,7 @@ bool GuiMap::DisplayingTileNums()
 
 void GuiMap::ToggleDisplayFps()
 {
+    scrGraphics->resetFps();
     scrGraphics->fpsEnabled = !scrGraphics->fpsEnabled;
     UpdateBaseViewMenuItems();
 }
@@ -3006,8 +3007,13 @@ void GuiMap::ActivateMap(HWND deactivate, HWND activate)
     
     if ( activate != NULL )
     {
+        if ( activate == this->getHandle() && this->scrGraphics != nullptr )
+            this->scrGraphics->resetFps();
+
         chkd.maps.Focus(activate);
-        Redraw(true);
+        if ( CM != nullptr )
+            CM->Redraw(true);
+
         chkd.maps.UpdateTreeView();
     }
 }
@@ -4067,6 +4073,7 @@ void GuiMap::SetSkin(GuiMap::Skin skin)
             auto fileData = ByteBuffer(4);
             ArchiveCluster archiveCluster {std::vector<ArchiveFilePtr>{}};
             this->scrGraphics->load(*chkd.scrData, loadSettings, archiveCluster, fileData);
+            this->scrGraphics->resetFps();
             logger.info() << "Switched to skin: " << getSkinName(skin) << '\n';
         }
         else
@@ -4092,6 +4099,7 @@ void GuiMap::SetSkin(GuiMap::Skin skin)
 
             auto fileData = ByteBuffer(1024*1024*120); // 120MB
             this->scrGraphics->load(*chkd.scrData, loadSettings, *archiveCluster, fileData);
+            this->scrGraphics->resetFps();
             auto end = std::chrono::high_resolution_clock::now();
             logger.info() << "New skin loaded in " << std::chrono::duration_cast<std::chrono::milliseconds>(end-begin).count() << "ms\n";
         }

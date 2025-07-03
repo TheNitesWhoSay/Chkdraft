@@ -826,7 +826,8 @@ void Scr::GraphicsData::Data::Skin::loadStars(ArchiveCluster & archiveCluster, s
 void Scr::GraphicsData::Data::Skin::loadClassicTiles(Sc::Data & scData, const LoadSettings & loadSettings)
 {
     auto tilesetIndex = size_t(loadSettings.tileset) % size_t(Sc::Terrain::NumTilesets);
-    this->tiles[tilesetIndex] = std::make_shared<Scr::GraphicsData::Data::Skin::Tileset>();
+    auto & tilesetGraphics = this->tiles[tilesetIndex];
+    tilesetGraphics = std::make_shared<Scr::GraphicsData::Data::Skin::Tileset>();
     // Populate tileTextureData
     constexpr size_t width = 32*128;
     std::vector<u8> tileTextureData(size_t(width*4096), u8(0)); // 4096x4096 palette indexes (128x128 tiles)
@@ -866,7 +867,7 @@ void Scr::GraphicsData::Data::Skin::loadClassicTiles(Sc::Data & scData, const Lo
     }
 
     // Load tileTextureData into a GRP
-    auto & tilesetGrp = this->tiles[tilesetIndex]->tilesetGrp;
+    auto & tilesetGrp = tilesetGraphics->tilesetGrp;
     tilesetGrp.width = 32;
     tilesetGrp.height = 32;
     tilesetGrp.frames = 1;
@@ -893,6 +894,15 @@ void Scr::GraphicsData::Data::Skin::loadClassicTiles(Sc::Data & scData, const Lo
         std::swap(((u8*)&tilesetGrp.palette.value()[i])[0], (((u8*)&tilesetGrp.palette.value()[i])[2])); // red-blue swap
 
     tilesetGrp.palette->update();
+
+    tilesetGraphics->shadowPalette.emplace();
+    std::memcpy(&(tilesetGraphics->shadowPalette.value())[0], &tiles.dark.rgbaPalette[0], 4*256);
+    tilesetGraphics->shadowPalette->update();
+
+    tilesetGraphics->halluPalette.emplace();
+    std::memcpy(&(tilesetGraphics->halluPalette.value())[0], &tiles.shift.rgbaPalette[0], 4*256);
+    tilesetGraphics->halluPalette->update();
+
 }
 
 void Scr::GraphicsData::Data::Skin::loadTiles(ArchiveCluster & archiveCluster, const LoadSettings & loadSettings, ByteBuffer & fileData)
@@ -905,11 +915,87 @@ void Scr::GraphicsData::Data::Skin::loadTiles(ArchiveCluster & archiveCluster, c
     }
 }
 
+void Scr::GraphicsData::Data::Skin::loadClassicImageFrame(std::size_t frameIndex, std::size_t imageIndex, Sc::Data & scData, std::vector<u8> & bitmapData)
+{
+    auto & classicImage = (*classicImages)[imageIndex];
+    auto & imageDat = scData.sprites.getImage(imageIndex);
+    auto & grp = scData.sprites.getGrp(imageDat.grpFile);
+    auto & grpFile = grp.get();
+
+    const Sc::Sprite::GrpFrameHeader & grpFrameHeader = grpFile.frameHeaders[frameIndex];
+    auto & frame = classicImage->frames[frameIndex];
+    s64 frameWidth = s64(grpFrameHeader.frameWidth);
+    s64 frameHeight = s64(grpFrameHeader.frameHeight);
+    if ( frameWidth == 0 || frameHeight == 0 ) // A dimension is zero, nothing to draw
+        return;
+
+    s64 bitmapWidth = (frameWidth+3)/4*4;
+    s64 bitmapHeight = (frameHeight+3)/4*4;
+    frame.frameWidth = grpFrameHeader.frameWidth;
+    frame.frameHeight = grpFrameHeader.frameHeight;
+    frame.texWidth = u32(bitmapWidth);
+    frame.texHeight = u32(bitmapHeight);
+    frame.xOffset = grpFrameHeader.xOffset;
+    frame.yOffset = grpFrameHeader.yOffset;
+        
+    size_t frameOffset = size_t(grpFrameHeader.frameOffset);
+    const Sc::Sprite::GrpFrame & grpFrame = (const Sc::Sprite::GrpFrame &)((u8*)&grpFile)[frameOffset];
+    for ( s64 row=0; row < frameHeight; row++ )
+    {
+        size_t rowOffset = size_t(grpFrame.rowOffsets[row]);
+        const Sc::Sprite::PixelRow & grpPixelRow = (const Sc::Sprite::PixelRow &)((u8*)&grpFile)[frameOffset+rowOffset];
+        const s64 rowStart = row*bitmapWidth;
+        s64 currPixelIndex = rowStart;
+        size_t pixelLineOffset = 0;
+        auto addition = size_t(row*bitmapWidth);
+        auto currPixel = &bitmapData[0]+addition; // Start from the left-most pixel of this row of the frame
+        auto rowEnd = row == bitmapHeight-1 ? &bitmapData[0]+bitmapWidth*bitmapHeight : &bitmapData[0]+size_t(currPixelIndex+frameWidth);
+
+        while ( currPixel < rowEnd )
+        {
+            const Sc::Sprite::PixelLine & pixelLine = (const Sc::Sprite::PixelLine &)((u8*)&grpPixelRow)[pixelLineOffset];
+            s64 lineLength = s64(pixelLine.lineLength());
+            if ( std::distance(currPixel, rowEnd) < lineLength )
+                lineLength = rowEnd - currPixel;
+                    
+            if ( pixelLine.isSpeckled() )
+            {
+                for ( s64 linePixel=0; linePixel<lineLength; linePixel++, ++currPixel ) // For every pixel in the line
+                    *currPixel = pixelLine.paletteIndex[linePixel]; // Place color from palette index specified in the array at current pixel
+            }
+            else // Solid or transparent
+            {
+                if ( pixelLine.isSolidLine() )
+                    std::fill_n(currPixel, lineLength, pixelLine.paletteIndex[0]); // Place single color across the entire line
+
+                currPixel += size_t(lineLength);
+            }
+            pixelLineOffset += pixelLine.sizeInBytes();
+        }
+    }
+                
+    frame.tex.genTexture();
+    frame.tex.bind();
+    frame.tex.setMinMagFilters(GL_NEAREST);
+    frame.tex.loadImage2D({
+        .data = &bitmapData[0],
+        .width = int(bitmapWidth),
+        .height = int(bitmapHeight),
+        .level = 0,
+        .internalformat = GL_R8UI,
+        .format = GL_RED_INTEGER,
+        .type = GL_UNSIGNED_BYTE
+    });
+    gl::Texture::bindDefault();
+
+    std::fill(&bitmapData[0], &bitmapData[0] + bitmapWidth * bitmapHeight, 0);
+}
+
 void Scr::GraphicsData::Data::Skin::loadClassicImages(Sc::Data & scData)
 {
     classicImages = std::make_shared<std::vector<std::shared_ptr<Scr::ClassicGrp>>>();
     classicImages->assign(999, nullptr);
-    std::vector<u8> bitmap(size_t(60480), u8(0));
+    //std::vector<u8> bitmapData(size_t(60480), u8(0));
 
     for ( size_t i=0; i<999; ++i )
     {
@@ -920,81 +1006,15 @@ void Scr::GraphicsData::Data::Skin::loadClassicImages(Sc::Data & scData)
         if ( numFrames > 0 )
         {
             auto classicImage = std::make_shared<Scr::ClassicGrp>();
-            (*classicImages)[i] = classicImage;
             classicImage->frames.reserve(numFrames);
+            for ( std::size_t frameIndex=0; frameIndex<numFrames; ++frameIndex )
+                classicImage->frames.emplace_back();
+
+            (*classicImages)[i] = classicImage;
             classicImage->grpWidth = grpFile.grpWidth;
             classicImage->grpHeight = grpFile.grpHeight;
-            for ( size_t frameIndex=0; frameIndex<numFrames; ++frameIndex )
-            {
-                classicImage->frames.emplace_back();
-                const Sc::Sprite::GrpFrameHeader & grpFrameHeader = grpFile.frameHeaders[frameIndex];
-                auto & frame = classicImage->frames[frameIndex];
-                s64 frameWidth = s64(grpFrameHeader.frameWidth);
-                s64 frameHeight = s64(grpFrameHeader.frameHeight);
-                if ( frameWidth == 0 || frameHeight == 0 ) // A dimension is zero, nothing to draw
-                    continue;
-
-                s64 bitmapWidth = (frameWidth+3)/4*4;
-                s64 bitmapHeight = (frameHeight+3)/4*4;
-                frame.frameWidth = grpFrameHeader.frameWidth;
-                frame.frameHeight = grpFrameHeader.frameHeight;
-                frame.texWidth = u32(bitmapWidth);
-                frame.texHeight = u32(bitmapHeight);
-                frame.xOffset = grpFrameHeader.xOffset;
-                frame.yOffset = grpFrameHeader.yOffset;
-        
-                size_t frameOffset = size_t(grpFrameHeader.frameOffset);
-                const Sc::Sprite::GrpFrame & grpFrame = (const Sc::Sprite::GrpFrame &)((u8*)&grpFile)[frameOffset];
-                for ( s64 row=0; row < frameHeight; row++ )
-                {
-                    size_t rowOffset = size_t(grpFrame.rowOffsets[row]);
-                    const Sc::Sprite::PixelRow & grpPixelRow = (const Sc::Sprite::PixelRow &)((u8*)&grpFile)[frameOffset+rowOffset];
-                    const s64 rowStart = row*bitmapWidth;
-                    s64 currPixelIndex = rowStart;
-                    size_t pixelLineOffset = 0;
-                    auto addition = size_t(row*bitmapWidth);
-                    auto currPixel = &bitmap[0]+addition; // Start from the left-most pixel of this row of the frame
-                    auto rowEnd = row == bitmapHeight-1 ? &bitmap[0]+bitmapWidth*bitmapHeight : &bitmap[0]+size_t(currPixelIndex+frameWidth);
-
-                    while ( currPixel < rowEnd )
-                    {
-                        const Sc::Sprite::PixelLine & pixelLine = (const Sc::Sprite::PixelLine &)((u8*)&grpPixelRow)[pixelLineOffset];
-                        s64 lineLength = s64(pixelLine.lineLength());
-                        if ( std::distance(currPixel, rowEnd) < lineLength )
-                            lineLength = rowEnd - currPixel;
-                    
-                        if ( pixelLine.isSpeckled() )
-                        {
-                            for ( s64 linePixel=0; linePixel<lineLength; linePixel++, ++currPixel ) // For every pixel in the line
-                                *currPixel = pixelLine.paletteIndex[linePixel]; // Place color from palette index specified in the array at current pixel
-                        }
-                        else // Solid or transparent
-                        {
-                            if ( pixelLine.isSolidLine() )
-                                std::fill_n(currPixel, lineLength, pixelLine.paletteIndex[0]); // Place single color across the entire line
-
-                            currPixel += size_t(lineLength);
-                        }
-                        pixelLineOffset += pixelLine.sizeInBytes();
-                    }
-                }
-                
-                frame.tex.genTexture();
-                frame.tex.bind();
-                frame.tex.setMinMagFilters(GL_NEAREST);
-                frame.tex.loadImage2D({
-                    .data = &bitmap[0],
-                    .width = int(bitmapWidth),
-                    .height = int(bitmapHeight),
-                    .level = 0,
-                    .internalformat = GL_R8UI,
-                    .format = GL_RED_INTEGER,
-                    .type = GL_UNSIGNED_BYTE
-                });
-                gl::Texture::bindDefault();
-
-                std::fill(&bitmap[0], &bitmap[0] + bitmapWidth * bitmapHeight, 0);
-            }
+            //for ( size_t frameIndex=0; frameIndex<numFrames; ++frameIndex )
+            //    loadClassicImageFrame(frameIndex, i, scData, bitmapData);
         }
     }
 }
@@ -1255,6 +1275,12 @@ std::shared_ptr<Scr::GraphicsData::RenderData> Scr::GraphicsData::load(Sc::Data 
         skin.loadClassicImages(scData);
 
     std::shared_ptr<RenderData> renderData = std::make_shared<RenderData>();
+    if ( isRemastered )
+        renderData->bitmapData.clear();
+    else
+        renderData->bitmapData = std::vector<u8>(size_t(60480), u8(0));
+
+    renderData->skin = data.skin[skinIndex];
     renderData->shaders = this->shaders;
     renderData->spk = skin.spk;
     renderData->tiles = skin.tiles[loadSettings.tileset];
@@ -1443,6 +1469,11 @@ Scr::Animation & Scr::MapGraphics::getImage(const Chk::Sprite & sprite)
 }
 
 Scr::MapGraphics::MapGraphics(Sc::Data & scData, GuiMap & guiMap) : scData(scData), map(guiMap), initialTickCount(GetTickCount64()) {}
+
+void Scr::MapGraphics::resetFps()
+{
+    this->fps = gl::Fps();
+}
 
 void Scr::MapGraphics::updateGrid()
 {
@@ -2720,6 +2751,8 @@ void Scr::MapGraphics::drawClassicImage(gl::Palette & palette, s32 x, s32 y, u32
 
     auto & imageInfo = (*renderDat->classicImages)[imageId];
     auto & frameInfo = imageInfo->frames[frameIndex >= imageInfo->frames.size() ? 0 : frameIndex];
+    if ( frameInfo.frameHeight == 0 )
+        renderDat->skin->loadClassicImageFrame(frameIndex, imageId, scData, renderDat->bitmapData);
 
     GLfloat vertexLeft = GLfloat(flipped ?
         (s32(imageInfo->grpWidth)/2 - s32(frameInfo.texWidth) - s32(frameInfo.xOffset)) :
@@ -2750,7 +2783,7 @@ void Scr::MapGraphics::drawClassicImage(gl::Palette & palette, s32 x, s32 y, u32
     }
 
     frameInfo.tex.bindToSlot(GL_TEXTURE0);
-    renderDat->tiles->tilesetGrp.palette->tex.bindToSlot(GL_TEXTURE1);
+    palette.tex.bindToSlot(GL_TEXTURE1);
 
     animVertices.bind();
     animVertices.bufferData(gl::UsageHint::DynamicDraw);
@@ -2854,18 +2887,12 @@ void Scr::MapGraphics::drawActor(const MapActor & mapActor, s32 xOffset, s32 yOf
                     renderDat->shaders->simplePaletteShader.opacity.setValue(1.0f);
                     break;
                 case MapImage::DrawFunction::Shadow:
-                    {
-                        renderDat->shaders->simplePaletteShader.opacity.setValue(0.5f); // Using an opacity uniform is cheating
-                        ScopedPaletteRemap<0, 256> shadowRemap(renderDat->tiles->tilesetGrp.palette, (void*)&scData.terrain.get(map.getTileset()).dark.rgbaPalette[0], prevMappedColor);
-                        drawClassicImage(*renderDat->tiles->tilesetGrp.palette, image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, image->imageId, prevMappedColor, image->flipped);
-                        renderDat->shaders->simplePaletteShader.opacity.setValue(1.0f);
-                    }
+                    renderDat->shaders->simplePaletteShader.opacity.setValue(0.5f); // Using an opacity uniform is cheating
+                    drawClassicImage(*renderDat->tiles->shadowPalette, image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, image->imageId, prevMappedColor, image->flipped);
+                    renderDat->shaders->simplePaletteShader.opacity.setValue(1.0f);
                     break;
                 case MapImage::DrawFunction::Hallucination:
-                    {
-                        ScopedPaletteRemap<0, 256> halluRemap(renderDat->tiles->tilesetGrp.palette, (void*)&scData.terrain.get(map.getTileset()).shift.rgbaPalette[0], prevMappedColor);
-                        drawClassicImage(*renderDat->tiles->tilesetGrp.palette, image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, image->imageId, prevMappedColor, image->flipped);
-                    }
+                    drawClassicImage(*renderDat->tiles->halluPalette, image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, image->imageId, prevMappedColor, image->flipped);
                     break;
                 case MapImage::DrawFunction::None:
                     break;

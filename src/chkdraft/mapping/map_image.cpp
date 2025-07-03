@@ -121,6 +121,7 @@ void Animator::createOverlay(u16 imageId, s8 x, s8 y, bool above)
     auto & overlayImage = context.animations.images[overlayImageIndex].value();
     overlayImage.rotation = chkd.scData.sprites.getImage(imageId).graphicTurns != 0;
     overlayImage.imageId = imageId;
+    overlayImage.owner = primaryImage->owner;
     overlayImage.xc = primaryImage->xc + s32(x);
     overlayImage.yc = primaryImage->yc + s32(y);
     overlayImage.drawFunction = (MapImage::DrawFunction)chkd.scData.sprites.getImage(imageId).drawFunction;
