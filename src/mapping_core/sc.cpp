@@ -1830,6 +1830,16 @@ bool Sc::Terrain::Tiles::load(size_t tilesetIndex, ArchiveCluster & archiveClust
     const std::string wpeFilePath = makeExtArchiveFilePath(mpqFilePath, "wpe");
     const std::string ddDataFilePath = makeExtArchiveFilePath(makeArchiveFilePath(mpqFilePath, "dddata"), "bin");
     
+    const std::string darkFilePath = makeExtArchiveFilePath(makeArchiveFilePath(mpqFilePath, "dark"), "pcx");
+    const std::string shiftFilePath = makeExtArchiveFilePath(makeArchiveFilePath(mpqFilePath, "shift"), "pcx");
+    bool darkLoaded = dark.load(archiveCluster, darkFilePath);
+    bool shiftLoaded = shift.load(archiveCluster, shiftFilePath);
+
+    bool remappingFilesLoaded = darkLoaded && shiftLoaded;
+
+    if ( !remappingFilesLoaded )
+        logger.error() << "Failed to get one or more remapping files for tileset " << mpqFilePath << std::endl;
+    
     auto cv5Data = Sc::Data::GetAsset(archiveCluster, cv5FilePath);
     auto vf4Data = Sc::Data::GetAsset(archiveCluster, vf4FilePath);
     auto vr4Data = Sc::Data::GetAsset(archiveCluster, vr4FilePath);
@@ -1962,7 +1972,7 @@ bool Sc::Terrain::Tiles::load(size_t tilesetIndex, ArchiveCluster & archiveClust
 
             loadIsom(tilesetIndex);
 
-            return true;
+            return remappingFilesLoaded;
         }
         else
             logger.error() << "One or more files improperly sized for tileset " << mpqFilePath << std::endl;

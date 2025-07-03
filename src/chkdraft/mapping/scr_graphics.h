@@ -416,16 +416,18 @@ namespace Scr {
                     "out vec4 fragColor;"
                     "uniform usampler2D tex;"
                     "uniform sampler2D pal;"
+                    "uniform float opacity;"
 
                     "void main() {"
                     "    uint palIndex = texture(tex, texCoord).r;"
                     "    if ( palIndex == uint(0) ) discard;"
-                    "    fragColor = vec4(texture(pal, vec2(palIndex/256., 0.)).rgb, 1.0);"
+                    "    fragColor = vec4(texture(pal, vec2(palIndex/256., 0.)).rgb, opacity);"
                     "};";
 
             public:
                 gl::uniform::Sampler2D tex { "tex" };
                 gl::uniform::Sampler2D pal { "pal" };
+                gl::uniform::Float opacity { "opacity" };
 
                 void load() {
                     gl::Program::create();
@@ -433,7 +435,8 @@ namespace Scr {
                     gl::Program::attachShader(gl::Shader(gl::Shader::Type::fragment, fragmentCode));
                     gl::Program::link();
                     gl::Program::use();
-                    gl::Program::findUniforms(posToNdc, texTransform, tex, pal);
+                    gl::Program::findUniforms(posToNdc, texTransform, tex, pal, opacity);
+                    opacity.setValue(1.0f);
                     posToNdc.loadIdentity();
                     texTransform.loadIdentity();
                 }

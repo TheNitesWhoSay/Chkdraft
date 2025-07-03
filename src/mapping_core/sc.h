@@ -3944,6 +3944,8 @@ namespace Sc {
             std::vector<MiniTilePixels> miniTilePixels;
             std::array<SystemColor, NumColors> staticSystemColorPalette;
             std::array<SystemColor, NumColors> systemColorPalette;
+            Pcx dark;
+            Pcx shift;
 
             std::vector<DoodadGroup> doodadGroups {};
             std::vector<DoodadPlacibility> doodadPlacibility {};

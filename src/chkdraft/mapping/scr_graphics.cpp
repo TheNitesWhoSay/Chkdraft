@@ -1744,6 +1744,7 @@ void Scr::MapGraphics::drawClassicStars()
     renderDat->shaders->simplePaletteShader.texTransform.loadIdentity();
     renderDat->shaders->simplePaletteShader.tex.setSlot(0);
     renderDat->shaders->simplePaletteShader.pal.setSlot(1);
+    renderDat->shaders->simplePaletteShader.opacity.setValue(1.0f);
     
     renderDat->tiles->tilesetGrp.palette->tex.bindToSlot(GL_TEXTURE1);
     animVertices.bind();
@@ -2245,6 +2246,7 @@ void Scr::MapGraphics::drawTileVertices(Scr::Grp & tilesetGrp, s32 width, s32 he
             renderDat->shaders->simplePaletteShader.texTransform.setMat4(tileToTex);
             renderDat->shaders->simplePaletteShader.tex.setSlot(0);
             renderDat->shaders->simplePaletteShader.pal.setSlot(1);
+            renderDat->shaders->simplePaletteShader.opacity.setValue(1.0f);
             tilesetGrp.mergedTexture.bindToSlot(GL_TEXTURE0);
             tilesetGrp.palette->tex.bindToSlot(GL_TEXTURE1);
         }
@@ -2628,6 +2630,7 @@ void Scr::MapGraphics::prepareImageRendering(bool isSelections)
         renderDat->shaders->simplePaletteShader.texTransform.loadIdentity();
         renderDat->shaders->simplePaletteShader.tex.setSlot(0);
         renderDat->shaders->simplePaletteShader.pal.setSlot(1);
+        renderDat->shaders->simplePaletteShader.opacity.setValue(1.0f);
     }
     else
     {
@@ -2719,8 +2722,8 @@ void Scr::MapGraphics::drawClassicImage(gl::Palette & palette, s32 x, s32 y, u32
     auto & frameInfo = imageInfo->frames[frameIndex >= imageInfo->frames.size() ? 0 : frameIndex];
 
     GLfloat vertexLeft = GLfloat(flipped ?
-        -imageInfo->grpWidth/2 + frameInfo.xOffset - s16(frameInfo.texWidth-frameInfo.frameWidth) :
-        -imageInfo->grpWidth/2 + frameInfo.xOffset);
+        (s32(imageInfo->grpWidth)/2 - s32(frameInfo.texWidth) - s32(frameInfo.xOffset)) :
+        (-s32(imageInfo->grpWidth)/2 + s32(frameInfo.xOffset)));
     GLfloat vertexTop = GLfloat(-imageInfo->grpHeight/2 + frameInfo.yOffset);
     gl::Rect2D<GLfloat> vertexRect { vertexLeft, vertexTop, vertexLeft + frameInfo.texWidth, vertexTop + frameInfo.texHeight };
     if ( flipped )
@@ -2745,7 +2748,6 @@ void Scr::MapGraphics::drawClassicImage(gl::Palette & palette, s32 x, s32 y, u32
             x+vertexRect.right, y+vertexRect.top   , 1.f, 0.f
         };
     }
-
 
     frameInfo.tex.bindToSlot(GL_TEXTURE0);
     renderDat->tiles->tilesetGrp.palette->tex.bindToSlot(GL_TEXTURE1);
@@ -2843,7 +2845,35 @@ void Scr::MapGraphics::drawActor(const MapActor & mapActor, s32 xOffset, s32 yOf
         if ( image && !image->hidden )
         {
             if ( loadSettings.skinId == Scr::Skin::Id::Classic )
-                drawClassicImage(*renderDat->tiles->tilesetGrp.palette, image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, image->imageId, (Chk::PlayerColor)image->owner, image->flipped);
+            {
+                switch ( image->drawFunction )
+                {
+                case MapImage::DrawFunction::Cloaked:
+                    renderDat->shaders->simplePaletteShader.opacity.setValue(0.5f); // Using an opacity uniform is cheating
+                    drawClassicImage(*renderDat->tiles->tilesetGrp.palette, image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, image->imageId, (Chk::PlayerColor)image->owner, image->flipped);
+                    renderDat->shaders->simplePaletteShader.opacity.setValue(1.0f);
+                    break;
+                case MapImage::DrawFunction::Shadow:
+                    {
+                        renderDat->shaders->simplePaletteShader.opacity.setValue(0.5f); // Using an opacity uniform is cheating
+                        ScopedPaletteRemap<0, 256> shadowRemap(renderDat->tiles->tilesetGrp.palette, (void*)&scData.terrain.get(map.getTileset()).dark.rgbaPalette[0], prevMappedColor);
+                        drawClassicImage(*renderDat->tiles->tilesetGrp.palette, image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, image->imageId, prevMappedColor, image->flipped);
+                        renderDat->shaders->simplePaletteShader.opacity.setValue(1.0f);
+                    }
+                    break;
+                case MapImage::DrawFunction::Hallucination:
+                    {
+                        ScopedPaletteRemap<0, 256> halluRemap(renderDat->tiles->tilesetGrp.palette, (void*)&scData.terrain.get(map.getTileset()).shift.rgbaPalette[0], prevMappedColor);
+                        drawClassicImage(*renderDat->tiles->tilesetGrp.palette, image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, image->imageId, prevMappedColor, image->flipped);
+                    }
+                    break;
+                case MapImage::DrawFunction::None:
+                    break;
+                default:
+                    drawClassicImage(*renderDat->tiles->tilesetGrp.palette, image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, image->imageId, (Chk::PlayerColor)image->owner, image->flipped);
+                    break;
+                }
+            }
             else
             {
                 switch ( image->drawFunction )
