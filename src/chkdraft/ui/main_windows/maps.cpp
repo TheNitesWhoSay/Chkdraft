@@ -391,6 +391,7 @@ void Maps::ChangeZoom(bool increment)
 void Maps::ChangePlayer(u8 newPlayer, bool updateMapPlayers)
 {
     currentlyActiveMap->setCurrPlayer(newPlayer);
+    currentlyActiveMap->animations.updateClipboardOwners(newPlayer);
 
     if ( updateMapPlayers )
     {

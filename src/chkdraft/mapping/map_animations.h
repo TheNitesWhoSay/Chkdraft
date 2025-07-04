@@ -62,6 +62,7 @@ public:
     void updateSpriteType(std::size_t spriteIndex, Sc::Sprite::Type newSpriteType);
     void updateUnitOwner(std::size_t unitIndex, u8 newUnitOwner);
     void updateSpriteOwner(std::size_t spriteIndex, u8 newSpriteOwner);
+    void updateClipboardOwners(u8 newOwner);
     void updateUnitIndex(std::size_t unitIndexFrom, std::size_t unitIndexTo);
     void updateSpriteIndex(std::size_t spriteIndexFrom, std::size_t spriteIndexTo);
     void updateUnitXc(std::size_t unitIndex, u16 oldXc, u16 newXc);

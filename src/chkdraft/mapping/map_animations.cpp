@@ -451,6 +451,27 @@ void MapAnimations::updateSpriteOwner(std::size_t spriteIndex, u8 newSpriteOwner
     }
 }
 
+void MapAnimations::updateClipboardOwners(u8 newOwner)
+{
+    for ( auto & actor : clipboard.unitActors )
+    {
+        for ( auto usedImageIndex : actor.usedImages )
+        {
+            if ( usedImageIndex != 0 )
+                images[usedImageIndex]->owner = newOwner;
+        }
+    }
+
+    for ( auto & actor : clipboard.spriteActors )
+    {
+        for ( auto usedImageIndex : actor.usedImages )
+        {
+            if ( usedImageIndex != 0 )
+                images[usedImageIndex]->owner = newOwner;
+        }
+    }
+}
+
 void MapAnimations::updateUnitIndex(std::size_t unitIndexFrom, std::size_t unitIndexTo)
 {
     auto & unitActor = scenario.view.units.attachedData(unitIndexTo);
