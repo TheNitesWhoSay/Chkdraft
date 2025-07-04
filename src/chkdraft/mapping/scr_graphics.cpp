@@ -3708,8 +3708,8 @@ void Scr::MapGraphics::drawPastes()
 
             if ( loadSettings.skinId == Scr::Skin::Id::Classic )
             {
-                for ( auto & pasteUnit : units )
-                    drawClassicImage(*palette, paste.x+pasteUnit.xc, paste.y+pasteUnit.yc, 0, getImageId(pasteUnit.unit), (Chk::PlayerColor)pasteUnit.unit.owner);
+                //for ( auto & pasteUnit : units )
+                //    drawClassicImage(*palette, paste.x+pasteUnit.xc, paste.y+pasteUnit.yc, 0, getImageId(pasteUnit.unit), (Chk::PlayerColor)pasteUnit.unit.owner);
             }
             else
             {
@@ -3747,11 +3747,11 @@ void Scr::MapGraphics::drawPastes()
 
             if ( loadSettings.skinId == Scr::Skin::Id::Classic )
             {
-                for ( auto & pasteSprite : sprites )
-                {
-                    drawClassicImage(*palette, paste.x+pasteSprite.xc, paste.y+pasteSprite.yc, 0,//pasteSprite.anim.frame,
-                        getImageId(pasteSprite.sprite), (Chk::PlayerColor)pasteSprite.sprite.owner);
-                }
+                //for ( auto & pasteSprite : sprites )
+                //{
+                //    drawClassicImage(*palette, paste.x+pasteSprite.xc, paste.y+pasteSprite.yc, 0,//pasteSprite.anim.frame,
+                //        getImageId(pasteSprite.sprite), (Chk::PlayerColor)pasteSprite.sprite.owner);
+                //}
             }
             else
             {
