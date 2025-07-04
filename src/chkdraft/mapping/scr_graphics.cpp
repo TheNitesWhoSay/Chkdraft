@@ -12,77 +12,10 @@
 
 extern Logger logger;
 
-template <size_t PaletteStartIndex, size_t RemappedLength>
-void remapPalette(gl::Palette & palette, void* colorMapping, Chk::PlayerColor playerColor, Chk::PlayerColor & prevMappedColor)
-{
-    if ( playerColor != prevMappedColor )
-    {
-        prevMappedColor = playerColor;
-        std::memcpy(&palette[PaletteStartIndex], colorMapping, RemappedLength*sizeof(palette[0]));
-        palette.update();
-    }
-}
-
-// ScopedPaletteRemap stores what was in the palette and remaps it, when going out of scope, restores palette & clears prevMappedColor
-template <size_t PaletteStartIndex, size_t RemappedLength>
-class ScopedPaletteRemap
-{
-    std::optional<gl::Palette> & palette;
-    Chk::PlayerColor & prevMappedColor;
-    std::uint32_t remapped[RemappedLength] {};
-
-public:
-    ScopedPaletteRemap(std::optional<gl::Palette> & palette, void* colorMapping, Chk::PlayerColor & prevMappedColor) : palette(palette), prevMappedColor(prevMappedColor)
-    {
-        if ( palette )
-        {
-            std::memcpy(remapped, &(*palette)[PaletteStartIndex], sizeof(remapped));
-            std::memcpy(&(*palette)[PaletteStartIndex], colorMapping, sizeof(remapped));
-            palette->update();
-        }
-    }
-
-    ~ScopedPaletteRemap()
-    {
-        if ( palette )
-        {
-            prevMappedColor = Chk::PlayerColor::None;
-            std::memcpy(&(*palette)[PaletteStartIndex], remapped, sizeof(remapped));
-            palette->update();
-        }
-    }
-};
-
-// ScopedPaletteRestore stores what was in the palette previously, when going out of scope, restores palette & clears prevMappedColor
-template <size_t PaletteStartIndex, size_t RemappedLength>
-class ScopedPaletteRestore
-{
-    std::optional<gl::Palette> & palette;
-    Chk::PlayerColor & prevMappedColor;
-    std::uint32_t remapped[RemappedLength] {};
-
-public:
-    ScopedPaletteRestore(std::optional<gl::Palette> & palette, Chk::PlayerColor & prevMappedColor) : palette(palette), prevMappedColor(prevMappedColor)
-    {
-        if ( palette )
-            std::memcpy(remapped, &(*palette)[PaletteStartIndex], sizeof(remapped));
-    }
-
-    ~ScopedPaletteRestore()
-    {
-        if ( palette )
-        {
-            prevMappedColor = Chk::PlayerColor::None;
-            std::memcpy(&(*palette)[PaletteStartIndex], remapped, sizeof(remapped));
-            palette->update();
-        }
-    }
-};
-
 void Scr::GraphicsData::Shaders::loadClassic()
 {
-    if ( !simplePaletteShader.hasShaders() )
-        simplePaletteShader.load();
+    if ( !classicPaletteShader.hasShaders() )
+        classicPaletteShader.load();
 
     if ( !solidColorShader.hasShaders() )
         solidColorShader.load();
@@ -915,7 +848,7 @@ void Scr::GraphicsData::Data::Skin::loadTiles(ArchiveCluster & archiveCluster, c
     }
 }
 
-void Scr::GraphicsData::Data::Skin::loadClassicImageFrame(std::size_t frameIndex, std::size_t imageIndex, Sc::Data & scData, std::vector<u8> & bitmapData)
+void Scr::GraphicsData::Data::Skin::loadClassicImageFrame(std::size_t frameIndex, std::size_t imageIndex, Sc::Data & scData, std::vector<u8> & bitmapData, bool saveBinds)
 {
     auto & classicImage = (*classicImages)[imageIndex];
     auto & imageDat = scData.sprites.getImage(imageIndex);
@@ -973,7 +906,11 @@ void Scr::GraphicsData::Data::Skin::loadClassicImageFrame(std::size_t frameIndex
             pixelLineOffset += pixelLine.sizeInBytes();
         }
     }
-                
+    
+    GLint savedTexture = 0;
+    if ( saveBinds )
+        glGetIntegerv(GL_TEXTURE_BINDING_2D, &savedTexture);
+
     frame.tex.genTexture();
     frame.tex.bind();
     frame.tex.setMinMagFilters(GL_NEAREST);
@@ -986,13 +923,31 @@ void Scr::GraphicsData::Data::Skin::loadClassicImageFrame(std::size_t frameIndex
         .format = GL_RED_INTEGER,
         .type = GL_UNSIGNED_BYTE
     });
-    gl::Texture::bindDefault();
+
+    if ( saveBinds )
+        glBindTexture(GL_TEXTURE_2D, savedTexture);
+    else
+        gl::Texture::bindDefault();
 
     std::fill(&bitmapData[0], &bitmapData[0] + bitmapWidth * bitmapHeight, 0);
 }
 
 void Scr::GraphicsData::Data::Skin::loadClassicImages(Sc::Data & scData)
 {
+    if ( !tunitPalette )
+    {
+        tunitPalette.emplace();
+        std::memcpy(&(tunitPalette.value())[0], &scData.tunit.rgbaPalette[0], 4*128);
+        tunitPalette->update();
+    }
+
+    if ( !tselectPalette )
+    {
+        tselectPalette.emplace();
+        std::memcpy(&(tselectPalette.value())[0], &scData.tselect.rgbaPalette[0], 4*24);
+        tselectPalette->update();
+    }
+
     classicImages = std::make_shared<std::vector<std::shared_ptr<Scr::ClassicGrp>>>();
     classicImages->assign(999, nullptr);
     //std::vector<u8> bitmapData(size_t(60480), u8(0));
@@ -1014,7 +969,7 @@ void Scr::GraphicsData::Data::Skin::loadClassicImages(Sc::Data & scData)
             classicImage->grpWidth = grpFile.grpWidth;
             classicImage->grpHeight = grpFile.grpHeight;
             //for ( size_t frameIndex=0; frameIndex<numFrames; ++frameIndex )
-            //    loadClassicImageFrame(frameIndex, i, scData, bitmapData);
+            //    loadClassicImageFrame(frameIndex, i, scData, bitmapData, false);
         }
     }
 }
@@ -1770,12 +1725,14 @@ void Scr::MapGraphics::drawClassicStars()
     if ( renderDat->spk == nullptr )
         return;
 
-    renderDat->shaders->simplePaletteShader.use();
-    renderDat->shaders->simplePaletteShader.posToNdc.setMat4(starToNdc);
-    renderDat->shaders->simplePaletteShader.texTransform.loadIdentity();
-    renderDat->shaders->simplePaletteShader.tex.setSlot(0);
-    renderDat->shaders->simplePaletteShader.pal.setSlot(1);
-    renderDat->shaders->simplePaletteShader.opacity.setValue(1.0f);
+    renderDat->shaders->classicPaletteShader.use();
+    renderDat->shaders->classicPaletteShader.posToNdc.setMat4(starToNdc);
+    renderDat->shaders->classicPaletteShader.texTransform.loadIdentity();
+    renderDat->shaders->classicPaletteShader.tex.setSlot(0);
+    renderDat->shaders->classicPaletteShader.pal.setSlot(1);
+    renderDat->shaders->classicPaletteShader.remapRange.setUVec2(0, 0);
+    renderDat->shaders->classicPaletteShader.remapOffset.setValue(0);
+    renderDat->shaders->classicPaletteShader.opacity.setValue(1.0f);
     
     renderDat->tiles->tilesetGrp.palette->tex.bindToSlot(GL_TEXTURE1);
     animVertices.bind();
@@ -2272,12 +2229,14 @@ void Scr::MapGraphics::drawTileVertices(Scr::Grp & tilesetGrp, s32 width, s32 he
         }
         else if ( loadSettings.skinId == Scr::Skin::Id::Classic ) // Classic
         {
-            renderDat->shaders->simplePaletteShader.use();
-            renderDat->shaders->simplePaletteShader.posToNdc.setMat4(positionTransformation);
-            renderDat->shaders->simplePaletteShader.texTransform.setMat4(tileToTex);
-            renderDat->shaders->simplePaletteShader.tex.setSlot(0);
-            renderDat->shaders->simplePaletteShader.pal.setSlot(1);
-            renderDat->shaders->simplePaletteShader.opacity.setValue(1.0f);
+            renderDat->shaders->classicPaletteShader.use();
+            renderDat->shaders->classicPaletteShader.posToNdc.setMat4(positionTransformation);
+            renderDat->shaders->classicPaletteShader.texTransform.setMat4(tileToTex);
+            renderDat->shaders->classicPaletteShader.tex.setSlot(0);
+            renderDat->shaders->classicPaletteShader.pal.setSlot(1);
+            renderDat->shaders->classicPaletteShader.remapRange.setUVec2(0, 0);
+            renderDat->shaders->classicPaletteShader.remapOffset.setValue(0);
+            renderDat->shaders->classicPaletteShader.opacity.setValue(1.0f);
             tilesetGrp.mergedTexture.bindToSlot(GL_TEXTURE0);
             tilesetGrp.palette->tex.bindToSlot(GL_TEXTURE1);
         }
@@ -2655,13 +2614,24 @@ void Scr::MapGraphics::prepareImageRendering(bool isSelections)
     auto imageToNdc = ndcTranslation * ndcScale * imageTranslation;
     if ( loadSettings.skinId == Scr::Skin::Id::Classic )
     {
-        prevMappedColor = Chk::PlayerColor::None;
-        renderDat->shaders->simplePaletteShader.use();
-        renderDat->shaders->simplePaletteShader.posToNdc.setMat4(imageToNdc);
-        renderDat->shaders->simplePaletteShader.texTransform.loadIdentity();
-        renderDat->shaders->simplePaletteShader.tex.setSlot(0);
-        renderDat->shaders->simplePaletteShader.pal.setSlot(1);
-        renderDat->shaders->simplePaletteShader.opacity.setValue(1.0f);
+        renderDat->shaders->classicPaletteShader.use();
+        if ( isSelections )
+            renderDat->skin->tselectPalette->tex.bindToSlot(GL_TEXTURE2);
+        else
+            renderDat->skin->tunitPalette->tex.bindToSlot(GL_TEXTURE2);
+
+        renderDat->shaders->classicPaletteShader.posToNdc.setMat4(imageToNdc);
+        renderDat->shaders->classicPaletteShader.texTransform.loadIdentity();
+        renderDat->shaders->classicPaletteShader.tex.setSlot(0);
+        renderDat->shaders->classicPaletteShader.pal.setSlot(1);
+        if ( isSelections )
+            renderDat->shaders->classicPaletteShader.remapRange.setUVec2(0, 8);
+        else
+            renderDat->shaders->classicPaletteShader.remapRange.setUVec2(8, 16);
+
+        renderDat->shaders->classicPaletteShader.remapOffset.setValue(0);
+        renderDat->shaders->classicPaletteShader.remapPal.setSlot(2);
+        renderDat->shaders->classicPaletteShader.opacity.setValue(1.0f);
     }
     else
     {
@@ -2745,14 +2715,15 @@ void Scr::MapGraphics::drawSelectionImage(Scr::Animation & animation, s32 x, s32
     animVertices.drawTriangles();
 }
 
-void Scr::MapGraphics::drawClassicImage(gl::Palette & palette, s32 x, s32 y, u32 frameIndex, u32 imageId, Chk::PlayerColor color, bool flipped)
+void Scr::MapGraphics::drawClassicImage(gl::Palette & palette, s32 x, s32 y, u32 frameIndex, u32 imageId, std::optional<Chk::PlayerColor> color, bool flipped)
 {
-    remapPalette<8, 8>(palette, &scData.tunit.rgbaPalette[color < 16 ? 8*color : 8*(color%16)], color, prevMappedColor);
+    if ( color )
+        this->renderDat->shaders->classicPaletteShader.remapOffset.setValue(8*(color.value()%16));
 
     auto & imageInfo = (*renderDat->classicImages)[imageId];
     auto & frameInfo = imageInfo->frames[frameIndex >= imageInfo->frames.size() ? 0 : frameIndex];
     if ( frameInfo.frameHeight == 0 )
-        renderDat->skin->loadClassicImageFrame(frameIndex, imageId, scData, renderDat->bitmapData);
+        renderDat->skin->loadClassicImageFrame(frameIndex, imageId, scData, renderDat->bitmapData, true);
 
     GLfloat vertexLeft = GLfloat(flipped ?
         (s32(imageInfo->grpWidth)/2 - s32(frameInfo.texWidth) - s32(frameInfo.xOffset)) :
@@ -2794,7 +2765,7 @@ void Scr::MapGraphics::drawUnitSelection(Sc::Unit::Type unitType, s32 x, s32 y)
 {
     auto [selImageId, selOffset] = getSelInfo(unitType);
     if ( loadSettings.skinId == Scr::Skin::Id::Classic )
-        drawClassicImage(*renderDat->tiles->tilesetGrp.palette, x, y+selOffset, 0, selImageId, Chk::PlayerColor::Red);
+        drawClassicImage(*renderDat->tiles->tilesetGrp.palette, x, y+selOffset, 0, selImageId, std::nullopt);
     else
         drawSelectionImage(getImage(selImageId), x, y+selOffset, 0, 0xFF00F518);
 }
@@ -2803,7 +2774,7 @@ void Scr::MapGraphics::drawSpriteSelection(Sc::Sprite::Type spriteType, s32 x, s
 {
     auto [selImageId, selOffset] = getSelInfo(spriteType, isDrawnAsSprite);
     if ( loadSettings.skinId == Scr::Skin::Id::Classic )
-        drawClassicImage(*renderDat->tiles->tilesetGrp.palette, x, y+selOffset, 0, selImageId, Chk::PlayerColor::Red);
+        drawClassicImage(*renderDat->tiles->tilesetGrp.palette, x, y+selOffset, 0, selImageId, std::nullopt);
     else
         drawSelectionImage(getImage(selImageId), x, y+selOffset, 0, 0xFFFFFFFF);
 }
@@ -2812,8 +2783,6 @@ void Scr::MapGraphics::drawImageSelections()
 {
     prepareImageRendering(true);
     auto & palette = renderDat->tiles->tilesetGrp.palette; // For SC:R there is no palette/this is std::nullopt
-    ScopedPaletteRemap<0, 8> remapped {palette, (void*)&scData.tselect.rgbaPalette[0], prevMappedColor}; // For SC:R this does nothing
-    prevMappedColor = Chk::PlayerColor::Red; // Use one unchanging value for player color here to prevent remappings
 
     for ( auto unitIndex : map.view.units.sel() )
     {
@@ -2882,21 +2851,25 @@ void Scr::MapGraphics::drawActor(const MapActor & mapActor, s32 xOffset, s32 yOf
                 switch ( image->drawFunction )
                 {
                 case MapImage::DrawFunction::Cloaked:
-                    renderDat->shaders->simplePaletteShader.opacity.setValue(0.5f); // Using an opacity uniform is cheating
+                    renderDat->shaders->classicPaletteShader.opacity.setValue(0.5f); // Using an opacity uniform is cheating
+                    renderDat->shaders->classicPaletteShader.remapRange.setUVec2(8, 16); // Use player colors
                     drawClassicImage(*renderDat->tiles->tilesetGrp.palette, image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, image->imageId, (Chk::PlayerColor)image->owner, image->flipped);
-                    renderDat->shaders->simplePaletteShader.opacity.setValue(1.0f);
+                    renderDat->shaders->classicPaletteShader.opacity.setValue(1.0f);
                     break;
                 case MapImage::DrawFunction::Shadow:
-                    renderDat->shaders->simplePaletteShader.opacity.setValue(0.5f); // Using an opacity uniform is cheating
-                    drawClassicImage(*renderDat->tiles->shadowPalette, image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, image->imageId, prevMappedColor, image->flipped);
-                    renderDat->shaders->simplePaletteShader.opacity.setValue(1.0f);
+                    renderDat->shaders->classicPaletteShader.opacity.setValue(0.5f); // Using an opacity uniform is cheating
+                    renderDat->shaders->classicPaletteShader.remapRange.setUVec2(0, 0); // No remapping
+                    drawClassicImage(*renderDat->tiles->shadowPalette, image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, image->imageId, std::nullopt, image->flipped);
+                    renderDat->shaders->classicPaletteShader.opacity.setValue(1.0f);
                     break;
                 case MapImage::DrawFunction::Hallucination:
-                    drawClassicImage(*renderDat->tiles->halluPalette, image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, image->imageId, prevMappedColor, image->flipped);
+                    renderDat->shaders->classicPaletteShader.remapRange.setUVec2(0, 0); // No remapping
+                    drawClassicImage(*renderDat->tiles->halluPalette, image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, image->imageId, std::nullopt, image->flipped);
                     break;
                 case MapImage::DrawFunction::None:
                     break;
                 default:
+                    renderDat->shaders->classicPaletteShader.remapRange.setUVec2(8, 16); // Use player colors
                     drawClassicImage(*renderDat->tiles->tilesetGrp.palette, image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, image->imageId, (Chk::PlayerColor)image->owner, image->flipped);
                     break;
                 }
@@ -2928,8 +2901,6 @@ void Scr::MapGraphics::drawActor(const MapActor & mapActor, s32 xOffset, s32 yOf
 void Scr::MapGraphics::drawActors()
 {
     prepareImageRendering();
-    auto & palette = renderDat->tiles->tilesetGrp.palette; // For SC:R there is no palette/this is std::nullopt
-    ScopedPaletteRestore<8, 8> remapped {palette, prevMappedColor}; // For SC:R this does nothing
 
     //for ( const auto & unit : map->units )
     //    drawUnit(unit);
@@ -3654,7 +3625,6 @@ void Scr::MapGraphics::drawPastes()
 
             prepareImageRendering();
             auto & palette = renderDat->tiles->tilesetGrp.palette;
-            ScopedPaletteRestore<8, 8> remapped {palette, prevMappedColor};
 
             if ( loadSettings.skinId == Scr::Skin::Id::Classic )
             {
@@ -3735,7 +3705,6 @@ void Scr::MapGraphics::drawPastes()
 
             prepareImageRendering();
             auto & palette = renderDat->tiles->tilesetGrp.palette;
-            ScopedPaletteRestore<8, 8> remapped {palette, prevMappedColor};
 
             if ( loadSettings.skinId == Scr::Skin::Id::Classic )
             {
@@ -3775,7 +3744,6 @@ void Scr::MapGraphics::drawPastes()
             prepareImageRendering();
 
             auto & palette = renderDat->tiles->tilesetGrp.palette;
-            ScopedPaletteRestore<8, 8> remapped {palette, prevMappedColor};
 
             if ( loadSettings.skinId == Scr::Skin::Id::Classic )
             {

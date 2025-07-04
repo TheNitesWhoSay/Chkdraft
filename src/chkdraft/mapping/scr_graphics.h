@@ -407,7 +407,7 @@ namespace Scr {
                 }
             };
 
-            class SimplePaletteShader : public TextureVertexShader
+            class ClassicPaletteShader : public TextureVertexShader
             {
                 static constexpr std::string_view fragmentCode =
                     "#version 330 core\n"
@@ -416,17 +416,26 @@ namespace Scr {
                     "out vec4 fragColor;"
                     "uniform usampler2D tex;"
                     "uniform sampler2D pal;"
+                    "uniform sampler2D remapPal;"
+                    "uniform uvec2 remapRange;"
+                    "uniform uint remapOffset;"
                     "uniform float opacity;"
 
                     "void main() {"
                     "    uint palIndex = texture(tex, texCoord).r;"
                     "    if ( palIndex == uint(0) ) discard;"
-                    "    fragColor = vec4(texture(pal, vec2(palIndex/256., 0.)).rgb, opacity);"
+                    "    else if ( palIndex >= remapRange.x && palIndex < remapRange.y )"
+                    "        fragColor = vec4(texture(remapPal, vec2((palIndex-remapRange.x+remapOffset)/256., 0.)).rgb, opacity);"
+                    "    else"
+                    "        fragColor = vec4(texture(pal, vec2(palIndex/256., 0.)).rgb, opacity);"
                     "};";
 
             public:
                 gl::uniform::Sampler2D tex { "tex" };
                 gl::uniform::Sampler2D pal { "pal" };
+                gl::uniform::Sampler2D remapPal { "remapPal" };
+                gl::uniform::UVec2 remapRange { "remapRange" };
+                gl::uniform::UInt remapOffset { "remapOffset" };
                 gl::uniform::Float opacity { "opacity" };
 
                 void load() {
@@ -435,7 +444,9 @@ namespace Scr {
                     gl::Program::attachShader(gl::Shader(gl::Shader::Type::fragment, fragmentCode));
                     gl::Program::link();
                     gl::Program::use();
-                    gl::Program::findUniforms(posToNdc, texTransform, tex, pal, opacity);
+                    gl::Program::findUniforms(posToNdc, texTransform, tex, pal, remapPal, remapRange, remapOffset, opacity);
+                    remapRange.setUVec2(0, 0);
+                    remapOffset.setValue(0);
                     opacity.setValue(1.0f);
                     posToNdc.loadIdentity();
                     texTransform.loadIdentity();
@@ -674,7 +685,7 @@ namespace Scr {
             HeatShader heatShader {}; // Remastered
             SimpleShader simpleShader {}; // Remastered
             SolidColorShader solidColorShader {}; // Remastered & Classic
-            SimplePaletteShader simplePaletteShader {}; // Classic
+            ClassicPaletteShader classicPaletteShader {}; // Classic
             
             void loadClassic();
             void load(ArchiveCluster & archiveCluster);
@@ -776,6 +787,8 @@ namespace Scr {
 
                     void load(ArchiveCluster & archiveCluster, const LoadSettings & loadSettings, ByteBuffer & fileData);
                 };
+                std::optional<gl::Palette> tunitPalette {};
+                std::optional<gl::Palette> tselectPalette {};
                 std::shared_ptr<SpkData> spk {};
                 std::shared_ptr<Tileset> tiles[Sc::Terrain::NumTilesets] {};
                 std::shared_ptr<std::vector<std::shared_ptr<Animation>>> images {}; // 999 images
@@ -787,7 +800,7 @@ namespace Scr {
                 void loadClassicTiles(Sc::Data & scData, const LoadSettings & loadSettings);
                 void loadTiles(ArchiveCluster & archiveCluster, const LoadSettings & loadSettings, ByteBuffer & fileData);
                 
-                void loadClassicImageFrame(std::size_t frameIndex, std::size_t imageIndex, Sc::Data & scData, std::vector<u8> & bitmapData);
+                void loadClassicImageFrame(std::size_t frameIndex, std::size_t imageIndex, Sc::Data & scData, std::vector<u8> & bitmapData, bool saveBinds);
                 void loadClassicImages(Sc::Data & scData);
                 void loadImages(Sc::Data & scData, ArchiveCluster & archiveCluster, std::filesystem::path texPrefix, const LoadSettings & loadSettings, ByteBuffer & fileData, gl::ContextSemaphore* contextSemaphore = nullptr);
             };
@@ -949,7 +962,7 @@ namespace Scr {
         void prepareImageRendering(bool isSelections = false);
         void drawImage(Scr::Animation & animation, s32 x, s32 y, u32 frame, u32 multiplyColor, u32 playerColor, bool hallucinate, bool flipped = false);
         void drawSelectionImage(Scr::Animation & animation, s32 x, s32 y, u32 frame, u32 multiplyColor);
-        void drawClassicImage(gl::Palette & palette, s32 x, s32 y, u32 frame, u32 imageId, Chk::PlayerColor color, bool flipped = false);
+        void drawClassicImage(gl::Palette & palette, s32 x, s32 y, u32 frame, u32 imageId, std::optional<Chk::PlayerColor> color, bool flipped = false);
         void drawUnitSelection(Sc::Unit::Type unitType, s32 x, s32 y);
         void drawSpriteSelection(Sc::Sprite::Type spriteType, s32 x, s32 y, bool isDrawnAsSprite);
         void drawImageSelections();
