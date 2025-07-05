@@ -426,7 +426,11 @@ namespace Scr {
                     "    if ( palIndex == uint(0) ) discard;"
                     "    else if ( palIndex >= remapRange.x && palIndex < remapRange.y )"
                     "        fragColor = vec4(texture(remapPal, vec2((palIndex-remapRange.x+remapOffset)/256., 0.)).rgb, opacity);"
-                    "    else"
+                    "    else if ( remapRange.x > remapRange.y ) {"
+                    "        vec4 p = texture(remapPal, vec2(palIndex/256., 0.)).rgba;"
+                    "        float sum = p.r+p.g+p.b;"
+                    "        fragColor = vec4(p.rgb, sum);"
+                    "    } else"
                     "        fragColor = vec4(texture(pal, vec2(palIndex/256., 0.)).rgb, opacity);"
                     "};";
 
@@ -783,6 +787,7 @@ namespace Scr {
                     Grp tilesetGrp {};
                     std::optional<gl::Palette> halluPalette {};
                     std::optional<gl::Palette> shadowPalette {};
+                    std::optional<gl::Palette> remapPalette[7];
                     std::vector<u16> maskIds {};
 
                     void load(ArchiveCluster & archiveCluster, const LoadSettings & loadSettings, ByteBuffer & fileData);

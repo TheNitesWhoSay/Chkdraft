@@ -64,6 +64,10 @@ void Animator::initializeImage(std::size_t iScriptId)
 {
     auto & imageDat = chkd.scData.sprites.getImage(currImage->imageId);
 
+    currImage->remapping = imageDat.remapping;
+    if ( currImage->remapping != 0 )
+        currImage->drawFunction = MapImage::DrawFunction::Remap;
+
     currImage->drawIfCloaked = imageDat.drawIfCloaked != 0;
     currImage->iScriptId = iScriptId;
     currImage->animation = chkd.scData.sprites.getAnimationHeader(iScriptId, Sc::Sprite::AnimHeader::StarEditInit);
@@ -124,6 +128,8 @@ void Animator::createOverlay(u16 imageId, s8 x, s8 y, bool above)
     overlayImage.owner = primaryImage->owner;
     overlayImage.xc = primaryImage->xc + s32(x);
     overlayImage.yc = primaryImage->yc + s32(y);
+    overlayImage.remapping = chkd.scData.sprites.getImage(imageId).remapping;
+    overlayImage.drawFunction = overlayImage.remapping != 0 ? MapImage::DrawFunction::Remap : MapImage::DrawFunction::Normal;
     overlayImage.drawFunction = (MapImage::DrawFunction)chkd.scData.sprites.getImage(imageId).drawFunction;
     //logger.info() << this << " creating overlay: " << &overlayImage << '\n';
     Animator {

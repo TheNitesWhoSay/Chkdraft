@@ -12,6 +12,7 @@ struct MapImage
         Cloak = 5,
         Cloaked = 6,
         Decloak = 7,
+        Remap = 9,
         Shadow = 10,
         Hallucination = 16,
         None
@@ -24,6 +25,7 @@ struct MapImage
     s32 yc = 0;
     s8 xOffset = 0;
     s8 yOffset = 0;
+    u8 remapping = 0;
     size_t baseFrame = 0;
     size_t frame = 0;
     bool flipped = false;

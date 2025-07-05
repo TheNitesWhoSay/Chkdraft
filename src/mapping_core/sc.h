@@ -2730,6 +2730,7 @@ namespace Sc {
         
         std::vector<Sc::Color<float>> rgbaPalette; // More standard (OpenGL-friendly) color format { red, green, blue, alpha }
         std::vector<Sc::SystemColor> bgraPalette; // Win32 RGBQUAD format { blue, green, red, alpha/reserved }
+        std::vector<u8> paletteIndex;
     };
 
     struct BoundingBox
@@ -3946,6 +3947,7 @@ namespace Sc {
             std::array<SystemColor, NumColors> systemColorPalette;
             Pcx dark;
             Pcx shift;
+            Pcx remap[7]; // ofire, gfire, bfire, bexpl, trans50, red, green
 
             std::vector<DoodadGroup> doodadGroups {};
             std::vector<DoodadPlacibility> doodadPlacibility {};

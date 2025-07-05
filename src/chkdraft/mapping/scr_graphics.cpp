@@ -836,6 +836,22 @@ void Scr::GraphicsData::Data::Skin::loadClassicTiles(Sc::Data & scData, const Lo
     std::memcpy(&(tilesetGraphics->halluPalette.value())[0], &tiles.shift.rgbaPalette[0], 4*256);
     tilesetGraphics->halluPalette->update();
 
+    for ( std::size_t i=0; i<std::size(tilesetGraphics->remapPalette); ++i )
+    {
+        if ( !tilesetGraphics->remapPalette[i] )
+        {
+            tilesetGraphics->remapPalette[i].emplace();
+            for ( std::size_t j=0; j<256; ++j ) // TODO: This is a very hacky approach that together with color-sum-transparency approximates effects
+            {
+                u8 ji = j;
+                u32 effect = ((ji-1) << 8);
+                tilesetGraphics->remapPalette[i].value()[j] = tilesetGrp.palette.value()[tiles.remap[i].paletteIndex[effect < tiles.remap[i].rgbaPalette.size() ? effect : 0]];
+            }
+
+            tilesetGraphics->remapPalette[i]->update();
+        }
+    }
+
 }
 
 void Scr::GraphicsData::Data::Skin::loadTiles(ArchiveCluster & archiveCluster, const LoadSettings & loadSettings, ByteBuffer & fileData)
@@ -2620,6 +2636,14 @@ void Scr::MapGraphics::prepareImageRendering(bool isSelections)
         else
             renderDat->skin->tunitPalette->tex.bindToSlot(GL_TEXTURE2);
 
+        renderDat->tiles->remapPalette[0]->tex.bindToSlot(GL_TEXTURE3);
+        renderDat->tiles->remapPalette[1]->tex.bindToSlot(GL_TEXTURE4);
+        renderDat->tiles->remapPalette[2]->tex.bindToSlot(GL_TEXTURE5);
+        renderDat->tiles->remapPalette[3]->tex.bindToSlot(GL_TEXTURE6);
+        renderDat->tiles->remapPalette[4]->tex.bindToSlot(GL_TEXTURE7);
+        renderDat->tiles->remapPalette[5]->tex.bindToSlot(GL_TEXTURE8);
+        renderDat->tiles->remapPalette[6]->tex.bindToSlot(GL_TEXTURE9);
+
         renderDat->shaders->classicPaletteShader.posToNdc.setMat4(imageToNdc);
         renderDat->shaders->classicPaletteShader.texTransform.loadIdentity();
         renderDat->shaders->classicPaletteShader.tex.setSlot(0);
@@ -2853,23 +2877,33 @@ void Scr::MapGraphics::drawActor(const MapActor & mapActor, s32 xOffset, s32 yOf
                 case MapImage::DrawFunction::Cloaked:
                     renderDat->shaders->classicPaletteShader.opacity.setValue(0.5f); // Using an opacity uniform is cheating
                     renderDat->shaders->classicPaletteShader.remapRange.setUVec2(8, 16); // Use player colors
+                    renderDat->shaders->classicPaletteShader.remapPal.setSlot(2);
                     drawClassicImage(*renderDat->tiles->tilesetGrp.palette, image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, image->imageId, (Chk::PlayerColor)image->owner, image->flipped);
                     renderDat->shaders->classicPaletteShader.opacity.setValue(1.0f);
                     break;
+                case MapImage::DrawFunction::Remap:
+                    renderDat->shaders->classicPaletteShader.remapRange.setUVec2(1, 0); // Special case
+                    renderDat->shaders->classicPaletteShader.remapPal.setSlot(2+image->remapping);
+                    renderDat->shaders->classicPaletteShader.opacity.setValue(1.0f); // Using an opacity uniform is cheating
+                    drawClassicImage(*renderDat->tiles->tilesetGrp.palette, image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, image->imageId, std::nullopt, image->flipped);
+                    break;
                 case MapImage::DrawFunction::Shadow:
                     renderDat->shaders->classicPaletteShader.opacity.setValue(0.5f); // Using an opacity uniform is cheating
-                    renderDat->shaders->classicPaletteShader.remapRange.setUVec2(0, 0); // No remapping
+                    renderDat->shaders->classicPaletteShader.remapRange.setUVec2(0, 0); // No remapping (beyond using the shadow palette)
+                    renderDat->shaders->classicPaletteShader.remapPal.setSlot(2);
                     drawClassicImage(*renderDat->tiles->shadowPalette, image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, image->imageId, std::nullopt, image->flipped);
                     renderDat->shaders->classicPaletteShader.opacity.setValue(1.0f);
                     break;
                 case MapImage::DrawFunction::Hallucination:
-                    renderDat->shaders->classicPaletteShader.remapRange.setUVec2(0, 0); // No remapping
+                    renderDat->shaders->classicPaletteShader.remapRange.setUVec2(0, 0); // No remapping (beyond using the hallucination palette)
+                    renderDat->shaders->classicPaletteShader.remapPal.setSlot(2);
                     drawClassicImage(*renderDat->tiles->halluPalette, image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, image->imageId, std::nullopt, image->flipped);
                     break;
                 case MapImage::DrawFunction::None:
                     break;
                 default:
                     renderDat->shaders->classicPaletteShader.remapRange.setUVec2(8, 16); // Use player colors
+                    renderDat->shaders->classicPaletteShader.remapPal.setSlot(2);
                     drawClassicImage(*renderDat->tiles->tilesetGrp.palette, image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, image->imageId, (Chk::PlayerColor)image->owner, image->flipped);
                     break;
                 }

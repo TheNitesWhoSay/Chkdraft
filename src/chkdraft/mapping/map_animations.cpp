@@ -231,6 +231,7 @@ void MapAnimations::restartActor(AnimationContext & context)
         auto owner = primaryImage.owner;
         auto xc = primaryImage.xc;
         auto yc = primaryImage.yc;
+        auto remapping = primaryImage.remapping;
         bool hiddenLeader = primaryImage.hiddenLeader;
         auto iScriptId = primaryImage.iScriptId;
         primaryImage = MapImage {
@@ -238,6 +239,7 @@ void MapAnimations::restartActor(AnimationContext & context)
             .owner = owner,
             .xc = xc,
             .yc = yc,
+            .remapping = remapping,
             .hiddenLeader = hiddenLeader,
             .drawIfCloaked = primaryImage.drawIfCloaked
         };

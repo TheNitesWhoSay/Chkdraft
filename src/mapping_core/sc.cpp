@@ -1832,10 +1832,25 @@ bool Sc::Terrain::Tiles::load(size_t tilesetIndex, ArchiveCluster & archiveClust
     
     const std::string darkFilePath = makeExtArchiveFilePath(makeArchiveFilePath(mpqFilePath, "dark"), "pcx");
     const std::string shiftFilePath = makeExtArchiveFilePath(makeArchiveFilePath(mpqFilePath, "shift"), "pcx");
+    const std::string ofireFilePath = makeExtArchiveFilePath(makeArchiveFilePath(mpqFilePath, "ofire"), "pcx");
+    const std::string gfireFilePath = makeExtArchiveFilePath(makeArchiveFilePath(mpqFilePath, "gfire"), "pcx");
+    const std::string bfireFilePath = makeExtArchiveFilePath(makeArchiveFilePath(mpqFilePath, "bfire"), "pcx");
+    const std::string bexplFilePath = makeExtArchiveFilePath(makeArchiveFilePath(mpqFilePath, "bexpl"), "pcx");
+    const std::string trans50FilePath = makeExtArchiveFilePath(makeArchiveFilePath(mpqFilePath, "trans50"), "pcx");
+    const std::string redFilePath = makeExtArchiveFilePath(makeArchiveFilePath(mpqFilePath, "red"), "pcx");
+    const std::string greenFilePath = makeExtArchiveFilePath(makeArchiveFilePath(mpqFilePath, "green"), "pcx");
     bool darkLoaded = dark.load(archiveCluster, darkFilePath);
     bool shiftLoaded = shift.load(archiveCluster, shiftFilePath);
+    bool ofireLoaded = remap[0].load(archiveCluster, ofireFilePath);
+    bool gfireLoaded = remap[1].load(archiveCluster, gfireFilePath);
+    bool bfireLoaded = remap[2].load(archiveCluster, bfireFilePath);
+    bool bexplLoaded = remap[3].load(archiveCluster, bexplFilePath);
+    bool trans50Loaded = remap[4].load(archiveCluster, trans50FilePath);
+    bool redLoaded = remap[5].load(archiveCluster, redFilePath);
+    bool greenLoaded = remap[6].load(archiveCluster, greenFilePath);
 
-    bool remappingFilesLoaded = darkLoaded && shiftLoaded;
+    bool remappingFilesLoaded = darkLoaded && shiftLoaded &&
+        ofireLoaded && gfireLoaded && bfireLoaded && bexplLoaded && trans50Loaded && redLoaded && greenLoaded;
 
     if ( !remappingFilesLoaded )
         logger.error() << "Failed to get one or more remapping files for tileset " << mpqFilePath << std::endl;
@@ -4077,7 +4092,7 @@ bool Sc::Pcx::load(ArchiveCluster & archiveCluster, const std::string & assetArc
 
         u8* paletteData = &pcxData.value()[pcxData->size()-PcxFile::PaletteSize];
         size_t dataOffset = 0;
-        size_t pixelCount = size_t(pcxFile.ncp)*size_t(pcxFile.nbs);
+        size_t pixelCount = (size_t(pcxFile.rightMargin)+1)*(size_t(pcxFile.lowerMargin)+1);
         for ( size_t pixel = 0; pixel < pixelCount; )
         {
             u8 compSect = pcxFile.data[dataOffset++];
@@ -4085,15 +4100,21 @@ bool Sc::Pcx::load(ArchiveCluster & archiveCluster, const std::string & assetArc
             {
                 rgbaPalette.push_back(Sc::Color<float>(paletteData[compSect*3], paletteData[compSect*3+1], paletteData[compSect*3+2]));
                 bgraPalette.push_back(Sc::SystemColor(paletteData[compSect*3], paletteData[compSect*3+1], paletteData[compSect*3+2]));
+                rgbaPalette.back().null = compSect;
+                bgraPalette.back().null = compSect;
+                paletteIndex.push_back(compSect);
                 pixel++;
             }
             else // Repeat color at palette starting at colorIndex*3, compSect-MaxOffset times
             {
                 u8 colorIndex = pcxFile.data[dataOffset++];
                 Sc::Color<float> rgbaColor(paletteData[colorIndex*3], paletteData[colorIndex*3+1], paletteData[colorIndex*3+2]);
+                rgbaColor.null = colorIndex;
                 Sc::SystemColor bgraColor(paletteData[colorIndex*3], paletteData[colorIndex*3+1], paletteData[colorIndex*3+2]);
+                bgraColor.null = colorIndex;
                 rgbaPalette.insert(rgbaPalette.end(), compSect-PcxFile::MaxOffset, rgbaColor);
                 bgraPalette.insert(bgraPalette.end(), compSect-PcxFile::MaxOffset, bgraColor);
+                paletteIndex.insert(paletteIndex.end(), compSect-PcxFile::MaxOffset, colorIndex);
                 pixel += (compSect-PcxFile::MaxOffset);
             }
         }

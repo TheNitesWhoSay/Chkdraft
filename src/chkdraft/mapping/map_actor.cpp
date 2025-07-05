@@ -133,9 +133,10 @@ void MapActor::setDrawFunction(MapImage::DrawFunction drawFunc, MapAnimations & 
             MapImage* image = &animations.images[std::size_t(usedImages[i])].value();
             switch ( image->drawFunction )
             {
+            case MapImage::DrawFunction::Remap:
             case MapImage::DrawFunction::Shadow:
             case MapImage::DrawFunction::None:
-                break; // Don't change the draw function for shadows or invisible images
+                break; // Don't change the draw function for remapped, shadows, or invisible images
             default:
                 if ( image->drawFunction != drawFunc )
                 {
