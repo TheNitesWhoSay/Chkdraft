@@ -2994,10 +2994,7 @@ LRESULT GuiMap::VerticalScroll(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 void GuiMap::ActivateMap(HWND deactivate, HWND activate)
 {
     if ( getHandle() == deactivate )
-    {
-        clipboard.endPasting(this);
         destroyBrush();
-    }
 
     chkd.tilePropWindow.DestroyThis();
     chkd.unitWindow.DestroyThis();
