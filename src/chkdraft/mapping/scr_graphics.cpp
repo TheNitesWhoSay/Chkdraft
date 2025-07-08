@@ -756,6 +756,156 @@ void Scr::GraphicsData::Data::Skin::loadStars(ArchiveCluster & archiveCluster, s
     }
 }
 
+/** Calculates a palette ("outputRemapPalette") that uses alpha transparency to approximate the given effect palette
+    There is a grp (e.g. dark swarm, nuke hit) that uses a special "effect remapper palette" ("srcEffectRemapper")
+    The actual/real output color for 1.16.1 effects is a function of the current palIndex value at the target pixel on the map (terrain/previous images)
+    An "effect" index is then calculated with effect = ((valueFromGrp-1) << 8) | palIndex
+    The output color is then picked from the games main palette: outputColor = pal[effect]
+
+    Ergo there are 256 actual colors (per tileset, and not counting color cycling) that a given effect pixel could be
+    based on the color of the terrain and images beneath it.
+
+    Plotted on a 3D rgb axis... these actual colors, together with the average palette color, average component distances vector, and average palette color...
+    Yields a reasonable alpha value by taking the ratio of
+        [distance between average remap result color and average palette color] to [average component distances vector to average palette color]
+
+    Colors then follow by rearranging the blend equation: output = src(alpha) + dest(1-alpha) */
+void calculateAlphaEffectPalette(const auto & srcEffectRemapper, const auto & srcPalette, auto & ouputRemapPalette, bool log = false)
+{
+    // actualRemapColors: stores resulting color when remapper[remapIndex] is applied to palette[palIndex]
+    // A little big for the stack, and it's all overwritten every time, so use static storage
+    static Sc::Color<float> actualRemapColors[256][256] {}; // [remapIndex][palIndex]
+    for ( std::size_t remapIndex=0; remapIndex<256; ++remapIndex )
+    {
+        for ( std::size_t palIndex=0; palIndex<256; ++palIndex )
+        {
+            u32 effect = ((remapIndex-1) << 8) | palIndex;
+            auto limit = srcEffectRemapper.paletteIndex.size();
+            auto actualRemapColor = srcPalette[srcEffectRemapper.paletteIndex[effect < limit ? effect : 0]];
+            actualRemapColors[remapIndex][palIndex].red = actualRemapColor.red;
+            actualRemapColors[remapIndex][palIndex].green = actualRemapColor.green;
+            actualRemapColors[remapIndex][palIndex].blue = actualRemapColor.blue;
+        }
+    }
+    
+    int redPalSum = 0;
+    int greenPalSum = 0;
+    int bluePalSum = 0;
+    Sc::Color<float> averagePalColor {};
+    for ( std::size_t palIndex=0; palIndex<256; ++palIndex )
+    {
+        redPalSum += srcPalette[palIndex].red;
+        greenPalSum += srcPalette[palIndex].green;
+        bluePalSum += srcPalette[palIndex].blue;
+    }
+    averagePalColor.red = redPalSum/256 + redPalSum%256/128;
+    averagePalColor.green = greenPalSum/256 + greenPalSum%256/128;
+    averagePalColor.blue = bluePalSum/256 + bluePalSum%256/128;
+    
+    Sc::Color<float> averageColors[256] {}; // [remapIndex] Average result color of applying remap to each pal index
+    for ( std::size_t remapIndex=0; remapIndex<256; ++remapIndex )
+    {
+        int redSum = 0;
+        int greenSum = 0;
+        int blueSum = 0;
+        for ( std::size_t palIndex=0; palIndex<256; ++palIndex)
+        {
+            auto actualRemapColor = actualRemapColors[remapIndex][palIndex];
+            redSum += actualRemapColor.red;
+            greenSum += actualRemapColor.green;
+            blueSum += actualRemapColor.blue;
+        }
+        averageColors[remapIndex].red = redSum/256 + ((redSum%256)/128);
+        averageColors[remapIndex].green = greenSum/256 + ((greenSum%256)/128);
+        averageColors[remapIndex].blue = blueSum/256 + ((blueSum%256)/128);
+    }
+
+    // colorDistance(s): stores distance between actualRemappedColors for each set of remappers and the average color
+    // A little big for the stack, and all overwritten every time, use state storage
+    static std::int64_t colorDistance[256][256] {}; // [remapIndex][palIndex]
+    static std::int64_t redColorDistance[256][256] {}; // [remapIndex][palIndex]
+    static std::int64_t greenColorDistance[256][256] {}; // [remapIndex][palIndex]
+    static std::int64_t blueColorDistance[256][256] {}; // [remapIndex][palIndex]
+    for ( std::size_t remapIndex=0; remapIndex<256; ++remapIndex )
+    {
+        for ( std::size_t palIndex=0; palIndex<256; ++palIndex )
+        {
+            auto originPaletteColor = srcPalette[remapIndex];
+            auto actualRemapColor = actualRemapColors[remapIndex][palIndex];
+            std::int64_t redPaletteDifference = std::int64_t(originPaletteColor.red) - std::int64_t(actualRemapColor.red);
+            std::int64_t greenPaletteDifference = std::int64_t(originPaletteColor.green) - std::int64_t(actualRemapColor.green);
+            std::int64_t bluePaletteDifference = std::int64_t(originPaletteColor.blue) - std::int64_t(actualRemapColor.blue);
+            redColorDistance[remapIndex][palIndex] = redPaletteDifference;
+            greenColorDistance[remapIndex][palIndex] = greenPaletteDifference;
+            blueColorDistance[remapIndex][palIndex] = bluePaletteDifference;
+            redPaletteDifference = redPaletteDifference*redPaletteDifference;
+            greenPaletteDifference = greenPaletteDifference*greenPaletteDifference;
+            bluePaletteDifference = bluePaletteDifference*bluePaletteDifference;
+            std::int64_t sum = redPaletteDifference+greenPaletteDifference+bluePaletteDifference;
+            if ( sum == 0 )
+                colorDistance[remapIndex][palIndex] = 0;
+            else
+                colorDistance[remapIndex][palIndex] = std::sqrt(sum);
+        }
+    }
+
+    for ( std::size_t remapIndex=0; remapIndex<256; ++remapIndex )
+    {
+        std::int64_t sumColorDistance = 0;
+        std::int64_t sumActualRemapRed = 0;
+        std::int64_t sumActualRemapGreen = 0;
+        std::int64_t sumActualRemapBlue = 0;
+        std::int64_t sumDifferenceRed = 0;
+        std::int64_t sumDifferenceGreen = 0;
+        std::int64_t sumDifferenceBlue = 0;
+        for ( std::size_t palIndex=0; palIndex<256; ++palIndex )
+        {
+            sumColorDistance += colorDistance[remapIndex][palIndex];
+            sumActualRemapRed += std::int64_t(actualRemapColors[remapIndex][palIndex].red);
+            sumActualRemapGreen += std::int64_t(actualRemapColors[remapIndex][palIndex].green);
+            sumActualRemapBlue += std::int64_t(actualRemapColors[remapIndex][palIndex].blue);
+            sumDifferenceRed += std::abs(redColorDistance[remapIndex][palIndex]);
+            sumDifferenceGreen += std::abs(greenColorDistance[remapIndex][palIndex]);
+            sumDifferenceBlue += std::abs(blueColorDistance[remapIndex][palIndex]);
+        }
+
+        auto averageColor = averageColors[remapIndex];
+        auto averageDistanceRed = sumDifferenceRed/256;
+        auto averageDistanceGreen = sumDifferenceGreen/256;
+        auto averageDistanceBlue = sumDifferenceBlue/256;
+        if ( sumColorDistance == 0 || (sumActualRemapRed == 0 && sumActualRemapGreen == 0 && sumActualRemapBlue == 0) )
+        {
+            u32 color = (0xFF << 24) | (averageColor.blue << 16) | (averageColor.green << 8) | averageColor.red; // 0xAABBGGRR
+            ouputRemapPalette[remapIndex] = color;
+        }
+        else
+        {
+            double averagePalToColorDistance = std::sqrt(
+                std::pow(averageColor.red - averagePalColor.red, 2) +
+                std::pow(averageColor.green - averagePalColor.green, 2) +
+                std::pow(averageColor.blue - averagePalColor.blue, 2)
+            );
+            double averageOffToPalDistance = std::sqrt(
+                std::pow(averageDistanceRed - averagePalColor.red, 2) +
+                std::pow(averageDistanceGreen - averagePalColor.green, 2) +
+                std::pow(averageDistanceBlue - averagePalColor.blue, 2)
+            );
+            double protoAlpha = averagePalToColorDistance / averageOffToPalDistance;
+
+            float fAlpha = float(protoAlpha) >= 1.0f ? 1.0f : float(protoAlpha);
+            float fRed = std::abs((averageColor.red/255.f)-(averagePalColor.red/255.f)*(1.f-fAlpha))/fAlpha;
+            float fGreen = std::abs((averageColor.green/255.f)-(averagePalColor.green/255.f)*(1.f-fAlpha))/fAlpha;
+            float fBlue = std::abs((averageColor.blue/255.f)-(averagePalColor.blue/255.f)*(1.f-fAlpha))/fAlpha;
+            u8 finalRed = fRed >= 1.0f ? u8(255) : u8(255.f*fRed);
+            u8 finalGreen = fGreen >= 1.0f ? u8(255) : u8(255.f*fGreen);
+            u8 finalBlue = fBlue >= 1.0f ? u8(255) : u8(255.f*fBlue);
+            u8 finalAlpha = fAlpha >= 1.0f ? u8(255) : u8(255.f*fAlpha);
+            u32 color = (finalAlpha << 24) | (finalBlue << 16) | (finalGreen << 8) | finalRed; // 0xAABBGGRR
+            ouputRemapPalette[remapIndex] = color;
+        }
+    }
+}
+
 void Scr::GraphicsData::Data::Skin::loadClassicTiles(Sc::Data & scData, const LoadSettings & loadSettings)
 {
     auto tilesetIndex = size_t(loadSettings.tileset) % size_t(Sc::Terrain::NumTilesets);
@@ -841,17 +991,10 @@ void Scr::GraphicsData::Data::Skin::loadClassicTiles(Sc::Data & scData, const Lo
         if ( !tilesetGraphics->remapPalette[i] )
         {
             tilesetGraphics->remapPalette[i].emplace();
-            for ( std::size_t j=0; j<256; ++j ) // TODO: This is a very hacky approach that together with color-sum-transparency approximates effects
-            {
-                u8 ji = j;
-                u32 effect = ((ji-1) << 8);
-                tilesetGraphics->remapPalette[i].value()[j] = tilesetGrp.palette.value()[tiles.remap[i].paletteIndex[effect < tiles.remap[i].rgbaPalette.size() ? effect : 0]];
-            }
-
+            calculateAlphaEffectPalette(tiles.remap[i], tiles.staticSystemColorPalette, tilesetGraphics->remapPalette[i]->colors, i==0);
             tilesetGraphics->remapPalette[i]->update();
         }
     }
-
 }
 
 void Scr::GraphicsData::Data::Skin::loadTiles(ArchiveCluster & archiveCluster, const LoadSettings & loadSettings, ByteBuffer & fileData)
@@ -3862,6 +4005,208 @@ void Scr::MapGraphics::drawPastes()
                 drawPasteSprites(paste);
         }
         break;
+    }
+}
+
+void Scr::MapGraphics::drawEffectColors() // TODO: This code was used to help debug faux alpha-effect palettes, it can be removed at a future date
+{
+    auto & solidColorShader = renderDat->shaders->solidColorShader;
+    solidColorShader.use();
+    solidColorShader.posToNdc.setMat4(gameToNdc);
+    auto & tileset = scData.terrain.get(map.getTileset());
+    auto & wpe = tileset.staticSystemColorPalette;
+
+    GLfloat width = 32;
+    GLfloat height = 32;
+    GLfloat xStart = 48;
+    GLfloat yStart = 48;
+
+    for ( std::size_t palIndex=0; palIndex<256; ++palIndex )
+    {
+        triangleVertices.clear();
+        
+        GLfloat x = palIndex%32;
+        GLfloat y = palIndex/32;
+        
+        GLfloat xc = xStart + x*width;
+        GLfloat yc = yStart + y*height;
+
+        gl::Rect2D<GLfloat> location{
+            .left = xc,
+            .top = yc,
+            .right = xc+16.f,
+            .bottom = yc+16.f
+        };
+
+        triangleVertices.vertices.insert(triangleVertices.vertices.end(), {
+            GLfloat(location.left), GLfloat(location.top),
+            GLfloat(location.right), GLfloat(location.top),
+            GLfloat(location.left), GLfloat(location.bottom),
+            GLfloat(location.left), GLfloat(location.bottom),
+            GLfloat(location.right), GLfloat(location.bottom),
+            GLfloat(location.right), GLfloat(location.top)
+        });
+
+        auto palColor = wpe[palIndex];
+        palColor.null = 0xFF;
+        solidColorShader.solidColor.setColor((u32 &)palColor); // Location color: 0xAABBGGRR
+        triangleVertices.bind();
+        triangleVertices.bufferData(gl::UsageHint::DynamicDraw);
+        triangleVertices.drawTriangles();
+        
+        // Draw the "true" remapped colors bottom-left
+        Sc::Color<float> destinationColors[256] {};
+        for ( std::size_t i=0; i<256; ++i )
+        {
+            GLfloat ix = i%16;
+            GLfloat iy = i/16;
+
+            triangleVertices.clear();
+            u32 effect = ((i-1) << 8) | palIndex;
+            auto limit = tileset.remap[0].paletteIndex.size();
+            auto trueRemapColor = wpe[tileset.remap[0].paletteIndex[effect < limit ? effect : 0]];
+            trueRemapColor.null = 0xFF;
+            
+            destinationColors[i].red = trueRemapColor.red;
+            destinationColors[i].blue = trueRemapColor.blue;
+            destinationColors[i].green = trueRemapColor.green;
+            destinationColors[i].null = 0xFF;
+
+            
+            gl::Rect2D<GLfloat> remapBox {
+                .left = xc+ix,
+                .top = yc+iy+16.f,
+                .right = xc+ix+1.f,
+                .bottom = yc+iy+17.f
+            };
+
+            triangleVertices.vertices.insert(triangleVertices.vertices.end(), {
+                GLfloat(remapBox.left), GLfloat(remapBox.top),
+                GLfloat(remapBox.right), GLfloat(remapBox.top),
+                GLfloat(remapBox.left), GLfloat(remapBox.bottom),
+                GLfloat(remapBox.left), GLfloat(remapBox.bottom),
+                GLfloat(remapBox.right), GLfloat(remapBox.bottom),
+                GLfloat(remapBox.right), GLfloat(remapBox.top)
+            });
+            std::swap(trueRemapColor.red, trueRemapColor.blue);
+            solidColorShader.solidColor.setColor((u32 &)trueRemapColor); // Location color: 0xAABBGGRR
+            triangleVertices.bind();
+            triangleVertices.bufferData(gl::UsageHint::DynamicDraw);
+            triangleVertices.drawTriangles();
+        }
+        
+        // Draw the palette colors top-right
+        Sc::Color<float> paletteColors[256] {};
+        for ( std::size_t i=0; i<256; ++i )
+        {
+            GLfloat ix = i%16;
+            GLfloat iy = i/16;
+
+            triangleVertices.clear();
+            auto color = wpe[i];
+            color.null = 0xFF;
+            
+            paletteColors[i].red = color.red;
+            paletteColors[i].green = color.green;
+            paletteColors[i].blue = color.blue;
+            paletteColors[i].null = 0xFF;
+
+            
+            gl::Rect2D<GLfloat> remapBox {
+                .left = xc+ix+16.f,
+                .top = yc+iy,
+                .right = xc+ix+17.f,
+                .bottom = yc+iy+1
+            };
+
+            triangleVertices.vertices.insert(triangleVertices.vertices.end(), {
+                GLfloat(remapBox.left), GLfloat(remapBox.top),
+                GLfloat(remapBox.right), GLfloat(remapBox.top),
+                GLfloat(remapBox.left), GLfloat(remapBox.bottom),
+                GLfloat(remapBox.left), GLfloat(remapBox.bottom),
+                GLfloat(remapBox.right), GLfloat(remapBox.bottom),
+                GLfloat(remapBox.right), GLfloat(remapBox.top)
+            });
+            solidColorShader.solidColor.setColor((u32 &)color); // Location color: 0xAABBGGRR
+            triangleVertices.bind();
+            triangleVertices.bufferData(gl::UsageHint::DynamicDraw);
+            triangleVertices.drawTriangles();
+        }
+
+        // Draw the regular palette in bottom right
+        for ( std::size_t i=0; i<256; ++i )
+        {
+            GLfloat ix = i%16;
+            GLfloat iy = i/16;
+
+            triangleVertices.clear();
+            auto color = wpe[i];
+            color.null = 0xFF;
+            
+            gl::Rect2D<GLfloat> remapBox {
+                .left = xc+ix+16.f,
+                .top = yc+iy+16.f,
+                .right = xc+ix+17.f,
+                .bottom = yc+iy+17.f
+            };
+
+            triangleVertices.vertices.insert(triangleVertices.vertices.end(), {
+                GLfloat(remapBox.left), GLfloat(remapBox.top),
+                GLfloat(remapBox.right), GLfloat(remapBox.top),
+                GLfloat(remapBox.left), GLfloat(remapBox.bottom),
+                GLfloat(remapBox.left), GLfloat(remapBox.bottom),
+                GLfloat(remapBox.right), GLfloat(remapBox.bottom),
+                GLfloat(remapBox.right), GLfloat(remapBox.top)
+            });
+            
+            solidColorShader.solidColor.setColor((u32 &)color); // Location color: 0xAABBGGRR
+            triangleVertices.bind();
+            triangleVertices.bufferData(gl::UsageHint::DynamicDraw);
+            triangleVertices.drawTriangles();
+        }
+    }
+
+    // Blend the remappings into the palette
+    for ( std::size_t palIndex=0; palIndex<256; ++palIndex )
+    {
+        triangleVertices.clear();
+        
+        GLfloat x = palIndex%32;
+        GLfloat y = palIndex/32;
+        
+        GLfloat xc = xStart + x*width;
+        GLfloat yc = yStart + y*height;
+
+        // Draw base color remapped
+        for ( std::size_t i=0; i<256; ++i )
+        {
+            GLfloat ix = i%16;
+            GLfloat iy = i/16;
+
+            triangleVertices.clear();
+            
+            gl::Rect2D<GLfloat> remapBox {
+                .left = xc+ix+16.f,
+                .top = yc+iy+16.f,
+                .right = xc+ix+17.f,
+                .bottom = yc+iy+17.f
+            };
+
+            triangleVertices.vertices.insert(triangleVertices.vertices.end(), {
+                GLfloat(remapBox.left), GLfloat(remapBox.top),
+                GLfloat(remapBox.right), GLfloat(remapBox.top),
+                GLfloat(remapBox.left), GLfloat(remapBox.bottom),
+                GLfloat(remapBox.left), GLfloat(remapBox.bottom),
+                GLfloat(remapBox.right), GLfloat(remapBox.bottom),
+                GLfloat(remapBox.right), GLfloat(remapBox.top)
+            });
+
+            auto remapColor = renderDat->tiles->remapPalette[0]->colors[i];
+            solidColorShader.solidColor.setColor((u32 &)remapColor); // Location color: 0xAABBGGRR
+            triangleVertices.bind();
+            triangleVertices.bufferData(gl::UsageHint::DynamicDraw);
+            triangleVertices.drawTriangles();
+        }
     }
 }
 

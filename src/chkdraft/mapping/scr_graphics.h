@@ -426,11 +426,9 @@ namespace Scr {
                     "    if ( palIndex == uint(0) ) discard;"
                     "    else if ( palIndex >= remapRange.x && palIndex < remapRange.y )"
                     "        fragColor = vec4(texture(remapPal, vec2((palIndex-remapRange.x+remapOffset)/256., 0.)).rgb, opacity);"
-                    "    else if ( remapRange.x > remapRange.y ) {"
-                    "        vec4 p = texture(remapPal, vec2(palIndex/256., 0.)).rgba;"
-                    "        float sum = p.r+p.g+p.b;"
-                    "        fragColor = vec4(p.rgb, sum);"
-                    "    } else"
+                    "    else if ( remapRange.x > remapRange.y )"
+                    "        fragColor = texture(remapPal, vec2(palIndex/256., 0.)).rgba;"
+                    "    else"
                     "        fragColor = vec4(texture(pal, vec2(palIndex/256., 0.)).rgb, opacity);"
                     "};";
 
@@ -983,6 +981,8 @@ namespace Scr {
         void drawDoodadSelection();
         void drawFps();
         void drawPastes();
+
+        void drawEffectColors();
 
         void render();
 

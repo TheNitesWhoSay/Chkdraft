@@ -291,6 +291,16 @@ void MapAnimations::initSpecialCases(MapActor & actor, std::size_t type, bool is
             primaryImage->waitUntil = chkd.gameClock.currentTick();
         }
     }
+    else if ( ((isUnit || isSpriteUnit) && Sc::Unit::Type::ProtossNexus) || (!isUnit && type == Sc::Sprite::Type::ProtossNexus) )
+    {
+        MapImage* primaryImage = actor.primaryImage(*this);
+        for ( auto usedImageIndex : actor.usedImages )
+        {
+            auto & image = images[usedImageIndex];
+            if ( image && image->imageId == 181 ) // Remove the bulbs from nexus
+                image->hidden = true;
+        }
+    }
 }
 
 void MapAnimations::initializeUnitActor(MapActor & actor, bool isClipboard, std::size_t unitIndex, const Chk::Unit & unit, s32 xc, s32 yc)
