@@ -3507,10 +3507,10 @@ void Scr::MapGraphics::drawDoodadSelection()
 void Scr::MapGraphics::drawFps()
 {
     fps.update(frameStart);
-    textFont->setColor(0.f, 1.f, 1.f);
     textFont->textShader.use();
     textFont->textShader.glyphScaling.setMat2(glyphScaling);
     textFont->textShader.textPosToNdc.setMat4(unscrolledWindowToNdc);
+    textFont->setColor(0.f, 1.f, 1.f);
     textFont->drawAffixedText<gl::Align::Center>(windowDimensions.width/2, 10.f, fps.displayNumber, " fps", "");
 }
 
