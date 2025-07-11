@@ -3003,14 +3003,14 @@ void Scr::MapGraphics::drawSprite(const Chk::Sprite & sprite)
         drawImage(getImage(sprite.type, sprite.isDrawnAsSprite()), sprite.xc, sprite.yc, 0, 0xFFFFFFFF, getPlayerColor(sprite.owner), false);
 }
 
-void Scr::MapGraphics::drawActor(const MapActor & mapActor, s32 xOffset, s32 yOffset)
+void Scr::MapGraphics::drawActor(const AnimContext & animations, const MapActor & mapActor, s32 xOffset, s32 yOffset)
 {
     for ( u16 imageIndex : mapActor.usedImages )
     {
         if ( imageIndex == 0 )
             break;
 
-        const std::optional<MapImage> & image = map.animations.images[imageIndex];
+        const std::optional<MapImage> & image = animations.images[imageIndex];
         if ( image && !image->hidden )
         {
             if ( loadSettings.skinId == Scr::Skin::Id::Classic )
@@ -3085,8 +3085,6 @@ void Scr::MapGraphics::drawActors()
     //for ( const auto & sprite : map->sprites )
     //    drawSprite(sprite);
     
-    const auto & clipboardUnitActors = map.clipboard.unitActors;
-    const auto & clipboardSpriteActors = map.clipboard.spriteActors;
     const auto & unitActors = map.view.units.readAttachedData();
     const auto & spriteActors = map.view.sprites.readAttachedData();
     map.animations.cleanDrawList();
@@ -3099,18 +3097,30 @@ void Scr::MapGraphics::drawActors()
         else
         {
             std::size_t index = static_cast<std::size_t>(drawEntry & MapAnimations::MaskIndex);
-            if ( drawEntry & MapAnimations::FlagIsClipboard )
-            {
-                point paste = map.selections.endDrag;
-                if ( drawEntry & MapAnimations::FlagUnitActor )
-                    drawActor(clipboardUnitActors[index], paste.x, paste.y);
-                else
-                    drawActor(clipboardSpriteActors[index], paste.x, paste.y);
-            }
-            else if ( drawEntry & MapAnimations::FlagUnitActor )
-                drawActor(unitActors[index], 0, 0);
+            if ( drawEntry & MapAnimations::FlagUnitActor )
+                drawActor(map.animations, unitActors[index], 0, 0);
             else
-                drawActor(spriteActors[index], 0, 0);
+                drawActor(map.animations, spriteActors[index], 0, 0);
+        }
+    }
+
+    const auto & clipboardUnitActors = map.clipboard.unitActors;
+    const auto & clipboardSpriteActors = map.clipboard.spriteActors;
+    map.clipboard.animations.cleanDrawList();
+    drawListSize = map.clipboard.animations.drawList.size();
+    for ( std::size_t i=1; i<drawListSize; ++i )
+    {
+        std::uint64_t drawEntry = map.clipboard.animations.drawList[i];
+        if ( drawEntry == MapAnimations::UnusedDrawEntry )
+            break;
+        else
+        {
+            std::size_t index = static_cast<std::size_t>(drawEntry & MapAnimations::MaskIndex);
+            point paste = map.selections.endDrag;
+            if ( drawEntry & MapAnimations::FlagUnitActor )
+                drawActor(map.clipboard.animations, clipboardUnitActors[index], paste.x, paste.y);
+            else
+                drawActor(map.clipboard.animations, clipboardSpriteActors[index], paste.x, paste.y);
         }
     }
 }
@@ -3516,7 +3526,7 @@ void Scr::MapGraphics::drawFps()
 
 void Scr::MapGraphics::drawPastes()
 {
-    const auto & images = map.animations.images;
+    const auto & images = map.clipboard.animations.images;
     auto layer = map.getLayer();
     auto subLayer = map.getSubLayer();
     auto drawPasteTerrain = [&](point paste) {

@@ -1,7 +1,7 @@
 #include <mapping_core/map_actor.h>
 #include "../chkdraft.h" // TODO: recheck whether there's a way this file could go in mapping_core too
 
-u16 & MapActor::getNewImageSlot(bool above, MapImage & image, MapAnimations & animations)
+u16 & MapActor::getNewImageSlot(bool above, MapImage & image, AnimContext & animations)
 {
     u16 primaryImageImageIndex = usedImages[primaryImageIndex];
     auto updatePrimaryImageIndex = [&]() {
@@ -64,7 +64,7 @@ void MapActor::removeImage(std::size_t imageIndex)
     updatePrimaryImageIndex();
 }
 
-MapImage* MapActor::primaryImage(MapAnimations & animations)
+MapImage* MapActor::primaryImage(AnimContext & animations)
 {
     if ( primaryImageIndex > std::size(usedImages) )
     {
@@ -81,14 +81,14 @@ MapImage* MapActor::primaryImage(MapAnimations & animations)
         return &(animations.images[usedImages[primaryImageIndex]].value());
 }
 
-void MapActor::setAnim(Sc::Sprite::AnimHeader animHeader, std::uint64_t currentTick, bool isUnit, MapAnimations & animations, bool silent)
+void MapActor::setAnim(Sc::Sprite::AnimHeader animHeader, std::uint64_t currentTick, bool isUnit, AnimContext & animations, bool silent)
 {
     for ( int i=0; noBreakSection; ++i )
     {
         animate(currentTick, isUnit, animations, true);
         if ( i == 100 ) // No apparent noBreakSection end
         {
-            AnimationContext context { .currentTick = currentTick, .animations = animations, .actor = *this, .isUnit = isUnit };
+            ActorContext context { .currentTick = currentTick, .animations = animations, .actor = *this, .isUnit = isUnit };
             animations.restartActor(context); // Try restarting the actor
             for ( int j=0; noBreakSection; ++j )
             {
@@ -124,7 +124,7 @@ void MapActor::setAnim(Sc::Sprite::AnimHeader animHeader, std::uint64_t currentT
     }
 }
 
-void MapActor::setDrawFunction(MapImage::DrawFunction drawFunc, MapAnimations & animations)
+void MapActor::setDrawFunction(MapImage::DrawFunction drawFunc, AnimContext & animations)
 {
     for ( std::ptrdiff_t i=std::size(usedImages)-1; i>=0 ; --i )
     {
@@ -153,7 +153,7 @@ void MapActor::setDrawFunction(MapImage::DrawFunction drawFunc, MapAnimations & 
     }
 }
 
-void MapActor::hideNonCloakImages(MapAnimations & animations)
+void MapActor::hideNonCloakImages(AnimContext & animations)
 {
     for ( std::size_t i=0; i<std::size(usedImages) && usedImages[i] != 0; ++i )
     {
@@ -163,7 +163,7 @@ void MapActor::hideNonCloakImages(MapAnimations & animations)
     }
 }
 
-void MapActor::showNonCloakImages(MapAnimations & animations)
+void MapActor::showNonCloakImages(AnimContext & animations)
 {
     for ( std::size_t i=0; i<std::size(usedImages) && usedImages[i] != 0; ++i )
     {
@@ -173,9 +173,9 @@ void MapActor::showNonCloakImages(MapAnimations & animations)
     }
 }
 
-void MapActor::animate(std::uint64_t currentTick, bool isUnit, MapAnimations & animations, bool unbreak)
+void MapActor::animate(std::uint64_t currentTick, bool isUnit, AnimContext & animations, bool unbreak)
 {
-    AnimationContext context {
+    ActorContext context {
         .currentTick = currentTick,
         .animations = animations,
         .actor = *this,

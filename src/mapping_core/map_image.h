@@ -3,7 +3,7 @@
 #include "sc.h"
 
 class MapActor;
-class MapAnimations;
+class AnimContext;
 
 struct MapImage
 {
@@ -48,17 +48,17 @@ struct MapImage
     void advanceBy(size_t numBytes);
 };
 
-struct AnimationContext
+struct ActorContext
 {
     std::uint64_t currentTick;
-    MapAnimations & animations;
+    AnimContext & animations;
     MapActor & actor;
     bool isUnit;
 };
 
 struct Animator
 {
-    AnimationContext & context;
+    ActorContext & context;
     std::size_t currImageIndex; // Does not change
     MapImage* currImage; // May be updated when new images are added
     bool unbreak = false; // If true, animation will skip waits till reaching nobrkcodeend

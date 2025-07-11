@@ -10,7 +10,7 @@ bool GuiMap::doAutoBackups = false;
 
 GuiMap::GuiMap(Clipboard & clipboard, const std::string & filePath) : MapFile(filePath),
     Chk::IsomCache(read.tileset, read.dimensions.tileWidth, read.dimensions.tileHeight, chkd.scData.terrain.get(read.tileset)),
-    clipboard(clipboard), scrGraphics{std::make_unique<Scr::MapGraphics>(chkd.scData, *this)}, animations((const Scenario &)*this, clipboard)
+    clipboard(clipboard), scrGraphics{std::make_unique<Scr::MapGraphics>(chkd.scData, *this)}, animations((const Scenario &)*this)
 {
     SetWinText(MapFile::getFileName());
     int layerSel = chkd.mainToolbar.layerBox.GetSel();
@@ -26,7 +26,7 @@ GuiMap::GuiMap(Clipboard & clipboard, const std::string & filePath) : MapFile(fi
 
 GuiMap::GuiMap(Clipboard & clipboard, FileBrowserPtr<SaveType> fileBrowser) : MapFile(fileBrowser),
     Chk::IsomCache(read.tileset, read.dimensions.tileWidth, read.dimensions.tileHeight, chkd.scData.terrain.get(read.tileset)),
-    clipboard(clipboard), scrGraphics{std::make_unique<Scr::MapGraphics>(chkd.scData, *this)}, animations((const Scenario &)*this, clipboard)
+    clipboard(clipboard), scrGraphics{std::make_unique<Scr::MapGraphics>(chkd.scData, *this)}, animations((const Scenario &)*this)
 {
     SetWinText(MapFile::getFileName());
     int layerSel = chkd.mainToolbar.layerBox.GetSel();
@@ -43,7 +43,7 @@ GuiMap::GuiMap(Clipboard & clipboard, FileBrowserPtr<SaveType> fileBrowser) : Ma
 GuiMap::GuiMap(Clipboard & clipboard, Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex, DefaultTriggers defaultTriggers)
     : MapFile(tileset, width, height, terrainTypeIndex, &chkd.scData.terrain.get(tileset)),
     Chk::IsomCache(read.tileset, read.dimensions.tileWidth, read.dimensions.tileHeight, chkd.scData.terrain.get(read.tileset)),
-    clipboard(clipboard), scrGraphics{std::make_unique<Scr::MapGraphics>(chkd.scData, *this)}, animations((const Scenario &)*this, clipboard)
+    clipboard(clipboard), scrGraphics{std::make_unique<Scr::MapGraphics>(chkd.scData, *this)}, animations((const Scenario &)*this)
 {
     refreshTileOccupationCache();
 
@@ -1835,11 +1835,13 @@ bool GuiMap::Animate()
         return chkd.colorCycler.cycleColors(GetTickCount64(), read.tileset, scGraphics.getPalette());
     else if ( chkd.gameClock.tick() )
     {
-        animations.animate(chkd.gameClock.currentTick());
+        auto currentTick = chkd.gameClock.currentTick();
+        clipboard.animations.animate(currentTick);
+        animations.animate(currentTick);
         UpdateGlGraphics();
         return true;
     }
-    else if ( CM->UpdateGlGraphics() )
+    else if ( this == CM.get() && CM->UpdateGlGraphics() )
         return true;
     else
         return false;
@@ -1965,7 +1967,9 @@ void GuiMap::Redraw(bool includeMiniMap)
         chkd.colorCycler.cycleColors(GetTickCount64(), read.tileset, scGraphics.getPalette());
     else if ( chkd.gameClock.tick() )
     {
-        CM->animations.animate(chkd.gameClock.currentTick());
+        auto currentTick = chkd.gameClock.currentTick();
+        CM->animations.animate(currentTick);
+        clipboard.animations.animate(currentTick);
         CM->UpdateGlGraphics(); // Color cycling or HD water
     }
 

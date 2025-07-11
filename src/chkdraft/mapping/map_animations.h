@@ -9,11 +9,9 @@ class Clipboard;
 struct PasteUnitNode;
 struct PasteSpriteNode;
 
-class MapAnimations
+struct AnimContext
 {
 protected:
-    const Scenario & scenario;
-    Clipboard & clipboard;
     std::vector<u16> availableImages {};
 
     u16 createImage();
@@ -28,7 +26,6 @@ public:
     static constexpr std::uint64_t FlagIsTurret     =        0x400000000ull;
     static constexpr std::uint64_t MaskY            =     0xFFF800000000ull;
     static constexpr std::uint64_t MaskElevation    =   0x1F000000000000ull;
-    static constexpr std::uint64_t FlagIsClipboard  = 0x8000000000000000ull;
     static constexpr std::uint64_t ShiftDrawUnit    = 32;
     static constexpr std::uint64_t ShiftUnitActor   = 33;
     static constexpr std::uint64_t ShiftIsTurret    = 34;
@@ -39,21 +36,28 @@ public:
     // unitOrSpriteIndex | isUnit << 32 | isTurret << 33 | y << 34 | elevation << 47
     bool drawListDirty = true; // If true at the end of an anim tick, sort the draw list, then go through all entries to give the new drawListIndexes to actors
     std::vector<std::uint64_t> drawList { 0ull }; // Index 0 of drawList is unused, a value of 0xFFFFFFFF in a drawList entry indicates an unused index
-    std::vector<std::optional<MapImage>> images; // contains the images associated with unitActors and spriteActors
-
-    MapAnimations(const Scenario & scenario, Clipboard & clipboard);
-
-    void initClipboardUnits();
-    void initClipboardSprites();
-    void clearClipboardUnits();
-    void clearClipboardSprites();
-    void clearClipboardActors();
+    std::vector<std::optional<MapImage>> images {MapImage{}}; // contains the images associated with unitActors and spriteActors, image 0 is unused
+    
     void clearActor(MapActor & actor);
-    void restartActor(AnimationContext & context);
-    void initializeActor(MapActor & actor, u8 direction, u16 imageId, u8 owner, s32 xc, s32 yc, u32 iScriptId, bool isUnit, bool autoRestart, std::uint64_t drawListValue);
+    void restartActor(ActorContext & context);
+    void initializeActor(MapActor & actor, u8 direction, u16 imageId, u8 owner, s32 xc, s32 yc, u32 iScriptId, bool isUnit, bool autoRestart, std::uint64_t drawListValue);;
     void initSpecialCases(MapActor & actor, std::size_t type, bool isUnit, bool isSpriteUnit = false);
     void initializeUnitActor(MapActor & actor, bool isClipboard, std::size_t unitIndex, const Chk::Unit & unit, s32 xc, s32 yc);
     void initializeSpriteActor(MapActor & actor, bool isClipboard, std::size_t spriteIndex, const Chk::Sprite & sprite, s32 xc, s32 yc);
+    
+    friend struct MapActor;
+    friend struct MapImage;
+    friend struct Animator;
+};
+
+class MapAnimations : public AnimContext
+{
+protected:
+    const Scenario & scenario;
+
+public:
+    MapAnimations(const Scenario & scenario);
+
     void addUnit(std::size_t unitIndex, MapActor & actor);
     void addSprite(std::size_t spriteIndex, MapActor & actor);
     void removeUnit(std::size_t unitIndex, MapActor & actor);
@@ -62,7 +66,6 @@ public:
     void updateSpriteType(std::size_t spriteIndex, Sc::Sprite::Type newSpriteType);
     void updateUnitOwner(std::size_t unitIndex, u8 newUnitOwner);
     void updateSpriteOwner(std::size_t spriteIndex, u8 newSpriteOwner);
-    void updateClipboardOwners(u8 newOwner);
     void updateUnitIndex(std::size_t unitIndexFrom, std::size_t unitIndexTo);
     void updateSpriteIndex(std::size_t spriteIndexFrom, std::size_t spriteIndexTo);
     void updateUnitXc(std::size_t unitIndex, u16 oldXc, u16 newXc);
@@ -73,13 +76,28 @@ public:
     void updateUnitStateFlags(std::size_t unitIndex, u16 oldStateFlags, u16 newStateFlags);
     void updateUnitRelationFlags(std::size_t unitIndex, u16 oldRelationFlags, u16 newRelationFlags);
     void updateSpriteFlags(std::size_t spriteIndex, u16 oldSpriteFlags, u16 newSpriteFlags);
-    void cleanDrawList();
 
+    void cleanDrawList();
     void animate(uint64_t currentTick);
-    
-    friend struct MapActor;
-    friend struct MapImage;
-    friend struct Animator;
+};
+
+class ClipboardAnimations : public AnimContext
+{
+protected:
+    Clipboard & clipboard;
+
+public:
+    ClipboardAnimations(Clipboard & clipboard);
+
+    void initClipboardUnits();
+    void initClipboardSprites();
+    void clearClipboardUnits();
+    void clearClipboardSprites();
+    void clearClipboardActors();
+    void updateClipboardOwners(u8 newOwner);
+
+    void cleanDrawList();
+    void animate(uint64_t currentTick);
 };
 
 #endif

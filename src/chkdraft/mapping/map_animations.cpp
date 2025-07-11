@@ -87,7 +87,7 @@ struct ResourceLevel
     }
 };
 
-u16 MapAnimations::createImage()
+u16 AnimContext::createImage()
 {
     if ( availableImages.empty() )
     {
@@ -103,7 +103,7 @@ u16 MapAnimations::createImage()
     }
 }
 
-void MapAnimations::removeImage(u16 imageIndex)
+void AnimContext::removeImage(u16 imageIndex)
 {
     if ( imageIndex == 0 )
         return;
@@ -112,9 +112,9 @@ void MapAnimations::removeImage(u16 imageIndex)
     availableImages.push_back(imageIndex);
 }
 
-void MapAnimations::initializeImage(u32 iScriptId, std::uint64_t currentTick, MapActor & actor, bool isUnit, std::size_t imageIndex)
+void AnimContext::initializeImage(u32 iScriptId, std::uint64_t currentTick, MapActor & actor, bool isUnit, std::size_t imageIndex)
 {
-    AnimationContext context {
+    ActorContext context {
         .currentTick = currentTick,
         .animations = *this,
         .actor = actor,
@@ -127,71 +127,7 @@ void MapAnimations::initializeImage(u32 iScriptId, std::uint64_t currentTick, Ma
     }.initializeImage(iScriptId);
 }
 
-MapAnimations::MapAnimations(const Scenario & scenario, Clipboard & clipboard)
-    : scenario(scenario), clipboard(clipboard), images{MapImage{}} // Image 0 is unused
-{
-
-}
-
-void MapAnimations::initClipboardUnits()
-{
-    clearClipboardUnits();
-    const auto & pasteUnits = clipboard.getUnits();
-    if ( !pasteUnits.empty() )
-        drawListDirty = true;
-
-    for ( std::size_t i=0; i<pasteUnits.size(); ++i ) // TODO: should sort pasteUnits by draw order first
-    {
-        const auto & pasteUnit = pasteUnits[i];
-        initializeUnitActor(clipboard.unitActors.emplace_back(), true, i, pasteUnit.unit, pasteUnit.xc, pasteUnit.yc);
-    }
-}
-
-void MapAnimations::initClipboardSprites()
-{
-    clearClipboardSprites();
-    const auto & pasteSprites = clipboard.getSprites();
-    if ( !pasteSprites.empty() )
-        drawListDirty = true;
-
-    for ( std::size_t i=0; i<pasteSprites.size(); ++i ) // TODO: should sort pasteSprites by draw order first
-    {
-        const auto & pasteSprite = pasteSprites[i];
-        initializeSpriteActor(clipboard.spriteActors.emplace_back(), true, i, pasteSprite.sprite, pasteSprite.xc, pasteSprite.yc);
-    }
-}
-
-void MapAnimations::clearClipboardUnits()
-{
-    drawListDirty = true;
-    for ( auto & unitActor : clipboard.unitActors )
-    {
-        drawList[unitActor.drawListIndex] = UnusedDrawEntry;
-        for ( auto usedImage : unitActor.usedImages )
-            removeImage(usedImage);
-    }
-    clipboard.unitActors.clear();
-}
-
-void MapAnimations::clearClipboardSprites()
-{
-    drawListDirty = true;
-    for ( auto & spriteActor : clipboard.spriteActors )
-    {
-        drawList[spriteActor.drawListIndex] = UnusedDrawEntry;
-        for ( auto usedImage : spriteActor.usedImages )
-            removeImage(usedImage);
-    }
-    clipboard.spriteActors.clear();
-}
-
-void MapAnimations::clearClipboardActors()
-{
-    clearClipboardUnits();
-    clearClipboardSprites();
-}
-
-void MapAnimations::clearActor(MapActor & actor)
+void AnimContext::clearActor(MapActor & actor)
 {
     for ( auto usedImageIndex : actor.usedImages )
         removeImage(usedImageIndex);
@@ -199,7 +135,7 @@ void MapAnimations::clearActor(MapActor & actor)
     actor = {};
 }
 
-void MapAnimations::restartActor(AnimationContext & context)
+void AnimContext::restartActor(ActorContext & context)
 {
     auto & actor = context.actor;
     actor.noBreakSection = false;
@@ -255,7 +191,7 @@ void MapAnimations::restartActor(AnimationContext & context)
     }
 }
 
-void MapAnimations::initializeActor(MapActor & actor, u8 direction, u16 imageId, u8 owner, s32 xc, s32 yc, u32 iScriptId, bool isUnit, bool autoRestart, std::uint64_t drawListValue)
+void AnimContext::initializeActor(MapActor & actor, u8 direction, u16 imageId, u8 owner, s32 xc, s32 yc, u32 iScriptId, bool isUnit, bool autoRestart, std::uint64_t drawListValue)
 {
     actor.drawListIndex = drawList.size();
     drawList.push_back(drawListValue);
@@ -272,7 +208,7 @@ void MapAnimations::initializeActor(MapActor & actor, u8 direction, u16 imageId,
     initializeImage(iScriptId, chkd.gameClock.currentTick(), actor, isUnit, imageIndex);
 }
 
-void MapAnimations::initSpecialCases(MapActor & actor, std::size_t type, bool isUnit, bool isSpriteUnit)
+void AnimContext::initSpecialCases(MapActor & actor, std::size_t type, bool isUnit, bool isSpriteUnit)
 {
     if ( ((isUnit || isSpriteUnit) && type == Sc::Unit::Type::ScannerSweep) || (!isUnit && type == Sc::Sprite::Type::ScannerSweep) )
     {
@@ -303,7 +239,7 @@ void MapAnimations::initSpecialCases(MapActor & actor, std::size_t type, bool is
     }
 }
 
-void MapAnimations::initializeUnitActor(MapActor & actor, bool isClipboard, std::size_t unitIndex, const Chk::Unit & unit, s32 xc, s32 yc)
+void AnimContext::initializeUnitActor(MapActor & actor, bool isClipboard, std::size_t unitIndex, const Chk::Unit & unit, s32 xc, s32 yc)
 {
     const auto & unitDat = chkd.scData.units.getUnit(unit.type);
     bool isSubUnit = unitDat.flags & Sc::Unit::Flags::Subunit;
@@ -315,7 +251,7 @@ void MapAnimations::initializeUnitActor(MapActor & actor, bool isClipboard, std:
     u32 iScriptId = iscriptIdFromUnit(unit.type);
 
     std::uint64_t drawListValue = isClipboard ?
-        (std::uint64_t(unitIndex) | FlagDrawUnit | FlagIsClipboard | FlagUnitActor | (isSubUnit ? FlagIsTurret : 0) |
+        (std::uint64_t(unitIndex) | FlagDrawUnit | FlagUnitActor | (isSubUnit ? FlagIsTurret : 0) |
             MaskY | (std::uint64_t(actor.elevation) << ShiftElevation)) :
         (std::uint64_t(unitIndex) | FlagDrawUnit | FlagUnitActor | (isSubUnit ? FlagIsTurret : 0) |
             (std::uint64_t(yc) << ShiftY) | (std::uint64_t(actor.elevation) << ShiftElevation));
@@ -343,7 +279,7 @@ void MapAnimations::initializeUnitActor(MapActor & actor, bool isClipboard, std:
         actor.setAnim(Sc::Sprite::AnimHeader::Landing, chkd.gameClock.currentTick(), true, *this);
 }
 
-void MapAnimations::initializeSpriteActor(MapActor & actor, bool isClipboard, std::size_t spriteIndex, const Chk::Sprite & sprite, s32 xc, s32 yc)
+void AnimContext::initializeSpriteActor(MapActor & actor, bool isClipboard, std::size_t spriteIndex, const Chk::Sprite & sprite, s32 xc, s32 yc)
 {
     bool isSpriteUnit = sprite.isUnit();
     bool isSubUnit = isSpriteUnit && chkd.scData.units.getUnit(Sc::Unit::Type(sprite.type)).flags & Sc::Unit::Flags::Subunit;
@@ -361,7 +297,7 @@ void MapAnimations::initializeSpriteActor(MapActor & actor, bool isClipboard, st
     u32 iScriptId = isSpriteUnit ? iscriptIdFromUnit(Sc::Unit::Type(sprite.type)) : iscriptIdFromSprite(sprite.type);
     bool autoRestart = sprite.type < chkd.scData.sprites.spriteAutoRestart.size() ? chkd.scData.sprites.spriteAutoRestart[sprite.type] : true;
     std::uint64_t drawListValue = isClipboard ?
-        (std::uint64_t(spriteIndex) | FlagIsClipboard | (isSubUnit ? FlagIsTurret : 0) |
+        (std::uint64_t(spriteIndex) | (isSubUnit ? FlagIsTurret : 0) |
             MaskY | (std::uint64_t(actor.elevation) << ShiftElevation)) :
         (std::uint64_t(spriteIndex) | (isSpriteUnit ? FlagDrawUnit : 0) | (isSubUnit ? FlagIsTurret : 0) |
             (std::uint64_t(yc) << ShiftY) | (std::uint64_t(actor.elevation) << ShiftElevation));
@@ -377,6 +313,12 @@ void MapAnimations::initializeSpriteActor(MapActor & actor, bool isClipboard, st
         else
             actor.setAnim(Sc::Sprite::AnimHeader::Enable, chkd.gameClock.currentTick(), false, *this, true);
     }
+}
+
+MapAnimations::MapAnimations(const Scenario & scenario)
+    : AnimContext(), scenario(scenario)
+{
+
 }
 
 void MapAnimations::addUnit(std::size_t unitIndex, MapActor & actor)
@@ -460,27 +402,6 @@ void MapAnimations::updateSpriteOwner(std::size_t spriteIndex, u8 newSpriteOwner
     {
         if ( usedImageIndex != 0 )
             images[usedImageIndex]->owner = newSpriteOwner;
-    }
-}
-
-void MapAnimations::updateClipboardOwners(u8 newOwner)
-{
-    for ( auto & actor : clipboard.unitActors )
-    {
-        for ( auto usedImageIndex : actor.usedImages )
-        {
-            if ( usedImageIndex != 0 )
-                images[usedImageIndex]->owner = newOwner;
-        }
-    }
-
-    for ( auto & actor : clipboard.spriteActors )
-    {
-        for ( auto usedImageIndex : actor.usedImages )
-        {
-            if ( usedImageIndex != 0 )
-                images[usedImageIndex]->owner = newOwner;
-        }
     }
 }
 
@@ -665,14 +586,7 @@ void MapAnimations::cleanDrawList()
             {
                 std::uint64_t drawItem = drawList[i];
                 std::uint32_t index = std::uint32_t(drawItem & MaskIndex);
-                if ( drawItem & FlagIsClipboard )
-                {
-                    if ( drawItem & FlagUnitActor )
-                        clipboard.unitActors[index].drawListIndex = i;
-                    else
-                        clipboard.spriteActors[index].drawListIndex = i;
-                }
-                else if ( drawItem & FlagUnitActor )
+                if ( drawItem & FlagUnitActor )
                     scenario.view.units.attachedData(index).drawListIndex = i;
                 else
                     scenario.view.sprites.attachedData(index).drawListIndex = i;
@@ -691,7 +605,120 @@ void MapAnimations::animate(uint64_t currentTick)
     
     for ( std::size_t i=0; i<spriteSize; ++i )
         scenario.view.sprites.attachedData(i).animate(currentTick, false, *this);
-    
+
+    cleanDrawList();
+}
+
+ClipboardAnimations::ClipboardAnimations(Clipboard & clipboard)
+    : AnimContext(), clipboard(clipboard)
+{
+
+}
+
+void ClipboardAnimations::initClipboardUnits()
+{
+    clearClipboardUnits();
+    const auto & pasteUnits = clipboard.getUnits();
+    if ( !pasteUnits.empty() )
+        drawListDirty = true;
+
+    for ( std::size_t i=0; i<pasteUnits.size(); ++i ) // TODO: should sort pasteUnits by draw order first
+    {
+        const auto & pasteUnit = pasteUnits[i];
+        initializeUnitActor(clipboard.unitActors.emplace_back(), true, i, pasteUnit.unit, pasteUnit.xc, pasteUnit.yc);
+    }
+}
+
+void ClipboardAnimations::initClipboardSprites()
+{
+    clearClipboardSprites();
+    const auto & pasteSprites = clipboard.getSprites();
+    if ( !pasteSprites.empty() )
+        drawListDirty = true;
+
+    for ( std::size_t i=0; i<pasteSprites.size(); ++i ) // TODO: should sort pasteSprites by draw order first
+    {
+        const auto & pasteSprite = pasteSprites[i];
+        initializeSpriteActor(clipboard.spriteActors.emplace_back(), true, i, pasteSprite.sprite, pasteSprite.xc, pasteSprite.yc);
+    }
+}
+
+void ClipboardAnimations::clearClipboardUnits()
+{
+    drawListDirty = true;
+    for ( auto & unitActor : clipboard.unitActors )
+    {
+        drawList[unitActor.drawListIndex] = UnusedDrawEntry;
+        for ( auto usedImage : unitActor.usedImages )
+            removeImage(usedImage);
+    }
+    clipboard.unitActors.clear();
+}
+
+void ClipboardAnimations::clearClipboardSprites()
+{
+    drawListDirty = true;
+    for ( auto & spriteActor : clipboard.spriteActors )
+    {
+        drawList[spriteActor.drawListIndex] = UnusedDrawEntry;
+        for ( auto usedImage : spriteActor.usedImages )
+            removeImage(usedImage);
+    }
+    clipboard.spriteActors.clear();
+}
+
+void ClipboardAnimations::clearClipboardActors()
+{
+    clearClipboardUnits();
+    clearClipboardSprites();
+}
+
+void ClipboardAnimations::updateClipboardOwners(u8 newOwner)
+{
+    for ( auto & actor : clipboard.unitActors )
+    {
+        for ( auto usedImageIndex : actor.usedImages )
+        {
+            if ( usedImageIndex != 0 )
+                images[usedImageIndex]->owner = newOwner;
+        }
+    }
+
+    for ( auto & actor : clipboard.spriteActors )
+    {
+        for ( auto usedImageIndex : actor.usedImages )
+        {
+            if ( usedImageIndex != 0 )
+                images[usedImageIndex]->owner = newOwner;
+        }
+    }
+}
+
+void ClipboardAnimations::cleanDrawList()
+{
+    if ( drawListDirty )
+    {
+        std::sort(drawList.begin(), drawList.end());
+        for ( std::size_t i=1; i<drawList.size(); ++i )
+        {
+            if ( drawList[i] == UnusedDrawEntry )
+                break;
+            else
+            {
+                std::uint64_t drawItem = drawList[i];
+                std::uint32_t index = std::uint32_t(drawItem & MaskIndex);
+                if ( drawItem & FlagUnitActor )
+                    clipboard.unitActors[index].drawListIndex = i;
+                else
+                    clipboard.spriteActors[index].drawListIndex = i;
+            }
+        }
+        drawListDirty = false;
+    }
+}
+
+void ClipboardAnimations::animate(uint64_t currentTick)
+{
     for ( auto & unitActor : clipboard.unitActors )
         unitActor.animate(currentTick, true, *this);
 

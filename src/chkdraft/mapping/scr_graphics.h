@@ -971,7 +971,7 @@ namespace Scr {
         void drawImageSelections();
         void drawUnit(const Chk::Unit & unit);
         void drawSprite(const Chk::Sprite & sprite);
-        void drawActor(const MapActor & mapActor, s32 xOffset, s32 yOffset);
+        void drawActor(const AnimContext & animContext, const MapActor & mapActor, s32 xOffset, s32 yOffset);
         void drawActors();
         void drawLocations();
         void drawTemporaryLocations();

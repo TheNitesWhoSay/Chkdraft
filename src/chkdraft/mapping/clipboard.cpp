@@ -934,8 +934,8 @@ void Clipboard::beginPasting(bool isQuickPaste, GuiMap & map)
     pasting = true;
     switch ( map.getLayer() )
     {
-        case Layer::Units: map.animations.initClipboardUnits(); break;
-        case Layer::Sprites: map.animations.initClipboardSprites(); break;
+        case Layer::Units: animations.initClipboardUnits(); break;
+        case Layer::Sprites: animations.initClipboardSprites(); break;
     }
 }
 
@@ -944,7 +944,7 @@ void Clipboard::endPasting(GuiMap* map)
     if ( pasting )
     {
         if ( map != nullptr )
-            map->animations.clearClipboardActors();
+            animations.clearClipboardActors();
 
         if ( quickPaste )
         {

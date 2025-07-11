@@ -1,5 +1,6 @@
 #ifndef CLIPBOARD_H
 #define CLIPBOARD_H
+#include <chkdraft/mapping/map_animations.h>
 #include <common_files/constants.h>
 #include <common_files/structs.h>
 #include <mapping_core/map_actor.h>
@@ -135,8 +136,11 @@ class Clipboard
     void updateFogMiddle(point middle);
 
 public:
-    std::vector<MapActor> unitActors;
-    std::vector<MapActor> spriteActors;
+    ClipboardAnimations animations;
+    std::vector<MapActor> unitActors {};
+    std::vector<MapActor> spriteActors {};
+
+    Clipboard() : animations(*this) {}
 
     bool hasTiles() const;
     bool hasDoodads() const;
