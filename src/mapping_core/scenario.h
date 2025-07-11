@@ -565,6 +565,9 @@ struct Scenario : RareEdit::Tracked<MapData, Scenario, DescriptorIndex>
     virtual void valueChanged(sprite_flags_path, u16 oldFlags, u16 newFlags) {}
     virtual void valueChanged(sprite_xc_path, u16 oldXc, u16 newXc) {}
     virtual void valueChanged(sprite_yc_path, u16 oldYc, u16 newYc) {}
+    
+    using tileset_path = PATH(root->tileset);
+    virtual void valueChanged(tileset_path, Sc::Terrain::Tileset oldTileset, Sc::Terrain::Tileset newTileset) {}
 
     bool clearTileSelChanged();
     bool clearFogSelChanged();

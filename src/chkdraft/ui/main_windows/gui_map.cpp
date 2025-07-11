@@ -4013,9 +4013,9 @@ std::string_view getSkinName(GuiMap::Skin skin)
     }
 }
 
-void GuiMap::SetSkin(GuiMap::Skin skin)
+void GuiMap::SetSkin(GuiMap::Skin skin, bool reloadCurrent)
 {
-    if ( skin == this->skin )
+    if ( skin == this->skin && !reloadCurrent )
         return;
 
     // Validate the skin and if remastered, turn it into Scr::GraphicsData::LoadSettings
@@ -4285,6 +4285,11 @@ void GuiMap::valueChanged(sprite_yc_path path, u16 oldYc, u16 newYc)
     }
 }
 
+void GuiMap::valueChanged(tileset_path, Sc::Terrain::Tileset oldTileset, Sc::Terrain::Tileset newTileset)
+{
+    if ( oldTileset != newTileset && scrGraphics )
+        this->SetSkin(this->skin, true);
+}
 
 void GuiMap::tileSelectionsChanged()
 {

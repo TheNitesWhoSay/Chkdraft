@@ -226,7 +226,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCach
                         CarbotHD
                     };
                     GuiMap::Skin GetSkin();
-                    void SetSkin(GuiMap::Skin skin);
+                    void SetSkin(GuiMap::Skin skin, bool reloadCurrent = false);
 
                     point getLastMousePosition() { return lastMousePosition; }
 
@@ -289,6 +289,8 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCach
                     void valueChanged(sprite_flags_path, u16 oldFlags, u16 newFlags) override;
                     void valueChanged(sprite_xc_path, u16 oldXc, u16 newXc) override;
                     void valueChanged(sprite_yc_path, u16 oldYc, u16 newYc) override;
+
+                    void valueChanged(tileset_path, Sc::Terrain::Tileset oldTileset, Sc::Terrain::Tileset newTileset) override;
 
                     void tileSelectionsChanged();
                     void tileFogSelectionsChanged();
