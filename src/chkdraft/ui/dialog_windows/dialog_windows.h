@@ -16,5 +16,6 @@
 #include "map_protection/enter_password.h"
 #include "dimensions.h"
 #include "about.h"
+#include "actor_properties.h"
 
 #endif

@@ -905,6 +905,7 @@ void Maps::DisableMapping()
         
         chkd.unitWindow.DestroyThis();
         chkd.spriteWindow.DestroyThis();
+        chkd.actorWindow.DestroyThis();
         chkd.locationWindow.DestroyThis();
         chkd.terrainPalWindow.DestroyThis();
         chkd.tilePropWindow.DestroyThis();

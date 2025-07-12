@@ -100,6 +100,7 @@ set(Headers
   ui/chkd_controls/unit_tree.h
   ui/chkd_controls/upgrade_tree.h
   ui/dialog_windows/about.h
+  ui/dialog_windows/actor_properties.h
   ui/dialog_windows/dialog_windows.h
   ui/dialog_windows/dimensions.h
   ui/dialog_windows/briefing_editor/briefing_editor.h
@@ -181,6 +182,7 @@ set(Sources
   ui/chkd_controls/unit_tree.cpp
   ui/chkd_controls/upgrade_tree.cpp
   ui/dialog_windows/about.cpp
+  ui/dialog_windows/actor_properties.cpp
   ui/dialog_windows/dimensions.cpp
   ui/dialog_windows/briefing_editor/briefing_editor.cpp
   ui/dialog_windows/briefing_editor/briefing_templates.cpp
