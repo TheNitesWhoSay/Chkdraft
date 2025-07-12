@@ -1041,7 +1041,7 @@ void Scr::GraphicsData::Data::Skin::loadClassicImageFrame(std::size_t frameIndex
         size_t pixelLineOffset = 0;
         auto addition = size_t(row*bitmapWidth);
         auto currPixel = &bitmapData[0]+addition; // Start from the left-most pixel of this row of the frame
-        auto rowEnd = row == bitmapHeight-1 ? &bitmapData[0]+bitmapWidth*bitmapHeight : &bitmapData[0]+size_t(currPixelIndex+frameWidth);
+        auto rowEnd = row == bitmapHeight-1 ? &bitmapData[0]+bitmapWidth*(bitmapHeight-1)+frameWidth : &bitmapData[0]+size_t(currPixelIndex+frameWidth);
 
         while ( currPixel < rowEnd )
         {
