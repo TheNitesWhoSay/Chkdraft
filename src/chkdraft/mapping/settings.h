@@ -20,6 +20,7 @@ class Settings
         static std::string starDatPath;
         static std::string brooDatPath;
         static std::string patchRtPath;
+        static u32 defaultSkin;
         static u32 logLevel;
         static u32 deathTableStart;
         static bool useAddressesForMemory; // If true, uses 1.16.1 addresses for memory conditions and actions

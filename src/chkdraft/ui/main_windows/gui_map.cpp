@@ -1965,7 +1965,7 @@ void GuiMap::Redraw(bool includeMiniMap)
 {
     if ( skin == GuiMap::Skin::ClassicGDI )
         chkd.colorCycler.cycleColors(GetTickCount64(), read.tileset, scGraphics.getPalette());
-    else if ( chkd.gameClock.tick() )
+    else if ( chkd.gameClock.tick() && CM != nullptr )
     {
         auto currentTick = chkd.gameClock.currentTick();
         CM->animations.animate(currentTick);

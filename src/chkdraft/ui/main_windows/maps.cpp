@@ -1,5 +1,6 @@
 #include "maps.h"
 #include "chkdraft/chkdraft.h"
+#include "chkdraft/mapping/settings.h"
 #include <memory>
 #include <string>
 #include <utility>
@@ -119,6 +120,7 @@ GuiMapPtr Maps::NewMap(Sc::Terrain::Tileset tileset, u16 width, u16 height, size
                 EnableMapping();
                 currentlyActiveMap->refreshScenario();
                 currentlyActiveMap->Scroll(true, true, false);
+                currentlyActiveMap->SetSkin(GuiMap::Skin(Settings::defaultSkin));
                 currentlyActiveMap->Redraw(true);
             
                 auto finish = std::chrono::high_resolution_clock::now();
@@ -160,6 +162,7 @@ bool Maps::OpenMap(const std::string & fileName)
 
                 SetFocus(chkd.getHandle());
                 currentlyActiveMap->Scroll(true, true, false);
+                currentlyActiveMap->SetSkin(GuiMap::Skin(Settings::defaultSkin));
                 currentlyActiveMap->Redraw(true);
                 currentlyActiveMap->refreshScenario();
                 logger.info() << "Initialized map [ID:" << newMap->getMapId() << "] from " << newMap->getFilePath() << std::endl;
