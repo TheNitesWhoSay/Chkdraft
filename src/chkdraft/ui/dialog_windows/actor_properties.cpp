@@ -7,6 +7,32 @@ enum class ActorListColumn { DrawListIndex, Type, UnitSpriteIndex, Priority, Nam
 enum_t(Id, u32, {
     ActorList = ID_FIRST,
 
+    ButtonPausePlay = IDC_BUTTON_PAUSEPLAY,
+    CheckAutoRestart = IDC_CHECK_AUTORESTART,
+    EditActorDirection = IDC_EDIT_ACTORDIRECTION,
+    EditElevation = IDC_EDIT_ELEVATION,
+    ComboAnimation = IDC_COMBO_ANIMATION,
+    ListboxImages = IDC_LISTBOX_IMAGES,
+    CheckPrimaryImage = IDC_CHECK_PRIMARYIMAGE,
+
+    EditImageId = IDC_EDIT_IMAGEID,
+    EditIscriptId = IDC_EDIT_ISCRIPTID,
+    EditOwner = IDC_EDIT_OWNER,
+    EditImageDirection = IDC_EDIT_IMAGEDIRECTION,
+    EditImageX = IDC_EDIT_IMAGEX,
+    EditImageY = IDC_EDIT_IMAGEY,
+    EditOffsetX = IDC_EDIT_OFFSETX,
+    EditOffsetY = IDC_EDIT_OFFSETY,
+    EditBaseFrame = IDC_EDIT_BASEFRAME,
+    EditGrpFrame = IDC_EDIT_GRPFRAME,
+    CheckFlipped = IDC_CHECK_FLIPPED,
+    CheckRotationEnabled = IDC_CHECK_ROTATIONENABLED,
+    CheckHidden = IDC_CHECK_HIDDEN,
+    CheckDrawIfCloaked = IDC_CHECK_DRAWIFCLOAKED,
+    ComboRemapping = IDC_COMBO_REMAPPING,
+    ComboSelectionColor = IDC_COMBO_SELECTIONCOLOR,
+    ComboDrawFunction = IDC_COMBO_DRAWFUNCTION,
+
     ButtonClose = IDC_BUTTON_CLOSE
 });
 
@@ -32,6 +58,32 @@ bool ActorPropertiesWindow::CreateThis(HWND hParent)
 
 bool ActorPropertiesWindow::CreateSubWindows(HWND hWnd)
 {
+    buttonPausePlayAnimation.FindThis(hWnd, Id::ButtonPausePlay);
+    checkAutoRestart.FindThis(hWnd, Id::CheckAutoRestart);
+    editActorDirection.FindThis(hWnd, Id::EditActorDirection);
+    editElevation.FindThis(hWnd, Id::EditElevation);
+    dropAnimation.FindThis(hWnd, Id::ComboAnimation);
+    listboxImages.FindThis(hWnd, Id::ListboxImages);
+    checkPrimaryImage.FindThis(hWnd, Id::CheckPrimaryImage);
+
+    editImageId.FindThis(hWnd, Id::EditImageId);
+    editIscriptId.FindThis(hWnd, Id::EditIscriptId);
+    editOwner.FindThis(hWnd, Id::EditOwner);
+    editImageDirection.FindThis(hWnd, Id::EditImageDirection);
+    editImageX.FindThis(hWnd, Id::EditImageX);
+    editImageY.FindThis(hWnd, Id::EditImageY);
+    editOffsetX.FindThis(hWnd, Id::EditOffsetX);
+    editOffsetY.FindThis(hWnd, Id::EditOffsetY);
+    editBaseFrame.FindThis(hWnd, Id::EditBaseFrame);
+    editGrpFrame.FindThis(hWnd, Id::EditGrpFrame);
+    checkFlipped.FindThis(hWnd, Id::CheckFlipped);
+    checkRotationEnabled.FindThis(hWnd, Id::CheckRotationEnabled);
+    checkHidden.FindThis(hWnd, Id::CheckHidden);
+    checkDrawIfCloaked.FindThis(hWnd, Id::CheckDrawIfCloaked);
+    dropRemapping.FindThis(hWnd, Id::ComboRemapping);
+    dropSelectionColor.FindThis(hWnd, Id::ComboSelectionColor);
+    dropDrawFunction.FindThis(hWnd, Id::ComboDrawFunction);
+
     initilizing = true;
     WindowsItem::SetWinText("Actor Properties");
 

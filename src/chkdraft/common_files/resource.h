@@ -100,6 +100,7 @@
 #define IDC_CHECK3                      1085
 #define IDC_CHECK4                      1086
 #define IDC_COMBO1                      1091
+#define IDC_COMBO_ANIMATION             1091
 #define IDC_EDIT1                       1092
 #define IDC_BUTTON_COMPSAVE             1093
 #define IDC_COMPSAVE                    1093
@@ -108,9 +109,11 @@
 #define IDC_MEDAIR                      1095
 #define IDC_CHECKCUWPCLOAKED            1095
 #define IDC_CHECK_UNUSED4               1095
+#define IDC_CHECK_DRAWIFCLOAKED         1095
 #define IDC_CHECK6                      1096
 #define IDC_HIGHAIR                     1096
 #define IDC_CHECK_UNUSED5               1096
+#define IDC_CHECK_HIDDEN                1096
 #define IDC_CHECK7                      1097
 #define IDC_EXTLOCNAMESTR               1097
 #define IDC_CHECK_UNUSED6               1097
@@ -123,19 +126,24 @@
 #define IDC_EDITENTERPASS               1099
 #define IDC_EDIT_LITPATH                1099
 #define IDC_EDITCUWPMANA                1099
+#define IDC_EDIT_ELEVATION              1099
 #define IDC_EDIT3                       1100
 #define IDC_LOCLEFT                     1100
 #define IDC_EDITCUWPSHIELD              1100
 #define IDC_EDIT_LEFT                   1100
+#define IDC_EDIT_IMAGEID                1100
 #define IDC_EDIT4                       1101
 #define IDC_LOCTOP                      1101
 #define IDC_EDITCUWPRESOURCES           1101
 #define IDC_EDIT_TOP                    1101
+#define IDC_EDIT_ISCRIPTID              1101
 #define IDC_EDIT5                       1102
 #define IDC_LOCRIGHT                    1102
 #define IDC_EDITCUWPHANGAR              1102
+#define IDC_EDIT_OWNER                  1102
 #define IDC_EDIT6                       1103
 #define IDC_LOCBOTTOM                   1103
+#define IDC_EDIT_IMAGEDIRECTION         1103
 #define IDC_BUTTON1                     1104
 #define IDC_INVERTX                     1104
 #define IDC_BUTTON_LITSAVE              1104
@@ -145,6 +153,7 @@
 #define IDC_INVERTY                     1105
 #define IDC_CHANGEPASSAPPLY             1105
 #define IDC_BUTTON_LIT                  1105
+#define IDC_BUTTON_PAUSEPLAY            1105
 #define IDC_BUTTON3                     1106
 #define IDC_INVERTXY                    1106
 #define IDC_LOWGROUND                   1107
@@ -184,10 +193,27 @@
 #define IDC_CREDITS                     1138
 #define ID_RESIZE_CHANGETILESET         1139
 #define IDC_LIST1                       1140
+#define IDC_LISTBOX_IMAGES              1140
 #define IDC_LIST2                       1141
 #define IDC_LIST_TERRAIN                1141
 #define IDC_CHECK_SMOOTHBORDER          1142
 #define IDC_GROUP_LINK                  1143
+#define IDC_COMBO_SELECTIONCOLOR        1144
+#define IDC_COMBO_DRAWFUNCTION          1145
+#define IDC_COMBO_REMAPPING             1146
+#define IDC_EDIT_IMAGEX                 1147
+#define IDC_EDIT_IMAGEY                 1148
+#define IDC_EDIT_OFFSETX                1149
+#define IDC_EDIT_OFFSETY                1150
+#define IDC_EDIT_BASEFRAME              1151
+#define IDC_EDIT_GRPFRAME               1152
+#define IDC_GROUP_ACTOR                 1153
+#define IDC_GROUP_IMAGE                 1154
+#define IDC_CHECK_AUTORESTART           1155
+#define IDC_EDIT_ACTORDIRECTION         1156
+#define IDC_CHECK_PRIMARYIMAGE          1157
+#define IDC_CHECK_FLIPPED               1158
+#define IDC_CHECK_ROTATIONENABLED       1159
 #define ID_FILE_NEW1                    40025
 #define ID_FILE_OPEN1                   40026
 #define ID_ADVANCED_OPENBACKUPDATABASE  40027
@@ -387,7 +413,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        169
 #define _APS_NEXT_COMMAND_VALUE         40679
-#define _APS_NEXT_CONTROL_VALUE         1144
+#define _APS_NEXT_CONTROL_VALUE         1160
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

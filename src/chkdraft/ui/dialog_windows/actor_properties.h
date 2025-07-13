@@ -40,6 +40,32 @@ class ActorPropertiesWindow : public WinLib::ClassDialog
         static constexpr std::size_t noSelectedActor = std::numeric_limits<std::size_t>::max();
         std::size_t selectedActorIndex = noSelectedActor;
 
+        WinLib::ButtonControl buttonPausePlayAnimation;
+        WinLib::CheckBoxControl checkAutoRestart;
+        WinLib::EditControl editActorDirection;
+        WinLib::EditControl editElevation;
+        WinLib::DropdownControl dropAnimation;
+        WinLib::ListBoxControl listboxImages;
+        WinLib::CheckBoxControl checkPrimaryImage;
+
+        WinLib::EditControl editImageId;
+        WinLib::EditControl editIscriptId;
+        WinLib::EditControl editOwner;
+        WinLib::EditControl editImageDirection;
+        WinLib::EditControl editImageX;
+        WinLib::EditControl editImageY;
+        WinLib::EditControl editOffsetX;
+        WinLib::EditControl editOffsetY;
+        WinLib::EditControl editBaseFrame;
+        WinLib::EditControl editGrpFrame;
+        WinLib::CheckBoxControl checkFlipped;
+        WinLib::CheckBoxControl checkRotationEnabled;
+        WinLib::CheckBoxControl checkHidden;
+        WinLib::CheckBoxControl checkDrawIfCloaked;
+        WinLib::DropdownControl dropRemapping;
+        WinLib::DropdownControl dropSelectionColor;
+        WinLib::DropdownControl dropDrawFunction;
+
         ActorListColumn columnSortedBy;
         bool flipSort;
         bool initilizing;
