@@ -14,8 +14,10 @@ struct MapActor
     static constexpr std::size_t MaxSlots = 10;
 
     s8 transitShadowTarget = 0;
+    u8 lastSetAnim = u8(Sc::Sprite::AnimHeader::Init);
     bool noBreakSection = false;
     bool autoRestart = false;
+    bool paused = false;
     u8 direction = 0;
     u8 elevation = 0;
     u16 drawListIndex = 0;

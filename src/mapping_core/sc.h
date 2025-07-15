@@ -1472,6 +1472,37 @@ namespace Sc {
             Enable = 27
         };
 
+        static constexpr std::string_view AnimName[] {
+            "0: Init",
+            "1: Death",
+            "2: GroundAttackInit",
+            "3: AirAttackInit",
+            "4: Unused1",
+            "5: GroundAttackRepeat",
+            "6: AirAttackRepeat",
+            "7: CastSpell",
+            "8: GroundAttackToIdle",
+            "9: AirAttackToIdle",
+            "10: Unused2",
+            "11: Walking",
+            "12: WalkingToIdle",
+            "13: SpecialState1",
+            "14: SpecialState2",
+            "15: AlmostBuilt",
+            "16: Built",
+            "17: Landing",
+            "18: LiftOff",
+            "19: IsWorking",
+            "20: WorkingToIdle",
+            "21: WarpIn",
+            "22: Unused3",
+            "23: StarEditInit",
+            "25: Disable",
+            "25: Burrow",
+            "26: Unburrow",
+            "27: Enable"
+        };
+
         bool load(ArchiveCluster & archiveCluster, Sc::TblFilePtr imagesTbl);
         bool loadAnimation(u16 id, IScriptAnimation* animation, size_t currOffset, bool & idIncludesFlip, bool & idIncludesUnflip, std::set<size_t> & visitedOffsets);
         const IScriptAnimation* getAnimationHeader(size_t iScriptId, AnimHeader animHeader) const;

@@ -25,20 +25,30 @@ class ActorPropertiesWindow : public WinLib::ClassDialog
     protected:
         void EnableActorEditing();
         void DisableActorEditing();
+        void UpdateActorFieldText();
+        void UpdateImageFieldText();
+        void ImageSelectionChanged();
+        void LvItemChanged(NMHDR* nmhdr);
 
         void NotifyClosePressed();
 
         virtual void NotifyButtonClicked(int idFrom, HWND hWndFrom); // Sent when a button or checkbox is clicked
+        virtual void NotifyComboSelChanged(int idFrom, HWND hWndFrom);
 
         BOOL Activate(WPARAM wParam, LPARAM lParam);
         BOOL ShowWindow(WPARAM wParam, LPARAM lParam);
 
         BOOL DlgNotify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr);
+        BOOL DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam);
         BOOL DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
     private:
         static constexpr std::size_t noSelectedActor = std::numeric_limits<std::size_t>::max();
         std::size_t selectedActorIndex = noSelectedActor;
+        int selectedImageSlot = -1;
+        std::size_t selectedImageIndex = 0;
+        std::optional<WinLib::DeviceContext> imageListDc {}; // Sound list HDC for speeding up string measurement
+        std::string imageStrings[10] {};
 
         WinLib::ButtonControl buttonPausePlayAnimation;
         WinLib::CheckBoxControl checkAutoRestart;

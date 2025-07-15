@@ -254,4 +254,25 @@ namespace WinLib {
         return false;
     }
 
+    int ListViewControl::GetFocusedItem()
+    {
+        return int(SendMessage(getHandle(), LVM_GETFOCUSEDGROUP, 0, 0));
+    }
+
+    int ListViewControl::GetNextSelection(int currentSelection)
+    {
+        int focusedItem = GetFocusedItem();
+        if ( focusedItem != -1 && focusedItem != currentSelection )
+        {
+            if ( SendMessage(getHandle(), LVM_GETITEMSTATE, focusedItem, LVIS_SELECTED) & LVIS_SELECTED )
+                return focusedItem;
+        }
+
+        int result = SendMessage(getHandle(), LVM_GETNEXTITEM, currentSelection, LVNI_SELECTED|LVNI_ABOVE);
+        if ( result == -1 )
+            return SendMessage(getHandle(), LVM_GETNEXTITEM, currentSelection, LVNI_SELECTED|LVNI_BELOW);
+        else
+            return result;
+    }
+
 }

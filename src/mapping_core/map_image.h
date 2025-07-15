@@ -17,6 +17,26 @@ struct MapImage
         Hallucination = 16,
         None
     };
+    static constexpr std::string_view drawFunctionNames[] {
+        "0: Normal",
+        "1: -",
+        "2: -",
+        "3: -",
+        "4: -",
+        "5: -",
+        "6: Cloaked",
+        "7: -",
+        "8: -",
+        "9: Remap",
+        "10: Shadow",
+        "11: -",
+        "12: -",
+        "13: -",
+        "14: -",
+        "15: -",
+        "16: Hallucination",
+        "17: None"
+    };
     
     u16 imageId = 0;
     u8 owner = 0;
@@ -26,6 +46,7 @@ struct MapImage
     s8 xOffset = 0;
     s8 yOffset = 0;
     u8 remapping = 0;
+    u8 selColor = 0;
     size_t baseFrame = 0;
     size_t frame = 0;
     bool flipped = false;

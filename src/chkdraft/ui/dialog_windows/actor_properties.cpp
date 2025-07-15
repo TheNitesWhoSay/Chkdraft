@@ -63,7 +63,6 @@ bool ActorPropertiesWindow::CreateSubWindows(HWND hWnd)
     editActorDirection.FindThis(hWnd, Id::EditActorDirection);
     editElevation.FindThis(hWnd, Id::EditElevation);
     dropAnimation.FindThis(hWnd, Id::ComboAnimation);
-    listboxImages.FindThis(hWnd, Id::ListboxImages);
     checkPrimaryImage.FindThis(hWnd, Id::CheckPrimaryImage);
 
     editImageId.FindThis(hWnd, Id::EditImageId);
@@ -84,7 +83,43 @@ bool ActorPropertiesWindow::CreateSubWindows(HWND hWnd)
     dropSelectionColor.FindThis(hWnd, Id::ComboSelectionColor);
     dropDrawFunction.FindThis(hWnd, Id::ComboDrawFunction);
 
+    listboxImages.CreateThis(hWnd, 584, 230, 167, 175, true, false, false, false, false, Id::ListboxImages);
+
+    editActorDirection.CreateNumberBuddy(0, 255);
+    editElevation.CreateNumberBuddy(0, 255);
+
+    editImageId.CreateNumberBuddy(0, 65535);
+    editIscriptId.CreateNumberBuddy(0, 65535);
+    editOwner.CreateNumberBuddy(0, 255);
+    editImageDirection.CreateNumberBuddy(0, 255);
+    editImageX.CreateNumberBuddy(-2147483648, 2147483647);
+    editImageY.CreateNumberBuddy(-2147483648, 2147483647);
+    editOffsetX.CreateNumberBuddy(-128, 127);
+    editOffsetY.CreateNumberBuddy(-128, 127);
+    editBaseFrame.CreateNumberBuddy(0, 65535);
+    editGrpFrame.CreateNumberBuddy(0, 65535);
+
     initilizing = true;
+    dropAnimation.SetHeight(438);
+    for ( std::size_t i=0; i<std::size(Sc::Sprite::AnimName); ++i )
+        dropAnimation.AddItem(std::string(Sc::Sprite::AnimName[i]), i);
+    
+    dropRemapping.SetHeight(438);
+    dropSelectionColor.SetHeight(438);
+    dropDrawFunction.SetHeight(438);
+    dropRemapping.AddItem("ofire", 0);
+    dropRemapping.AddItem("gfire", 1);
+    dropRemapping.AddItem("bfire", 2);
+    dropRemapping.AddItem("bexpl", 3);
+    dropRemapping.AddItem("trans50", 4);
+    dropRemapping.AddItem("red", 5);
+    dropRemapping.AddItem("green", 6);
+    dropSelectionColor.AddItem("0", 0);
+    dropSelectionColor.AddItem("1", 0);
+    dropSelectionColor.AddItem("2", 0);
+    for ( std::size_t i=0; i<std::size(MapImage::drawFunctionNames); ++i )
+        dropDrawFunction.AddItem(std::string(MapImage::drawFunctionNames[i]), i);
+
     WindowsItem::SetWinText("Actor Properties");
 
     listActors.CreateThis(hWnd, 9, 10, 549, 449, false, false, Id::ActorList);
@@ -97,6 +132,7 @@ bool ActorPropertiesWindow::CreateSubWindows(HWND hWnd)
     listActors.AddColumn(3, "Draw Priority", 120, LVCFMT_RIGHT);
     listActors.AddColumn(4, "Name", 150, LVCFMT_LEFT);
 
+    DisableActorEditing();
     RepopulateList();
 
     listActors.Show();
@@ -125,7 +161,7 @@ void ActorPropertiesWindow::SetListRedraw(bool redraw)
 
 bool ActorPropertiesWindow::AddActor(bool isUnit, bool isSpriteUnit, std::size_t unitOrSpriteType, std::size_t unitOrSpriteIndex, const MapActor & actor)
 {
-    std::string actorName = isUnit || isSpriteUnit ?
+    std::string actorName = (isUnit || isSpriteUnit) ?
         Sc::Unit::defaultDisplayNames[unitOrSpriteType < Sc::Unit::defaultDisplayNames.size() ? unitOrSpriteType : 0] :
         chkd.scData.sprites.spriteNames[unitOrSpriteType < chkd.scData.sprites.spriteNames.size() ? unitOrSpriteType : 0];
 
@@ -229,12 +265,264 @@ void ActorPropertiesWindow::RepopulateList()
 
 void ActorPropertiesWindow::EnableActorEditing()
 {
+    if ( selectedActorIndex != noSelectedActor )
+    {
+        if ( selectedActorIndex == 0 || selectedActorIndex > CM->animations.drawList.size() )
+        {
+            selectedActorIndex = noSelectedActor;
+            DisableActorEditing();
+            return;
+        }
 
+        buttonPausePlayAnimation.EnableThis();
+        checkAutoRestart.EnableThis();
+        editActorDirection.EnableThis();
+        editElevation.EnableThis();
+        dropAnimation.EnableThis();
+        listboxImages.EnableThis();
+        checkPrimaryImage.EnableThis();
+
+        editImageId.EnableThis();
+        editIscriptId.EnableThis();
+        editOwner.EnableThis();
+        editImageDirection.EnableThis();
+        editImageX.EnableThis();
+        editImageY.EnableThis();
+        editOffsetX.EnableThis();
+        editOffsetY.EnableThis();
+        editBaseFrame.EnableThis();
+        editGrpFrame.EnableThis();
+        checkFlipped.EnableThis();
+        checkRotationEnabled.EnableThis();
+        checkHidden.EnableThis();
+        checkDrawIfCloaked.EnableThis();
+        dropRemapping.EnableThis();
+        dropSelectionColor.EnableThis();
+        dropDrawFunction.EnableThis();
+
+        UpdateActorFieldText();
+    }
 }
 
 void ActorPropertiesWindow::DisableActorEditing()
 {
+    if ( selectedActorIndex == noSelectedActor )
+    {
+        buttonPausePlayAnimation.SetText("Pause Animation");
+        checkAutoRestart.SetCheck(false);
+        editActorDirection.SetText("");
+        editElevation.SetText("");
+        dropAnimation.SetSel(0);
+        listboxImages.ClearItems();
+        checkPrimaryImage.SetCheck(false);
+        
+        editImageId.SetText("");
+        editIscriptId.SetText("");
+        editOwner.SetText("");
+        editImageDirection.SetText("");
+        editImageX.SetText("");
+        editImageY.SetText("");
+        editOffsetX.SetText("");
+        editOffsetY.SetText("");
+        editBaseFrame.SetText("");
+        editGrpFrame.SetText("");
+        checkFlipped.SetCheck(false);
+        checkRotationEnabled.SetCheck(false);
+        checkHidden.SetCheck(false);
+        checkDrawIfCloaked.SetCheck(false);
+        dropRemapping.SetSel(0);
+        dropSelectionColor.SetSel(0);
+        dropDrawFunction.SetSel(0);
 
+        buttonPausePlayAnimation.DisableThis();
+        checkAutoRestart.DisableThis();
+        editActorDirection.DisableThis();
+        editElevation.DisableThis();
+        dropAnimation.DisableThis();
+        listboxImages.DisableThis();
+        checkPrimaryImage.DisableThis();
+
+        editImageId.DisableThis();
+        editIscriptId.DisableThis();
+        editOwner.DisableThis();
+        editImageDirection.DisableThis();
+        editImageX.DisableThis();
+        editImageY.DisableThis();
+        editOffsetX.DisableThis();
+        editOffsetY.DisableThis();
+        editBaseFrame.DisableThis();
+        editGrpFrame.DisableThis();
+        checkFlipped.DisableThis();
+        checkRotationEnabled.DisableThis();
+        checkHidden.DisableThis();
+        checkDrawIfCloaked.DisableThis();
+        dropRemapping.DisableThis();
+        dropSelectionColor.DisableThis();
+        dropDrawFunction.DisableThis();
+    }
+}
+
+void ActorPropertiesWindow::UpdateActorFieldText()
+{
+    if ( selectedActorIndex == noSelectedActor || selectedActorIndex == 0 || selectedActorIndex > CM->animations.drawList.size() )
+    {
+        selectedActorIndex = noSelectedActor;
+        DisableActorEditing();
+        return;
+    }
+
+    const MapActor* actor = nullptr;
+    auto drawEntry = CM->animations.drawList[selectedActorIndex];
+    auto unitOrSpriteIndex = drawEntry & MapAnimations::MaskIndex;
+    if ( drawEntry != MapAnimations::UnusedDrawEntry )
+    {
+        if ( drawEntry & MapAnimations::FlagUnitActor )
+            actor = &(CM->view.units.readAttachedData()[unitOrSpriteIndex]);
+        else
+            actor = &(CM->view.sprites.readAttachedData()[unitOrSpriteIndex]);
+    }
+    if ( actor == nullptr )
+    {
+        selectedActorIndex = noSelectedActor;
+        DisableActorEditing();
+        return;
+    }
+
+    buttonPausePlayAnimation.SetText(actor->paused ? "Play Animation" : "Pause Animation");
+    checkAutoRestart.SetCheck(actor->autoRestart);
+    editActorDirection.SetEditNum(actor->direction);
+    editElevation.SetEditNum(actor->elevation);
+    dropAnimation.SetSel(actor->lastSetAnim % 28);
+    
+    listboxImages.SetRedraw(false);
+    listboxImages.ClearItems();
+    auto primaryImageSlot = actor->primaryImageIndex;
+    int primaryImageIndex = -1;
+    selectedImageSlot = -1;
+    auto & images = CM->animations.images;
+    for ( std::size_t i=0; i<std::size(actor->usedImages); ++i )
+    {
+        imageStrings[i] = "";
+        auto imageListIndex = actor->usedImages[i];
+        if ( imageListIndex != 0 && imageListIndex < images.size() && images[imageListIndex] )
+        {
+            auto image = images[imageListIndex];
+            std::string imageStr {};
+            bool hasImageDat = image->imageId < chkd.scData.sprites.numImages();
+            if ( hasImageDat )
+            {
+                const auto & imageDat = chkd.scData.sprites.getImage(image->imageId);
+                if ( imageDat.grpFile < chkd.scData.sprites.imagesTbl->numStrings() )
+                    imageStr = getArchiveFileName(chkd.scData.sprites.imagesTbl->getString(imageDat.grpFile));
+            }
+            std::string display = "[" + std::to_string(imageListIndex) + "] " +
+                (imageStr.empty() ? "ImageId:" + std::to_string(image->imageId) : imageStr);
+            imageStrings[i] = display;
+            int insertionIndex = listboxImages.AddItem(i);
+            if ( insertionIndex != -1 && primaryImageSlot == i )
+            {
+                selectedImageSlot = i;
+                selectedImageIndex = imageListIndex;
+                primaryImageIndex = insertionIndex;
+            }
+        }
+    }
+    listboxImages.SetCurSel(primaryImageIndex);
+    listboxImages.SetRedraw(true);
+    checkPrimaryImage.SetCheck(true);
+
+    UpdateImageFieldText();
+}
+
+void ActorPropertiesWindow::UpdateImageFieldText()
+{
+    auto & images = CM->animations.images;
+    auto & image = images[selectedImageIndex];
+    editImageId.SetEditNum(image->imageId);
+    editIscriptId.SetEditNum(image->iScriptId);
+    editOwner.SetEditNum(image->owner);
+    editImageDirection.SetEditNum(image->direction);
+    editImageX.SetEditNum(image->xc);
+    editImageY.SetEditNum(image->yc);
+    editOffsetX.SetEditNum(image->xOffset);
+    editOffsetY.SetEditNum(image->yOffset);
+    editBaseFrame.SetEditNum(image->baseFrame);
+    editGrpFrame.SetEditNum(image->frame);
+    checkFlipped.SetCheck(image->flipped);
+    checkRotationEnabled.SetCheck(image->rotation);
+    checkHidden.SetCheck(image->hidden);
+    checkDrawIfCloaked.SetCheck(image->drawIfCloaked);
+    int drawFunc = int(image->drawFunction)%(int(MapImage::DrawFunction::None)+1);
+    dropRemapping.SetSel(int(image->remapping)%7);
+    dropSelectionColor.SetSel(int(image->selColor)%3);
+    dropDrawFunction.SetSel(drawFunc);
+}
+
+void ActorPropertiesWindow::ImageSelectionChanged()
+{
+    if ( selectedActorIndex == noSelectedActor || selectedActorIndex == 0 || selectedActorIndex > CM->animations.drawList.size() )
+    {
+        selectedActorIndex = noSelectedActor;
+        DisableActorEditing();
+        return;
+    }
+
+    const MapActor* actor = nullptr;
+    auto drawEntry = CM->animations.drawList[selectedActorIndex];
+    auto unitOrSpriteIndex = drawEntry & MapAnimations::MaskIndex;
+    if ( drawEntry != MapAnimations::UnusedDrawEntry )
+    {
+        if ( drawEntry & MapAnimations::FlagUnitActor )
+            actor = &(CM->view.units.readAttachedData()[unitOrSpriteIndex]);
+        else
+            actor = &(CM->view.sprites.readAttachedData()[unitOrSpriteIndex]);
+    }
+    if ( actor == nullptr )
+    {
+        selectedActorIndex = noSelectedActor;
+        DisableActorEditing();
+        return;
+    }
+
+    LPARAM itemData = 0;
+    if ( listboxImages.GetCurSelItem(itemData) )
+    {
+        auto & images = CM->animations.images;
+        this->selectedImageSlot = itemData;
+        this->selectedImageIndex = actor->usedImages[std::size_t(itemData)];
+        
+        checkPrimaryImage.SetCheck(this->selectedImageSlot == actor->primaryImageIndex);
+        UpdateImageFieldText();
+        listboxImages.RedrawThis();
+    }
+}
+
+void ActorPropertiesWindow::LvItemChanged(NMHDR* nmhdr)
+{
+    NMLISTVIEW* itemInfo = (NMLISTVIEW*)nmhdr;
+    LPARAM index = itemInfo->lParam;
+        
+    if ( itemInfo->uNewState & LVIS_SELECTED && initilizing == false ) // Selected, add item to selection
+    {
+        bool firstSelected = selectedActorIndex == noSelectedActor;
+        selectedActorIndex = index;
+        if ( firstSelected )
+            EnableActorEditing();
+        else
+            UpdateActorFieldText();
+    }
+    else if ( itemInfo->uOldState & LVIS_SELECTED && selectedActorIndex != noSelectedActor ) // From selected to not selected, remove item from selection
+    {
+        if ( index == int(selectedActorIndex) )
+        {
+            int nextSelection = listActors.GetNextSelection(int(selectedActorIndex));
+            selectedActorIndex = nextSelection == -1 ? noSelectedActor : nextSelection;
+            if ( nextSelection == -1 )
+                DisableActorEditing();
+            else
+                UpdateActorFieldText();
+        }
+    }
 }
 
 void ActorPropertiesWindow::NotifyClosePressed()
@@ -247,6 +535,14 @@ void ActorPropertiesWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
     switch ( idFrom )
     {
     case Id::ButtonClose: NotifyClosePressed(); break;
+    }
+}
+
+void ActorPropertiesWindow::NotifyComboSelChanged(int idFrom, HWND hWndFrom)
+{
+    switch ( idFrom )
+    {
+    case Id::ListboxImages: ImageSelectionChanged(); break;
     }
 }
 
@@ -271,13 +567,92 @@ BOOL ActorPropertiesWindow::ShowWindow(WPARAM wParam, LPARAM lParam)
 
 BOOL ActorPropertiesWindow::DlgNotify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
 {
+    switch ( nmhdr->code )
+    {
+    case LVN_ITEMCHANGED: LvItemChanged(nmhdr); break;
+    }
     return ClassDialog::DlgNotify(hWnd, idFrom, nmhdr);
+}
+
+BOOL ActorPropertiesWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
+{
+    switch ( HIWORD(wParam) )
+    {
+    case LBN_KILLFOCUS:
+        listboxImages.RedrawThis();
+        break;
+    }
+    return ClassDialog::DlgCommand(hWnd, wParam, lParam);
 }
 
 BOOL ActorPropertiesWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     switch( msg )
     {
+        case WinLib::LB::WM_PREMEASUREITEMS: // Measuring is time sensative, load necessary items for measuring all strings once
+            imageListDc.emplace(listboxImages.getHandle());
+            break;
+
+        case WM_MEASUREITEM:
+        {
+            MEASUREITEMSTRUCT* mis = (MEASUREITEMSTRUCT*)lParam;
+            const auto & str = imageStrings[mis->itemData];
+            if ( !str.empty() && GetStringDrawSize(*imageListDc, mis->itemWidth, mis->itemHeight, str) )
+            {
+                mis->itemWidth += 5;
+                mis->itemHeight += 2;
+
+                if ( mis->itemHeight > 255 )
+                    mis->itemHeight = 255;
+            }
+            return TRUE;
+        }
+        break;
+
+        case WinLib::LB::WM_POSTMEASUREITEMS: // Release items loaded for measurement
+            imageListDc = std::nullopt;
+            break;
+
+        case WM_CTLCOLORLISTBOX:
+            if ( listboxImages == (HWND)lParam )
+            {
+                HBRUSH hBrush = WinLib::ResourceManager::getSolidBrush(RGB(255, 255, 255));
+                if ( hBrush != NULL )
+                    return (LPARAM)hBrush;
+            }
+            return ClassDialog::DlgProc(hWnd, msg, wParam, lParam);
+            break;
+
+        case WinLib::LB::WM_PREDRAWITEMS:
+            break;
+
+        case WM_DRAWITEM:
+        {
+            PDRAWITEMSTRUCT pdis = (PDRAWITEMSTRUCT)lParam;
+            bool isSelected = pdis->itemData == selectedImageSlot,
+                isFocused = listboxImages.getHandle() == GetFocus(),
+                drawSelection = ((pdis->itemAction&ODA_SELECT) == ODA_SELECT),
+                drawEntire = ((pdis->itemAction&ODA_DRAWENTIRE) == ODA_DRAWENTIRE);
+
+            if ( pdis->itemID != -1 && ( drawSelection || drawEntire ) )
+            {
+                WinLib::DeviceContext dc { pdis->hDC };
+                const auto & str = imageStrings[pdis->itemData];
+                if ( !str.empty() )
+                {
+                    dc.fillRect(pdis->rcItem, isFocused && isSelected ? RGB(0, 120, 215) : (isSelected ? RGB(240, 240, 240) : RGB(255, 255, 255)));
+                    SetBkMode(pdis->hDC, TRANSPARENT);
+                    DrawString(dc, pdis->rcItem.left+3, pdis->rcItem.top+1, pdis->rcItem.right-pdis->rcItem.left,
+                        (isSelected && isFocused) ? RGB(255, 255, 255) : RGB(0, 0, 0), str);
+                }
+            }
+            return TRUE;
+        }
+        break;
+
+        case WinLib::LB::WM_POSTDRAWITEMS:
+            break;
+
     case WM_ACTIVATE: return Activate(wParam, lParam); break;
     case WM_SHOWWINDOW: return ShowWindow(wParam, lParam); break;
     case WM_CLOSE: DestroyThis(); break;

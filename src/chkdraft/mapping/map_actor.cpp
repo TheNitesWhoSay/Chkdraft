@@ -83,6 +83,7 @@ MapImage* MapActor::primaryImage(AnimContext & animations)
 
 void MapActor::setAnim(Sc::Sprite::AnimHeader animHeader, std::uint64_t currentTick, bool isUnit, AnimContext & animations, bool silent)
 {
+    lastSetAnim = u8(int(animHeader) % 28);
     for ( int i=0; noBreakSection; ++i )
     {
         animate(currentTick, isUnit, animations, true);
@@ -175,6 +176,9 @@ void MapActor::showNonCloakImages(AnimContext & animations)
 
 void MapActor::animate(std::uint64_t currentTick, bool isUnit, AnimContext & animations, bool unbreak)
 {
+    if ( paused )
+        return;
+
     ActorContext context {
         .currentTick = currentTick,
         .animations = animations,
