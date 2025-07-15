@@ -21,7 +21,7 @@ struct MapActor
     u8 direction = 0;
     u8 elevation = 0;
     u16 drawListIndex = 0;
-    u16 primaryImageIndex = 0;
+    u16 primaryImageSlot = 0;
     u16 usedImages[MaxSlots] {}; // Only leftmost indexes are used
 
     u16 & getNewImageSlot(bool above, MapImage & image, AnimContext & animations); // If result is non-zero, no image slots are available

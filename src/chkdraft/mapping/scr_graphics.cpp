@@ -1014,6 +1014,9 @@ void Scr::GraphicsData::Data::Skin::loadClassicImageFrame(std::size_t frameIndex
     auto & grp = scData.sprites.getGrp(imageDat.grpFile);
     auto & grpFile = grp.get();
 
+    if ( frameIndex >= grpFile.numFrames || frameIndex >= classicImage->frames.size() )
+        return;
+
     const Sc::Sprite::GrpFrameHeader & grpFrameHeader = grpFile.frameHeaders[frameIndex];
     auto & frame = classicImage->frames[frameIndex];
     s64 frameWidth = s64(grpFrameHeader.frameWidth);

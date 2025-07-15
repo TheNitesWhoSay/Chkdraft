@@ -3,12 +3,12 @@
 
 u16 & MapActor::getNewImageSlot(bool above, MapImage & image, AnimContext & animations)
 {
-    u16 primaryImageImageIndex = usedImages[primaryImageIndex];
+    u16 primaryImageIndex = usedImages[primaryImageSlot];
     auto updatePrimaryImageIndex = [&]() {
         for ( std::size_t j=0; j<MaxSlots; ++j )
         {
-            if ( usedImages[j] == primaryImageImageIndex )
-                primaryImageIndex = j;
+            if ( usedImages[j] == primaryImageIndex )
+                primaryImageSlot = j;
         }
     };
     defragmentNonZeroes(usedImages);
@@ -46,12 +46,12 @@ u16 & MapActor::getNewImageSlot(bool above, MapImage & image, AnimContext & anim
 
 void MapActor::removeImage(std::size_t imageIndex)
 {
-    u16 primaryImageImageIndex = usedImages[primaryImageIndex];
+    u16 primaryImageImageIndex = usedImages[primaryImageSlot];
     auto updatePrimaryImageIndex = [&]() {
         for ( std::size_t j=0; j<MaxSlots; ++j )
         {
             if ( usedImages[j] == primaryImageImageIndex )
-                primaryImageIndex = j;
+                primaryImageSlot = j;
         }
     };
     for ( auto & usedImage : usedImages )
@@ -60,25 +60,25 @@ void MapActor::removeImage(std::size_t imageIndex)
             usedImage = 0;
     }
     defragmentNonZeroes(usedImages);
-    primaryImageIndex = 0;
+    primaryImageSlot = 0;
     updatePrimaryImageIndex();
 }
 
 MapImage* MapActor::primaryImage(AnimContext & animations)
 {
-    if ( primaryImageIndex > std::size(usedImages) )
+    if ( primaryImageSlot > std::size(usedImages) )
     {
-        logger.error() << "Invalid primaryImageIndex: " << primaryImageIndex << '\n';
+        logger.error() << "Invalid primaryImageSlot: " << primaryImageSlot << '\n';
         return nullptr;
     }
-    else if ( usedImages[primaryImageIndex] == 0 || usedImages[primaryImageIndex] >= animations.images.size() ||
-        animations.images[usedImages[primaryImageIndex]] == std::nullopt )
+    else if ( usedImages[primaryImageSlot] == 0 || usedImages[primaryImageSlot] >= animations.images.size() ||
+        animations.images[usedImages[primaryImageSlot]] == std::nullopt )
     {
-        logger.error() << "Invalid imageIndex: " << usedImages[primaryImageIndex] << '\n';
+        logger.error() << "Invalid imageIndex: " << usedImages[primaryImageSlot] << '\n';
         return nullptr;
     }
     else
-        return &(animations.images[usedImages[primaryImageIndex]].value());
+        return &(animations.images[usedImages[primaryImageSlot]].value());
 }
 
 void MapActor::setAnim(Sc::Sprite::AnimHeader animHeader, std::uint64_t currentTick, bool isUnit, AnimContext & animations, bool silent)
@@ -112,7 +112,7 @@ void MapActor::setAnim(Sc::Sprite::AnimHeader animHeader, std::uint64_t currentT
             const Sc::Sprite::IScriptAnimation* anim = chkd.scData.sprites.getAnimationHeader(image->iScriptId, animHeader);
             if ( anim == nullptr )
             {
-                if ( i == primaryImageIndex && !silent )
+                if ( i == primaryImageSlot && !silent )
                     logger.error("Could not set anim, header not found");
 
                 continue;

@@ -25,7 +25,7 @@ public:
     static constexpr std::uint64_t FlagUnitActor    =        0x200000000ull;
     static constexpr std::uint64_t FlagIsTurret     =        0x400000000ull;
     static constexpr std::uint64_t MaskY            =     0xFFF800000000ull;
-    static constexpr std::uint64_t MaskElevation    =   0x1F000000000000ull;
+    static constexpr std::uint64_t MaskElevation    =   0xFF000000000000ull;
     static constexpr std::uint64_t ShiftDrawUnit    = 32;
     static constexpr std::uint64_t ShiftUnitActor   = 33;
     static constexpr std::uint64_t ShiftIsTurret    = 34;

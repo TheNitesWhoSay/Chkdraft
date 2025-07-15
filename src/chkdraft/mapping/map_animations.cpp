@@ -141,18 +141,18 @@ void AnimContext::restartActor(ActorContext & context)
     actor.noBreakSection = false;
     for ( std::size_t i=0; i<std::size(actor.usedImages); ++i ) // Remove all non-primary actors
     {
-        if ( i != actor.primaryImageIndex )
+        if ( i != actor.primaryImageSlot )
         {
             removeImage(actor.usedImages[i]);
             actor.usedImages[i] = 0;
         }
     }
-    if ( actor.primaryImageIndex < std::size(actor.usedImages) )
+    if ( actor.primaryImageSlot < std::size(actor.usedImages) )
     {
-        if ( actor.primaryImageIndex != 0 )
+        if ( actor.primaryImageSlot != 0 )
         {
-            std::swap(actor.usedImages[0], actor.usedImages[actor.primaryImageIndex]);
-            actor.primaryImageIndex = 0;
+            std::swap(actor.usedImages[0], actor.usedImages[actor.primaryImageSlot]);
+            actor.primaryImageSlot = 0;
         }
         std::size_t imageIndex = static_cast<std::size_t>(actor.usedImages[0]);
         if ( imageIndex >= images.size() || images[imageIndex] == std::nullopt )

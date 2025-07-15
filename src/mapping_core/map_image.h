@@ -47,8 +47,8 @@ struct MapImage
     s8 yOffset = 0;
     u8 remapping = 0;
     u8 selColor = 0;
-    size_t baseFrame = 0;
-    size_t frame = 0;
+    u16 baseFrame = 0;
+    u16 frame = 0;
     bool flipped = false;
     bool rotation = false;
     bool hiddenLeader = false;
@@ -57,7 +57,7 @@ struct MapImage
     DrawFunction drawFunction = DrawFunction::Normal;
 
     u16 returnOffset = 0;
-    size_t iScriptId = 0;
+    u32 iScriptId = 0;
     const Sc::Sprite::IScriptAnimation* animation = nullptr;
     std::uint64_t waitUntil {};
 

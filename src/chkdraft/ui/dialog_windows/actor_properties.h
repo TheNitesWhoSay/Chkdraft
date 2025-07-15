@@ -32,8 +32,36 @@ class ActorPropertiesWindow : public WinLib::ClassDialog
 
         void NotifyClosePressed();
 
+        void ActorDirectionUpdated();
+        void ActorElevationUpdated();
+        void ImageIdUpdated();
+        void ImageIscriptIdUpdated();
+        void ImageOwnerUpdated();
+        void ImageDirectionUpdated();
+        void ImageXcUpdated();
+        void ImageYcUpdated();
+        void ImageOffsetXcUpdated();
+        void ImageOffsetYcUpdated();
+        void ImageBaseFrameUpdated();
+        void ImageGrpFrameUpdated();
+
+        void AnimationSelectionChanged();
+        void RemappingSelectionChanged();
+        void SelColorSelectionChanged();
+        void DrawFuncSelectionChanged();
+
+        void NotifyPausePlayClicked();
+        void NotifyAutoRestartClicked();
+        void NotifyPrimaryImageClicked();
+        void NotifyFlippedClicked();
+        void NotifyRotationEnabledClicked();
+        void NotifyHiddenClicked();
+        void NotifyDrawIfCloakedClicked();
+
         virtual void NotifyButtonClicked(int idFrom, HWND hWndFrom); // Sent when a button or checkbox is clicked
         virtual void NotifyComboSelChanged(int idFrom, HWND hWndFrom);
+        virtual void NotifyEditUpdated(int idFrom, HWND hWndFrom); // Sent when edit text changes, before redraw
+        virtual void NotifyEditFocusLost(int idFrom, HWND hWndFrom); // Sent when focus changes or the window is hidden
 
         BOOL Activate(WPARAM wParam, LPARAM lParam);
         BOOL ShowWindow(WPARAM wParam, LPARAM lParam);
@@ -41,6 +69,9 @@ class ActorPropertiesWindow : public WinLib::ClassDialog
         BOOL DlgNotify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr);
         BOOL DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam);
         BOOL DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+        MapActor* getActiveActor();
+        MapImage* getActiveImage();
 
     private:
         static constexpr std::size_t noSelectedActor = std::numeric_limits<std::size_t>::max();

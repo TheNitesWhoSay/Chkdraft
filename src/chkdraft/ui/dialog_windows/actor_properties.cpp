@@ -91,7 +91,7 @@ bool ActorPropertiesWindow::CreateSubWindows(HWND hWnd)
     editImageId.CreateNumberBuddy(0, 65535);
     editIscriptId.CreateNumberBuddy(0, 65535);
     editOwner.CreateNumberBuddy(0, 255);
-    editImageDirection.CreateNumberBuddy(0, 255);
+    editImageDirection.CreateNumberBuddy(0, 32);
     editImageX.CreateNumberBuddy(-2147483648, 2147483647);
     editImageY.CreateNumberBuddy(-2147483648, 2147483647);
     editOffsetX.CreateNumberBuddy(-128, 127);
@@ -364,29 +364,9 @@ void ActorPropertiesWindow::DisableActorEditing()
 
 void ActorPropertiesWindow::UpdateActorFieldText()
 {
-    if ( selectedActorIndex == noSelectedActor || selectedActorIndex == 0 || selectedActorIndex > CM->animations.drawList.size() )
-    {
-        selectedActorIndex = noSelectedActor;
-        DisableActorEditing();
-        return;
-    }
-
-    const MapActor* actor = nullptr;
-    auto drawEntry = CM->animations.drawList[selectedActorIndex];
-    auto unitOrSpriteIndex = drawEntry & MapAnimations::MaskIndex;
-    if ( drawEntry != MapAnimations::UnusedDrawEntry )
-    {
-        if ( drawEntry & MapAnimations::FlagUnitActor )
-            actor = &(CM->view.units.readAttachedData()[unitOrSpriteIndex]);
-        else
-            actor = &(CM->view.sprites.readAttachedData()[unitOrSpriteIndex]);
-    }
+    const MapActor* actor = getActiveActor();
     if ( actor == nullptr )
-    {
-        selectedActorIndex = noSelectedActor;
-        DisableActorEditing();
         return;
-    }
 
     buttonPausePlayAnimation.SetText(actor->paused ? "Play Animation" : "Pause Animation");
     checkAutoRestart.SetCheck(actor->autoRestart);
@@ -396,7 +376,7 @@ void ActorPropertiesWindow::UpdateActorFieldText()
     
     listboxImages.SetRedraw(false);
     listboxImages.ClearItems();
-    auto primaryImageSlot = actor->primaryImageIndex;
+    auto primaryImageSlot = actor->primaryImageSlot;
     int primaryImageIndex = -1;
     selectedImageSlot = -1;
     auto & images = CM->animations.images;
@@ -436,8 +416,10 @@ void ActorPropertiesWindow::UpdateActorFieldText()
 
 void ActorPropertiesWindow::UpdateImageFieldText()
 {
-    auto & images = CM->animations.images;
-    auto & image = images[selectedImageIndex];
+    MapImage* image = getActiveImage();
+    if ( image == nullptr )
+        return;
+
     editImageId.SetEditNum(image->imageId);
     editIscriptId.SetEditNum(image->iScriptId);
     editOwner.SetEditNum(image->owner);
@@ -460,38 +442,14 @@ void ActorPropertiesWindow::UpdateImageFieldText()
 
 void ActorPropertiesWindow::ImageSelectionChanged()
 {
-    if ( selectedActorIndex == noSelectedActor || selectedActorIndex == 0 || selectedActorIndex > CM->animations.drawList.size() )
-    {
-        selectedActorIndex = noSelectedActor;
-        DisableActorEditing();
-        return;
-    }
-
-    const MapActor* actor = nullptr;
-    auto drawEntry = CM->animations.drawList[selectedActorIndex];
-    auto unitOrSpriteIndex = drawEntry & MapAnimations::MaskIndex;
-    if ( drawEntry != MapAnimations::UnusedDrawEntry )
-    {
-        if ( drawEntry & MapAnimations::FlagUnitActor )
-            actor = &(CM->view.units.readAttachedData()[unitOrSpriteIndex]);
-        else
-            actor = &(CM->view.sprites.readAttachedData()[unitOrSpriteIndex]);
-    }
-    if ( actor == nullptr )
-    {
-        selectedActorIndex = noSelectedActor;
-        DisableActorEditing();
-        return;
-    }
-
+    MapActor* actor = getActiveActor();
     LPARAM itemData = 0;
-    if ( listboxImages.GetCurSelItem(itemData) )
+    if ( actor != nullptr && listboxImages.GetCurSelItem(itemData) )
     {
-        auto & images = CM->animations.images;
         this->selectedImageSlot = itemData;
         this->selectedImageIndex = actor->usedImages[std::size_t(itemData)];
         
-        checkPrimaryImage.SetCheck(this->selectedImageSlot == actor->primaryImageIndex);
+        checkPrimaryImage.SetCheck(this->selectedImageSlot == actor->primaryImageSlot);
         UpdateImageFieldText();
         listboxImages.RedrawThis();
     }
@@ -530,10 +488,323 @@ void ActorPropertiesWindow::NotifyClosePressed()
     EndDialog(getHandle(), IDCLOSE);
 }
 
+void ActorPropertiesWindow::ActorDirectionUpdated()
+{
+    if ( auto newDirection = editActorDirection.GetEditNum<u8>() )
+    {
+        MapActor* actor = getActiveActor();
+        if ( actor != nullptr && actor->direction != *newDirection )
+        {
+            actor->direction = *newDirection;
+            for ( std::size_t i=0; i<std::size(actor->usedImages); ++i )
+            {
+                if ( actor->usedImages[i] != 0 && actor->usedImages[i] < CM->animations.images.size() )
+                    CM->animations.images[actor->usedImages[i]]->setDirection(*newDirection);
+            }
+        }
+    }
+}
+
+void ActorPropertiesWindow::ActorElevationUpdated()
+{
+    if ( auto newElevation = editElevation.GetEditNum<u8>() )
+    {
+        MapActor* actor = getActiveActor();
+        if ( actor != nullptr && actor->elevation != *newElevation )
+        {
+            auto & drawList = CM->animations.drawList;
+            actor->elevation = *newElevation;
+            auto & drawListEntry = drawList[actor->drawListIndex];
+            drawListEntry = (drawListEntry & (~MapAnimations::MaskElevation)) | (std::uint64_t(actor->elevation) << MapAnimations::ShiftElevation);
+            auto newDrawListValue = drawListEntry;
+            CM->animations.drawListDirty = true;
+            CM->animations.cleanDrawList();
+            for ( std::size_t i=1; i<drawList.size(); ++i )
+            {
+                if ( drawList[i] == newDrawListValue )
+                {
+                    this->selectedActorIndex = i;
+                    this->RepopulateList();
+                    break;
+                }
+            }
+        }
+    }
+}
+
+void ActorPropertiesWindow::ImageIdUpdated()
+{
+    if ( auto newImageId = editImageId.GetEditNum<u16>() )
+    {
+        MapActor* actor = getActiveActor();
+        MapImage* image = getActiveImage();
+        if ( actor != nullptr && image != nullptr && image->imageId != *newImageId )
+        {
+            image->imageId = *newImageId;
+            if ( actor->primaryImageSlot == this->selectedImageSlot ) // Restart the actor if this was the primary image, else just leave it
+            {
+                ActorContext actorContext {
+                    .currentTick = chkd.gameClock.currentTick(),
+                    .animations = CM->animations,
+                    .actor = *actor,
+                    .isUnit = (CM->animations.drawList[actor->drawListIndex] & MapAnimations::FlagUnitActor) == MapAnimations::FlagUnitActor
+                };
+                CM->animations.restartActor(actorContext);
+            }
+        }
+    }
+}
+
+void ActorPropertiesWindow::ImageIscriptIdUpdated()
+{
+    if ( auto newIscriptId = editIscriptId.GetEditNum<u32>() )
+    {
+        MapActor* actor = getActiveActor();
+        MapImage* image = getActiveImage();
+        if ( actor != nullptr && image != nullptr && image->iScriptId != *newIscriptId )
+        {
+            image->iScriptId = *newIscriptId;
+            if ( actor->primaryImageSlot == this->selectedImageSlot ) // Restart the actor if this was the primary image, else just leave it
+            {
+                ActorContext actorContext {
+                    .currentTick = chkd.gameClock.currentTick(),
+                    .animations = CM->animations,
+                    .actor = *actor,
+                    .isUnit = (CM->animations.drawList[actor->drawListIndex] & MapAnimations::FlagUnitActor) == MapAnimations::FlagUnitActor
+                };
+                CM->animations.restartActor(actorContext);
+            }
+        }
+    }
+}
+
+void ActorPropertiesWindow::ImageOwnerUpdated()
+{
+    if ( auto newOwner = editOwner.GetEditNum<u8>() )
+    {
+        MapImage* image = getActiveImage();
+        if ( image != nullptr && image->owner != *newOwner )
+            image->owner = *newOwner;
+    }
+}
+
+void ActorPropertiesWindow::ImageDirectionUpdated()
+{
+    if ( auto newDirection = editImageDirection.GetEditNum<u8>() )
+    {
+        MapImage* image = getActiveImage();
+        if ( image != nullptr && image->direction != *newDirection )
+        {
+            image->direction = *newDirection;
+            
+            image->flipped = image->direction > 16;
+            if ( image->flipped )
+                image->direction = 32 - image->direction;
+            checkFlipped.SetCheck(image->flipped);
+
+            image->frame = image->baseFrame + image->direction;
+            editGrpFrame.SetEditNum(image->frame);
+        }
+    }
+}
+
+void ActorPropertiesWindow::ImageXcUpdated()
+{
+    if ( auto newXc = editImageX.GetEditNum<s32>() )
+    {
+        MapImage* image = getActiveImage();
+        if ( image != nullptr && image->xc != *newXc )
+            image->xc = *newXc;
+    }
+}
+
+void ActorPropertiesWindow::ImageYcUpdated()
+{
+    if ( auto newYc = editImageY.GetEditNum<s32>() )
+    {
+        MapImage* image = getActiveImage();
+        if ( image != nullptr && image->yc != *newYc )
+            image->yc = *newYc;
+    }
+}
+
+void ActorPropertiesWindow::ImageOffsetXcUpdated()
+{
+    if ( auto newOffsetXc = editOffsetX.GetEditNum<s8>() )
+    {
+        MapImage* image = getActiveImage();
+        if ( image != nullptr && image->xOffset != *newOffsetXc )
+            image->xOffset = *newOffsetXc;
+    }
+}
+
+void ActorPropertiesWindow::ImageOffsetYcUpdated()
+{
+    if ( auto newOffsetYc = editOffsetY.GetEditNum<s8>() )
+    {
+        MapImage* image = getActiveImage();
+        if ( image != nullptr && image->yOffset != *newOffsetYc )
+            image->yOffset = *newOffsetYc;
+    }
+}
+
+void ActorPropertiesWindow::ImageBaseFrameUpdated()
+{
+    if ( auto newBaseFrame = editBaseFrame.GetEditNum<u16>() )
+    {
+        MapImage* image = getActiveImage();
+        if ( image != nullptr && image->baseFrame != *newBaseFrame )
+        {
+            image->baseFrame = *newBaseFrame;
+            image->frame = image->baseFrame + image->direction;
+        }
+    }
+}
+
+void ActorPropertiesWindow::ImageGrpFrameUpdated()
+{
+    if ( auto newGrpFrame = editGrpFrame.GetEditNum<u16>() )
+    {
+        MapImage* image = getActiveImage();
+        if ( image != nullptr && image->frame != *newGrpFrame )
+            image->frame = *newGrpFrame;
+    }
+}
+
+void ActorPropertiesWindow::AnimationSelectionChanged()
+{
+    int newAnimSel = dropAnimation.GetSel();
+    if ( newAnimSel >= 0 && newAnimSel < 28 )
+    {
+        MapActor* actor = getActiveActor();
+        if ( actor != nullptr && int(actor->lastSetAnim) != newAnimSel )
+        {
+            actor->setAnim(Sc::Sprite::AnimHeader(newAnimSel), chkd.gameClock.currentTick(),
+                (CM->animations.drawList[actor->drawListIndex] & MapAnimations::FlagUnitActor), CM->animations);
+        }
+    }
+}
+
+void ActorPropertiesWindow::RemappingSelectionChanged()
+{
+    int newRemapping = dropRemapping.GetSel();
+    if ( newRemapping >= 0 && newRemapping < 7 )
+    {
+        MapImage* image = getActiveImage();
+        if ( image != nullptr && int(image->remapping) != newRemapping )
+            image->remapping = newRemapping;
+    }
+}
+
+void ActorPropertiesWindow::SelColorSelectionChanged()
+{
+    int newSelColor = dropSelectionColor.GetSel();
+    if ( newSelColor >= 0 && newSelColor < 3 )
+    {
+        MapImage* image = getActiveImage();
+        if ( image != nullptr && int(image->selColor) != newSelColor )
+            image->selColor = newSelColor;
+    }
+}
+
+void ActorPropertiesWindow::DrawFuncSelectionChanged()
+{
+    int newDrawFunc = dropDrawFunction.GetSel();
+    if ( newDrawFunc >= 0 && newDrawFunc <= int(MapImage::DrawFunction::None) )
+    {
+        MapImage* image = getActiveImage();
+        if ( image != nullptr && int(image->drawFunction) != newDrawFunc )
+            image->drawFunction = MapImage::DrawFunction(newDrawFunc);
+    }
+}
+
+void ActorPropertiesWindow::NotifyPausePlayClicked()
+{
+    MapActor* actor = getActiveActor();
+    if ( actor != nullptr )
+    {
+        if ( actor->paused )
+        {
+            buttonPausePlayAnimation.SetText("Pause Animation");
+            actor->paused = false;
+            UpdateActorFieldText();
+        }
+        else
+        {
+            buttonPausePlayAnimation.SetText("Play Animation");
+            actor->paused = true;
+            UpdateActorFieldText();
+        }
+    }
+}
+
+void ActorPropertiesWindow::NotifyAutoRestartClicked()
+{
+    MapActor* actor = getActiveActor();
+    if ( actor != nullptr )
+    {
+        if ( checkAutoRestart.isChecked() )
+            actor->autoRestart = true;
+        else
+            actor->autoRestart = false;
+    }
+}
+
+void ActorPropertiesWindow::NotifyPrimaryImageClicked()
+{
+    MapActor* actor = getActiveActor();
+    if ( actor != nullptr )
+    {
+        if ( checkPrimaryImage.isChecked() )
+            actor->primaryImageSlot = this->selectedImageSlot;
+        else // Prevent unchecking the primary image
+            checkPrimaryImage.SetCheck(actor->primaryImageSlot == this->selectedImageSlot);
+    }
+}
+
+void ActorPropertiesWindow::NotifyFlippedClicked()
+{
+    bool newFlipped = checkFlipped.isChecked();
+    MapImage* image = getActiveImage();
+    if ( image != nullptr && image->flipped != newFlipped )
+        image->flipped = newFlipped;
+}
+
+void ActorPropertiesWindow::NotifyRotationEnabledClicked()
+{
+    bool newRotationEnabled = checkRotationEnabled.isChecked();
+    MapImage* image = getActiveImage();
+    if ( image != nullptr && image->rotation != newRotationEnabled )
+        image->rotation = newRotationEnabled;
+}
+
+void ActorPropertiesWindow::NotifyHiddenClicked()
+{
+    bool newHidden = checkHidden.isChecked();
+    MapImage* image = getActiveImage();
+    if ( image != nullptr && image->hidden != newHidden )
+        image->hidden = newHidden;
+}
+
+void ActorPropertiesWindow::NotifyDrawIfCloakedClicked()
+{
+    bool newDrawIfCloaked = checkDrawIfCloaked.isChecked();
+    MapImage* image = getActiveImage();
+    if ( image != nullptr && image->drawIfCloaked != newDrawIfCloaked )
+        image->drawIfCloaked = newDrawIfCloaked;
+}
+
 void ActorPropertiesWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
 {
     switch ( idFrom )
     {
+    case Id::ButtonPausePlay: NotifyPausePlayClicked(); break;
+    case Id::CheckAutoRestart: NotifyAutoRestartClicked(); break;
+    case Id::CheckPrimaryImage: NotifyPrimaryImageClicked(); break;
+    case Id::CheckFlipped: NotifyFlippedClicked(); break;
+    case Id::CheckRotationEnabled: NotifyRotationEnabledClicked(); break;
+    case Id::CheckHidden: NotifyHiddenClicked(); break;
+    case Id::CheckDrawIfCloaked: NotifyDrawIfCloakedClicked(); break;
     case Id::ButtonClose: NotifyClosePressed(); break;
     }
 }
@@ -543,6 +814,50 @@ void ActorPropertiesWindow::NotifyComboSelChanged(int idFrom, HWND hWndFrom)
     switch ( idFrom )
     {
     case Id::ListboxImages: ImageSelectionChanged(); break;
+    case Id::ComboAnimation: AnimationSelectionChanged(); break;
+    case Id::ComboRemapping: RemappingSelectionChanged(); break;
+    case Id::ComboSelectionColor: SelColorSelectionChanged(); break;
+    case Id::ComboDrawFunction: DrawFuncSelectionChanged(); break;
+    }
+}
+
+void ActorPropertiesWindow::NotifyEditUpdated(int idFrom, HWND hWndFrom)
+{
+    switch ( idFrom )
+    {
+    case Id::EditActorDirection: ActorDirectionUpdated(); break;
+    case Id::EditElevation: ActorElevationUpdated(); break;
+
+    case Id::EditImageId: ImageIdUpdated(); break;
+    case Id::EditIscriptId: ImageIscriptIdUpdated(); break;
+    case Id::EditOwner: ImageOwnerUpdated(); break;
+    case Id::EditImageDirection: ImageDirectionUpdated(); break;
+    case Id::EditImageX: ImageXcUpdated(); break;
+    case Id::EditImageY: ImageYcUpdated(); break;
+    case Id::EditOffsetX: ImageOffsetXcUpdated(); break;
+    case Id::EditOffsetY: ImageOffsetYcUpdated(); break;
+    case Id::EditBaseFrame: ImageBaseFrameUpdated(); break;
+    case Id::EditGrpFrame: ImageGrpFrameUpdated(); break;
+    }
+}
+
+void ActorPropertiesWindow::NotifyEditFocusLost(int idFrom, HWND hWndFrom)
+{
+    switch ( idFrom )
+    {
+    case Id::EditActorDirection: ActorDirectionUpdated(); break;
+    case Id::EditElevation: ActorElevationUpdated(); break;
+
+    case Id::EditImageId: ImageIdUpdated(); break;
+    case Id::EditIscriptId: ImageIscriptIdUpdated(); break;
+    case Id::EditOwner: ImageOwnerUpdated(); break;
+    case Id::EditImageDirection: ImageDirectionUpdated(); break;
+    case Id::EditImageX: ImageXcUpdated(); break;
+    case Id::EditImageY: ImageYcUpdated(); break;
+    case Id::EditOffsetX: ImageOffsetXcUpdated(); break;
+    case Id::EditOffsetY: ImageOffsetYcUpdated(); break;
+    case Id::EditBaseFrame: ImageBaseFrameUpdated(); break;
+    case Id::EditGrpFrame: ImageGrpFrameUpdated(); break;
     }
 }
 
@@ -659,4 +974,47 @@ BOOL ActorPropertiesWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
     default: return ClassDialog::DlgProc(hWnd, msg, wParam, lParam); break;
     }
     return TRUE;
+}
+
+MapActor* ActorPropertiesWindow::getActiveActor()
+{
+    if ( selectedActorIndex == noSelectedActor || selectedActorIndex == 0 || selectedActorIndex > CM->animations.drawList.size() )
+    {
+        selectedActorIndex = noSelectedActor;
+        DisableActorEditing();
+        return nullptr;
+    }
+
+    const MapActor* actor = nullptr;
+    auto drawEntry = CM->animations.drawList[selectedActorIndex];
+    auto unitOrSpriteIndex = drawEntry & MapAnimations::MaskIndex;
+    if ( drawEntry != MapAnimations::UnusedDrawEntry )
+    {
+        if ( drawEntry & MapAnimations::FlagUnitActor )
+            return &(CM->view.units.attachedData(unitOrSpriteIndex));
+        else
+            return &(CM->view.sprites.attachedData(unitOrSpriteIndex));
+    }
+    selectedActorIndex = noSelectedActor;
+    DisableActorEditing();
+    return nullptr;
+}
+
+MapImage* ActorPropertiesWindow::getActiveImage()
+{
+    if ( const MapActor* actor = getActiveActor() )
+    {
+        if ( this->selectedImageIndex >= CM->animations.images.size() )
+        {
+            this->selectedImageSlot = -1;
+            this->selectedImageIndex = 0;
+            DisableActorEditing();
+        }
+        else
+        {
+            auto & entry = CM->animations.images[this->selectedImageIndex];
+            return entry ? &entry.value() : nullptr;
+        }
+    }
+    return nullptr;
 }

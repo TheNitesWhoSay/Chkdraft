@@ -95,7 +95,7 @@ void Animator::initializeImage(std::size_t iScriptId)
 
 void Animator::endImage()
 {
-    if ( currImageIndex == context.actor.usedImages[context.actor.primaryImageIndex] )
+    if ( currImageIndex == context.actor.usedImages[context.actor.primaryImageSlot] )
         currImage->end();
     else
     {
@@ -166,7 +166,7 @@ void Animator::animate()
             Sc::Sprite::Op code = Sc::Sprite::Op(currImage->animation->code);
             ++currOffset; // 1-byte code
             std::string opName = code < Sc::Sprite::OpName.size() ? std::string(Sc::Sprite::OpName[code]) : std::to_string(int(code));
-            //if ( context.actor.usedImages[context.actor.primaryImageIndex] == currImageIndex )
+            //if ( context.actor.usedImages[context.actor.primaryImageSlot] == currImageIndex )
             //    logger.info() << "  " << this->currImage->iScriptId << ", " << this->currImage->imageId << ", " << opName << ", \n";
 
             if ( code < Sc::Sprite::OpParams.size() )
