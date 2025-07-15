@@ -225,6 +225,7 @@ void UnitSettingsWindow::CreateSubWindows(HWND hParent)
 {
     unitTree.UpdateUnitNames(Sc::Unit::defaultDisplayNames);
     unitTree.CreateThis(hParent, 5, 5, 200, 489, false, Id::TREE_UNITSETTINGS);
+    unitTree.UpdateUnitTree();
     buttonResetUnitDefaults.CreateThis(hParent, 5, 494, 200, 25, "Reset All Units To Default", Id::BUTTON_RESETALLUNITDEFAULTS);
     checkUseUnitDefaults.CreateThis(hParent, 210, 5, 100, 20, false, "Use Unit Defaults", Id::CHECK_USEUNITDEFAULTS);
     checkEnabledByDefault.CreateThis(hParent, 403, 5, 120, 20, false, "Enabled by Default", Id::CHECK_ENABLEDBYDEFAULT);

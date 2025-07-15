@@ -4421,7 +4421,10 @@ bool Sc::Data::loadSpriteNames(const Sc::Sprite::SpriteGroup & spriteGroup)
         loadSpriteNames(subGroup);
     
     for ( const auto & memberSprite : spriteGroup.memberSprites )
-        sprites.spriteNames[memberSprite.spriteIndex] = memberSprite.spriteName;
+    {
+        if ( !memberSprite.isUnit )
+            sprites.spriteNames[memberSprite.spriteIndex] = memberSprite.spriteName;
+    }
 
     return true;
 }
