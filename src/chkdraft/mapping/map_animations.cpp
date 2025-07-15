@@ -348,7 +348,10 @@ void MapAnimations::removeUnit(std::size_t unitIndex, MapActor & actor)
     drawListDirty = true;
     const auto & unitActors = scenario.view.units.readAttachedData();
     for ( std::size_t i=unitIndex+1; i<unitActors.size(); ++i )
-        --drawList[unitActors[i].drawListIndex]; // Decrement affected unit indexes in draw list
+    {
+        if ( drawList[unitActors[i].drawListIndex] != UnusedDrawEntry )
+            --drawList[unitActors[i].drawListIndex]; // Decrement affected unit indexes in draw list
+    }
 
     drawList[actor.drawListIndex] = UnusedDrawEntry;
     actor.drawListIndex = 0;
@@ -361,7 +364,10 @@ void MapAnimations::removeSprite(std::size_t spriteIndex, MapActor & actor)
     drawListDirty = true;
     const auto & spriteActors = scenario.view.sprites.readAttachedData();
     for ( std::size_t i=spriteIndex+1; i<spriteActors.size(); ++i )
-        --drawList[spriteActors[i].drawListIndex]; // Decrement affected sprite indexes in draw list
+    {
+        if ( drawList[spriteActors[i].drawListIndex] != UnusedDrawEntry )
+            --drawList[spriteActors[i].drawListIndex]; // Decrement affected sprite indexes in draw list
+    }
     
     drawList[actor.drawListIndex] = UnusedDrawEntry;
     actor.drawListIndex = 0;
