@@ -26,6 +26,8 @@ enum_t(Id, u32, {
     CheckNydus, CheckAddon,
     TextLinkRawFlags,
     EditLinkRawFlags,
+    
+    ButtonGraphics,
 
     GroupUnitProperties = IDC_GROUP_PROPERTIES,
     GroupLinkedUnit = IDC_GROUP_LINK,
@@ -52,7 +54,7 @@ enum_t(Id, u32, {
     CheckHallucinated = IDC_CHECK_HALLUCINATED,
     CheckBurrowed = IDC_CHECK_BURROWED,
     CheckCloaked = IDC_CHECK_CLOAKED,
-    CheckLifted = IDC_CHECK_LIFTED,
+    CheckLifted = IDC_CHECK_LIFTED
 });
 
 UnitPropertiesWindow::UnitPropertiesWindow() : columnSortedBy(UnitListColumn::Index), flipSort(false), initilizing(true), changeHighlightOnly(false)
@@ -153,9 +155,13 @@ void UnitPropertiesWindow::CreateAdvancedTab()
     {
         if ( CM != nullptr && CM->selections.hasUnits() && CM->selections.getFirstUnit() < CM->numUnits() )
         {
+            EnableUnitEditing();
             auto & unit = CM->getUnit(CM->selections.getFirstUnit());
             this->SetUnitFieldText(unit);
         }
+        else
+            DisableUnitEditing();
+
         return;
     }
     else
@@ -198,6 +204,8 @@ void UnitPropertiesWindow::CreateAdvancedTab()
     textLinkRawFlags.CreateThis(hWnd, checkLeft, checkNydus.Bottom()+5, 55, 13, "Raw Flags:", Id::TextLinkRawFlags);
     editLinkRawFlags.CreateThis(hWnd, textLinkRawFlags.Right()+2, checkNydus.Bottom()+5, 100, 20, false, Id::EditLinkRawFlags);
 
+    buttonGraphics.CreateThis(hWnd, groupLinkFlags.Right()-76, groupLinkFlags.Bottom()+9, 75, 23, "Graphics...", Id::ButtonGraphics, false, false);
+
     const WindowsItem* advancedItems[] {
         &groupValidFieldFlags, &checkValidFieldOwner, &checkValidFieldLife, &checkValidFieldMana, &checkValidFieldShield, &checkValidFieldResources,
         &checkValidFieldHangar, &textValidFieldRawFlags, &editValidFieldRawFlags,
@@ -213,7 +221,9 @@ void UnitPropertiesWindow::CreateAdvancedTab()
 
         &groupLinkFlags,
         &checkNydus, &checkAddon,
-        &textLinkRawFlags, &editLinkRawFlags
+        &textLinkRawFlags, &editLinkRawFlags,
+
+        &buttonGraphics
     };
 
     for ( const WindowsItem* item : advancedItems )
@@ -224,6 +234,8 @@ void UnitPropertiesWindow::CreateAdvancedTab()
         auto & unit = CM->getUnit(CM->selections.getFirstUnit());
         this->SetUnitFieldText(unit);
     }
+    else
+        DisableUnitEditing();
 
     initilizing = false;
 }
@@ -435,7 +447,7 @@ void UnitPropertiesWindow::EnableUnitEditing()
     const Chk::Unit & unit = CM->getUnit(CM->selections.getFirstUnit());
     SetUnitFieldText(unit);
 
-    if ( advanced )
+    if ( advancedTabCreated )
     {
         WindowsItem* advancedItems[] {
             &groupValidFieldFlags, &checkValidFieldOwner, &checkValidFieldLife, &checkValidFieldMana, &checkValidFieldShield, &checkValidFieldResources,
@@ -452,7 +464,9 @@ void UnitPropertiesWindow::EnableUnitEditing()
 
             &groupLinkFlags,
             &checkNydus, &checkAddon,
-            &textLinkRawFlags, &editLinkRawFlags
+            &textLinkRawFlags, &editLinkRawFlags,
+
+            &buttonGraphics
         };
 
         for ( WindowsItem* item : advancedItems )
@@ -489,7 +503,7 @@ void UnitPropertiesWindow::DisableUnitEditing()
         checkControls[i]->DisableThis();
     }
 
-    if ( advanced )
+    if ( advancedTabCreated )
     {
         WinLib::CheckBoxControl* advancedCheckControls[] {
             &checkValidFieldOwner, &checkValidFieldLife, &checkValidFieldMana, &checkValidFieldShield, &checkValidFieldResources, &checkValidFieldHangar,
@@ -510,6 +524,8 @@ void UnitPropertiesWindow::DisableUnitEditing()
             editControl->SetText("");
             editControl->DisableThis();
         }
+
+        buttonGraphics.DisableThis();
     }
 }
 
@@ -989,6 +1005,21 @@ void UnitPropertiesWindow::NotifyJumpToPressed()
                 return;
             }
         }
+    }
+}
+
+void UnitPropertiesWindow::NotifyGraphicsPressed()
+{
+    u16 firstUnit = CM->selections.getFirstUnit();
+    if ( std::size_t(firstUnit) < CM->numUnits() )
+    {
+        if ( chkd.actorWindow.getHandle() == NULL )
+            chkd.actorWindow.CreateThis(chkd.getHandle());
+        
+        NotifyClosePressed();
+        ::ShowWindow(chkd.actorWindow.getHandle(), SW_SHOW);
+        chkd.actorWindow.FocusAndSelectIndex(CM->view.units.attachedData(firstUnit).drawListIndex);
+        chkd.actorWindow.FocusThis();
     }
 }
 
@@ -1524,6 +1555,7 @@ void UnitPropertiesWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
     case Id::ButtonDelete: NotifyDeletePressed(); break;
     case Id::ButtonLinkUnlink: NotifyLinkUnlinkPressed(); break;
     case Id::ButtonJumpTo: NotifyJumpToPressed(); break;
+    case Id::ButtonGraphics: NotifyGraphicsPressed(); break;
     case Id::CheckInvincible: NotifyInvincibleClicked(); break;
     case Id::CheckHallucinated: NotifyHallucinatedClicked(); break;
     case Id::CheckBurrowed: NotifyBurrowedClicked(); break;

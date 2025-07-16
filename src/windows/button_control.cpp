@@ -15,7 +15,7 @@ namespace WinLib {
 
     }
 
-    bool ButtonControl::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, const std::string & initText, u64 id, bool imageButton)
+    bool ButtonControl::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, const std::string & initText, u64 id, bool imageButton, bool clientEdge)
     {
         if ( imageButton )
         {
@@ -24,7 +24,7 @@ namespace WinLib {
         }
         else
         {
-            return WindowControl::CreateControl( WS_EX_CLIENTEDGE, WC_BUTTON, initText, WS_VISIBLE|WS_CHILD|BS_PUSHBUTTON,
+            return WindowControl::CreateControl( clientEdge ? WS_EX_CLIENTEDGE : NULL, WC_BUTTON, initText, WS_VISIBLE|WS_CHILD|BS_PUSHBUTTON,
                                                  x, y, width, height, hParent, (HMENU)id, true );
         }
     }

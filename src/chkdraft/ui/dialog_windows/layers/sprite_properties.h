@@ -44,6 +44,7 @@ class SpritePropertiesWindow : public WinLib::ClassDialog
         void NotifyMoveDownPressed();
         void NotifyMoveToPressed();
         void NotifyDeletePressed();
+        void NotifyGraphicsPressed();
 
         void NotifyCheckClicked(u32 idFrom);
 
@@ -73,7 +74,7 @@ class SpritePropertiesWindow : public WinLib::ClassDialog
 
         WinLib::ListViewControl listSprites;
         PlayerDropdown dropPlayer;
-        WinLib::ButtonControl buttonMoveUp, buttonMoveTop, buttonMoveDown, buttonMoveEnd, buttonDelete, buttonMoveTo;
+        WinLib::ButtonControl buttonMoveUp, buttonMoveTop, buttonMoveDown, buttonMoveEnd, buttonDelete, buttonMoveTo, buttonGraphics;
         WinLib::EditControl editSpriteId, editUnused, editXc, editYc;
         WinLib::CheckBoxControl checkUnused0, checkUnused1, checkUnused2, checkUnused3, checkUnused4, checkUnused5, checkUnused6, checkUnused7, checkUnused8,
             checkUnused9, checkUnused10, checkUnused11, checkPureSprite, checkUnitSprite, checkUnused14, checkDisabled;

@@ -38,7 +38,9 @@ enum_t(Id, u32, {
     CheckPureSprite = IDC_CHECK_PURESPRITE,
     CheckUnitSprite = IDC_CHECK_UNITSPRITE,
     CheckUnused14 = IDC_CHECK_UNUSED14,
-    CheckDisabled = IDC_CHECK_DISABLED
+    CheckDisabled = IDC_CHECK_DISABLED,
+    
+    ButtonGraphics = IDC_BUTTON_GRAPHICS
 });
 
 SpritePropertiesWindow::SpritePropertiesWindow() : columnSortedBy(SpriteListColumn::Index), flipSort(false), initilizing(true), changeHighlightOnly(false)
@@ -69,6 +71,7 @@ bool SpritePropertiesWindow::CreateSubWindows(HWND hWnd)
     buttonMoveEnd.FindThis(hWnd, Id::ButtonMoveEnd);
     buttonDelete.FindThis(hWnd, Id::ButtonDelete);
     buttonMoveTo.FindThis(hWnd, Id::ButtonMoveTo);
+    buttonGraphics.FindThis(hWnd, Id::ButtonGraphics);
 
     editSpriteId.FindThis(hWnd, Id::EditSpriteId);
     editUnused.FindThis(hWnd, Id::EditUnused);
@@ -292,7 +295,7 @@ void SpritePropertiesWindow::EnableSpriteEditing()
 {
     dropPlayer.EnableThis();
 
-    WinLib::ButtonControl* buttonControls[] = { &buttonMoveUp, &buttonMoveTop, &buttonMoveDown, &buttonMoveEnd, &buttonDelete, &buttonMoveTo };
+    WinLib::ButtonControl* buttonControls[] = { &buttonMoveUp, &buttonMoveTop, &buttonMoveDown, &buttonMoveEnd, &buttonDelete, &buttonMoveTo, &buttonGraphics };
     WinLib::EditControl* editControls[] = { &editSpriteId, &editUnused, &editXc, &editYc };
     WinLib::CheckBoxControl* checkControls[] = { &checkUnused0, &checkUnused1, &checkUnused2, &checkUnused3, &checkUnused4, &checkUnused5, &checkUnused6,
         &checkUnused7, &checkUnused8, &checkUnused9, &checkUnused10, &checkUnused11, &checkPureSprite, &checkUnitSprite, &checkUnused14, &checkDisabled};
@@ -323,7 +326,7 @@ void SpritePropertiesWindow::DisableSpriteEditing()
     dropPlayer.SetSel(-1);
     dropPlayer.DisableThis();
 
-    WinLib::ButtonControl* buttonControls[] = { &buttonMoveUp, &buttonMoveTop, &buttonMoveDown, &buttonMoveEnd, &buttonDelete, &buttonMoveTo };
+    WinLib::ButtonControl* buttonControls[] = { &buttonMoveUp, &buttonMoveTop, &buttonMoveDown, &buttonMoveEnd, &buttonDelete, &buttonMoveTo, &buttonGraphics };
     WinLib::EditControl* editControls[] = { &editSpriteId, &editUnused, &editXc, &editYc };
     WinLib::CheckBoxControl* checkControls[] = { &checkUnused0, &checkUnused1, &checkUnused2, &checkUnused3, &checkUnused4, &checkUnused5, &checkUnused6,
         &checkUnused7, &checkUnused8, &checkUnused9, &checkUnused10, &checkUnused11, &checkPureSprite, &checkUnitSprite, &checkUnused14, &checkDisabled};
@@ -610,6 +613,21 @@ void SpritePropertiesWindow::NotifyDeletePressed()
     }
 }
 
+void SpritePropertiesWindow::NotifyGraphicsPressed()
+{
+    u16 firstSprite = CM->selections.getFirstSprite();
+    if ( std::size_t(firstSprite) < CM->numSprites() )
+    {
+        if ( chkd.actorWindow.getHandle() == NULL )
+            chkd.actorWindow.CreateThis(chkd.getHandle());
+
+        NotifyClosePressed();
+        ::ShowWindow(chkd.actorWindow.getHandle(), SW_SHOW);
+        chkd.actorWindow.FocusAndSelectIndex(CM->view.sprites.attachedData(firstSprite).drawListIndex);
+        chkd.actorWindow.FocusThis();
+    }
+}
+
 void SpritePropertiesWindow::NotifyCheckClicked(u32 idFrom)
 {
     auto edit = CM->operator()(ActionDescriptor::UpdateSpriteFlags);
@@ -726,6 +744,7 @@ void SpritePropertiesWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
     case Id::ButtonMoveDown: NotifyMoveDownPressed(); break;
     case Id::ButtonMoveTo: NotifyMoveToPressed(); break;
     case Id::ButtonDelete: NotifyDeletePressed(); break;
+    case Id::ButtonGraphics: NotifyGraphicsPressed(); break;
     case Id::CheckUnused0: case Id::CheckUnused1: case Id::CheckUnused2: case Id::CheckUnused3:
     case Id::CheckUnused4: case Id::CheckUnused5: case Id::CheckUnused6: case Id::CheckUnused7:
     case Id::CheckUnused8: case Id::CheckUnused9: case Id::CheckUnused10: case Id::CheckUnused11:

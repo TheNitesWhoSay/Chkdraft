@@ -49,6 +49,7 @@ class UnitPropertiesWindow : public WinLib::ClassDialog
         void NotifyDeletePressed();
         void NotifyLinkUnlinkPressed();
         void NotifyJumpToPressed();
+        void NotifyGraphicsPressed();
 
         void NotifyInvincibleClicked();
         void NotifyHallucinatedClicked();
@@ -140,6 +141,8 @@ class UnitPropertiesWindow : public WinLib::ClassDialog
         WinLib::CheckBoxControl checkNydus, checkAddon;
         WinLib::TextControl textLinkRawFlags;
         WinLib::EditControl editLinkRawFlags;
+
+        WinLib::ButtonControl buttonGraphics;
 };
 
 #endif

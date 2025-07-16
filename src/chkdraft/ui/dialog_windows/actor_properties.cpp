@@ -120,7 +120,7 @@ bool ActorPropertiesWindow::CreateSubWindows(HWND hWnd)
     for ( std::size_t i=0; i<std::size(MapImage::drawFunctionNames); ++i )
         dropDrawFunction.AddItem(std::string(MapImage::drawFunctionNames[i]), i);
 
-    WindowsItem::SetWinText("Actor Properties");
+    WindowsItem::SetWinText("Editor-Only Graphics Properties");
 
     listActors.CreateThis(hWnd, 9, 10, 549, 449, false, false, Id::ActorList);
     listActors.EnableFullRowSelect();
@@ -181,6 +181,7 @@ void ActorPropertiesWindow::FocusAndSelectIndex(u16 drawListIndex)
     findInfo.lParam = drawListIndex;
     s32 lvIndex = ListView_FindItem(listActors.getHandle(), -1, &findInfo);
     ListView_SetItemState(listActors.getHandle(), lvIndex, LVIS_FOCUSED | LVIS_SELECTED, LVIS_FOCUSED | LVIS_SELECTED);
+    listActors.EnsureVisible(int(drawListIndex), true);
 }
 
 void ActorPropertiesWindow::DeselectIndex(u16 drawListIndex)

@@ -149,6 +149,7 @@
 #define IDC_BUTTON_LITSAVE              1104
 #define ID_REFRESH_TEXTTRIGS            1104
 #define IDC_BUTTON_ADVANCED             1104
+#define IDC_BUTTON_GRAPHICS             1104
 #define IDC_BUTTON2                     1105
 #define IDC_INVERTY                     1105
 #define IDC_CHANGEPASSAPPLY             1105
