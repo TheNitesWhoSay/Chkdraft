@@ -424,7 +424,10 @@ namespace Scr {
                     "void main() {"
                     "    uint palIndex = texture(tex, texCoord).r;"
                     "    if ( palIndex == uint(0) ) discard;"
-                    "    else if ( palIndex >= remapRange.x && palIndex < remapRange.y )"
+                    "    else if ( remapOffset == uint(255) && palIndex <= uint(8) ) {"
+                    "        float remapIndex = texture(remapPal, vec2(palIndex+remapRange.x/256., 0.)).a;"
+                    "        fragColor = vec4(texture(pal, vec2(remapIndex, 0.)).rgb, opacity);"
+                    "    } else if ( palIndex >= remapRange.x && palIndex < remapRange.y )"
                     "        fragColor = vec4(texture(remapPal, vec2((palIndex-remapRange.x+remapOffset)/256., 0.)).rgb, opacity);"
                     "    else if ( remapRange.x > remapRange.y )"
                     "        fragColor = texture(remapPal, vec2(palIndex/256., 0.)).rgba;"
@@ -926,6 +929,7 @@ namespace Scr {
         bool displayBuildability = false;
         bool displayElevations = false;
         bool clipLocationNames = true; // If true, text is wrapped and restricted to location bounds
+        uint32_t customSelColor = 0xFFFF0000; // 0xAABBGGRR
 
         MapGraphics(Sc::Data & data, GuiMap & guiMap);
 
@@ -964,7 +968,7 @@ namespace Scr {
         void drawTileSelection();
         void prepareImageRendering(bool isSelections = false);
         void drawImage(Scr::Animation & animation, s32 x, s32 y, u32 frame, u32 multiplyColor, u32 playerColor, bool hallucinate, bool flipped = false);
-        void drawSelectionImage(Scr::Animation & animation, s32 x, s32 y, u32 frame, u32 multiplyColor);
+        void drawSelectionImage(Scr::Animation & animation, s32 x, s32 y, u32 frame, u32 colorSet, u32 multiplyColor, bool flipped = false);
         void drawClassicImage(gl::Palette & palette, s32 x, s32 y, u32 frame, u32 imageId, std::optional<Chk::PlayerColor> color, bool flipped = false);
         void drawUnitSelection(Sc::Unit::Type unitType, s32 x, s32 y);
         void drawSpriteSelection(Sc::Sprite::Type spriteType, s32 x, s32 y, bool isDrawnAsSprite);

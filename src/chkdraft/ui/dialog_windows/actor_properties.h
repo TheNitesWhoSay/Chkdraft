@@ -57,6 +57,7 @@ class ActorPropertiesWindow : public WinLib::ClassDialog
         void NotifyRotationEnabledClicked();
         void NotifyHiddenClicked();
         void NotifyDrawIfCloakedClicked();
+        void NotifyCustomColorClicked();
 
         virtual void NotifyButtonClicked(int idFrom, HWND hWndFrom); // Sent when a button or checkbox is clicked
         virtual void NotifyComboSelChanged(int idFrom, HWND hWndFrom);
@@ -105,6 +106,7 @@ class ActorPropertiesWindow : public WinLib::ClassDialog
         WinLib::CheckBoxControl checkDrawIfCloaked;
         WinLib::DropdownControl dropRemapping;
         WinLib::DropdownControl dropSelectionColor;
+        WinLib::ButtonControl buttonCustomColor;
         WinLib::DropdownControl dropDrawFunction;
 
         ActorListColumn columnSortedBy;

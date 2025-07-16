@@ -2789,6 +2789,7 @@ void Scr::MapGraphics::prepareImageRendering(bool isSelections)
         renderDat->tiles->remapPalette[4]->tex.bindToSlot(GL_TEXTURE7);
         renderDat->tiles->remapPalette[5]->tex.bindToSlot(GL_TEXTURE8);
         renderDat->tiles->remapPalette[6]->tex.bindToSlot(GL_TEXTURE9);
+        renderDat->skin->tselectPalette->tex.bindToSlot(GL_TEXTURE10);
 
         renderDat->shaders->classicPaletteShader.posToNdc.setMat4(imageToNdc);
         renderDat->shaders->classicPaletteShader.texTransform.loadIdentity();
@@ -2863,7 +2864,7 @@ void Scr::MapGraphics::drawImage(Scr::Animation & animation, s32 x, s32 y, u32 f
     animVertices.drawTriangles();
 }
 
-void Scr::MapGraphics::drawSelectionImage(Scr::Animation & animation, s32 x, s32 y, u32 frameIndex, u32 multiplyColor)
+void Scr::MapGraphics::drawSelectionImage(Scr::Animation & animation, s32 x, s32 y, u32 frameIndex, u32 colorSet, u32 multiplyColor, bool flipped)
 {
     auto & frame = animation.frames[frameIndex >= animation.totalFrames ? 0 : frameIndex];
     
@@ -2874,11 +2875,18 @@ void Scr::MapGraphics::drawSelectionImage(Scr::Animation & animation, s32 x, s32
         { GLfloat(frame.width)         , GLfloat(frame.height) }, // frameSize
         { GLfloat(frame.xOffset)       , GLfloat(frame.yOffset) }, // framePosOffset
         { GLfloat(frame.xTextureOffset), GLfloat(frame.yTextureOffset) }, // frameTexOffset
-        { GLfloat(1.f)                 , GLfloat(0.f) } // frameTexFlipper{mul,add}
+        { GLfloat(flipped ? -1.f : 1.f), GLfloat(flipped ? 1.f : 0.f) } // frameTexFlipper{mul,add}
     });
 
     renderDat->shaders->selectionShader.multiplyColor.setColor(multiplyColor);
-    renderDat->shaders->selectionShader.solidColor.setColor(0xFF249824);
+    switch ( colorSet )
+    {
+        case 1: renderDat->shaders->selectionShader.solidColor.setColor(0xFF34B8BC); break; // 0xAABBGGRR - tselect[1]
+        case 2: renderDat->shaders->selectionShader.solidColor.setColor(0xFF040484); break; // 0xAABBGGRR - tselect[2]
+        case 3: renderDat->shaders->selectionShader.solidColor.setColor(0xFF000000); break; // 0xAABBGGRR - black
+        case 4: renderDat->shaders->selectionShader.solidColor.setColor(customSelColor); break; // 0xAABBGGRR - custom
+        default: renderDat->shaders->selectionShader.solidColor.setColor(0xFF249824); break; // 0xAABBGGRR - tselect[3]
+    }
 
     animation.diffuse.bindToSlot(GL_TEXTURE0);
 
@@ -2937,7 +2945,7 @@ void Scr::MapGraphics::drawUnitSelection(Sc::Unit::Type unitType, s32 x, s32 y)
     if ( loadSettings.skinId == Scr::Skin::Id::Classic )
         drawClassicImage(*renderDat->tiles->tilesetGrp.palette, x, y+selOffset, 0, selImageId, std::nullopt);
     else
-        drawSelectionImage(getImage(selImageId), x, y+selOffset, 0, 0xFF00F518);
+        drawSelectionImage(getImage(selImageId), x, y+selOffset, 0, 0, 0xFF00F518);
 }
 
 void Scr::MapGraphics::drawSpriteSelection(Sc::Sprite::Type spriteType, s32 x, s32 y, bool isDrawnAsSprite)
@@ -2946,7 +2954,7 @@ void Scr::MapGraphics::drawSpriteSelection(Sc::Sprite::Type spriteType, s32 x, s
     if ( loadSettings.skinId == Scr::Skin::Id::Classic )
         drawClassicImage(*renderDat->tiles->tilesetGrp.palette, x, y+selOffset, 0, selImageId, std::nullopt);
     else
-        drawSelectionImage(getImage(selImageId), x, y+selOffset, 0, 0xFFFFFFFF);
+        drawSelectionImage(getImage(selImageId), x, y+selOffset, 0, 0, 0xFFFFFFFF);
 }
 
 void Scr::MapGraphics::drawImageSelections()
@@ -3045,6 +3053,12 @@ void Scr::MapGraphics::drawActor(const AnimContext & animations, const MapActor 
                     renderDat->shaders->classicPaletteShader.remapPal.setSlot(2);
                     drawClassicImage(*renderDat->tiles->halluPalette, image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, image->imageId, std::nullopt, image->flipped);
                     break;
+                case MapImage::DrawFunction::Selection:
+                    renderDat->shaders->classicPaletteShader.remapOffset.setValue(255);
+                    renderDat->shaders->classicPaletteShader.remapRange.setUVec2((int(image->selColor)%3)*8, 0);
+                    renderDat->shaders->classicPaletteShader.remapPal.setSlot(10); // Remap [1-8] to tselect 8
+                    drawClassicImage(*renderDat->tiles->tilesetGrp.palette, image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, image->imageId, std::nullopt, image->flipped);
+                    break;
                 case MapImage::DrawFunction::None:
                     break;
                 default:
@@ -3066,6 +3080,11 @@ void Scr::MapGraphics::drawActor(const AnimContext & animations, const MapActor 
                     break;
                 case MapImage::DrawFunction::Hallucination:
                     drawImage(getImage(image->imageId), image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, 0xFFFFFFFF, getPlayerColor(image->owner), true, image->flipped);
+                    break;
+                case MapImage::DrawFunction::Selection:
+                    renderDat->shaders->selectionShader.use();
+                    drawSelectionImage(getImage(image->imageId), image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, image->selColor, 0xFFFFFFFF, image->flipped);
+                    renderDat->shaders->spriteShader.use();
                     break;
                 case MapImage::DrawFunction::None:
                     break;

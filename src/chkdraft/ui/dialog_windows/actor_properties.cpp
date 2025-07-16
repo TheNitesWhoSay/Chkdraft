@@ -1,11 +1,15 @@
 #include "actor_properties.h"
 #include "chkdraft/chkdraft.h"
+#include "chkdraft/ui/chkd_controls/move_to.h"
+#include "chkdraft/ui/dialog_windows/map_settings/color_properties.h"
+#include "chkdraft/mapping/scr_graphics.h"
 #include <CommCtrl.h>
 
 enum class ActorListColumn { DrawListIndex, Type, UnitSpriteIndex, Priority, Name };
 
 enum_t(Id, u32, {
     ActorList = ID_FIRST,
+    ButtonCustomColor,
 
     ButtonPausePlay = IDC_BUTTON_PAUSEPLAY,
     CheckAutoRestart = IDC_CHECK_AUTORESTART,
@@ -83,6 +87,9 @@ bool ActorPropertiesWindow::CreateSubWindows(HWND hWnd)
     dropSelectionColor.FindThis(hWnd, Id::ComboSelectionColor);
     dropDrawFunction.FindThis(hWnd, Id::ComboDrawFunction);
 
+    buttonCustomColor.CreateThis(hWnd, dropSelectionColor.Right(), dropSelectionColor.Top(), 20, 19, "", Id::ButtonCustomColor, true);
+    buttonCustomColor.SetImageFromResourceId(IDB_PROPERTIES);
+
     listboxImages.CreateThis(hWnd, 584, 230, 167, 175, true, false, false, false, false, Id::ListboxImages);
 
     editActorDirection.CreateNumberBuddy(0, 255);
@@ -117,6 +124,8 @@ bool ActorPropertiesWindow::CreateSubWindows(HWND hWnd)
     dropSelectionColor.AddItem("0", 0);
     dropSelectionColor.AddItem("1", 0);
     dropSelectionColor.AddItem("2", 0);
+    dropSelectionColor.AddItem("Black", 0);
+    dropSelectionColor.AddItem("Custom", 0);
     for ( std::size_t i=0; i<std::size(MapImage::drawFunctionNames); ++i )
         dropDrawFunction.AddItem(std::string(MapImage::drawFunctionNames[i]), i);
 
@@ -437,7 +446,7 @@ void ActorPropertiesWindow::UpdateImageFieldText()
     checkDrawIfCloaked.SetCheck(image->drawIfCloaked);
     int drawFunc = int(image->drawFunction)%(int(MapImage::DrawFunction::None)+1);
     dropRemapping.SetSel(int(image->remapping)%7);
-    dropSelectionColor.SetSel(int(image->selColor)%3);
+    dropSelectionColor.SetSel(int(image->selColor)%5);
     dropDrawFunction.SetSel(drawFunc);
 }
 
@@ -700,11 +709,14 @@ void ActorPropertiesWindow::RemappingSelectionChanged()
 void ActorPropertiesWindow::SelColorSelectionChanged()
 {
     int newSelColor = dropSelectionColor.GetSel();
-    if ( newSelColor >= 0 && newSelColor < 3 )
+    if ( newSelColor >= 0 && newSelColor < 5 )
     {
         MapImage* image = getActiveImage();
         if ( image != nullptr && int(image->selColor) != newSelColor )
             image->selColor = newSelColor;
+        
+        if ( image != nullptr )
+            image->drawFunction = MapImage::DrawFunction::Selection;
     }
 }
 
@@ -795,6 +807,27 @@ void ActorPropertiesWindow::NotifyDrawIfCloakedClicked()
         image->drawIfCloaked = newDrawIfCloaked;
 }
 
+void ActorPropertiesWindow::NotifyCustomColorClicked()
+{
+    MapImage* image = getActiveImage();
+    if ( image != nullptr )
+    {
+        static u32 prevColor = 0;
+        if ( auto playerColor = ColorPropertiesDialog::GetArgbColor(getHandle(), prevColor) )
+        {
+            u8 alpha = 0xFF;
+            if ( MoveToDialog<u8>::GetIndex(alpha, getHandle(), "Opacity", "Opacity (0-255):") )
+            {
+                prevColor = (u32(alpha) << 24) | *playerColor;
+                image->selColor = 4;
+                image->drawFunction = MapImage::DrawFunction::Selection;
+                CM->scrGraphics->customSelColor = prevColor;
+                UpdateActorFieldText();
+            }
+        }
+    }
+}
+
 void ActorPropertiesWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
 {
     switch ( idFrom )
@@ -806,6 +839,7 @@ void ActorPropertiesWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
     case Id::CheckRotationEnabled: NotifyRotationEnabledClicked(); break;
     case Id::CheckHidden: NotifyHiddenClicked(); break;
     case Id::CheckDrawIfCloaked: NotifyDrawIfCloakedClicked(); break;
+    case Id::ButtonCustomColor: NotifyCustomColorClicked(); break;
     case Id::ButtonClose: NotifyClosePressed(); break;
     }
 }

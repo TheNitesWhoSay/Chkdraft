@@ -14,9 +14,9 @@
 void Chkdraft::OnLoadTest()
 {
     mainPlot.leftBar.SetWidth(360);
-
-    auto & map = []() -> GuiMap & {
-        auto map = chkd.maps.NewMap(Sc::Terrain::Tileset::SpacePlatform, 96, 96, Sc::Isom::Brush::Space::Platform);
+    
+    /*auto & map = []() -> GuiMap & {
+        auto map = chkd.maps.NewMap(Sc::Terrain::Tileset::Jungle, 96, 96, Sc::Isom::Brush::Jungle::Default);
         //map->addUnit(Chk::Unit {map->getNextClassId(), 192, 64, Sc::Unit::Type::StartLocation, 0, 0, 0, Sc::Player::Id::Player2});
         map->setForceFlags(Chk::Force::Force1, Chk::ForceFlags::All & Chk::ForceFlags::xRandomizeStartLocation);
         map->setForceFlags(Chk::Force::Force2, Chk::ForceFlags::All & Chk::ForceFlags::xRandomizeStartLocation);
@@ -27,7 +27,7 @@ void Chkdraft::OnLoadTest()
     auto edit = CM->operator()();
     for ( std::size_t i=0; i<Sc::Unit::TotalTypes; ++i )
     {
-        //if ( i != Sc::Unit::Type::TerranSiegeTank_SiegeMode )
+        //if ( i != Sc::Unit::Type::DarkSwarm )
         //    continue;
         //if ( scData.units.getUnit(Sc::Unit::Type(i)).subunit1 == 228 )
         //    continue;
@@ -46,8 +46,10 @@ void Chkdraft::OnLoadTest()
         int y = i/32;
         //CM->addSprite(Chk::Sprite {Sc::Sprite::Type(i), u16(x*64+64), u16(y*64+64), Sc::Player::Id::Player1, 0, Chk::Sprite::SpriteFlags::DrawAsSprite});
     }
-    CM->SetSkin(GuiMap::Skin::ScrSD);
-    maps.ChangeLayer(Layer::Units);
+    //CM->setZoom(4.0);
+    //CM->SetSkin(GuiMap::Skin::ClassicGL);
+    CM->ToggleDisplayFps();*/
+    //maps.ChangeLayer(Layer::Units);
     //maps.ChangeLayer(Layer::Sprites);
 
     /*for ( std::size_t i=0; i<Sc::Unit::TotalTypes; ++i )
@@ -144,7 +146,6 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
 #endif
             }
         }
-
 
         if ( CM != nullptr && CM->Animate() )
             CM->Redraw(false);
@@ -379,6 +380,11 @@ bool Chkdraft::DlgKeyListener(HWND hWnd, UINT & msg, WPARAM wParam, LPARAM lPara
                         else if ( GetParent(hWnd) == spriteWindow.getHandle() )
                         {
                             spriteWindow.DestroyThis();
+                            return true;
+                        }
+                        else if ( GetParent(hWnd) == actorWindow.getHandle() )
+                        {
+                            actorWindow.DestroyThis();
                             return true;
                         }
                         else if ( GetParent(hWnd) == locationWindow.getHandle() )
@@ -871,6 +877,7 @@ void Chkdraft::MinimizeDialogs()
 {
     ShowWindow(unitWindow.getHandle(), SW_HIDE);
     ShowWindow(spriteWindow.getHandle(), SW_HIDE);
+    ShowWindow(actorWindow.getHandle(), SW_HIDE);
     ShowWindow(locationWindow.getHandle(), SW_HIDE);
     ShowWindow(terrainPalWindow.getHandle(), SW_HIDE);
     ShowWindow(mapSettingsWindow.getHandle(), SW_HIDE);
@@ -882,6 +889,7 @@ void Chkdraft::RestoreDialogs()
 {
     ShowWindow(unitWindow.getHandle(), SW_SHOW);
     ShowWindow(spriteWindow.getHandle(), SW_SHOW);
+    ShowWindow(actorWindow.getHandle(), SW_SHOW);
     ShowWindow(locationWindow.getHandle(), SW_SHOW);
     ShowWindow(terrainPalWindow.getHandle(), SW_SHOW);
     ShowWindow(mapSettingsWindow.getHandle(), SW_SHOW);

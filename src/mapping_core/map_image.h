@@ -14,6 +14,7 @@ struct MapImage
         Decloak = 7,
         Remap = 9,
         Shadow = 10,
+        Selection = 13,
         Hallucination = 16,
         None
     };
@@ -31,7 +32,7 @@ struct MapImage
         "10: Shadow",
         "11: -",
         "12: -",
-        "13: -",
+        "13: Selection",
         "14: -",
         "15: -",
         "16: Hallucination",
