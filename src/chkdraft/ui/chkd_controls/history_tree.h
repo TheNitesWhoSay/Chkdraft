@@ -31,12 +31,13 @@ class HistoryTree : public WinLib::TreeViewControl
         void createRoot();
         HistAction* InsertAction(std::size_t actionIndex, const RareEdit::RenderAction<DescriptorIndex> & action, HTREEITEM parent);
         void InsertAction(std::size_t actionIndex, const RareEdit::RenderAction<DescriptorIndex> & action);
-        void RebuildHistoryTree();
+        std::size_t RebuildHistoryTree(); // Returns total byte count
         void RefreshActionHeaders(std::optional<std::size_t> excludeIndex = std::nullopt);
+        
+        std::unordered_map<std::size_t, HistAction> actionTree {};
 
     private:
         HTREEITEM hHistoryRoot = NULL;
-        std::unordered_map<std::size_t, HistAction> actionTree {};
 };
 
 #endif

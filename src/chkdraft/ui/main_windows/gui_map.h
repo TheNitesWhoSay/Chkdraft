@@ -361,6 +361,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCach
                     s32 screenTop = 0;
                     u32 bitmapWidth = 0;
                     u32 bitmapHeight = 0;
+                    u64 totalHistSizeInBytes = 0;
                     bool RedrawMiniMap = true;
                     bool RedrawMap = true;
                     WinLib::DeviceContext miniMapBuffer {};

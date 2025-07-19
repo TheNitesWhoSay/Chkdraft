@@ -1,5 +1,6 @@
 #include "gui_map.h"
 #include <chkdraft.h>
+#include <chkdraft/mapping/settings.h>
 
 void GuiMap::afterAction(std::size_t actionIndex)
 {
@@ -13,6 +14,7 @@ void GuiMap::afterAction(std::size_t actionIndex)
     else
         Tracked::renderAction(actionIndex, action, true);
 
+    totalHistSizeInBytes += action.byteCount;
     chkd.mainPlot.leftBar.historyTree.RefreshActionHeaders(std::make_optional(actionIndex));
     chkd.mainPlot.leftBar.historyTree.InsertAction(actionIndex, action);
     if ( nonSelChangeCursor > Tracked::previousCursorIndex() )
@@ -40,5 +42,19 @@ void GuiMap::afterAction(std::size_t actionIndex)
             ss << "  " << i << ": " << changeEvent.summary << '\n';
         }
         logger.trace() << ss.str();
+    }
+
+    // Trimming actions will invalidate the actionIndex, so do this after everything else
+    if ( actionIndex+1 > Settings::maxHistActions || totalHistSizeInBytes >= static_cast<u64>(Settings::maxHistMemoryUsageMb)*1048576 ) // TODO: Reset
+    {
+        bool trimActionCountLimit = actionIndex+1 > Settings::maxHistActions;
+        // If reached maxHistActions, trim first 20% of actions, e.g. max actions 500 = 100 trimmed
+        // If reached maxHistMemoryUsageMb, find the actionIndex for which trimming the actions prior would bring memory use to 80% of maxHistMemoryUsageMb
+        if ( trimActionCountLimit )
+            Tracked::trimHistory(Settings::maxHistActions/5);
+        else
+            Tracked::trimHistoryToSize(Settings::maxHistMemoryUsageMb*1048576*4/5);
+
+        totalHistSizeInBytes = chkd.mainPlot.leftBar.historyTree.RebuildHistoryTree();
     }
 }

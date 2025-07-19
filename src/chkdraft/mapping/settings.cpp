@@ -12,6 +12,8 @@ u32 Settings::logLevel(LogLevel::Info);
 u32 Settings::deathTableStart(Sc::Address::Patch_1_16_1::DeathTable);
 bool Settings::useAddressesForMemory(true);
 bool Settings::isRemastered(false);
+u32 Settings::maxHistMemoryUsageMb(500);
+u32 Settings::maxHistActions(500);
 
 bool ParseLong(const std::string & text, u32 & dest, size_t pos, size_t end)
 {
@@ -185,6 +187,26 @@ bool Settings::readSettingsFile()
                     else
                         useAddressesForMemory = true;
                 }
+                else if ( key == "maxHistMemoryUsageMb" )
+                {
+                    u32 temp = 0;
+                    if ( ParseLong(value, temp, 0, value.length()) )
+                    {
+                        maxHistMemoryUsageMb = temp;
+                        if ( maxHistMemoryUsageMb < 1 )
+                            maxHistMemoryUsageMb = 1;
+                    }
+                }
+                else if ( key == "maxHistActions" )
+                {
+                    u32 temp = 0;
+                    if ( ParseLong(value, temp, 0, value.length()) )
+                    {
+                        maxHistActions = temp;
+                        if ( maxHistActions < 5 )
+                            maxHistActions = 5;
+                    }
+                }
                 else
                     foundValue = false;
 
@@ -211,7 +233,9 @@ bool Settings::updateSettingsFile()
             << "logLevel=" << logLevel << std::endl
             << "deathTableStart=0x" << std::hex << std::uppercase << deathTableStart << std::dec << std::nouppercase << std::endl
             << "useAddressesForMemory=" << (useAddressesForMemory?"TRUE":"FALSE") << std::endl
-            << "isRemastered=" << (isRemastered?"TRUE":"FALSE") << std::endl;
+            << "isRemastered=" << (isRemastered?"TRUE":"FALSE") << std::endl
+            << "maxHistMemoryUsageMb=" << maxHistMemoryUsageMb << std::endl
+            << "maxHistActions=" << maxHistActions << std::endl;
         loadFile.close();
         return true;
     }

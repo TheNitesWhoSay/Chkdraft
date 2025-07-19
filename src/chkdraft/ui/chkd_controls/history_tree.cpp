@@ -367,19 +367,24 @@ void HistoryTree::InsertAction(std::size_t actionIndex, const RareEdit::RenderAc
     SendMessage(TreeViewControl::getHandle(), WM_VSCROLL, SB_BOTTOM, 0);
 }
 
-void HistoryTree::RebuildHistoryTree()
+std::size_t HistoryTree::RebuildHistoryTree()
 {
     SetRedraw(false);
     EmptySubTree(hHistoryRoot);
     
     this->actionTree.clear();
     auto changeHistory = CM->renderChangeHistory(true);
+    u64 totalByteCount = 0;
     for ( std::size_t i=0; i<changeHistory.size(); ++i )
+    {
         InsertAction(i, changeHistory[i]);
+        totalByteCount += static_cast<u64>(changeHistory[i].byteCount);
+    }
     
-    this->SetItemText(hHistoryRoot, "History");
+    this->SetItemText(hHistoryRoot, "History (" + getSizeString(totalByteCount) + ")");
     SetRedraw(true);
     RedrawThis();
+    return totalByteCount;
 }
 
 void HistoryTree::RefreshActionHeaders(std::optional<std::size_t> excludeIndex)
