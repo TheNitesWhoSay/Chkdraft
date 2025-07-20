@@ -36,6 +36,9 @@ class HistoryTree : public WinLib::TreeViewControl
         
         std::unordered_map<std::size_t, HistAction> actionTree {};
 
+    protected:
+        LRESULT ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
     private:
         HTREEITEM hHistoryRoot = NULL;
 };

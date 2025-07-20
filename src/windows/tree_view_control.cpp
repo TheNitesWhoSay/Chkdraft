@@ -11,9 +11,9 @@ namespace WinLib {
 
     }
 
-    bool TreeViewControl::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, bool hasButtons, u64 id)
+    bool TreeViewControl::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, bool hasButtons, u64 id, bool sizeable)
     {
-        DWORD dwStyle = WS_VISIBLE|WS_CHILD|TVS_NONEVENHEIGHT|TVS_HASLINES;
+        DWORD dwStyle = WS_VISIBLE|WS_CHILD|TVS_NONEVENHEIGHT|TVS_HASLINES|(sizeable ? WS_SIZEBOX : DWORD(0));
         if ( hasButtons )
             dwStyle |= TVS_HASBUTTONS|TVS_LINESATROOT;
 

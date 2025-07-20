@@ -457,3 +457,48 @@ void HistoryTree::RefreshActionHeaders(std::optional<std::size_t> excludeIndex)
     SetRedraw(true);
     RedrawThis();
 }
+
+LRESULT HistoryTree::ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+    switch ( msg )
+    {
+        case WM_SIZING:
+        {
+            int yBorder = GetSystemMetrics(SM_CYSIZEFRAME);
+            RECT rcLeftBar {};
+            RECT rcHistTree {};
+            RECT rcMainTree {};
+            WinLib::TreeViewControl::getWindowRect(rcHistTree);
+            chkd.mainPlot.leftBar.getClientRect(rcLeftBar);
+            LONG leftBarHeightMinusMinimap = rcLeftBar.bottom-rcLeftBar.top-145;
+            LONG histTreeHeight = rcHistTree.bottom-rcHistTree.top;
+            chkd.mainPlot.leftBar.historyTreeSize = float(double(histTreeHeight)/double(leftBarHeightMinusMinimap));
+            if ( chkd.mainPlot.leftBar.historyTreeSize < 0.1f )
+                chkd.mainPlot.leftBar.historyTreeSize = 0.1f;
+            else if ( chkd.mainPlot.leftBar.historyTreeSize > 0.9f )
+                chkd.mainPlot.leftBar.historyTreeSize = 0.9f;
+            
+            int totalTreeHeight = rcLeftBar.bottom-rcLeftBar.top-146;
+            int mainTreeHeight = totalTreeHeight-histTreeHeight;
+
+            // Fit the main tree to the middle part of the left bar
+            GetClientRect(chkd.mainPlot.leftBar.getHandle(), &rcLeftBar);
+            SetWindowPos(chkd.mainPlot.leftBar.mainTree.getHandle(), NULL, -2, 145, rcLeftBar.right-rcLeftBar.left+2, mainTreeHeight+yBorder+6, SWP_NOZORDER);
+            return 0;
+        }
+        break;
+        case WM_NCHITTEST:
+        {
+            auto result = WinLib::TreeViewControl::ControlProc(hWnd, msg, wParam, lParam);
+            switch ( result )
+            {
+                case HTTOPLEFT: case HTTOP: case HTTOPRIGHT: return HTTOP;
+                case HTLEFT: case HTRIGHT: case HTBOTTOMRIGHT: case HTBOTTOM: case HTBOTTOMLEFT:
+                    return HTCLIENT; // Prevent use of any sizing border except top as a sizing border
+                default: return result;
+            }
+        }
+        break;
+    }
+    return WinLib::TreeViewControl::ControlProc(hWnd, msg, wParam, lParam);
+}

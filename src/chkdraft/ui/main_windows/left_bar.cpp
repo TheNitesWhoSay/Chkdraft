@@ -250,14 +250,14 @@ LRESULT LeftBar::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
                 // Fit the history tree to the bottom part of the left bar
                 int totalTreeHeight = rcLeftBar.bottom-rcLeftBar.top-146;
-                int historyTreeHeight = int((rcLeftBar.bottom-rcLeftBar.top-146)*historyTreeSize);
+                int historyTreeHeight = int((rcLeftBar.bottom-rcLeftBar.top-145)*historyTreeSize);
                 int mainTreeHeight = totalTreeHeight-historyTreeHeight;
                 GetClientRect(hWnd, &rcLeftBar);
-                SetWindowPos(historyTree.getHandle(), NULL, -2, 145+mainTreeHeight, rcLeftBar.right-rcLeftBar.left+2, historyTreeHeight, SWP_NOZORDER);
+                SetWindowPos(historyTree.getHandle(), NULL, -5-xBorder, 135+mainTreeHeight, rcLeftBar.right-rcLeftBar.left+8+2*xBorder, historyTreeHeight, SWP_NOZORDER);
 
                 // Fit the main tree to the middle part of the left bar
                 GetClientRect(hWnd, &rcLeftBar);
-                SetWindowPos(mainTree.getHandle(), NULL, -2, 145, rcLeftBar.right-rcLeftBar.left+2, mainTreeHeight, SWP_NOZORDER);
+                SetWindowPos(mainTree.getHandle(), NULL, -2, 145, rcLeftBar.right-rcLeftBar.left+2, mainTreeHeight-yBorder-4, SWP_NOZORDER);
             }
             break;
 
@@ -281,7 +281,7 @@ LRESULT LeftBar::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                     this->blockSelections = false;
                 }
 
-                if ( historyTree.CreateThis(hWnd, -2, 50, 162, 114, true, Id::IDR_HISTORY_TREE) )
+                if ( historyTree.CreateThis(hWnd, -2, 50, 162, 114, true, Id::IDR_HISTORY_TREE, true) )
                 {
                     historyTree.setDefaultFont();
                     historyTree.createRoot();

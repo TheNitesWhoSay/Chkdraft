@@ -16,13 +16,12 @@ class LeftBar : public WinLib::ClassWindow
         virtual ~LeftBar();
         bool CreateThis(HWND hParent);
 
+        float historyTreeSize = 0.25f;
+
     protected:
         virtual void NotifyTreeItemSelected(LPARAM newValue); // Sent when a new tree item is selected
         LRESULT Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr);
         LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-
-    private:
-        float historyTreeSize = 0.25;
 };
 
 #endif

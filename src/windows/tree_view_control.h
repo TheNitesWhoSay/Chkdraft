@@ -9,7 +9,7 @@ namespace WinLib {
     {
         public:
             virtual ~TreeViewControl();
-            bool CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, bool hasButtons, u64 id);
+            bool CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, bool hasButtons, u64 id, bool sizeable = false);
             HTREEITEM InsertTreeItem(HTREEITEM hParentItem, const std::string & text, LPARAM lParam, bool expanded = false);
             bool SetHandle(HWND hWnd);
             bool SetItemText(HTREEITEM hItem, const std::string & newText);
@@ -19,7 +19,7 @@ namespace WinLib {
             std::optional<LPARAM> GetSelData();
 
         protected:
-            LRESULT ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+            virtual LRESULT ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
         private:
             HTREEITEM InsertParent(const std::string & text, LPARAM lParam);
