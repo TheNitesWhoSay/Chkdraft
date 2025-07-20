@@ -410,7 +410,27 @@ bool Chkdraft::DlgKeyListener(HWND hWnd, UINT & msg, WPARAM wParam, LPARAM lPara
                             return true;
                         }
                         break;
-                    case 'Z': case 'Y': case 'X': case 'C': case 'V':
+                    case 'Z':
+                        if ( (GetKeyState(VK_CONTROL) & 0x8000) && !editFocused && CM != nullptr )
+                        {
+                            if ( SendMessage(GetFocus(), WinLib::MISC::WM_ISEDIT, NULL, NULL) != 715827882 )
+                            {
+                                CM->undo();
+                                return true;
+                            }
+                        }
+                        break;
+                    case 'Y':
+                        if ( (GetKeyState(VK_CONTROL) & 0x8000) && !editFocused && CM != nullptr )
+                        {
+                            if ( SendMessage(GetFocus(), WinLib::MISC::WM_ISEDIT, NULL, NULL) != 715827882 )
+                            {
+                                CM->redo();
+                                return true;
+                            }
+                        }
+                        break;
+                    case 'X': case 'C': case 'V':
                         if ( GetKeyState(VK_CONTROL) & 0x8000 && (
                             GetParent(hWnd) == unitWindow.getHandle() ||
                             GetParent(hWnd) == spriteWindow.getHandle() ||
