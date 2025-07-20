@@ -185,7 +185,7 @@ bool Chkdraft::CreateThis()
     if ( !ClassWindow::WindowClassIsRegistered("wcChkdraft") )
     {
         DWORD classStyle = 0;
-        HICON hIcon = WinLib::ResourceManager::getIcon(IDI_PROGRAM_ICON, 32, 32);
+        HICON hIcon = WinLib::ResourceManager::getIcon(IDI_PROGRAM_ICON, 48, 48);
         HICON hIconSmall = WinLib::ResourceManager::getIcon(IDI_PROGRAM_ICON, 16, 16);
         HCURSOR hCursor = LoadCursor(NULL, IDC_ARROW);
         HBRUSH hBackground = (HBRUSH)(COLOR_APPWORKSPACE+1);
