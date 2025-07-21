@@ -33,7 +33,7 @@ public:
     static constexpr std::uint64_t ShiftElevation   = 48;
 
     static constexpr std::uint64_t MaskNonIndexDrawList = 0xFFFFFFFF00000000;
-    // unitOrSpriteIndex | isUnit << 32 | isTurret << 33 | y << 34 | elevation << 47
+    // unitOrSpriteIndex | drawUnit << 32 | unitActor << 33 | isTurret << 34 | y << 35 | elevation << 48
     bool drawListDirty = true; // If true at the end of an anim tick, sort the draw list, then go through all entries to give the new drawListIndexes to actors
     std::vector<std::uint64_t> drawList { 0ull }; // Index 0 of drawList is unused, a value of 0xFFFFFFFF in a drawList entry indicates an unused index
     std::vector<std::optional<MapImage>> images {MapImage{}}; // contains the images associated with unitActors and spriteActors, image 0 is unused

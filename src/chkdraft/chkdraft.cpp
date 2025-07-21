@@ -13,8 +13,6 @@
 
 void Chkdraft::OnLoadTest()
 {
-    mainPlot.leftBar.SetWidth(360);
-    
     /*auto & map = []() -> GuiMap & {
         auto map = chkd.maps.NewMap(Sc::Terrain::Tileset::Jungle, 96, 96, Sc::Isom::Brush::Jungle::Default);
         //map->addUnit(Chk::Unit {map->getNextClassId(), 192, 64, Sc::Unit::Type::StartLocation, 0, 0, 0, Sc::Player::Id::Player2});
@@ -880,17 +878,20 @@ bool Chkdraft::CreateSubWindows()
         DragAcceptFiles(hWnd, TRUE);
         int statusWidths[] = { 130, 205, 350, 450, 600, -1 };
 
-        return mainMenu.FindThis(hWnd) &&
+        if ( mainMenu.FindThis(hWnd) &&
             mainToolbar.CreateThis(hWnd, Id::IDR_MAIN_TOOLBAR) &&
             statusBar.CreateThis(sizeof(statusWidths) / sizeof(int), statusWidths, 0,
                 WS_CHILD | WS_VISIBLE | SBARS_SIZEGRIP, hWnd, (HMENU)Id::IDR_MAIN_STATUS) &&
             mainPlot.CreateThis(hWnd, Id::IDR_MAIN_PLOT) &&
             BecomeMDIFrame(maps, GetSubMenu(GetMenu(hWnd), 6), Id::ID_MDI_FIRSTCHILD,
                 WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_VSCROLL | WS_HSCROLL,
-                0, 0, 0, 0, (HMENU)Id::IDR_MAIN_MDI);
+                0, 0, 0, 0, (HMENU)Id::IDR_MAIN_MDI) )
+        {
+            mainPlot.leftBar.SetWidth(360);
+            return true;
+        }
     }
-    else
-        return false;
+    return false;
 }
 
 void Chkdraft::MinimizeDialogs()
