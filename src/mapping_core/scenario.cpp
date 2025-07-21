@@ -7888,7 +7888,7 @@ uint16_t Scenario::countNeighborMatches(const Sc::Isom::ShapeLinks & shapeLinks,
     uint16_t totalMatches = 0;
     for ( auto quadrant : Sc::Isom::quadrants ) // For each quadrant in the shape (and each neighbor which overlaps with said quadrant)
     {
-        const auto & neighborShape = isomLinks[neighbors[quadrant].isomValue];
+        const auto & neighborShape = isomLinks[neighbors[quadrant].isomValue < isomLinks.size() ? neighbors[quadrant].isomValue : 0];
         auto neighborTerrainType = neighborShape.terrainType;
         auto neighborLinkId = neighbors[quadrant].linkId;
         auto quadrantLinkId = shapeLinks.getLinkId(quadrant);
