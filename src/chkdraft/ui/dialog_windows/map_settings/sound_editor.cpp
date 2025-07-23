@@ -25,7 +25,7 @@ enum_t(Id, u32, {
     DROP_CUSTOMMPQPATH
 });
 
-SoundEditorWindow::SoundEditorWindow() : wavQuality(WavQuality::Uncompressed), selectedSoundListIndex(-1), soundListDc(std::nullopt)
+SoundEditorWindow::SoundEditorWindow() : wavQuality(WavQuality::Uncompressed), selectedSoundEntry(-1), soundListDc(std::nullopt)
 {
 
 }
@@ -54,19 +54,28 @@ bool SoundEditorWindow::DestroyThis()
 {
     ClassWindow::DestroyThis();
     this->wavQuality = WavQuality::Uncompressed;
-    this->selectedSoundListIndex = -1;
+    this->selectedSoundEntry = -1;
     this->soundListDc = std::nullopt;
     return true;
 }
 
 void SoundEditorWindow::RefreshWindow()
 {
-    soundMap.clear();
+    soundEntries.clear();
+    std::unordered_set<u32> foundSoundStringIds {};
+    std::unordered_set<std::string> foundSoundPaths {};
     for ( size_t i=0; i<Chk::TotalSounds; i++ )
     {
         size_t soundStringId = CM->getSoundStringId(i);
-        if ( soundStringId != Chk::StringId::UnusedSound )
-            soundMap.insert(std::pair<u32, u16>((u32)soundStringId, (u16)i));
+        if ( soundStringId != Chk::StringId::UnusedSound && !foundSoundStringIds.contains(soundStringId) )
+        {
+            foundSoundStringIds.insert(soundStringId);
+            auto soundPath = CM->getString<RawString>(soundStringId, Chk::Scope::Game);
+            if ( soundPath && !soundPath->empty() )
+                foundSoundPaths.insert(*soundPath);
+
+            soundEntries.push_back(SoundEntry{.soundPath = *soundPath, .stringId = u32(soundStringId), .soundIndex = u16(i)});
+        }
     }
     for ( size_t i=0; i<CM->numTriggers(); i++ )
     {
@@ -77,7 +86,16 @@ void SoundEditorWindow::RefreshWindow()
                 trigger.actions[actionIndex].actionType == Chk::Action::Type::Transmission) &&
                 trigger.actions[actionIndex].soundStringId != Chk::StringId::NoString )
             {
-                soundMap.insert(std::pair<u32, u16>((u32)trigger.actions[actionIndex].soundStringId, u16_max));
+                size_t soundStringId = trigger.actions[actionIndex].soundStringId;
+                if ( soundStringId != Chk::StringId::UnusedSound && !foundSoundStringIds.contains(soundStringId) )
+                {
+                    foundSoundStringIds.insert(soundStringId);
+                    auto soundPath = CM->getString<RawString>(soundStringId, Chk::Scope::Game);
+                    if ( soundPath && !soundPath->empty() )
+                        foundSoundPaths.insert(*soundPath);
+
+                    soundEntries.push_back(SoundEntry{.soundPath = *soundPath, .stringId = u32(soundStringId), .soundIndex = u16_max});
+                }
             }
         }
     }
@@ -90,24 +108,78 @@ void SoundEditorWindow::RefreshWindow()
                 trigger.actions[actionIndex].actionType == Chk::Action::Type::BriefingTransmission) &&
                 trigger.actions[actionIndex].soundStringId != Chk::StringId::NoString )
             {
-                soundMap.insert(std::pair<u32, u16>((u32)trigger.actions[actionIndex].soundStringId, u16_max));
+                size_t soundStringId = trigger.actions[actionIndex].soundStringId;
+                if ( soundStringId != Chk::StringId::UnusedSound && !foundSoundStringIds.contains(soundStringId) )
+                {
+                    foundSoundStringIds.insert(soundStringId);
+                    auto soundPath = CM->getString<RawString>(soundStringId, Chk::Scope::Game);
+                    if ( soundPath && !soundPath->empty() )
+                        foundSoundPaths.insert(*soundPath);
+
+                    soundEntries.push_back(SoundEntry{.soundPath = *soundPath, .stringId = u32(soundStringId), .soundIndex = u16_max});
+                }
+            }
+        }
+    }
+    const auto & modifiedAssets = CM->getModifiedAssets();
+    for ( auto & modifiedAsset : modifiedAssets )
+    {
+        if ( modifiedAsset.actionTaken == AssetAction::Add )
+        {
+            const std::string & assetMpqPath = modifiedAsset.assetMpqPath;
+            if ( !assetMpqPath.empty() && !foundSoundPaths.contains(assetMpqPath) )
+            {
+                foundSoundPaths.insert(assetMpqPath);
+                soundEntries.push_back(SoundEntry{.soundPath = assetMpqPath, .stringId = Chk::StringId::NoString, .soundIndex = u16_max});
+            }
+        }
+    }
+
+    auto listFile = CM->getListfile();
+    if ( listFile )
+    {
+        for ( auto & entry : (*listFile) )
+        {
+            std::string archivePath = fixArchivePathSeparators(entry);
+            if ( !archivePath.empty() && !foundSoundPaths.contains(archivePath) )
+            {
+                std::string lCase = archivePath;
+                for ( auto & c : lCase )
+                    c = std::tolower(c);
+
+                if ( lCase.compare(makeExtArchiveFilePath(makeArchiveFilePath("staredit", "scenario"), "chk")) == 0 )
+                    continue;
+
+                bool alreadyRemoved = false;
+                for ( const auto & modifiedAsset : modifiedAssets )
+                {
+                    if ( modifiedAsset.actionTaken == AssetAction::Remove && archivePath.compare(modifiedAsset.assetMpqPath) == 0 )
+                    {
+                        alreadyRemoved = true;
+                        break;
+                    }
+                }
+
+                if ( !alreadyRemoved )
+                {
+                    foundSoundPaths.insert(archivePath);
+                    soundEntries.push_back(SoundEntry{.soundPath = archivePath, .stringId = Chk::StringId::NoString, .soundIndex = u16_max});
+                }
             }
         }
     }
 
     listMapSounds.SetRedraw(false);
     listMapSounds.ClearItems();
-    for ( auto pair : soundMap )
-    {
-        u32 soundStringId = pair.first;
-        listMapSounds.AddItem(soundStringId);
-    }
+    for ( std::size_t i=0; i<soundEntries.size(); ++i )
+        listMapSounds.AddItem(static_cast<LPARAM>(i));
+
     listMapSounds.SetRedraw(true);
 
-    if ( selectedSoundListIndex > 0 && selectedSoundListIndex < listMapSounds.GetNumItems() )
-        listMapSounds.SetCurSel(selectedSoundListIndex);
+    if ( selectedSoundEntry >= 0 && selectedSoundEntry < soundEntries.size() && selectedSoundEntry < listMapSounds.GetNumItems() )
+        listMapSounds.SetCurSel(selectedSoundEntry);
 
-    if ( selectedSoundListIndex == -1 )
+    if ( selectedSoundEntry == -1 )
     {
         buttonDeleteSound.DisableThis();
         buttonExtractSound.DisableThis();
@@ -126,19 +198,34 @@ void SoundEditorWindow::RefreshWindow()
 
 void SoundEditorWindow::UpdateWindowText()
 {
-    LPARAM soundStringId = 0;
-    if ( selectedSoundListIndex >= 0 && listMapSounds.GetItemData(selectedSoundListIndex, soundStringId) )
+    if ( selectedSoundEntry >= 0 && selectedSoundEntry < soundEntries.size() )
     {
-        u16 soundIndex = u16_max;
-        auto soundEntry = soundMap.find(u32(soundStringId));
-        if ( soundEntry != soundMap.end() )
-            soundIndex = soundEntry->second;
-
+        const auto & soundEntry = soundEntries[selectedSoundEntry];
+        std::size_t soundStringId = soundEntry.stringId;
         SoundStatus soundStatus = CM->getSoundStatus(size_t(soundStringId));
 
         std::string soundStatusString = "";
         if ( soundStatus == SoundStatus::NoMatch )
-            soundStatusString = ", Status: No Matching Sound File";
+        {
+            if ( soundStringId == Chk::StringId::NoString )
+            {
+                const auto & modifiedAssets = CM->getModifiedAssets();
+                bool isModifiedAsset = false;
+                for ( const ModifiedAsset & modifiedAsset : modifiedAssets )
+                {
+                    if ( modifiedAsset.actionTaken == AssetAction::Add && soundEntry.soundPath.compare(modifiedAsset.assetMpqPath) == 0 )
+                    {
+                        soundStatusString = ", Status: Unreferenced Pending Asset";
+                        isModifiedAsset = true;
+                        break;
+                    }
+                }
+                if ( !isModifiedAsset )
+                    soundStatusString = ", Status: Unreferenced File In Map";
+            }
+            else
+                soundStatusString = ", Status: No Matching Sound File";
+        }
         else if ( soundStatus == SoundStatus::NoMatchExtended )
             soundStatusString = ", Status: Extended, cannot match";
         else if ( soundStatus == SoundStatus::FileInUse )
@@ -152,13 +239,13 @@ void SoundEditorWindow::UpdateWindowText()
         else if ( soundStatus == SoundStatus::PendingMatch )
             soundStatusString = ", Status: Matches Pending Asset";
 
-        if ( soundIndex == u16_max )
+        if ( soundEntry.soundIndex == u16_max )
         {
             chkd.mapSettingsWindow.SetWinText("Map Settings - [Sound #null, String #" + std::to_string(soundStringId) + soundStatusString + "]");
         }
         else
         {
-            chkd.mapSettingsWindow.SetWinText("Map Settings - [Sound #" + std::to_string(soundIndex) + ", String #" + std::to_string(soundStringId) + soundStatusString + "]");
+            chkd.mapSettingsWindow.SetWinText("Map Settings - [Sound #" + std::to_string(soundEntry.soundIndex) + ", String #" + std::to_string(soundStringId) + soundStatusString + "]");
         }
     }
     else
@@ -189,10 +276,9 @@ void SoundEditorWindow::UpdateCustomStringList()
 
 void SoundEditorWindow::PlaySoundButtonPressed() // TODO: Support for playing and stopping oggs
 {
-    LPARAM soundStringId = 0;
-    if ( selectedSoundListIndex >= 0 && listMapSounds.GetItemData(selectedSoundListIndex, soundStringId) )
+    if ( selectedSoundEntry >= 0 && selectedSoundEntry < soundEntries.size() )
     {
-        if ( auto soundData = CM->getSound(size_t(soundStringId)) ) // Non-virtual sound
+        if ( auto soundData = CM->getSound(soundEntries[selectedSoundEntry].soundPath) ) // Non-virtual sound
         {
 #ifdef UNICODE
             PlaySoundW((LPCTSTR)&soundData.value()[0], NULL, SND_ASYNC|SND_MEMORY);
@@ -200,7 +286,7 @@ void SoundEditorWindow::PlaySoundButtonPressed() // TODO: Support for playing an
             PlaySoundA((LPCTSTR)&soundData.value()[0], NULL, SND_ASYNC|SND_MEMORY);
 #endif
         }
-        else if ( auto soundString = CM->getString<RawString>(size_t(soundStringId)) ) // Might be a virtual sound
+        else if ( auto soundString = CM->getString<RawString>(soundEntries[selectedSoundEntry].stringId) ) // Might be a virtual sound
         {
             if ( CM->isInVirtualSoundList(*soundString) ) // Is a virtual sound
             {
@@ -251,20 +337,19 @@ void SoundEditorWindow::PlayVirtualSoundButtonPressed()
 
 void SoundEditorWindow::ExtractSoundButtonPressed()
 {
-    if ( !listMapSounds.GetCurSel(selectedSoundListIndex) )
-        selectedSoundListIndex = -1;
+    if ( !listMapSounds.GetCurSel(selectedSoundEntry) )
+        selectedSoundEntry = -1;
 
-    LPARAM soundStringId = 0;
-    if ( selectedSoundListIndex >= 0 && listMapSounds.GetItemData(selectedSoundListIndex, soundStringId) )
+    if ( selectedSoundEntry >= 0 && selectedSoundEntry < soundEntries.size() )
     {
-        if ( auto soundArchivePath = CM->getString<RawString>(size_t(soundStringId)) )
+        if ( auto soundArchivePath = CM->getString<RawString>(size_t(soundEntries[selectedSoundEntry].stringId)) )
         {
             u32 filterIndex = 0;
             std::string saveFilePath = getArchiveFileName(*soundArchivePath);
             FileBrowserPtr<u32> fileBrowser = getDefaultSoundSaver();
             if ( fileBrowser->browseForSavePath(saveFilePath, filterIndex) )
             {
-                SoundStatus soundStatus = CM->getSoundStatus(size_t(soundStringId));
+                SoundStatus soundStatus = CM->getSoundStatus(size_t(soundEntries[selectedSoundEntry].stringId));
                 if ( soundStatus == SoundStatus::VirtualFile )
                 {
                     if ( !Sc::Data::ExtractAsset(*soundArchivePath, saveFilePath, Sc::DataFile::BrowserPtr(new ChkdDataFileBrowser()),
@@ -414,10 +499,10 @@ void SoundEditorWindow::MapSoundSelectionChanged()
 {
     listVirtualSounds.ClearSel();
     buttonPreviewPlaySound.DisableThis();
-    if ( !listMapSounds.GetCurSel(selectedSoundListIndex) )
-        selectedSoundListIndex = -1;
+    if ( !listMapSounds.GetCurSel(selectedSoundEntry) )
+        selectedSoundEntry = -1;
 
-    if ( selectedSoundListIndex == -1 )
+    if ( selectedSoundEntry == -1 )
     {
         buttonDeleteSound.DisableThis();
         buttonExtractSound.DisableThis();
@@ -427,9 +512,9 @@ void SoundEditorWindow::MapSoundSelectionChanged()
     {
         buttonDeleteSound.EnableThis();
         LPARAM soundStringId = 0;
-        if ( selectedSoundListIndex >= 0 && listMapSounds.GetItemData(selectedSoundListIndex, soundStringId) )
+        if ( selectedSoundEntry >= 0 && selectedSoundEntry < soundEntries.size() )
         {
-            if ( !CM->stringIsSound(size_t(soundStringId)) )
+            if ( !CM->stringIsSound(size_t(soundEntries[selectedSoundEntry].stringId)) )
                 buttonDeleteSound.DisableThis();
 
             SoundStatus soundStatus = CM->getSoundStatus(size_t(soundStringId));
@@ -444,7 +529,7 @@ void SoundEditorWindow::MapSoundSelectionChanged()
 
 void SoundEditorWindow::VirtualSoundSelectionChanged()
 {
-    selectedSoundListIndex = -1;
+    selectedSoundEntry = -1;
     listMapSounds.ClearSel();
     buttonPlaySound.DisableThis();
     UpdateWindowText();
@@ -473,52 +558,55 @@ void SoundEditorWindow::StopSoundsButtonPressed()
 
 void SoundEditorWindow::DeleteSoundButtonPressed()
 {
-    LPARAM soundStringId = 0;
-    if ( listMapSounds.GetItemData(selectedSoundListIndex, soundStringId) )
+    if ( selectedSoundEntry >= 0 && selectedSoundEntry < soundEntries.size() )
     {
+        const auto & soundEntry = soundEntries[selectedSoundEntry];
+        std::size_t soundStringId = soundEntry.stringId;
         bool soundStringIdIsUsed = false;
-        for ( size_t i=0; i<CM->numTriggers(); i++ )
+        if ( soundStringId != Chk::StringId::NoString )
         {
-            const Chk::Trigger & trigger = CM->getTrigger(i);
-            for ( size_t actionIndex = 0; actionIndex < Chk::Trigger::MaxActions; actionIndex++ )
+            for ( size_t i=0; i<CM->numTriggers(); i++ )
             {
-                if ( (trigger.actions[actionIndex].actionType == Chk::Action::Type::PlaySound ||
-                    trigger.actions[actionIndex].actionType == Chk::Action::Type::Transmission) &&
-                    trigger.actions[actionIndex].soundStringId == u32(soundStringId) )
-                {
-                    soundStringIdIsUsed = true;
-                    i = CM->numTriggers();
-                    break;
-                }
-            }
-        }
-        if ( !soundStringIdIsUsed )
-        {
-            for ( size_t i=0; i<CM->numBriefingTriggers(); i++ )
-            {
-                const Chk::Trigger & trigger = CM->getBriefingTrigger(i);
+                const Chk::Trigger & trigger = CM->getTrigger(i);
                 for ( size_t actionIndex = 0; actionIndex < Chk::Trigger::MaxActions; actionIndex++ )
                 {
-                    if ( (trigger.actions[actionIndex].actionType == Chk::Action::Type::BriefingPlaySound ||
-                        trigger.actions[actionIndex].actionType == Chk::Action::Type::BriefingTransmission) &&
+                    if ( (trigger.actions[actionIndex].actionType == Chk::Action::Type::PlaySound ||
+                        trigger.actions[actionIndex].actionType == Chk::Action::Type::Transmission) &&
                         trigger.actions[actionIndex].soundStringId == u32(soundStringId) )
                     {
                         soundStringIdIsUsed = true;
-                        i = CM->numBriefingTriggers();
+                        i = CM->numTriggers();
                         break;
+                    }
+                }
+            }
+            if ( !soundStringIdIsUsed )
+            {
+                for ( size_t i=0; i<CM->numBriefingTriggers(); i++ )
+                {
+                    const Chk::Trigger & trigger = CM->getBriefingTrigger(i);
+                    for ( size_t actionIndex = 0; actionIndex < Chk::Trigger::MaxActions; actionIndex++ )
+                    {
+                        if ( (trigger.actions[actionIndex].actionType == Chk::Action::Type::BriefingPlaySound ||
+                            trigger.actions[actionIndex].actionType == Chk::Action::Type::BriefingTransmission) &&
+                            trigger.actions[actionIndex].soundStringId == u32(soundStringId) )
+                        {
+                            soundStringIdIsUsed = true;
+                            i = CM->numBriefingTriggers();
+                            break;
+                        }
                     }
                 }
             }
         }
 
-
         if ( soundStringIdIsUsed )
         {
-            SoundStatus soundStatus = CM->getSoundStatus(size_t(soundStringId));
+            SoundStatus soundStatus = CM->getSoundStatus(soundStringId);
             if ( soundStatus == SoundStatus::NoMatch || soundStatus == SoundStatus::NoMatchExtended )
             {
-                selectedSoundListIndex = -1;
-                CM->removeSoundByStringId(size_t(soundStringId), true);
+                selectedSoundEntry = -1;
+                CM->removeSoundByStringId(soundStringId, true);
                 CM->refreshScenario();
             }
             else
@@ -536,16 +624,20 @@ void SoundEditorWindow::DeleteSoundButtonPressed()
 
                 if ( WinLib::GetYesNo(warningMessage, "Warning!") == WinLib::PromptResult::Yes )
                 {
-                    selectedSoundListIndex = -1;
-                    CM->removeSoundByStringId(size_t(soundStringId), true);
+                    selectedSoundEntry = -1;
+                    CM->removeSoundByStringId(soundStringId, true);
                     CM->refreshScenario();
                 }
             }
         }
         else
         {
-            selectedSoundListIndex = -1;
-            CM->removeSoundByStringId(size_t(soundStringId), false);
+            if ( soundStringId == Chk::StringId::NoString )
+                CM->removeAsset(soundEntry.soundPath);
+            else
+                CM->removeSoundByStringId(soundStringId, false);
+
+            selectedSoundEntry = -1;
             CM->refreshScenario();
         }
         CM->deleteUnusedStrings(Chk::Scope::Both);
@@ -579,16 +671,20 @@ LRESULT SoundEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
         case WM_MEASUREITEM:
         {
             MEASUREITEMSTRUCT* mis = (MEASUREITEMSTRUCT*)lParam;
-            auto str = CM->getString<RawString>((size_t)mis->itemData);
-            if ( str && GetStringDrawSize(*soundListDc, mis->itemWidth, mis->itemHeight, *str) )
+            auto soundEntryIndex = size_t(mis->itemData);
+            if ( soundEntryIndex >= 0 && soundEntryIndex < soundEntries.size() )
             {
-                mis->itemWidth += 5;
-                mis->itemHeight += 2;
+                const auto & soundPath = soundEntries[soundEntryIndex].soundPath;
+                if ( !soundPath.empty() && GetStringDrawSize(*soundListDc, mis->itemWidth, mis->itemHeight, soundPath) )
+                {
+                    mis->itemWidth += 5;
+                    mis->itemHeight += 2;
 
-                if ( mis->itemHeight > 255 )
-                    mis->itemHeight = 255;
+                    if ( mis->itemHeight > 255 )
+                        mis->itemHeight = 255;
+                }
+                return TRUE;
             }
-            return TRUE;
         }
         break;
 
@@ -609,13 +705,17 @@ LRESULT SoundEditorWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
             if ( pdis->itemID != -1 && ( drawSelection || drawEntire ) )
             {
                 WinLib::DeviceContext dc { pdis->hDC };
-                auto str = CM->getString<RawString>((size_t)pdis->itemData);
-                if ( CM != nullptr && str )
+                auto soundEntryIndex = size_t(pdis->itemData);
+                if ( soundEntryIndex >= 0 && soundEntryIndex < soundEntries.size() )
                 {
-                    dc.fillRect(pdis->rcItem, RGB(0, 0, 0)); // Same color as in WM_CTLCOLORLISTBOX
-                    SetBkMode(pdis->hDC, TRANSPARENT);
-                    DrawString(dc, pdis->rcItem.left+3, pdis->rcItem.top+1, pdis->rcItem.right-pdis->rcItem.left,
-                        RGB(16, 252, 24), *str);
+                    const auto & soundPath = soundEntries[soundEntryIndex].soundPath;
+                    if ( CM != nullptr && !soundPath.empty() )
+                    {
+                        dc.fillRect(pdis->rcItem, RGB(0, 0, 0)); // Same color as in WM_CTLCOLORLISTBOX
+                        SetBkMode(pdis->hDC, TRANSPARENT);
+                        DrawString(dc, pdis->rcItem.left+3, pdis->rcItem.top+1, pdis->rcItem.right-pdis->rcItem.left,
+                            RGB(16, 252, 24), soundPath);
+                    }
                 }
                 if ( isSelected )
                     DrawFocusRect(pdis->hDC, &pdis->rcItem);

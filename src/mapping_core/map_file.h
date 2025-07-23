@@ -40,19 +40,23 @@ struct MapFile : Scenario, MpqFile // MapFile is a scenario file and usually an 
     bool addMpqAsset(const std::string & assetMpqFilePath, const std::vector<u8> & asset, WavQuality wavQuality);
     void removeMpqAsset(const std::string & assetMpqFilePath);
     std::optional<std::vector<u8>> getMpqAsset(const std::string & assetMpqFilePath);
+    std::optional<std::vector<std::string>> getListfile();
     bool extractMpqAsset(const std::string & assetMpqFilePath, const std::string & systemFilePath);
-
+    
     std::optional<std::vector<u8>> getSound(size_t stringId);
+    std::optional<std::vector<u8>> getSound(const std::string & soundPath);
     bool addSound(size_t stringId); // Adds a sound string to the sound list
     bool addSound(const std::string & srcFilePath, WavQuality wavQuality, bool virtualFile);
     bool addSound(const std::string & srcFilePath, const std::string & destMpqPath, WavQuality wavQuality, bool virtualFile);
     bool addSound(const std::string & destMpqPath, const std::vector<u8> & soundContents, WavQuality wavQuality);
     bool removeSoundBySoundIndex(u16 soundIndex, bool removeIfUsed);
     bool removeSoundByStringId(size_t stringId, bool removeIfUsed);
+    bool removeAsset(const std::string & assetPath);
     SoundStatus getSoundStatus(size_t soundStringId);
     bool getSoundStatuses(std::map<size_t/*stringId*/, SoundStatus> & outSoundStatus, bool includePureStringSounds);
     bool isInVirtualSoundList(const std::string & soundMpqPath) const;
 
+    const std::vector<ModifiedAsset> & getModifiedAssets();
     std::string getFileName() const;
     const std::string & getFilePath() const override;
 

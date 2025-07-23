@@ -466,6 +466,7 @@ void Chkdraft::KeyListener(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                     case VK_DELETE: if ( CM != nullptr ) CM->deleteSelection(); return; break;
                     case VK_ESCAPE: if ( CM != nullptr ) { maps.endPaste(); CM->clearSelection(); } return; break;
                     case VK_RETURN: if ( CM != nullptr ) CM->ReturnKeyPress(); return; break;
+                    //case VK_F5: if ( CM != nullptr ) CM->printChangeHistory(); return; break;
                 }
 
                 if ( GetKeyState(VK_CONTROL) & 0x8000 ) // Control is down

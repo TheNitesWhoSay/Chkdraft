@@ -504,6 +504,20 @@ std::optional<std::vector<u8>> MapFile::getMpqAsset(const std::string & assetMpq
     return std::nullopt;
 }
 
+std::optional<std::vector<std::string>> MapFile::getListfile()
+{
+    if ( MpqFile::isOpen() )
+        return MpqFile::getListfile();
+    else if ( MpqFile::open(mapFilePath, true, false) )
+    {
+        auto result = MpqFile::getListfile();
+        MpqFile::close();
+        return result;
+    }
+    else
+        return std::nullopt;
+}
+
 bool MapFile::extractMpqAsset(const std::string & assetMpqFilePath, const std::string & systemFilePath)
 {
     if ( auto asset = getMpqAsset(assetMpqFilePath) )
@@ -520,6 +534,14 @@ std::optional<std::vector<u8>> MapFile::getSound(size_t stringId)
 {
     if ( auto soundString = Scenario::getString<RawString>(stringId) )
         return getMpqAsset(*soundString);
+    else
+        return std::nullopt;
+}
+
+std::optional<std::vector<u8>> MapFile::getSound(const std::string & soundPath)
+{
+    if ( !soundPath.empty() )
+        return getMpqAsset(soundPath);
     else
         return std::nullopt;
 }
@@ -544,6 +566,7 @@ bool MapFile::addSound(const std::string & srcFilePath, WavQuality wavQuality, b
 
 bool MapFile::addSound(const std::string & srcFilePath, const std::string & destMpqPath, WavQuality wavQuality, bool virtualFile)
 {
+    auto edit = createAction(ActionDescriptor::AddSound);
     if ( virtualFile )
     {
         size_t soundStringId = Scenario::addString(RawString(srcFilePath), Chk::Scope::Game);
@@ -615,9 +638,21 @@ bool MapFile::removeSoundByStringId(size_t soundStringId, bool removeIfUsed)
     return false;
 }
 
+bool MapFile::removeAsset(const std::string & assetPath)
+{
+    if ( !assetPath.empty() )
+    {
+        removeMpqAsset(assetPath);
+        return true;
+    }
+    return false;
+}
+
 SoundStatus MapFile::getSoundStatus(size_t soundStringId)
 {
-    if ( Scenario::stringUsed(soundStringId, Chk::Scope::Either, Chk::Scope::Editor) &&
+    if ( soundStringId == Chk::StringId::NoString )
+        return SoundStatus::NoMatch;
+    else if ( Scenario::stringUsed(soundStringId, Chk::Scope::Either, Chk::Scope::Editor) &&
         !Scenario::stringUsed(soundStringId, Chk::Scope::Either, Chk::Scope::Game) )
         return SoundStatus::NoMatch; // Extended strings are not used in SC and therefore never match
     else
@@ -739,6 +774,11 @@ bool MapFile::isInVirtualSoundList(const std::string & soundMpqPath) const
         }
     }
     return false;
+}
+
+const std::vector<ModifiedAsset> & MapFile::getModifiedAssets()
+{
+    return modifiedAssets;
 }
 
 std::string MapFile::getFileName() const

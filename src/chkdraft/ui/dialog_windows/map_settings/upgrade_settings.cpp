@@ -484,6 +484,7 @@ LRESULT UpgradeSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 LRESULT state = SendMessage((HWND)lParam, BM_GETCHECK, 0, 0);
                 int player = LOWORD(wParam) - Id::ID_CHECK_DEFAULTUPGRADEP1;
                 bool useDefault = (state == BST_CHECKED);
+                auto edit = CM->operator()(ActionDescriptor::SetPlayerUsesDefaultUpgradeLeveling);
                 CM->setPlayerUsesDefaultUpgradeLeveling((Sc::Upgrade::Type)selectedUpgrade, player, useDefault);
                 if ( state != BST_CHECKED )
                 {

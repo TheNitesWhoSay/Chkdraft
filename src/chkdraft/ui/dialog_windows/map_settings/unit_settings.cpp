@@ -743,11 +743,13 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 CM->setPlayerUsesDefaultUnitBuildability(selectedUnitType, player, true);
             else if ( sel == 1 ) // Yes
             {
+                auto action = CM->operator()(ActionDescriptor::SetUnitTypeBuildable);
                 CM->setPlayerUsesDefaultUnitBuildability(selectedUnitType, player, false);
                 CM->setUnitBuildable(selectedUnitType, player, true);
             }
             else if ( sel == 2 ) // No
             {
+                auto action = CM->operator()(ActionDescriptor::SetUnitTypeBuildable);
                 CM->setPlayerUsesDefaultUnitBuildability(selectedUnitType, player, false);
                 CM->setUnitBuildable(selectedUnitType, player, false);
             }

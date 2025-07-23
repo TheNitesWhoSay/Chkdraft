@@ -190,6 +190,34 @@ bool MpqFile::findFile(const std::string & filePath, const std::string & mpqPath
     return success;
 }
 
+std::optional<std::vector<std::string>> MpqFile::getListfile() const
+{
+    if ( isOpen() )
+    {
+        auto listFile = getFile("(listfile)");
+        if ( listFile )
+        {
+            auto result = std::make_optional<std::vector<std::string>>();
+            auto & listFileBytes = *listFile;
+            std::size_t entryStart = 0;
+            std::size_t size = listFile->size();
+            for ( std::size_t i=0; i<size; ++i )
+            {
+                char c = char(listFileBytes[i]);
+                if ( c == '\r' || c == '\n' )
+                {
+                    if ( i > entryStart )
+                        result->emplace_back((const char*)&listFileBytes[entryStart], i-entryStart);
+                    
+                    entryStart = i+1;
+                }
+            }
+            return result;
+        }
+    }
+    return std::nullopt;
+}
+
 size_t MpqFile::getFileSize(const std::string & mpqPath) const
 {
     if ( isOpen() )
