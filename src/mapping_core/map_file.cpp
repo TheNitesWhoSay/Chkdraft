@@ -337,7 +337,6 @@ bool MapFile::processModifiedAssets(bool updateListFile)
             {
                 if ( auto assetBuffer = temporaryMpq.getFile(modifiedAsset->assetTempMpqPath) )
                 {
-                    temporaryMpq.removeFile(modifiedAsset->assetTempMpqPath);
                     if ( MpqFile::addFile(assetMpqPath, *assetBuffer, modifiedAsset->wavQualitySelected) )
                         processedAssets.push_back(modifiedAsset);
                     else
@@ -357,8 +356,6 @@ bool MapFile::processModifiedAssets(bool updateListFile)
                 }
             }
         }
-        temporaryMpq.setUpdatingListFile(updateListFile);
-        temporaryMpq.save();
     }
 
     if ( processedAssets.size() == modifiedAssets.size() )
@@ -473,13 +470,6 @@ void MapFile::removeMpqAsset(const std::string & assetMpqFilePath)
 
         // Remove the asset from the list of assets to be added to the actual map file
         modifiedAssets.erase(recentlyAddedAsset);
-
-        // Try to remove it from the temporary file for some short-term disk saving; ignore errors, if any
-        if ( openTemporaryMpq() )
-        {
-            temporaryMpq.removeFile(tempMpqFilePath);
-            temporaryMpq.save();
-        }
     }
     else // The given file was not added recently, mark it for deletion at the next save
         modifiedAssets.push_back(ModifiedAsset(assetMpqFilePath, AssetAction::Remove));
@@ -616,6 +606,11 @@ bool MapFile::removeSoundBySoundIndex(u16 soundIndex, bool removeIfUsed)
         Scenario::setSoundStringId(soundIndex, 0);
         if ( soundString )
         {
+            if ( auto asset = getMpqAsset(*soundString) )
+            {
+                if ( temporaryMpq.open(temporaryMpqPath, false, true) )
+                    temporaryMpq.addFile(*soundString, *asset);
+            }
             Scenario::deleteString(soundStringId);
             removeMpqAsset(*soundString);
         }
@@ -631,7 +626,14 @@ bool MapFile::removeSoundByStringId(size_t soundStringId, bool removeIfUsed)
         auto soundString = Scenario::getString<RawString>(soundStringId, Chk::Scope::Game);
         Scenario::deleteString(soundStringId);
         if ( soundString )
+        {
+            if ( auto asset = getMpqAsset(*soundString) )
+            {
+                if ( temporaryMpq.open(temporaryMpqPath, false, true) )
+                    temporaryMpq.addFile(*soundString, *asset);
+            }
             removeMpqAsset(*soundString);
+        }
 
         return true;
     }
@@ -642,6 +644,11 @@ bool MapFile::removeAsset(const std::string & assetPath)
 {
     if ( !assetPath.empty() )
     {
+        if ( auto asset = getMpqAsset(assetPath) )
+        {
+            if ( temporaryMpq.open(temporaryMpqPath, false, true) )
+                temporaryMpq.addFile(assetPath, *asset);
+        }
         removeMpqAsset(assetPath);
         return true;
     }
