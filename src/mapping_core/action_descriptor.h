@@ -192,6 +192,7 @@ enum class ActionDescriptor
     RescopeString,
     // Sounds
     AddSound,
+    RemoveSound,
     // CUWPs
     AddCuwp,
     SetCuwp,

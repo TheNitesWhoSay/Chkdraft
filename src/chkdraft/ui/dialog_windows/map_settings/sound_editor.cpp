@@ -74,7 +74,7 @@ void SoundEditorWindow::RefreshWindow()
             if ( soundPath && !soundPath->empty() )
                 foundSoundPaths.insert(*soundPath);
 
-            soundEntries.push_back(SoundEntry{.soundPath = *soundPath, .stringId = u32(soundStringId), .soundIndex = u16(i)});
+            soundEntries.push_back(SoundEntry{.soundPath = soundPath ? *soundPath : std::string{}, .stringId = u32(soundStringId), .soundIndex = u16(i)});
         }
     }
     for ( size_t i=0; i<CM->numTriggers(); i++ )
@@ -94,7 +94,7 @@ void SoundEditorWindow::RefreshWindow()
                     if ( soundPath && !soundPath->empty() )
                         foundSoundPaths.insert(*soundPath);
 
-                    soundEntries.push_back(SoundEntry{.soundPath = *soundPath, .stringId = u32(soundStringId), .soundIndex = u16_max});
+                    soundEntries.push_back(SoundEntry{.soundPath = soundPath ? *soundPath : std::string{}, .stringId = u32(soundStringId), .soundIndex = u16_max});
                 }
             }
         }
@@ -116,7 +116,7 @@ void SoundEditorWindow::RefreshWindow()
                     if ( soundPath && !soundPath->empty() )
                         foundSoundPaths.insert(*soundPath);
 
-                    soundEntries.push_back(SoundEntry{.soundPath = *soundPath, .stringId = u32(soundStringId), .soundIndex = u16_max});
+                    soundEntries.push_back(SoundEntry{.soundPath = soundPath ? *soundPath : std::string{}, .stringId = u32(soundStringId), .soundIndex = u16_max});
                 }
             }
         }
@@ -396,6 +396,9 @@ void SoundEditorWindow::BrowseButtonPressed()
 
 void SoundEditorWindow::AddFileButtonPressed()
 {
+    auto edit = CM->operator()(ActionDescriptor::AddSound);
+    std::size_t actionIndex = CM->getPendingActionIndex();
+
     bool useVirtualFile = checkVirtualFile.isChecked();
     bool useCustomMpqString = checkCustomMpqString.isChecked();
     int sel = dropCustomMpqString.GetSel();
@@ -406,7 +409,7 @@ void SoundEditorWindow::AddFileButtonPressed()
         return;
     }
 
-    bool addedSound = false;
+    std::optional<AssetDescriptor> addedSound {};
     auto filePath = editFileName.GetWinText();
     if ( useVirtualFile && CM->isInVirtualSoundList(*filePath) )
     {
@@ -445,6 +448,9 @@ void SoundEditorWindow::AddFileButtonPressed()
 
     if ( addedSound )
     {
+        if ( !addedSound->mpqPath.empty() && !addedSound->tempMpqPath.empty() )
+            CM->addActionSoundDescriptor(actionIndex, *addedSound);
+
         editFileName.SetText("");
         CM->refreshScenario();
     }
@@ -560,6 +566,9 @@ void SoundEditorWindow::DeleteSoundButtonPressed()
 {
     if ( selectedSoundEntry >= 0 && selectedSoundEntry < soundEntries.size() )
     {
+        auto edit = CM->operator()(ActionDescriptor::RemoveSound);
+        std::size_t actionIndex = CM->getPendingActionIndex();
+
         const auto & soundEntry = soundEntries[selectedSoundEntry];
         std::size_t soundStringId = soundEntry.stringId;
         bool soundStringIdIsUsed = false;
@@ -606,8 +615,13 @@ void SoundEditorWindow::DeleteSoundButtonPressed()
             if ( soundStatus == SoundStatus::NoMatch || soundStatus == SoundStatus::NoMatchExtended )
             {
                 selectedSoundEntry = -1;
-                CM->removeSoundByStringId(soundStringId, true);
-                CM->refreshScenario();
+                if ( auto soundDescriptor = CM->removeSoundByStringId(soundStringId, true) )
+                {
+                    if ( !soundDescriptor->mpqPath.empty() && !soundDescriptor->tempMpqPath.empty() )
+                        CM->addActionSoundDescriptor(actionIndex, *soundDescriptor);
+
+                    CM->refreshScenario();
+                }
             }
             else
             {
@@ -625,8 +639,13 @@ void SoundEditorWindow::DeleteSoundButtonPressed()
                 if ( WinLib::GetYesNo(warningMessage, "Warning!") == WinLib::PromptResult::Yes )
                 {
                     selectedSoundEntry = -1;
-                    CM->removeSoundByStringId(soundStringId, true);
-                    CM->refreshScenario();
+                    if ( auto soundDescriptor = CM->removeSoundByStringId(soundStringId, true) )
+                    {
+                        if ( !soundDescriptor->mpqPath.empty() && !soundDescriptor->tempMpqPath.empty() )
+                            CM->addActionSoundDescriptor(actionIndex, *soundDescriptor);
+
+                        CM->refreshScenario();
+                    }
                 }
             }
         }
@@ -635,7 +654,13 @@ void SoundEditorWindow::DeleteSoundButtonPressed()
             if ( soundStringId == Chk::StringId::NoString )
                 CM->removeAsset(soundEntry.soundPath);
             else
-                CM->removeSoundByStringId(soundStringId, false);
+            {
+                if ( auto soundDescriptor = CM->removeSoundByStringId(soundStringId, false) )
+                {
+                    if ( !soundDescriptor->mpqPath.empty() && !soundDescriptor->tempMpqPath.empty() )
+                        CM->addActionSoundDescriptor(actionIndex, *soundDescriptor);
+                }
+            }
 
             selectedSoundEntry = -1;
             CM->refreshScenario();

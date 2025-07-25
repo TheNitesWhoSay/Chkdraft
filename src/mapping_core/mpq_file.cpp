@@ -410,11 +410,23 @@ bool MpqFile::remove()
 
 u64 ModifiedAsset::nextAssetId(0);
 
-ModifiedAsset::ModifiedAsset(const std::string & assetMpqPath, AssetAction actionTaken, WavQuality wavQualitySelected)
-    : assetMpqPath(assetMpqPath), wavQualitySelected(WavQuality::Uncompressed), actionTaken(actionTaken)
+std::string ModifiedAsset::getNextTempMpqPath()
 {
-    assetTempMpqPath = std::to_string(nextAssetId);
+    std::string assetTempMpqPath = std::to_string(nextAssetId);
     nextAssetId ++;
+    return assetTempMpqPath;
+}
+
+ModifiedAsset::ModifiedAsset(const std::string & assetMpqPath, AssetAction actionTaken, WavQuality wavQualitySelected)
+    : assetMpqPath(assetMpqPath), assetTempMpqPath(getNextTempMpqPath()), wavQualitySelected(WavQuality::Uncompressed), actionTaken(actionTaken)
+{
+
+}
+
+ModifiedAsset::ModifiedAsset(const std::string & assetMpqPath, const std::string & assetTempMpqPath, AssetAction actionTaken, WavQuality wavQualitySelected)
+    :assetMpqPath(assetMpqPath), assetTempMpqPath(assetTempMpqPath), wavQualitySelected(wavQualitySelected), actionTaken(actionTaken)
+{
+
 }
 
 std::vector<FilterEntry<u32>> getMpqFilter()

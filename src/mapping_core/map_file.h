@@ -19,6 +19,10 @@ std::optional<std::string> getPreSavePath(); // Gets path holding assets to be w
 
 class SimpleMapBrowser;
 enum class SoundStatus;
+struct AssetDescriptor {
+    std::string mpqPath;
+    std::string tempMpqPath;
+};
 
 struct MapFile : Scenario, MpqFile // MapFile is a scenario file and usually an MpqFile
 {
@@ -36,9 +40,11 @@ struct MapFile : Scenario, MpqFile // MapFile is a scenario file and usually an 
 
     static std::string GetStandardSoundDir();
 
-    bool addMpqAsset(const std::string & assetSystemFilePath, const std::string & assetMpqFilePath, WavQuality wavQuality);
-    bool addMpqAsset(const std::string & assetMpqFilePath, const std::vector<u8> & asset, WavQuality wavQuality);
+    std::optional<AssetDescriptor> addMpqAsset(const std::string & assetSystemFilePath, const std::string & assetMpqFilePath, WavQuality wavQuality);
+    std::optional<AssetDescriptor> addMpqAsset(const std::string & assetMpqFilePath, const std::vector<u8> & asset, WavQuality wavQuality);
+    void reAddMpqAsset(const AssetDescriptor & assetDescriptor);
     void removeMpqAsset(const std::string & assetMpqFilePath);
+    void removeMpqAsset(const AssetDescriptor & soundDescriptor);
     std::optional<std::vector<u8>> getMpqAsset(const std::string & assetMpqFilePath);
     std::optional<std::vector<std::string>> getListfile();
     bool extractMpqAsset(const std::string & assetMpqFilePath, const std::string & systemFilePath);
@@ -46,11 +52,11 @@ struct MapFile : Scenario, MpqFile // MapFile is a scenario file and usually an 
     std::optional<std::vector<u8>> getSound(size_t stringId);
     std::optional<std::vector<u8>> getSound(const std::string & soundPath);
     bool addSound(size_t stringId); // Adds a sound string to the sound list
-    bool addSound(const std::string & srcFilePath, WavQuality wavQuality, bool virtualFile);
-    bool addSound(const std::string & srcFilePath, const std::string & destMpqPath, WavQuality wavQuality, bool virtualFile);
-    bool addSound(const std::string & destMpqPath, const std::vector<u8> & soundContents, WavQuality wavQuality);
-    bool removeSoundBySoundIndex(u16 soundIndex, bool removeIfUsed);
-    bool removeSoundByStringId(size_t stringId, bool removeIfUsed);
+    std::optional<AssetDescriptor> addSound(const std::string & srcFilePath, WavQuality wavQuality, bool virtualFile);
+    std::optional<AssetDescriptor> addSound(const std::string & srcFilePath, const std::string & destMpqPath, WavQuality wavQuality, bool virtualFile);
+    std::optional<AssetDescriptor> addSound(const std::string & destMpqPath, const std::vector<u8> & soundContents, WavQuality wavQuality);
+    std::optional<AssetDescriptor> removeSoundBySoundIndex(u16 soundIndex, bool removeIfUsed);
+    std::optional<AssetDescriptor> removeSoundByStringId(size_t stringId, bool removeIfUsed);
     bool removeAsset(const std::string & assetPath);
     SoundStatus getSoundStatus(size_t soundStringId);
     bool getSoundStatuses(std::map<size_t/*stringId*/, SoundStatus> & outSoundStatus, bool includePureStringSounds);

@@ -253,6 +253,7 @@ std::string getActionText(std::size_t actionIndex, const RareEdit::RenderAction<
                 case ActionDescriptor::RescopeString: actionText += "Rescope String"; break;
                 // Sounds
                 case ActionDescriptor::AddSound: actionText += "Add Sound"; break;
+                case ActionDescriptor::RemoveSound: actionText += "Remove Sound"; break;
                 // CUWPs
                 case ActionDescriptor::AddCuwp: actionText += "Add CUWP"; break;
                 case ActionDescriptor::SetCuwp: actionText += "Set CUWP"; break;

@@ -347,7 +347,7 @@ bool MapFile::processModifiedAssets(bool updateListFile)
             }
             else if ( modifiedAsset->actionTaken == AssetAction::Remove )
             {
-                if ( MpqFile::removeFile(assetMpqPath) )
+                if ( MpqFile::removeFile(assetMpqPath) || !MpqFile::findFile(assetMpqPath) )
                     processedAssets.push_back(modifiedAsset);
                 else
                 {
@@ -391,9 +391,9 @@ std::string MapFile::GetStandardSoundDir()
     return "staredit\\wav\\";
 }
 
-bool MapFile::addMpqAsset(const std::string & assetSystemFilePath, const std::string & assetMpqFilePath, WavQuality wavQuality)
+std::optional<AssetDescriptor> MapFile::addMpqAsset(const std::string & assetSystemFilePath, const std::string & assetMpqFilePath, WavQuality wavQuality)
 {
-    bool success = false;
+    std::optional<AssetDescriptor> result = std::nullopt;
     if ( ::findFile(assetSystemFilePath) )
     {
         if ( openTemporaryMpq() )
@@ -403,7 +403,7 @@ bool MapFile::addMpqAsset(const std::string & assetSystemFilePath, const std::st
             if ( temporaryMpq.addFile(tempMpqPath, assetSystemFilePath) )
             {
                 modifiedAssets.push_back(modifiedAsset);
-                success = true;
+                result = AssetDescriptor{ .mpqPath = modifiedAsset.assetMpqPath, .tempMpqPath = modifiedAsset.assetTempMpqPath };
             }
             else
                 CHKD_ERR("Failed to add file!");
@@ -417,22 +417,22 @@ bool MapFile::addMpqAsset(const std::string & assetSystemFilePath, const std::st
     else
         CHKD_ERR("Failed to find asset file!");
 
-    return success;
+    return result;
 }
 
-bool MapFile::addMpqAsset(const std::string & assetMpqFilePath, const std::vector<u8> & asset, WavQuality wavQuality)
+std::optional<AssetDescriptor> MapFile::addMpqAsset(const std::string & assetMpqFilePath, const std::vector<u8> & asset, WavQuality wavQuality)
 {
-    bool success = false;
+    std::optional<AssetDescriptor> result = std::nullopt;
     if ( openTemporaryMpq() )
     {
         ModifiedAsset modifiedAsset = ModifiedAsset(assetMpqFilePath, AssetAction::Add, wavQuality);
         const std::string & tempMpqPath = modifiedAsset.assetTempMpqPath;
-        if ( temporaryMpq.open(temporaryMpqPath, false, true) )
+        if ( openTemporaryMpq() )
         {
             if ( temporaryMpq.addFile(modifiedAsset.assetTempMpqPath, asset) )
             {
                 modifiedAssets.push_back(modifiedAsset);
-                success = true;
+                result = AssetDescriptor{ .mpqPath = modifiedAsset.assetMpqPath, .tempMpqPath = modifiedAsset.assetTempMpqPath };
             }
             else
                 CHKD_ERR("Failed to add file!");
@@ -446,7 +446,30 @@ bool MapFile::addMpqAsset(const std::string & assetMpqFilePath, const std::vecto
     else
         CHKD_ERR("Failed to setup asset temporary storage!");
 
-    return success;
+    return result;
+}
+
+void MapFile::reAddMpqAsset(const AssetDescriptor & assetDescriptor)
+{
+    auto recentlyRemovedAsset = modifiedAssets.end();
+    for ( auto asset = modifiedAssets.begin(); asset != modifiedAssets.end(); asset++ )
+    {
+        if ( asset->assetMpqPath.compare(assetDescriptor.mpqPath) == 0 )
+        {
+            if ( asset->actionTaken == AssetAction::Add )
+                return; // Already being added on next save, nothing to do
+            else if ( asset->actionTaken == AssetAction::Remove )
+                recentlyRemovedAsset = asset;
+        }
+    }
+
+    if ( recentlyRemovedAsset != modifiedAssets.end() )
+        modifiedAssets.erase(recentlyRemovedAsset); // Was going to be removed on next save, cancel that
+    else
+    {
+        ModifiedAsset modifiedAsset = ModifiedAsset(assetDescriptor.mpqPath, assetDescriptor.tempMpqPath, AssetAction::Add, WavQuality::Uncompressed);
+        modifiedAssets.push_back(modifiedAsset); // Add to mpq on next save
+    }
 }
 
 void MapFile::removeMpqAsset(const std::string & assetMpqFilePath)
@@ -473,6 +496,32 @@ void MapFile::removeMpqAsset(const std::string & assetMpqFilePath)
     }
     else // The given file was not added recently, mark it for deletion at the next save
         modifiedAssets.push_back(ModifiedAsset(assetMpqFilePath, AssetAction::Remove));
+}
+
+void MapFile::removeMpqAsset(const AssetDescriptor & assetDescriptor)
+{
+    auto recentlyAddedAsset = modifiedAssets.end();
+    for ( auto asset = modifiedAssets.begin(); asset != modifiedAssets.end(); asset++ )
+    {
+        if ( asset->actionTaken == AssetAction::Remove )
+            return; // Already scheduled for deletion, take no further action
+        else if ( asset->assetMpqPath.compare(assetDescriptor.mpqPath) == 0 )
+        {
+            recentlyAddedAsset = asset;
+            break;
+        }
+    }
+
+    if ( recentlyAddedAsset != modifiedAssets.end() ) // Asset was added between last save and now, cancel its addition
+    {
+        // Get the temp mpq file path used for this asset
+        const std::string tempMpqFilePath = recentlyAddedAsset->assetTempMpqPath;
+
+        // Remove the asset from the list of assets to be added to the actual map file
+        modifiedAssets.erase(recentlyAddedAsset);
+    }
+    else // The given file was not added recently, mark it for deletion at the next save
+        modifiedAssets.push_back(ModifiedAsset(assetDescriptor.mpqPath, AssetAction::Remove));
 }
 
 std::optional<std::vector<u8>> MapFile::getMpqAsset(const std::string & assetMpqFilePath)
@@ -547,14 +596,14 @@ bool MapFile::addSound(size_t stringId)
     return false;
 }
 
-bool MapFile::addSound(const std::string & srcFilePath, WavQuality wavQuality, bool virtualFile)
+std::optional<AssetDescriptor> MapFile::addSound(const std::string & srcFilePath, WavQuality wavQuality, bool virtualFile)
 {
     std::string mpqSoundDirectory = GetStandardSoundDir();
     std::string mpqFilePath = makeArchiveFilePath(mpqSoundDirectory, getSystemFileName(srcFilePath));
     return addSound(srcFilePath, mpqFilePath, wavQuality, virtualFile);
 }
 
-bool MapFile::addSound(const std::string & srcFilePath, const std::string & destMpqPath, WavQuality wavQuality, bool virtualFile)
+std::optional<AssetDescriptor> MapFile::addSound(const std::string & srcFilePath, const std::string & destMpqPath, WavQuality wavQuality, bool virtualFile)
 {
     auto edit = createAction(ActionDescriptor::AddSound);
     if ( virtualFile )
@@ -563,81 +612,92 @@ bool MapFile::addSound(const std::string & srcFilePath, const std::string & dest
         if ( soundStringId != Chk::StringId::NoString )
         {
             Scenario::addSound(soundStringId);
-            return true;
+            return AssetDescriptor{.mpqPath = "", .tempMpqPath = ""};
         }
     }
-    else if ( addMpqAsset(srcFilePath, destMpqPath, wavQuality) ) // Add, Register
+    else if ( auto result = addMpqAsset(srcFilePath, destMpqPath, wavQuality) ) // Add, Register
     {
         size_t soundStringId = Scenario::addString(RawString(destMpqPath), Chk::Scope::Game);
         if ( soundStringId != Chk::StringId::NoString )
         {
             Scenario::addSound(soundStringId);
-            return true;
+            return result;
         }
         else
             removeMpqAsset(destMpqPath); // Try to remove the sound, ignore errors if any
     }
-    return false;
+    return std::nullopt;
 }
 
-bool MapFile::addSound(const std::string & destMpqPath, const std::vector<u8> & soundContents, WavQuality wavQuality)
+std::optional<AssetDescriptor> MapFile::addSound(const std::string & destMpqPath, const std::vector<u8> & soundContents, WavQuality wavQuality)
 {
     bool success = false;
-    if ( addMpqAsset(destMpqPath, soundContents, wavQuality) )
+    if ( auto result = addMpqAsset(destMpqPath, soundContents, wavQuality) )
     {
         size_t soundStringId = Scenario::addString(RawString(destMpqPath), Chk::Scope::Game);
         if ( soundStringId != Chk::StringId::NoString )
         {
             Scenario::addSound(soundStringId);
-            return true;
+            return result;
         }
         else
             removeMpqAsset(destMpqPath); // Try to remove the sound, ignore errors if any
     }
-    return false;
+    return std::nullopt;
 }
 
-bool MapFile::removeSoundBySoundIndex(u16 soundIndex, bool removeIfUsed)
+std::optional<AssetDescriptor> MapFile::removeSoundBySoundIndex(u16 soundIndex, bool removeIfUsed)
 {
+    std::optional<AssetDescriptor> result = std::nullopt;
     size_t soundStringId = Scenario::getSoundStringId(soundIndex);
     if ( soundStringId != Chk::StringId::UnusedSound )
     {
+        result = AssetDescriptor{.mpqPath = "", .tempMpqPath = ""};
         auto soundString = Scenario::getString<RawString>(soundStringId, Chk::Scope::Game);
         Scenario::setSoundStringId(soundIndex, 0);
         if ( soundString )
         {
+            result->mpqPath = *soundString;
             if ( auto asset = getMpqAsset(*soundString) )
             {
-                if ( temporaryMpq.open(temporaryMpqPath, false, true) )
-                    temporaryMpq.addFile(*soundString, *asset);
+                if ( openTemporaryMpq() )
+                {
+                    std::string nextTempMpqPath = ModifiedAsset::getNextTempMpqPath();
+                    if ( temporaryMpq.addFile(nextTempMpqPath, *asset) )
+                        result->tempMpqPath = nextTempMpqPath;
+                }
             }
             Scenario::deleteString(soundStringId);
             removeMpqAsset(*soundString);
         }
-        return true;
     }
-    return false;
+    return result;
 }
 
-bool MapFile::removeSoundByStringId(size_t soundStringId, bool removeIfUsed)
+std::optional<AssetDescriptor> MapFile::removeSoundByStringId(size_t soundStringId, bool removeIfUsed)
 {
+    std::optional<AssetDescriptor> result = std::nullopt;
     if ( soundStringId != Chk::StringId::UnusedSound )
     {
+        result = AssetDescriptor{.mpqPath = "", .tempMpqPath = ""};
         auto soundString = Scenario::getString<RawString>(soundStringId, Chk::Scope::Game);
         Scenario::deleteString(soundStringId);
         if ( soundString )
         {
+            result->mpqPath = *soundString;
             if ( auto asset = getMpqAsset(*soundString) )
             {
-                if ( temporaryMpq.open(temporaryMpqPath, false, true) )
-                    temporaryMpq.addFile(*soundString, *asset);
+                if ( openTemporaryMpq() )
+                {
+                    std::string nextTempMpqPath = ModifiedAsset::getNextTempMpqPath();
+                    if ( temporaryMpq.addFile(nextTempMpqPath, *asset) )
+                        result->tempMpqPath = nextTempMpqPath;
+                }
             }
             removeMpqAsset(*soundString);
         }
-
-        return true;
     }
-    return false;
+    return result;
 }
 
 bool MapFile::removeAsset(const std::string & assetPath)
@@ -646,7 +706,7 @@ bool MapFile::removeAsset(const std::string & assetPath)
     {
         if ( auto asset = getMpqAsset(assetPath) )
         {
-            if ( temporaryMpq.open(temporaryMpqPath, false, true) )
+            if ( openTemporaryMpq() )
                 temporaryMpq.addFile(assetPath, *asset);
         }
         removeMpqAsset(assetPath);

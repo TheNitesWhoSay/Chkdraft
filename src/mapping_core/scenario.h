@@ -86,8 +86,8 @@ struct Scenario : RareEdit::Tracked<MapData, Scenario, DescriptorIndex>
         void alignActionsTop();
     };
 
-    void undoAction();
-    void redoAction();
+    std::size_t undoAction();
+    std::size_t redoAction();
     void printChangeHistory();
 
     Scenario(); // Construct empty map

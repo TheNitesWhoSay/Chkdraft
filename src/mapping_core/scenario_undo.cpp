@@ -3,7 +3,7 @@
 
 extern Logger logger;
 
-void Scenario::undoAction()
+std::size_t Scenario::undoAction()
 {
-    Tracked::undoAction(); // For a large structure like MapData, undo/redo should have their own TU/.cpp file
+    return Tracked::undoAction(); // For a large structure like MapData, undo/redo should have their own TU/.cpp file
 }

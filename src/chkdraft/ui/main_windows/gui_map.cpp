@@ -1712,20 +1712,74 @@ bool GuiMap::pastingToGrid()
 
 void GuiMap::undo()
 {
-    Scenario::undoAction();
-    checkSelChangeFlags();
-    checkUnsavedChanges();
-    chkd.mainPlot.leftBar.historyTree.RefreshActionHeaders();
-    refreshScenario(false); // TODO: rely on change notifications instead of using hard refreshes
+    std::size_t actionIndex = Scenario::undoAction();
+    if ( actionIndex != Tracked::noAction )
+    {
+        ActionDescriptor actionDescriptor = Tracked::getActionUserData(actionIndex).descriptorIndex;
+        switch ( actionDescriptor )
+        {
+            case ActionDescriptor::AddSound: // Undo AddSound -> Sound Removed
+            {
+                auto found = actionSoundDescriptors.find(actionIndex);
+                if ( found != actionSoundDescriptors.end() && !found->second.mpqPath.empty() && !found->second.tempMpqPath.empty() )
+                {
+                    const auto & soundDescriptor = found->second;
+                    removeMpqAsset(soundDescriptor);
+                }
+            }
+            break;
+            case ActionDescriptor::RemoveSound: // Undo RemoveSound -> Sound Added
+            {
+                auto found = actionSoundDescriptors.find(actionIndex);
+                if ( found != actionSoundDescriptors.end() && !found->second.mpqPath.empty() && !found->second.tempMpqPath.empty() )
+                {
+                    const auto & soundDescriptor = found->second;
+                    reAddMpqAsset(soundDescriptor);
+                }
+            }
+            break;
+        }
+        checkSelChangeFlags();
+        checkUnsavedChanges();
+        chkd.mainPlot.leftBar.historyTree.RefreshActionHeaders();
+        refreshScenario(false); // TODO: rely on change notifications instead of using hard refreshes
+    }
 }
 
 void GuiMap::redo()
 {
-    Scenario::redoAction();
-    checkSelChangeFlags();
-    checkUnsavedChanges();
-    chkd.mainPlot.leftBar.historyTree.RefreshActionHeaders();
-    refreshScenario(false); // TODO: rely on change notifications instead of using hard refreshes
+    std::size_t actionIndex = Scenario::redoAction();
+    if ( actionIndex != Tracked::noAction )
+    {
+        ActionDescriptor actionDescriptor = Tracked::getActionUserData(actionIndex).descriptorIndex;
+        switch ( actionDescriptor )
+        {
+            case ActionDescriptor::AddSound: // Redo AddSound
+            {
+                auto found = actionSoundDescriptors.find(actionIndex);
+                if ( found != actionSoundDescriptors.end() && !found->second.mpqPath.empty() && !found->second.tempMpqPath.empty() )
+                {
+                    const auto & soundDescriptor = found->second;
+                    reAddMpqAsset(soundDescriptor);
+                }
+            }
+            break;
+            case ActionDescriptor::RemoveSound: // Redo RemoveSound
+            {
+                auto found = actionSoundDescriptors.find(actionIndex);
+                if ( found != actionSoundDescriptors.end() && !found->second.mpqPath.empty() && !found->second.tempMpqPath.empty() )
+                {
+                    const auto & soundDescriptor = found->second;
+                    removeMpqAsset(soundDescriptor);
+                }
+            }
+            break;
+        }
+        checkSelChangeFlags();
+        checkUnsavedChanges();
+        chkd.mainPlot.leftBar.historyTree.RefreshActionHeaders();
+        refreshScenario(false); // TODO: rely on change notifications instead of using hard refreshes
+    }
 }
 
 void GuiMap::checkUnsavedChanges()
@@ -2899,6 +2953,11 @@ void GuiMap::SetAutoBackup(bool doAutoBackups)
 void GuiMap::skipEventRendering()
 {
     skipEventRender = true;
+}
+
+void GuiMap::addActionSoundDescriptor(std::size_t actionIndex, const AssetDescriptor & soundDescriptor)
+{
+    actionSoundDescriptors.insert(std::make_pair(actionIndex, soundDescriptor));
 }
 
 ChkdPalette & GuiMap::getPalette()

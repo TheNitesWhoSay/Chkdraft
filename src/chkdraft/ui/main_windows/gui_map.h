@@ -211,6 +211,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCach
                     static void SetAutoBackup(bool doAutoBackups);
                     
                     void skipEventRendering();
+                    void addActionSoundDescriptor(std::size_t actionIndex, const AssetDescriptor & soundDescriptor);
 
                     ChkdPalette & getPalette();
                     ChkdPalette & getStaticPalette();
@@ -312,6 +313,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCach
                     bool unsavedChanges = false;
                     std::size_t lastSaveActionCursor = 0;
                     std::size_t nonSelChangeCursor = std::numeric_limits<std::size_t>::max();
+                    std::unordered_map<std::size_t, AssetDescriptor> actionSoundDescriptors;
 
                     Layer currLayer = Layer::Terrain;
                     TerrainSubLayer currTerrainSubLayer = TerrainSubLayer::Isom;

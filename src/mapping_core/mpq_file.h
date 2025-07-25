@@ -166,8 +166,11 @@ public:
     WavQuality wavQualitySelected;
     AssetAction actionTaken;
 
+    static std::string getNextTempMpqPath();
+
     ModifiedAsset() = delete;
     ModifiedAsset(const std::string & assetMpqPath, AssetAction actionTaken, WavQuality wavQualitySelected = WavQuality::Uncompressed);
+    ModifiedAsset(const std::string & assetMpqPath, const std::string & assetTempMpqPath, AssetAction actionTaken, WavQuality wavQualitySelected = WavQuality::Uncompressed);
 
 private:
     static u64 nextAssetId; // Changes are needed if this is accessed in a multi-threaded environment
