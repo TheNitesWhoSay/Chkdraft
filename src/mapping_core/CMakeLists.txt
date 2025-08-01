@@ -47,6 +47,7 @@ set(Headers
   map_file.h
   map_image.h
   mapping_core.h
+  mpq_asset_manager.h
   mpq_file.h
   sc.h
   scenario.h
@@ -64,6 +65,7 @@ set(Sources
   escape_strings.cpp
   file_browser.cpp
   map_file.cpp
+  mpq_asset_manager.cpp
   mpq_file.cpp
   sc.cpp
   scenario.cpp

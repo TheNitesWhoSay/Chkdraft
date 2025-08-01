@@ -1719,25 +1719,9 @@ void GuiMap::undo()
         switch ( actionDescriptor )
         {
             case ActionDescriptor::AddSound: // Undo AddSound -> Sound Removed
-            {
-                auto found = actionSoundDescriptors.find(actionIndex);
-                if ( found != actionSoundDescriptors.end() && !found->second.mpqPath.empty() && !found->second.tempMpqPath.empty() )
-                {
-                    const auto & soundDescriptor = found->second;
-                    removeMpqAsset(soundDescriptor);
-                }
-            }
-            break;
             case ActionDescriptor::RemoveSound: // Undo RemoveSound -> Sound Added
-            {
-                auto found = actionSoundDescriptors.find(actionIndex);
-                if ( found != actionSoundDescriptors.end() && !found->second.mpqPath.empty() && !found->second.tempMpqPath.empty() )
-                {
-                    const auto & soundDescriptor = found->second;
-                    reAddMpqAsset(soundDescriptor);
-                }
-            }
-            break;
+                MapFile::undoAssetAction(actionIndex);
+                break;
         }
         checkSelChangeFlags();
         checkUnsavedChanges();
@@ -1755,25 +1739,9 @@ void GuiMap::redo()
         switch ( actionDescriptor )
         {
             case ActionDescriptor::AddSound: // Redo AddSound
-            {
-                auto found = actionSoundDescriptors.find(actionIndex);
-                if ( found != actionSoundDescriptors.end() && !found->second.mpqPath.empty() && !found->second.tempMpqPath.empty() )
-                {
-                    const auto & soundDescriptor = found->second;
-                    reAddMpqAsset(soundDescriptor);
-                }
-            }
-            break;
             case ActionDescriptor::RemoveSound: // Redo RemoveSound
-            {
-                auto found = actionSoundDescriptors.find(actionIndex);
-                if ( found != actionSoundDescriptors.end() && !found->second.mpqPath.empty() && !found->second.tempMpqPath.empty() )
-                {
-                    const auto & soundDescriptor = found->second;
-                    removeMpqAsset(soundDescriptor);
-                }
-            }
-            break;
+                MapFile::redoAssetAction(actionIndex);
+                break;
         }
         checkSelChangeFlags();
         checkUnsavedChanges();
@@ -2953,11 +2921,6 @@ void GuiMap::SetAutoBackup(bool doAutoBackups)
 void GuiMap::skipEventRendering()
 {
     skipEventRender = true;
-}
-
-void GuiMap::addActionSoundDescriptor(std::size_t actionIndex, const AssetDescriptor & soundDescriptor)
-{
-    actionSoundDescriptors.insert(std::make_pair(actionIndex, soundDescriptor));
 }
 
 ChkdPalette & GuiMap::getPalette()

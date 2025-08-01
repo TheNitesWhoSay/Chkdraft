@@ -91,8 +91,9 @@ void MpqFile::setUpdatingListFile(bool updateListFile)
     this->updateListFile = updateListFile;
 }
 
-void MpqFile::save()
+bool MpqFile::save()
 {
+    bool success = false;
     if ( isOpen() )
     {
         if ( madeChanges )
@@ -104,19 +105,21 @@ void MpqFile::save()
                 for ( size_t assetIndex = 0; assetIndex < numAddedMpqAssets; assetIndex ++ )
                     filestringMpqPaths[assetIndex] = addedMpqAssetPaths[assetIndex].c_str();
 
-               if ( SUCCEEDED(SFileAddListFileEntries(hMpq, filestringMpqPaths.get(), (DWORD)numAddedMpqAssets)) &&
+                if ( SUCCEEDED(SFileAddListFileEntries(hMpq, filestringMpqPaths.get(), (DWORD)numAddedMpqAssets)) &&
                     SFileCompactArchive(hMpq, NULL, false) )
-               {
+                {
+                    success = true;
                     addedMpqAssetPaths.clear();
-               }
+                }
             }
             else
-                SFileCompactArchive(hMpq, NULL, false);
+                success = SFileCompactArchive(hMpq, NULL, false);
 
-            SFileFlushArchive(hMpq);
+            success = success && SFileFlushArchive(hMpq);
         }
         madeChanges = false;
     }
+    return success;
 }
 
 void MpqFile::close()
@@ -406,27 +409,6 @@ bool MpqFile::remove()
         return true;
     }
     return false;
-}
-
-u64 ModifiedAsset::nextAssetId(0);
-
-std::string ModifiedAsset::getNextTempMpqPath()
-{
-    std::string assetTempMpqPath = std::to_string(nextAssetId);
-    nextAssetId ++;
-    return assetTempMpqPath;
-}
-
-ModifiedAsset::ModifiedAsset(const std::string & assetMpqPath, AssetAction actionTaken, WavQuality wavQualitySelected)
-    : assetMpqPath(assetMpqPath), assetTempMpqPath(getNextTempMpqPath()), wavQualitySelected(WavQuality::Uncompressed), actionTaken(actionTaken)
-{
-
-}
-
-ModifiedAsset::ModifiedAsset(const std::string & assetMpqPath, const std::string & assetTempMpqPath, AssetAction actionTaken, WavQuality wavQualitySelected)
-    :assetMpqPath(assetMpqPath), assetTempMpqPath(assetTempMpqPath), wavQualitySelected(wavQualitySelected), actionTaken(actionTaken)
-{
-
 }
 
 std::vector<FilterEntry<u32>> getMpqFilter()
