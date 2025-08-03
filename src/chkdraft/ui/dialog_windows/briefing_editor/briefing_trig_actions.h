@@ -48,8 +48,8 @@ class BriefingTrigActionsWindow : public WinLib::ClassWindow, public ICndActGrid
 
         LRESULT MeasureItem(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
         LRESULT EraseBackground(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-        void ChangeActionType(Chk::Action & action, Chk::Action::Type newType);
-        bool TransformAction(Chk::Action & action, Chk::Action::Type newType, bool refreshImmediately);
+        void ChangeActionType(std::size_t briefingTriggerIndex, std::size_t actionIndex, Chk::Action::Type newType);
+        bool TransformAction(std::size_t briefingTriggerIndex, std::size_t actionIndex, Chk::Action::Type newType, bool refreshImmediately);
         void RefreshActionAreas();
         void UpdateActionName(u8 actionNum, const std::string & newText, bool refreshImmediately);
         void UpdateActionArg(u8 actionNum, u8 argNum, const std::string & newText, bool refreshImmediately);

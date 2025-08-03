@@ -67,6 +67,7 @@ void AboutWindow::CreateSubWindows(HWND hWnd)
             " - Justin Forsberg - Owner and lead developer of Chkdraft.\n"
             " - SaintOfIdiocy, Adam Heinermann, and Corbo - Direct contributions inside and outside of git, including code, testing, and miscellaneous assistance.\n"
             " - RElesgoe, Zoltan Kovacs, Caden-Fletcher and Milestone - Direct contributions to the project on git.\n"
+            " - Sayoka - Created the icon for chkdraft.\n"
             " - Lanthanide, Oh_Man, CecilSunkure, Wormer, Roy, and many other members of the SEN community for ideas, testing, and other forms of support.");
     }
 }

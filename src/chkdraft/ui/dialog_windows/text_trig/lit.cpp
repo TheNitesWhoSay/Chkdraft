@@ -31,10 +31,7 @@ void LitWindow::ButtonLit()
     if ( CM != nullptr )
     {
         if ( RunLit(*CM) )
-        {
-            CM->notifyChange(false);
             CM->refreshScenario();
-        }
     }
     else
         Error("No map open!");
@@ -48,10 +45,7 @@ void LitWindow::ButtonLitSave()
         {
             CM->refreshScenario();
             if ( !chkd.maps.SaveCurr(false) )
-            {
                 WinLib::Message("Compile Succeeded, Save Failed", "Compiler");
-                CM->notifyChange(false);
-            }
         }
     }
     else

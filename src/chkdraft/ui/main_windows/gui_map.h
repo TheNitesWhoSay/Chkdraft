@@ -3,9 +3,9 @@
 #include <common_files/common_files.h>
 #include <windows/windows_ui.h>
 #include "mapping/clipboard.h"
+#include "mapping/map_animations.h"
 #include "mapping/sc_graphics.h"
 #include "mapping/selections.h"
-#include "mapping/undos/undos.h"
 
 namespace Scr { class MapGraphics; }
 
@@ -31,17 +31,17 @@ enum class Direction
     Down
 };
 
-class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos, private Chk::IsomCache
+class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCache
 {
     public:
 /* Public Data  */  Clipboard & clipboard;
                     Selections selections {*this};
-                    Undos undos {*this};
                     std::unique_ptr<Scr::MapGraphics> scrGraphics;
+                    MapAnimations animations;
 
 /* Constructor  */  GuiMap(Clipboard & clipboard, const std::string & filePath);
                     GuiMap(Clipboard & clipboard, FileBrowserPtr<SaveType> fileBrowser = getDefaultOpenMapBrowser());
-                    GuiMap(Clipboard & clipboard, Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex, DefaultTriggers defaultTriggers);
+                    GuiMap(Clipboard & clipboard, Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex, DefaultTriggers defaultTriggers, SaveType saveType);
 
 /*  Destructor  */  virtual ~GuiMap();
 
@@ -58,8 +58,9 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     virtual void setTileset(Sc::Terrain::Tileset tileset);
                     void setDimensions(u16 newTileWidth, u16 newTileHeight, u16 sizeValidationFlags = SizeValidationFlag::Default, s32 leftEdge = 0, s32 topEdge = 0, size_t newTerrainType = 0);
                     bool placeIsomTerrain(Chk::IsomDiamond isomDiamond, size_t terrainType, size_t brushExtent);
-                    void unlinkAndDeleteUnit(size_t unitIndex, std::shared_ptr<ReversibleActions> opUndos);
-                    void changeUnitOwner(size_t unitIndex, u8 newPlayer, std::shared_ptr<ReversibleActions> opUndos);
+                    void unlinkAndDeleteSelectedUnits();
+                    void unlinkAndDeleteUnit(size_t unitIndex);
+                    void changeUnitOwner(size_t unitIndex, u8 newPlayer);
 
 /*   UI Accel   */  Layer getLayer();
                     bool setLayer(Layer newLayer);
@@ -101,7 +102,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     /** Takes a player number, outputs the string/string index of the associated owner (i.e. rescuable) */
                     u8 GetPlayerOwnerStringId(u8 player);
 
-                    void refreshScenario();
+                    void refreshScenario(bool clearSelections = true);
 
 /*   Sel/Paste  */  void clearSelectedTiles();
                     void clearSelectedDoodads();
@@ -117,18 +118,16 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     bool pastingToGrid();
                     void moveSelection(Direction direction, bool useGrid);
 
-/*   Undo Redo  */  void AddUndo(ReversiblePtr action);
-                    void undo();
+/*   Undo Redo  */  void undo();
                     void redo();
-                    virtual void ChangesMade();
-                    virtual void ChangesReversed();
-                    inline std::shared_ptr<ReversibleActions> TileChanges() { return this->tileChanges; }
+                    void checkUnsavedChanges();
 
 /*   Graphics   */  float MiniMapScale(u16 xSize, u16 ySize);
 
                     bool EnsureBitmapSize(u32 desiredWidth, u32 desiredHeight);
                     void SnapSelEndDrag();
                     bool UpdateGlGraphics();
+                    bool Animate();
                     void PaintMap(GuiMapPtr currMap, bool pasting);
                     void PaintMiniMap(const WinLib::DeviceContext & dc);
                     void Redraw(bool includeMiniMap);
@@ -180,6 +179,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     enum_t(LocSnapFlags, u32, { SnapX1 = BIT_0, SnapY1 = BIT_1, SnapX2 = BIT_2, SnapY2 = BIT_3,
                         SnapAll = SnapX1|SnapY1|SnapX2|SnapY2, None = 0 });
                     bool SnapLocationDimensions(u32 & x1, u32 & y1, u32 & x2, u32 & y2, LocSnapFlags locSnapFlags);
+                    bool SnapLocationDimensions(std::size_t locationIndex, LocSnapFlags locSnapFlags);
                     
                     void SetCutCopyPasteSnap(Snap cutCopyPasteSnap);
                     void ToggleIncludeDoodadTiles();
@@ -202,17 +202,16 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
 
 /*     Misc     */  void setMapId(u16 mapId);
                     u16 getMapId();
-                    void notifyChange(bool undoable); // Notifies that a change occured, if it's not undoable changes are locked
-                    void changesUndone(); // Notifies that all undoable changes have been undone
-                    bool changesLocked(); // Checks if changes are locked
-                    void addAsterisk(); // Adds an asterix onto the map name
-                    void removeAsterisk(); // Removes an asterix from the map name
+                    void notifyUnsavedChanges(); // Adds an asterix onto the map name
+                    void notifyNoUnsavedChanges(); // Removes an asterix from the map name
                     void updateMenu(); // Updates which items are checked in the main menu
 
                     bool CreateThis(HWND hClient, const std::string & title);
                     void ReturnKeyPress();
                     static void SetAutoBackup(bool doAutoBackups);
                     
+                    void skipEventRendering();
+
                     ChkdPalette & getPalette();
                     ChkdPalette & getStaticPalette();
 
@@ -227,7 +226,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                         CarbotHD
                     };
                     GuiMap::Skin GetSkin();
-                    void SetSkin(GuiMap::Skin skin);
+                    void SetSkin(GuiMap::Skin skin, bool reloadCurrent = false);
 
                     point getLastMousePosition() { return lastMousePosition; }
 
@@ -239,7 +238,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     LRESULT HorizontalScroll(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
                     LRESULT VerticalScroll(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
                     LRESULT DoSize(HWND hWnd, WPARAM wParam, LPARAM lParam);
-                    void ActivateMap(HWND hWnd);
+                    void ActivateMap(HWND deactivate, HWND activate);
                     LRESULT DestroyWindow(HWND hWnd);
 
                     void ContextMenu(int x, int y);
@@ -267,25 +266,55 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
 
 
     private:
-
-                    void addIsomUndo(const Chk::IsomRectUndo & isomUndo) final;
+                    void destroyBrush();
                     void refreshTileOccupationCache();
                     void windowBoundsChanged();
+
+                    void elementAdded(units_path, std::size_t index) override;
+                    void elementRemoved(units_path, std::size_t index) override;
+                    void elementMoved(units_path, std::size_t oldIndex, std::size_t newIndex) override;
+                    void valueChanged(unit_type_path, Sc::Unit::Type oldType, Sc::Unit::Type newType) override;
+                    void valueChanged(unit_owner_path, u8 oldOwner, u8 newOwner) override;
+                    void valueChanged(unit_xc_path, u16 oldXc, u16 newXc) override;
+                    void valueChanged(unit_yc_path, u16 oldYc, u16 newYc) override;
+                    void valueChanged(unit_resource_path, u32 oldResourceAmount, u32 newResourceAmount) override;
+                    void valueChanged(unit_state_path, u16 oldStateFlags, u16 newStateFlags) override;
+                    void valueChanged(unit_relation_flags_path, u16 oldRelationFlags, u16 newRelationFlags) override;
+
+                    void elementAdded(sprites_path, std::size_t index) override;
+                    void elementRemoved(sprites_path, std::size_t index) override;
+                    void elementMoved(sprites_path, std::size_t oldIndex, std::size_t newIndex) override;
+                    void valueChanged(sprite_type_path, Sc::Sprite::Type oldType, Sc::Sprite::Type newType) override;
+                    void valueChanged(sprite_owner_path, u8 oldOwner, u8 newOwner) override;
+                    void valueChanged(sprite_flags_path, u16 oldFlags, u16 newFlags) override;
+                    void valueChanged(sprite_xc_path, u16 oldXc, u16 newXc) override;
+                    void valueChanged(sprite_yc_path, u16 oldYc, u16 newYc) override;
+
+                    void valueChanged(tileset_path, Sc::Terrain::Tileset oldTileset, Sc::Terrain::Tileset newTileset) override;
+
+                    void tileSelectionsChanged();
+                    void tileFogSelectionsChanged();
+                    void checkSelChangeFlags();
+
+                    void afterAction(std::size_t actionIndex) override;
 
 /* Private Data */  Graphics scGraphics {*this, selections};
                     GuiMap::Skin skin = Skin::ClassicGDI;
                     std::shared_ptr<WinLib::DeviceContext> openGlDc;
                     u64 prevTickCount = GetTickCount64();
+                    std::optional<RareEdit::Editor<Tracked>> brushAction {};
+                    struct ScopedBrushDestructor { // Destroys the brush when this object goes out of scope
+                        std::optional<RareEdit::Editor<Tracked>> & brushAction;
+                        ~ScopedBrushDestructor() { brushAction = std::nullopt; }
+                    };
 
                     u16 mapId = 0;
-                    bool changeLock = false;
                     bool unsavedChanges = false;
+                    std::size_t lastSaveActionCursor = 0;
+                    std::size_t nonSelChangeCursor = std::numeric_limits<std::size_t>::max();
 
                     Layer currLayer = Layer::Terrain;
                     TerrainSubLayer currTerrainSubLayer = TerrainSubLayer::Isom;
-                    std::shared_ptr<ReversibleActions> tileChanges = nullptr;
-                    std::shared_ptr<ReversibleActions> fogChanges = nullptr;
-                    std::shared_ptr<ReversibleActions> cutCopyPasteChanges = nullptr; // tileChanges & fogChanges roll into this
                     Chk::TileOccupationCache tileOccupationCache;
                     u8 currPlayer = 0;
                     double zoom = 1.0;
@@ -317,6 +346,8 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     bool cutCopyPasteSprites = true;
                     bool cutCopyPasteUnits = true;
                     bool cutCopyPasteFog = false;
+
+                    bool skipEventRender = false;
 					
                     UINT_PTR panTimerID = 0;
                     int panStartX = -1;
@@ -330,6 +361,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, public IObserveUndos,
                     s32 screenTop = 0;
                     u32 bitmapWidth = 0;
                     u32 bitmapHeight = 0;
+                    u64 totalHistSizeInBytes = 0;
                     bool RedrawMiniMap = true;
                     bool RedrawMap = true;
                     WinLib::DeviceContext miniMapBuffer {};

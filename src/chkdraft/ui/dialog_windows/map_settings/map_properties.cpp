@@ -2,7 +2,6 @@
 #include "color_properties.h"
 #include <common_files/common_files.h>
 #include "chkdraft/chkdraft.h"
-#include "mapping/undos/chkd_undos/dimension_change.h"
 #include <string>
 
 extern Logger logger;
@@ -281,7 +280,6 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     {
         if ( HIWORD(wParam) == BN_CLICKED )
         {
-            auto dimensionsUndo = DimensionChange::Make((void*)CM.get());
             Sc::Terrain::Tileset newTileset = (Sc::Terrain::Tileset)SendMessage(GetDlgItem(hWnd, Id::CB_MAPTILESET), CB_GETCURSEL, 0, 0);
             size_t newMapTerrain = dropNewMapTerrain.GetSelData();
             CM->setTileset(newTileset);
@@ -289,7 +287,6 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             if ( editMapWidth.GetEditNum<u16>(newWidth) && editMapHeight.GetEditNum<u16>(newHeight) )
                 CM->setDimensions(newWidth, newHeight, Scenario::SizeValidationFlag::Default, 0, 0, newMapTerrain);
             
-            CM->AddUndo(dimensionsUndo);
             CM->refreshScenario();
             CM->Redraw(true);
         }
@@ -334,10 +331,7 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 case 4: newType = Sc::Player::SlotType::Neutral; break;
                 }
                 if ( newType != Sc::Player::SlotType::Inactive )
-                {
                     CM->setSlotType(player, newType);
-                    CM->notifyChange(false);
-                }
             }
         }
         break;
@@ -354,7 +348,6 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 CM->setPlayerRace(player, (Chk::Race)newRace);
                 chkd.maps.UpdatePlayerStatus();
                 CM->Redraw(true);
-                CM->notifyChange(false);
             }
         }
         break;
@@ -378,20 +371,18 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 }
                 chkd.maps.UpdatePlayerStatus();
                 CM->Redraw(true);
-                CM->notifyChange(false);
             }
         }
         break;
         case CBN_EDITCHANGE:
         {
             u32 player = LOWORD(wParam) - Id::CB_P1COLOR; // 0 based player
-            u8 newColor;
+            u8 newColor = 0;
             if ( dropPlayerColor[player].GetEditNum<u8>(newColor) )
             {
                 CM->setPlayerColor(player, (Chk::PlayerColor)newColor);
                 chkd.maps.UpdatePlayerStatus();
                 CM->Redraw(true);
-                CM->notifyChange(false);
             }
         }
 
@@ -433,11 +424,11 @@ void MapPropertiesWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
         size_t playerIndex = size_t(idFrom)-Id::BUTTON_P1COLOR;
         if ( auto playerColor = ColorPropertiesDialog::GetCrgbColor(getHandle(), CM->getPlayerCustomColor(playerIndex)) )
         {
+            auto edit = CM->operator()(ActionDescriptor::SetPlayerColor);
             CM->setPlayerColorSetting(playerIndex, Chk::PlayerColorSetting::Custom);
             CM->setPlayerCustomColor(playerIndex, *playerColor);
             chkd.maps.UpdatePlayerStatus();
             CM->Redraw(true);
-            CM->notifyChange(false);
             this->RefreshWindow();
         }
     }
@@ -449,9 +440,9 @@ void MapPropertiesWindow::CheckReplaceMapTitle()
     {
         if ( auto newMapTitle = editMapTitle.GetWinText() )
         {
+            auto edit = CM->operator()(ActionDescriptor::SetScenarioName);
             CM->setScenarioName<ChkdString>(*newMapTitle);
             CM->deleteUnusedStrings(Chk::Scope::Both);
-            CM->notifyChange(false);
             possibleTitleUpdate = false;
         }
     }
@@ -463,9 +454,9 @@ void MapPropertiesWindow::CheckReplaceMapDescription()
     {
         if ( auto newMapDescription = editMapDescription.GetWinText() )
         {
+            auto edit = CM->operator()(ActionDescriptor::SetScenarioDescription);
             CM->setScenarioDescription<ChkdString>(*newMapDescription);
             CM->deleteUnusedStrings(Chk::Scope::Both);
-            CM->notifyChange(false);
             possibleDescriptionUpdate = false;
         }
     }

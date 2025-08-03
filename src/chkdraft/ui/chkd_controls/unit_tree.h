@@ -2,6 +2,7 @@
 #define UNITTREE_H
 #include <windows/windows_ui.h>
 #include <common_files/common_files.h>
+#include <mapping_core/mapping_core.h>
 
 class UnitTree : public WinLib::TreeViewControl
 {
@@ -10,20 +11,16 @@ class UnitTree : public WinLib::TreeViewControl
         bool AddThis(HWND hTree, HTREEITEM hRoot);
         bool CreateThis(HWND hParent, int x, int y, int width, int height, bool hasButtons, u32 id);
 
+        void UpdateUnitTree();
         void UpdateUnitNames(const std::vector<std::string> & displayNames);
         void UpdateUnitName(int unitId);
-
-    protected:
-        void InsertAllUnits(HTREEITEM hParent);
-        void InsertZergItems(HTREEITEM hParent);
-        void InsertTerranItems(HTREEITEM hParent);
-        void InsertProtossItems(HTREEITEM hParent);
-        void InsertNeutralItems(HTREEITEM hParent);
-        void InsertUndefinedItems(HTREEITEM hParent);
-
+        
     private:
+        void InsertAllUnits(HTREEITEM hParent);
+        HTREEITEM hUnitRoot = NULL;
         HTREEITEM UnitItems[228] {};
         std::vector<std::string> unitDisplayNames {};
+        void insertUnits(const Sc::Unit::UnitGroup & unitGroup, HTREEITEM hParent);
         void AddUnitItems(HTREEITEM hParent, const std::vector<u16> & unitIds);
 };
 

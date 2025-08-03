@@ -22,6 +22,7 @@ HTREEITEM LocationTree::InsertLocationItem(const std::string & text, u32 index)
 
 void LocationTree::RebuildLocationTree(bool updateSelection)
 {
+    SetRedraw(false);
     size_t selectedLocation = CM->selections.getSelectedLocation();
     EmptySubTree(hLocationRoot);
 
@@ -53,6 +54,7 @@ void LocationTree::RebuildLocationTree(bool updateSelection)
 
     if ( updateSelection )
         TreeViewControl::SelectItem(selected != NULL ? selected : hLocationRoot);
-
+    
+    SetRedraw(true);
     RedrawThis();
 }

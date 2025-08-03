@@ -3,6 +3,7 @@
 #include "common_files/constants.h"
 #include "common_files/structs.h"
 #include "mapping/color_cycler.h"
+#include "mapping/map_animations.h"
 #include <mapping_core/mapping_core.h>
 #include <rarecpp/reflect.h>
 #include <cstdint>
@@ -406,7 +407,7 @@ namespace Scr {
                 }
             };
 
-            class SimplePaletteShader : public TextureVertexShader
+            class ClassicPaletteShader : public TextureVertexShader
             {
                 static constexpr std::string_view fragmentCode =
                     "#version 330 core\n"
@@ -415,16 +416,32 @@ namespace Scr {
                     "out vec4 fragColor;"
                     "uniform usampler2D tex;"
                     "uniform sampler2D pal;"
+                    "uniform sampler2D remapPal;"
+                    "uniform uvec2 remapRange;"
+                    "uniform uint remapOffset;"
+                    "uniform float opacity;"
 
                     "void main() {"
                     "    uint palIndex = texture(tex, texCoord).r;"
                     "    if ( palIndex == uint(0) ) discard;"
-                    "    fragColor = vec4(texture(pal, vec2(palIndex/256., 0.)).rgb, 1.0);"
+                    "    else if ( remapOffset == uint(255) && palIndex <= uint(8) ) {"
+                    "        float remapIndex = texture(remapPal, vec2(palIndex+remapRange.x/256., 0.)).a;"
+                    "        fragColor = vec4(texture(pal, vec2(remapIndex, 0.)).rgb, opacity);"
+                    "    } else if ( palIndex >= remapRange.x && palIndex < remapRange.y )"
+                    "        fragColor = vec4(texture(remapPal, vec2((palIndex-remapRange.x+remapOffset)/256., 0.)).rgb, opacity);"
+                    "    else if ( remapRange.x > remapRange.y )"
+                    "        fragColor = texture(remapPal, vec2(palIndex/256., 0.)).rgba;"
+                    "    else"
+                    "        fragColor = vec4(texture(pal, vec2(palIndex/256., 0.)).rgb, opacity);"
                     "};";
 
             public:
                 gl::uniform::Sampler2D tex { "tex" };
                 gl::uniform::Sampler2D pal { "pal" };
+                gl::uniform::Sampler2D remapPal { "remapPal" };
+                gl::uniform::UVec2 remapRange { "remapRange" };
+                gl::uniform::UInt remapOffset { "remapOffset" };
+                gl::uniform::Float opacity { "opacity" };
 
                 void load() {
                     gl::Program::create();
@@ -432,7 +449,10 @@ namespace Scr {
                     gl::Program::attachShader(gl::Shader(gl::Shader::Type::fragment, fragmentCode));
                     gl::Program::link();
                     gl::Program::use();
-                    gl::Program::findUniforms(posToNdc, texTransform, tex, pal);
+                    gl::Program::findUniforms(posToNdc, texTransform, tex, pal, remapPal, remapRange, remapOffset, opacity);
+                    remapRange.setUVec2(0, 0);
+                    remapOffset.setValue(0);
+                    opacity.setValue(1.0f);
                     posToNdc.loadIdentity();
                     texTransform.loadIdentity();
                 }
@@ -482,7 +502,8 @@ namespace Scr {
                     "    vec2 frameTexFlipper = image[6];"
 
                     "    vec2 flippedNormalTex = vec2(frameTexFlipper.x*normalTex.x + frameTexFlipper.y, normalTex.y);"
-                    "    vec2 imageOriginOffset = -animSize/2.0 + framePosOffset;"
+                    "    vec2 imageOriginOffset = vec2(-frameTexFlipper.x*animSize.x/2.0 + frameTexFlipper.x*framePosOffset.x - frameTexFlipper.y*frameSize.x,"
+                    "                                  -animSize.y/2.0 + framePosOffset.y);"
                     "    gl_Position = posToNdc * vec4(centerPos + imageScale*(imageOriginOffset + normalPos*frameSize), 0.0, 1.0);"
                     "    texCoord = animTexScale * (frameTexOffset + flippedNormalTex*frameSize);"
                     "};";
@@ -669,7 +690,7 @@ namespace Scr {
             HeatShader heatShader {}; // Remastered
             SimpleShader simpleShader {}; // Remastered
             SolidColorShader solidColorShader {}; // Remastered & Classic
-            SimplePaletteShader simplePaletteShader {}; // Classic
+            ClassicPaletteShader classicPaletteShader {}; // Classic
             
             void loadClassic();
             void load(ArchiveCluster & archiveCluster);
@@ -765,10 +786,15 @@ namespace Scr {
                 {
                     Grp tileMask {};
                     Grp tilesetGrp {};
+                    std::optional<gl::Palette> halluPalette {};
+                    std::optional<gl::Palette> shadowPalette {};
+                    std::optional<gl::Palette> remapPalette[7];
                     std::vector<u16> maskIds {};
 
                     void load(ArchiveCluster & archiveCluster, const LoadSettings & loadSettings, ByteBuffer & fileData);
                 };
+                std::optional<gl::Palette> tunitPalette {};
+                std::optional<gl::Palette> tselectPalette {};
                 std::shared_ptr<SpkData> spk {};
                 std::shared_ptr<Tileset> tiles[Sc::Terrain::NumTilesets] {};
                 std::shared_ptr<std::vector<std::shared_ptr<Animation>>> images {}; // 999 images
@@ -780,6 +806,7 @@ namespace Scr {
                 void loadClassicTiles(Sc::Data & scData, const LoadSettings & loadSettings);
                 void loadTiles(ArchiveCluster & archiveCluster, const LoadSettings & loadSettings, ByteBuffer & fileData);
                 
+                void loadClassicImageFrame(std::size_t frameIndex, std::size_t imageIndex, Sc::Data & scData, std::vector<u8> & bitmapData, bool saveBinds);
                 void loadClassicImages(Sc::Data & scData);
                 void loadImages(Sc::Data & scData, ArchiveCluster & archiveCluster, std::filesystem::path texPrefix, const LoadSettings & loadSettings, ByteBuffer & fileData, gl::ContextSemaphore* contextSemaphore = nullptr);
             };
@@ -795,6 +822,8 @@ namespace Scr {
 
         struct RenderData // Data required for rendering a given map with a given visual quality, skin, and tileset
         {
+            std::vector<u8> bitmapData {};
+            std::shared_ptr<Data::Skin> skin = nullptr;
             std::shared_ptr<Shaders> shaders = nullptr;
             std::shared_ptr<SpkData> spk = nullptr;
             std::shared_ptr<Data::Skin::Tileset> tiles = nullptr;
@@ -836,6 +865,7 @@ namespace Scr {
         u32 n2Frame = 0;
         u32 nIncrement = 0;
         u64 initialTickCount = 0;
+        std::chrono::system_clock::time_point frameStart {};
 
         Sc::Data & scData;
         GuiMap & map; // Reference to the map this instance of graphics renders
@@ -860,7 +890,7 @@ namespace Scr {
         gl::VertexVector<> triangleVertices5 {};
         gl::VertexVector<> triangleVertices6 {};
         
-        u32 getPlayerColor(u8 player);
+        u32 getPlayerColor(u8 player, bool hasCrgb);
         size_t getImageId(Sc::Unit::Type unitType);
         size_t getImageId(Sc::Sprite::Type spriteType);
         size_t getImageId(Sc::Sprite::Type spriteType, bool isDrawnAsSprite);
@@ -876,7 +906,6 @@ namespace Scr {
             size_t attachOverlayImageId;
             size_t attachFrame;
         };
-        UnitInfo getUnitInfo(Sc::Unit::Type unitType, bool attached, bool lifted);
         struct SelectInfo {
             size_t imageId;
             s32 yOffset;
@@ -891,6 +920,7 @@ namespace Scr {
         Scr::Animation & getImage(const Chk::Sprite & sprite);
 
     public:
+
         bool fpsEnabled = false;
         bool displayIsomNums = false;
         bool displayTileNums = false;
@@ -898,9 +928,11 @@ namespace Scr {
         bool displayBuildability = false;
         bool displayElevations = false;
         bool clipLocationNames = true; // If true, text is wrapped and restricted to location bounds
+        uint32_t customSelColor = 0xFFFF0000; // 0xAABBGGRR
 
         MapGraphics(Sc::Data & data, GuiMap & guiMap);
 
+        void resetFps();
         void updateGrid(); // Occurs when the map view, grid size or grid color changes
         void mapViewChanged(); // Occurs when the window bounds, zoom-level or skin changes
         void windowBoundsChanged(gl::Rect2D<s32> windowBounds);
@@ -935,14 +967,13 @@ namespace Scr {
         void drawTileSelection();
         void prepareImageRendering(bool isSelections = false);
         void drawImage(Scr::Animation & animation, s32 x, s32 y, u32 frame, u32 multiplyColor, u32 playerColor, bool hallucinate, bool flipped = false);
-        void drawSelectionImage(Scr::Animation & animation, s32 x, s32 y, u32 frame, u32 multiplyColor);
-        void drawClassicImage(gl::Palette & palette, s32 x, s32 y, u32 frame, u32 imageId, Chk::PlayerColor color, bool flipped = false);
+        void drawSelectionImage(Scr::Animation & animation, s32 x, s32 y, u32 frame, u32 colorSet, u32 multiplyColor, bool flipped = false);
+        void drawClassicImage(gl::Palette & palette, s32 x, s32 y, u32 frame, u32 imageId, std::optional<Chk::PlayerColor> color, bool flipped = false);
         void drawUnitSelection(Sc::Unit::Type unitType, s32 x, s32 y);
         void drawSpriteSelection(Sc::Sprite::Type spriteType, s32 x, s32 y, bool isDrawnAsSprite);
         void drawImageSelections();
-        void drawUnit(const Chk::Unit & unit);
-        void drawSprite(const Chk::Sprite & sprite);
-        void drawImages();
+        void drawActor(const AnimContext & animContext, const MapActor & mapActor, s32 xOffset, s32 yOffset, bool hasCrgb);
+        void drawActors();
         void drawLocations();
         void drawTemporaryLocations();
         void drawSelectionRectangle(const gl::Rect2D<GLfloat> & rectangle);
@@ -951,6 +982,8 @@ namespace Scr {
         void drawDoodadSelection();
         void drawFps();
         void drawPastes();
+
+        void drawEffectColors();
 
         void render();
 

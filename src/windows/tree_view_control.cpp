@@ -11,9 +11,9 @@ namespace WinLib {
 
     }
 
-    bool TreeViewControl::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, bool hasButtons, u64 id)
+    bool TreeViewControl::CreateThis(HWND hParent, s32 x, s32 y, s32 width, s32 height, bool hasButtons, u64 id, bool sizeable)
     {
-        DWORD dwStyle = WS_VISIBLE|WS_CHILD|TVS_NONEVENHEIGHT|TVS_HASLINES;
+        DWORD dwStyle = WS_VISIBLE|WS_CHILD|TVS_NONEVENHEIGHT|TVS_HASLINES|(sizeable ? WS_SIZEBOX : DWORD(0));
         if ( hasButtons )
             dwStyle |= TVS_HASBUTTONS|TVS_LINESATROOT;
 
@@ -22,7 +22,7 @@ namespace WinLib {
                                              x, y, width, height, hParent, (HMENU)id, true );
     }
 
-    HTREEITEM TreeViewControl::InsertTreeItem(HTREEITEM hParentItem, const std::string & text, LPARAM lParam)
+    HTREEITEM TreeViewControl::InsertTreeItem(HTREEITEM hParentItem, const std::string & text, LPARAM lParam, bool expanded)
     {
         if ( hParentItem == NULL )
             return InsertParent(text, lParam);
@@ -33,7 +33,12 @@ namespace WinLib {
             TVINSERTSTRUCT tvinsert = { };
             tvinsert.hParent = hParentItem;
             tvinsert.hInsertAfter = TVI_LAST;
-            tvinsert.item.mask = TVIF_TEXT|LVIF_PARAM;
+            tvinsert.item.mask = expanded ? TVIF_TEXT|LVIF_PARAM|TVIF_STATE : TVIF_TEXT|LVIF_PARAM;
+            if ( expanded )
+            {
+                tvinsert.item.stateMask = TVIS_EXPANDED;
+                tvinsert.item.state = TVIS_EXPANDED;
+            }
             tvinsert.item.pszText = (LPTSTR)sysText.c_str();
             tvinsert.item.lParam = lParam;
             return TreeView_InsertItem(getHandle(), &tvinsert);

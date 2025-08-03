@@ -290,6 +290,30 @@ public:
     }
 };
 
+template <class T, std::size_t N>
+void defragmentNonZeroes(T (&arr)[N]) // Aligns all non-zero to the leftmost slots in the array, without reordering the non-zero elements
+{
+    std::size_t availableStart = N;
+    for ( std::size_t i=0; i<N; ++i )
+    {
+        if ( arr[i] == 0 )
+        {
+            if ( availableStart == N )
+                availableStart = i;
+        }
+        else if ( availableStart < N )
+        {
+            std::size_t leftShiftStart = i;
+            do {
+                ++i;
+            } while ( i<N && arr[i] != 0 );
+            std::rotate(&arr[availableStart], &arr[leftShiftStart], &arr[i]);
+            availableStart += i-leftShiftStart;
+            i = availableStart+1;
+        }
+    }
+}
+
 inline std::u8string_view asUtf8(const std::string & utf8String) { return std::u8string_view((char8_t*)utf8String.c_str(), utf8String.size()); }
 
 #endif

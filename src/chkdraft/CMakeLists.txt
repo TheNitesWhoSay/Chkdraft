@@ -24,7 +24,7 @@ include(FetchContent)
 FetchContent_Declare(
   rarecpp
   GIT_REPOSITORY https://github.com/TheNitesWhoSay/RareCpp.git
-  GIT_TAG 21ba359 # release-2.3.3
+  GIT_TAG 4acbf69 # release-2.5.0TODO
 )
 FetchContent_MakeAvailable(rarecpp)
 include_directories(${rarecpp_SOURCE_DIR}/include)
@@ -55,10 +55,15 @@ set(Headers
   common_files/resource.h
   common_files/structs.h
   common_files/version.h
+  mapping/map_actor.cpp
+  mapping/map_animations.h
+  mapping/map_animations.cpp
+  mapping/map_image.cpp
   mapping/chkd_plugins.h
   mapping/clipboard.h
   mapping/color_cycler.h
   mapping/data_file_browsers.h
+  mapping/game_clock.h
   mapping/memory_tiered_tasks.h
   mapping/sc_graphics.h
   mapping/scr_graphics.h
@@ -78,30 +83,11 @@ set(Headers
   mapping/opengl/gl/vertices.h
   mapping/opengl/glad/glad/gl.h
   mapping/opengl/glad/KHR/khrplatform.h
-  mapping/undos/reversibles.h
-  mapping/undos/undos.h
-  mapping/undos/chkd_undos/cut_copy_paste_change.h
-  mapping/undos/chkd_undos/dimension_change.h
-  mapping/undos/chkd_undos/doodad_change.h
-  mapping/undos/chkd_undos/doodad_create_del.h
-  mapping/undos/chkd_undos/fog_change.h
-  mapping/undos/chkd_undos/isom_change.h
-  mapping/undos/chkd_undos/location_change.h
-  mapping/undos/chkd_undos/location_create_del.h
-  mapping/undos/chkd_undos/location_move.h
-  mapping/undos/chkd_undos/mtxm_change.h
-  mapping/undos/chkd_undos/sprite_change.h
-  mapping/undos/chkd_undos/sprite_create_del.h
-  mapping/undos/chkd_undos/sprite_index_move.h
-  mapping/undos/chkd_undos/tile_change.h
-  mapping/undos/chkd_undos/undo_types.h
-  mapping/undos/chkd_undos/unit_change.h
-  mapping/undos/chkd_undos/unit_create_del.h
-  mapping/undos/chkd_undos/unit_index_move.h
   ui/chkd_controls/chkd_string_input.h
   ui/chkd_controls/cnd_act_grid.h
   ui/chkd_controls/cuwp_input.h
   ui/chkd_controls/doodad_tree.h
+  ui/chkd_controls/history_tree.h
   ui/chkd_controls/isom_tree.h
   ui/chkd_controls/location_tree.h
   ui/chkd_controls/main_tree.h
@@ -114,6 +100,7 @@ set(Headers
   ui/chkd_controls/unit_tree.h
   ui/chkd_controls/upgrade_tree.h
   ui/dialog_windows/about.h
+  ui/dialog_windows/actor_properties.h
   ui/dialog_windows/dialog_windows.h
   ui/dialog_windows/dimensions.h
   ui/dialog_windows/briefing_editor/briefing_editor.h
@@ -126,10 +113,8 @@ set(Headers
   ui/dialog_windows/layers/location_properties.h
   ui/dialog_windows/layers/terrain_palette.h
   ui/dialog_windows/layers/tile_properties.h
-  ui/dialog_windows/layers/sprite_properties/preserved_sprite_stats.h
-  ui/dialog_windows/layers/sprite_properties/sprite_properties.h
-  ui/dialog_windows/layers/unit_properties/preserved_unit_stats.h
-  ui/dialog_windows/layers/unit_properties/unit_properties.h
+  ui/dialog_windows/layers/sprite_properties.h
+  ui/dialog_windows/layers/unit_properties.h
   ui/dialog_windows/map_protection/change_password.h
   ui/dialog_windows/map_protection/enter_password.h
   ui/dialog_windows/map_settings/color_properties.h
@@ -180,29 +165,11 @@ set(Sources
   mapping/selections.cpp
   mapping/settings.cpp
   mapping/opengl/glad/glad/gl.c
-  mapping/undos/reversibles.cpp
-  mapping/undos/undos.cpp
-  mapping/undos/chkd_undos/cut_copy_paste_change.cpp
-  mapping/undos/chkd_undos/dimension_change.cpp
-  mapping/undos/chkd_undos/doodad_change.cpp
-  mapping/undos/chkd_undos/doodad_create_del.cpp
-  mapping/undos/chkd_undos/fog_change.cpp
-  mapping/undos/chkd_undos/isom_change.cpp
-  mapping/undos/chkd_undos/location_change.cpp
-  mapping/undos/chkd_undos/location_create_del.cpp
-  mapping/undos/chkd_undos/location_move.cpp
-  mapping/undos/chkd_undos/mtxm_change.cpp
-  mapping/undos/chkd_undos/sprite_change.cpp
-  mapping/undos/chkd_undos/sprite_create_del.cpp
-  mapping/undos/chkd_undos/sprite_index_move.cpp
-  mapping/undos/chkd_undos/tile_change.cpp
-  mapping/undos/chkd_undos/unit_change.cpp
-  mapping/undos/chkd_undos/unit_create_del.cpp
-  mapping/undos/chkd_undos/unit_index_move.cpp
   ui/chkd_controls/chkd_string_input.cpp
   ui/chkd_controls/cnd_act_grid.cpp
   ui/chkd_controls/cuwp_input.cpp
   ui/chkd_controls/doodad_tree.cpp
+  ui/chkd_controls/history_tree.cpp
   ui/chkd_controls/isom_tree.cpp
   ui/chkd_controls/location_tree.cpp
   ui/chkd_controls/main_tree.cpp
@@ -215,6 +182,7 @@ set(Sources
   ui/chkd_controls/unit_tree.cpp
   ui/chkd_controls/upgrade_tree.cpp
   ui/dialog_windows/about.cpp
+  ui/dialog_windows/actor_properties.cpp
   ui/dialog_windows/dimensions.cpp
   ui/dialog_windows/briefing_editor/briefing_editor.cpp
   ui/dialog_windows/briefing_editor/briefing_templates.cpp
@@ -226,10 +194,8 @@ set(Sources
   ui/dialog_windows/layers/location_properties.cpp
   ui/dialog_windows/layers/terrain_palette.cpp
   ui/dialog_windows/layers/tile_properties.cpp
-  ui/dialog_windows/layers/sprite_properties/preserved_sprite_stats.cpp
-  ui/dialog_windows/layers/sprite_properties/sprite_properties.cpp
-  ui/dialog_windows/layers/unit_properties/preserved_unit_stats.cpp
-  ui/dialog_windows/layers/unit_properties/unit_properties.cpp
+  ui/dialog_windows/layers/sprite_properties.cpp
+  ui/dialog_windows/layers/unit_properties.cpp
   ui/dialog_windows/map_protection/change_password.cpp
   ui/dialog_windows/map_protection/enter_password.cpp
   ui/dialog_windows/map_settings/color_properties.cpp
@@ -260,6 +226,7 @@ set(Sources
   ui/dialog_windows/trig_modify/trig_modify_text.cpp
   ui/dialog_windows/trig_modify/trig_players.cpp
   ui/main_windows/gui_map.cpp
+  ui/main_windows/gui_map_printer.cpp
   ui/main_windows/left_bar.cpp
   ui/main_windows/logger_window.cpp
   ui/main_windows/main_plot.cpp

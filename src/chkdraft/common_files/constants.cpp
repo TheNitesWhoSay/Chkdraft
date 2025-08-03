@@ -282,7 +282,7 @@ const std::vector<std::string> playerOwners = { "Unused", "Rescuable", "Computer
 
 const std::vector<std::string> playerRaces =
 {
-    "Zerg", "Terran", "Protoss", "Independent", "Neutral", "User Select", "Inactive", "Human"
+    "Zerg", "Terran", "Protoss", "Independent", "Neutral", "User Select", "Random", "Human"
 };
 
 const std::vector<std::string> specialColors =

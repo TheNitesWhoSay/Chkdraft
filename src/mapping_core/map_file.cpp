@@ -14,7 +14,6 @@ extern Logger logger;
 
 #undef PlaySound
 
-std::hash<std::string> MapFile::strHash;
 std::map<size_t, std::string> MapFile::virtualSoundTable;
 u64 MapFile::nextAssetFileId(0);
 
@@ -28,32 +27,25 @@ FileBrowserPtr<SaveType> MapFile::getDefaultSaveMapBrowser()
     return FileBrowserPtr<SaveType>(new FileBrowser<SaveType>(getSaveMapFilters(), "Save Map", false, true));
 }
 
-MapFile::MapFile(const std::string & filePath) :
-    saveType(SaveType::Unknown), mapFilePath(""), temporaryMpqPath(""), temporaryMpq(true, true)
+MapFile::MapFile(const std::string & filePath) : MpqAssetManager()
 {
     initializeVirtualSoundTable();
     load(filePath);
 }
 
-MapFile::MapFile(FileBrowserPtr<SaveType> fileBrowser) :
-    saveType(SaveType::Unknown), mapFilePath(""), temporaryMpqPath(""), temporaryMpq(true, true)
+MapFile::MapFile(FileBrowserPtr<SaveType> fileBrowser) : MpqAssetManager()
 {
     initializeVirtualSoundTable();
     load(fileBrowser);
 }
 
-MapFile::MapFile(Sc::Terrain::Tileset tileset, u16 width, u16 height)
-    : Scenario(tileset, width, height), saveType(SaveType::HybridScm), mapFilePath(""), temporaryMpqPath(""), temporaryMpq(true, true)
+MapFile::MapFile(Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex, SaveType saveType, const Sc::Terrain::Tiles* tilesetData)
+    : Scenario(tileset, width, height, terrainTypeIndex, saveType, tilesetData), MpqAssetManager()
 {
     initializeVirtualSoundTable();
 }
 
-MapFile::MapFile() : Scenario(), saveType(SaveType::HybridScm), mapFilePath(""), temporaryMpqPath(""), temporaryMpq(true, true)
-{
-
-}
-
-MapFile::~MapFile()
+MapFile::MapFile() : Scenario(), MpqAssetManager()
 {
 
 }
@@ -66,7 +58,7 @@ bool MapFile::load(const std::string & filePath)
 bool MapFile::load(FileBrowserPtr<SaveType> fileBrowser)
 {
     std::string browseFilePath = "";
-    SaveType saveType;
+    SaveType saveType = SaveType::Unknown;
     return fileBrowser != nullptr && fileBrowser->browseForOpenPath(browseFilePath, saveType) && openMapFile(browseFilePath);
 }
 
@@ -79,16 +71,16 @@ bool MapFile::save(const std::string & saveFilePath, bool overwriting, bool upda
         CHKD_ERR("Cannot save protected maps!");
     else if ( !saveFilePath.empty() )
     {
-        logger.info() << "Saving to: " << saveFilePath << " with saveType: \"" << saveTypeToStr(saveType) << "\"" << std::endl;
+        logger.info() << "Saving to: " << saveFilePath << " with saveType: \"" << saveTypeToStr(read.saveType) << "\"" << std::endl;
         auto start = std::chrono::high_resolution_clock::now();
         bool versionCorrect = true;
-        if ( saveType == SaveType::StarCraftScm || saveType == SaveType::StarCraftChk ) // StarCraft Map, edit to match
+        if ( read.saveType == SaveType::StarCraftScm || read.saveType == SaveType::StarCraftChk ) // StarCraft Map, edit to match
             versionCorrect = Scenario::changeVersionTo(Chk::Version::StarCraft_Original);
-        else if ( saveType == SaveType::HybridScm || saveType == SaveType::HybridChk ) // Hybrid Map, edit to match
+        else if ( read.saveType == SaveType::HybridScm || read.saveType == SaveType::HybridChk ) // Hybrid Map, edit to match
             versionCorrect = Scenario::changeVersionTo(Chk::Version::StarCraft_Hybrid);
-        else if ( saveType == SaveType::ExpansionScx || saveType == SaveType::ExpansionChk || saveType == SaveType::AllMaps ) // BroodWar Map, edit to match
+        else if ( read.saveType == SaveType::ExpansionScx || read.saveType == SaveType::ExpansionChk || read.saveType == SaveType::AllMaps ) // BroodWar Map, edit to match
             versionCorrect = Scenario::changeVersionTo(Chk::Version::StarCraft_BroodWar);
-        else if ( saveType == SaveType::RemasteredScx || saveType == SaveType::RemasteredChk || saveType == SaveType::AllMaps ) // Remastered Map, edit to match
+        else if ( read.saveType == SaveType::RemasteredScx || read.saveType == SaveType::RemasteredChk || read.saveType == SaveType::AllMaps ) // Remastered Map, edit to match
             versionCorrect = Scenario::changeVersionTo(Chk::Version::StarCraft_Remastered);
 
         if ( !versionCorrect )
@@ -99,8 +91,8 @@ bool MapFile::save(const std::string & saveFilePath, bool overwriting, bool upda
 
         updateSaveSections();
 
-        if ( (saveType == SaveType::StarCraftScm || saveType == SaveType::HybridScm ||
-              saveType == SaveType::ExpansionScx || saveType == SaveType::RemasteredScx) || saveType == SaveType::AllMaps ) // Must be packed into an MPQ
+        if ( (read.saveType == SaveType::StarCraftScm || read.saveType == SaveType::HybridScm ||
+              read.saveType == SaveType::ExpansionScx || read.saveType == SaveType::RemasteredScx) || read.saveType == SaveType::AllMaps ) // Must be packed into an MPQ
         {
             if ( savePathChanged && overwriting && !::removeFile(saveFilePath) )
             {
@@ -122,7 +114,7 @@ bool MapFile::save(const std::string & saveFilePath, bool overwriting, bool upda
                             CHKD_ERR("Failed to add scenario file!");
                             success = false;
                         }
-                        else if ( !processModifiedAssets(updateListFile) )
+                        else if ( !MpqAssetManager::saveAssets((MpqFile &)(*this)) )
                         {
                             CHKD_ERR("Processing assets failed!");
                             success = false;
@@ -133,7 +125,7 @@ bool MapFile::save(const std::string & saveFilePath, bool overwriting, bool upda
                         mapFilePath = saveFilePath;
                         
                         auto finish = std::chrono::high_resolution_clock::now();
-                        logger.info() << "Successfully saved to: " << saveFilePath << " with saveType: \"" << saveTypeToStr(saveType) << "\" in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
+                        logger.info() << "Successfully saved to: " << saveFilePath << " with saveType: \"" << saveTypeToStr(read.saveType) << "\" in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
                         return success;
                     }
                     else
@@ -155,7 +147,7 @@ bool MapFile::save(const std::string & saveFilePath, bool overwriting, bool upda
                     {
                         mapFilePath = saveFilePath;
                         auto finish = std::chrono::high_resolution_clock::now();
-                        logger.info() << "Successfully saved to: " << saveFilePath << " with saveType: \"" << saveTypeToStr(saveType) << "\" in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
+                        logger.info() << "Successfully saved to: " << saveFilePath << " with saveType: \"" << saveTypeToStr(read.saveType) << "\" in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
                         return true;
                     }
                     else
@@ -187,20 +179,28 @@ bool MapFile::save(bool saveAs, bool updateListFile, FileBrowserPtr<SaveType> fi
         CHKD_ERR("Cannot save protected maps!");
     else
     {
+        auto edit = createAction(ActionDescriptor::UpdateSaveSections);
         // If scenario changed such that save type should have changed, adjust it in advance so filter type is correct
-        if ( Scenario::getVersion() >= Chk::Version::StarCraft_Remastered )
-            saveType = isChkSaveType(saveType) ? SaveType::RemasteredChk : SaveType::RemasteredScx;
-        else if ( Scenario::getVersion() >= Chk::Version::StarCraft_BroodWar )
-            saveType = isChkSaveType(saveType) ? SaveType::ExpansionChk : SaveType::ExpansionScx;
-        else if ( Scenario::getVersion() >= Chk::Version::StarCraft_Hybrid )
-            saveType = isChkSaveType(saveType) ? SaveType::HybridChk : SaveType::HybridScm;
+        SaveType newSaveType = read.saveType;
+        if ( Scenario::getVersion() >= Chk::Version::StarCraft_Remastered || read.saveType == SaveType::RemasteredScx || read.saveType == SaveType::RemasteredChk )
+            newSaveType = isChkSaveType(read.saveType) ? SaveType::RemasteredChk : SaveType::RemasteredScx;
+        else if ( Scenario::getVersion() >= Chk::Version::StarCraft_BroodWar || read.saveType == SaveType::ExpansionScx || read.saveType == SaveType::ExpansionChk )
+            newSaveType = isChkSaveType(read.saveType) ? SaveType::ExpansionChk : SaveType::ExpansionScx;
+        else if ( Scenario::getVersion() >= Chk::Version::StarCraft_Hybrid || read.saveType == SaveType::HybridScm || read.saveType == SaveType::HybridChk )
+            newSaveType = isChkSaveType(read.saveType) ? SaveType::HybridChk : SaveType::HybridScm;
         else // version < Chk::Version::StarCraft_Hybrid
-            saveType = isChkSaveType(saveType) ? SaveType::StarCraftChk : SaveType::StarCraftScm;
+            newSaveType = isChkSaveType(read.saveType) ? SaveType::StarCraftChk : SaveType::StarCraftScm;
+
+        if ( newSaveType != read.saveType )
+            edit->saveType = newSaveType;
 
         bool overwriting = false;
         std::string newMapFilePath;
         if ( (saveAs || mapFilePath.empty()) && fileBrowser != nullptr ) // saveAs specified or filePath not yet determined, and a fileBrowser is available
-            getSaveDetails(saveType, newMapFilePath, overwriting, fileBrowser);
+        {
+            if ( getSaveDetails(newSaveType, newMapFilePath, overwriting, fileBrowser) && read.saveType != newSaveType )
+                edit->saveType = newSaveType;
+        }
         else if ( !saveAs )
             newMapFilePath = mapFilePath;
 
@@ -210,12 +210,10 @@ bool MapFile::save(bool saveAs, bool updateListFile, FileBrowserPtr<SaveType> fi
     return false;
 }
 
-bool MapFile::openTemporaryMpq()
+std::string MapFile::getTemporaryMpqPath()
 {
-    if ( temporaryMpq.isOpen() )
-        return true;
-    else if ( !temporaryMpqPath.empty() )
-        return temporaryMpq.open(temporaryMpqPath, false, true);
+    if ( !MpqAssetManager::tempMpqPath.empty() )
+        return MpqAssetManager::tempMpqPath;
 
     std::string assetFileDirectory("");
     std::string assetFilePath("");
@@ -251,22 +249,12 @@ bool MapFile::openTemporaryMpq()
         }
     }
 
-    if ( assetFilePath.length() > 0 )
-    {
-        try {
-            if ( temporaryMpq.create(assetFilePath) )
-            {
-                temporaryMpqPath = temporaryMpq.getFilePath();
-                return true;
-            }
-        } catch ( ... ) {
-            CHKD_ERR("Failed to setup temporary asset storage, out of memory!");
-        }
-    }
-    else
-        CHKD_ERR("Failed to setup temporary asset storage, an appropriate file path could not be found!");
+    return assetFilePath;
+}
 
-    return false;
+std::size_t MapFile::getCurrentActionIndex()
+{
+    return Tracked::getPendingActionIndex();
 }
 
 bool MapFile::openMapFile(const std::string & filePath)
@@ -287,17 +275,8 @@ bool MapFile::openMapFile(const std::string & filePath)
 
                     std::stringstream chk(std::ios_base::in|std::ios_base::out|std::ios_base::binary);
                     std::copy(chkData->begin(), chkData->end(), std::ostream_iterator<u8>(chk));
-                    if ( Scenario::read(chk) )
+                    if ( Scenario::parse(chk, true) )
                     {
-                        if ( Scenario::isOriginal() )
-                            saveType = SaveType::StarCraftScm; // Vanilla
-                        else if ( Scenario::isHybrid() )
-                            saveType = SaveType::HybridScm; // Hybrid
-                        else if ( Scenario::isExpansion() )
-                            saveType = SaveType::ExpansionScx; // Expansion
-                        else if ( Scenario::isRemastered() )
-                            saveType = SaveType::RemasteredScx; // Remastered
-                    
                         auto finish = std::chrono::high_resolution_clock::now();
                         logger.info() << "Map " << mapFilePath << " opened in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
                         return true;
@@ -319,17 +298,8 @@ bool MapFile::openMapFile(const std::string & filePath)
         {
             this->mapFilePath = filePath;
             std::ifstream chk(std::filesystem::path(asUtf8(filePath)), std::ios_base::binary|std::ios_base::in);
-            if ( Scenario::read(chk) )
+            if ( Scenario::parse(chk, false) )
             {
-                if ( Scenario::isOriginal() )
-                    saveType = SaveType::StarCraftChk; // Vanilla chk
-                else if ( Scenario::isHybrid() )
-                    saveType = SaveType::HybridChk; // Hybrid chk
-                else if ( Scenario::isExpansion() )
-                    saveType = SaveType::ExpansionChk; // Expansion chk
-                else
-                    saveType = SaveType::RemasteredChk;
-                
                 auto finish = std::chrono::high_resolution_clock::now();
                 logger.info() << "Map " << mapFilePath << " opened in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
                 return true;
@@ -343,56 +313,6 @@ bool MapFile::openMapFile(const std::string & filePath)
     return false;
 }
 
-bool MapFile::processModifiedAssets(bool updateListFile)
-{
-    std::vector<std::vector<ModifiedAsset>::iterator> processedAssets;
-    if ( openTemporaryMpq() )
-    {
-        for ( auto modifiedAsset = modifiedAssets.begin(); modifiedAsset != modifiedAssets.end(); ++modifiedAsset )
-        {
-            const std::string & assetMpqPath = modifiedAsset->assetMpqPath;
-            if ( modifiedAsset->actionTaken == AssetAction::Add )
-            {
-                if ( auto assetBuffer = temporaryMpq.getFile(modifiedAsset->assetTempMpqPath) )
-                {
-                    temporaryMpq.removeFile(modifiedAsset->assetTempMpqPath);
-                    if ( MpqFile::addFile(assetMpqPath, *assetBuffer, modifiedAsset->wavQualitySelected) )
-                        processedAssets.push_back(modifiedAsset);
-                    else
-                        CHKD_ERR("Failed to save %s to destination file", assetMpqPath.c_str());
-                }
-                else
-                    CHKD_ERR("Failed to read in temporary asset!");
-            }
-            else if ( modifiedAsset->actionTaken == AssetAction::Remove )
-            {
-                if ( MpqFile::removeFile(assetMpqPath) )
-                    processedAssets.push_back(modifiedAsset);
-                else
-                {
-                    logger.error() << assetMpqPath.c_str() << std::endl;
-                    CHKD_ERR("Failed to remove %s from map archive", assetMpqPath.c_str());
-                }
-            }
-        }
-        temporaryMpq.setUpdatingListFile(updateListFile);
-        temporaryMpq.save();
-    }
-
-    if ( processedAssets.size() == modifiedAssets.size() )
-    {
-        modifiedAssets.clear();
-        return true;
-    }
-    else
-    {
-        for ( auto processedAsset : processedAssets )
-            modifiedAssets.erase(processedAsset);
-
-        return false;
-    }
-}
-
 void MapFile::initializeVirtualSoundTable()
 {
     if ( MapFile::virtualSoundTable.size() == 0 )
@@ -401,20 +321,10 @@ void MapFile::initializeVirtualSoundTable()
         for ( size_t i=0; i<numVirtualSounds; i++ )
         {
             std::string soundPath(Sc::Sound::virtualSoundPaths[i]);
-            size_t hash = strHash(soundPath);
+            size_t hash = std::hash<std::string>{}(soundPath);
             virtualSoundTable.insert(std::pair<size_t, std::string>(hash, soundPath));
         }
     }
-}
-
-SaveType MapFile::getSaveType()
-{
-    return saveType;
-}
-
-void MapFile::setSaveType(SaveType newSaveType)
-{
-    saveType = newSaveType;
 }
 
 std::string MapFile::GetStandardSoundDir()
@@ -422,114 +332,31 @@ std::string MapFile::GetStandardSoundDir()
     return "staredit\\wav\\";
 }
 
-bool MapFile::addMpqAsset(const std::string & assetSystemFilePath, const std::string & assetMpqFilePath, WavQuality wavQuality)
-{
-    bool success = false;
-    if ( ::findFile(assetSystemFilePath) )
-    {
-        if ( openTemporaryMpq() )
-        {
-            ModifiedAsset modifiedAsset(assetMpqFilePath, AssetAction::Add, wavQuality);
-            const std::string & tempMpqPath = modifiedAsset.assetTempMpqPath;
-            if ( temporaryMpq.addFile(tempMpqPath, assetSystemFilePath) )
-            {
-                modifiedAssets.push_back(modifiedAsset);
-                success = true;
-            }
-            else
-                CHKD_ERR("Failed to add file!");
-            
-            temporaryMpq.setUpdatingListFile(true);
-            temporaryMpq.save();
-        }
-        else
-            CHKD_ERR("Failed to setup asset temporary storage!");
-    }
-    else
-        CHKD_ERR("Failed to find asset file!");
-
-    return success;
-}
-
-bool MapFile::addMpqAsset(const std::string & assetMpqFilePath, const std::vector<u8> & asset, WavQuality wavQuality)
-{
-    bool success = false;
-    if ( openTemporaryMpq() )
-    {
-        ModifiedAsset modifiedAsset = ModifiedAsset(assetMpqFilePath, AssetAction::Add, wavQuality);
-        const std::string & tempMpqPath = modifiedAsset.assetTempMpqPath;
-        if ( temporaryMpq.open(temporaryMpqPath, false, true) )
-        {
-            if ( temporaryMpq.addFile(modifiedAsset.assetTempMpqPath, asset) )
-            {
-                modifiedAssets.push_back(modifiedAsset);
-                success = true;
-            }
-            else
-                CHKD_ERR("Failed to add file!");
-            
-            temporaryMpq.setUpdatingListFile(true);
-            temporaryMpq.save();
-        }
-        else
-            CHKD_ERR("Failed to open temp file!\n\nThe file may be in use elsewhere.");
-    }
-    else
-        CHKD_ERR("Failed to setup asset temporary storage!");
-
-    return success;
-}
-
-void MapFile::removeMpqAsset(const std::string & assetMpqFilePath)
-{
-    auto recentlyAddedAsset = modifiedAssets.end();
-    for ( auto asset = modifiedAssets.begin(); asset != modifiedAssets.end(); asset++ )
-    {
-        if ( asset->actionTaken == AssetAction::Remove )
-            return; // Already scheduled for deletion, take no further action
-        else if ( asset->assetMpqPath == assetMpqFilePath )
-        {
-            recentlyAddedAsset = asset;
-            break;
-        }
-    }
-
-    if ( recentlyAddedAsset != modifiedAssets.end() ) // Asset was added between last save and now, cancel its addition
-    {
-        // Get the temp mpq file path used for this asset
-        const std::string tempMpqFilePath = recentlyAddedAsset->assetTempMpqPath;
-
-        // Remove the asset from the list of assets to be added to the actual map file
-        modifiedAssets.erase(recentlyAddedAsset);
-
-        // Try to remove it from the temporary file for some short-term disk saving; ignore errors, if any
-        if ( openTemporaryMpq() )
-        {
-            temporaryMpq.removeFile(tempMpqFilePath);
-            temporaryMpq.save();
-        }
-    }
-    else // The given file was not added recently, mark it for deletion at the next save
-        modifiedAssets.push_back(ModifiedAsset(assetMpqFilePath, AssetAction::Remove));
-}
-
 std::optional<std::vector<u8>> MapFile::getMpqAsset(const std::string & assetMpqFilePath)
 {
-    bool success = false;
-    for ( auto & asset : modifiedAssets ) // Check if it's a recently added asset
-    {
-        if ( asset.actionTaken == AssetAction::Add && asset.assetMpqPath.compare(assetMpqFilePath) == 0 ) // Asset was recently added
-            return openTemporaryMpq() ? temporaryMpq.getFile(asset.assetTempMpqPath) : std::nullopt;
-    }
-
-    if ( MpqFile::open(mapFilePath, true, false) )
+    if ( auto found = MpqAssetManager::getRecentlyModdedAsset(assetMpqFilePath) )
+        return found;
+    else if ( MpqFile::open(mapFilePath, true, false) )
     {
         auto asset = MpqFile::getFile(assetMpqFilePath);
         MpqFile::close();
         return asset;
     }
-
     return std::nullopt;
+}
+
+std::optional<std::vector<std::string>> MapFile::getListfile()
+{
+    if ( MpqFile::isOpen() )
+        return MpqFile::getListfile();
+    else if ( MpqFile::open(mapFilePath, true, false) )
+    {
+        auto result = MpqFile::getListfile();
+        MpqFile::close();
+        return result;
+    }
+    else
+        return std::nullopt;
 }
 
 bool MapFile::extractMpqAsset(const std::string & assetMpqFilePath, const std::string & systemFilePath)
@@ -548,6 +375,14 @@ std::optional<std::vector<u8>> MapFile::getSound(size_t stringId)
 {
     if ( auto soundString = Scenario::getString<RawString>(stringId) )
         return getMpqAsset(*soundString);
+    else
+        return std::nullopt;
+}
+
+std::optional<std::vector<u8>> MapFile::getSound(const std::string & soundPath)
+{
+    if ( !soundPath.empty() )
+        return getMpqAsset(soundPath);
     else
         return std::nullopt;
 }
@@ -572,25 +407,23 @@ bool MapFile::addSound(const std::string & srcFilePath, WavQuality wavQuality, b
 
 bool MapFile::addSound(const std::string & srcFilePath, const std::string & destMpqPath, WavQuality wavQuality, bool virtualFile)
 {
+    auto edit = createAction(ActionDescriptor::AddSound);
     if ( virtualFile )
     {
         size_t soundStringId = Scenario::addString(RawString(srcFilePath), Chk::Scope::Game);
         if ( soundStringId != Chk::StringId::NoString )
-        {
-            Scenario::addSound(soundStringId);
-            return true;
-        }
+            return Scenario::addSound(soundStringId) != Chk::TotalSounds;
     }
-    else if ( addMpqAsset(srcFilePath, destMpqPath, wavQuality) ) // Add, Register
+    else if ( auto result = MpqAssetManager::addAsset(destMpqPath, srcFilePath, wavQuality) ) // Add, Register
     {
         size_t soundStringId = Scenario::addString(RawString(destMpqPath), Chk::Scope::Game);
         if ( soundStringId != Chk::StringId::NoString )
         {
             Scenario::addSound(soundStringId);
-            return true;
+            return result;
         }
         else
-            removeMpqAsset(destMpqPath); // Try to remove the sound, ignore errors if any
+            MpqAssetManager::removeAsset(destMpqPath); // Try to remove the sound, ignore errors if any
     }
     return false;
 }
@@ -598,22 +431,23 @@ bool MapFile::addSound(const std::string & srcFilePath, const std::string & dest
 bool MapFile::addSound(const std::string & destMpqPath, const std::vector<u8> & soundContents, WavQuality wavQuality)
 {
     bool success = false;
-    if ( addMpqAsset(destMpqPath, soundContents, wavQuality) )
+    if ( auto result = MpqAssetManager::addAsset(destMpqPath, soundContents, wavQuality) )
     {
         size_t soundStringId = Scenario::addString(RawString(destMpqPath), Chk::Scope::Game);
         if ( soundStringId != Chk::StringId::NoString )
         {
             Scenario::addSound(soundStringId);
-            return true;
+            return result;
         }
         else
-            removeMpqAsset(destMpqPath); // Try to remove the sound, ignore errors if any
+            MpqAssetManager::removeAsset(destMpqPath); // Try to remove the sound, ignore errors if any
     }
     return false;
 }
 
 bool MapFile::removeSoundBySoundIndex(u16 soundIndex, bool removeIfUsed)
 {
+    bool result = false;
     size_t soundStringId = Scenario::getSoundStringId(soundIndex);
     if ( soundStringId != Chk::StringId::UnusedSound )
     {
@@ -621,31 +455,31 @@ bool MapFile::removeSoundBySoundIndex(u16 soundIndex, bool removeIfUsed)
         Scenario::setSoundStringId(soundIndex, 0);
         if ( soundString )
         {
+            result = MpqAssetManager::removeAsset(*soundString);
             Scenario::deleteString(soundStringId);
-            removeMpqAsset(*soundString);
         }
-        return true;
     }
-    return false;
+    return result;
 }
 
 bool MapFile::removeSoundByStringId(size_t soundStringId, bool removeIfUsed)
 {
+    bool result = false;
     if ( soundStringId != Chk::StringId::UnusedSound )
     {
         auto soundString = Scenario::getString<RawString>(soundStringId, Chk::Scope::Game);
         Scenario::deleteString(soundStringId);
         if ( soundString )
-            removeMpqAsset(*soundString);
-
-        return true;
+            result = MpqAssetManager::removeAsset(*soundString);
     }
-    return false;
+    return result;
 }
 
 SoundStatus MapFile::getSoundStatus(size_t soundStringId)
 {
-    if ( Scenario::stringUsed(soundStringId, Chk::Scope::Either, Chk::Scope::Editor) &&
+    if ( soundStringId == Chk::StringId::NoString )
+        return SoundStatus::NoMatch;
+    else if ( Scenario::stringUsed(soundStringId, Chk::Scope::Either, Chk::Scope::Editor) &&
         !Scenario::stringUsed(soundStringId, Chk::Scope::Either, Chk::Scope::Game) )
         return SoundStatus::NoMatch; // Extended strings are not used in SC and therefore never match
     else
@@ -653,11 +487,8 @@ SoundStatus MapFile::getSoundStatus(size_t soundStringId)
         auto soundString = Scenario::getString<RawString>(soundStringId, Chk::Scope::Game);
         if ( soundString )
         {
-            for ( ModifiedAsset & modifiedAsset : modifiedAssets )
-            {
-                if ( modifiedAsset.actionTaken == AssetAction::Add && soundString->compare(modifiedAsset.assetMpqPath) == 0 )
-                    return SoundStatus::PendingMatch;
-            }
+            if ( auto found = MpqAssetManager::getRecentlyModdedAsset(*soundString) )
+                return SoundStatus::PendingMatch;
 
             HANDLE hMpq = NULL;
             if ( MpqFile::open(mapFilePath, true, false) )
@@ -722,14 +553,8 @@ bool MapFile::getSoundStatuses(std::map<size_t/*stringId*/, SoundStatus> & outSo
         }
         else if ( auto soundString = Scenario::getString<RawString>(soundStringId) )
         {
-            for ( ModifiedAsset & modifiedAsset : modifiedAssets )
-            {
-                if ( modifiedAsset.actionTaken == AssetAction::Add && soundString->compare(modifiedAsset.assetMpqPath) == 0 )
-                {
-                    outSoundStatus.insert(std::pair<size_t, SoundStatus>(soundStringId, SoundStatus::PendingMatch));
-                    continue;
-                }
-            }
+            if ( auto found = MpqAssetManager::getRecentlyModdedAsset(*soundString) )
+                outSoundStatus.insert(std::pair<size_t, SoundStatus>(soundStringId, SoundStatus::PendingMatch));
 
             if ( MapFile::open(mapFilePath, true, false) )
             {
@@ -749,7 +574,7 @@ bool MapFile::getSoundStatuses(std::map<size_t/*stringId*/, SoundStatus> & outSo
 
 bool MapFile::isInVirtualSoundList(const std::string & soundMpqPath) const
 {
-    size_t hash = MapFile::strHash(soundMpqPath);
+    size_t hash = std::hash<std::string>{}(soundMpqPath);
     size_t numMatching = MapFile::virtualSoundTable.count(hash);
     if ( numMatching == 1 )
     {

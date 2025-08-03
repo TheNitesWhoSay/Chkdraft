@@ -1,12 +1,14 @@
 #ifndef CLIPBOARD_H
 #define CLIPBOARD_H
+#include <chkdraft/mapping/map_animations.h>
 #include <common_files/constants.h>
 #include <common_files/structs.h>
+#include <mapping_core/map_actor.h>
 #include <mapping_core/mapping_core.h>
 #include <chrono>
 #include <string>
+
 class GuiMap;
-class Undos;
 
 using TileNeighbor = Sc::Terrain::TileNeighbor;
 
@@ -58,7 +60,7 @@ struct PasteSpriteNode
     s32 yc = 0;
 
     PasteSpriteNode() = delete;
-    PasteSpriteNode(const Chk::Sprite & sprite) : sprite(sprite), xc(sprite.xc), yc(sprite.yc) {}
+    PasteSpriteNode(const Chk::Sprite & sprite);
 };
 
 struct PasteUnitNode
@@ -119,13 +121,13 @@ class Clipboard
 
     void ClearQuickItems();
 
-    void pasteTerrain(TerrainSubLayer terrainSubLayer, s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos);
-    void pasteDoodads(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos);
-    void fillPasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos);
-    void pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos, bool allowStack);
-    void pasteSprites(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos);
-    void pasteBrushFog(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos);
-    void pasteFog(s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos);
+    void pasteTerrain(TerrainSubLayer terrainSubLayer, s32 mapClickX, s32 mapClickY, GuiMap & map, point prevPaste);
+    void pasteDoodads(s32 mapClickX, s32 mapClickY, GuiMap & map, point prevPaste);
+    void fillPasteTerrain(s32 mapClickX, s32 mapClickY, GuiMap & map, point prevPaste);
+    void pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap & map, bool allowStack, point prevPaste);
+    void pasteSprites(s32 mapClickX, s32 mapClickY, GuiMap & map, point prevPaste);
+    void pasteBrushFog(s32 mapClickX, s32 mapClickY, GuiMap & map, point prevPaste);
+    void pasteFog(s32 mapClickX, s32 mapClickY, GuiMap & map, point prevPaste);
         
     void updateTileMiddle(point middle);
     void updateDoodadMiddle(point middle);
@@ -134,10 +136,16 @@ class Clipboard
     void updateFogMiddle(point middle);
 
 public:
-    bool hasTiles();
-    bool hasDoodads();
-    bool hasUnits() { return copyUnits.size() > 0; }
-    bool hasSprites() { return copySprites.size() > 0; }
+    ClipboardAnimations animations;
+    std::vector<MapActor> unitActors {};
+    std::vector<MapActor> spriteActors {};
+
+    Clipboard() : animations(*this) {}
+
+    bool hasTiles() const;
+    bool hasDoodads() const;
+    bool hasUnits() const { return copyUnits.size() > 0; }
+    bool hasSprites() const { return copySprites.size() > 0; }
     void copy(GuiMap & map, Layer layer);
 
     void setQuickIsom(size_t terrainTypeIndex);
@@ -145,33 +153,38 @@ public:
         
     void setQuickTile(u16 index, s32 xc, s32 yc);
     void addQuickTile(u16 index, s32 xc, s32 yc);
-    bool hasQuickTiles() { return quickTiles.size() > 0; }
+    bool hasQuickTiles() const { return quickTiles.size() > 0; }
 
     void addQuickUnit(const Chk::Unit & unit);
-    bool hasQuickUnits() { return quickUnits.size() > 0; }
+    bool hasQuickUnits() const { return quickUnits.size() > 0; }
         
     void addQuickSprite(const Chk::Sprite & sprite);
-    bool hasQuickSprites() { return quickSprites.size() > 0; }
+    bool hasQuickSprites() const { return quickSprites.size() > 0; }
 
-    bool hasFogTiles() { return copyFogTiles.size() > 0; }
+    bool hasFogTiles() const { return copyFogTiles.size() > 0; }
 
-    const auto & getFogBrush() { return this->fogBrush; }
+    const auto & getFogBrush() const { return this->fogBrush; }
     void setFogBrushSize(u32 width, u32 height);
     void initFogBrush(s32 mapClickX, s32 mapClickY, const GuiMap & map, bool allPlayers);
 
-    void beginPasting(bool isQuickPaste);
-    void endPasting();
+    void beginPasting(bool isQuickPaste, GuiMap & map);
+    void endPasting(GuiMap* map);
 
-    void doPaste(Layer layer, TerrainSubLayer terrainSubLayer, s32 mapClickX, s32 mapClickY, GuiMap & map, Undos & undos, bool allowStack);
+    void doPaste(Layer layer, TerrainSubLayer terrainSubLayer, s32 mapClickX, s32 mapClickY, GuiMap & map, bool allowStack);
         
-    bool getFillSimilarTiles();
+    bool getFillSimilarTiles() const;
     void toggleFillSimilarTiles();
-
+    
     std::vector<PasteTileNode> & getTiles();
     std::vector<PasteDoodadNode> & getDoodads();
     std::vector<PasteUnitNode> & getUnits();
     std::vector<PasteSpriteNode> & getSprites();
     std::vector<PasteFogTileNode> & getFogTiles();
+    const std::vector<PasteTileNode> & getTiles() const;
+    const std::vector<PasteDoodadNode> & getDoodads() const;
+    const std::vector<PasteUnitNode> & getUnits() const;
+    const std::vector<PasteSpriteNode> & getSprites() const;
+    const std::vector<PasteFogTileNode> & getFogTiles() const;
     bool isPasting() { return pasting; }
     bool isQuickPasting() { return pasting && quickPaste; }
     bool isPreviousPasteLoc(u16 x, u16 y) { return x == prevPaste.x && y == prevPaste.y; }
