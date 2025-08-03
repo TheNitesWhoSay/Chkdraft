@@ -63,10 +63,17 @@ class SoundEditorWindow : public WinLib::ClassWindow
         WinLib::CheckBoxControl checkCustomMpqString;
         WinLib::DropdownControl dropCustomMpqString;
 
-        int selectedSoundListIndex;
+        int selectedSoundEntry = -1;
         WavQuality wavQuality;
         std::optional<WinLib::DeviceContext> soundListDc; // Sound list HDC for speeding up string measurement
-        std::map<u32/*stringId*/, u16/*soundIndex*/> soundMap;
+        struct SoundEntry {
+            std::string soundPath;
+            u32 stringId;
+            u16 soundIndex;
+
+            bool unreferenced() { return stringId == Chk::StringId::NoString; } // True if the map never references this sound/asset
+        };
+        std::vector<SoundEntry> soundEntries {};
         static FileBrowserPtr<u32> getDefaultSoundBrowser();
         static FileBrowserPtr<u32> getDefaultSoundSaver();
 };

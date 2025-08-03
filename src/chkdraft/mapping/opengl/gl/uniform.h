@@ -83,6 +83,17 @@ namespace gl
             }
         };
 
+        struct UInt : Base // Singular unsigned int
+        {
+            using Base::Base;
+
+            void setValue(GLuint value)
+            {
+                WRAP_GL_VALIDATE_CURRENT_PROGRAM();
+                glUniform1ui(uniformLocation, value);
+            }
+        };
+
         struct Float : Base // Singular float
         {
             using Base::Base;
@@ -181,6 +192,17 @@ namespace gl
             {
                 WRAP_GL_VALIDATE_CURRENT_PROGRAM();
                 glUniform2f(uniformLocation, x, y);
+            }
+        };
+
+        struct UVec2 : Base // uVec2 - 2 unsigned integer vector
+        {
+            using Base::Base;
+
+            void setUVec2(GLuint x, GLuint y)
+            {
+                WRAP_GL_VALIDATE_CURRENT_PROGRAM();
+                glUniform2ui(uniformLocation, x, y);
             }
         };
 

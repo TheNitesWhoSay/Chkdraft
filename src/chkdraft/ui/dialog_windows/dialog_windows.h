@@ -2,8 +2,8 @@
 #define DIALOGWINDOWS_H
 
 #include "map_settings//map_settings.h"
-#include "layers/unit_properties/unit_properties.h"
-#include "layers/sprite_properties/sprite_properties.h"
+#include "layers/unit_properties.h"
+#include "layers/sprite_properties.h"
 #include "layers/location_properties.h"
 #include "layers/tile_properties.h"
 #include "new_map/new_map.h"
@@ -16,5 +16,6 @@
 #include "map_protection/enter_password.h"
 #include "dimensions.h"
 #include "about.h"
+#include "actor_properties.h"
 
 #endif

@@ -59,7 +59,7 @@ void TerrainPaletteWindow::SelectTile(std::uint16_t tileValue)
 
     if ( !chkd.maps.clipboard.hasQuickTiles() || !chkd.maps.clipboard.isPasting() || chkd.maps.clipboard.getTiles()[0].value != tileValue )
     {
-        chkd.maps.clipboard.endPasting();
+        chkd.maps.clipboard.endPasting(CM.get());
         CM->setSubLayer(TerrainSubLayer::Rectangular);
         chkd.maps.clipboard.setQuickTile(tileValue, -16, -16);
         chkd.maps.startPaste(true);
@@ -192,7 +192,7 @@ void TerrainPaletteWindow::LButtonDown(WPARAM wParam, int xc, int yc)
             yTileCoord = (yc + tilesetIndexedYC) / PIXELS_PER_TILE,
             tileNum = yTileCoord*TILES_PER_ROW + xTileCoord;
 
-        chkd.maps.clipboard.endPasting();
+        chkd.maps.clipboard.endPasting(CM.get());
         CM->setSubLayer(TerrainSubLayer::Rectangular);
         chkd.maps.clipboard.addQuickTile(tileNum, -16, -16);
         chkd.maps.startPaste(true);

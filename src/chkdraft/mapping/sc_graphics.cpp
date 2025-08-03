@@ -302,7 +302,7 @@ void Graphics::DrawLocations(ChkdBitmap & bitmap, bool showAnywhere)
 
     for ( size_t locationId=1; locationId<map.numLocations(); ++locationId )
     {
-        const auto & location = map.locations[locationId];
+        const auto & location = map->locations[locationId];
         if ( locationId != Chk::LocationId::Anywhere || showAnywhere )
         {
             
@@ -398,7 +398,7 @@ void Graphics::DrawLocations(ChkdBitmap & bitmap, bool showAnywhere)
     }
 
     u16 selectedLoc = selections.getSelectedLocation();
-    if ( selectedLoc != NO_LOCATION && selectedLoc < map.locations.size() )
+    if ( selectedLoc != NO_LOCATION && selectedLoc < map->locations.size() )
     {
         const Chk::Location & loc = map.getLocation(selectedLoc);
         s32 leftMost = std::min(loc.left, loc.right);
@@ -1558,52 +1558,61 @@ void DrawTileSel(const WinLib::DeviceContext & dc, ChkdPalette & palette, u16 wi
     rcBorder.top    = (0      + screenTop)/32 - 1;
     rcBorder.bottom = (height + screenTop)/32 + 1;
 
-    std::vector<TileNode> & selectedTiles = selections.tiles;
-    for ( auto & tile : selectedTiles )
+    auto selTiles = selections.renderTiles.tiles;
+    if ( !selTiles.empty() )
     {
-        if ( tile.xc > rcBorder.left &&
-             tile.xc < rcBorder.right &&
-             tile.yc > rcBorder.top &&
-             tile.yc < rcBorder.bottom )
-        // If tile is within current map border
+        LONG tileWidth = LONG(map.getTileWidth());
+        auto xBegin = std::max(LONG(selections.renderTiles.xBegin), rcBorder.left);
+        auto xEnd = std::min(LONG(selections.renderTiles.xEnd), rcBorder.right);
+        auto yBegin = std::max(LONG(selections.renderTiles.yBegin), rcBorder.top);
+        auto yEnd = std::min(LONG(selections.renderTiles.yEnd), rcBorder.bottom);
+        for ( LONG y=std::max(LONG(0), yBegin); y<yEnd; ++y )
         {
-            int xStart = int(tile.xc)*32-screenLeft;
-            int yStart = int(tile.yc)*32-screenTop;
-            AlphaBlend(dc.getDcHandle(), xStart, yStart, 32, 32,
-                tileBlend.getDcHandle(), 0, 0, 32, 32, blendFunction);
-
-            if ( tile.neighbors != TileNeighbor::None ) // if any edges need to be drawn
+            for ( LONG x=std::max(LONG(0), xBegin); x<xEnd; ++x )
             {
-                rect.left   = tile.xc*32 - screenLeft;
-                rect.right  = tile.xc*32 - screenLeft + 32;
-                rect.top    = tile.yc*32 - screenTop;
-                rect.bottom = tile.yc*32 - screenTop + 32;
+                auto selTile = selTiles[y*tileWidth + x];
+                if ( selTile )
+                {
+                    auto neighbors = *selTile;
+                    int xStart = int(x)*32-screenLeft;
+                    int yStart = int(y)*32-screenTop;
+                    AlphaBlend(dc.getDcHandle(), xStart, yStart, 32, 32,
+                        tileBlend.getDcHandle(), 0, 0, 32, 32, blendFunction);
 
-                if ( (tile.neighbors & TileNeighbor::Top) == TileNeighbor::Top )
-                {
-                    dc.moveTo(rect.left, rect.top);
-                    dc.lineTo(rect.right, rect.top);
-                }
-                if ( (tile.neighbors & TileNeighbor::Right) == TileNeighbor::Right )
-                {
-                    if ( rect.right >= width )
-                        rect.right --;
+                    if ( neighbors != TileNeighbor::None ) // if any edges need to be drawn
+                    {
+                        rect.left   = x*32 - screenLeft;
+                        rect.right  = x*32 - screenLeft + 32;
+                        rect.top    = y*32 - screenTop;
+                        rect.bottom = y*32 - screenTop + 32;
 
-                    dc.moveTo(rect.right, rect.top);
-                    dc.lineTo(rect.right, rect.bottom+1);
-                }
-                if ( (tile.neighbors & TileNeighbor::Bottom) == TileNeighbor::Bottom )
-                {
-                    if ( rect.bottom >= height )
-                        rect.bottom --;
+                        if ( (neighbors & TileNeighbor::Top) == TileNeighbor::Top )
+                        {
+                            dc.moveTo(rect.left, rect.top);
+                            dc.lineTo(rect.right, rect.top);
+                        }
+                        if ( (neighbors & TileNeighbor::Right) == TileNeighbor::Right )
+                        {
+                            if ( rect.right >= width )
+                                rect.right --;
 
-                    dc.moveTo(rect.left, rect.bottom);
-                    dc.lineTo(rect.right, rect.bottom);
-                }
-                if ( (tile.neighbors & TileNeighbor::Left) == TileNeighbor::Left )
-                {
-                    dc.moveTo(rect.left, rect.bottom);
-                    dc.lineTo(rect.left, rect.top-1);
+                            dc.moveTo(rect.right, rect.top);
+                            dc.lineTo(rect.right, rect.bottom+1);
+                        }
+                        if ( (neighbors & TileNeighbor::Bottom) == TileNeighbor::Bottom )
+                        {
+                            if ( rect.bottom >= height )
+                                rect.bottom --;
+
+                            dc.moveTo(rect.left, rect.bottom);
+                            dc.lineTo(rect.right, rect.bottom);
+                        }
+                        if ( (neighbors & TileNeighbor::Left) == TileNeighbor::Left )
+                        {
+                            dc.moveTo(rect.left, rect.bottom);
+                            dc.lineTo(rect.left, rect.top-1);
+                        }
+                    }
                 }
             }
         }
@@ -1632,50 +1641,59 @@ void DrawFogTileSel(const WinLib::DeviceContext & dc, ChkdPalette & palette, u16
     rcBorder.top    = (0      + screenTop)/32 - 1;
     rcBorder.bottom = (height + screenTop)/32 + 1;
 
-    auto & selFogTiles = selections.fogTiles;
-    for ( auto & tile : selFogTiles )
+    auto selFogTiles = selections.renderFogTiles.tiles;
+    if ( !selFogTiles.empty() )
     {
-        if ( tile.xc > rcBorder.left &&
-             tile.xc < rcBorder.right &&
-             tile.yc > rcBorder.top &&
-             tile.yc < rcBorder.bottom )
-        // If tile is within current map border
+        LONG tileWidth = LONG(map.getTileWidth());
+        auto xBegin = std::max(LONG(selections.renderFogTiles.xBegin), rcBorder.left);
+        auto xEnd = std::min(LONG(selections.renderFogTiles.xEnd), rcBorder.right);
+        auto yBegin = std::max(LONG(selections.renderFogTiles.yBegin), rcBorder.top);
+        auto yEnd = std::min(LONG(selections.renderFogTiles.yEnd), rcBorder.bottom);
+        for ( LONG y=yBegin; y<yEnd; ++y )
         {
-            AlphaBlend(dc.getDcHandle(), int(tile.xc)*32-screenLeft, int(tile.yc)*32-screenTop, 32, 32,
-                tileBlend.getDcHandle(), 0, 0, 32, 32, blendFunction);
-
-            if ( tile.neighbors != TileNeighbor::None ) // if any edges need to be drawn
+            for ( LONG x=xBegin; x<xEnd; ++x )
             {
-                rect.left   = tile.xc*32 - screenLeft;
-                rect.right  = tile.xc*32 - screenLeft + 32;
-                rect.top    = tile.yc*32 - screenTop;
-                rect.bottom = tile.yc*32 - screenTop + 32;
+                auto selFogTile = selFogTiles[y*tileWidth + x];
+                if ( selFogTile )
+                {
+                    auto neighbors = *selFogTile;
+                    AlphaBlend(dc.getDcHandle(), int(x)*32-screenLeft, int(y)*32-screenTop, 32, 32,
+                        tileBlend.getDcHandle(), 0, 0, 32, 32, blendFunction);
 
-                if ( (tile.neighbors & TileNeighbor::Top) == TileNeighbor::Top )
-                {
-                    dc.moveTo(rect.left, rect.top);
-                    dc.lineTo(rect.right, rect.top);
-                }
-                if ( (tile.neighbors & TileNeighbor::Right) == TileNeighbor::Right )
-                {
-                    if ( rect.right >= width )
-                        rect.right --;
+                    if ( neighbors != TileNeighbor::None ) // if any edges need to be drawn
+                    {
+                        rect.left   = x*32 - screenLeft;
+                        rect.right  = x*32 - screenLeft + 32;
+                        rect.top    = y*32 - screenTop;
+                        rect.bottom = y*32 - screenTop + 32;
 
-                    dc.moveTo(rect.right, rect.top);
-                    dc.lineTo(rect.right, rect.bottom+1);
-                }
-                if ( (tile.neighbors & TileNeighbor::Bottom) == TileNeighbor::Bottom )
-                {
-                    if ( rect.bottom >= height )
-                        rect.bottom --;
+                        if ( (neighbors & TileNeighbor::Top) == TileNeighbor::Top )
+                        {
+                            dc.moveTo(rect.left, rect.top);
+                            dc.lineTo(rect.right, rect.top);
+                        }
+                        if ( (neighbors & TileNeighbor::Right) == TileNeighbor::Right )
+                        {
+                            if ( rect.right >= width )
+                                rect.right --;
 
-                    dc.moveTo(rect.left, rect.bottom);
-                    dc.lineTo(rect.right, rect.bottom);
-                }
-                if ( (tile.neighbors & TileNeighbor::Left) == TileNeighbor::Left )
-                {
-                    dc.moveTo(rect.left, rect.bottom);
-                    dc.lineTo(rect.left, rect.top-1);
+                            dc.moveTo(rect.right, rect.top);
+                            dc.lineTo(rect.right, rect.bottom+1);
+                        }
+                        if ( (neighbors & TileNeighbor::Bottom) == TileNeighbor::Bottom )
+                        {
+                            if ( rect.bottom >= height )
+                                rect.bottom --;
+
+                            dc.moveTo(rect.left, rect.bottom);
+                            dc.lineTo(rect.right, rect.bottom);
+                        }
+                        if ( (neighbors & TileNeighbor::Left) == TileNeighbor::Left )
+                        {
+                            dc.moveTo(rect.left, rect.bottom);
+                            dc.lineTo(rect.left, rect.top-1);
+                        }
+                    }
                 }
             }
         }
@@ -1685,8 +1703,7 @@ void DrawFogTileSel(const WinLib::DeviceContext & dc, ChkdPalette & palette, u16
 void DrawDoodadSel(const WinLib::DeviceContext & dc, u16 width, u16 height, u32 screenLeft, u32 screenTop, Selections & selections, GuiMap & map)
 {
     dc.setPen(PS_SOLID, 0, RGB(255, 0, 0));
-    const auto & selDoodads = selections.doodads;
-    for ( auto index : selDoodads )
+    for ( auto index : map.view.doodads.sel() )
     {
         const auto & selDoodad = map.getDoodad(index);
         const auto & tileset = chkd.scData.terrain.get(CM->getTileset());
@@ -1916,7 +1933,7 @@ void DrawPasteGraphics(const WinLib::DeviceContext & dc, ChkdPalette & palette, 
                                 {
                                     size_t tileXc = xTileStart+x;
                                     size_t tileYc = yTileStart+y;
-                                    if ( tileXc < map.dimensions.tileWidth && tileYc < map.dimensions.tileHeight )
+                                    if ( tileXc < map->dimensions.tileWidth && tileYc < map->dimensions.tileHeight )
                                     {
                                         u16 existingTileGroup = map.getTile(tileXc, tileYc) / 16;
                                         if ( existingTileGroup == placability.tileGroup[y*tileWidth+x] || allowIllegalDoodads )
@@ -2174,10 +2191,10 @@ void DrawSelectingFrame(const WinLib::DeviceContext & dc, Selections & selection
               endDrag = selections.endDrag;
 
         RECT rect;
-        rect.left   = s32(((s32)startDrag.x-(s32)screenLeft)/**scale*/)  ;
-        rect.right  = s32(((s32)  endDrag.x-(s32)screenLeft)/**scale*/)+1;
-        rect.top    = s32(((s32)startDrag.y-(s32)screenTop )/**scale*/)  ;
-        rect.bottom = s32(((s32)  endDrag.y-(s32)screenTop )/**scale*/)+1;
+        rect.left   = s32(((s32)startDrag.x-(s32)screenLeft))  ;
+        rect.right  = s32(((s32)  endDrag.x-(s32)screenLeft))+1;
+        rect.top    = s32(((s32)startDrag.y-(s32)screenTop ))  ;
+        rect.bottom = s32(((s32)  endDrag.y-(s32)screenTop ))+1;
     
         if ( rect.right < rect.left )
         {
@@ -2278,7 +2295,7 @@ void DrawMiniMapTiles(ChkdBitmap & bitmap, const ChkdPalette & palette, s64 bitW
 void DrawMiniMapUnits(ChkdBitmap & bitmap, u16 bitWidth, u16 bitHeight, u16 xSize, u16 ySize,
                        u16 xOffset, u16 yOffset, float scale, const Sc::Terrain::Tiles & tiles, GuiMap & map )
 {
-    for ( const auto & unit : map.units )
+    for ( const auto & unit : map->units )
     {
         Chk::PlayerColor color = (unit.owner < Sc::Player::TotalSlots ?
             map.getPlayerColor(unit.owner) : (Chk::PlayerColor)unit.owner);
@@ -2295,7 +2312,7 @@ void DrawMiniMapUnits(ChkdBitmap & bitmap, u16 bitWidth, u16 bitHeight, u16 xSiz
             bitmap[bitIndex] = chkd.scData.tminimap.bgraPalette[color];
     }
     
-    for ( const auto & sprite : map.sprites )
+    for ( const auto & sprite : map->sprites )
     {
         if ( sprite.isDrawnAsSprite() )
         {

@@ -347,7 +347,9 @@ namespace WinLib {
 
     LRESULT EditControl::ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     {
-        if ( msg == WM_LBUTTONDOWN && stopFowardingOnClick && forwardArrowKeys )
+        if ( msg == WinLib::MISC::WM_ISEDIT )
+            return 715827882;
+        else if ( msg == WM_LBUTTONDOWN && stopFowardingOnClick && forwardArrowKeys )
             forwardArrowKeys = false;
         else if ( msg == WM_KEYDOWN )
         {

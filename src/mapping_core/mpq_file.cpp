@@ -91,8 +91,9 @@ void MpqFile::setUpdatingListFile(bool updateListFile)
     this->updateListFile = updateListFile;
 }
 
-void MpqFile::save()
+bool MpqFile::save()
 {
+    bool success = false;
     if ( isOpen() )
     {
         if ( madeChanges )
@@ -104,19 +105,21 @@ void MpqFile::save()
                 for ( size_t assetIndex = 0; assetIndex < numAddedMpqAssets; assetIndex ++ )
                     filestringMpqPaths[assetIndex] = addedMpqAssetPaths[assetIndex].c_str();
 
-               if ( SUCCEEDED(SFileAddListFileEntries(hMpq, filestringMpqPaths.get(), (DWORD)numAddedMpqAssets)) &&
+                if ( SUCCEEDED(SFileAddListFileEntries(hMpq, filestringMpqPaths.get(), (DWORD)numAddedMpqAssets)) &&
                     SFileCompactArchive(hMpq, NULL, false) )
-               {
+                {
+                    success = true;
                     addedMpqAssetPaths.clear();
-               }
+                }
             }
             else
-                SFileCompactArchive(hMpq, NULL, false);
+                success = SFileCompactArchive(hMpq, NULL, false);
 
-            SFileFlushArchive(hMpq);
+            success = success && SFileFlushArchive(hMpq);
         }
         madeChanges = false;
     }
+    return success;
 }
 
 void MpqFile::close()
@@ -188,6 +191,34 @@ bool MpqFile::findFile(const std::string & filePath, const std::string & mpqPath
         }
     }
     return success;
+}
+
+std::optional<std::vector<std::string>> MpqFile::getListfile() const
+{
+    if ( isOpen() )
+    {
+        auto listFile = getFile("(listfile)");
+        if ( listFile )
+        {
+            auto result = std::make_optional<std::vector<std::string>>();
+            auto & listFileBytes = *listFile;
+            std::size_t entryStart = 0;
+            std::size_t size = listFile->size();
+            for ( std::size_t i=0; i<size; ++i )
+            {
+                char c = char(listFileBytes[i]);
+                if ( c == '\r' || c == '\n' )
+                {
+                    if ( i > entryStart )
+                        result->emplace_back((const char*)&listFileBytes[entryStart], i-entryStart);
+                    
+                    entryStart = i+1;
+                }
+            }
+            return result;
+        }
+    }
+    return std::nullopt;
 }
 
 size_t MpqFile::getFileSize(const std::string & mpqPath) const
@@ -378,15 +409,6 @@ bool MpqFile::remove()
         return true;
     }
     return false;
-}
-
-u64 ModifiedAsset::nextAssetId(0);
-
-ModifiedAsset::ModifiedAsset(const std::string & assetMpqPath, AssetAction actionTaken, WavQuality wavQualitySelected)
-    : assetMpqPath(assetMpqPath), wavQualitySelected(WavQuality::Uncompressed), actionTaken(actionTaken)
-{
-    assetTempMpqPath = std::to_string(nextAssetId);
-    nextAssetId ++;
 }
 
 std::vector<FilterEntry<u32>> getMpqFilter()

@@ -50,7 +50,7 @@ public:
     virtual bool open(const std::string & filePath, bool readOnly = true, bool createIfNotFound = false) override { return false; }
     virtual bool findFile(const std::string & filePath, const std::string & clusterFilePath) const override { return false; }
     virtual inline bool create(const std::string & filePath) override { return false; }
-    virtual inline void save() override {}
+    virtual inline bool save() override { return false; }
     virtual inline bool addFile(const std::string & archivedFilePath, std::stringstream & fileData) override { return false; }
     virtual bool addFile(const std::string & archivedFilePath, const std::vector<u8> & fileData) override { return false; }
     virtual bool addFile(const std::string & archivedFilePath, const std::string & filePath) override { return false; }

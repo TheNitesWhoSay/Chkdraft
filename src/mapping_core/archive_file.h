@@ -66,11 +66,11 @@ public:
     bool open(const FileBrowserPtr<FilterId> fileBrowser) { return virtualizableOpen(fileBrowser); }
 
     // Saves an archive, if changes have been made then the archive is saved
-    // If no archive is open calling this method has no affect
-    virtual void save() = 0;
+    // If no archive is open calling this method has no effect
+    virtual bool save() = 0;
 
     // Closes an archive, if changes have been made then the archive is saved
-    // If no archive is open calling this method has no affect
+    // If no archive is open calling this method has no effect
     // If the deleteOnClose flag was specified earlier the archive is removed from disk after being closed
     virtual void close();
 

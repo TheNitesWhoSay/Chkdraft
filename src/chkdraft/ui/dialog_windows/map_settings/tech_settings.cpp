@@ -329,7 +329,6 @@ LRESULT TechSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 if ( WinLib::GetYesNo("Are you sure you want to reset all tech settings?", "Confirm") == WinLib::PromptResult::Yes )
                 {
                     CM->setTechsToDefault();
-                    CM->notifyChange(false);
                     RefreshWindow();
                 }
             }
@@ -352,7 +351,6 @@ LRESULT TechSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                     CM->setTechUsesDefaultSettings((Sc::Tech::Type)selectedTech, false);
                 }
 
-                CM->notifyChange(false);
                 RefreshWindow();
             }
             break;
@@ -361,10 +359,7 @@ LRESULT TechSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             {
                 u16 newMineralCost;
                 if ( editMineralCosts.GetEditNum<u16>(newMineralCost) )
-                {
                     CM->setTechMineralCost((Sc::Tech::Type)selectedTech, newMineralCost);
-                    CM->notifyChange(false);
-                }
             }
             break;
         case Id::EDIT_GASCOSTS:
@@ -372,10 +367,7 @@ LRESULT TechSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             {
                 u16 newGasCost;
                 if ( editGasCosts.GetEditNum<u16>(newGasCost) )
-                {
                     CM->setTechGasCost((Sc::Tech::Type)selectedTech, newGasCost);
-                    CM->notifyChange(false);
-                }
             }
             break;
         case Id::EDIT_TIMECOSTS:
@@ -388,8 +380,6 @@ LRESULT TechSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                         CM->setTechResearchTime((Sc::Tech::Type)selectedTech, 65535); // Set to max
                     else // Normal
                         CM->setTechResearchTime((Sc::Tech::Type)selectedTech, newTimeCost * 15);
-
-                    CM->notifyChange(false);
                 }
             }
             break;
@@ -398,10 +388,7 @@ LRESULT TechSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             {
                 u16 newEnergyCost;
                 if ( editEnergyCosts.GetEditNum<u16>(newEnergyCost) )
-                {
                     CM->setTechEnergyCost((Sc::Tech::Type)selectedTech, newEnergyCost);
-                    CM->notifyChange(false);
-                }
             }
             break;
         case Id::RADIO_DEFAULTDISABLED:
@@ -410,7 +397,6 @@ LRESULT TechSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             {
                 CM->setDefaultTechAvailable((Sc::Tech::Type)selectedTech, false);
                 CM->setTechUsesDefaultSettings((Sc::Tech::Type)selectedTech, false);
-                CM->notifyChange(false);
                 RefreshWindow();
             }
             break;
@@ -420,7 +406,6 @@ LRESULT TechSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             {
                 CM->setDefaultTechAvailable((Sc::Tech::Type)selectedTech, true);
                 CM->setDefaultTechResearched((Sc::Tech::Type)selectedTech, false);
-                CM->notifyChange(false);
                 RefreshWindow();
             }
             break;
@@ -430,7 +415,6 @@ LRESULT TechSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             {
                 CM->setDefaultTechResearched((Sc::Tech::Type)selectedTech, true);
                 CM->setDefaultTechAvailable((Sc::Tech::Type)selectedTech, true);
-                CM->notifyChange(false);
                 RefreshWindow();
             }
             break;
@@ -445,12 +429,12 @@ LRESULT TechSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 else
                     dropPlayerTechSettings[player].EnableThis();
                 CM->setPlayerUsesDefaultTechSettings((Sc::Tech::Type)selectedTech, player, useDefault);
-                CM->notifyChange(false);
                 RefreshWindow();
             }
             if ( HIWORD(wParam) == CBN_SELCHANGE && selectedTech != -1 &&
                 LOWORD(wParam) >= Id::DROP_P1TECHSETTINGS && LOWORD(wParam) <= Id::DROP_P12TECHSETTINGS )
             {
+                auto edit = CM->operator()(ActionDescriptor::SetTechResearched);
                 u8 player = u8(LOWORD(wParam) - Id::DROP_P1TECHSETTINGS);
                 int selection = dropPlayerTechSettings[player].GetSel();
                 if ( selection == 0 ) // Disabled
@@ -468,8 +452,6 @@ LRESULT TechSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                     CM->setTechAvailable((Sc::Tech::Type)selectedTech, player, true);
                     CM->setTechResearched((Sc::Tech::Type)selectedTech, player, true);
                 }
-
-                CM->notifyChange(false);
             }
         }
     }

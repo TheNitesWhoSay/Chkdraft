@@ -10,6 +10,9 @@
 #include <utility>
 #include <vector>
 #include <chrono>
+#ifdef INCLUDE_LITE_SCENARIO
+#include "lite_scenario.h"
+#endif
 #undef PlaySound
 
 extern Logger logger;
@@ -21,7 +24,7 @@ TextTrigCompiler::TextTrigCompiler(bool useAddressesForMemory, u32 deathTableOff
 
 }
 
-bool TextTrigCompiler::compileTriggers(std::string & text, Scenario & chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd)
+template <class MapType> bool TextTrigCompiler::compileTriggers(std::string & text, MapType & chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd)
 {
     logger.info() << "Starting trigger compilation to replace range [" << trigIndexBegin << ", " << trigIndexEnd << ")..." << std::endl;
     auto start = std::chrono::high_resolution_clock::now();
@@ -55,8 +58,12 @@ bool TextTrigCompiler::compileTriggers(std::string & text, Scenario & chk, Sc::D
     catch ( std::bad_alloc ) { CHKD_ERR("Compilation aborted due to low memory."); }
     return false;
 }
+template bool TextTrigCompiler::compileTriggers<Scenario>(std::string & text, Scenario & chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd);
+#ifdef INCLUDE_LITE_SCENARIO
+template bool TextTrigCompiler::compileTriggers<LiteScenario>(std::string & text, LiteScenario & chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd);
+#endif
 
-bool TextTrigCompiler::compileTrigger(std::string & text, Scenario & chk, Sc::Data & scData, size_t trigIndex)
+template <class MapType> bool TextTrigCompiler::compileTrigger(std::string & text, MapType & chk, Sc::Data & scData, size_t trigIndex)
 {
     if ( !loadCompiler(chk, scData, trigIndex, trigIndex+1) )
         return false;
@@ -89,6 +96,10 @@ bool TextTrigCompiler::compileTrigger(std::string & text, Scenario & chk, Sc::Da
     catch ( std::bad_alloc ) { CHKD_ERR("Compilation aborted due to low memory."); }
     return false;
 }
+template bool TextTrigCompiler::compileTrigger<Scenario>(std::string & text, Scenario & chk, Sc::Data & scData, size_t trigIndex);
+#ifdef INCLUDE_LITE_SCENARIO
+template bool TextTrigCompiler::compileTrigger<LiteScenario>(std::string & text, LiteScenario & chk, Sc::Data & scData, size_t trigIndex);
+#endif
 
 bool TextTrigCompiler::parseConditionName(std::string text, Chk::Condition::Type & conditionType) const
 {
@@ -124,7 +135,7 @@ bool TextTrigCompiler::parseConditionName(std::string text, Chk::Condition::Type
     return false;
 }
 
-bool TextTrigCompiler::parseConditionArg(std::string conditionArgText, Chk::Condition::Argument argument, Chk::Condition & condition, const Scenario & chk, Sc::Data & scData, size_t trigIndex, bool silent)
+template <class MapType> std::optional<Chk::Condition::ArgField> TextTrigCompiler::parseConditionArg(std::string conditionArgText, Chk::Condition::Argument argument, Chk::Condition & condition, const MapType & chk, Sc::Data & scData, size_t trigIndex, bool silent)
 {
     u32 dataTypesToLoad = 0;
     switch ( argument.type )
@@ -137,23 +148,26 @@ bool TextTrigCompiler::parseConditionArg(std::string conditionArgText, Chk::Cond
     }
 
     if ( !loadCompiler(chk, scData, trigIndex, trigIndex+1, (ScenarioDataFlag)dataTypesToLoad) )
-        return false;
+        return std::nullopt;
 
     std::string txcd = conditionArgText;
     std::stringstream argumentError;
     std::vector<RawString> stringContents = { conditionArgText };
     size_t nextString = 0;
-    if ( parseConditionArg(txcd, stringContents, nextString, condition, 0, txcd.size(), argument, argumentError) )
-        return true;
-    else
+    auto result = parseConditionArg(txcd, stringContents, nextString, condition, 0, txcd.size(), argument, argumentError);
+    if ( !result )
     {
         std::stringstream errorMessage;
         errorMessage << "Unable to parse condition arg: \"" << conditionArgText << "\"" << argumentError.str();
         if ( !silent )
             CHKD_ERR(errorMessage.str());
     }
-    return false;
+    return result;
 }
+template std::optional<Chk::Condition::ArgField> TextTrigCompiler::parseConditionArg<Scenario>(std::string conditionArgText, Chk::Condition::Argument argument, Chk::Condition & condition, const Scenario & chk, Sc::Data & scData, size_t trigIndex, bool silent);
+#ifdef INCLUDE_LITE_SCENARIO
+template std::optional<Chk::Condition::ArgField> TextTrigCompiler::parseConditionArg<LiteScenario>(std::string conditionArgText, Chk::Condition::Argument argument, Chk::Condition & condition, const LiteScenario & chk, Sc::Data & scData, size_t trigIndex, bool silent);
+#endif
 
 bool TextTrigCompiler::parseActionName(std::string text, Chk::Action::Type & actionType) const
 {
@@ -188,7 +202,7 @@ bool TextTrigCompiler::parseActionName(std::string text, Chk::Action::Type & act
     return false;
 }
 
-bool TextTrigCompiler::parseActionArg(std::string actionArgText, Chk::Action::Argument argument, Chk::Action & action, const Scenario & chk, Sc::Data & scData, size_t trigIndex, size_t actionIndex, bool silent)
+template <class MapType> std::optional<Chk::Action::ArgField> TextTrigCompiler::parseActionArg(std::string actionArgText, Chk::Action::Argument argument, Chk::Action & action, const MapType & chk, Sc::Data & scData, size_t trigIndex, size_t actionIndex, bool silent)
 {
     u32 dataTypesToLoad = 0;
     switch ( argument.type )
@@ -204,27 +218,30 @@ bool TextTrigCompiler::parseActionArg(std::string actionArgText, Chk::Action::Ar
     }
 
     if ( !loadCompiler(chk, scData, trigIndex, trigIndex+1, (ScenarioDataFlag)dataTypesToLoad) )
-        return false;
+        return std::nullopt;
     
     std::string txac = actionArgText;
     std::stringstream argumentError;
     std::vector<RawString> stringContents = { actionArgText };
     size_t nextString = 0;
-    if ( parseActionArg(txac, stringContents, nextString, action, 0, txac.size(), argument, argumentError, trigIndex, actionIndex) )
-        return true;
-    else
+    auto result = parseActionArg(txac, stringContents, nextString, action, 0, txac.size(), argument, argumentError, trigIndex, actionIndex);
+    if ( !result )
     {
         std::stringstream errorMessage;
         errorMessage << "Unable to parse action arg: \"" << actionArgText << "\" " << argumentError.str();
         if ( !silent )
             CHKD_ERR(errorMessage.str());
     }
-    return false;
+    return result;
 }
+template std::optional<Chk::Action::ArgField> TextTrigCompiler::parseActionArg<Scenario>(std::string actionArgText, Chk::Action::Argument argument, Chk::Action & action, const Scenario & chk, Sc::Data & scData, size_t trigIndex, size_t actionIndex, bool silent);
+#ifdef INCLUDE_LITE_SCENARIO
+template std::optional<Chk::Action::ArgField> TextTrigCompiler::parseActionArg<LiteScenario>(std::string actionArgText, Chk::Action::Argument argument, Chk::Action & action, const LiteScenario & chk, Sc::Data & scData, size_t trigIndex, size_t actionIndex, bool silent);
+#endif
 
 // protected
 
-bool TextTrigCompiler::loadCompiler(const Scenario & chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd, ScenarioDataFlag dataTypes)
+template <class MapType> bool TextTrigCompiler::loadCompiler(const MapType & chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd, ScenarioDataFlag dataTypes)
 {
     clearCompiler();
     
@@ -245,6 +262,10 @@ bool TextTrigCompiler::loadCompiler(const Scenario & chk, Sc::Data & scData, siz
         (!prepRegularStrings || prepStringTable(chk, newStringTable, trigIndexBegin, trigIndexEnd, Chk::Scope::Game)) &&
         (!prepExtendedStrings || prepStringTable(chk, newExtendedStringTable, trigIndexBegin, trigIndexEnd, Chk::Scope::Editor));
 }
+template bool TextTrigCompiler::loadCompiler<Scenario>(const Scenario & chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd, ScenarioDataFlag dataTypes);
+#ifdef INCLUDE_LITE_SCENARIO
+template bool TextTrigCompiler::loadCompiler<LiteScenario>(const LiteScenario & chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd, ScenarioDataFlag dataTypes);
+#endif
 
 void TextTrigCompiler::clearCompiler()
 {
@@ -1882,206 +1903,206 @@ bool TextTrigCompiler::parseAction(std::string & text, size_t pos, size_t end, C
     return actionType != Chk::Action::VirtualType::NoAction;
 }
 
-bool TextTrigCompiler::parseConditionArg(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Condition & currCondition, size_t pos, size_t end, Chk::Condition::Argument argument, std::stringstream & error)
+std::optional<Chk::Condition::ArgField> TextTrigCompiler::parseConditionArg(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Condition & currCondition, size_t pos, size_t end, Chk::Condition::Argument argument, std::stringstream & error)
 {
     // returns whether the condition was true and prints msg to the error message if false
-#define returnMsg(condition, msg)                           \
-    if ( condition )                                        \
-        return true;                                        \
-    else {                                                  \
-        error << msg;                                       \
-        return false;                                       \
+#define returnMsg(argField, condition, msg)  \
+    if ( condition )                         \
+        return std::make_optional(argField); \
+    else {                                   \
+        error << msg;                        \
+        return std::nullopt;                 \
     }
 
     Chk::Condition::ArgType argType = argument.type;
     switch ( argType )
     {
         case Chk::Condition::ArgType::Unit:
-            returnMsg( parseUnitName(text, stringContents, nextString, currCondition.unitType, pos, end) ||
+            returnMsg( Chk::Condition::ArgField::UnitType, parseUnitName(text, stringContents, nextString, currCondition.unitType, pos, end) ||
                 parseShort(text, (u16 &)currCondition.unitType, pos, end),
                 "Expected: Unit name or 2-byte unitID" );
         case Chk::Condition::ArgType::Location:
-            returnMsg( parseLocationName(text, stringContents, nextString, currCondition.locationId, pos, end) ||
+            returnMsg( Chk::Condition::ArgField::LocationId, parseLocationName(text, stringContents, nextString, currCondition.locationId, pos, end) ||
                 parseLong(text, currCondition.locationId, pos, end),
                 "Expected: Location name or 4-byte locationNum" );
         case Chk::Condition::ArgType::Player:
-            returnMsg( parsePlayer(text, stringContents, nextString, currCondition.player, pos, end) ||
+            returnMsg( Chk::Condition::ArgField::Player, parsePlayer(text, stringContents, nextString, currCondition.player, pos, end) ||
                 parseLong(text, currCondition.player, pos, end),
                 "Expected: Player/group name or 4-byte id" );
         case Chk::Condition::ArgType::Amount:
-            returnMsg( parseLong(text, currCondition.amount, pos, end),
+            returnMsg( Chk::Condition::ArgField::Amount, parseLong(text, currCondition.amount, pos, end),
                 "Expected: 4-byte amount" );
         case Chk::Condition::ArgType::NumericComparison:
-            returnMsg( parseNumericComparison(text, stringContents, nextString, currCondition.comparison, pos, end) ||
+            returnMsg( Chk::Condition::ArgField::Comparison, parseNumericComparison(text, stringContents, nextString, currCondition.comparison, pos, end) ||
                 parseByte(text, (u8 &)currCondition.comparison, pos, end),
                 "Expected: Numeric comparison or 1-byte comparisonID" );
         case Chk::Condition::ArgType::ResourceType:
-            returnMsg( parseResourceType(text, stringContents, nextString, currCondition.typeIndex, pos, end) ||
+            returnMsg( Chk::Condition::ArgField::TypeIndex, parseResourceType(text, stringContents, nextString, currCondition.typeIndex, pos, end) ||
                 parseByte(text, currCondition.typeIndex, pos, end),
                 "Expected: Resource type or 1-byte resourceID" );
         case Chk::Condition::ArgType::ScoreType:
-            returnMsg( parseScoreType(text, stringContents, nextString, currCondition.typeIndex, pos, end) ||
+            returnMsg( Chk::Condition::ArgField::TypeIndex, parseScoreType(text, stringContents, nextString, currCondition.typeIndex, pos, end) ||
                 parseByte(text, currCondition.typeIndex, pos, end),
                 "Expected: Score type or 1-byte scoreID" );
         case Chk::Condition::ArgType::Switch:
-            returnMsg( parseSwitch(text, stringContents, nextString, currCondition.typeIndex, pos, end) ||
+            returnMsg( Chk::Condition::ArgField::TypeIndex, parseSwitch(text, stringContents, nextString, currCondition.typeIndex, pos, end) ||
                 parseByte(text, currCondition.typeIndex, pos, end),
                 "Expected: Switch name or 1-byte switchID" );
         case Chk::Condition::ArgType::SwitchState:
-            returnMsg( parseSwitchState(text, stringContents, nextString, currCondition.comparison, pos, end) ||
+            returnMsg( Chk::Condition::ArgField::Comparison, parseSwitchState(text, stringContents, nextString, currCondition.comparison, pos, end) ||
                 parseByte(text, (u8 &)currCondition.comparison, pos, end),
                 "Expected: Switch state or 1-byte comparisonID" );
         case Chk::Condition::ArgType::Comparison: // NumericComparison, SwitchState
-            returnMsg( parseByte(text, (u8 &)currCondition.comparison, pos, end) ||
+            returnMsg( Chk::Condition::ArgField::Comparison, parseByte(text, (u8 &)currCondition.comparison, pos, end) ||
                 parseNumericComparison(text, stringContents, nextString, currCondition.comparison, pos, end) ||
                 parseSwitchState(text, stringContents, nextString, currCondition.comparison, pos, end),
                 "Expected: 1-byte comparison" );
         case Chk::Condition::ArgType::ConditionType:
-            returnMsg( parseByte(text, (u8 &)currCondition.conditionType, pos, end),
+            returnMsg( Chk::Condition::ArgField::ConditionType, parseByte(text, (u8 &)currCondition.conditionType, pos, end),
                 "Expected: 1-byte conditionID" );
         case Chk::Condition::ArgType::TypeIndex: // ResourceType, ScoreType, Switch
-            returnMsg( parseByte(text, currCondition.typeIndex, pos, end) ||
+            returnMsg( Chk::Condition::ArgField::TypeIndex, parseByte(text, currCondition.typeIndex, pos, end) ||
                 parseResourceType(text, stringContents, nextString, currCondition.typeIndex, pos, end) ||
                 parseScoreType(text, stringContents, nextString, currCondition.typeIndex, pos, end) ||
                 parseSwitch(text, stringContents, nextString, currCondition.typeIndex, pos, end),
                 "Expected: 1-byte typeId, resource type, score type, or switch name" );
         case Chk::Condition::ArgType::Flags:
-            returnMsg( parseByte(text, currCondition.flags, pos, end),
+            returnMsg( Chk::Condition::ArgField::Flags, parseByte(text, currCondition.flags, pos, end),
                 "Expected: 1-byte flags" );
         case Chk::Condition::ArgType::MaskFlag:
-            returnMsg( parseConditionMaskFlag(text, currCondition.maskFlag, pos, end) ||
+            returnMsg( Chk::Condition::ArgField::MaskFlag, parseConditionMaskFlag(text, currCondition.maskFlag, pos, end) ||
                 parseShort(text, (u16 &)currCondition.maskFlag, pos, end),
                 "Expected: 2-byte mask flag" );
         case Chk::Condition::ArgType::MemoryOffset:
-            returnMsg( (useAddressesForMemory && parseMemoryAddress(text, currCondition.player, pos, end, deathTableOffset) ||
+            returnMsg( Chk::Condition::ArgField::Player, (useAddressesForMemory && parseMemoryAddress(text, currCondition.player, pos, end, deathTableOffset) ||
                 !useAddressesForMemory && parseLong(text, currCondition.player, pos, end)),
                 (useAddressesForMemory ? "Expected: 4-byte address" : "Expected: 4-byte death table offset") );
         case Chk::Condition::ArgType::MemoryBitmask:
-            returnMsg( parseLong(text, currCondition.locationId, pos, end),
+            returnMsg( Chk::Condition::ArgField::LocationId, parseLong(text, currCondition.locationId, pos, end),
                 "Expected: 4-byte amount" );
     }
     CHKD_ERR("INTERNAL ERROR: Invalid argIndex or argument unhandled, report this");
-    return false;
+    return std::nullopt;
 }
 
-bool TextTrigCompiler::parseActionArg(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Action & currAction, size_t pos, size_t end, Chk::Action::Argument arg, std::stringstream & error, size_t trigIndex, size_t actionIndex)
+std::optional<Chk::Action::ArgField> TextTrigCompiler::parseActionArg(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Action & currAction, size_t pos, size_t end, Chk::Action::Argument arg, std::stringstream & error, size_t trigIndex, size_t actionIndex)
 {
     switch ( arg.type )
     {
         case Chk::Action::ArgType::Location:
-            returnMsg( parseLocationName(text, stringContents, nextString, arg.field == Chk::Action::ArgField::Number ? currAction.number : currAction.locationId, pos, end) ||
+            returnMsg( arg.field, parseLocationName(text, stringContents, nextString, arg.field == Chk::Action::ArgField::Number ? currAction.number : currAction.locationId, pos, end) ||
                 parseLong(text, arg.field == Chk::Action::ArgField::Number ? currAction.number : currAction.locationId, pos, end),
                 "Expected: Location name or 4-byte locationNum" );
         case Chk::Action::ArgType::String:
-            returnMsg( parseString(text, stringContents, nextString, currAction.stringId, pos, end, trigIndex, actionIndex, false) ||
+            returnMsg( Chk::Action::ArgField::StringId, parseString(text, stringContents, nextString, currAction.stringId, pos, end, trigIndex, actionIndex, false) ||
                 parseLong(text, currAction.stringId, pos, end),
                 "Expected: String or stringNum" );
         case Chk::Action::ArgType::Player:
-            returnMsg( parsePlayer(text, stringContents, nextString, arg.field == Chk::Action::ArgField::Number ? currAction.number : currAction.group, pos, end) ||
+            returnMsg( arg.field, parsePlayer(text, stringContents, nextString, arg.field == Chk::Action::ArgField::Number ? currAction.number : currAction.group, pos, end) ||
                 parseLong(text, arg.field == Chk::Action::ArgField::Number ? currAction.number : currAction.group, pos, end),
                 "Expected: Group name or 4-byte groupID" );
         case Chk::Action::ArgType::Unit:
-            returnMsg( parseUnitName(text, stringContents, nextString, (Sc::Unit::Type &)currAction.type, pos, end) ||
+            returnMsg( Chk::Action::ArgField::Type, parseUnitName(text, stringContents, nextString, (Sc::Unit::Type &)currAction.type, pos, end) ||
                 parseShort(text, (u16 &)currAction.type, pos, end),
                 "Expected: Unit name or 2-byte unitID" );
         case Chk::Action::ArgType::NumUnits:
-            returnMsg( parseSpecialUnitAmount(text, stringContents, nextString, currAction.type2, pos, end) ||
+            returnMsg( Chk::Action::ArgField::Type2, parseSpecialUnitAmount(text, stringContents, nextString, currAction.type2, pos, end) ||
                 parseByte(text, currAction.type2, pos, end),
                 "Expected: 1-byte number" );
         case Chk::Action::ArgType::CUWP:
         case Chk::Action::ArgType::Percent:
         case Chk::Action::ArgType::Amount:
-            returnMsg((arg.field == Chk::Action::ArgField::Type2 ? parseByte(text, currAction.type2, pos, end) : parseLong(text, currAction.number, pos, end)),
+            returnMsg( arg.field, (arg.field == Chk::Action::ArgField::Type2 ? parseByte(text, currAction.type2, pos, end) : parseLong(text, currAction.number, pos, end)),
                 (arg.field == Chk::Action::ArgField::Type2 ? "Expected: 1-byte number" : "Expected: 4-byte number" ));
         case Chk::Action::ArgType::ScoreType:
-            returnMsg( parseScoreType(text, stringContents, nextString, currAction.type, pos, end) ||
+            returnMsg( Chk::Action::ArgField::Type, parseScoreType(text, stringContents, nextString, currAction.type, pos, end) ||
                 parseShort(text, currAction.type, pos, end),
                 "Expected: Score type or 1-byte scoreID" );
         case Chk::Action::ArgType::ResourceType:
-            returnMsg( parseResourceType(text, stringContents, nextString, currAction.type, pos, end) ||
+            returnMsg( Chk::Action::ArgField::Type, parseResourceType(text, stringContents, nextString, currAction.type, pos, end) ||
                 parseShort(text, currAction.type, pos, end),
                 "Expected: Resource type or 2-byte number" );
         case Chk::Action::ArgType::StateMod:
-            returnMsg( parseStateMod(text, stringContents, nextString, currAction.type2, pos, end) ||
+            returnMsg( Chk::Action::ArgField::Type2, parseStateMod(text, stringContents, nextString, currAction.type2, pos, end) ||
                 parseByte(text, currAction.type2, pos, end),
                 "Expected: State modifier or 1-byte number" );
         case Chk::Action::ArgType::Order:
-            returnMsg ( parseOrder(text, stringContents, nextString, currAction.type2, pos, end) ||
+            returnMsg ( Chk::Action::ArgField::Type2, parseOrder(text, stringContents, nextString, currAction.type2, pos, end) ||
                 parseByte(text, currAction.type2, pos, end),
                 "Expected: Order or 1-byte number" );
         case Chk::Action::ArgType::Sound:
-            returnMsg( parseSoundName(text, stringContents, nextString, currAction.soundStringId, pos, end, trigIndex, actionIndex) ||
+            returnMsg( Chk::Action::ArgField::SoundStringId, parseSoundName(text, stringContents, nextString, currAction.soundStringId, pos, end, trigIndex, actionIndex) ||
                 parseLong(text, currAction.soundStringId, pos, end),
                 "Expected: Sound name or 4-byte soundID" );
         case Chk::Action::ArgType::Duration:
-            returnMsg( parseLong(text, currAction.time, pos, end),
+            returnMsg( Chk::Action::ArgField::Time, parseLong(text, currAction.time, pos, end),
                 "Expected: 4-byte duration" );
         case Chk::Action::ArgType::Script:
-            returnMsg ( parseScript(text, stringContents, nextString, currAction.number, pos, end) ||
+            returnMsg ( Chk::Action::ArgField::Number, parseScript(text, stringContents, nextString, currAction.number, pos, end) ||
                 parseLong(text, currAction.number, pos, end),
                 "Expected: Script name or 4-byte script num" );
         case Chk::Action::ArgType::AllyState:
-            returnMsg( parseAllianceStatus(text, stringContents, nextString, currAction.type, pos, end) ||
+            returnMsg( Chk::Action::ArgField::Type, parseAllianceStatus(text, stringContents, nextString, currAction.type, pos, end) ||
                 parseShort(text, currAction.type, pos, end),
                 "Expected: Alliance status or 2-byte number" );
         case Chk::Action::ArgType::NumericMod:
-            returnMsg( parseNumericModifier(text, stringContents, nextString, currAction.type2, pos, end) ||
+            returnMsg( Chk::Action::ArgField::Type2, parseNumericModifier(text, stringContents, nextString, currAction.type2, pos, end) ||
                 parseByte(text, currAction.type2, pos, end),
                 "Expected: Numeric modifier or 1-byte number" );
         case Chk::Action::ArgType::Switch:
-            returnMsg ( parseSwitch(text, stringContents, nextString, currAction.number, pos, end) ||
+            returnMsg ( Chk::Action::ArgField::Number, parseSwitch(text, stringContents, nextString, currAction.number, pos, end) ||
                 parseLong(text, currAction.number, pos, end),
                 "Expected: Switch name or 4-byte number" );
         case Chk::Action::ArgType::SwitchMod:
-            returnMsg ( parseSwitchMod(text, stringContents, nextString, currAction.type2, pos, end) ||
+            returnMsg ( Chk::Action::ArgField::Type2, parseSwitchMod(text, stringContents, nextString, currAction.type2, pos, end) ||
                 parseByte(text, currAction.type2, pos, end),
                 "Expected: Switch modifier or 1-byte number" );
         case Chk::Action::ArgType::ActionType:
-            returnMsg( parseByte(text, (u8 &)currAction.actionType, pos, end),
+            returnMsg( Chk::Action::ArgField::ActionType, parseByte(text, (u8 &)currAction.actionType, pos, end),
                 "Expected: 1-byte actionID" );
         case Chk::Action::ArgType::TextFlags:
         case Chk::Action::ArgType::Flags:
-            returnMsg( parseTextDisplayFlag(text, stringContents, nextString, currAction.flags, pos, end) ||
+            returnMsg( Chk::Action::ArgField::Flags, parseTextDisplayFlag(text, stringContents, nextString, currAction.flags, pos, end) ||
                 parseByte(text, currAction.flags, pos, end),
                 "Expected: Always display text flags or 1-byte flag data" );
         case Chk::Action::ArgType::Number: // Amount, Group2, LocDest, UnitPropNum, ScriptNum
-            returnMsg( parsePlayer(text, stringContents, nextString, currAction.number, pos, end) ||
+            returnMsg( Chk::Action::ArgField::Number, parsePlayer(text, stringContents, nextString, currAction.number, pos, end) ||
                 parseLocationName(text, stringContents, nextString, currAction.number, pos, end) ||
                 parseScript(text, stringContents, nextString, currAction.number, pos, end) ||
                 parseSwitch(text, stringContents, nextString, currAction.number, pos, end) ||
                 parseLong(text, currAction.number, pos, end),
                 "Expected: Group, location, script, switch, or 4-byte number" );
         case Chk::Action::ArgType::TypeIndex: // Unit, ScoreType, ResourceType, AllianceStatus
-            returnMsg( parseUnitName(text, stringContents, nextString, (Sc::Unit::Type &)currAction.type, pos, end) ||
+            returnMsg( Chk::Action::ArgField::Type, parseUnitName(text, stringContents, nextString, (Sc::Unit::Type &)currAction.type, pos, end) ||
                 parseScoreType(text, stringContents, nextString, currAction.type, pos, end) ||
                 parseResourceType(text, stringContents, nextString, currAction.type, pos, end) ||
                 parseAllianceStatus(text, stringContents, nextString, currAction.type, pos, end) ||
                 parseShort(text, currAction.type, pos, end),
                 "Expected: Unit, score type, resource type, alliance status, or 2-byte typeID" );
         case Chk::Action::ArgType::SecondaryTypeIndex: // NumUnits (0=all), SwitchAction, UnitOrder, ModifyType
-            returnMsg( parseSwitchMod(text, stringContents, nextString, currAction.type2, pos, end) ||
+            returnMsg( Chk::Action::ArgField::Type2, parseSwitchMod(text, stringContents, nextString, currAction.type2, pos, end) ||
                 parseOrder(text, stringContents, nextString, currAction.type2, pos, end) ||
                 parseNumericModifier(text, stringContents, nextString, currAction.type2, pos, end) ||
                 parseStateMod(text, stringContents, nextString, currAction.type2, pos, end) ||
                 parseByte(text, currAction.type2, pos, end),
                 "Expected: Switch modifier, order, numeric modifier, state modifier, or 1-byte number" );
         case Chk::Action::ArgType::Padding:
-            returnMsg( parseByte(text, currAction.padding, pos, end),
+            returnMsg( Chk::Action::ArgField::Padding, parseByte(text, currAction.padding, pos, end),
                 "Expected: 1-byte padding" );
         case Chk::Action::ArgType::MaskFlag:
-            returnMsg( parseActionMaskFlag(text, currAction.maskFlag, pos, end) ||
+            returnMsg( Chk::Action::ArgField::MaskFlag, parseActionMaskFlag(text, currAction.maskFlag, pos, end) ||
                 parseShort(text, (u16 &)currAction.maskFlag, pos, end),
                 "Expected: 2-byte mask flag" );
         case Chk::Action::ArgType::MemoryOffset:
-            returnMsg( (useAddressesForMemory && parseMemoryAddress(text, currAction.group, pos, end, deathTableOffset) ||
+            returnMsg( Chk::Action::ArgField::Group, (useAddressesForMemory && parseMemoryAddress(text, currAction.group, pos, end, deathTableOffset) ||
                 !useAddressesForMemory && parseLong(text, currAction.group, pos, end)),
                 (useAddressesForMemory ? "Expected: 4-byte address" : "Expected: 4-byte death table offset") );
         case Chk::Action::ArgType::MemoryBitmask:
-            returnMsg( parseLong(text, currAction.locationId, pos, end),
+            returnMsg( Chk::Action::ArgField::LocationId, parseLong(text, currAction.locationId, pos, end),
                 "Expected: 4-byte number");
     }
     CHKD_ERR("INTERNAL ERROR: Invalid argIndex or argument unhandled, report this");
-    return false;
+    return std::nullopt;
 }
 
 bool TextTrigCompiler::parseExecutionFlags(std::string & text, size_t pos, size_t end, u32 & flags) const
@@ -3640,7 +3661,7 @@ bool TextTrigCompiler::parseByte(const std::string & text, u8 & dest, size_t pos
     return false;
 }
 
-bool TextTrigCompiler::prepLocationTable(const Scenario & map)
+template <class MapType> bool TextTrigCompiler::prepLocationTable(const MapType & map)
 {
     LocationTableNode locNode = {};
     locationTable.reserve(map.numLocations()+1);
@@ -3673,8 +3694,12 @@ bool TextTrigCompiler::prepLocationTable(const Scenario & map)
     locationTable.reserve(locationTable.size());
     return true;
 }
+template bool TextTrigCompiler::prepLocationTable<Scenario>(const Scenario & map);
+#ifdef INCLUDE_LITE_SCENARIO
+template bool TextTrigCompiler::prepLocationTable<LiteScenario>(const LiteScenario & map);
+#endif
 
-bool TextTrigCompiler::prepUnitTable(const Scenario & map)
+template <class MapType> bool TextTrigCompiler::prepUnitTable(const MapType & map)
 {
     UnitTableNode unitNode = {};
     u16 stringId = 0;
@@ -3702,8 +3727,12 @@ bool TextTrigCompiler::prepUnitTable(const Scenario & map)
     }
     return true;
 }
+template bool TextTrigCompiler::prepUnitTable<Scenario>(const Scenario & map);
+#ifdef INCLUDE_LITE_SCENARIO
+template bool TextTrigCompiler::prepUnitTable<LiteScenario>(const LiteScenario & map);
+#endif
 
-bool TextTrigCompiler::prepSwitchTable(const Scenario & map)
+template <class MapType> bool TextTrigCompiler::prepSwitchTable(const MapType & map)
 {
     SwitchTableNode switchNode = {};
     size_t stringId = 0;
@@ -3724,8 +3753,12 @@ bool TextTrigCompiler::prepSwitchTable(const Scenario & map)
     }
     return true;
 }
+template bool TextTrigCompiler::prepSwitchTable<Scenario>(const Scenario & map);
+#ifdef INCLUDE_LITE_SCENARIO
+template bool TextTrigCompiler::prepSwitchTable<LiteScenario>(const LiteScenario & map);
+#endif
 
-bool TextTrigCompiler::prepGroupTable(const Scenario & map)
+template <class MapType> bool TextTrigCompiler::prepGroupTable(const MapType & map)
 {
     GroupTableNode groupNode = {};
     for ( u32 i=0; i<Chk::TotalForces; i++ )
@@ -3745,8 +3778,12 @@ bool TextTrigCompiler::prepGroupTable(const Scenario & map)
     }
     return true;
 }
+template bool TextTrigCompiler::prepGroupTable<Scenario>(const Scenario & map);
+#ifdef INCLUDE_LITE_SCENARIO
+template bool TextTrigCompiler::prepGroupTable<LiteScenario>(const LiteScenario & map);
+#endif
 
-bool TextTrigCompiler::prepStringTable(const Scenario & map, std::unordered_multimap<size_t, std::unique_ptr<StringTableNode>> & stringHashTable, size_t trigIndexBegin, size_t trigIndexEnd, const Chk::Scope & scope)
+template <class MapType> bool TextTrigCompiler::prepStringTable(const MapType & map, std::unordered_multimap<size_t, std::unique_ptr<StringTableNode>> & stringHashTable, size_t trigIndexBegin, size_t trigIndexEnd, const Chk::Scope & scope)
 {
     std::bitset<Chk::MaxStrings> stringUsed; // Table of strings currently used in the map
     u32 userMask = scope == Chk::Scope::Game ? Chk::StringUserFlag::xTrigger : Chk::StringUserFlag::All;
@@ -3792,8 +3829,12 @@ bool TextTrigCompiler::prepStringTable(const Scenario & map, std::unordered_mult
 
     return true;
 }
+template bool TextTrigCompiler::prepStringTable<Scenario>(const Scenario & map, std::unordered_multimap<size_t, std::unique_ptr<StringTableNode>> & stringHashTable, size_t trigIndexBegin, size_t trigIndexEnd, const Chk::Scope & scope);
+#ifdef INCLUDE_LITE_SCENARIO
+template bool TextTrigCompiler::prepStringTable<LiteScenario>(const LiteScenario & map, std::unordered_multimap<size_t, std::unique_ptr<StringTableNode>> & stringHashTable, size_t trigIndexBegin, size_t trigIndexEnd, const Chk::Scope & scope);
+#endif
 
-void TextTrigCompiler::prepTriggerString(const Scenario & scenario, std::unordered_multimap<size_t, std::unique_ptr<StringTableNode>> & stringHashTable, const u32 & stringId, const bool & inReplacedRange, const Chk::Scope & scope)
+template <class MapType> void TextTrigCompiler::prepTriggerString(const MapType & scenario, std::unordered_multimap<size_t, std::unique_ptr<StringTableNode>> & stringHashTable, const u32 & stringId, const bool & inReplacedRange, const Chk::Scope & scope)
 {
     if ( auto rawString = scenario.getString<RawString>(stringId, scope) )
     {
@@ -3825,6 +3866,10 @@ void TextTrigCompiler::prepTriggerString(const Scenario & scenario, std::unorder
         }
     }
 }
+template void TextTrigCompiler::prepTriggerString<Scenario>(const Scenario & scenario, std::unordered_multimap<size_t, std::unique_ptr<StringTableNode>> & stringHashTable, const u32 & stringId, const bool & inReplacedRange, const Chk::Scope & scope);
+#ifdef INCLUDE_LITE_SCENARIO
+template void TextTrigCompiler::prepTriggerString<LiteScenario>(const LiteScenario & scenario, std::unordered_multimap<size_t, std::unique_ptr<StringTableNode>> & stringHashTable, const u32 & stringId, const bool & inReplacedRange, const Chk::Scope & scope);
+#endif
 
 bool TextTrigCompiler::prepScriptTable(Sc::Data & scData)
 {
@@ -3840,8 +3885,9 @@ bool TextTrigCompiler::prepScriptTable(Sc::Data & scData)
     return true;
 }
 
-bool TextTrigCompiler::buildNewMap(Scenario & scenario, size_t trigIndexBegin, size_t trigIndexEnd, std::vector<Chk::Trigger> & triggers, std::stringstream & error) const
+template <class MapType> bool TextTrigCompiler::buildNewMap(MapType & scenario, size_t trigIndexBegin, size_t trigIndexEnd, std::vector<Chk::Trigger> & triggers, std::stringstream & error) const
 {
+    auto edit = scenario();
     auto strBackup = scenario.copyStrings();
     std::vector<Chk::Trigger> replacedTriggers = scenario.replaceTriggerRange(trigIndexBegin, trigIndexEnd, triggers);
     bool success = true;
@@ -3855,9 +3901,9 @@ bool TextTrigCompiler::buildNewMap(Scenario & scenario, size_t trigIndexBegin, s
                 for ( auto assignee : str->assignees )
                 {
                     if ( assignee.isSound )
-                        scenario.triggers[assignee.trigIndex+trigIndexBegin].actions[assignee.actionIndex].soundStringId = str->stringId;
+                        edit->triggers[assignee.trigIndex+trigIndexBegin].actions[assignee.actionIndex].soundStringId = str->stringId;
                     else
-                        scenario.triggers[assignee.trigIndex+trigIndexBegin].actions[assignee.actionIndex].stringId = str->stringId;
+                        edit->triggers[assignee.trigIndex+trigIndexBegin].actions[assignee.actionIndex].stringId = str->stringId;
                 }
             }
             else
@@ -3879,6 +3925,10 @@ bool TextTrigCompiler::buildNewMap(Scenario & scenario, size_t trigIndexBegin, s
     }
     return success;
 }
+template bool TextTrigCompiler::buildNewMap<Scenario>(Scenario & scenario, size_t trigIndexBegin, size_t trigIndexEnd, std::vector<Chk::Trigger> & triggers, std::stringstream & error) const;
+#ifdef INCLUDE_LITE_SCENARIO
+template bool TextTrigCompiler::buildNewMap<LiteScenario>(LiteScenario & scenario, size_t trigIndexBegin, size_t trigIndexEnd, std::vector<Chk::Trigger> & triggers, std::stringstream & error) const;
+#endif
 
 BriefingTextTrigCompiler::BriefingTextTrigCompiler()
     : TextTrigCompiler(false, 0x58A364) // These parameters aren't actually used for briefing triggers which have no EUDs
@@ -3886,7 +3936,7 @@ BriefingTextTrigCompiler::BriefingTextTrigCompiler()
 
 }
 
-bool BriefingTextTrigCompiler::compileBriefingTriggers(std::string & text, Scenario & chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd)
+template <class MapType> bool BriefingTextTrigCompiler::compileBriefingTriggers(std::string & text, MapType & chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd)
 {
     logger.info() << "Starting briefing trigger compilation to replace range [" << trigIndexBegin << ", " << trigIndexEnd << ")..." << std::endl;
     auto start = std::chrono::high_resolution_clock::now();
@@ -3919,8 +3969,12 @@ bool BriefingTextTrigCompiler::compileBriefingTriggers(std::string & text, Scena
     catch ( std::bad_alloc ) { CHKD_ERR("Compilation aborted due to low memory."); }
     return false;
 }
+template bool BriefingTextTrigCompiler::compileBriefingTriggers<Scenario>(std::string & text, Scenario & chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd);
+#ifdef INCLUDE_LITE_SCENARIO
+template bool BriefingTextTrigCompiler::compileBriefingTriggers<LiteScenario>(std::string & text, LiteScenario & chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd);
+#endif
 
-bool BriefingTextTrigCompiler::compileBriefingTrigger(std::string & trigText, Scenario & chk, Sc::Data & scData, size_t trigIndex)
+template <class MapType> bool BriefingTextTrigCompiler::compileBriefingTrigger(std::string & trigText, MapType & chk, Sc::Data & scData, size_t trigIndex)
 {
     if ( !TextTrigCompiler::loadCompiler(chk, scData, trigIndex, trigIndex+1) )
         return false;
@@ -3953,6 +4007,10 @@ bool BriefingTextTrigCompiler::compileBriefingTrigger(std::string & trigText, Sc
     catch ( std::bad_alloc ) { CHKD_ERR("Compilation aborted due to low memory."); }
     return false;
 }
+template bool BriefingTextTrigCompiler::compileBriefingTrigger<Scenario>(std::string & trigText, Scenario & chk, Sc::Data & scData, size_t trigIndex);
+#ifdef INCLUDE_LITE_SCENARIO
+template bool BriefingTextTrigCompiler::compileBriefingTrigger<LiteScenario>(std::string & trigText, LiteScenario & chk, Sc::Data & scData, size_t trigIndex);
+#endif
 
 bool BriefingTextTrigCompiler::parseBriefingActionName(std::string text, Chk::Action::Type & actionType) const
 {
@@ -3987,7 +4045,7 @@ bool BriefingTextTrigCompiler::parseBriefingActionName(std::string text, Chk::Ac
     return false;
 }
 
-bool BriefingTextTrigCompiler::parseBriefingActionArg(std::string actionArgText, Chk::Action::Argument argument, Chk::Action & action, const Scenario & chk, Sc::Data & scData, size_t trigIndex, size_t actionIndex, bool silent)
+template <class MapType> std::optional<Chk::Action::ArgField> BriefingTextTrigCompiler::parseBriefingActionArg(std::string actionArgText, Chk::Action::Argument argument, Chk::Action & action, const MapType & chk, Sc::Data & scData, size_t trigIndex, size_t actionIndex, bool silent)
 {
     u32 dataTypesToLoad = 0;
     switch ( argument.type )
@@ -4003,23 +4061,26 @@ bool BriefingTextTrigCompiler::parseBriefingActionArg(std::string actionArgText,
     }
 
     if ( !loadCompiler(chk, scData, trigIndex, trigIndex+1, (ScenarioDataFlag)dataTypesToLoad) )
-        return false;
+        return std::nullopt;
     
     std::string txac = actionArgText;
     std::stringstream argumentError;
     std::vector<RawString> stringContents = { actionArgText };
     size_t nextString = 0;
-    if ( parseBriefingActionArg(txac, stringContents, nextString, action, 0, txac.size(), argument, argumentError, trigIndex, actionIndex) )
-        return true;
-    else
+    auto result = parseBriefingActionArg(txac, stringContents, nextString, action, 0, txac.size(), argument, argumentError, trigIndex, actionIndex);
+    if ( !result )
     {
         std::stringstream errorMessage;
         errorMessage << "Unable to parse action arg: \"" << actionArgText << "\" " << argumentError.str();
         if ( !silent )
             CHKD_ERR(errorMessage.str());
     }
-    return false;
+    return result;
 }
+template std::optional<Chk::Action::ArgField> BriefingTextTrigCompiler::parseBriefingActionArg<Scenario>(std::string actionArgText, Chk::Action::Argument argument, Chk::Action & action, const Scenario & chk, Sc::Data & scData, size_t trigIndex, size_t actionIndex, bool silent);
+#ifdef INCLUDE_LITE_SCENARIO
+template std::optional<Chk::Action::ArgField> BriefingTextTrigCompiler::parseBriefingActionArg<LiteScenario>(std::string actionArgText, Chk::Action::Argument argument, Chk::Action & action, const LiteScenario & chk, Sc::Data & scData, size_t trigIndex, size_t actionIndex, bool silent);
+#endif
 
 bool BriefingTextTrigCompiler::parseBriefingTriggers(std::string & text, std::vector<RawString> & stringContents, std::vector<Chk::Trigger> & output, std::stringstream & error)
 {
@@ -4451,11 +4512,11 @@ bool BriefingTextTrigCompiler::parseBriefingAction(std::string & text, size_t po
     return actionType != Chk::Action::VirtualType::NoAction;
 }
 
-bool BriefingTextTrigCompiler::parseBriefingActionArg(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Action & currAction, size_t pos, size_t end, Chk::Action::Argument argument, std::stringstream & error, size_t trigIndex, size_t actionIndex)
+std::optional<Chk::Action::ArgField> BriefingTextTrigCompiler::parseBriefingActionArg(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Action & currAction, size_t pos, size_t end, Chk::Action::Argument argument, std::stringstream & error, size_t trigIndex, size_t actionIndex)
 {
     if ( argument.type == Chk::Action::ArgType::BriefingSlot )
     {
-        returnMsg( parseBriefingSlot(text, stringContents, nextString, currAction.group, pos, end) ||
+        returnMsg( Chk::Action::ArgField::Group, parseBriefingSlot(text, stringContents, nextString, currAction.group, pos, end) ||
             parseLong(text, currAction.group, pos, end),
             "Expected briefing slot or 4-byte briefing-slot number" );
     }
@@ -4494,8 +4555,9 @@ bool BriefingTextTrigCompiler::parseBriefingSlot(std::string & text, std::vector
     return false;
 }
 
-bool BriefingTextTrigCompiler::buildNewMap(Scenario & scenario, size_t trigIndexBegin, size_t trigIndexEnd, std::vector<Chk::Trigger> & briefingTriggers, std::stringstream & error) const
+template <class MapType> bool BriefingTextTrigCompiler::buildNewMap(MapType & scenario, size_t trigIndexBegin, size_t trigIndexEnd, std::vector<Chk::Trigger> & briefingTriggers, std::stringstream & error) const
 {
+    auto edit = scenario();
     auto strBackup = scenario.copyStrings();
     std::vector<Chk::Trigger> replacedBriefingTriggers = scenario.replaceBriefingTriggerRange(trigIndexBegin, trigIndexEnd, briefingTriggers);
     bool success = true;
@@ -4506,12 +4568,12 @@ bool BriefingTextTrigCompiler::buildNewMap(Scenario & scenario, size_t trigIndex
             str->stringId = (u32)scenario.addString<RawString>(str->scStr.str, Chk::Scope::Game);
             if ( str->stringId != Chk::StringId::NoString )
             {
-                for ( auto assignee : str->assignees )
+                for ( const auto & assignee : str->assignees )
                 {
                     if ( assignee.isSound )
-                        scenario.briefingTriggers[assignee.trigIndex+trigIndexBegin].actions[assignee.actionIndex].soundStringId = str->stringId;
+                        edit->briefingTriggers[assignee.trigIndex+trigIndexBegin].actions[assignee.actionIndex].soundStringId = str->stringId;
                     else
-                        scenario.briefingTriggers[assignee.trigIndex+trigIndexBegin].actions[assignee.actionIndex].stringId = str->stringId;
+                        edit->briefingTriggers[assignee.trigIndex+trigIndexBegin].actions[assignee.actionIndex].stringId = str->stringId;
                 }
             }
             else
@@ -4533,6 +4595,10 @@ bool BriefingTextTrigCompiler::buildNewMap(Scenario & scenario, size_t trigIndex
     }
     return success;
 }
+template bool BriefingTextTrigCompiler::buildNewMap<Scenario>(Scenario & scenario, size_t trigIndexBegin, size_t trigIndexEnd, std::vector<Chk::Trigger> & briefingTriggers, std::stringstream & error) const;
+#ifdef INCLUDE_LITE_SCENARIO
+template bool BriefingTextTrigCompiler::buildNewMap<LiteScenario>(LiteScenario & scenario, size_t trigIndexBegin, size_t trigIndexEnd, std::vector<Chk::Trigger> & briefingTriggers, std::stringstream & error) const;
+#endif
 
 size_t findStringEnd(const std::string & str, size_t pos)
 {

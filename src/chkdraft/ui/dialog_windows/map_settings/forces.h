@@ -18,7 +18,8 @@ class ForcesWindow : public WinLib::ClassWindow
     private:
         void CheckReplaceForceName(Chk::Force force);
 
-        bool possibleForceNameUpdate[4];
+        bool initializing = true;
+        bool possibleForceNameUpdate[4] {false, false, false, false};
         u8 playerBeingDragged;
 
         WinLib::EditControl editForceName[4];

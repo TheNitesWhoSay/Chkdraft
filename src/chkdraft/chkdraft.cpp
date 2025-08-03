@@ -1,6 +1,4 @@
 #include "chkdraft.h"
-#include <cross_cut/logger.h>
-#include <cross_cut/test_commands.h>
 #include "mapping/data_file_browsers.h"
 #include "mapping/settings.h"
 #include "mapping/scr_graphics.h"
@@ -16,15 +14,57 @@
 void Chkdraft::OnLoadTest()
 {
     /*auto & map = []() -> GuiMap & {
-        auto map = chkd.maps.NewMap();
-        map->addUnit(Chk::Unit {map->getNextClassId(), 64, 64, Sc::Unit::Type::StartLocation, 0, 0, 0, Sc::Player::Id::Player1});
-        map->addUnit(Chk::Unit {map->getNextClassId(), 192, 64, Sc::Unit::Type::StartLocation, 0, 0, 0, Sc::Player::Id::Player2});
+        auto map = chkd.maps.NewMap(Sc::Terrain::Tileset::Jungle, 96, 96, Sc::Isom::Brush::Jungle::Default);
+        //map->addUnit(Chk::Unit {map->getNextClassId(), 192, 64, Sc::Unit::Type::StartLocation, 0, 0, 0, Sc::Player::Id::Player2});
         map->setForceFlags(Chk::Force::Force1, Chk::ForceFlags::All & Chk::ForceFlags::xRandomizeStartLocation);
         map->setForceFlags(Chk::Force::Force2, Chk::ForceFlags::All & Chk::ForceFlags::xRandomizeStartLocation);
         map->setPlayerForce(Sc::Player::Id::Player2, Chk::Force::Force2);
         map->setSlotType(1, Sc::Player::SlotType::Computer);
         _Pragma("warning(suppress: 26716)") return *map;
-    }();*/
+    }();
+    auto edit = CM->operator()();
+    for ( std::size_t i=0; i<Sc::Unit::TotalTypes; ++i )
+    {
+        //if ( i != Sc::Unit::Type::DarkSwarm )
+        //    continue;
+        //if ( scData.units.getUnit(Sc::Unit::Type(i)).subunit1 == 228 )
+        //    continue;
+        int x = i%20;
+        int y = i/20;
+        //CM->addUnit(Chk::Unit {CM->getNextClassId(), u16(x*64+64), u16(y*64+64), Sc::Unit::Type(i), 0, 0, 0, Sc::Player::Id::Player1});
+        //CM->addSprite(Chk::Sprite {Sc::Sprite::Type(i), u16(x*64+64), u16(y*64+64), Sc::Player::Id::Player1, 0, Chk::Sprite::SpriteFlags::IsUnit});
+    }
+    for ( std::size_t i=0; i<Sc::Sprite::TotalSprites; ++i )
+    {
+        //if ( i != 321 )
+        //    continue;
+        //if ( scData.units.getUnit(Sc::Unit::Type(i)).subunit1 == 228 )
+        //    continue;
+        int x = i%32;
+        int y = i/32;
+        //CM->addSprite(Chk::Sprite {Sc::Sprite::Type(i), u16(x*64+64), u16(y*64+64), Sc::Player::Id::Player1, 0, Chk::Sprite::SpriteFlags::DrawAsSprite});
+    }
+    //CM->setZoom(4.0);
+    //CM->SetSkin(GuiMap::Skin::ClassicGL);
+    CM->ToggleDisplayFps();*/
+    //maps.ChangeLayer(Layer::Units);
+    //maps.ChangeLayer(Layer::Sprites);
+
+    /*for ( std::size_t i=0; i<Sc::Unit::TotalTypes; ++i )
+        CM->addUnit(Chk::Unit{CM->getNextClassId(), 128, 128, Sc::Unit::Type(i), 0, 0, 0, Sc::Player::Id::Player1});
+    for ( std::size_t i=0; i<Sc::Sprite::TotalSprites; ++i )
+        CM->addSprite(Chk::Sprite{.type = Sc::Sprite::Type(i), .xc=192, .yc=128, .flags = Chk::Sprite::SpriteFlags::DrawAsSprite});
+    for ( std::size_t i=0; i<Sc::Sprite::TotalSprites; ++i )
+        CM->addSprite(Chk::Sprite{.type = Sc::Sprite::Type(i), .xc=256, .yc=128, .flags = 0});*/
+    //CM->addSprite(Chk::Sprite{.type = Sc::Sprite::Type(65), .xc = 200, .yc = 200, .flags = Chk::Sprite::SpriteFlags::DrawAsSprite});
+    //CM->addSprite(Chk::Sprite{.type = Sc::Sprite::Type(65), .xc = 250, .yc = 250, .flags = Chk::Sprite::SpriteFlags::DrawAsSprite});
+    //CM->clipboard.addQuickSprite(Chk::Sprite{.type = Sc::Sprite::Type(65), .flags = Chk::Sprite::SpriteFlags::DrawAsSprite});
+    //CM->clipboard.beginPasting(true, *CM);
+}
+
+void Chkdraft::PreLoadTest()
+{
+
 }
 
 enum_t(Id, u32, {
@@ -38,7 +78,7 @@ enum_t(Id, u32, {
 
 #define ifmapopen(dothis) if ( CM != nullptr ) dothis;
 
-Chkdraft::Chkdraft() : currDialog(NULL), editFocused(false), mainCommander(std::shared_ptr<Logger>(&logger, [](Logger*){})), logFile(nullptr, nullptr, logger.getLogLevel())
+Chkdraft::Chkdraft() : currDialog(NULL), editFocused(false), logFile(nullptr, nullptr, logger.getLogLevel())
 {
     
 }
@@ -50,6 +90,7 @@ Chkdraft::~Chkdraft()
 
 int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
 {
+    PreLoadTest();
     SetupLogging();
     if ( !CreateThis() )
         return 1;
@@ -65,6 +106,7 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
     UpdateWindow();
 
     scData.load(Sc::DataFile::BrowserPtr(new ChkdDataFileBrowser()), ChkdDataFileBrowser::getDataFileDescriptors(), ChkdDataFileBrowser::getExpectedStarCraftDirectory());
+    mainPlot.leftBar.mainTree.unitTree.UpdateUnitTree();
     mainPlot.leftBar.mainTree.spriteTree.UpdateSpriteTree();
     ParseCmdLine(lpCmdLine);
     GuiMap::SetAutoBackup(true);
@@ -103,10 +145,7 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
             }
         }
 
-
-        if ( CM != nullptr && CM->GetSkin() == GuiMap::Skin::ClassicGDI && colorCycler.cycleColors(GetTickCount64(), CM->getTileset(), CM->getPalette()) )
-            CM->Redraw(false);
-        else if ( CM != nullptr && CM->GetSkin() != GuiMap::Skin::ClassicGDI && CM->UpdateGlGraphics() )
+        if ( CM != nullptr && CM->Animate() )
             CM->Redraw(false);
 
         std::this_thread::sleep_for(std::chrono::milliseconds(1)); // Avoid consuming a core
@@ -144,8 +183,8 @@ bool Chkdraft::CreateThis()
     if ( !ClassWindow::WindowClassIsRegistered("wcChkdraft") )
     {
         DWORD classStyle = 0;
-        HICON hIcon = WinLib::ResourceManager::getIcon(IDI_PROGRAM_ICON, 32, 32);
-        HICON hIconSmall = WinLib::ResourceManager::getIcon(IDI_PROGRAM_ICON, 16, 16);
+        HICON hIcon = WinLib::ResourceManager::getIcon(IDI_PROGRAM_ICON, 48, 48);
+        HICON hIconSmall = WinLib::ResourceManager::getIcon(IDI_ICON_SMALL, 16, 16);
         HCURSOR hCursor = LoadCursor(NULL, IDC_ARROW);
         HBRUSH hBackground = (HBRUSH)(COLOR_APPWORKSPACE+1);
         std::string wcName = "wcChkdraft";
@@ -164,12 +203,6 @@ bool Chkdraft::CreateThis()
     HMENU id = NULL;
 
     return ClassWindow::CreateClassWindow(exStyle, windowName, style, windowX, windowY, windowWidth, windowHeight, NULL, id) && Chkdraft::CreateSubWindows();
-}
-
-bool Chkdraft::ChangesLocked(u16 mapId)
-{
-    GuiMapPtr map = maps.GetMap(mapId);
-    return map != nullptr && map->changesLocked();
 }
 
 bool Chkdraft::EditFocused()
@@ -347,6 +380,11 @@ bool Chkdraft::DlgKeyListener(HWND hWnd, UINT & msg, WPARAM wParam, LPARAM lPara
                             spriteWindow.DestroyThis();
                             return true;
                         }
+                        else if ( GetParent(hWnd) == actorWindow.getHandle() )
+                        {
+                            actorWindow.DestroyThis();
+                            return true;
+                        }
                         else if ( GetParent(hWnd) == locationWindow.getHandle() )
                         {
                             locationWindow.DestroyThis();
@@ -370,7 +408,27 @@ bool Chkdraft::DlgKeyListener(HWND hWnd, UINT & msg, WPARAM wParam, LPARAM lPara
                             return true;
                         }
                         break;
-                    case 'Z': case 'Y': case 'X': case 'C': case 'V':
+                    case 'Z':
+                        if ( (GetKeyState(VK_CONTROL) & 0x8000) && !editFocused && CM != nullptr )
+                        {
+                            if ( SendMessage(GetFocus(), WinLib::MISC::WM_ISEDIT, NULL, NULL) != 715827882 )
+                            {
+                                CM->undo();
+                                return true;
+                            }
+                        }
+                        break;
+                    case 'Y':
+                        if ( (GetKeyState(VK_CONTROL) & 0x8000) && !editFocused && CM != nullptr )
+                        {
+                            if ( SendMessage(GetFocus(), WinLib::MISC::WM_ISEDIT, NULL, NULL) != 715827882 )
+                            {
+                                CM->redo();
+                                return true;
+                            }
+                        }
+                        break;
+                    case 'X': case 'C': case 'V':
                         if ( GetKeyState(VK_CONTROL) & 0x8000 && (
                             GetParent(hWnd) == unitWindow.getHandle() ||
                             GetParent(hWnd) == spriteWindow.getHandle() ||
@@ -408,6 +466,7 @@ void Chkdraft::KeyListener(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                     case VK_DELETE: if ( CM != nullptr ) CM->deleteSelection(); return; break;
                     case VK_ESCAPE: if ( CM != nullptr ) { maps.endPaste(); CM->clearSelection(); } return; break;
                     case VK_RETURN: if ( CM != nullptr ) CM->ReturnKeyPress(); return; break;
+                    //case VK_F5: if ( CM != nullptr ) CM->printChangeHistory(); return; break;
                 }
 
                 if ( GetKeyState(VK_CONTROL) & 0x8000 ) // Control is down
@@ -819,23 +878,27 @@ bool Chkdraft::CreateSubWindows()
         DragAcceptFiles(hWnd, TRUE);
         int statusWidths[] = { 130, 205, 350, 450, 600, -1 };
 
-        return mainMenu.FindThis(hWnd) &&
+        if ( mainMenu.FindThis(hWnd) &&
             mainToolbar.CreateThis(hWnd, Id::IDR_MAIN_TOOLBAR) &&
             statusBar.CreateThis(sizeof(statusWidths) / sizeof(int), statusWidths, 0,
                 WS_CHILD | WS_VISIBLE | SBARS_SIZEGRIP, hWnd, (HMENU)Id::IDR_MAIN_STATUS) &&
             mainPlot.CreateThis(hWnd, Id::IDR_MAIN_PLOT) &&
             BecomeMDIFrame(maps, GetSubMenu(GetMenu(hWnd), 6), Id::ID_MDI_FIRSTCHILD,
                 WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_VSCROLL | WS_HSCROLL,
-                0, 0, 0, 0, (HMENU)Id::IDR_MAIN_MDI);
+                0, 0, 0, 0, (HMENU)Id::IDR_MAIN_MDI) )
+        {
+            mainPlot.leftBar.SetWidth(360);
+            return true;
+        }
     }
-    else
-        return false;
+    return false;
 }
 
 void Chkdraft::MinimizeDialogs()
 {
     ShowWindow(unitWindow.getHandle(), SW_HIDE);
     ShowWindow(spriteWindow.getHandle(), SW_HIDE);
+    ShowWindow(actorWindow.getHandle(), SW_HIDE);
     ShowWindow(locationWindow.getHandle(), SW_HIDE);
     ShowWindow(terrainPalWindow.getHandle(), SW_HIDE);
     ShowWindow(mapSettingsWindow.getHandle(), SW_HIDE);
@@ -847,6 +910,7 @@ void Chkdraft::RestoreDialogs()
 {
     ShowWindow(unitWindow.getHandle(), SW_SHOW);
     ShowWindow(spriteWindow.getHandle(), SW_SHOW);
+    ShowWindow(actorWindow.getHandle(), SW_SHOW);
     ShowWindow(locationWindow.getHandle(), SW_SHOW);
     ShowWindow(terrainPalWindow.getHandle(), SW_SHOW);
     ShowWindow(mapSettingsWindow.getHandle(), SW_SHOW);
