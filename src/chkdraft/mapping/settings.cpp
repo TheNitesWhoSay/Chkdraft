@@ -7,10 +7,13 @@ std::string Settings::starCraftPath("");
 std::string Settings::starDatPath("");
 std::string Settings::brooDatPath("");
 std::string Settings::patchRtPath("");
+u32 Settings::defaultSkin(1);
 u32 Settings::logLevel(LogLevel::Info);
 u32 Settings::deathTableStart(Sc::Address::Patch_1_16_1::DeathTable);
 bool Settings::useAddressesForMemory(true);
 bool Settings::isRemastered(false);
+u32 Settings::maxHistMemoryUsageMb(500);
+u32 Settings::maxHistActions(500);
 
 bool ParseLong(const std::string & text, u32 & dest, size_t pos, size_t end)
 {
@@ -146,6 +149,14 @@ bool Settings::readSettingsFile()
                     brooDatPath = value;
                 else if ( key == "patchRtPath" )
                     patchRtPath = value;
+                else if ( key == "defaultSkin" )
+                {
+                    u32 temp = 0;
+                    if ( ParseLong(value, temp, 0, value.length()) && temp > 0 && temp < 8 )
+                        defaultSkin = temp-1;
+                    else
+                        defaultSkin = 1;
+                }
                 else if ( key == "logLevel" )
                 {
                     u32 temp = 0;
@@ -176,6 +187,26 @@ bool Settings::readSettingsFile()
                     else
                         useAddressesForMemory = true;
                 }
+                else if ( key == "maxHistMemoryUsageMb" )
+                {
+                    u32 temp = 0;
+                    if ( ParseLong(value, temp, 0, value.length()) )
+                    {
+                        maxHistMemoryUsageMb = temp;
+                        if ( maxHistMemoryUsageMb < 1 )
+                            maxHistMemoryUsageMb = 1;
+                    }
+                }
+                else if ( key == "maxHistActions" )
+                {
+                    u32 temp = 0;
+                    if ( ParseLong(value, temp, 0, value.length()) )
+                    {
+                        maxHistActions = temp;
+                        if ( maxHistActions < 5 )
+                            maxHistActions = 5;
+                    }
+                }
                 else
                     foundValue = false;
 
@@ -198,10 +229,13 @@ bool Settings::updateSettingsFile()
             << "starDatPath=" << starDatPath << std::endl
             << "brooDatPath=" << brooDatPath << std::endl
             << "patchRtPath=" << patchRtPath << std::endl
+            << "defaultSkin=" << (defaultSkin+1) << std::endl
             << "logLevel=" << logLevel << std::endl
             << "deathTableStart=0x" << std::hex << std::uppercase << deathTableStart << std::dec << std::nouppercase << std::endl
             << "useAddressesForMemory=" << (useAddressesForMemory?"TRUE":"FALSE") << std::endl
-            << "isRemastered=" << (isRemastered?"TRUE":"FALSE") << std::endl;
+            << "isRemastered=" << (isRemastered?"TRUE":"FALSE") << std::endl
+            << "maxHistMemoryUsageMb=" << maxHistMemoryUsageMb << std::endl
+            << "maxHistActions=" << maxHistActions << std::endl;
         loadFile.close();
         return true;
     }

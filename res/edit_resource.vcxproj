@@ -18,6 +18,7 @@
     <Image Include="new-tab.bmp" />
     <Image Include="properties.bmp" />
     <Image Include="save-as.bmp" />
+    <Image Include="small.ico" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

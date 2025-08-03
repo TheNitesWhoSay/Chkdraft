@@ -7,6 +7,7 @@ class ColorPropertiesDialog
 {
 public:
     static std::optional<Chk::Rgb> GetCrgbColor(HWND hParent, Chk::Rgb previousColor);
+    static std::optional<u32> GetArgbColor(HWND hParent, u32 previousColor);
 
 private:
     static COLORREF customColors[16];

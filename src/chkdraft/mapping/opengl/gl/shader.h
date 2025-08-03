@@ -55,7 +55,10 @@ namespace gl
             GLint status = 0;
             glGetShaderiv(*shaderId, GL_COMPILE_STATUS, &status);
             if ( status == GL_FALSE )
-                throw std::runtime_error("Failed to compile shader: \n\n" + getInfoLog());
+            {
+                std::string infoLog = getInfoLog();
+                throw std::runtime_error("Failed to compile shader: \n\n" + infoLog);
+            }
         }
 
         Shader(Shader::Type type, std::string_view source, bool requireNonEmpty = true)

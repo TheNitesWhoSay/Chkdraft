@@ -13,6 +13,7 @@
 #include "basics.h" // Numerous useful definitions, constants, and utility functions
 #include "sha256.h" // Provides the means to compute sha256 hashes for securing sensitive passwords or keys
 
+#include "action_descriptor.h" // Defines the descriptors used for giving summary text to actions
 #include "casc_archive.h" // A CASC file is an archive format (like .zip) specialized for StarCraft Remastered
 #include "chk.h" // Defines all static structures, constants, and enumerations specific to scenario files (.chk)
 #include "escape_strings.h" // Defines several string types that extend basic strings in ways useful for mapping purposes

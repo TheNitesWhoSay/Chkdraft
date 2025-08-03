@@ -70,7 +70,7 @@ public:
     virtual bool extractFile(const std::string & cascPath, const std::string & systemFilePath) const override;
 
     virtual inline bool create(const std::string & filePath) override { return false; }
-    virtual inline void save() override {}
+    virtual inline bool save() override { return false; }
     virtual inline bool addFile(const std::string & archivedFilePath, std::stringstream & fileData) override { return false; }
     virtual bool addFile(const std::string & archivedFilePath, const std::vector<u8> & fileData) override { return false; }
     virtual bool addFile(const std::string & archivedFilePath, const std::string & filePath) override { return false; }

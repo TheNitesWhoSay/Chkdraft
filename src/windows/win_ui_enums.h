@@ -147,6 +147,12 @@ namespace WinLib {
         TV_LAST
     });
 
+    enum_t(MISC, u32, {
+        WM_ISEDIT = TV::TV_LAST,
+
+        MISC_LAST
+    });
+
     // First user-message used by a given set of sub-windows
     #define MSG_FIRST (WinLib::TV::TV_LAST+1)
 

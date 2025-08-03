@@ -1,10 +1,12 @@
 #include "sc.h"
+#include <rarecpp/json.h>
 #include <cross_cut/logger.h>
 #include "mpq_file.h"
 #include "casc_archive.h"
 #include <algorithm>
 #include <chrono>
 #include <set>
+#include <tuple>
 
 extern Logger logger;
 
@@ -1828,6 +1830,31 @@ bool Sc::Terrain::Tiles::load(size_t tilesetIndex, ArchiveCluster & archiveClust
     const std::string wpeFilePath = makeExtArchiveFilePath(mpqFilePath, "wpe");
     const std::string ddDataFilePath = makeExtArchiveFilePath(makeArchiveFilePath(mpqFilePath, "dddata"), "bin");
     
+    const std::string darkFilePath = makeExtArchiveFilePath(makeArchiveFilePath(mpqFilePath, "dark"), "pcx");
+    const std::string shiftFilePath = makeExtArchiveFilePath(makeArchiveFilePath(mpqFilePath, "shift"), "pcx");
+    const std::string ofireFilePath = makeExtArchiveFilePath(makeArchiveFilePath(mpqFilePath, "ofire"), "pcx");
+    const std::string gfireFilePath = makeExtArchiveFilePath(makeArchiveFilePath(mpqFilePath, "gfire"), "pcx");
+    const std::string bfireFilePath = makeExtArchiveFilePath(makeArchiveFilePath(mpqFilePath, "bfire"), "pcx");
+    const std::string bexplFilePath = makeExtArchiveFilePath(makeArchiveFilePath(mpqFilePath, "bexpl"), "pcx");
+    const std::string trans50FilePath = makeExtArchiveFilePath(makeArchiveFilePath(mpqFilePath, "trans50"), "pcx");
+    const std::string redFilePath = makeExtArchiveFilePath(makeArchiveFilePath(mpqFilePath, "red"), "pcx");
+    const std::string greenFilePath = makeExtArchiveFilePath(makeArchiveFilePath(mpqFilePath, "green"), "pcx");
+    bool darkLoaded = dark.load(archiveCluster, darkFilePath);
+    bool shiftLoaded = shift.load(archiveCluster, shiftFilePath);
+    bool ofireLoaded = remap[0].load(archiveCluster, ofireFilePath);
+    bool gfireLoaded = remap[1].load(archiveCluster, gfireFilePath);
+    bool bfireLoaded = remap[2].load(archiveCluster, bfireFilePath);
+    bool bexplLoaded = remap[3].load(archiveCluster, bexplFilePath);
+    bool trans50Loaded = remap[4].load(archiveCluster, trans50FilePath);
+    bool redLoaded = remap[5].load(archiveCluster, redFilePath);
+    bool greenLoaded = remap[6].load(archiveCluster, greenFilePath);
+
+    bool remappingFilesLoaded = darkLoaded && shiftLoaded &&
+        ofireLoaded && gfireLoaded && bfireLoaded && bexplLoaded && trans50Loaded && redLoaded && greenLoaded;
+
+    if ( !remappingFilesLoaded )
+        logger.error() << "Failed to get one or more remapping files for tileset " << mpqFilePath << std::endl;
+    
     auto cv5Data = Sc::Data::GetAsset(archiveCluster, cv5FilePath);
     auto vf4Data = Sc::Data::GetAsset(archiveCluster, vf4FilePath);
     auto vr4Data = Sc::Data::GetAsset(archiveCluster, vr4FilePath);
@@ -1960,7 +1987,7 @@ bool Sc::Terrain::Tiles::load(size_t tilesetIndex, ArchiveCluster & archiveClust
 
             loadIsom(tilesetIndex);
 
-            return true;
+            return remappingFilesLoaded;
         }
         else
             logger.error() << "One or more files improperly sized for tileset " << mpqFilePath << std::endl;
@@ -2383,18 +2410,38 @@ std::vector<size_t> Sc::Sprite::ParamSize {
     /* short_ */ 2
 };
 
+bool Sc::Sprite::LoFile::load(ArchiveCluster & archiveCluster, const std::string & archiveFileName)
+{
+    auto loFile = Sc::Data::GetAsset(archiveCluster, archiveFileName);
+    if ( !loFile )
+    {
+        logger.error("Failed to find " + archiveFileName);
+        return false;
+    }
+
+    this->loData = loFile.value();
+    if ( this->loData.size() < 8 )
+    {
+        this->loData.assign(12, 0); // Create a header indicating an empty lo file
+        logger.error("Invalid .lo* headerfor " + archiveFileName);
+        return false;
+    }
+    return true;
+}
+
 bool Sc::Sprite::load(ArchiveCluster & archiveCluster, Sc::TblFilePtr imagesTbl)
 {
     logger.debug("Loading Sprites...");
     auto start = std::chrono::high_resolution_clock::now();
-
+    
+    size_t numStrings = imagesTbl->numStrings();
     this->imagesTbl = imagesTbl;
+    this->loFiles.assign(numStrings, LoFile{});
 
     Sc::Sprite::Grp blankGrp;
     blankGrp.makeBlank();
     
     grps.push_back(blankGrp);
-    size_t numStrings = imagesTbl->numStrings();
     for ( size_t i=1; i<=numStrings; i++ )
     {
         const std::string & imageFilePath = imagesTbl->getString(i);
@@ -2409,8 +2456,15 @@ bool Sc::Sprite::load(ArchiveCluster & archiveCluster, Sc::TblFilePtr imagesTbl)
                 return false;
             }
         }
-        else
+        else if ( getArchiveFileExtension(imageFilePath).starts_with(".lo") )
+        {
             grps.push_back(blankGrp);
+            loFiles[i].load(archiveCluster, "unit\\" + imageFilePath);
+        }
+        else
+        {
+            grps.push_back(blankGrp);
+        }
     }
 
     if ( numStrings == 0 )
@@ -2475,6 +2529,12 @@ bool Sc::Sprite::load(ArchiveCluster & archiveCluster, Sc::TblFilePtr imagesTbl)
     IScriptIdTableEntry* iScriptIdTable = (IScriptIdTableEntry*)&iscript[isIdTableOffset];
     for ( ; iScriptIdTable->id != 0xFFFF; ++iScriptIdTable )
     {
+        if ( iScriptIdTable->id >= iscriptOffsets.size() )
+            iscriptOffsets.resize(iScriptIdTable->id+1, 0);
+        
+        iscriptOffsets[iScriptIdTable->id] = iScriptIdTable->offset;
+
+        // TODO: Long-term it's likely that only the iscriptOffsets code above is needed and the below code and the loadAnimation method can be removed
         u16 id = iScriptIdTable->id;
         bool idIncludesFlip = false;
         bool idIncludesUnflip = false;
@@ -2486,7 +2546,7 @@ bool Sc::Sprite::load(ArchiveCluster & archiveCluster, Sc::TblFilePtr imagesTbl)
         }
         IScriptAnimationHeader* iScriptAnimationHeader = (IScriptAnimationHeader*)&iscript[animationsOffset];
         size_t totalAnimations = size_t(iScriptAnimationHeader->animationCount & 0xFFFE) + 2;
-        //logger << id << " has " << totalAnimations << " animations" << std::endl;
+
         for ( size_t animationIndex=0; animationIndex < totalAnimations; ++animationIndex )
         {
             size_t animationOffset = iScriptAnimationHeader->animationsOffset[animationIndex];
@@ -2498,14 +2558,13 @@ bool Sc::Sprite::load(ArchiveCluster & archiveCluster, Sc::TblFilePtr imagesTbl)
                     logger.error() << "Failed to parse scripts\\ISCRIPT.BIN" << std::endl;
                     return false;
                 }
-                //logger << currOffset << ": " << std::endl;
 
                 if ( currOffset < iscript.size() )
                 {
                     IScriptAnimation* animation = (IScriptAnimation*)&iscript[currOffset];
                     std::set<size_t> visitedOffsets {};
                     visitedOffsets.insert(currOffset);
-                    if ( !loadAnimation(animation, currOffset, idIncludesFlip, idIncludesUnflip, visitedOffsets) )
+                    if ( !loadAnimation(id, animation, currOffset, idIncludesFlip, idIncludesUnflip, visitedOffsets) )
                         return false;
                 }
                 else
@@ -2523,20 +2582,22 @@ bool Sc::Sprite::load(ArchiveCluster & archiveCluster, Sc::TblFilePtr imagesTbl)
     return true;
 }
 
-bool Sc::Sprite::loadAnimation(IScriptAnimation* animation, size_t currOffset, bool & idIncludesFlip, bool & idIncludesUnflip, std::set<size_t> & visitedOffsets)
+bool Sc::Sprite::loadAnimation(u16 id, IScriptAnimation* animation, size_t currOffset, bool & idIncludesFlip, bool & idIncludesUnflip, std::set<size_t> & visitedOffsets)
 {
+    // id here is just a temporary stopgap so I can examine one script, flip and unflip temporary loaders
+    // visitedOffset is an immediate-cache preventing infinite loops during initial load... during actual animation though you want the infinite loop behavior
+    // iScript being just a byte vector..., currOffset an index into it, animation a pointer into it at currOffset
     for ( ; ; )
     {
         if ( currOffset >= iscript.size() )
             return true;
+
         Op code = Op(animation->code);
         ++currOffset; // 1-byte code
-        //std::string opName = code < OpName.size() ? std::string(OpName[code]) : std::to_string(int(code));
-        //logger << "  " << opName << ", ";
         if ( code < OpParams.size() )
         {
             auto & opCodeParams = OpParams[code];
-            if ( code == Op::setflipstate && iscript[currOffset] == 1 )
+            if ( code == Op::setflipstate && iscript[currOffset] == 1 ) 
                 idIncludesFlip = true;
             else if ( code == Op::setflipstate && iscript[currOffset] == 0 )
                 idIncludesUnflip = true;
@@ -2554,9 +2615,10 @@ bool Sc::Sprite::loadAnimation(IScriptAnimation* animation, size_t currOffset, b
                 {
                     visitedOffsets.insert(dest);
                     IScriptAnimation* subAnimation = (IScriptAnimation*)&iscript[dest];
-                    if ( !loadAnimation(subAnimation, dest, idIncludesFlip, idIncludesUnflip, visitedOffsets) )
-                        return false;
+                    return loadAnimation(id, subAnimation, dest, idIncludesFlip, idIncludesUnflip, visitedOffsets);
                 }
+                else
+                    return true;
             }
             
             // Move currOffset past all the parameters
@@ -2565,14 +2627,45 @@ bool Sc::Sprite::loadAnimation(IScriptAnimation* animation, size_t currOffset, b
                 auto currParam = opCodeParams[param];
                 auto paramSize = ParamSize[size_t(currParam)];
                 u16 paramValue = paramSize == 1 ? iscript[currOffset] : (u16 &)iscript[currOffset];
-                //logger << paramValue << ", ";
                 currOffset += paramSize;
             }
             if ( currOffset < iscript.size() )
                 animation = (IScriptAnimation*)&iscript[currOffset];
         }
-        //logger << std::endl;
     }
+    return true;
+}
+
+const Sc::Sprite::IScriptAnimation* Sc::Sprite::getAnimationHeader(size_t iScriptId, AnimHeader animHeader) const
+{
+    IScriptDatFileHeader* scriptHeader = (IScriptDatFileHeader*)&iscript[0];
+    size_t animationsOffset = iscriptOffsets[iScriptId];
+    if ( animationsOffset >= iscript.size() )
+    {
+        logger.error() << "Invalid iscript\n";
+        return nullptr;
+    }
+    IScriptAnimationHeader* iScriptAnimationHeader = (IScriptAnimationHeader*)&iscript[animationsOffset];
+    size_t totalAnimations = size_t(iScriptAnimationHeader->animationCount & 0xFFFE) + 2;
+    if ( std::size_t(animHeader) >= totalAnimations )
+        return nullptr;
+
+    size_t animationOffset = iScriptAnimationHeader->animationsOffset[std::size_t(animHeader)];
+    if ( animationOffset > 0 )
+    {
+        size_t currOffset = animationOffset;
+        if ( currOffset >= iscript.size() )
+        {
+            logger.error() << "Invalid iscript\n";
+            return nullptr;
+        }
+        else
+        {
+            IScriptAnimation* animation = (IScriptAnimation*)&iscript[currOffset];
+            return animation;
+        }
+    }
+    return nullptr;
 }
 
 const Sc::Sprite::Grp & Sc::Sprite::getGrp(size_t grpIndex)
@@ -3999,7 +4092,7 @@ bool Sc::Pcx::load(ArchiveCluster & archiveCluster, const std::string & assetArc
 
         u8* paletteData = &pcxData.value()[pcxData->size()-PcxFile::PaletteSize];
         size_t dataOffset = 0;
-        size_t pixelCount = size_t(pcxFile.ncp)*size_t(pcxFile.nbs);
+        size_t pixelCount = (size_t(pcxFile.rightMargin)+1)*(size_t(pcxFile.lowerMargin)+1);
         for ( size_t pixel = 0; pixel < pixelCount; )
         {
             u8 compSect = pcxFile.data[dataOffset++];
@@ -4007,15 +4100,21 @@ bool Sc::Pcx::load(ArchiveCluster & archiveCluster, const std::string & assetArc
             {
                 rgbaPalette.push_back(Sc::Color<float>(paletteData[compSect*3], paletteData[compSect*3+1], paletteData[compSect*3+2]));
                 bgraPalette.push_back(Sc::SystemColor(paletteData[compSect*3], paletteData[compSect*3+1], paletteData[compSect*3+2]));
+                rgbaPalette.back().null = compSect;
+                bgraPalette.back().null = compSect;
+                paletteIndex.push_back(compSect);
                 pixel++;
             }
             else // Repeat color at palette starting at colorIndex*3, compSect-MaxOffset times
             {
                 u8 colorIndex = pcxFile.data[dataOffset++];
                 Sc::Color<float> rgbaColor(paletteData[colorIndex*3], paletteData[colorIndex*3+1], paletteData[colorIndex*3+2]);
+                rgbaColor.null = colorIndex;
                 Sc::SystemColor bgraColor(paletteData[colorIndex*3], paletteData[colorIndex*3+1], paletteData[colorIndex*3+2]);
+                bgraColor.null = colorIndex;
                 rgbaPalette.insert(rgbaPalette.end(), compSect-PcxFile::MaxOffset, rgbaColor);
                 bgraPalette.insert(bgraPalette.end(), compSect-PcxFile::MaxOffset, bgraColor);
+                paletteIndex.insert(paletteIndex.end(), compSect-PcxFile::MaxOffset, colorIndex);
                 pixel += (compSect-PcxFile::MaxOffset);
             }
         }
@@ -4161,22 +4260,191 @@ void Sc::Isom::TerrainTypeShapes::populateLinkIdsToSolidBrushes(Span<TileGroup> 
     }
 }
 
+NOTE(ZergUnits, Json::Name{"Zerg"})
+struct ZergUnits
+{
+    NOTE(misc, Json::Name{"*"})
+    static constexpr u16 misc[] { 59, 36, 35, 97 };
+
+    NOTE(air, Json::Name{"Air Units"})
+    static constexpr u16 air[] { 62, 44, 43, 42, 45, 47 };
+
+    NOTE(buildings, Json::Name{"Buildings"})
+    static constexpr u16 buildings[] { 130, 143, 136, 139, 149, 137, 131, 133, 135, 132, 134, 138, 142, 141, 144, 146, 140 };
+
+    NOTE(ground, Json::Name{"Ground Units"})
+    static constexpr u16 ground[] { 50, 40, 46, 41, 38, 103, 39, 37 };
+
+    NOTE(heroes, Json::Name{"Heroes"})
+    static constexpr u16 heroes[] { 54, 53, 104, 51, 56, 55, 49, 48, 52, 57 };
+
+    NOTE(special, Json::Name{"Special"})
+    static constexpr u16 special[] { 194, 197, 191 };
+
+    NOTE(specialBuildings, Json::Name{"Special Buildings"})
+    static constexpr u16 specialBuildings[] { 150, 201, 151, 152, 148, 147 };
+
+    NOTE(zerg, Json::Name{"Zerg"})
+    static constexpr u16 zerg[] { 145, 153 };
+
+    REFLECT_NOTED(ZergUnits, misc, air, buildings, ground, heroes, special, specialBuildings, zerg)
+};
+
+NOTE(TerranUnits, Json::Name{"Terran"})
+struct TerranUnits
+{
+    NOTE(misc, Json::Name{"*"})
+    static constexpr u16 misc[] { 18, 24, 26, 4, 33, 6, 31, 91, 92, 119 };
+
+    NOTE(addons, Json::Name{"Addons"})
+    static constexpr u16 addons[] { 107, 115, 117, 120, 108, 118 };
+
+    NOTE(air, Json::Name{"Air Units"})
+    static constexpr u16 air[] { 12, 11, 9, 58, 8 };
+
+    NOTE(buildings, Json::Name{"Buildings"})
+    static constexpr u16 buildings[] { 112, 123, 111, 125, 106, 122, 113, 124, 110, 116, 114, 109 };
+
+    NOTE(ground, Json::Name{"Ground Units"})
+    static constexpr u16 ground[] { 32, 1, 3, 0, 34, 7, 30, 5, 2 };
+
+    NOTE(heroes, Json::Name{"Heroes"})
+    static constexpr u16 heroes[] { 17, 100, 27, 25, 23, 102, 10, 28, 20, 19, 22, 29, 99, 16, 15, 21 };
+
+    NOTE(special, Json::Name{"Special"})
+    static constexpr u16 special[] { 14, 195, 198, 192, 13 };
+
+    NOTE(specialBuildings, Json::Name{"Special Buildings"})
+    static constexpr u16 specialBuildings[] { 127, 126, 200, 190 };
+
+    NOTE(terran, Json::Name{"Terran"})
+    static constexpr u16 terran[] { 121 };
+
+    REFLECT_NOTED(TerranUnits, misc, addons, air, buildings, ground, heroes, special, specialBuildings, terran)
+};
+
+NOTE(ProtossUnits, Json::Name{"Protoss"})
+struct ProtossUnits
+{
+    NOTE(air, Json::Name{"Air Units"})
+    static constexpr u16 air[] { 71, 72, 60, 73, 84, 70, 69 };
+
+    NOTE(buildings, Json::Name{"Buildings"})
+    static constexpr u16 buildings[] { 170, 157, 163, 164, 169, 166, 160, 154, 159, 162, 156, 155, 171, 172, 167, 165 };
+
+    NOTE(ground, Json::Name{"Ground Units"})
+    static constexpr u16 ground[] { 68, 63, 61, 66, 67, 64, 83, 85, 65 };
+
+    NOTE(heroes, Json::Name{"Heroes"})
+    static constexpr u16 heroes[] { 87, 88, 86, 74, 78, 77, 82, 80, 98, 79, 76, 81, 75 };
+
+    NOTE(protoss, Json::Name{"Protoss"})
+    static constexpr u16 protoss[] { 158, 161 };
+
+    NOTE(special, Json::Name{"Special"})
+    static constexpr u16 special[] { 196, 199, 193 };
+
+    NOTE(specialBuildings, Json::Name{"Special Buildings"})
+    static constexpr u16 specialBuildings[] { 173, 174, 168, 189, 175 };
+
+    REFLECT_NOTED(ProtossUnits, air, buildings, ground, heroes, protoss, special, specialBuildings)
+};
+
+NOTE(NeutralUnits, Json::Name{"Neutral"})
+struct NeutralUnits
+{
+    NOTE(critters, Json::Name{"Critters"})
+    static constexpr u16 critters[] { 90, 94, 95, 89, 93, 96 };
+
+    NOTE(doodads, Json::Name{"Doodads"})
+    static constexpr u16 doodads[] { 209, 204, 203, 207, 205, 211, 210, 208, 206, 213, 212 };
+
+    NOTE(neutral, Json::Name{"Neutral"})
+    static constexpr u16 neutral[] { 181, 179, 180, 185, 187, 182, 186 };
+
+    NOTE(powerups, Json::Name{"Powerups"})
+    static constexpr u16 powerups[] { 218, 129, 219, 217, 128, 216 };
+
+    NOTE(protoss, Json::Name{"Protoss"})
+    static constexpr u16 protoss[] { 105 };
+
+    NOTE(resources, Json::Name{"Resources"})
+    static constexpr u16 resources[] { 220, 221, 176, 177, 178, 188, 222, 223, 224, 225, 226, 227 };
+
+    NOTE(special, Json::Name{"Special"})
+    static constexpr u16 special[] { 215, 101 };
+
+    NOTE(startLocation, Json::Name{"Start Location"})
+    static constexpr u16 startLocation[] { 214 };
+
+    NOTE(zerg, Json::Name{"Zerg"})
+    static constexpr u16 zerg[] { 202 };
+
+    REFLECT_NOTED(NeutralUnits, critters, doodads, neutral, powerups, protoss, resources, special, startLocation, zerg)
+};
+
+NOTE(UndefinedUnits, Json::Name{"Undefined"})
+struct UndefinedUnits
+{
+    NOTE(independent, Json::Name{"Independent"})
+    static constexpr u16 independent[] {183, 184};
+
+    REFLECT_NOTED(UndefinedUnits, independent)
+};
+
+using UnitGroups = std::tuple<ZergUnits, TerranUnits, ProtossUnits, NeutralUnits, UndefinedUnits>;
+
+bool Sc::Data::loadUnitGroups()
+{
+    RareTs::forIndexes<std::tuple_size_v<UnitGroups>>([&](auto i) {
+        constexpr std::size_t I = decltype(i)::value;
+        using UnitGroup = std::tuple_element_t<I, UnitGroups>;
+
+        auto groupName = RareTs::Notes<UnitGroup>::template getNote<Json::Name>().value;
+        auto & unitGroup = units.unitGroups.emplace_back(Sc::Unit::UnitGroup{std::string(groupName)});
+
+        RareTs::Members<UnitGroup>::forEach([&](auto member) {
+            auto subGroupName = member.template getNote<Json::Name>().value;
+            auto & values = member.value();
+            auto & subUnitGroup = unitGroup.subGroups.emplace_back(Sc::Unit::UnitGroup{std::string(subGroupName)});
+            subUnitGroup.memberUnits = std::vector<u16>(std::begin(values), std::end(values));
+        });
+    });
+    
+    return true;
+}
+
 bool Sc::Data::loadSpriteNames(const Sc::Sprite::SpriteGroup & spriteGroup)
 {
     auto & spriteGroups = sprites.spriteGroups;
     for ( const auto & subGroup : spriteGroup.subGroups )
         loadSpriteNames(subGroup);
     
-    for ( auto memberSprite : spriteGroup.memberSprites )
-        sprites.spriteNames[memberSprite.spriteIndex] = memberSprite.spriteName;
+    for ( const auto & memberSprite : spriteGroup.memberSprites )
+    {
+        if ( !memberSprite.isUnit )
+            sprites.spriteNames[memberSprite.spriteIndex] = memberSprite.spriteName;
+    }
 
     return true;
 }
 
-bool Sc::Data::loadSpriteGroups(Sc::TblFilePtr imagesTbl)
+#ifdef _DEBUG
+void appendSpriteIndexes(std::set<u16> & indexes, const Sc::Sprite::SpriteGroup & spriteGroup)
+{
+    for ( const auto & subGroup : spriteGroup.subGroups )
+        appendSpriteIndexes(indexes, subGroup);
+    
+    for ( const auto & memberSprite : spriteGroup.memberSprites )
+        indexes.insert(memberSprite.spriteIndex);
+}
+#endif
+
+bool Sc::Data::loadSpriteGroups(Sc::TblFilePtr imagesTbl, Sc::TblFilePtr statTxt)
 {
     constexpr auto totalSprites = Sc::Sprite::TotalSprites;
 
+    sprites.spriteAutoRestart.assign(totalSprites, true);
     auto & doodads = sprites.spriteGroups.emplace_back(Sc::Sprite::SpriteGroup{"Doodads"});
     for ( u16 tilesetIndex = Sc::Terrain::Tileset::Badlands; tilesetIndex < Sc::Terrain::NumTilesets; ++tilesetIndex )
     {
@@ -4260,37 +4528,55 @@ bool Sc::Data::loadSpriteGroups(Sc::TblFilePtr imagesTbl)
             {
                 std::sort(tilesetDoodads.subGroups.back().memberSprites.begin(), tilesetDoodads.subGroups.back().memberSprites.end(),
                     [](const auto & l, const auto & r) { return l.spriteIndex < r.spriteIndex; });
+
+                for ( const auto & sprite : doodadGroupSprites.memberSprites ) {
+                    sprites.spriteAutoRestart[sprite.spriteIndex] = false;
+                }
             }
         }
     }
     
-    auto & unitSprites = sprites.spriteGroups.emplace_back(Sc::Sprite::SpriteGroup{"Units"});
-    for ( size_t i=0; i<Sc::Unit::TotalTypes; ++i )
-    {
-        const auto & unitDat = units.getUnit(Sc::Unit::Type(i));
-        const auto & flingyDat = units.getFlingy(unitDat.graphics);
-        const auto & spriteDat = sprites.getSprite(flingyDat.sprite);
-        const auto & imageDat = sprites.getImage(spriteDat.imageFile);
-        const auto & imageFileStr = imagesTbl->getString(imageDat.grpFile);
-        std::string imageFileName = getSystemFileName(imageFileStr);
+    sprites.spriteGroups.emplace_back(Sc::Sprite::SpriteGroup{"Unit Pure Sprites"});
+    auto & spriteUnits = sprites.spriteGroups.emplace_back(Sc::Sprite::SpriteGroup{"Sprite Units"});
+    auto & unitPureSprites = sprites.spriteGroups[sprites.spriteGroups.size()-2];
+    RareTs::forIndexes<std::tuple_size_v<UnitGroups>>([&](auto i) {
+        constexpr std::size_t I = decltype(i)::value;
+        using UnitGroup = std::tuple_element_t<I, UnitGroups>;
 
-        unitSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{flingyDat.sprite, units.defaultDisplayNames[i]});
-    }
+        auto groupName = RareTs::Notes<UnitGroup>::template getNote<Json::Name>().value;
+        auto & pureSpriteUnitGroup = unitPureSprites.subGroups.emplace_back(Sc::Sprite::SpriteGroup{std::string(groupName)});
+        auto & spriteUnitsUnitGroup = spriteUnits.subGroups.emplace_back(Sc::Sprite::SpriteGroup{std::string(groupName)});
+
+        RareTs::Members<UnitGroup>::forEach([&](auto member) {
+            auto subGroupName = member.template getNote<Json::Name>().value;
+            auto & values = member.value();
+            auto & subPureSpriteUnitGroup = pureSpriteUnitGroup.subGroups.emplace_back(Sc::Sprite::SpriteGroup{std::string(subGroupName)});
+            auto & subSpriteUnitsUnitGroup = spriteUnitsUnitGroup.subGroups.emplace_back(Sc::Sprite::SpriteGroup{std::string(subGroupName)});
+            for ( u16 unitId : values )
+            {
+                const auto & unitDat = units.getUnit(Sc::Unit::Type(unitId));
+                const auto & flingyDat = units.getFlingy(unitDat.graphics);
+                subPureSpriteUnitGroup.memberSprites.push_back(Sc::Sprite::TreeSprite{flingyDat.sprite, units.defaultDisplayNames[unitId]});
+                subSpriteUnitsUnitGroup.memberSprites.push_back(Sc::Sprite::TreeSprite{unitId, units.defaultDisplayNames[unitId], true});
+                sprites.spriteAutoRestart[flingyDat.sprite] = false;
+            }
+        });
+    });
     
     auto & remains = sprites.spriteGroups.emplace_back(Sc::Sprite::SpriteGroup{"Remains"});
-    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{230, "Ghost Remains"});
     remains.memberSprites.push_back(Sc::Sprite::TreeSprite{236, "Marine Remains"});
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{230, "Ghost Remains"});
     remains.memberSprites.push_back(Sc::Sprite::TreeSprite{490, "Medic Remains"});
-
-    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{134, "Broodling Remains"});
-    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{139, "Defiler Remains"});
-    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{141, "Drone Remains"});
-    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{143, "Egg Remains"});
-    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{147, "Hydralisk Remains"});
+    
     remains.memberSprites.push_back(Sc::Sprite::TreeSprite{150, "Larva Remains"});
-    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{158, "Ultralisk Remains"});
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{143, "Egg Remains"});
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{141, "Drone Remains"});
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{134, "Broodling Remains"});
     remains.memberSprites.push_back(Sc::Sprite::TreeSprite{160, "Zergling Remains"});
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{147, "Hydralisk Remains"});
     remains.memberSprites.push_back(Sc::Sprite::TreeSprite{484, "Lurker Remains"});
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{158, "Ultralisk Remains"});
+    remains.memberSprites.push_back(Sc::Sprite::TreeSprite{139, "Defiler Remains"});
 
     remains.memberSprites.push_back(Sc::Sprite::TreeSprite{192, "Dragoon Remains"});
     
@@ -4304,6 +4590,8 @@ bool Sc::Data::loadSpriteGroups(Sc::TblFilePtr imagesTbl)
     auto & construction = sprites.spriteGroups.emplace_back(Sc::Sprite::SpriteGroup{"Construction"});
     construction.memberSprites.push_back(Sc::Sprite::TreeSprite{270, "Terran Construction - Large"});
     construction.memberSprites.push_back(Sc::Sprite::TreeSprite{271, "Terran Construction - Small"});
+    sprites.spriteAutoRestart[270] = false;
+    sprites.spriteAutoRestart[271] = false;
     construction.memberSprites.push_back(Sc::Sprite::TreeSprite{182, "Zergling Building Spawn - Small"});
     construction.memberSprites.push_back(Sc::Sprite::TreeSprite{183, "Zergling Building Spawn - Medium"});
     construction.memberSprites.push_back(Sc::Sprite::TreeSprite{184, "Zergling Building Spawn - Large"});
@@ -4324,48 +4612,82 @@ bool Sc::Data::loadSpriteGroups(Sc::TblFilePtr imagesTbl)
     explosions.memberSprites.push_back(Sc::Sprite::TreeSprite{154, "Overlord Death"});
     explosions.memberSprites.push_back(Sc::Sprite::TreeSprite{156, "Queen Death"});
     explosions.memberSprites.push_back(Sc::Sprite::TreeSprite{483, "Devourer Death"});
+    explosions.memberSprites.push_back(Sc::Sprite::TreeSprite{374, "Hallucination Death 1"});
+    explosions.memberSprites.push_back(Sc::Sprite::TreeSprite{375, "Hallucination Death 2"});
+    explosions.memberSprites.push_back(Sc::Sprite::TreeSprite{376, "Hallucination Death 3"});
     
+    auto removeWeaponLabelHotkey = [](const std::string & label) -> std::string {
+        if ( label.size() >= 2 && label[1] == '\3' )
+        {
+            std::string newLabel {};
+            for ( std::size_t i=2; i<label.size(); ++i )
+            {
+                if ( label[i] != '\1' && label[i] != '\3' )
+                    newLabel += label[i];
+            }
+            return newLabel;
+        }
+        else
+            return label;
+    };
+
     std::set<u16> knownWeaponSprites {};
-    auto & weaponSprites = sprites.spriteGroups.emplace_back(Sc::Sprite::SpriteGroup{"Weapons"});
+    sprites.spriteGroups.emplace_back(Sc::Sprite::SpriteGroup{"Weapons"});
+    auto & abilities = sprites.spriteGroups.emplace_back(Sc::Sprite::SpriteGroup{"Abilities"});
+    auto & weaponSprites = sprites.spriteGroups[sprites.spriteGroups.size()-2];
     for ( size_t i=0; i<Weapon::Total; ++i )
     {
         const auto & weapon = weapons.get(Sc::Weapon::Type(i));
         const auto & flingyDat = units.getFlingy(weapon.graphics);
         if ( knownWeaponSprites.find(flingyDat.sprite) == knownWeaponSprites.end() )
         {
+            if ( flingyDat.sprite == Sprite::Type::ZergScourge || flingyDat.sprite == Sprite::Type::WhiteCircle370 ||
+                flingyDat.sprite == Sprite::Type::ZergBeaconOverlay ) {
+                continue; // Duplicate of scourge sprite from unit group, or otherwise poorly grouped white circle/zerg marker
+            }
+
             knownWeaponSprites.insert(flingyDat.sprite);
             const auto & spriteDat = sprites.getSprite(flingyDat.sprite);
             const auto & imageDat = sprites.getImage(spriteDat.imageFile);
             const auto & imageFileStr = imagesTbl->getString(imageDat.grpFile);
             std::string imageFileName = getSystemFileName(imageFileStr);
+            std::string weaponLabel = removeWeaponLabelHotkey(statTxt->getString(weapon.label));
+            if ( flingyDat.sprite == Sprite::Type::DualPhotonBlastersHit )
+                weaponLabel = "Dual Photon Blasters Hit"; // Fix poor name: "Unused"
+            else if ( flingyDat.sprite == Sprite::Type::NeedleSpineHit )
+                weaponLabel = "Needle Spine Hit"; // Fix repeated name: "Needle Spine"
 
-            weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{flingyDat.sprite, imageFileName});
+            if ( flingyDat.sprite == Sprite::Type::PsionicStorm || flingyDat.sprite == Sprite::Type::YamatoGun ||
+                flingyDat.sprite == Sprite::Type::EmpShockwave || flingyDat.sprite == Sprite::Type::Parasite || flingyDat.sprite == Sprite::Type::Plague ||
+                flingyDat.sprite == Sprite::Type::Consume || flingyDat.sprite == Sprite::Type::OpticalFlare )
+            {
+                abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{flingyDat.sprite, weaponLabel}); // Better grouped under abilities than weapons
+            }
+            else
+                weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{flingyDat.sprite, weaponLabel});
         }
     }
-    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{309, "smoke.grp"});
-    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{310, "GreSmoke.grp"});
-    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{332, "spooge.grp"});
-    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{365, "SporeHit.grp"});
-    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{367, "SpoTrail.grp"});
-    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{368, "gSmoke.grp"});
-    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{371, "plasma.grp"});
-    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{372, "PlasDrip.grp"});
-    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{373, "HKTrail.grp"});
-    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{374, "ehaMed.grp"});
-    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{375, "ehaMed.grp"});
-    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{376, "ehaMed.grp"});
-    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{378, "flamer.grp"});
-    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{505, "bsmoke.grp"});
-    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{513, "ZDvHit.grp"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{309, "Smoke Trail"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{310, "Smoke Grenade"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{332, "Needle Spines"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{365, "Spore Hit"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{367, "Spore Trail"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{368, "Spore Smoke"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{371, "Acid Spray"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{372, "Plasma Drip"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{373, "Protoss Trail"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{378, "Flamethrower"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{505, "Halo Rocket Trail"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{507, "Neutron Flare Overlay"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{513, "Corrosive Acid Hit"});
     
-    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{354, "PDripHit.grp"});
-    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{369, "dragbull.grp (unused)"});
-    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{511, "Spike.grp"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{354, "Plasma Drip Hit (unused)"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{369, "Phase Distruptor (unused)"});
+    weaponSprites.memberSprites.push_back(Sc::Sprite::TreeSprite{511, "Subterranean Spines"});
 
     std::sort(weaponSprites.memberSprites.begin(), weaponSprites.memberSprites.end(),
-        [](const auto & l, const auto & r) { return l.spriteIndex < r.spriteIndex; });
+        [](const auto & l, const auto & r) { return l.spriteName < r.spriteName; });
 
-    auto & abilities = sprites.spriteGroups.emplace_back(Sc::Sprite::SpriteGroup{"Abilities"});
     abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{231, "Nuke Target Dot"});
     abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{322, "Burrowing Dust"});
     abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{361, "Stasis"});
@@ -4375,9 +4697,11 @@ bool Sc::Data::loadSpriteGroups(Sc::TblFilePtr imagesTbl)
     abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{500, "Feedback - Small"});
     abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{501, "Feedback - Medium"});
     abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{502, "Feedback - Large"});
-    abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{507, "Neutron Flare"});
     abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{514, "Maelstrom Hit"});
-    abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{351, "Yamato Gun"});
+    abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{351, "Yamato Gun Trail"});
+
+    std::sort(abilities.memberSprites.begin(), abilities.memberSprites.end(),
+        [](const auto & l, const auto & r) { return l.spriteIndex < r.spriteIndex; });
 
     abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{323, "Building Landing Dust 1"});
     abilities.memberSprites.push_back(Sc::Sprite::TreeSprite{324, "Building Landing Dust 2"});
@@ -4393,21 +4717,37 @@ bool Sc::Data::loadSpriteGroups(Sc::TblFilePtr imagesTbl)
     misc.memberSprites.push_back(Sc::Sprite::TreeSprite{318, "Cursor"});
     misc.memberSprites.push_back(Sc::Sprite::TreeSprite{320, "High Templar Glow"});
     misc.memberSprites.push_back(Sc::Sprite::TreeSprite{321, "Psi Field - Right Upper"});
+    sprites.spriteAutoRestart[321] = false;
     misc.memberSprites.push_back(Sc::Sprite::TreeSprite{344, "Magna Pulse"});
     misc.memberSprites.push_back(Sc::Sprite::TreeSprite{300, "White Circle"});
+    misc.memberSprites.push_back(Sc::Sprite::TreeSprite{370, "White Circle"});
     misc.memberSprites.push_back(Sc::Sprite::TreeSprite{504, "White Circle"});
     misc.memberSprites.push_back(Sc::Sprite::TreeSprite{247, "Science Vessel Turret"});
     misc.memberSprites.push_back(Sc::Sprite::TreeSprite{377, "Bunker Overlay"});
+    misc.memberSprites.push_back(Sc::Sprite::TreeSprite{510, "Zerg Beacon Overlay"});
 
     misc.memberSprites.push_back(Sc::Sprite::TreeSprite{311, "Vespene Puff 1"});
     misc.memberSprites.push_back(Sc::Sprite::TreeSprite{312, "Vespene Puff 2"});
     misc.memberSprites.push_back(Sc::Sprite::TreeSprite{313, "Vespene Puff 3"});
     misc.memberSprites.push_back(Sc::Sprite::TreeSprite{314, "Vespene Puff 4"});
     misc.memberSprites.push_back(Sc::Sprite::TreeSprite{315, "Vespene Puff 5"});
-
-    sprites.spriteNames.assign(517, "");
+    
+    sprites.spriteNames.assign(Sc::Sprite::TotalSprites, "");
     for ( auto & spriteGroup : sprites.spriteGroups )
         loadSpriteNames(spriteGroup);
+
+    #ifdef _DEBUG
+    // Validate that every sprite is included
+    std::set<u16> treeSpriteIndexes {};
+    for ( const auto & spriteGroup : sprites.spriteGroups )
+        appendSpriteIndexes(treeSpriteIndexes, spriteGroup);
+
+    for ( std::size_t i=0; i<Sc::Sprite::TotalSprites; ++i )
+    {
+        if ( !treeSpriteIndexes.contains(u16(i)) )
+            throw std::logic_error("All sprites not included!");
+    }
+    #endif
 
     return true;
 }
@@ -4474,7 +4814,10 @@ bool Sc::Data::load(Sc::DataFile::BrowserPtr dataFileBrowser, const std::vector<
     if ( !tselect.load(*archiveCluster, "game\\tselect.pcx") )
         CHKD_ERR("Failed to load tselect.pcx");
 
-    if ( !loadSpriteGroups(imagesTbl) )
+    if ( !loadUnitGroups() )
+        CHKD_ERR("Failed to load unit groups");
+
+    if ( !loadSpriteGroups(imagesTbl, statTxt) )
         CHKD_ERR("Failed to load sprite groups");
     
     auto finish = std::chrono::high_resolution_clock::now();

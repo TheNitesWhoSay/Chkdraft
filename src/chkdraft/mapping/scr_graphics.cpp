@@ -12,77 +12,10 @@
 
 extern Logger logger;
 
-template <size_t PaletteStartIndex, size_t RemappedLength>
-void remapPalette(gl::Palette & palette, void* colorMapping, Chk::PlayerColor playerColor, Chk::PlayerColor & prevMappedColor)
-{
-    if ( playerColor != prevMappedColor )
-    {
-        prevMappedColor = playerColor;
-        std::memcpy(&palette[PaletteStartIndex], colorMapping, RemappedLength*sizeof(palette[0]));
-        palette.update();
-    }
-}
-
-// ScopedPaletteRemap stores what was in the palette and remaps it, when going out of scope, restores palette & clears prevMappedColor
-template <size_t PaletteStartIndex, size_t RemappedLength>
-class ScopedPaletteRemap
-{
-    std::optional<gl::Palette> & palette;
-    Chk::PlayerColor & prevMappedColor;
-    std::uint32_t remapped[RemappedLength] {};
-
-public:
-    ScopedPaletteRemap(std::optional<gl::Palette> & palette, void* colorMapping, Chk::PlayerColor & prevMappedColor) : palette(palette), prevMappedColor(prevMappedColor)
-    {
-        if ( palette )
-        {
-            std::memcpy(remapped, &(*palette)[PaletteStartIndex], sizeof(remapped));
-            std::memcpy(&(*palette)[PaletteStartIndex], colorMapping, sizeof(remapped));
-            palette->update();
-        }
-    }
-
-    ~ScopedPaletteRemap()
-    {
-        if ( palette )
-        {
-            prevMappedColor = Chk::PlayerColor::None;
-            std::memcpy(&(*palette)[PaletteStartIndex], remapped, sizeof(remapped));
-            palette->update();
-        }
-    }
-};
-
-// ScopedPaletteRestore stores what was in the palette previously, when going out of scope, restores palette & clears prevMappedColor
-template <size_t PaletteStartIndex, size_t RemappedLength>
-class ScopedPaletteRestore
-{
-    std::optional<gl::Palette> & palette;
-    Chk::PlayerColor & prevMappedColor;
-    std::uint32_t remapped[RemappedLength] {};
-
-public:
-    ScopedPaletteRestore(std::optional<gl::Palette> & palette, Chk::PlayerColor & prevMappedColor) : palette(palette), prevMappedColor(prevMappedColor)
-    {
-        if ( palette )
-            std::memcpy(remapped, &(*palette)[PaletteStartIndex], sizeof(remapped));
-    }
-
-    ~ScopedPaletteRestore()
-    {
-        if ( palette )
-        {
-            prevMappedColor = Chk::PlayerColor::None;
-            std::memcpy(&(*palette)[PaletteStartIndex], remapped, sizeof(remapped));
-            palette->update();
-        }
-    }
-};
-
 void Scr::GraphicsData::Shaders::loadClassic()
 {
-    if ( !simplePaletteShader.hasShaders() )
-        simplePaletteShader.load();
+    if ( !classicPaletteShader.hasShaders() )
+        classicPaletteShader.load();
 
     if ( !solidColorShader.hasShaders() )
         solidColorShader.load();
@@ -823,10 +756,161 @@ void Scr::GraphicsData::Data::Skin::loadStars(ArchiveCluster & archiveCluster, s
     }
 }
 
+/** Calculates a palette ("outputRemapPalette") that uses alpha transparency to approximate the given effect palette
+    There is a grp (e.g. dark swarm, nuke hit) that uses a special "effect remapper palette" ("srcEffectRemapper")
+    The actual/real output color for 1.16.1 effects is a function of the current palIndex value at the target pixel on the map (terrain/previous images)
+    An "effect" index is then calculated with effect = ((valueFromGrp-1) << 8) | palIndex
+    The output color is then picked from the games main palette: outputColor = pal[effect]
+
+    Ergo there are 256 actual colors (per tileset, and not counting color cycling) that a given effect pixel could be
+    based on the color of the terrain and images beneath it.
+
+    Plotted on a 3D rgb axis... these actual colors, together with the average palette color, average component distances vector, and average palette color...
+    Yields a reasonable alpha value by taking the ratio of
+        [distance between average remap result color and average palette color] to [average component distances vector to average palette color]
+
+    Colors then follow by rearranging the blend equation: output = src(alpha) + dest(1-alpha) */
+void calculateAlphaEffectPalette(const auto & srcEffectRemapper, const auto & srcPalette, auto & ouputRemapPalette, bool log = false)
+{
+    // actualRemapColors: stores resulting color when remapper[remapIndex] is applied to palette[palIndex]
+    // A little big for the stack, and it's all overwritten every time, so use static storage
+    static Sc::Color<float> actualRemapColors[256][256] {}; // [remapIndex][palIndex]
+    for ( std::size_t remapIndex=0; remapIndex<256; ++remapIndex )
+    {
+        for ( std::size_t palIndex=0; palIndex<256; ++palIndex )
+        {
+            u32 effect = ((remapIndex-1) << 8) | palIndex;
+            auto limit = srcEffectRemapper.paletteIndex.size();
+            auto actualRemapColor = srcPalette[srcEffectRemapper.paletteIndex[effect < limit ? effect : 0]];
+            actualRemapColors[remapIndex][palIndex].red = actualRemapColor.red;
+            actualRemapColors[remapIndex][palIndex].green = actualRemapColor.green;
+            actualRemapColors[remapIndex][palIndex].blue = actualRemapColor.blue;
+        }
+    }
+    
+    int redPalSum = 0;
+    int greenPalSum = 0;
+    int bluePalSum = 0;
+    Sc::Color<float> averagePalColor {};
+    for ( std::size_t palIndex=0; palIndex<256; ++palIndex )
+    {
+        redPalSum += srcPalette[palIndex].red;
+        greenPalSum += srcPalette[palIndex].green;
+        bluePalSum += srcPalette[palIndex].blue;
+    }
+    averagePalColor.red = redPalSum/256 + redPalSum%256/128;
+    averagePalColor.green = greenPalSum/256 + greenPalSum%256/128;
+    averagePalColor.blue = bluePalSum/256 + bluePalSum%256/128;
+    
+    Sc::Color<float> averageColors[256] {}; // [remapIndex] Average result color of applying remap to each pal index
+    for ( std::size_t remapIndex=0; remapIndex<256; ++remapIndex )
+    {
+        int redSum = 0;
+        int greenSum = 0;
+        int blueSum = 0;
+        for ( std::size_t palIndex=0; palIndex<256; ++palIndex)
+        {
+            auto actualRemapColor = actualRemapColors[remapIndex][palIndex];
+            redSum += actualRemapColor.red;
+            greenSum += actualRemapColor.green;
+            blueSum += actualRemapColor.blue;
+        }
+        averageColors[remapIndex].red = redSum/256 + ((redSum%256)/128);
+        averageColors[remapIndex].green = greenSum/256 + ((greenSum%256)/128);
+        averageColors[remapIndex].blue = blueSum/256 + ((blueSum%256)/128);
+    }
+
+    // colorDistance(s): stores distance between actualRemappedColors for each set of remappers and the average color
+    // A little big for the stack, and all overwritten every time, use state storage
+    static std::int64_t colorDistance[256][256] {}; // [remapIndex][palIndex]
+    static std::int64_t redColorDistance[256][256] {}; // [remapIndex][palIndex]
+    static std::int64_t greenColorDistance[256][256] {}; // [remapIndex][palIndex]
+    static std::int64_t blueColorDistance[256][256] {}; // [remapIndex][palIndex]
+    for ( std::size_t remapIndex=0; remapIndex<256; ++remapIndex )
+    {
+        for ( std::size_t palIndex=0; palIndex<256; ++palIndex )
+        {
+            auto originPaletteColor = srcPalette[remapIndex];
+            auto actualRemapColor = actualRemapColors[remapIndex][palIndex];
+            std::int64_t redPaletteDifference = std::int64_t(originPaletteColor.red) - std::int64_t(actualRemapColor.red);
+            std::int64_t greenPaletteDifference = std::int64_t(originPaletteColor.green) - std::int64_t(actualRemapColor.green);
+            std::int64_t bluePaletteDifference = std::int64_t(originPaletteColor.blue) - std::int64_t(actualRemapColor.blue);
+            redColorDistance[remapIndex][palIndex] = redPaletteDifference;
+            greenColorDistance[remapIndex][palIndex] = greenPaletteDifference;
+            blueColorDistance[remapIndex][palIndex] = bluePaletteDifference;
+            redPaletteDifference = redPaletteDifference*redPaletteDifference;
+            greenPaletteDifference = greenPaletteDifference*greenPaletteDifference;
+            bluePaletteDifference = bluePaletteDifference*bluePaletteDifference;
+            std::int64_t sum = redPaletteDifference+greenPaletteDifference+bluePaletteDifference;
+            if ( sum == 0 )
+                colorDistance[remapIndex][palIndex] = 0;
+            else
+                colorDistance[remapIndex][palIndex] = std::sqrt(sum);
+        }
+    }
+
+    for ( std::size_t remapIndex=0; remapIndex<256; ++remapIndex )
+    {
+        std::int64_t sumColorDistance = 0;
+        std::int64_t sumActualRemapRed = 0;
+        std::int64_t sumActualRemapGreen = 0;
+        std::int64_t sumActualRemapBlue = 0;
+        std::int64_t sumDifferenceRed = 0;
+        std::int64_t sumDifferenceGreen = 0;
+        std::int64_t sumDifferenceBlue = 0;
+        for ( std::size_t palIndex=0; palIndex<256; ++palIndex )
+        {
+            sumColorDistance += colorDistance[remapIndex][palIndex];
+            sumActualRemapRed += std::int64_t(actualRemapColors[remapIndex][palIndex].red);
+            sumActualRemapGreen += std::int64_t(actualRemapColors[remapIndex][palIndex].green);
+            sumActualRemapBlue += std::int64_t(actualRemapColors[remapIndex][palIndex].blue);
+            sumDifferenceRed += std::abs(redColorDistance[remapIndex][palIndex]);
+            sumDifferenceGreen += std::abs(greenColorDistance[remapIndex][palIndex]);
+            sumDifferenceBlue += std::abs(blueColorDistance[remapIndex][palIndex]);
+        }
+
+        auto averageColor = averageColors[remapIndex];
+        auto averageDistanceRed = sumDifferenceRed/256;
+        auto averageDistanceGreen = sumDifferenceGreen/256;
+        auto averageDistanceBlue = sumDifferenceBlue/256;
+        if ( sumColorDistance == 0 || (sumActualRemapRed == 0 && sumActualRemapGreen == 0 && sumActualRemapBlue == 0) )
+        {
+            u32 color = (0xFF << 24) | (averageColor.blue << 16) | (averageColor.green << 8) | averageColor.red; // 0xAABBGGRR
+            ouputRemapPalette[remapIndex] = color;
+        }
+        else
+        {
+            double averagePalToColorDistance = std::sqrt(
+                std::pow(averageColor.red - averagePalColor.red, 2) +
+                std::pow(averageColor.green - averagePalColor.green, 2) +
+                std::pow(averageColor.blue - averagePalColor.blue, 2)
+            );
+            double averageOffToPalDistance = std::sqrt(
+                std::pow(averageDistanceRed - averagePalColor.red, 2) +
+                std::pow(averageDistanceGreen - averagePalColor.green, 2) +
+                std::pow(averageDistanceBlue - averagePalColor.blue, 2)
+            );
+            double protoAlpha = averagePalToColorDistance / averageOffToPalDistance;
+
+            float fAlpha = float(protoAlpha) >= 1.0f ? 1.0f : float(protoAlpha);
+            float fRed = std::abs((averageColor.red/255.f)-(averagePalColor.red/255.f)*(1.f-fAlpha))/fAlpha;
+            float fGreen = std::abs((averageColor.green/255.f)-(averagePalColor.green/255.f)*(1.f-fAlpha))/fAlpha;
+            float fBlue = std::abs((averageColor.blue/255.f)-(averagePalColor.blue/255.f)*(1.f-fAlpha))/fAlpha;
+            u8 finalRed = fRed >= 1.0f ? u8(255) : u8(255.f*fRed);
+            u8 finalGreen = fGreen >= 1.0f ? u8(255) : u8(255.f*fGreen);
+            u8 finalBlue = fBlue >= 1.0f ? u8(255) : u8(255.f*fBlue);
+            u8 finalAlpha = fAlpha >= 1.0f ? u8(255) : u8(255.f*fAlpha);
+            u32 color = (finalAlpha << 24) | (finalBlue << 16) | (finalGreen << 8) | finalRed; // 0xAABBGGRR
+            ouputRemapPalette[remapIndex] = color;
+        }
+    }
+}
+
 void Scr::GraphicsData::Data::Skin::loadClassicTiles(Sc::Data & scData, const LoadSettings & loadSettings)
 {
     auto tilesetIndex = size_t(loadSettings.tileset) % size_t(Sc::Terrain::NumTilesets);
-    this->tiles[tilesetIndex] = std::make_shared<Scr::GraphicsData::Data::Skin::Tileset>();
+    auto & tilesetGraphics = this->tiles[tilesetIndex];
+    tilesetGraphics = std::make_shared<Scr::GraphicsData::Data::Skin::Tileset>();
     // Populate tileTextureData
     constexpr size_t width = 32*128;
     std::vector<u8> tileTextureData(size_t(width*4096), u8(0)); // 4096x4096 palette indexes (128x128 tiles)
@@ -866,7 +950,7 @@ void Scr::GraphicsData::Data::Skin::loadClassicTiles(Sc::Data & scData, const Lo
     }
 
     // Load tileTextureData into a GRP
-    auto & tilesetGrp = this->tiles[tilesetIndex]->tilesetGrp;
+    auto & tilesetGrp = tilesetGraphics->tilesetGrp;
     tilesetGrp.width = 32;
     tilesetGrp.height = 32;
     tilesetGrp.frames = 1;
@@ -893,6 +977,24 @@ void Scr::GraphicsData::Data::Skin::loadClassicTiles(Sc::Data & scData, const Lo
         std::swap(((u8*)&tilesetGrp.palette.value()[i])[0], (((u8*)&tilesetGrp.palette.value()[i])[2])); // red-blue swap
 
     tilesetGrp.palette->update();
+
+    tilesetGraphics->shadowPalette.emplace();
+    std::memcpy(&(tilesetGraphics->shadowPalette.value())[0], &tiles.dark.rgbaPalette[0], 4*256);
+    tilesetGraphics->shadowPalette->update();
+
+    tilesetGraphics->halluPalette.emplace();
+    std::memcpy(&(tilesetGraphics->halluPalette.value())[0], &tiles.shift.rgbaPalette[0], 4*256);
+    tilesetGraphics->halluPalette->update();
+
+    for ( std::size_t i=0; i<std::size(tilesetGraphics->remapPalette); ++i )
+    {
+        if ( !tilesetGraphics->remapPalette[i] )
+        {
+            tilesetGraphics->remapPalette[i].emplace();
+            calculateAlphaEffectPalette(tiles.remap[i], tiles.staticSystemColorPalette, tilesetGraphics->remapPalette[i]->colors, i==0);
+            tilesetGraphics->remapPalette[i]->update();
+        }
+    }
 }
 
 void Scr::GraphicsData::Data::Skin::loadTiles(ArchiveCluster & archiveCluster, const LoadSettings & loadSettings, ByteBuffer & fileData)
@@ -905,11 +1007,112 @@ void Scr::GraphicsData::Data::Skin::loadTiles(ArchiveCluster & archiveCluster, c
     }
 }
 
+void Scr::GraphicsData::Data::Skin::loadClassicImageFrame(std::size_t frameIndex, std::size_t imageIndex, Sc::Data & scData, std::vector<u8> & bitmapData, bool saveBinds)
+{
+    auto & classicImage = (*classicImages)[imageIndex];
+    auto & imageDat = scData.sprites.getImage(imageIndex);
+    auto & grp = scData.sprites.getGrp(imageDat.grpFile);
+    auto & grpFile = grp.get();
+
+    if ( frameIndex >= grpFile.numFrames || frameIndex >= classicImage->frames.size() )
+        return;
+
+    const Sc::Sprite::GrpFrameHeader & grpFrameHeader = grpFile.frameHeaders[frameIndex];
+    auto & frame = classicImage->frames[frameIndex];
+    s64 frameWidth = s64(grpFrameHeader.frameWidth);
+    s64 frameHeight = s64(grpFrameHeader.frameHeight);
+    if ( frameWidth == 0 || frameHeight == 0 ) // A dimension is zero, nothing to draw
+        return;
+
+    s64 bitmapWidth = (frameWidth+3)/4*4;
+    s64 bitmapHeight = (frameHeight+3)/4*4;
+    frame.frameWidth = grpFrameHeader.frameWidth;
+    frame.frameHeight = grpFrameHeader.frameHeight;
+    frame.texWidth = u32(bitmapWidth);
+    frame.texHeight = u32(bitmapHeight);
+    frame.xOffset = grpFrameHeader.xOffset;
+    frame.yOffset = grpFrameHeader.yOffset;
+        
+    size_t frameOffset = size_t(grpFrameHeader.frameOffset);
+    const Sc::Sprite::GrpFrame & grpFrame = (const Sc::Sprite::GrpFrame &)((u8*)&grpFile)[frameOffset];
+    for ( s64 row=0; row < frameHeight; row++ )
+    {
+        size_t rowOffset = size_t(grpFrame.rowOffsets[row]);
+        const Sc::Sprite::PixelRow & grpPixelRow = (const Sc::Sprite::PixelRow &)((u8*)&grpFile)[frameOffset+rowOffset];
+        const s64 rowStart = row*bitmapWidth;
+        s64 currPixelIndex = rowStart;
+        size_t pixelLineOffset = 0;
+        auto addition = size_t(row*bitmapWidth);
+        auto currPixel = &bitmapData[0]+addition; // Start from the left-most pixel of this row of the frame
+        auto rowEnd = row == bitmapHeight-1 ? &bitmapData[0]+bitmapWidth*(bitmapHeight-1)+frameWidth : &bitmapData[0]+size_t(currPixelIndex+frameWidth);
+
+        while ( currPixel < rowEnd )
+        {
+            const Sc::Sprite::PixelLine & pixelLine = (const Sc::Sprite::PixelLine &)((u8*)&grpPixelRow)[pixelLineOffset];
+            s64 lineLength = s64(pixelLine.lineLength());
+            if ( std::distance(currPixel, rowEnd) < lineLength )
+                lineLength = rowEnd - currPixel;
+                    
+            if ( pixelLine.isSpeckled() )
+            {
+                for ( s64 linePixel=0; linePixel<lineLength; linePixel++, ++currPixel ) // For every pixel in the line
+                    *currPixel = pixelLine.paletteIndex[linePixel]; // Place color from palette index specified in the array at current pixel
+            }
+            else // Solid or transparent
+            {
+                if ( pixelLine.isSolidLine() )
+                    std::fill_n(currPixel, lineLength, pixelLine.paletteIndex[0]); // Place single color across the entire line
+
+                currPixel += size_t(lineLength);
+            }
+            pixelLineOffset += pixelLine.sizeInBytes();
+        }
+    }
+    
+    GLint savedTexture = 0;
+    if ( saveBinds )
+        glGetIntegerv(GL_TEXTURE_BINDING_2D, &savedTexture);
+
+    frame.tex.genTexture();
+    frame.tex.bind();
+    frame.tex.setMinMagFilters(GL_NEAREST);
+    frame.tex.loadImage2D({
+        .data = &bitmapData[0],
+        .width = int(bitmapWidth),
+        .height = int(bitmapHeight),
+        .level = 0,
+        .internalformat = GL_R8UI,
+        .format = GL_RED_INTEGER,
+        .type = GL_UNSIGNED_BYTE
+    });
+
+    if ( saveBinds )
+        glBindTexture(GL_TEXTURE_2D, savedTexture);
+    else
+        gl::Texture::bindDefault();
+
+    std::fill(&bitmapData[0], &bitmapData[0] + bitmapWidth * bitmapHeight, 0);
+}
+
 void Scr::GraphicsData::Data::Skin::loadClassicImages(Sc::Data & scData)
 {
+    if ( !tunitPalette )
+    {
+        tunitPalette.emplace();
+        std::memcpy(&(tunitPalette.value())[0], &scData.tunit.rgbaPalette[0], 4*128);
+        tunitPalette->update();
+    }
+
+    if ( !tselectPalette )
+    {
+        tselectPalette.emplace();
+        std::memcpy(&(tselectPalette.value())[0], &scData.tselect.rgbaPalette[0], 4*24);
+        tselectPalette->update();
+    }
+
     classicImages = std::make_shared<std::vector<std::shared_ptr<Scr::ClassicGrp>>>();
     classicImages->assign(999, nullptr);
-    std::vector<u8> bitmap(size_t(60480), u8(0));
+    //std::vector<u8> bitmapData(size_t(60480), u8(0));
 
     for ( size_t i=0; i<999; ++i )
     {
@@ -920,81 +1123,15 @@ void Scr::GraphicsData::Data::Skin::loadClassicImages(Sc::Data & scData)
         if ( numFrames > 0 )
         {
             auto classicImage = std::make_shared<Scr::ClassicGrp>();
-            (*classicImages)[i] = classicImage;
             classicImage->frames.reserve(numFrames);
+            for ( std::size_t frameIndex=0; frameIndex<numFrames; ++frameIndex )
+                classicImage->frames.emplace_back();
+
+            (*classicImages)[i] = classicImage;
             classicImage->grpWidth = grpFile.grpWidth;
             classicImage->grpHeight = grpFile.grpHeight;
-            for ( size_t frameIndex=0; frameIndex<numFrames; ++frameIndex )
-            {
-                classicImage->frames.emplace_back();
-                const Sc::Sprite::GrpFrameHeader & grpFrameHeader = grpFile.frameHeaders[frameIndex];
-                auto & frame = classicImage->frames[frameIndex];
-                s64 frameWidth = s64(grpFrameHeader.frameWidth);
-                s64 frameHeight = s64(grpFrameHeader.frameHeight);
-                if ( frameWidth == 0 || frameHeight == 0 ) // A dimension is zero, nothing to draw
-                    continue;
-
-                s64 bitmapWidth = (frameWidth+3)/4*4;
-                s64 bitmapHeight = (frameHeight+3)/4*4;
-                frame.frameWidth = grpFrameHeader.frameWidth;
-                frame.frameHeight = grpFrameHeader.frameHeight;
-                frame.texWidth = u32(bitmapWidth);
-                frame.texHeight = u32(bitmapHeight);
-                frame.xOffset = grpFrameHeader.xOffset;
-                frame.yOffset = grpFrameHeader.yOffset;
-        
-                size_t frameOffset = size_t(grpFrameHeader.frameOffset);
-                const Sc::Sprite::GrpFrame & grpFrame = (const Sc::Sprite::GrpFrame &)((u8*)&grpFile)[frameOffset];
-                for ( s64 row=0; row < frameHeight; row++ )
-                {
-                    size_t rowOffset = size_t(grpFrame.rowOffsets[row]);
-                    const Sc::Sprite::PixelRow & grpPixelRow = (const Sc::Sprite::PixelRow &)((u8*)&grpFile)[frameOffset+rowOffset];
-                    const s64 rowStart = row*bitmapWidth;
-                    s64 currPixelIndex = rowStart;
-                    size_t pixelLineOffset = 0;
-                    auto addition = size_t(row*bitmapWidth);
-                    auto currPixel = &bitmap[0]+addition; // Start from the left-most pixel of this row of the frame
-                    auto rowEnd = row == bitmapHeight-1 ? &bitmap[0]+bitmapWidth*bitmapHeight : &bitmap[0]+size_t(currPixelIndex+frameWidth);
-
-                    while ( currPixel < rowEnd )
-                    {
-                        const Sc::Sprite::PixelLine & pixelLine = (const Sc::Sprite::PixelLine &)((u8*)&grpPixelRow)[pixelLineOffset];
-                        s64 lineLength = s64(pixelLine.lineLength());
-                        if ( std::distance(currPixel, rowEnd) < lineLength )
-                            lineLength = rowEnd - currPixel;
-                    
-                        if ( pixelLine.isSpeckled() )
-                        {
-                            for ( s64 linePixel=0; linePixel<lineLength; linePixel++, ++currPixel ) // For every pixel in the line
-                                *currPixel = pixelLine.paletteIndex[linePixel]; // Place color from palette index specified in the array at current pixel
-                        }
-                        else // Solid or transparent
-                        {
-                            if ( pixelLine.isSolidLine() )
-                                std::fill_n(currPixel, lineLength, pixelLine.paletteIndex[0]); // Place single color across the entire line
-
-                            currPixel += size_t(lineLength);
-                        }
-                        pixelLineOffset += pixelLine.sizeInBytes();
-                    }
-                }
-                
-                frame.tex.genTexture();
-                frame.tex.bind();
-                frame.tex.setMinMagFilters(GL_NEAREST);
-                frame.tex.loadImage2D({
-                    .data = &bitmap[0],
-                    .width = int(bitmapWidth),
-                    .height = int(bitmapHeight),
-                    .level = 0,
-                    .internalformat = GL_R8UI,
-                    .format = GL_RED_INTEGER,
-                    .type = GL_UNSIGNED_BYTE
-                });
-                gl::Texture::bindDefault();
-
-                std::fill(&bitmap[0], &bitmap[0] + bitmapWidth * bitmapHeight, 0);
-            }
+            //for ( size_t frameIndex=0; frameIndex<numFrames; ++frameIndex )
+            //    loadClassicImageFrame(frameIndex, i, scData, bitmapData, false);
         }
     }
 }
@@ -1255,6 +1392,12 @@ std::shared_ptr<Scr::GraphicsData::RenderData> Scr::GraphicsData::load(Sc::Data 
         skin.loadClassicImages(scData);
 
     std::shared_ptr<RenderData> renderData = std::make_shared<RenderData>();
+    if ( isRemastered )
+        renderData->bitmapData.clear();
+    else
+        renderData->bitmapData = std::vector<u8>(size_t(60480), u8(0));
+
+    renderData->skin = data.skin[skinIndex];
     renderData->shaders = this->shaders;
     renderData->spk = skin.spk;
     renderData->tiles = skin.tiles[loadSettings.tileset];
@@ -1265,9 +1408,32 @@ std::shared_ptr<Scr::GraphicsData::RenderData> Scr::GraphicsData::load(Sc::Data 
     return renderData;
 }
 
-u32 Scr::MapGraphics::getPlayerColor(u8 player)
+u32 Scr::MapGraphics::getPlayerColor(u8 player, bool hasCrgb)
 {
-    return (u32 &)(scData.tunit.rgbaPalette[8*size_t(player)]);
+    if ( player >= 8 )
+        return (u32 &)(scData.tunit.rgbaPalette[8*size_t(player) < scData.tunit.rgbaPalette.size() ? 8*size_t(player) : 8*size_t(player)%scData.tunit.rgbaPalette.size()]);
+    else if ( hasCrgb && map->version >= Chk::Version::StarCraft_Remastered )
+    {
+        switch ( map->customColors.playerSetting[player] )
+        {
+            case 2: // Custom RGB
+            {
+                auto & customColor = map->customColors.playerColor[player]; // RGB -> 0xAABBGGRR
+                return u32(0xFF000000) | (u32(customColor[2]) << 16) | (u32(customColor[1]) << 8) | u32(customColor[0]);
+            }
+            case 3: // Blue color
+                return (u32 &)(scData.tunit.rgbaPalette[8*std::size_t(map->customColors.playerColor[player][2])]);
+            case 0: // Random
+            case 1: // Player choice
+            default:
+                return (u32 &)(scData.tunit.rgbaPalette[8*size_t(player) < scData.tunit.rgbaPalette.size() ? 8*size_t(player) : 8*size_t(player)%scData.tunit.rgbaPalette.size()]);
+        }
+    }
+    else
+    {
+        std::size_t color = static_cast<std::size_t>(map->playerColors[player]);
+        return (u32 &)(scData.tunit.rgbaPalette[8*color]);
+    }
 }
 
 size_t Scr::MapGraphics::getImageId(Sc::Unit::Type unitType)
@@ -1299,93 +1465,6 @@ size_t Scr::MapGraphics::getImageId(const Chk::Sprite & sprite)
     return sprite.isDrawnAsSprite() ?
         getImageId(sprite.type) :
         getImageId(Sc::Unit::Type(sprite.type));
-}
-
-Scr::MapGraphics::UnitInfo Scr::MapGraphics::getUnitInfo(Sc::Unit::Type unitType, bool attached, bool lifted)
-{
-    auto getPreferredFrame = [&](u16 unitId) -> size_t {
-        switch ( Sc::Unit::Type(unitId) )
-        {
-            case Sc::Unit::Type::TerranSiegeTank_SiegeMode:
-            case Sc::Unit::Type::EdmundDuke_SiegeMode: return 5;
-            case Sc::Unit::Type::SiegeTankTurret_SiegeMode:
-            case Sc::Unit::Type::DukeTurretType2: return 0x55;
-            case Sc::Unit::Type::TerranGoliath:
-            case Sc::Unit::Type::GoliathTurret:
-            case Sc::Unit::Type::AlanSchezar_Goliath:
-            case Sc::Unit::Type::AlanTurret: return 0x77;
-            default: return 0;
-        }
-    };
-    auto getLiftedFrame = [&](u16 unitId) -> size_t {
-        switch ( Sc::Unit::Type(unitId) )
-        {
-            case Sc::Unit::Type::InfestedCommandCenter:
-            case Sc::Unit::Type::TerranBarracks:
-            case Sc::Unit::Type::TerranCommandCenter:
-            case Sc::Unit::Type::TerranEngineeringBay: return 4;
-            case Sc::Unit::Type::TerranFactory:
-            case Sc::Unit::Type::TerranScienceFacility: return 5;
-            case Sc::Unit::Type::TerranStarport: return 3;
-            default: return 0;
-        }
-    };
-    auto getSubUnitOffset = [&](u16 unitId) {
-        switch ( Sc::Unit::Type(unitId) )
-        {
-            case Sc::Unit::Type::SiegeTankTurret_SiegeMode:
-            case Sc::Unit::Type::DukeTurretType2: return point{8, 16};
-            default: return point{0, 0};
-        }
-    };
-    auto getOverlay = [&](u16 unitId) -> size_t {
-        switch ( Sc::Unit::Type(unitId) )
-        {
-            case Sc::Unit::Type::InfestedCommandCenter: return 101;
-            default: return std::numeric_limits<size_t>::max();
-        }
-    };
-    auto getAttachedOverlay = [&](u16 unitId) -> size_t {
-        switch ( Sc::Unit::Type(unitId) )
-        {
-            case Sc::Unit::Type::TerranComsatStation: return 272;
-            case Sc::Unit::Type::TerranControlTower: return 282;
-            case Sc::Unit::Type::TerranCovertOps: return 289;
-            case Sc::Unit::Type::TerranMachineShop: return 294;
-            case Sc::Unit::Type::TerranNuclearSilo: return 313;
-            case Sc::Unit::Type::TerranPhysicsLab: return 302;
-            default: return std::numeric_limits<size_t>::max();
-        }
-    };
-    auto getAttachedOverlayPreferredFrame = [&](size_t unitId) -> size_t {
-        switch ( Sc::Unit::Type(unitId) )
-        {
-            case Sc::Unit::Type::TerranComsatStation: return 3;
-            case Sc::Unit::Type::TerranControlTower: return 4;
-            case Sc::Unit::Type::TerranCovertOps: return 4;
-            case Sc::Unit::Type::TerranMachineShop: return 3;
-            case Sc::Unit::Type::TerranNuclearSilo: return 4;
-            case Sc::Unit::Type::TerranPhysicsLab: return 4;
-            default: return std::numeric_limits<size_t>::max();
-        }
-    };
-
-    auto & unitDat = scData.units.getUnit(Sc::Unit::Type(unitType >= 228 ? 0 : unitType));
-    size_t subUnitImageId = unitDat.subunit1 == 228 ? std::numeric_limits<size_t>::max() :
-        scData.sprites.getSprite(scData.units.getFlingy(scData.units.getUnit(unitDat.subunit1).graphics).sprite).imageFile;
-    u32 flingyId = u32(scData.units.getUnit(Sc::Unit::Type(unitType >= 228 ? 0 : unitType)).graphics);
-    u32 spriteId = u32(scData.units.getFlingy(flingyId >= 209 ? 0 : flingyId).sprite);
-    auto & sprite = scData.sprites.getSprite(spriteId >= 517 ? 0 : spriteId);
-    return UnitInfo {
-        .imageId = sprite.imageFile > 999 ? 0 : size_t(sprite.imageFile),
-        .imageFrame = lifted ? getLiftedFrame(unitType) : getPreferredFrame(unitType),
-        .subUnitImageId = subUnitImageId,
-        .subUnitOffset = getSubUnitOffset(unitDat.subunit1),
-        .subUnitFrame = getPreferredFrame(unitDat.subunit1),
-        .overlayImageId = getOverlay(unitType),
-        .attachOverlayImageId = attached ? getAttachedOverlay(unitType) : std::numeric_limits<size_t>::max(),
-        .attachFrame = attached ? getAttachedOverlayPreferredFrame(unitType) : std::numeric_limits<size_t>::max()
-    };
 }
 
 Scr::MapGraphics::SelectInfo Scr::MapGraphics::getSelInfo(Sc::Unit::Type unitType)
@@ -1443,6 +1522,11 @@ Scr::Animation & Scr::MapGraphics::getImage(const Chk::Sprite & sprite)
 }
 
 Scr::MapGraphics::MapGraphics(Sc::Data & scData, GuiMap & guiMap) : scData(scData), map(guiMap), initialTickCount(GetTickCount64()) {}
+
+void Scr::MapGraphics::resetFps()
+{
+    this->fps = gl::Fps();
+}
 
 void Scr::MapGraphics::updateGrid()
 {
@@ -1739,11 +1823,14 @@ void Scr::MapGraphics::drawClassicStars()
     if ( renderDat->spk == nullptr )
         return;
 
-    renderDat->shaders->simplePaletteShader.use();
-    renderDat->shaders->simplePaletteShader.posToNdc.setMat4(starToNdc);
-    renderDat->shaders->simplePaletteShader.texTransform.loadIdentity();
-    renderDat->shaders->simplePaletteShader.tex.setSlot(0);
-    renderDat->shaders->simplePaletteShader.pal.setSlot(1);
+    renderDat->shaders->classicPaletteShader.use();
+    renderDat->shaders->classicPaletteShader.posToNdc.setMat4(starToNdc);
+    renderDat->shaders->classicPaletteShader.texTransform.loadIdentity();
+    renderDat->shaders->classicPaletteShader.tex.setSlot(0);
+    renderDat->shaders->classicPaletteShader.pal.setSlot(1);
+    renderDat->shaders->classicPaletteShader.remapRange.setUVec2(0, 0);
+    renderDat->shaders->classicPaletteShader.remapOffset.setValue(0);
+    renderDat->shaders->classicPaletteShader.opacity.setValue(1.0f);
     
     renderDat->tiles->tilesetGrp.palette->tex.bindToSlot(GL_TEXTURE1);
     animVertices.bind();
@@ -2240,11 +2327,14 @@ void Scr::MapGraphics::drawTileVertices(Scr::Grp & tilesetGrp, s32 width, s32 he
         }
         else if ( loadSettings.skinId == Scr::Skin::Id::Classic ) // Classic
         {
-            renderDat->shaders->simplePaletteShader.use();
-            renderDat->shaders->simplePaletteShader.posToNdc.setMat4(positionTransformation);
-            renderDat->shaders->simplePaletteShader.texTransform.setMat4(tileToTex);
-            renderDat->shaders->simplePaletteShader.tex.setSlot(0);
-            renderDat->shaders->simplePaletteShader.pal.setSlot(1);
+            renderDat->shaders->classicPaletteShader.use();
+            renderDat->shaders->classicPaletteShader.posToNdc.setMat4(positionTransformation);
+            renderDat->shaders->classicPaletteShader.texTransform.setMat4(tileToTex);
+            renderDat->shaders->classicPaletteShader.tex.setSlot(0);
+            renderDat->shaders->classicPaletteShader.pal.setSlot(1);
+            renderDat->shaders->classicPaletteShader.remapRange.setUVec2(0, 0);
+            renderDat->shaders->classicPaletteShader.remapOffset.setValue(0);
+            renderDat->shaders->classicPaletteShader.opacity.setValue(1.0f);
             tilesetGrp.mergedTexture.bindToSlot(GL_TEXTURE0);
             tilesetGrp.palette->tex.bindToSlot(GL_TEXTURE1);
         }
@@ -2277,12 +2367,12 @@ void Scr::MapGraphics::drawTerrain()
     auto endOff = -.1f/(128*renderDat->tiles->tilesetGrp.width);
 
     tileVertices.clear();
-    auto tiles = scData.terrain.get(Sc::Terrain::Tileset(map.tileset));
+    auto tiles = scData.terrain.get(Sc::Terrain::Tileset(map->tileset));
     for ( s32 y=mapTileBounds.top; y<=mapTileBounds.bottom; ++y )
     {
         for ( s32 x=mapTileBounds.left; x<=mapTileBounds.right; ++x )
         {
-            u16 tileIndex = map.tiles[size_t(y) * size_t(map.dimensions.tileWidth) + size_t(x)];
+            u16 tileIndex = map->tiles[size_t(y) * size_t(map->dimensions.tileWidth) + size_t(x)];
             size_t groupIndex = Sc::Terrain::Tiles::getGroupIndex(tileIndex);
             if ( groupIndex < tiles.tileGroups.size() )
             {
@@ -2311,7 +2401,7 @@ void Scr::MapGraphics::drawTilesetIndexed(s32 left, s32 top, s32 width, s32 heig
     auto & tilesetGrp = renderDat->tiles->tilesetGrp;
 
     tileVertices.clear();
-    auto & tiles = scData.terrain.get(Sc::Terrain::Tileset(map.tileset));
+    auto & tiles = scData.terrain.get(Sc::Terrain::Tileset(map->tileset));
 
     s32 topRow = scrollY/33;
     s32 bottomRow = (scrollY + height)/33;
@@ -2524,55 +2614,73 @@ void Scr::MapGraphics::drawTilesetIndexed(s32 left, s32 top, s32 width, s32 heig
 
 void Scr::MapGraphics::drawTileSelection()
 {
-    const Sc::Terrain::Tiles & tiles = scData.terrain.get(map.tileset);
+    const Sc::Terrain::Tiles & tiles = scData.terrain.get(map->tileset);
     triangleVertices.clear();
     lineVertices.clear();
-    for ( auto & tile : map.selections.tiles )
+    
+    auto selTiles = map.selections.renderTiles.tiles;
+    if ( !map.view.tiles.sel().empty() )
     {
-        gl::Rect2D<GLfloat> rect {
-            GLfloat(32*tile.xc),
-            GLfloat(32*tile.yc),
-            GLfloat(32*tile.xc+32),
-            GLfloat(32*tile.yc+32),
-        };
-        triangleVertices.vertices.insert(triangleVertices.vertices.end(), {
-            rect.left, rect.top,
-            rect.right, rect.top,
-            rect.left, rect.bottom,
-            rect.left, rect.bottom,
-            rect.right, rect.bottom,
-            rect.right, rect.top
-        });
-
-        if ( tile.neighbors != TileNeighbor::None ) // Need to draw tile edge line
+        auto tileWidth = map.getTileWidth();
+        auto xBegin = map.selections.renderTiles.xBegin;
+        auto xEnd = map.selections.renderTiles.xEnd;
+        auto yBegin = map.selections.renderTiles.yBegin;
+        auto yEnd = map.selections.renderTiles.yEnd;
+        for ( std::size_t y=yBegin; y<yEnd; ++y )
         {
-            if ( (tile.neighbors & TileNeighbor::Top) == TileNeighbor::Top )
+            for ( std::size_t x=xBegin; x<xEnd; ++x )
             {
-                lineVertices.vertices.insert(lineVertices.vertices.end(), {
-                    rect.left, rect.top,
-                    rect.right, rect.top,
-                });
-            }
-            if ( (tile.neighbors & TileNeighbor::Right) == TileNeighbor::Right )
-            {
-                lineVertices.vertices.insert(lineVertices.vertices.end(), {
-                    rect.right, rect.top,
-                    rect.right, rect.bottom,
-                });
-            }
-            if ( (tile.neighbors & TileNeighbor::Bottom) == TileNeighbor::Bottom )
-            {
-                lineVertices.vertices.insert(lineVertices.vertices.end(), {
-                    rect.right, rect.bottom,
-                    rect.left, rect.bottom,
-                });
-            }
-            if ( (tile.neighbors & TileNeighbor::Left) == TileNeighbor::Left )
-            {
-                lineVertices.vertices.insert(lineVertices.vertices.end(), {
-                    rect.left, rect.bottom,
-                    rect.left, rect.top,
-                });
+                auto selTile = selTiles[y*tileWidth + x];
+                if ( selTile )
+                {
+                    auto neighbors = *selTile;
+                    gl::Rect2D<GLfloat> rect {
+                        GLfloat(32*x),
+                        GLfloat(32*y),
+                        GLfloat(32*x+32),
+                        GLfloat(32*y+32),
+                    };
+                    triangleVertices.vertices.insert(triangleVertices.vertices.end(), {
+                        rect.left, rect.top,
+                        rect.right, rect.top,
+                        rect.left, rect.bottom,
+                        rect.left, rect.bottom,
+                        rect.right, rect.bottom,
+                        rect.right, rect.top
+                    });
+
+                    if ( neighbors != TileNeighbor::None ) // Need to draw tile edge line
+                    {
+                        if ( (neighbors & TileNeighbor::Top) == TileNeighbor::Top )
+                        {
+                            lineVertices.vertices.insert(lineVertices.vertices.end(), {
+                                rect.left, rect.top,
+                                rect.right, rect.top,
+                            });
+                        }
+                        if ( (neighbors & TileNeighbor::Right) == TileNeighbor::Right )
+                        {
+                            lineVertices.vertices.insert(lineVertices.vertices.end(), {
+                                rect.right, rect.top,
+                                rect.right, rect.bottom,
+                            });
+                        }
+                        if ( (neighbors & TileNeighbor::Bottom) == TileNeighbor::Bottom )
+                        {
+                            lineVertices.vertices.insert(lineVertices.vertices.end(), {
+                                rect.right, rect.bottom,
+                                rect.left, rect.bottom,
+                            });
+                        }
+                        if ( (neighbors & TileNeighbor::Left) == TileNeighbor::Left )
+                        {
+                            lineVertices.vertices.insert(lineVertices.vertices.end(), {
+                                rect.left, rect.bottom,
+                                rect.left, rect.top,
+                            });
+                        }
+                    }
+                }
             }
         }
     }
@@ -2604,12 +2712,33 @@ void Scr::MapGraphics::prepareImageRendering(bool isSelections)
     auto imageToNdc = ndcTranslation * ndcScale * imageTranslation;
     if ( loadSettings.skinId == Scr::Skin::Id::Classic )
     {
-        prevMappedColor = Chk::PlayerColor::None;
-        renderDat->shaders->simplePaletteShader.use();
-        renderDat->shaders->simplePaletteShader.posToNdc.setMat4(imageToNdc);
-        renderDat->shaders->simplePaletteShader.texTransform.loadIdentity();
-        renderDat->shaders->simplePaletteShader.tex.setSlot(0);
-        renderDat->shaders->simplePaletteShader.pal.setSlot(1);
+        renderDat->shaders->classicPaletteShader.use();
+        if ( isSelections )
+            renderDat->skin->tselectPalette->tex.bindToSlot(GL_TEXTURE2);
+        else
+            renderDat->skin->tunitPalette->tex.bindToSlot(GL_TEXTURE2);
+
+        renderDat->tiles->remapPalette[0]->tex.bindToSlot(GL_TEXTURE3);
+        renderDat->tiles->remapPalette[1]->tex.bindToSlot(GL_TEXTURE4);
+        renderDat->tiles->remapPalette[2]->tex.bindToSlot(GL_TEXTURE5);
+        renderDat->tiles->remapPalette[3]->tex.bindToSlot(GL_TEXTURE6);
+        renderDat->tiles->remapPalette[4]->tex.bindToSlot(GL_TEXTURE7);
+        renderDat->tiles->remapPalette[5]->tex.bindToSlot(GL_TEXTURE8);
+        renderDat->tiles->remapPalette[6]->tex.bindToSlot(GL_TEXTURE9);
+        renderDat->skin->tselectPalette->tex.bindToSlot(GL_TEXTURE10);
+
+        renderDat->shaders->classicPaletteShader.posToNdc.setMat4(imageToNdc);
+        renderDat->shaders->classicPaletteShader.texTransform.loadIdentity();
+        renderDat->shaders->classicPaletteShader.tex.setSlot(0);
+        renderDat->shaders->classicPaletteShader.pal.setSlot(1);
+        if ( isSelections )
+            renderDat->shaders->classicPaletteShader.remapRange.setUVec2(0, 8);
+        else
+            renderDat->shaders->classicPaletteShader.remapRange.setUVec2(8, 16);
+
+        renderDat->shaders->classicPaletteShader.remapOffset.setValue(0);
+        renderDat->shaders->classicPaletteShader.remapPal.setSlot(2);
+        renderDat->shaders->classicPaletteShader.opacity.setValue(1.0f);
     }
     else
     {
@@ -2671,7 +2800,7 @@ void Scr::MapGraphics::drawImage(Scr::Animation & animation, s32 x, s32 y, u32 f
     animVertices.drawTriangles();
 }
 
-void Scr::MapGraphics::drawSelectionImage(Scr::Animation & animation, s32 x, s32 y, u32 frameIndex, u32 multiplyColor)
+void Scr::MapGraphics::drawSelectionImage(Scr::Animation & animation, s32 x, s32 y, u32 frameIndex, u32 colorSet, u32 multiplyColor, bool flipped)
 {
     auto & frame = animation.frames[frameIndex >= animation.totalFrames ? 0 : frameIndex];
     
@@ -2682,27 +2811,37 @@ void Scr::MapGraphics::drawSelectionImage(Scr::Animation & animation, s32 x, s32
         { GLfloat(frame.width)         , GLfloat(frame.height) }, // frameSize
         { GLfloat(frame.xOffset)       , GLfloat(frame.yOffset) }, // framePosOffset
         { GLfloat(frame.xTextureOffset), GLfloat(frame.yTextureOffset) }, // frameTexOffset
-        { GLfloat(1.f)                 , GLfloat(0.f) } // frameTexFlipper{mul,add}
+        { GLfloat(flipped ? -1.f : 1.f), GLfloat(flipped ? 1.f : 0.f) } // frameTexFlipper{mul,add}
     });
 
     renderDat->shaders->selectionShader.multiplyColor.setColor(multiplyColor);
-    renderDat->shaders->selectionShader.solidColor.setColor(0xFF249824);
+    switch ( colorSet )
+    {
+        case 1: renderDat->shaders->selectionShader.solidColor.setColor(0xFF34B8BC); break; // 0xAABBGGRR - tselect[1]
+        case 2: renderDat->shaders->selectionShader.solidColor.setColor(0xFF040484); break; // 0xAABBGGRR - tselect[2]
+        case 3: renderDat->shaders->selectionShader.solidColor.setColor(0xFF000000); break; // 0xAABBGGRR - black
+        case 4: renderDat->shaders->selectionShader.solidColor.setColor(customSelColor); break; // 0xAABBGGRR - custom
+        default: renderDat->shaders->selectionShader.solidColor.setColor(0xFF249824); break; // 0xAABBGGRR - tselect[3]
+    }
 
     animation.diffuse.bindToSlot(GL_TEXTURE0);
 
     animVertices.drawTriangles();
 }
 
-void Scr::MapGraphics::drawClassicImage(gl::Palette & palette, s32 x, s32 y, u32 frameIndex, u32 imageId, Chk::PlayerColor color, bool flipped)
+void Scr::MapGraphics::drawClassicImage(gl::Palette & palette, s32 x, s32 y, u32 frameIndex, u32 imageId, std::optional<Chk::PlayerColor> color, bool flipped)
 {
-    remapPalette<8, 8>(palette, &scData.tunit.rgbaPalette[color < 16 ? 8*color : 8*(color%16)], color, prevMappedColor);
+    if ( color )
+        this->renderDat->shaders->classicPaletteShader.remapOffset.setValue(8*(color.value()%16));
 
     auto & imageInfo = (*renderDat->classicImages)[imageId];
-    auto & frameInfo = imageInfo->frames[frameIndex];
+    auto & frameInfo = imageInfo->frames[frameIndex >= imageInfo->frames.size() ? 0 : frameIndex];
+    if ( frameInfo.frameHeight == 0 )
+        renderDat->skin->loadClassicImageFrame(frameIndex, imageId, scData, renderDat->bitmapData, true);
 
     GLfloat vertexLeft = GLfloat(flipped ?
-        -imageInfo->grpWidth/2 + frameInfo.xOffset - s16(frameInfo.texWidth-frameInfo.frameWidth) :
-        -imageInfo->grpWidth/2 + frameInfo.xOffset);
+        (s32(imageInfo->grpWidth)/2 - s32(frameInfo.texWidth) - s32(frameInfo.xOffset)) :
+        (-s32(imageInfo->grpWidth)/2 + s32(frameInfo.xOffset)));
     GLfloat vertexTop = GLfloat(-imageInfo->grpHeight/2 + frameInfo.yOffset);
     gl::Rect2D<GLfloat> vertexRect { vertexLeft, vertexTop, vertexLeft + frameInfo.texWidth, vertexTop + frameInfo.texHeight };
     if ( flipped )
@@ -2728,9 +2867,8 @@ void Scr::MapGraphics::drawClassicImage(gl::Palette & palette, s32 x, s32 y, u32
         };
     }
 
-
     frameInfo.tex.bindToSlot(GL_TEXTURE0);
-    renderDat->tiles->tilesetGrp.palette->tex.bindToSlot(GL_TEXTURE1);
+    palette.tex.bindToSlot(GL_TEXTURE1);
 
     animVertices.bind();
     animVertices.bufferData(gl::UsageHint::DynamicDraw);
@@ -2741,90 +2879,172 @@ void Scr::MapGraphics::drawUnitSelection(Sc::Unit::Type unitType, s32 x, s32 y)
 {
     auto [selImageId, selOffset] = getSelInfo(unitType);
     if ( loadSettings.skinId == Scr::Skin::Id::Classic )
-        drawClassicImage(*renderDat->tiles->tilesetGrp.palette, x, y+selOffset, 0, selImageId, Chk::PlayerColor::Red);
+        drawClassicImage(*renderDat->tiles->tilesetGrp.palette, x, y+selOffset, 0, selImageId, std::nullopt);
     else
-        drawSelectionImage(getImage(selImageId), x, y+selOffset, 0, 0xFF00F518);
+        drawSelectionImage(getImage(selImageId), x, y+selOffset, 0, 0, 0xFF00F518);
 }
 
 void Scr::MapGraphics::drawSpriteSelection(Sc::Sprite::Type spriteType, s32 x, s32 y, bool isDrawnAsSprite)
 {
     auto [selImageId, selOffset] = getSelInfo(spriteType, isDrawnAsSprite);
     if ( loadSettings.skinId == Scr::Skin::Id::Classic )
-        drawClassicImage(*renderDat->tiles->tilesetGrp.palette, x, y+selOffset, 0, selImageId, Chk::PlayerColor::Red);
+        drawClassicImage(*renderDat->tiles->tilesetGrp.palette, x, y+selOffset, 0, selImageId, std::nullopt);
     else
-        drawSelectionImage(getImage(selImageId), x, y+selOffset, 0, 0xFFFFFFFF);
+        drawSelectionImage(getImage(selImageId), x, y+selOffset, 0, 0, 0xFFFFFFFF);
 }
 
 void Scr::MapGraphics::drawImageSelections()
 {
     prepareImageRendering(true);
     auto & palette = renderDat->tiles->tilesetGrp.palette; // For SC:R there is no palette/this is std::nullopt
-    ScopedPaletteRemap<0, 8> remapped {palette, (void*)&scData.tselect.rgbaPalette[0], prevMappedColor}; // For SC:R this does nothing
-    prevMappedColor = Chk::PlayerColor::Red; // Use one unchanging value for player color here to prevent remappings
 
-    for ( auto unitIndex : map.selections.units )
+    for ( auto unitIndex : map.view.units.sel() )
     {
-        if ( unitIndex < map.units.size() )
+        if ( unitIndex < map->units.size() )
         {
-            auto & unit = map.units[unitIndex];
+            auto & unit = map->units[unitIndex];
             drawUnitSelection(unit.type, unit.xc, unit.yc);
         }
     }
 
-    for ( auto spriteIndex : map.selections.sprites )
+    for ( auto spriteIndex : map.view.sprites.sel() )
     {
-        if ( spriteIndex < map.sprites.size() )
+        if ( spriteIndex < map->sprites.size() )
         {
-            auto & sprite = map.sprites[spriteIndex];
+            auto & sprite = map->sprites[spriteIndex];
             drawSpriteSelection(sprite.type, sprite.xc, sprite.yc, sprite.isDrawnAsSprite());
         }
     }
 }
 
-void Scr::MapGraphics::drawUnit(const Chk::Unit & unit)
+void Scr::MapGraphics::drawActor(const AnimContext & animations, const MapActor & mapActor, s32 xOffset, s32 yOffset, bool hasCrgb)
 {
-    constexpr auto none = std::numeric_limits<size_t>::max();
-    auto [imageId, imageFrame, subUnitImageId, subUnitOffset, subUnitFrame, overlayImageId, attachOverlayImageId, attachFrame]
-        = getUnitInfo(unit.type, unit.isAttached(), unit.isLifted());
-
-    auto drawUnit = [&](s32 xc, s32 yc, u32 frame, size_t imageId, u8 owner, bool flipped)
+    for ( u16 imageIndex : mapActor.usedImages )
     {
-        if ( loadSettings.skinId == Scr::Skin::Id::Classic )
-            drawClassicImage(*renderDat->tiles->tilesetGrp.palette, xc, yc, frame, imageId, (Chk::PlayerColor)owner, flipped);
-        else
-            drawImage(getImage(imageId), xc, yc, frame, 0xFFFFFFFF, getPlayerColor(owner), false, flipped);
-    };
+        if ( imageIndex == 0 )
+            break;
 
-    drawUnit(unit.xc, unit.yc, imageFrame, imageId, unit.owner, scData.sprites.imageFlipped(imageId));
-    if ( subUnitImageId != none )
-        drawUnit(s32(unit.xc)-s32(subUnitOffset.x), s32(unit.yc)-s32(subUnitOffset.y), subUnitFrame, subUnitImageId, unit.owner, false);
-
-    if ( overlayImageId != none )
-        drawUnit(unit.xc, unit.yc, 0, overlayImageId, unit.owner, false);
-
-    if ( attachOverlayImageId != none )
-        drawUnit(unit.xc, unit.yc, attachFrame, attachOverlayImageId, unit.owner, false);
+        const std::optional<MapImage> & image = animations.images[imageIndex];
+        if ( image && !image->hidden )
+        {
+            if ( loadSettings.skinId == Scr::Skin::Id::Classic )
+            {
+                switch ( image->drawFunction )
+                {
+                case MapImage::DrawFunction::Cloaked:
+                    renderDat->shaders->classicPaletteShader.opacity.setValue(0.5f); // Using an opacity uniform is cheating
+                    renderDat->shaders->classicPaletteShader.remapRange.setUVec2(8, 16); // Use player colors
+                    renderDat->shaders->classicPaletteShader.remapPal.setSlot(2);
+                    drawClassicImage(*renderDat->tiles->tilesetGrp.palette, image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, image->imageId,
+                        Chk::PlayerColor(image->owner < 8 ? map->playerColors[image->owner] : (Chk::PlayerColor)image->owner), image->flipped);
+                    renderDat->shaders->classicPaletteShader.opacity.setValue(1.0f);
+                    break;
+                case MapImage::DrawFunction::Remap:
+                    renderDat->shaders->classicPaletteShader.remapRange.setUVec2(1, 0); // Special case
+                    renderDat->shaders->classicPaletteShader.remapPal.setSlot(2+image->remapping);
+                    renderDat->shaders->classicPaletteShader.opacity.setValue(1.0f); // Using an opacity uniform is cheating
+                    drawClassicImage(*renderDat->tiles->tilesetGrp.palette, image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, image->imageId, std::nullopt, image->flipped);
+                    break;
+                case MapImage::DrawFunction::Shadow:
+                    renderDat->shaders->classicPaletteShader.opacity.setValue(0.5f); // Using an opacity uniform is cheating
+                    renderDat->shaders->classicPaletteShader.remapRange.setUVec2(0, 0); // No remapping (beyond using the shadow palette)
+                    renderDat->shaders->classicPaletteShader.remapPal.setSlot(2);
+                    drawClassicImage(*renderDat->tiles->shadowPalette, image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, image->imageId, std::nullopt, image->flipped);
+                    renderDat->shaders->classicPaletteShader.opacity.setValue(1.0f);
+                    break;
+                case MapImage::DrawFunction::Hallucination:
+                    renderDat->shaders->classicPaletteShader.remapRange.setUVec2(0, 0); // No remapping (beyond using the hallucination palette)
+                    renderDat->shaders->classicPaletteShader.remapPal.setSlot(2);
+                    drawClassicImage(*renderDat->tiles->halluPalette, image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, image->imageId, std::nullopt, image->flipped);
+                    break;
+                case MapImage::DrawFunction::Selection:
+                    renderDat->shaders->classicPaletteShader.remapOffset.setValue(255);
+                    renderDat->shaders->classicPaletteShader.remapRange.setUVec2((int(image->selColor)%3)*8, 0);
+                    renderDat->shaders->classicPaletteShader.remapPal.setSlot(10); // Remap [1-8] to tselect 8
+                    drawClassicImage(*renderDat->tiles->tilesetGrp.palette, image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, image->imageId, std::nullopt, image->flipped);
+                    break;
+                case MapImage::DrawFunction::None:
+                    break;
+                default:
+                    renderDat->shaders->classicPaletteShader.remapRange.setUVec2(8, 16); // Use player colors
+                    renderDat->shaders->classicPaletteShader.remapPal.setSlot(2);
+                    drawClassicImage(*renderDat->tiles->tilesetGrp.palette, image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, image->imageId,
+                        Chk::PlayerColor(image->owner < 8 ? map->playerColors[image->owner] : (Chk::PlayerColor)image->owner), image->flipped);
+                    break;
+                }
+            }
+            else
+            {
+                switch ( image->drawFunction )
+                {
+                case MapImage::DrawFunction::Cloaked:
+                    drawImage(getImage(image->imageId), image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, 0x80FFFFFF, getPlayerColor(image->owner, hasCrgb), false, image->flipped);
+                    break;
+                case MapImage::DrawFunction::Shadow:
+                    drawImage(getImage(image->imageId), image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, 0x80000000, getPlayerColor(image->owner, hasCrgb), false, image->flipped);
+                    break;
+                case MapImage::DrawFunction::Hallucination:
+                    drawImage(getImage(image->imageId), image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, 0xFFFFFFFF, getPlayerColor(image->owner, hasCrgb), true, image->flipped);
+                    break;
+                case MapImage::DrawFunction::Selection:
+                    renderDat->shaders->selectionShader.use();
+                    drawSelectionImage(getImage(image->imageId), image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, image->selColor, 0xFFFFFFFF, image->flipped);
+                    renderDat->shaders->spriteShader.use();
+                    break;
+                case MapImage::DrawFunction::None:
+                    break;
+                default:
+                    drawImage(getImage(image->imageId), image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, 0xFFFFFFFF, getPlayerColor(image->owner, hasCrgb), false, image->flipped);
+                    break;
+                }
+            }
+        }
+    }
 }
 
-void Scr::MapGraphics::drawSprite(const Chk::Sprite & sprite)
+void Scr::MapGraphics::drawActors()
 {
-    if ( loadSettings.skinId == Scr::Skin::Id::Classic )
-        drawClassicImage(*renderDat->tiles->tilesetGrp.palette, sprite.xc, sprite.yc, 0, getImageId(sprite.type, sprite.isDrawnAsSprite()), (Chk::PlayerColor)sprite.owner);
-    else
-        drawImage(getImage(sprite.type, sprite.isDrawnAsSprite()), sprite.xc, sprite.yc, 0, 0xFFFFFFFF, getPlayerColor(sprite.owner), false);
-}
-
-void Scr::MapGraphics::drawImages()
-{
+    bool hasCrgb = map->hasSection(Chk::SectionName::CRGB);
     prepareImageRendering();
-    auto & palette = renderDat->tiles->tilesetGrp.palette; // For SC:R there is no palette/this is std::nullopt
-    ScopedPaletteRestore<8, 8> remapped {palette, prevMappedColor}; // For SC:R this does nothing
 
-    for ( const auto & unit : map.units )
-        drawUnit(unit);
+    const auto & unitActors = map.view.units.readAttachedData();
+    const auto & spriteActors = map.view.sprites.readAttachedData();
+    map.animations.cleanDrawList();
+    std::size_t drawListSize = map.animations.drawList.size();
+    for ( std::size_t i=1; i<drawListSize; ++i )
+    {
+        std::uint64_t drawEntry = map.animations.drawList[i];
+        if ( drawEntry == MapAnimations::UnusedDrawEntry )
+            break;
+        else
+        {
+            std::size_t index = static_cast<std::size_t>(drawEntry & MapAnimations::MaskIndex);
+            if ( drawEntry & MapAnimations::FlagUnitActor )
+                drawActor(map.animations, unitActors[index], 0, 0, hasCrgb);
+            else
+                drawActor(map.animations, spriteActors[index], 0, 0, hasCrgb);
+        }
+    }
 
-    for ( const auto & sprite : map.sprites )
-        drawSprite(sprite);
+    const auto & clipboardUnitActors = map.clipboard.unitActors;
+    const auto & clipboardSpriteActors = map.clipboard.spriteActors;
+    map.clipboard.animations.cleanDrawList();
+    drawListSize = map.clipboard.animations.drawList.size();
+    for ( std::size_t i=1; i<drawListSize; ++i )
+    {
+        std::uint64_t drawEntry = map.clipboard.animations.drawList[i];
+        if ( drawEntry == MapAnimations::UnusedDrawEntry )
+            break;
+        else
+        {
+            std::size_t index = static_cast<std::size_t>(drawEntry & MapAnimations::MaskIndex);
+            point paste = map.selections.endDrag;
+            if ( drawEntry & MapAnimations::FlagUnitActor )
+                drawActor(map.clipboard.animations, clipboardUnitActors[index], paste.x, paste.y, hasCrgb);
+            else
+                drawActor(map.clipboard.animations, clipboardSpriteActors[index], paste.x, paste.y, hasCrgb);
+        }
+    }
 }
 
 void Scr::MapGraphics::drawLocations()
@@ -2833,12 +3053,12 @@ void Scr::MapGraphics::drawLocations()
     lineVertices.clear();
     triangleVertices.clear();
     triangleVertices2.clear();
-    for ( size_t i=0; i<map.locations.size(); ++i )
+    for ( size_t i=0; i<map->locations.size(); ++i )
     {
         if ( i == Chk::LocationId::Anywhere && map.LockAnywhere() )
             continue;
 
-        const auto & location = map.locations[i];
+        const auto & location = map->locations[i];
         auto & triVertices = location.right < location.left || location.bottom < location.top ?
             triangleVertices2.vertices : triangleVertices.vertices;
 
@@ -2917,12 +3137,12 @@ void Scr::MapGraphics::drawLocations()
         textFont->clippedTextShader.textPosToNdc.setMat4(gameToNdc);
         textFont->setColor(255, 255, 0);
 
-        for ( size_t i=0; i<map.locations.size(); ++i )
+        for ( size_t i=0; i<map->locations.size(); ++i )
         {
             if ( i == Chk::LocationId::Anywhere && map.LockAnywhere() )
                 continue;
 
-            const auto & location = map.locations[i];
+            const auto & location = map->locations[i];
 
             auto locationName = map.getLocationName<RawString>(i);
             if ( locationName )
@@ -2949,9 +3169,9 @@ void Scr::MapGraphics::drawLocations()
         textFont->textShader.glyphScaling.setMat2(glyphScaling);
         textFont->textShader.textPosToNdc.setMat4(gameToNdc);
         textFont->setColor(255, 255, 0);
-        for ( size_t i=0; i<map.locations.size(); ++i )
+        for ( size_t i=0; i<map->locations.size(); ++i )
         {
-            const auto & location = map.locations[i];
+            const auto & location = map->locations[i];
             auto locationName = map.getLocationName<RawString>(i);
             if ( locationName )
             {
@@ -3087,52 +3307,70 @@ void Scr::MapGraphics::drawFogTileSelection()
     lineVertices.vertices.clear();
     u8 currPlayer = map.getCurrPlayer();
     u8 currPlayerMask = u8Bits[currPlayer];
-    for ( auto & tile : map.selections.fogTiles )
-    {
-        gl::Rect2D<GLfloat> rect {
-            GLfloat(tile.xc*32),
-            GLfloat(tile.yc*32),
-            GLfloat(tile.xc*32+32),
-            GLfloat(tile.yc*32+32),
-        };
-        triangleVertices.vertices.insert(triangleVertices.vertices.begin(), {
-            rect.left, rect.top,
-            rect.right, rect.top,
-            rect.left, rect.bottom,
-            rect.left, rect.bottom,
-            rect.right, rect.bottom,
-            rect.right, rect.top
-        });
 
-        if ( tile.neighbors != TileNeighbor::None ) // Some edges need to be drawn
+    auto selFogTiles = map.selections.renderFogTiles.tiles;
+    if ( !map.view.tileFog.sel().empty() )
+    {
+        auto tileWidth = map.getTileWidth();
+        auto xBegin = map.selections.renderFogTiles.xBegin;
+        auto xEnd = map.selections.renderFogTiles.xEnd;
+        auto yBegin = map.selections.renderFogTiles.yBegin;
+        auto yEnd = map.selections.renderFogTiles.yEnd;
+        for ( std::size_t y=yBegin; y<yEnd; ++y )
         {
-            if ( (tile.neighbors & TileNeighbor::Top) == TileNeighbor::Top )
+            for ( std::size_t x=xBegin; x<xEnd; ++x )
             {
-                lineVertices.vertices.insert(lineVertices.vertices.end(), {
-                    rect.left, rect.top,
-                    rect.right, rect.top,
-                });
-            }
-            if ( (tile.neighbors & TileNeighbor::Right) == TileNeighbor::Right )
-            {
-                lineVertices.vertices.insert(lineVertices.vertices.end(), {
-                    rect.right, rect.top,
-                    rect.right, rect.bottom,
-                });
-            }
-            if ( (tile.neighbors & TileNeighbor::Bottom) == TileNeighbor::Bottom )
-            {
-                lineVertices.vertices.insert(lineVertices.vertices.end(), {
-                    rect.right, rect.bottom,
-                    rect.left, rect.bottom,
-                });
-            }
-            if ( (tile.neighbors & TileNeighbor::Left) == TileNeighbor::Left )
-            {
-                lineVertices.vertices.insert(lineVertices.vertices.end(), {
-                    rect.left, rect.bottom,
-                    rect.left, rect.top,
-                });
+                auto selTile = selFogTiles[y*tileWidth + x];
+                if ( selTile )
+                {
+                    auto neighbors = *selTile;
+                    gl::Rect2D<GLfloat> rect {
+                        GLfloat(x*32),
+                        GLfloat(y*32),
+                        GLfloat(x*32+32),
+                        GLfloat(y*32+32),
+                    };
+                    triangleVertices.vertices.insert(triangleVertices.vertices.begin(), {
+                        rect.left, rect.top,
+                        rect.right, rect.top,
+                        rect.left, rect.bottom,
+                        rect.left, rect.bottom,
+                        rect.right, rect.bottom,
+                        rect.right, rect.top
+                    });
+
+                    if ( neighbors != TileNeighbor::None ) // Some edges need to be drawn
+                    {
+                        if ( (neighbors & TileNeighbor::Top) == TileNeighbor::Top )
+                        {
+                            lineVertices.vertices.insert(lineVertices.vertices.end(), {
+                                rect.left, rect.top,
+                                rect.right, rect.top,
+                            });
+                        }
+                        if ( (neighbors & TileNeighbor::Right) == TileNeighbor::Right )
+                        {
+                            lineVertices.vertices.insert(lineVertices.vertices.end(), {
+                                rect.right, rect.top,
+                                rect.right, rect.bottom,
+                            });
+                        }
+                        if ( (neighbors & TileNeighbor::Bottom) == TileNeighbor::Bottom )
+                        {
+                            lineVertices.vertices.insert(lineVertices.vertices.end(), {
+                                rect.right, rect.bottom,
+                                rect.left, rect.bottom,
+                            });
+                        }
+                        if ( (neighbors & TileNeighbor::Left) == TileNeighbor::Left )
+                        {
+                            lineVertices.vertices.insert(lineVertices.vertices.end(), {
+                                rect.left, rect.bottom,
+                                rect.left, rect.top,
+                            });
+                        }
+                    }
+                }
             }
         }
     }
@@ -3160,8 +3398,8 @@ void Scr::MapGraphics::drawFogTileSelection()
 void Scr::MapGraphics::drawDoodadSelection()
 {
     lineVertices.vertices.clear();
-    const auto & tileset = scData.terrain.get(map.tileset);
-    for ( auto index : map.selections.doodads )
+    const auto & tileset = scData.terrain.get(map->tileset);
+    for ( auto index : map.view.doodads.sel() )
     {
         const auto & selDoodad = map.getDoodad(index);
         if ( auto doodadGroupIndex = tileset.getDoodadGroupIndex(selDoodad.type) )
@@ -3200,15 +3438,17 @@ void Scr::MapGraphics::drawDoodadSelection()
 
 void Scr::MapGraphics::drawFps()
 {
-    fps.update(std::chrono::system_clock::now());
+    fps.update(frameStart);
     textFont->textShader.use();
     textFont->textShader.glyphScaling.setMat2(glyphScaling);
     textFont->textShader.textPosToNdc.setMat4(unscrolledWindowToNdc);
+    textFont->setColor(0.f, 1.f, 1.f);
     textFont->drawAffixedText<gl::Align::Center>(windowDimensions.width/2, 10.f, fps.displayNumber, " fps", "");
 }
 
 void Scr::MapGraphics::drawPastes()
 {
+    const auto & images = map.clipboard.animations.images;
     auto layer = map.getLayer();
     auto subLayer = map.getSubLayer();
     auto drawPasteTerrain = [&](point paste) {
@@ -3240,7 +3480,7 @@ void Scr::MapGraphics::drawPastes()
         else if ( subLayer == TerrainSubLayer::Rectangular || layer == Layer::CutCopyPaste )
         {
             point center { paste.x+16, paste.y+16 };
-            const Sc::Terrain::Tiles & tiles = scData.terrain.get(map.tileset);
+            const Sc::Terrain::Tiles & tiles = scData.terrain.get(map->tileset);
             auto & pasteTiles = map.clipboard.getTiles();
             tileVertices.vertices.clear();
             lineVertices.vertices.clear();
@@ -3399,7 +3639,7 @@ void Scr::MapGraphics::drawPastes()
         const auto & doodads = map.clipboard.getDoodads();
         if ( !doodads.empty() )
         {
-            const Sc::Terrain::Tiles & tiles = scData.terrain.get(map.tileset);
+            const Sc::Terrain::Tiles & tiles = scData.terrain.get(map->tileset);
             point center { paste.x, paste.y };
             tileVertices.vertices.clear();
             triangleVertices.clear();
@@ -3447,7 +3687,7 @@ void Scr::MapGraphics::drawPastes()
                                 {
                                     size_t tileXc = xTileStart + x;
                                     size_t tileYc = yTileStart + y;
-                                    if ( tileXc < map.dimensions.tileWidth && tileYc < map.dimensions.tileHeight )
+                                    if ( tileXc < map->dimensions.tileWidth && tileYc < map->dimensions.tileHeight )
                                     {
                                         u16 existingTileGroup = map.getTile(tileXc, tileYc) / 16;
                                         bool placeable = existingTileGroup == placability.tileGroup[y*tileWidth+x] || allowIllegalDoodads;
@@ -3495,7 +3735,6 @@ void Scr::MapGraphics::drawPastes()
 
             prepareImageRendering();
             auto & palette = renderDat->tiles->tilesetGrp.palette;
-            ScopedPaletteRestore<8, 8> remapped {palette, prevMappedColor};
 
             if ( loadSettings.skinId == Scr::Skin::Id::Classic )
             {
@@ -3513,6 +3752,7 @@ void Scr::MapGraphics::drawPastes()
             }
             else
             {
+                bool hasCrgb = map->hasSection(Chk::SectionName::CRGB);
                 for ( auto & doodad : doodads )
                 {
                     auto tileWidth = doodad.tileWidth;
@@ -3522,7 +3762,7 @@ void Scr::MapGraphics::drawPastes()
                     auto xStart = evenWidth ? -16*doodad.tileWidth + (center.x+doodad.tileX*32+16)/32*32 : -16*(doodad.tileWidth-1) + (center.x + doodad.tileX*32)/32*32;
                     auto yStart = evenHeight ? -16*doodad.tileHeight + (center.y+doodad.tileY*32+16)/32*32 : -16*(doodad.tileHeight-1) + (center.y+doodad.tileY*32)/32*32;
                     if ( doodad.overlayIndex != 0 )
-                        drawImage(getDoodadImage(doodad), s32(xStart+tileWidth*16), s32(yStart+tileHeight*16), 0, 0, 0xFFFFFFFF, getPlayerColor(doodad.owner), false);
+                        drawImage(getDoodadImage(doodad), s32(xStart+tileWidth*16), s32(yStart+tileHeight*16), 0, 0, 0xFFFFFFFF, getPlayerColor(doodad.owner, hasCrgb), false);
                 }
             }
         }
@@ -3576,17 +3816,16 @@ void Scr::MapGraphics::drawPastes()
 
             prepareImageRendering();
             auto & palette = renderDat->tiles->tilesetGrp.palette;
-            ScopedPaletteRestore<8, 8> remapped {palette, prevMappedColor};
 
             if ( loadSettings.skinId == Scr::Skin::Id::Classic )
             {
-                for ( auto & pasteUnit : units )
-                    drawClassicImage(*palette, paste.x+pasteUnit.xc, paste.y+pasteUnit.yc, 0, getImageId(pasteUnit.unit), (Chk::PlayerColor)pasteUnit.unit.owner);
+                //for ( auto & pasteUnit : units )
+                //    drawClassicImage(*palette, paste.x+pasteUnit.xc, paste.y+pasteUnit.yc, 0, getImageId(pasteUnit.unit), (Chk::PlayerColor)pasteUnit.unit.owner);
             }
             else
             {
-                for ( auto & pasteUnit : units )
-                    drawImage(getImage(pasteUnit.unit), paste.x+pasteUnit.xc, paste.y+pasteUnit.yc, 0, 0xFFFFFFFF, getPlayerColor(pasteUnit.unit.owner), false);
+                //for ( auto & pasteUnit : units )
+                //    drawImage(getImage(pasteUnit.unit), paste.x+pasteUnit.xc, paste.y+pasteUnit.yc, 0, 0xFFFFFFFF, getPlayerColor(pasteUnit.unit.owner), false);
             }
 
             auto & solidColorShader = renderDat->shaders->solidColorShader;
@@ -3616,17 +3855,22 @@ void Scr::MapGraphics::drawPastes()
             prepareImageRendering();
 
             auto & palette = renderDat->tiles->tilesetGrp.palette;
-            ScopedPaletteRestore<8, 8> remapped {palette, prevMappedColor};
 
             if ( loadSettings.skinId == Scr::Skin::Id::Classic )
             {
-                for ( auto & pasteSprite : sprites )
-                    drawClassicImage(*palette, paste.x+pasteSprite.xc, paste.y+pasteSprite.yc, 0, getImageId(pasteSprite.sprite), (Chk::PlayerColor)pasteSprite.sprite.owner);
+                //for ( auto & pasteSprite : sprites )
+                //{
+                //    drawClassicImage(*palette, paste.x+pasteSprite.xc, paste.y+pasteSprite.yc, 0,//pasteSprite.anim.frame,
+                //        getImageId(pasteSprite.sprite), (Chk::PlayerColor)pasteSprite.sprite.owner);
+                //}
             }
             else
             {
-                for ( auto & pasteSprite : sprites )
-                    drawImage(getImage(pasteSprite.sprite), paste.x+pasteSprite.xc, paste.y+pasteSprite.yc, 0, 0xFFFFFFFF, getPlayerColor(pasteSprite.sprite.owner), false);
+                //for ( auto & pasteSprite : sprites )
+                //{
+                //    drawImage(getImage(pasteSprite.sprite), paste.x+pasteSprite.xc/*+pasteSprite.anim.xOffset*/, paste.y+pasteSprite.yc/*+pasteSprite.anim.yOffset*/,
+                //        images[pasteSprite.testAnim.usedImages[0]]->frame, 0xFFFFFFFF, getPlayerColor(pasteSprite.sprite.owner), false);
+                //}
             }
         }
     };
@@ -3698,8 +3942,211 @@ void Scr::MapGraphics::drawPastes()
     }
 }
 
+void Scr::MapGraphics::drawEffectColors() // TODO: This code was used to help debug faux alpha-effect palettes, it can be removed at a future date
+{
+    auto & solidColorShader = renderDat->shaders->solidColorShader;
+    solidColorShader.use();
+    solidColorShader.posToNdc.setMat4(gameToNdc);
+    auto & tileset = scData.terrain.get(map.getTileset());
+    auto & wpe = tileset.staticSystemColorPalette;
+
+    GLfloat width = 32;
+    GLfloat height = 32;
+    GLfloat xStart = 48;
+    GLfloat yStart = 48;
+
+    for ( std::size_t palIndex=0; palIndex<256; ++palIndex )
+    {
+        triangleVertices.clear();
+        
+        GLfloat x = palIndex%32;
+        GLfloat y = palIndex/32;
+        
+        GLfloat xc = xStart + x*width;
+        GLfloat yc = yStart + y*height;
+
+        gl::Rect2D<GLfloat> location{
+            .left = xc,
+            .top = yc,
+            .right = xc+16.f,
+            .bottom = yc+16.f
+        };
+
+        triangleVertices.vertices.insert(triangleVertices.vertices.end(), {
+            GLfloat(location.left), GLfloat(location.top),
+            GLfloat(location.right), GLfloat(location.top),
+            GLfloat(location.left), GLfloat(location.bottom),
+            GLfloat(location.left), GLfloat(location.bottom),
+            GLfloat(location.right), GLfloat(location.bottom),
+            GLfloat(location.right), GLfloat(location.top)
+        });
+
+        auto palColor = wpe[palIndex];
+        palColor.null = 0xFF;
+        solidColorShader.solidColor.setColor((u32 &)palColor); // Location color: 0xAABBGGRR
+        triangleVertices.bind();
+        triangleVertices.bufferData(gl::UsageHint::DynamicDraw);
+        triangleVertices.drawTriangles();
+        
+        // Draw the "true" remapped colors bottom-left
+        Sc::Color<float> destinationColors[256] {};
+        for ( std::size_t i=0; i<256; ++i )
+        {
+            GLfloat ix = i%16;
+            GLfloat iy = i/16;
+
+            triangleVertices.clear();
+            u32 effect = ((i-1) << 8) | palIndex;
+            auto limit = tileset.remap[0].paletteIndex.size();
+            auto trueRemapColor = wpe[tileset.remap[0].paletteIndex[effect < limit ? effect : 0]];
+            trueRemapColor.null = 0xFF;
+            
+            destinationColors[i].red = trueRemapColor.red;
+            destinationColors[i].blue = trueRemapColor.blue;
+            destinationColors[i].green = trueRemapColor.green;
+            destinationColors[i].null = 0xFF;
+
+            
+            gl::Rect2D<GLfloat> remapBox {
+                .left = xc+ix,
+                .top = yc+iy+16.f,
+                .right = xc+ix+1.f,
+                .bottom = yc+iy+17.f
+            };
+
+            triangleVertices.vertices.insert(triangleVertices.vertices.end(), {
+                GLfloat(remapBox.left), GLfloat(remapBox.top),
+                GLfloat(remapBox.right), GLfloat(remapBox.top),
+                GLfloat(remapBox.left), GLfloat(remapBox.bottom),
+                GLfloat(remapBox.left), GLfloat(remapBox.bottom),
+                GLfloat(remapBox.right), GLfloat(remapBox.bottom),
+                GLfloat(remapBox.right), GLfloat(remapBox.top)
+            });
+            std::swap(trueRemapColor.red, trueRemapColor.blue);
+            solidColorShader.solidColor.setColor((u32 &)trueRemapColor); // Location color: 0xAABBGGRR
+            triangleVertices.bind();
+            triangleVertices.bufferData(gl::UsageHint::DynamicDraw);
+            triangleVertices.drawTriangles();
+        }
+        
+        // Draw the palette colors top-right
+        Sc::Color<float> paletteColors[256] {};
+        for ( std::size_t i=0; i<256; ++i )
+        {
+            GLfloat ix = i%16;
+            GLfloat iy = i/16;
+
+            triangleVertices.clear();
+            auto color = wpe[i];
+            color.null = 0xFF;
+            
+            paletteColors[i].red = color.red;
+            paletteColors[i].green = color.green;
+            paletteColors[i].blue = color.blue;
+            paletteColors[i].null = 0xFF;
+
+            
+            gl::Rect2D<GLfloat> remapBox {
+                .left = xc+ix+16.f,
+                .top = yc+iy,
+                .right = xc+ix+17.f,
+                .bottom = yc+iy+1
+            };
+
+            triangleVertices.vertices.insert(triangleVertices.vertices.end(), {
+                GLfloat(remapBox.left), GLfloat(remapBox.top),
+                GLfloat(remapBox.right), GLfloat(remapBox.top),
+                GLfloat(remapBox.left), GLfloat(remapBox.bottom),
+                GLfloat(remapBox.left), GLfloat(remapBox.bottom),
+                GLfloat(remapBox.right), GLfloat(remapBox.bottom),
+                GLfloat(remapBox.right), GLfloat(remapBox.top)
+            });
+            solidColorShader.solidColor.setColor((u32 &)color); // Location color: 0xAABBGGRR
+            triangleVertices.bind();
+            triangleVertices.bufferData(gl::UsageHint::DynamicDraw);
+            triangleVertices.drawTriangles();
+        }
+
+        // Draw the regular palette in bottom right
+        for ( std::size_t i=0; i<256; ++i )
+        {
+            GLfloat ix = i%16;
+            GLfloat iy = i/16;
+
+            triangleVertices.clear();
+            auto color = wpe[i];
+            color.null = 0xFF;
+            
+            gl::Rect2D<GLfloat> remapBox {
+                .left = xc+ix+16.f,
+                .top = yc+iy+16.f,
+                .right = xc+ix+17.f,
+                .bottom = yc+iy+17.f
+            };
+
+            triangleVertices.vertices.insert(triangleVertices.vertices.end(), {
+                GLfloat(remapBox.left), GLfloat(remapBox.top),
+                GLfloat(remapBox.right), GLfloat(remapBox.top),
+                GLfloat(remapBox.left), GLfloat(remapBox.bottom),
+                GLfloat(remapBox.left), GLfloat(remapBox.bottom),
+                GLfloat(remapBox.right), GLfloat(remapBox.bottom),
+                GLfloat(remapBox.right), GLfloat(remapBox.top)
+            });
+            
+            solidColorShader.solidColor.setColor((u32 &)color); // Location color: 0xAABBGGRR
+            triangleVertices.bind();
+            triangleVertices.bufferData(gl::UsageHint::DynamicDraw);
+            triangleVertices.drawTriangles();
+        }
+    }
+
+    // Blend the remappings into the palette
+    for ( std::size_t palIndex=0; palIndex<256; ++palIndex )
+    {
+        triangleVertices.clear();
+        
+        GLfloat x = palIndex%32;
+        GLfloat y = palIndex/32;
+        
+        GLfloat xc = xStart + x*width;
+        GLfloat yc = yStart + y*height;
+
+        // Draw base color remapped
+        for ( std::size_t i=0; i<256; ++i )
+        {
+            GLfloat ix = i%16;
+            GLfloat iy = i/16;
+
+            triangleVertices.clear();
+            
+            gl::Rect2D<GLfloat> remapBox {
+                .left = xc+ix+16.f,
+                .top = yc+iy+16.f,
+                .right = xc+ix+17.f,
+                .bottom = yc+iy+17.f
+            };
+
+            triangleVertices.vertices.insert(triangleVertices.vertices.end(), {
+                GLfloat(remapBox.left), GLfloat(remapBox.top),
+                GLfloat(remapBox.right), GLfloat(remapBox.top),
+                GLfloat(remapBox.left), GLfloat(remapBox.bottom),
+                GLfloat(remapBox.left), GLfloat(remapBox.bottom),
+                GLfloat(remapBox.right), GLfloat(remapBox.bottom),
+                GLfloat(remapBox.right), GLfloat(remapBox.top)
+            });
+
+            auto remapColor = renderDat->tiles->remapPalette[0]->colors[i];
+            solidColorShader.solidColor.setColor((u32 &)remapColor); // Location color: 0xAABBGGRR
+            triangleVertices.bind();
+            triangleVertices.bufferData(gl::UsageHint::DynamicDraw);
+            triangleVertices.drawTriangles();
+        }
+    }
+}
+
 void Scr::MapGraphics::render()
 {
+    this->frameStart = std::chrono::system_clock::now();
     auto layer = map.getLayer();
 
     if ( loadSettings.skinId == Skin::Id::Classic )
@@ -3713,7 +4160,7 @@ void Scr::MapGraphics::render()
 
     drawGrid();
     drawImageSelections();
-    drawImages();
+    drawActors();
 
     switch ( layer ) {
         case Layer::Locations: drawLocations(); break;

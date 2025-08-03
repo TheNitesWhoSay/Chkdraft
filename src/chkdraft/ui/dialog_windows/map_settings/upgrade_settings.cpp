@@ -366,10 +366,7 @@ LRESULT UpgradeSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             {
                 u16 newMineralCost;
                 if ( editMineralBaseCosts.GetEditNum<u16>(newMineralCost) )
-                {
                     CM->setUpgradeBaseMineralCost((Sc::Upgrade::Type)selectedUpgrade, newMineralCost);
-                    CM->notifyChange(false);
-                }
             }
             break;
 
@@ -378,10 +375,7 @@ LRESULT UpgradeSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             {
                 u16 newMineralFactor;
                 if ( editMineralUpgradeFactor.GetEditNum<u16>(newMineralFactor) )
-                {
                     CM->setUpgradeMineralCostFactor((Sc::Upgrade::Type)selectedUpgrade, newMineralFactor);
-                    CM->notifyChange(false);
-                }
             }
             break;
 
@@ -390,10 +384,7 @@ LRESULT UpgradeSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             {
                 u16 newGasCost;
                 if ( editGasBaseCosts.GetEditNum<u16>(newGasCost) )
-                {
                     CM->setUpgradeBaseGasCost((Sc::Upgrade::Type)selectedUpgrade, newGasCost);
-                    CM->notifyChange(false);
-                }
             }
             break;
 
@@ -402,10 +393,7 @@ LRESULT UpgradeSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             {
                 u16 newGasFactor;
                 if ( editGasUpgradeFactor.GetEditNum<u16>(newGasFactor) )
-                {
                     CM->setUpgradeGasCostFactor((Sc::Upgrade::Type)selectedUpgrade, newGasFactor);
-                    CM->notifyChange(false);
-                }
             }
             break;
 
@@ -419,8 +407,6 @@ LRESULT UpgradeSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                         CM->setUpgradeBaseResearchTime((Sc::Upgrade::Type)selectedUpgrade, 65535); // Set to max
                     else // Normal
                         CM->setUpgradeBaseResearchTime((Sc::Upgrade::Type)selectedUpgrade, newTimeCost * 15);
-
-                    CM->notifyChange(false);
                 }
             }
             break;
@@ -435,8 +421,6 @@ LRESULT UpgradeSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                         CM->setUpgradeResearchTimeFactor((Sc::Upgrade::Type)selectedUpgrade, 65535); // Set to max
                     else // Normal
                         CM->setUpgradeResearchTimeFactor((Sc::Upgrade::Type)selectedUpgrade, newTimeFactor * 15); // Set to max
-
-                    CM->notifyChange(false);
                 }
             }
             break;
@@ -446,10 +430,7 @@ LRESULT UpgradeSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             {
                 u8 newStartLevel;
                 if ( editDefaultStartLevel.GetEditNum<u8>(newStartLevel) )
-                {
                     CM->setDefaultStartUpgradeLevel((Sc::Upgrade::Type)selectedUpgrade, newStartLevel);
-                    CM->notifyChange(false);
-                }
             }
             break;
 
@@ -458,10 +439,7 @@ LRESULT UpgradeSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             {
                 u8 newMaxLevel;
                 if ( editDefaultMaxLevel.GetEditNum<u8>(newMaxLevel) )
-                {
                     CM->setDefaultMaxUpgradeLevel((Sc::Upgrade::Type)selectedUpgrade, newMaxLevel);
-                    CM->notifyChange(false);
-                }
             }
             break;
 
@@ -485,7 +463,6 @@ LRESULT UpgradeSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                     }
 
                     RefreshWindow();
-                    CM->notifyChange(false);
                 }
             }
             break;
@@ -495,7 +472,6 @@ LRESULT UpgradeSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 if ( WinLib::GetYesNo("Are you sure you want to reset all ugprade settings?", "Confirm") == WinLib::PromptResult::Yes )
                 {
                     CM->setUpgradesToDefault();
-                    CM->notifyChange(false);
                     DisableCostEditing();
                     RefreshWindow();
                 }
@@ -508,6 +484,7 @@ LRESULT UpgradeSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 LRESULT state = SendMessage((HWND)lParam, BM_GETCHECK, 0, 0);
                 int player = LOWORD(wParam) - Id::ID_CHECK_DEFAULTUPGRADEP1;
                 bool useDefault = (state == BST_CHECKED);
+                auto edit = CM->operator()(ActionDescriptor::SetPlayerUsesDefaultUpgradeLeveling);
                 CM->setPlayerUsesDefaultUpgradeLeveling((Sc::Upgrade::Type)selectedUpgrade, player, useDefault);
                 if ( state != BST_CHECKED )
                 {
@@ -517,7 +494,6 @@ LRESULT UpgradeSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                     CM->setStartUpgradeLevel((Sc::Upgrade::Type)selectedUpgrade, player, defaultStartLevel);
                     CM->setMaxUpgradeLevel((Sc::Upgrade::Type)selectedUpgrade, player, defaultMaxLevel);
                 }
-                CM->notifyChange(false);
                 RefreshWindow();
             }
             else if ( HIWORD(wParam) == EN_CHANGE && selectedUpgrade != -1 &&
@@ -526,10 +502,7 @@ LRESULT UpgradeSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 u8 player = u8(LOWORD(wParam) - Id::ID_EDIT_P1STARTLEVEL),
                     newStartLevel;
                 if ( editPlayerStartLevel[player].GetEditNum<u8>(newStartLevel) )
-                {
                     CM->setStartUpgradeLevel((Sc::Upgrade::Type)selectedUpgrade, player, newStartLevel);
-                    CM->notifyChange(false);
-                }
             }
             else if ( HIWORD(wParam) == EN_CHANGE && selectedUpgrade != -1 &&
                 LOWORD(wParam) >= Id::ID_EDIT_P1MAXLEVEL && LOWORD(wParam) <= Id::ID_EDIT_P12MAXLEVEL )
@@ -537,10 +510,7 @@ LRESULT UpgradeSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 u8 player = u8(LOWORD(wParam) - Id::ID_EDIT_P1MAXLEVEL),
                     newMaxLevel;
                 if ( editPlayerMaxLevel[player].GetEditNum<u8>(newMaxLevel) )
-                {
                     CM->setMaxUpgradeLevel((Sc::Upgrade::Type)selectedUpgrade, player, newMaxLevel);
-                    CM->notifyChange(false);
-                }
             }
             break;
         }

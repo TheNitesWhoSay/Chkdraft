@@ -5,10 +5,10 @@
 using u16 = uint16_t;
 
 // Major version is a variable length base-10 number
-constexpr u16 MajorVersionNumber = 1;
+constexpr u16 MajorVersionNumber = 2;
 
 // Minor version is a 2-digit base-10 number
-constexpr u16 MinorVersionNumber = 12;
+constexpr u16 MinorVersionNumber = 00;
 
 u16 GetDateShort(); // Returns 384*(year-2000) + 32*month + day based on the date compiled
 

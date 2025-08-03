@@ -649,4 +649,148 @@ TEST(BasicsTest, ToHexString)
     EXPECT_STREQ("0xFF", to_hex_string<u8>(u8(255)).c_str());
 }
 
+template <std::size_t N>
+void testDefragmentNonZeroes(int (&&arr)[N], int (&&expected)[N])
+{
+    defragmentNonZeroes(arr);
+    auto defragmentedArray = std::vector(std::begin(arr), std::end(arr));
+    auto expectedArray = std::vector(std::begin(expected), std::end(expected));
+    EXPECT_EQ(defragmentedArray, expectedArray);
+}
+
+TEST(BasicsTest, DefragmentNonZeroes)
+{
+    testDefragmentNonZeroes({0}, {0}); // One zero
+
+    testDefragmentNonZeroes({1}, {1}); // No zeroes
+
+    testDefragmentNonZeroes({0, 0}, {0, 0}); // Two zeroes
+    testDefragmentNonZeroes({0, 1}, {1, 0}); // One zero
+    testDefragmentNonZeroes({1, 0}, {1, 0});
+    testDefragmentNonZeroes({1, 2}, {1, 2}); // No zeroes
+
+    testDefragmentNonZeroes({0, 0, 0}, {0, 0, 0}); // Three zeroes
+    testDefragmentNonZeroes({0, 0, 1}, {1, 0, 0}); // Two zeroes
+    testDefragmentNonZeroes({0, 1, 0}, {1, 0, 0});
+    testDefragmentNonZeroes({1, 0, 0}, {1, 0, 0});
+    testDefragmentNonZeroes({0, 1, 2}, {1, 2, 0}); // One zero
+    testDefragmentNonZeroes({1, 0, 2}, {1, 2, 0});
+    testDefragmentNonZeroes({1, 2, 0}, {1, 2, 0});
+    testDefragmentNonZeroes({1, 2, 3}, {1, 2, 3}); // No zeroes
+    
+    testDefragmentNonZeroes({0, 0, 0, 0}, {0, 0, 0, 0}); // Four zeroes
+    testDefragmentNonZeroes({0, 0, 0, 1}, {1, 0, 0, 0}); // Three zeroes
+    testDefragmentNonZeroes({0, 0, 1, 0}, {1, 0, 0, 0});
+    testDefragmentNonZeroes({0, 1, 0, 0}, {1, 0, 0, 0});
+    testDefragmentNonZeroes({1, 0, 0, 0}, {1, 0, 0, 0});
+    testDefragmentNonZeroes({0, 0, 1, 2}, {1, 2, 0, 0}); // Two zeroes
+    testDefragmentNonZeroes({0, 1, 0, 2}, {1, 2, 0, 0});
+    testDefragmentNonZeroes({0, 1, 2, 0}, {1, 2, 0, 0});
+    testDefragmentNonZeroes({1, 0, 0, 2}, {1, 2, 0, 0});
+    testDefragmentNonZeroes({1, 0, 2, 0}, {1, 2, 0, 0});
+    testDefragmentNonZeroes({1, 2, 0, 0}, {1, 2, 0, 0});
+    testDefragmentNonZeroes({0, 1, 2, 3}, {1, 2, 3, 0}); // One zero
+    testDefragmentNonZeroes({1, 0, 2, 3}, {1, 2, 3, 0});
+    testDefragmentNonZeroes({1, 2, 0, 3}, {1, 2, 3, 0});
+    testDefragmentNonZeroes({1, 2, 3, 0}, {1, 2, 3, 0});
+    testDefragmentNonZeroes({1, 2, 3, 4}, {1, 2, 3, 4}); // No zeroes
+
+    testDefragmentNonZeroes({0, 0, 0, 0, 0}, {0, 0, 0, 0, 0}); // Five zeroes
+    testDefragmentNonZeroes({0, 0, 0, 0, 1}, {1, 0, 0, 0, 0}); // Four zeroes
+    testDefragmentNonZeroes({0, 0, 0, 1, 0}, {1, 0, 0, 0, 0});
+    testDefragmentNonZeroes({0, 0, 1, 0, 0}, {1, 0, 0, 0, 0});
+    testDefragmentNonZeroes({0, 1, 0, 0, 0}, {1, 0, 0, 0, 0});
+    testDefragmentNonZeroes({1, 0, 0, 0, 0}, {1, 0, 0, 0, 0});
+    testDefragmentNonZeroes({0, 0, 0, 1, 2}, {1, 2, 0, 0, 0}); // Three zeroes
+    testDefragmentNonZeroes({0, 0, 1, 0, 2}, {1, 2, 0, 0, 0});
+    testDefragmentNonZeroes({0, 0, 1, 2, 0}, {1, 2, 0, 0, 0});
+    testDefragmentNonZeroes({0, 1, 0, 0, 2}, {1, 2, 0, 0, 0});
+    testDefragmentNonZeroes({0, 1, 0, 2, 0}, {1, 2, 0, 0, 0});
+    testDefragmentNonZeroes({0, 1, 2, 0, 0}, {1, 2, 0, 0, 0});
+    testDefragmentNonZeroes({1, 0, 0, 0, 2}, {1, 2, 0, 0, 0});
+    testDefragmentNonZeroes({1, 0, 0, 2, 0}, {1, 2, 0, 0, 0});
+    testDefragmentNonZeroes({1, 0, 2, 0, 0}, {1, 2, 0, 0, 0});
+    testDefragmentNonZeroes({1, 2, 0, 0, 0}, {1, 2, 0, 0, 0});
+    testDefragmentNonZeroes({0, 0, 1, 2, 3}, {1, 2, 3, 0, 0}); // Two zeroes
+    testDefragmentNonZeroes({0, 1, 0, 2, 3}, {1, 2, 3, 0, 0});
+    testDefragmentNonZeroes({0, 1, 2, 0, 3}, {1, 2, 3, 0, 0});
+    testDefragmentNonZeroes({0, 1, 2, 3, 0}, {1, 2, 3, 0, 0});
+    testDefragmentNonZeroes({1, 0, 0, 2, 3}, {1, 2, 3, 0, 0});
+    testDefragmentNonZeroes({1, 0, 2, 0, 3}, {1, 2, 3, 0, 0});
+    testDefragmentNonZeroes({1, 0, 2, 3, 0}, {1, 2, 3, 0, 0});
+    testDefragmentNonZeroes({1, 2, 0, 0, 3}, {1, 2, 3, 0, 0});
+    testDefragmentNonZeroes({1, 2, 0, 3, 0}, {1, 2, 3, 0, 0});
+    testDefragmentNonZeroes({1, 2, 3, 0, 0}, {1, 2, 3, 0, 0});
+    testDefragmentNonZeroes({0, 1, 2, 3, 4}, {1, 2, 3, 4, 0}); // One zero
+    testDefragmentNonZeroes({1, 0, 2, 3, 4}, {1, 2, 3, 4, 0});
+    testDefragmentNonZeroes({1, 2, 0, 3, 4}, {1, 2, 3, 4, 0});
+    testDefragmentNonZeroes({1, 2, 3, 0, 4}, {1, 2, 3, 4, 0});
+    testDefragmentNonZeroes({1, 2, 3, 4, 0}, {1, 2, 3, 4, 0});
+    testDefragmentNonZeroes({1, 2, 3, 4, 5}, {1, 2, 3, 4, 5}); // No zeroes
+
+    testDefragmentNonZeroes({0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0}); // Six zeroes
+    testDefragmentNonZeroes({0, 0, 0, 0, 0, 1}, {1, 0, 0, 0, 0, 0}); // Five zeroes
+    testDefragmentNonZeroes({0, 0, 0, 0, 1, 0}, {1, 0, 0, 0, 0, 0});
+    testDefragmentNonZeroes({0, 0, 0, 1, 0, 0}, {1, 0, 0, 0, 0, 0});
+    testDefragmentNonZeroes({0, 0, 1, 0, 0, 0}, {1, 0, 0, 0, 0, 0});
+    testDefragmentNonZeroes({0, 1, 0, 0, 0, 0}, {1, 0, 0, 0, 0, 0});
+    testDefragmentNonZeroes({1, 0, 0, 0, 0, 0}, {1, 0, 0, 0, 0, 0});
+    testDefragmentNonZeroes({0, 0, 0, 0, 1, 2}, {1, 2, 0, 0, 0, 0}); // Four zeroes
+    testDefragmentNonZeroes({0, 0, 0, 1, 0, 2}, {1, 2, 0, 0, 0, 0});
+    testDefragmentNonZeroes({0, 0, 0, 1, 2, 0}, {1, 2, 0, 0, 0, 0});
+    testDefragmentNonZeroes({0, 0, 1, 0, 0, 2}, {1, 2, 0, 0, 0, 0});
+    testDefragmentNonZeroes({0, 0, 1, 0, 2, 0}, {1, 2, 0, 0, 0, 0});
+    testDefragmentNonZeroes({0, 0, 1, 2, 0, 0}, {1, 2, 0, 0, 0, 0});
+    testDefragmentNonZeroes({0, 1, 0, 0, 0, 2}, {1, 2, 0, 0, 0, 0});
+    testDefragmentNonZeroes({0, 1, 0, 0, 2, 0}, {1, 2, 0, 0, 0, 0});
+    testDefragmentNonZeroes({0, 1, 0, 2, 0, 0}, {1, 2, 0, 0, 0, 0});
+    testDefragmentNonZeroes({0, 1, 2, 0, 0, 0}, {1, 2, 0, 0, 0, 0});
+    testDefragmentNonZeroes({1, 0, 0, 0, 0, 2}, {1, 2, 0, 0, 0, 0});
+    testDefragmentNonZeroes({1, 0, 0, 0, 2, 0}, {1, 2, 0, 0, 0, 0});
+    testDefragmentNonZeroes({1, 0, 0, 2, 0, 0}, {1, 2, 0, 0, 0, 0});
+    testDefragmentNonZeroes({1, 0, 2, 0, 0, 0}, {1, 2, 0, 0, 0, 0});
+    testDefragmentNonZeroes({1, 2, 0, 0, 0, 0}, {1, 2, 0, 0, 0, 0});
+    testDefragmentNonZeroes({0, 0, 0, 1, 2, 3}, {1, 2, 3, 0, 0, 0}); // Three zeroes
+    testDefragmentNonZeroes({0, 0, 1, 0, 2, 3}, {1, 2, 3, 0, 0, 0});
+    testDefragmentNonZeroes({0, 0, 1, 2, 0, 3}, {1, 2, 3, 0, 0, 0});
+    testDefragmentNonZeroes({0, 0, 1, 2, 3, 0}, {1, 2, 3, 0, 0, 0});
+    testDefragmentNonZeroes({0, 1, 0, 0, 2, 3}, {1, 2, 3, 0, 0, 0});
+    testDefragmentNonZeroes({0, 1, 0, 2, 0, 3}, {1, 2, 3, 0, 0, 0});
+    testDefragmentNonZeroes({0, 1, 0, 2, 3, 0}, {1, 2, 3, 0, 0, 0});
+    testDefragmentNonZeroes({0, 1, 2, 0, 0, 3}, {1, 2, 3, 0, 0, 0});
+    testDefragmentNonZeroes({0, 1, 2, 0, 3, 0}, {1, 2, 3, 0, 0, 0});
+    testDefragmentNonZeroes({0, 1, 2, 3, 0, 0}, {1, 2, 3, 0, 0, 0});
+    testDefragmentNonZeroes({1, 0, 0, 0, 2, 3}, {1, 2, 3, 0, 0, 0});
+    testDefragmentNonZeroes({1, 0, 0, 2, 0, 3}, {1, 2, 3, 0, 0, 0});
+    testDefragmentNonZeroes({1, 0, 0, 2, 3, 0}, {1, 2, 3, 0, 0, 0});
+    testDefragmentNonZeroes({1, 0, 2, 0, 0, 3}, {1, 2, 3, 0, 0, 0});
+    testDefragmentNonZeroes({1, 0, 2, 0, 3, 0}, {1, 2, 3, 0, 0, 0});
+    testDefragmentNonZeroes({1, 0, 2, 3, 0, 0}, {1, 2, 3, 0, 0, 0});
+    testDefragmentNonZeroes({1, 2, 0, 0, 0, 3}, {1, 2, 3, 0, 0, 0});
+    testDefragmentNonZeroes({1, 2, 0, 0, 3, 0}, {1, 2, 3, 0, 0, 0});
+    testDefragmentNonZeroes({1, 2, 0, 3, 0, 0}, {1, 2, 3, 0, 0, 0});
+    testDefragmentNonZeroes({1, 2, 3, 0, 0, 0}, {1, 2, 3, 0, 0, 0});
+    testDefragmentNonZeroes({0, 0, 1, 2, 3, 4}, {1, 2, 3, 4, 0, 0}); // Two zeroes
+    testDefragmentNonZeroes({0, 1, 0, 2, 3, 4}, {1, 2, 3, 4, 0, 0});
+    testDefragmentNonZeroes({0, 1, 2, 0, 3, 4}, {1, 2, 3, 4, 0, 0});
+    testDefragmentNonZeroes({0, 1, 2, 3, 0, 4}, {1, 2, 3, 4, 0, 0});
+    testDefragmentNonZeroes({0, 1, 2, 3, 4, 0}, {1, 2, 3, 4, 0, 0});
+    testDefragmentNonZeroes({1, 0, 0, 2, 3, 4}, {1, 2, 3, 4, 0, 0});
+    testDefragmentNonZeroes({1, 0, 2, 0, 3, 4}, {1, 2, 3, 4, 0, 0});
+    testDefragmentNonZeroes({1, 0, 2, 3, 0, 4}, {1, 2, 3, 4, 0, 0});
+    testDefragmentNonZeroes({1, 0, 2, 3, 4, 0}, {1, 2, 3, 4, 0, 0});
+    testDefragmentNonZeroes({1, 2, 0, 0, 3, 4}, {1, 2, 3, 4, 0, 0});
+    testDefragmentNonZeroes({1, 2, 0, 3, 4, 0}, {1, 2, 3, 4, 0, 0});
+    testDefragmentNonZeroes({1, 2, 3, 0, 0, 4}, {1, 2, 3, 4, 0, 0});
+    testDefragmentNonZeroes({1, 2, 3, 0, 4, 0}, {1, 2, 3, 4, 0, 0});
+    testDefragmentNonZeroes({1, 2, 3, 4, 0, 0}, {1, 2, 3, 4, 0, 0});
+    testDefragmentNonZeroes({0, 1, 2, 3, 4, 5}, {1, 2, 3, 4, 5, 0}); // One zero
+    testDefragmentNonZeroes({1, 0, 2, 3, 4, 5}, {1, 2, 3, 4, 5, 0});
+    testDefragmentNonZeroes({1, 2, 0, 3, 4, 5}, {1, 2, 3, 4, 5, 0});
+    testDefragmentNonZeroes({1, 2, 3, 0, 4, 5}, {1, 2, 3, 4, 5, 0});
+    testDefragmentNonZeroes({1, 2, 3, 4, 0, 5}, {1, 2, 3, 4, 5, 0});
+    testDefragmentNonZeroes({1, 2, 3, 4, 5, 0}, {1, 2, 3, 4, 5, 0});
+    testDefragmentNonZeroes({1, 2, 3, 4, 5, 6}, {1, 2, 3, 4, 5, 6}); // No zeroes
+}
+
 #pragma warning(pop)
