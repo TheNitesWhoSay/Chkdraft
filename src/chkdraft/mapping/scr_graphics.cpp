@@ -1408,9 +1408,31 @@ std::shared_ptr<Scr::GraphicsData::RenderData> Scr::GraphicsData::load(Sc::Data 
     return renderData;
 }
 
-u32 Scr::MapGraphics::getPlayerColor(u8 player)
+u32 Scr::MapGraphics::getPlayerColor(u8 player, bool hasCrgb)
 {
-    return (u32 &)(scData.tunit.rgbaPalette[8*size_t(player)]);
+    if ( player >= 8 )
+        return (u32 &)(scData.tunit.rgbaPalette[8*size_t(player) < scData.tunit.rgbaPalette.size() ? 8*size_t(player) : 8*size_t(player)%scData.tunit.rgbaPalette.size()]);
+    else if ( hasCrgb && map->version >= Chk::Version::StarCraft_Remastered )
+    {
+        switch ( map->customColors.playerSetting[player] )
+        {
+            case 0: // Random
+            case 1: // Player choice
+                return (u32 &)(scData.tunit.rgbaPalette[8*size_t(player) < scData.tunit.rgbaPalette.size() ? 8*size_t(player) : 8*size_t(player)%scData.tunit.rgbaPalette.size()]);
+            case 2: // Custom RGB
+            {
+                auto & customColor = map->customColors.playerColor[player]; // RGB -> 0xAABBGGRR
+                return u32(0xFF000000) | (u32(customColor[2]) << 16) | (u32(customColor[1]) << 8) | u32(customColor[0]);
+            }
+            case 3: // Blue color
+                return (u32 &)(scData.tunit.rgbaPalette[8*std::size_t(map->customColors.playerColor[player][2])]);
+        }
+    }
+    else
+    {
+        std::size_t color = static_cast<std::size_t>(map->playerColors[player]);
+        return (u32 &)(scData.tunit.rgbaPalette[8*color]);
+    }
 }
 
 size_t Scr::MapGraphics::getImageId(Sc::Unit::Type unitType)
@@ -2981,40 +3003,7 @@ void Scr::MapGraphics::drawImageSelections()
     }
 }
 
-void Scr::MapGraphics::drawUnit(const Chk::Unit & unit)
-{
-    constexpr auto none = std::numeric_limits<size_t>::max();
-    auto [imageId, imageFrame, subUnitImageId, subUnitOffset, subUnitFrame, overlayImageId, attachOverlayImageId, attachFrame]
-        = getUnitInfo(unit.type, unit.isAttached(), unit.isLifted());
-
-    auto drawUnit = [&](s32 xc, s32 yc, u32 frame, size_t imageId, u8 owner, bool flipped)
-    {
-        if ( loadSettings.skinId == Scr::Skin::Id::Classic )
-            drawClassicImage(*renderDat->tiles->tilesetGrp.palette, xc, yc, frame, imageId, (Chk::PlayerColor)owner, flipped);
-        else
-            drawImage(getImage(imageId), xc, yc, frame, 0xFFFFFFFF, getPlayerColor(owner), false, flipped);
-    };
-
-    drawUnit(unit.xc, unit.yc, imageFrame, imageId, unit.owner, scData.sprites.imageFlipped(imageId));
-    if ( subUnitImageId != none )
-        drawUnit(s32(unit.xc)-s32(subUnitOffset.x), s32(unit.yc)-s32(subUnitOffset.y), subUnitFrame, subUnitImageId, unit.owner, false);
-
-    if ( overlayImageId != none )
-        drawUnit(unit.xc, unit.yc, 0, overlayImageId, unit.owner, false);
-
-    if ( attachOverlayImageId != none )
-        drawUnit(unit.xc, unit.yc, attachFrame, attachOverlayImageId, unit.owner, false);
-}
-
-void Scr::MapGraphics::drawSprite(const Chk::Sprite & sprite)
-{
-    if ( loadSettings.skinId == Scr::Skin::Id::Classic )
-        drawClassicImage(*renderDat->tiles->tilesetGrp.palette, sprite.xc, sprite.yc, 0, getImageId(sprite.type, sprite.isDrawnAsSprite()), (Chk::PlayerColor)sprite.owner);
-    else
-        drawImage(getImage(sprite.type, sprite.isDrawnAsSprite()), sprite.xc, sprite.yc, 0, 0xFFFFFFFF, getPlayerColor(sprite.owner), false);
-}
-
-void Scr::MapGraphics::drawActor(const AnimContext & animations, const MapActor & mapActor, s32 xOffset, s32 yOffset)
+void Scr::MapGraphics::drawActor(const AnimContext & animations, const MapActor & mapActor, s32 xOffset, s32 yOffset, bool hasCrgb)
 {
     for ( u16 imageIndex : mapActor.usedImages )
     {
@@ -3032,7 +3021,8 @@ void Scr::MapGraphics::drawActor(const AnimContext & animations, const MapActor 
                     renderDat->shaders->classicPaletteShader.opacity.setValue(0.5f); // Using an opacity uniform is cheating
                     renderDat->shaders->classicPaletteShader.remapRange.setUVec2(8, 16); // Use player colors
                     renderDat->shaders->classicPaletteShader.remapPal.setSlot(2);
-                    drawClassicImage(*renderDat->tiles->tilesetGrp.palette, image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, image->imageId, (Chk::PlayerColor)image->owner, image->flipped);
+                    drawClassicImage(*renderDat->tiles->tilesetGrp.palette, image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, image->imageId,
+                        Chk::PlayerColor(image->owner < 8 ? map->playerColors[image->owner] : (Chk::PlayerColor)image->owner), image->flipped);
                     renderDat->shaders->classicPaletteShader.opacity.setValue(1.0f);
                     break;
                 case MapImage::DrawFunction::Remap:
@@ -3064,7 +3054,8 @@ void Scr::MapGraphics::drawActor(const AnimContext & animations, const MapActor 
                 default:
                     renderDat->shaders->classicPaletteShader.remapRange.setUVec2(8, 16); // Use player colors
                     renderDat->shaders->classicPaletteShader.remapPal.setSlot(2);
-                    drawClassicImage(*renderDat->tiles->tilesetGrp.palette, image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, image->imageId, (Chk::PlayerColor)image->owner, image->flipped);
+                    drawClassicImage(*renderDat->tiles->tilesetGrp.palette, image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, image->imageId,
+                        Chk::PlayerColor(image->owner < 8 ? map->playerColors[image->owner] : (Chk::PlayerColor)image->owner), image->flipped);
                     break;
                 }
             }
@@ -3073,13 +3064,13 @@ void Scr::MapGraphics::drawActor(const AnimContext & animations, const MapActor 
                 switch ( image->drawFunction )
                 {
                 case MapImage::DrawFunction::Cloaked:
-                    drawImage(getImage(image->imageId), image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, 0x80FFFFFF, getPlayerColor(image->owner), false, image->flipped);
+                    drawImage(getImage(image->imageId), image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, 0x80FFFFFF, getPlayerColor(image->owner, hasCrgb), false, image->flipped);
                     break;
                 case MapImage::DrawFunction::Shadow:
-                    drawImage(getImage(image->imageId), image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, 0x80000000, getPlayerColor(image->owner), false, image->flipped);
+                    drawImage(getImage(image->imageId), image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, 0x80000000, getPlayerColor(image->owner, hasCrgb), false, image->flipped);
                     break;
                 case MapImage::DrawFunction::Hallucination:
-                    drawImage(getImage(image->imageId), image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, 0xFFFFFFFF, getPlayerColor(image->owner), true, image->flipped);
+                    drawImage(getImage(image->imageId), image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, 0xFFFFFFFF, getPlayerColor(image->owner, hasCrgb), true, image->flipped);
                     break;
                 case MapImage::DrawFunction::Selection:
                     renderDat->shaders->selectionShader.use();
@@ -3089,7 +3080,7 @@ void Scr::MapGraphics::drawActor(const AnimContext & animations, const MapActor 
                 case MapImage::DrawFunction::None:
                     break;
                 default:
-                    drawImage(getImage(image->imageId), image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, 0xFFFFFFFF, getPlayerColor(image->owner), false, image->flipped);
+                    drawImage(getImage(image->imageId), image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, 0xFFFFFFFF, getPlayerColor(image->owner, hasCrgb), false, image->flipped);
                     break;
                 }
             }
@@ -3099,14 +3090,9 @@ void Scr::MapGraphics::drawActor(const AnimContext & animations, const MapActor 
 
 void Scr::MapGraphics::drawActors()
 {
+    bool hasCrgb = map->hasSection(Chk::SectionName::CRGB);
     prepareImageRendering();
 
-    //for ( const auto & unit : map->units )
-    //    drawUnit(unit);
-
-    //for ( const auto & sprite : map->sprites )
-    //    drawSprite(sprite);
-    
     const auto & unitActors = map.view.units.readAttachedData();
     const auto & spriteActors = map.view.sprites.readAttachedData();
     map.animations.cleanDrawList();
@@ -3120,9 +3106,9 @@ void Scr::MapGraphics::drawActors()
         {
             std::size_t index = static_cast<std::size_t>(drawEntry & MapAnimations::MaskIndex);
             if ( drawEntry & MapAnimations::FlagUnitActor )
-                drawActor(map.animations, unitActors[index], 0, 0);
+                drawActor(map.animations, unitActors[index], 0, 0, hasCrgb);
             else
-                drawActor(map.animations, spriteActors[index], 0, 0);
+                drawActor(map.animations, spriteActors[index], 0, 0, hasCrgb);
         }
     }
 
@@ -3140,9 +3126,9 @@ void Scr::MapGraphics::drawActors()
             std::size_t index = static_cast<std::size_t>(drawEntry & MapAnimations::MaskIndex);
             point paste = map.selections.endDrag;
             if ( drawEntry & MapAnimations::FlagUnitActor )
-                drawActor(map.clipboard.animations, clipboardUnitActors[index], paste.x, paste.y);
+                drawActor(map.clipboard.animations, clipboardUnitActors[index], paste.x, paste.y, hasCrgb);
             else
-                drawActor(map.clipboard.animations, clipboardSpriteActors[index], paste.x, paste.y);
+                drawActor(map.clipboard.animations, clipboardSpriteActors[index], paste.x, paste.y, hasCrgb);
         }
     }
 }
@@ -3852,6 +3838,7 @@ void Scr::MapGraphics::drawPastes()
             }
             else
             {
+                bool hasCrgb = map->hasSection(Chk::SectionName::CRGB);
                 for ( auto & doodad : doodads )
                 {
                     auto tileWidth = doodad.tileWidth;
@@ -3861,7 +3848,7 @@ void Scr::MapGraphics::drawPastes()
                     auto xStart = evenWidth ? -16*doodad.tileWidth + (center.x+doodad.tileX*32+16)/32*32 : -16*(doodad.tileWidth-1) + (center.x + doodad.tileX*32)/32*32;
                     auto yStart = evenHeight ? -16*doodad.tileHeight + (center.y+doodad.tileY*32+16)/32*32 : -16*(doodad.tileHeight-1) + (center.y+doodad.tileY*32)/32*32;
                     if ( doodad.overlayIndex != 0 )
-                        drawImage(getDoodadImage(doodad), s32(xStart+tileWidth*16), s32(yStart+tileHeight*16), 0, 0, 0xFFFFFFFF, getPlayerColor(doodad.owner), false);
+                        drawImage(getDoodadImage(doodad), s32(xStart+tileWidth*16), s32(yStart+tileHeight*16), 0, 0, 0xFFFFFFFF, getPlayerColor(doodad.owner, hasCrgb), false);
                 }
             }
         }

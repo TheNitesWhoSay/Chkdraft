@@ -890,7 +890,7 @@ namespace Scr {
         gl::VertexVector<> triangleVertices5 {};
         gl::VertexVector<> triangleVertices6 {};
         
-        u32 getPlayerColor(u8 player);
+        u32 getPlayerColor(u8 player, bool hasCrgb);
         size_t getImageId(Sc::Unit::Type unitType);
         size_t getImageId(Sc::Sprite::Type spriteType);
         size_t getImageId(Sc::Sprite::Type spriteType, bool isDrawnAsSprite);
@@ -973,9 +973,7 @@ namespace Scr {
         void drawUnitSelection(Sc::Unit::Type unitType, s32 x, s32 y);
         void drawSpriteSelection(Sc::Sprite::Type spriteType, s32 x, s32 y, bool isDrawnAsSprite);
         void drawImageSelections();
-        void drawUnit(const Chk::Unit & unit);
-        void drawSprite(const Chk::Sprite & sprite);
-        void drawActor(const AnimContext & animContext, const MapActor & mapActor, s32 xOffset, s32 yOffset);
+        void drawActor(const AnimContext & animContext, const MapActor & mapActor, s32 xOffset, s32 yOffset, bool hasCrgb);
         void drawActors();
         void drawLocations();
         void drawTemporaryLocations();
