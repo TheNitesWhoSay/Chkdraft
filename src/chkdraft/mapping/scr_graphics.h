@@ -906,7 +906,6 @@ namespace Scr {
             size_t attachOverlayImageId;
             size_t attachFrame;
         };
-        UnitInfo getUnitInfo(Sc::Unit::Type unitType, bool attached, bool lifted);
         struct SelectInfo {
             size_t imageId;
             s32 yOffset;
