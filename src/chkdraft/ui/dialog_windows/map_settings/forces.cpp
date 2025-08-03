@@ -47,6 +47,7 @@ bool ForcesWindow::CreateThis(HWND hParent, u64 windowId)
     if ( ClassWindow::RegisterWindowClass(0, NULL, NULL, NULL, NULL, "Forces", NULL, false) &&
          ClassWindow::CreateClassWindow(0, "Forces", WS_VISIBLE|WS_CHILD, 4, 22, 592, 524, hParent, (HMENU)windowId) )
     {
+        initializing = true;
         HWND hForces = getHandle();
         textAboutForces.CreateThis(hForces, 5, 10, 587, 20,
             "Designate player forces, set force names, and force properties. It is recommended to separate computer and human players", 0);
@@ -78,7 +79,8 @@ bool ForcesWindow::CreateThis(HWND hParent, u64 windowId)
 
         if ( WM_DRAGNOTIFY == WM_NULL )
             WM_DRAGNOTIFY = RegisterWindowMessage(DRAGLISTMSGSTRING);
-
+        
+        initializing = false;
         return true;
     }
     else
@@ -97,6 +99,7 @@ void ForcesWindow::RefreshWindow()
     HWND hWnd = getHandle();
     if ( CM != nullptr )
     {
+        initializing = true;
         for ( int force=0; force<4; force++ )
         {
             u8 forceFlags = CM->getForceFlags((Chk::Force)force);
@@ -150,6 +153,7 @@ void ForcesWindow::RefreshWindow()
             if ( hListBox != NULL )
                 SendMessage(hListBox, LB_ADDSTRING, 0, (LPARAM)icux::toUistring(ssplayer.str()).c_str());
         }
+        initializing = false;
     }
 }
 
@@ -210,7 +214,7 @@ LRESULT ForcesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     break;
 
     case EN_CHANGE:
-        if ( LOWORD(wParam) >= Id::EDIT_F1NAME && LOWORD(wParam) <= Id::EDIT_F4NAME )
+        if ( LOWORD(wParam) >= Id::EDIT_F1NAME && LOWORD(wParam) <= Id::EDIT_F4NAME && !initializing )
             possibleForceNameUpdate[LOWORD(wParam) - Id::EDIT_F1NAME] = true;
         break;
 
