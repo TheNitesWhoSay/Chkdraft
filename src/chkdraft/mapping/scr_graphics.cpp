@@ -1416,9 +1416,6 @@ u32 Scr::MapGraphics::getPlayerColor(u8 player, bool hasCrgb)
     {
         switch ( map->customColors.playerSetting[player] )
         {
-            case 0: // Random
-            case 1: // Player choice
-                return (u32 &)(scData.tunit.rgbaPalette[8*size_t(player) < scData.tunit.rgbaPalette.size() ? 8*size_t(player) : 8*size_t(player)%scData.tunit.rgbaPalette.size()]);
             case 2: // Custom RGB
             {
                 auto & customColor = map->customColors.playerColor[player]; // RGB -> 0xAABBGGRR
@@ -1426,6 +1423,10 @@ u32 Scr::MapGraphics::getPlayerColor(u8 player, bool hasCrgb)
             }
             case 3: // Blue color
                 return (u32 &)(scData.tunit.rgbaPalette[8*std::size_t(map->customColors.playerColor[player][2])]);
+            case 0: // Random
+            case 1: // Player choice
+            default:
+                return (u32 &)(scData.tunit.rgbaPalette[8*size_t(player) < scData.tunit.rgbaPalette.size() ? 8*size_t(player) : 8*size_t(player)%scData.tunit.rgbaPalette.size()]);
         }
     }
     else
