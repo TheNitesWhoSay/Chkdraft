@@ -135,6 +135,7 @@ GuiMap::GuiMap(Clipboard & clipboard, Sc::Terrain::Tileset tileset, u16 width, u
 
 GuiMap::~GuiMap()
 {
+    chkd.maps.releaseRenderContext(this->openGlDc);
     chkd.tilePropWindow.DestroyThis();
 }
 
