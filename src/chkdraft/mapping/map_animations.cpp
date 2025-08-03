@@ -129,6 +129,9 @@ void AnimContext::initializeImage(u32 iScriptId, std::uint64_t currentTick, MapA
 
 void AnimContext::clearActor(MapActor & actor)
 {
+    if ( actor.drawListIndex > 0 && actor.drawListIndex != UnusedDrawEntry && actor.drawListIndex < drawList.size() )
+        drawList[actor.drawListIndex] = UnusedDrawEntry;
+
     for ( auto usedImageIndex : actor.usedImages )
         removeImage(usedImageIndex);
 
@@ -241,14 +244,15 @@ void AnimContext::initSpecialCases(MapActor & actor, std::size_t type, bool isUn
 
 void AnimContext::initializeUnitActor(MapActor & actor, bool isClipboard, std::size_t unitIndex, const Chk::Unit & unit, s32 xc, s32 yc)
 {
-    const auto & unitDat = chkd.scData.units.getUnit(unit.type);
+    auto unitType = unit.type < Sc::Unit::TotalTypes ? unit.type : Sc::Unit::Type::TerranMarine;
+    const auto & unitDat = chkd.scData.units.getUnit(unitType);
     bool isSubUnit = unitDat.flags & Sc::Unit::Flags::Subunit;
     bool isFlyerOrLifted = unitDat.flags & Sc::Unit::Flags::Flyer ||
         unitDat.flags & Sc::Unit::Flags::FlyingBuilding && unit.isLifted();
 
     actor.elevation = unitDat.elevationLevel;
     u8 direction = unitDat.unitDirection == 32 ? ((std::rand() & 31) << 3) : (unitDat.unitDirection << 3);
-    u32 iScriptId = iscriptIdFromUnit(unit.type);
+    u32 iScriptId = iscriptIdFromUnit(unitType);
 
     std::uint64_t drawListValue = isClipboard ?
         (std::uint64_t(unitIndex) | FlagDrawUnit | FlagUnitActor | (isSubUnit ? FlagIsTurret : 0) |
@@ -257,7 +261,7 @@ void AnimContext::initializeUnitActor(MapActor & actor, bool isClipboard, std::s
             (std::uint64_t(yc) << ShiftY) | (std::uint64_t(actor.elevation) << ShiftElevation));
 
     initializeActor(actor, direction, getImageId(unit), unit.owner, xc, yc, iScriptId, true, false, drawListValue);
-    initSpecialCases(actor, std::size_t(unit.type), true);
+    initSpecialCases(actor, std::size_t(unitType), true);
 
     // Update draw func if applicable
     if ( unit.stateFlags & Chk::Unit::State::Hallucinated )
@@ -282,8 +286,10 @@ void AnimContext::initializeUnitActor(MapActor & actor, bool isClipboard, std::s
 void AnimContext::initializeSpriteActor(MapActor & actor, bool isClipboard, std::size_t spriteIndex, const Chk::Sprite & sprite, s32 xc, s32 yc)
 {
     bool isSpriteUnit = sprite.isUnit();
-    bool isSubUnit = isSpriteUnit && chkd.scData.units.getUnit(Sc::Unit::Type(sprite.type)).flags & Sc::Unit::Flags::Subunit;
-    bool isFlyer = isSpriteUnit && chkd.scData.units.getUnit(Sc::Unit::Type(sprite.type)).flags & Sc::Unit::Flags::Flyer;
+    auto spriteType = isSpriteUnit ? (Sc::Unit::Type(sprite.type) < Sc::Unit::TotalTypes ? sprite.type : Sc::Sprite::Type(0)) :
+        (sprite.type < Sc::Sprite::TotalSprites ? sprite.type : Sc::Sprite::Type(0));
+    bool isSubUnit = isSpriteUnit && chkd.scData.units.getUnit(Sc::Unit::Type(spriteType)).flags & Sc::Unit::Flags::Subunit;
+    bool isFlyer = isSpriteUnit && chkd.scData.units.getUnit(Sc::Unit::Type(spriteType)).flags & Sc::Unit::Flags::Flyer;
 
     actor.elevation = 4;
     if ( isSpriteUnit )
@@ -291,11 +297,11 @@ void AnimContext::initializeSpriteActor(MapActor & actor, bool isClipboard, std:
         if ( sprite.flags & Chk::Sprite::SpriteFlags::SpriteUnitDiabled )
             actor.elevation = 1;
         else
-            actor.elevation = chkd.scData.units.getUnit(Sc::Unit::Type(sprite.type)).elevationLevel;
+            actor.elevation = chkd.scData.units.getUnit(Sc::Unit::Type(spriteType)).elevationLevel;
     }
 
-    u32 iScriptId = isSpriteUnit ? iscriptIdFromUnit(Sc::Unit::Type(sprite.type)) : iscriptIdFromSprite(sprite.type);
-    bool autoRestart = sprite.type < chkd.scData.sprites.spriteAutoRestart.size() ? chkd.scData.sprites.spriteAutoRestart[sprite.type] : true;
+    u32 iScriptId = isSpriteUnit ? iscriptIdFromUnit(Sc::Unit::Type(spriteType)) : iscriptIdFromSprite(spriteType);
+    bool autoRestart = spriteType < chkd.scData.sprites.spriteAutoRestart.size() ? chkd.scData.sprites.spriteAutoRestart[spriteType] : true;
     std::uint64_t drawListValue = isClipboard ?
         (std::uint64_t(spriteIndex) | (isSubUnit ? FlagIsTurret : 0) |
             MaskY | (std::uint64_t(actor.elevation) << ShiftElevation)) :
@@ -303,7 +309,7 @@ void AnimContext::initializeSpriteActor(MapActor & actor, bool isClipboard, std:
             (std::uint64_t(yc) << ShiftY) | (std::uint64_t(actor.elevation) << ShiftElevation));
 
     initializeActor(actor, 0, getImageId(sprite), sprite.owner, xc, yc, iScriptId, false, autoRestart, drawListValue);
-    initSpecialCases(actor, std::size_t(sprite.type), false, isSpriteUnit);
+    initSpecialCases(actor, std::size_t(spriteType), false, isSpriteUnit);
 
     // Update anim if applicable
     if ( isSpriteUnit )
@@ -377,6 +383,7 @@ void MapAnimations::removeSprite(std::size_t spriteIndex, MapActor & actor)
 
 void MapAnimations::updateUnitType(std::size_t unitIndex, Sc::Unit::Type newUnitType)
 {
+    drawListDirty = true;
     const auto & unit = scenario.read.units[unitIndex];
     auto & unitActor = scenario.view.units.attachedData(unitIndex);
     clearActor(unitActor);
@@ -385,6 +392,7 @@ void MapAnimations::updateUnitType(std::size_t unitIndex, Sc::Unit::Type newUnit
 
 void MapAnimations::updateSpriteType(std::size_t spriteIndex, Sc::Sprite::Type newSpriteType)
 {
+    drawListDirty = true;
     const auto & sprite = scenario.read.sprites[spriteIndex];
     auto & spriteActor = scenario.view.sprites.attachedData(spriteIndex);
     clearActor(spriteActor);
@@ -553,6 +561,7 @@ void MapAnimations::updateSpriteFlags(std::size_t spriteIndex, u16 oldSpriteFlag
     auto & actor = scenario.view.sprites.attachedData(spriteIndex);
     if ( (oldSpriteFlags & Chk::Sprite::SpriteFlags::DrawAsSprite) != (newSpriteFlags & Chk::Sprite::SpriteFlags::DrawAsSprite) )
     {
+        drawListDirty = true;
         clearActor(actor);
         initializeSpriteActor(actor, false, spriteIndex, sprite, sprite.xc, sprite.yc);
     }

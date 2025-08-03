@@ -546,6 +546,9 @@ void ActorPropertiesWindow::ImageIdUpdated()
 {
     if ( auto newImageId = editImageId.GetEditNum<u16>() )
     {
+        if ( newImageId >= Sc::Sprite::TotalImages )
+            newImageId = 0;
+
         MapActor* actor = getActiveActor();
         MapImage* image = getActiveImage();
         if ( actor != nullptr && image != nullptr && image->imageId != *newImageId )
