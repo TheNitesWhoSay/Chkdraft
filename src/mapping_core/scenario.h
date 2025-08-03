@@ -93,7 +93,7 @@ struct Scenario : RareEdit::Tracked<MapData, Scenario, DescriptorIndex>
     Scenario(); // Construct empty map
     
     // Construct new map
-    Scenario(Sc::Terrain::Tileset tileset, u16 width = 64, u16 height = 64, size_t terrainTypeIndex = 0, const Sc::Terrain::Tiles* tilesetData = nullptr);
+    Scenario(Sc::Terrain::Tileset tileset, u16 width = 64, u16 height = 64, size_t terrainTypeIndex = 0, SaveType saveType = SaveType::HybridScm, const Sc::Terrain::Tiles* tilesetData = nullptr);
 
     // Versioning API
     Chk::Version getVersion() const;

@@ -39,8 +39,8 @@ MapFile::MapFile(FileBrowserPtr<SaveType> fileBrowser) : MpqAssetManager()
     load(fileBrowser);
 }
 
-MapFile::MapFile(Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex, const Sc::Terrain::Tiles* tilesetData)
-    : Scenario(tileset, width, height, terrainTypeIndex, tilesetData), MpqAssetManager()
+MapFile::MapFile(Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex, SaveType saveType, const Sc::Terrain::Tiles* tilesetData)
+    : Scenario(tileset, width, height, terrainTypeIndex, saveType, tilesetData), MpqAssetManager()
 {
     initializeVirtualSoundTable();
 }
@@ -182,11 +182,11 @@ bool MapFile::save(bool saveAs, bool updateListFile, FileBrowserPtr<SaveType> fi
         auto edit = createAction(ActionDescriptor::UpdateSaveSections);
         // If scenario changed such that save type should have changed, adjust it in advance so filter type is correct
         SaveType newSaveType = read.saveType;
-        if ( Scenario::getVersion() >= Chk::Version::StarCraft_Remastered )
+        if ( Scenario::getVersion() >= Chk::Version::StarCraft_Remastered || read.saveType == SaveType::RemasteredScx || read.saveType == SaveType::RemasteredChk )
             newSaveType = isChkSaveType(read.saveType) ? SaveType::RemasteredChk : SaveType::RemasteredScx;
-        else if ( Scenario::getVersion() >= Chk::Version::StarCraft_BroodWar )
+        else if ( Scenario::getVersion() >= Chk::Version::StarCraft_BroodWar || read.saveType == SaveType::ExpansionScx || read.saveType == SaveType::ExpansionChk )
             newSaveType = isChkSaveType(read.saveType) ? SaveType::ExpansionChk : SaveType::ExpansionScx;
-        else if ( Scenario::getVersion() >= Chk::Version::StarCraft_Hybrid )
+        else if ( Scenario::getVersion() >= Chk::Version::StarCraft_Hybrid || read.saveType == SaveType::HybridScm || read.saveType == SaveType::HybridChk )
             newSaveType = isChkSaveType(read.saveType) ? SaveType::HybridChk : SaveType::HybridScm;
         else // version < Chk::Version::StarCraft_Hybrid
             newSaveType = isChkSaveType(read.saveType) ? SaveType::StarCraftChk : SaveType::StarCraftScm;

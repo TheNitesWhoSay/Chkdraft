@@ -40,8 +40,8 @@ GuiMap::GuiMap(Clipboard & clipboard, FileBrowserPtr<SaveType> fileBrowser) : Ma
         this->elementAdded(Scenario::units_path{}, i);
 }
 
-GuiMap::GuiMap(Clipboard & clipboard, Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex, DefaultTriggers defaultTriggers)
-    : MapFile(tileset, width, height, terrainTypeIndex, &chkd.scData.terrain.get(tileset)),
+GuiMap::GuiMap(Clipboard & clipboard, Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex, DefaultTriggers defaultTriggers, SaveType saveType)
+    : MapFile(tileset, width, height, terrainTypeIndex, saveType, &chkd.scData.terrain.get(tileset)),
     Chk::IsomCache(read.tileset, read.dimensions.tileWidth, read.dimensions.tileHeight, chkd.scData.terrain.get(read.tileset)),
     clipboard(clipboard), scrGraphics{std::make_unique<Scr::MapGraphics>(chkd.scData, *this)}, animations((const Scenario &)*this)
 {

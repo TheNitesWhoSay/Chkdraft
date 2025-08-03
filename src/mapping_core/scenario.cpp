@@ -545,9 +545,11 @@ struct IsomInitializerCache : Chk::IsomCache
 
 Scenario::Scenario() : Tracked{this} {}
 
-Scenario::Scenario(Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex, const Sc::Terrain::Tiles* tilesetData) : Tracked{this}
+Scenario::Scenario(Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex, SaveType saveType, const Sc::Terrain::Tiles* tilesetData) : Tracked{this}
 {
     auto mapData = std::make_unique<::MapData>();
+    mapData->saveType = saveType;
+
     mapData->dimensions = Chk::DIM{.tileWidth = width, .tileHeight = height};
     mapData->tileset = tileset;
     mapData->tiles.assign(size_t(width)*size_t(height), u16(0));

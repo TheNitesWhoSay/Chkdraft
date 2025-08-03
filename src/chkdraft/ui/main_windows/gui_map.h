@@ -41,7 +41,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCach
 
 /* Constructor  */  GuiMap(Clipboard & clipboard, const std::string & filePath);
                     GuiMap(Clipboard & clipboard, FileBrowserPtr<SaveType> fileBrowser = getDefaultOpenMapBrowser());
-                    GuiMap(Clipboard & clipboard, Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex, DefaultTriggers defaultTriggers);
+                    GuiMap(Clipboard & clipboard, Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex, DefaultTriggers defaultTriggers, SaveType saveType);
 
 /*  Destructor  */  virtual ~GuiMap();
 

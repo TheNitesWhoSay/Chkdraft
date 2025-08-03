@@ -104,7 +104,7 @@ GuiMapPtr Maps::NewMap(Sc::Terrain::Tileset tileset, u16 width, u16 height, size
     }
 
     auto start = std::chrono::high_resolution_clock::now();
-    GuiMapPtr newMap = GuiMapPtr(new GuiMap(clipboard, tileset, width, height, terrainTypeIndex, defaultTriggers));
+    GuiMapPtr newMap = GuiMapPtr(new GuiMap(clipboard, tileset, width, height, terrainTypeIndex, defaultTriggers, Settings::isRemastered ? SaveType::RemasteredScx : SaveType::HybridScm));
     if ( newMap != nullptr )
     {
         try {
