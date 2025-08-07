@@ -24,3 +24,4 @@ add_library(${This} STATIC ${Sources} ${Headers})
 find_package(ICU COMPONENTS uc i18n REQUIRED)
 
 target_link_libraries(${This} ICU::uc ICU::i18n)
+target_include_directories(${This} INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
