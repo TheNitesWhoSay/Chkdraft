@@ -1306,6 +1306,8 @@ namespace Chk {
         StringProperties();
         StringProperties(u8 red, u8 green, u8 blue, bool isUsed, bool hasPriority, bool isBold, bool isUnderlined, bool isItalics, u32 size);
         
+        inline operator u32() const { return (u32(red) << 24) | (u32(green) << 16) | (u32(blue) << 8) | u32(flags); }
+
         class InvalidSize : public std::exception
         {
             public:

@@ -600,12 +600,12 @@ Scenario::Scenario(Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t t
     mapData->locations[Chk::LocationId::Anywhere] = Chk::Location{.right = (u32)width*32, .bottom = (u32)height*32, .stringId = 3};
 
     if ( this->isHybridOrAbove() )
-        mapData->saveSections.push_back(MapData::Section{Chk::SectionName::TYPE});
+        mapData->saveSections.push_back(::MapData::Section{Chk::SectionName::TYPE});
     
-    mapData->saveSections.push_back(MapData::Section{Chk::SectionName::VER});
+    mapData->saveSections.push_back(::MapData::Section{Chk::SectionName::VER});
 
     if ( !this->isHybridOrAbove() )
-        mapData->saveSections.push_back(MapData::Section{Chk::SectionName::IVER});
+        mapData->saveSections.push_back(::MapData::Section{Chk::SectionName::IVER});
 
     mapData->saveSections.insert(mapData->saveSections.end(), {
         {Chk::SectionName::IVE2}, {Chk::SectionName::VCOD}, {Chk::SectionName::IOWN}, {Chk::SectionName::OWNR},
@@ -768,7 +768,7 @@ void read(std::istream & is, Value & value, std::streamsize sectionSize)
 
 void Scenario::parse(std::istream & is, ::MapData & mapData, Chk::SectionName sectionName, Chk::SectionSize sectionSize)
 {
-    auto & section = mapData.addSaveSection(MapData::Section{sectionName});
+    auto & section = mapData.addSaveSection(::MapData::Section{sectionName});
     switch ( sectionName )
     {
         case SectionName::MRGN: // Manual deserialization to account for zeroth location being unused
@@ -1208,7 +1208,7 @@ bool Scenario::deserialize(Chk::SerializedChk* data)
     return false;
 }
 
-std::size_t Scenario::addSaveSection(MapData::Section section)
+std::size_t Scenario::addSaveSection(::MapData::Section section)
 {
     if ( hasSection(section.sectionName) )
     {
@@ -1229,7 +1229,7 @@ std::size_t Scenario::addSaveSection(MapData::Section section)
 void Scenario::addSaveSection(Chk::SectionName sectionName)
 {
     if ( !hasSection(sectionName) )
-        Scenario::addSaveSection(MapData::Section{sectionName, std::nullopt});
+        Scenario::addSaveSection(::MapData::Section{sectionName, std::nullopt});
 }
 
 void Scenario::removeSaveSection(Chk::SectionName sectionName)
@@ -3043,7 +3043,7 @@ void Scenario::syncKstringsToBytes(std::vector<u8> & stringBytes, u32 requestedC
         else
         {
             auto prop = read.editorStrings[i]->properties;
-            (u32 &)stringBytes[stringPropertiesStart+sizeof(u32)*i] = (u32 &)Chk::StringProperties(prop.red, prop.green, prop.blue, prop.isUsed, prop.hasPriority, prop.isBold, prop.isUnderlined, prop.isItalics, prop.size);
+            (u32 &)stringBytes[stringPropertiesStart+sizeof(u32)*i] = (u32)Chk::StringProperties(prop.red, prop.green, prop.blue, prop.isUsed, prop.hasPriority, prop.isBold, prop.isUnderlined, prop.isItalics, prop.size);
             (u32 &)stringBytes[sizeof(u32)+sizeof(u32)*i] = u32(stringBytes.size());
             stringBytes.insert(stringBytes.end(), read.editorStrings[i]->str.c_str(), read.editorStrings[i]->str.c_str()+read.editorStrings[i]->length()+1);
         }
