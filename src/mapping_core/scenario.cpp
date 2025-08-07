@@ -1780,6 +1780,7 @@ void Scenario::markValidUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed,
         
         }
         break;
+        default: break;
     }
 }
 
@@ -1865,6 +1866,7 @@ size_t Scenario::findString(const StringType & str, Chk::Scope storageScope) con
                 size_t editorResult = findEditorString();
                 return editorResult != Chk::StringId::NoString ? editorResult : findGameString();
             }
+        default: break;
     }
     return size_t(Chk::StringId::NoString);
 }
@@ -2078,6 +2080,7 @@ void Scenario::deleteUnusedStrings(Chk::Scope storageScope)
         case Chk::Scope::Game: deleteUnusedGameStrings(); break;
         case Chk::Scope::Editor: deleteUnusedEditorStrings(); break;
         case Chk::Scope::Both: deleteUnusedGameStrings(); deleteUnusedEditorStrings(); break;
+        default: break;
     }
 }
 
@@ -2472,6 +2475,7 @@ size_t Scenario::getUnitNameStringId(Sc::Unit::Type unitType, Chk::UseExpSection
             case Chk::UseExpSection::No: return read.editorStringOverrides.unitName[unitType];
             case Chk::UseExpSection::YesIfAvailable: return read.editorStringOverrides.expUnitName[unitType] != 0 ? read.editorStringOverrides.expUnitName[unitType] : read.editorStringOverrides.unitName[unitType];
             case Chk::UseExpSection::NoIfOrigAvailable: return read.editorStringOverrides.unitName[unitType] != 0 ? read.editorStringOverrides.unitName[unitType] : read.editorStringOverrides.expUnitName[unitType];
+            default: break;
         }
     }
     return 0;
@@ -2610,6 +2614,7 @@ std::optional<StringType> Scenario::getString(size_t gameStringId, size_t editor
         case Chk::Scope::GameOverEditor: return gameStringId != 0 ? getString<StringType>(gameStringId, Chk::Scope::Game) : getString<StringType>(editorStringId, Chk::Scope::Editor);
         case Chk::Scope::Either:
         case Chk::Scope::EditorOverGame: return editorStringId != 0 ? getString<StringType>(editorStringId, Chk::Scope::Editor) : getString<StringType>(gameStringId, Chk::Scope::Game);
+        default: break;
     }
     return std::nullopt;
 }
@@ -3370,7 +3375,6 @@ bool Scenario::upgradeKstrToCurrent()
             const auto & location = read.locations[locationIndex];
             if ( location.stringId > strCapacity &&
                  location.stringId != Chk::StringId::NoString &&
-                 location.stringId < 65536 &&
                  size_t(65536-location.stringId) < read.editorStrings.size() )
             {
                 edit->editorStringOverrides.locationName[locationIndex] = 65536-location.stringId;
@@ -3380,7 +3384,6 @@ bool Scenario::upgradeKstrToCurrent()
 
         if ( read.scenarioProperties.scenarioNameStringId > strCapacity &&
             read.scenarioProperties.scenarioNameStringId != Chk::StringId::NoString &&
-            read.scenarioProperties.scenarioNameStringId < 65536 &&
             size_t(65536-read.scenarioProperties.scenarioNameStringId) < read.editorStrings.size() )
         {
             setScenarioNameStringId(65536-read.scenarioProperties.scenarioNameStringId, Chk::Scope::Editor);
@@ -3389,7 +3392,6 @@ bool Scenario::upgradeKstrToCurrent()
 
         if ( read.scenarioProperties.scenarioDescriptionStringId > strCapacity &&
             read.scenarioProperties.scenarioDescriptionStringId != Chk::StringId::NoString &&
-            read.scenarioProperties.scenarioDescriptionStringId < 65536 &&
             size_t(65536-read.scenarioProperties.scenarioDescriptionStringId) < read.editorStrings.size() )
         {
             setScenarioDescriptionStringId(65536-read.scenarioProperties.scenarioDescriptionStringId, Chk::Scope::Editor);
@@ -3400,7 +3402,6 @@ bool Scenario::upgradeKstrToCurrent()
         {
             if ( read.forces.forceString[i] > strCapacity &&
                 read.forces.forceString[i] != Chk::StringId::NoString &&
-                read.forces.forceString[i] < 65536 &&
                 size_t(65536-read.forces.forceString[i]) < read.editorStrings.size() )
             {
                 setForceNameStringId(i, 65536-read.forces.forceString[i], Chk::Scope::Editor);
@@ -3433,7 +3434,6 @@ bool Scenario::upgradeKstrToCurrent()
         {
             if ( read.origUnitSettings.nameStringId[i] > strCapacity &&
                 read.origUnitSettings.nameStringId[i] != Chk::StringId::NoString &&
-                read.origUnitSettings.nameStringId[i] < 65536 &&
                 size_t(65536-read.origUnitSettings.nameStringId[i]) < read.editorStrings.size() )
             {
                 setUnitNameStringId(i, 65536-read.origUnitSettings.nameStringId[i], Chk::UseExpSection::No, Chk::Scope::Editor);
@@ -3444,7 +3444,6 @@ bool Scenario::upgradeKstrToCurrent()
         {
             if ( read.unitSettings.nameStringId[i] > strCapacity &&
                 read.unitSettings.nameStringId[i] != Chk::StringId::NoString &&
-                read.unitSettings.nameStringId[i] < 65536 &&
                 size_t(65536-read.unitSettings.nameStringId[i]) < read.editorStrings.size() )
             {
                 setUnitNameStringId(i, 65536-read.unitSettings.nameStringId[i], Chk::UseExpSection::Yes, Chk::Scope::Editor);

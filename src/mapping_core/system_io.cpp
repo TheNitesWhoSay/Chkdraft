@@ -621,7 +621,7 @@ bool lastErrorIndicatedFileNotFound()
     return ::GetLastError() == ERROR_FILE_NOT_FOUND;
 #else
     return false;
-#endif;
+#endif
 }
 
 bool lastErrorIndicatedBadFormat()
@@ -630,7 +630,7 @@ bool lastErrorIndicatedBadFormat()
     return ::GetLastError() == ERROR_BAD_FORMAT;
 #else
     return false;
-#endif;
+#endif
 }
 
 unsigned long getLastError()
@@ -639,5 +639,5 @@ unsigned long getLastError()
     return ::GetLastError();
 #else
     return 0;
-#endif;
+#endif
 }

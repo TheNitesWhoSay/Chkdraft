@@ -1028,17 +1028,17 @@ namespace Chk {
         bool hasSoundArgument() const;
         bool hasBriefingStringArgument() const;
         bool hasBriefingSoundArgument() const;
-        inline bool switchUsed(size_t switchId) const;
-        inline bool locationUsed(size_t locationId) const;
-        inline bool stringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyTrigger) const;
-        inline bool gameStringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyTrigger) const;
-        inline bool commentStringUsed(size_t stringId) const;
-        inline bool briefingStringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyBriefingTrigger) const;
-        inline void markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed) const;
-        inline void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::AnyTrigger) const;
-        inline void markUsedGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::AnyTrigger) const;
-        inline void markUsedCommentStrings(std::bitset<Chk::MaxStrings> & stringIdUsed) const;
-        inline void markUsedBriefingStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::AnyBriefingTrigger) const;
+        bool switchUsed(size_t switchId) const;
+        bool locationUsed(size_t locationId) const;
+        bool stringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyTrigger) const;
+        bool gameStringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyTrigger) const;
+        bool commentStringUsed(size_t stringId) const;
+        bool briefingStringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyBriefingTrigger) const;
+        void markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed) const;
+        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::AnyTrigger) const;
+        void markUsedGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::AnyTrigger) const;
+        void markUsedCommentStrings(std::bitset<Chk::MaxStrings> & stringIdUsed) const;
+        void markUsedBriefingStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::AnyBriefingTrigger) const;
         void remapLocationIds(const std::map<u32, u32> & locationIdRemappings);
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void remapBriefingStringIds(const std::map<u32, u32> & stringIdRemappings);
@@ -1311,9 +1311,10 @@ namespace Chk {
         class InvalidSize : public std::exception
         {
             public:
-                InvalidSize(u32 size, u32 baseFontSize, u32 fontStepSize) : error(error) { }
+                InvalidSize(u32 size, u32 baseFontSize, u32 fontStepSize)
+                    : error(std::to_string(size) + ", " + std::to_string(baseFontSize) + ", " + std::to_string(fontStepSize)) {}
                 virtual const char* what() const throw() { return error.c_str(); }
-                const std::string error;
+                const std::string error {};
             private:
                 InvalidSize(); // Disallow ctor
         };

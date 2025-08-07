@@ -1359,7 +1359,7 @@ namespace Sc {
                 for ( u16 x=0; x<frameWidth && offsetWithinRow < (u32)maxRowLength; totalLines++ )
                 {
                     offsetWithinRow += pixelLine->sizeInBytes();
-                    pixelLine = (const PixelLine*)((u8*)adjacentHorizontalLines)[offsetWithinRow];
+                    pixelLine = reinterpret_cast<const PixelLine*>(((u8*)adjacentHorizontalLines)[offsetWithinRow]);
                 }
                 return totalLines;
             }

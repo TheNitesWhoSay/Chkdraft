@@ -22,7 +22,7 @@ if ( PROJECT_IS_TOP_LEVEL )
   if ( "${CMAKE_CXX_COMPILER_ID}" MATCHES "MSVC" )
     add_compile_options(/permissive-)
   endif ()
-  add_compile_definitions(_UNICODE UNICODE NOMINMAX)
+  add_compile_definitions(_UNICODE UNICODE NOMINMAX _CRT_SECURE_NO_WARNINGS)
   add_subdirectory(${ChkdraftRootPath}/src/cross_cut ${CMAKE_CURRENT_BINARY_DIR}/cross_cut_lib)
 endif()
 
