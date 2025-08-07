@@ -1,6 +1,6 @@
 #include "scr_graphics.h"
 #include <chkdraft/ui/main_windows/gui_map.h>
-#include <cross_cut/logger.h>
+#include "cross_cut/logger.h"
 #include <rarecpp/json.h>
 #include <chrono>
 #include <cstring>

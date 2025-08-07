@@ -1,6 +1,6 @@
 #include "sc.h"
 #include <rarecpp/json.h>
-#include <cross_cut/logger.h>
+#include "cross_cut/logger.h"
 #include "mpq_file.h"
 #include "casc_archive.h"
 #include <algorithm>

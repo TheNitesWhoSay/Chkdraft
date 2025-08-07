@@ -1,5 +1,5 @@
 #include "text_trig_generator.h"
-#include <cross_cut/logger.h>
+#include "cross_cut/logger.h"
 #include "math.h"
 #include <string>
 #include <chrono>

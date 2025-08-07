@@ -1,7 +1,7 @@
 #include "lite_scenario.h"
 #include "sha256.h"
 #include "math.h"
-#include <cross_cut/logger.h>
+#include "cross_cut/logger.h"
 #include <algorithm>
 #include <cstdio>
 #include <exception>

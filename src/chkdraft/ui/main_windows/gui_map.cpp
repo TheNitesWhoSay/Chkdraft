@@ -3,7 +3,7 @@
 #include "ui/chkd_controls/move_to.h"
 #include "mapping/data_file_browsers.h"
 #include "mapping/scr_graphics.h"
-#include <cross_cut/logger.h>
+#include "cross_cut/logger.h"
 #include <WindowsX.h>
 
 bool GuiMap::doAutoBackups = false;

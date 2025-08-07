@@ -1,6 +1,6 @@
 #include "text_trig_compiler.h"
 #include <rarecpp/string_buffer.h>
-#include <cross_cut/logger.h>
+#include "cross_cut/logger.h"
 #include "escape_strings.h"
 #include "math.h"
 #include <cstdio>

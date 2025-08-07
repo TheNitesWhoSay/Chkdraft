@@ -3,7 +3,7 @@
 #include <windows/windows_ui.h>
 #include <string>
 #include <vector>
-#include <cross_cut/logger.h>
+#include "cross_cut/logger.h"
 #include "chkdraft/chkdraft.h"
 
 extern Logger logger;

@@ -1,5 +1,5 @@
 #include "mpq_file.h"
-#include <cross_cut/simple_icu.h>
+#include "cross_cut/simple_icu.h"
 #include <StormLib.h>
 #include "system_io.h"
 #include <iterator>

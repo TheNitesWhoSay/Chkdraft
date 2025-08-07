@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <cross_cut/logger.h>
+#include "cross_cut/logger.h"
 #include <regex>
 
 constexpr const char* testExceptionWhatString = "TEST EXCEPTION";
