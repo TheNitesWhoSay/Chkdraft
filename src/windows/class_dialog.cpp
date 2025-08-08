@@ -1,7 +1,7 @@
 #include "class_dialog.h"
 #include "win_ui_enums.h"
 #include <CommCtrl.h>
-#include <cross_cut/simple_icu.h>
+#include "cross_cut/simple_icu.h"
 
 namespace WinLib {
 

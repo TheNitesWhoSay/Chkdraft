@@ -2,7 +2,7 @@
 #define LOGGERWINDOW_H
 #include <common_files/common_files.h>
 #include <windows/windows_ui.h>
-#include <cross_cut/simple_icu.h>
+#include "cross_cut/simple_icu.h"
 #include <deque>
 #include <ostream>
 #include <streambuf>

@@ -6,7 +6,7 @@
 #include <Windows.h>
 #include <string>
 #include <algorithm>
-#include <cross_cut/simple_icu.h>
+#include "cross_cut/simple_icu.h"
 
 namespace WinLib {
 

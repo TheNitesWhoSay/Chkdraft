@@ -1,6 +1,6 @@
 #include "casc_archive.h"
 #include <CascLib.h>
-#include <cross_cut/simple_icu.h>
+#include "cross_cut/simple_icu.h"
 #include <filesystem>
 #include <fstream>
 
@@ -133,7 +133,7 @@ bool CascArchive::getFile(const std::string & cascPath, ByteBuffer & fileData) c
         {
             size_t fileSize = (size_t)CascGetFileSize(openFile, NULL);
             fileData.expand(fileSize);
-            bool success = CascReadFile(openFile, (void*)fileData.data(), (DWORD)fileSize, (LPDWORD)(&bytesRead));
+            bool success = CascReadFile(openFile, (void*)fileData.data(), (DWORD)fileSize, (PDWORD)(&bytesRead));
             CascCloseFile(openFile);
             return true;
         }
@@ -151,7 +151,7 @@ std::optional<std::vector<u8>> CascArchive::getFile(const std::string & cascPath
         {
             size_t fileSize = (size_t)CascGetFileSize(openFile, NULL);
             auto fileData = std::make_optional<std::vector<u8>>(fileSize);
-            bool success = CascReadFile(openFile, (void*)&fileData.value()[0], (DWORD)fileSize, (LPDWORD)(&bytesRead));
+            bool success = CascReadFile(openFile, (void*)&fileData.value()[0], (DWORD)fileSize, (PDWORD)(&bytesRead));
             CascCloseFile(openFile);
             return success ? fileData : std::nullopt;
         }

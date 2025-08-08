@@ -1,6 +1,6 @@
 #include "basics.h"
 #include "system_io.h"
-#include <cross_cut/simple_icu.h>
+#include "cross_cut/simple_icu.h"
 #include <algorithm>
 #include <cstdio>
 #include <fstream>
@@ -354,11 +354,7 @@ bool makeFileCopy(const std::string & inFilePath, const std::string & outFilePat
 bool makeDirectory(const std::string & directory)
 {
     icux::filestring directoryPath = icux::toFilestring(directory);
-#ifdef WINDOWS_UTF16
-    return _wmkdir(directoryPath.c_str()) == 0 || GetLastError() == ERROR_ALREADY_EXISTS;
-#else
-    return _mkdir(directoryPath.c_str()) == 0 || GetLastError() == ERROR_ALREADY_EXISTS;
-#endif
+    return std::filesystem::create_directories(directoryPath.c_str());
 }
 
 bool removeFile(const std::string & filePath)
@@ -384,6 +380,11 @@ bool removeFiles(const std::string & firstFileName, const std::string & secondFi
     return success;
 }
 
+#ifdef __linux__
+#include <dlfcn.h>
+#include <linux/limits.h>
+#endif
+
 std::optional<std::string> getModuleDirectory(bool includeTrailingSeparator)
 {
 #ifdef _WIN32
@@ -395,6 +396,11 @@ std::optional<std::string> getModuleDirectory(bool includeTrailingSeparator)
         if ( lastBackslashPos != std::string::npos && lastBackslashPos < modulePath.size() )
             return icux::toUtf8(modulePath.substr(0, lastBackslashPos)) + (includeTrailingSeparator ? getSystemPathSeparator() : "");
     }
+#elif defined (__linux__)
+    icux::codepoint cModulePath[PATH_MAX] = {};
+    Dl_info dlInfo {};
+    if ( dladdr((const void*)&getModuleDirectory, &dlInfo) != 0 )
+        return icux::toUtf8(dlInfo.dli_fname);
 #endif
     return std::nullopt;
 }
@@ -621,7 +627,7 @@ bool lastErrorIndicatedFileNotFound()
     return ::GetLastError() == ERROR_FILE_NOT_FOUND;
 #else
     return false;
-#endif;
+#endif
 }
 
 bool lastErrorIndicatedBadFormat()
@@ -630,7 +636,7 @@ bool lastErrorIndicatedBadFormat()
     return ::GetLastError() == ERROR_BAD_FORMAT;
 #else
     return false;
-#endif;
+#endif
 }
 
 unsigned long getLastError()
@@ -639,5 +645,5 @@ unsigned long getLastError()
     return ::GetLastError();
 #else
     return 0;
-#endif;
+#endif
 }

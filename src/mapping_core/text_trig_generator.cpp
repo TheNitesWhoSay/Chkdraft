@@ -1,5 +1,5 @@
 #include "text_trig_generator.h"
-#include <cross_cut/logger.h>
+#include "cross_cut/logger.h"
 #include "math.h"
 #include <string>
 #include <chrono>
@@ -526,12 +526,21 @@ inline void TextTrigGenerator::appendTrigger(StringBuffer & output, const Chk::T
     // Add Flags
     if ( trigger.flags > 0 )
     {
+        static std::string_view zeroes = "00000000000000000000000000000000";
+        static std::array<char, 256> num {};
+
         output += "\n\nFlags:\n";
-        char number[36];
-        _itoa_s(trigger.flags, number, 36, 2); // TODO: FIXME
-        size_t length = std::strlen(number);
-        output += std::string(32-length, '0');
-        output += std::string(number);
+        if ( auto [p, ec] = std::to_chars((char*)num.data(), (char*)num.data() + num.size(), trigger.flags, 2); ec == std::errc{} )
+        {
+            std::size_t totalChars = std::size_t(p-&num[0]);
+            if ( totalChars < 32 )
+                output << zeroes.substr(0, 32-totalChars);
+
+            output << std::string_view(&num[0], totalChars);
+        }
+        else
+            throw std::runtime_error("Failed to get string representation for flags!");
+
         output += ';';
     }
 
@@ -558,6 +567,8 @@ inline void TextTrigGenerator::appendConditionArgument(StringBuffer & output, co
         case Chk::Condition::ArgType::MaskFlag: appendConditionMaskFlag(output, condition.maskFlag); break;
         case Chk::Condition::ArgType::MemoryOffset: appendMemory(output, condition.player); break;
         case Chk::Condition::ArgType::MemoryBitmask: appendBitmask(output, condition.locationId); break;
+
+        case Chk::Condition::ArgType::NoType: break;
     }
 }
 
@@ -609,6 +620,8 @@ inline void TextTrigGenerator::appendActionArgument(StringBuffer & output, const
         case Chk::Action::ArgType::MaskFlag: appendActionMaskFlag(output, action.maskFlag); break;
         case Chk::Action::ArgType::MemoryOffset: appendMemory(output, action.group); break;
         case Chk::Action::ArgType::MemoryBitmask: appendBitmask(output, action.locationId); break;
+
+        case Chk::Action::ArgType::BriefingSlot: case Chk::Action::ArgType::NoType: break;
     }
 }
 
@@ -892,7 +905,7 @@ template <class MapType> bool TextTrigGenerator::prepLocationTable(const MapType
         }
         else if ( loc.stringId > 0 )
         {
-            if ( auto locationName = map.getLocationName<EscString>(i, Chk::Scope::Game) )
+            if ( auto locationName = map.template getLocationName<EscString>(i, Chk::Scope::Game) )
             {
                 if ( quoteArgs )
                     locationTable.push_back( "\"" + *locationName + "\"" );
@@ -923,7 +936,7 @@ template <class MapType> bool TextTrigGenerator::prepUnitTable(const MapType & m
         {
             if ( useCustomNames && unitType < 228 )
             {
-                auto unquotedName = map.getUnitName<EscString>((Sc::Unit::Type)unitType, false);
+                auto unquotedName = map.template getUnitName<EscString>((Sc::Unit::Type)unitType, false);
                 unitName = EscString("\"" + *unquotedName + "\"");
             }
             if ( !unitName )
@@ -932,7 +945,7 @@ template <class MapType> bool TextTrigGenerator::prepUnitTable(const MapType & m
         else
         {
             if ( useCustomNames && unitType < 228 )
-                unitName = map.getUnitName<EscString>((Sc::Unit::Type)unitType, false);
+                unitName = map.template getUnitName<EscString>((Sc::Unit::Type)unitType, false);
             if ( !unitName )
                 unitName = EscString(Sc::Unit::legacyTextTrigDisplayNames[unitType]);
         }
@@ -952,7 +965,7 @@ template <class MapType> bool TextTrigGenerator::prepSwitchTable(const MapType &
 
     for ( size_t switchIndex=0; switchIndex<Chk::TotalSwitches; switchIndex++ )
     {
-        if ( auto switchName = map.getSwitchName<RawString>(switchIndex) )
+        if ( auto switchName = map.template getSwitchName<RawString>(switchIndex) )
         {
             if ( quoteArgs )
                 switchTable.push_back( "\"" + *switchName + "\"" );
@@ -1019,7 +1032,7 @@ template <class MapType> bool TextTrigGenerator::prepGroupTable(const MapType & 
 
     for ( size_t i=0; i<4; i++ )
     {
-        if ( auto forceName = map.getForceName<EscString>((Chk::Force)i) )
+        if ( auto forceName = map.template getForceName<EscString>((Chk::Force)i) )
         {
             if ( quoteArgs )
                 groupTable.push_back("\"" + *forceName + "\"");
@@ -1103,7 +1116,7 @@ template <class MapType> bool TextTrigGenerator::prepStringTable(const MapType &
     {
         if ( stringUsed[i] )
         {
-            if ( auto str = map.getString<EscString>(i, Chk::Scope::Game) )
+            if ( auto str = map.template getString<EscString>(i, Chk::Scope::Game) )
             {
                 EscString newString;
                 for ( auto & character : *str )
@@ -1126,7 +1139,7 @@ template <class MapType> bool TextTrigGenerator::prepStringTable(const MapType &
     {
         if ( extendedStringUsed[i] )
         {
-            if ( auto str = map.getString<EscString>(i, Chk::Scope::Editor) )
+            if ( auto str = map.template getString<EscString>(i, Chk::Scope::Editor) )
             {
                 EscString newString;
                 for ( auto & character : *str )

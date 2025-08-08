@@ -2,7 +2,7 @@
 #define CHKDRAFT_H
 #include <windows/windows_ui.h>
 #include <common_files/common_files.h>
-#include <cross_cut/logger.h>
+#include "cross_cut/logger.h"
 #include "ui/dialog_windows/dialog_windows.h"
 #include "mapping/chkd_plugins.h"
 #include "mapping/color_cycler.h"

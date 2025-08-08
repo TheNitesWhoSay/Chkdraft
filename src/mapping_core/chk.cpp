@@ -729,45 +729,45 @@ bool Chk::Action::hasBriefingSoundArgument() const
     return false;
 }
 
-inline bool Chk::Action::switchUsed(size_t switchId) const
+bool Chk::Action::switchUsed(size_t switchId) const
 {
     return actionType < NumActionTypes && actionType == Chk::Action::Type::SetSwitch && size_t(this->number) == switchId;
 }
 
-inline bool Chk::Action::locationUsed(size_t locationId) const
+bool Chk::Action::locationUsed(size_t locationId) const
 {
     return actionType < NumActionTypes &&
         ((actionUsesLocationArg[actionType] && this->locationId == locationId) ||
          (actionUsesSecondaryLocationArg[actionType] && this->number == locationId));
 }
 
-inline bool Chk::Action::stringUsed(size_t stringId, u32 userMask) const
+bool Chk::Action::stringUsed(size_t stringId, u32 userMask) const
 {
     return actionType < NumActionTypes &&
         (((userMask & Chk::StringUserFlag::TriggerAction) == Chk::StringUserFlag::TriggerAction && actionUsesStringArg[actionType] && this->stringId == stringId) ||
          ((userMask & Chk::StringUserFlag::TriggerActionSound) == Chk::StringUserFlag::TriggerActionSound && actionUsesSoundArg[actionType] && this->soundStringId == stringId));
 }
 
-inline bool Chk::Action::gameStringUsed(size_t stringId, u32 userMask) const
+bool Chk::Action::gameStringUsed(size_t stringId, u32 userMask) const
 {
     return actionType < NumActionTypes &&
         (((userMask & Chk::StringUserFlag::TriggerAction) == Chk::StringUserFlag::TriggerAction && actionUsesGameStringArg[actionType] && this->stringId == stringId) ||
          ((userMask & Chk::StringUserFlag::TriggerActionSound) == Chk::StringUserFlag::TriggerActionSound && actionUsesSoundArg[actionType] && this->soundStringId == stringId));
 }
 
-inline bool Chk::Action::commentStringUsed(size_t stringId) const
+bool Chk::Action::commentStringUsed(size_t stringId) const
 {
     return actionType == Type::Comment && this->stringId == stringId;
 }
 
-inline bool Chk::Action::briefingStringUsed(size_t stringId, u32 userMask) const
+bool Chk::Action::briefingStringUsed(size_t stringId, u32 userMask) const
 {
     return actionType < NumBriefingActionTypes &&
         (((userMask & Chk::StringUserFlag::BriefingTriggerAction) == Chk::StringUserFlag::BriefingTriggerAction && briefingActionUsesStringArg[actionType] && this->stringId == stringId) ||
          ((userMask & Chk::StringUserFlag::BriefingTriggerActionSound) == Chk::StringUserFlag::BriefingTriggerActionSound && briefingActionUsesSoundArg[actionType] && this->soundStringId == stringId));
 }
 
-inline void Chk::Action::markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed) const
+void Chk::Action::markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed) const
 {
     if ( actionType < NumActionTypes )
     {
@@ -779,7 +779,7 @@ inline void Chk::Action::markUsedLocations(std::bitset<Chk::TotalLocations+1> & 
     }
 }
 
-inline void Chk::Action::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask) const
+void Chk::Action::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask) const
 {
     if ( actionType < NumActionTypes )
     {
@@ -791,7 +791,7 @@ inline void Chk::Action::markUsedStrings(std::bitset<Chk::MaxStrings> & stringId
     }
 }
 
-inline void Chk::Action::markUsedGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask) const
+void Chk::Action::markUsedGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask) const
 {
     if ( actionType < NumActionTypes )
     {
@@ -803,13 +803,13 @@ inline void Chk::Action::markUsedGameStrings(std::bitset<Chk::MaxStrings> & stri
     }
 }
 
-inline void Chk::Action::markUsedCommentStrings(std::bitset<Chk::MaxStrings> & stringIdUsed) const
+void Chk::Action::markUsedCommentStrings(std::bitset<Chk::MaxStrings> & stringIdUsed) const
 {
     if ( actionType == Type::Comment && stringId > 0 && stringId < Chk::MaxStrings )
         stringIdUsed[stringId] = true;
 }
 
-inline void Chk::Action::markUsedBriefingStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask) const
+void Chk::Action::markUsedBriefingStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask) const
 {
     if ( actionType < NumBriefingActionTypes )
     {
@@ -1835,9 +1835,9 @@ StrProp::StrProp(Chk::StringProperties stringProperties) :
     isBold((stringProperties.flags & Chk::StrFlags::bold) == Chk::StrFlags::bold), isUnderlined((stringProperties.flags & Chk::StrFlags::underlined) == Chk::StrFlags::underlined),
     isItalics((stringProperties.flags & Chk::StrFlags::italics) == Chk::StrFlags::italics),
     size(Chk::baseFontSize +
-        ((stringProperties.flags & Chk::StrFlags::sizePlusFourSteps) == Chk::StrFlags::sizePlusFourSteps) ? 4*Chk::fontStepSize : 0 +
-        ((stringProperties.flags & Chk::StrFlags::sizePlusTwoSteps) == Chk::StrFlags::sizePlusTwoSteps) ? 2*Chk::fontStepSize : 0 +
-        ((stringProperties.flags & Chk::StrFlags::sizePlusOneStep) == Chk::StrFlags::sizePlusOneStep) ? 1*Chk::fontStepSize : 0)
+        (((stringProperties.flags & Chk::StrFlags::sizePlusFourSteps) == Chk::StrFlags::sizePlusFourSteps) ? 4*Chk::fontStepSize : 0) +
+        (((stringProperties.flags & Chk::StrFlags::sizePlusTwoSteps) == Chk::StrFlags::sizePlusTwoSteps) ? 2*Chk::fontStepSize : 0) +
+        (((stringProperties.flags & Chk::StrFlags::sizePlusOneStep) == Chk::StrFlags::sizePlusOneStep) ? 1*Chk::fontStepSize : 0))
 {
     
 }

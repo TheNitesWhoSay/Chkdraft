@@ -1,12 +1,13 @@
 #include "scenario.h"
 #include "sha256.h"
 #include "math.h"
-#include <cross_cut/logger.h>
+#include "cross_cut/logger.h"
 #include <algorithm>
 #include <cstdio>
 #include <exception>
 #include <functional>
 #include <iostream>
+#include <iterator>
 #include <sstream>
 #include <string>
 #include <unordered_map>
@@ -600,12 +601,12 @@ Scenario::Scenario(Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t t
     mapData->locations[Chk::LocationId::Anywhere] = Chk::Location{.right = (u32)width*32, .bottom = (u32)height*32, .stringId = 3};
 
     if ( this->isHybridOrAbove() )
-        mapData->saveSections.push_back(MapData::Section{Chk::SectionName::TYPE});
+        mapData->saveSections.push_back(::MapData::Section{Chk::SectionName::TYPE});
     
-    mapData->saveSections.push_back(MapData::Section{Chk::SectionName::VER});
+    mapData->saveSections.push_back(::MapData::Section{Chk::SectionName::VER});
 
     if ( !this->isHybridOrAbove() )
-        mapData->saveSections.push_back(MapData::Section{Chk::SectionName::IVER});
+        mapData->saveSections.push_back(::MapData::Section{Chk::SectionName::IVER});
 
     mapData->saveSections.insert(mapData->saveSections.end(), {
         {Chk::SectionName::IVE2}, {Chk::SectionName::VCOD}, {Chk::SectionName::IOWN}, {Chk::SectionName::OWNR},
@@ -768,7 +769,7 @@ void read(std::istream & is, Value & value, std::streamsize sectionSize)
 
 void Scenario::parse(std::istream & is, ::MapData & mapData, Chk::SectionName sectionName, Chk::SectionSize sectionSize)
 {
-    auto & section = mapData.addSaveSection(MapData::Section{sectionName});
+    auto & section = mapData.addSaveSection(::MapData::Section{sectionName});
     switch ( sectionName )
     {
         case SectionName::MRGN: // Manual deserialization to account for zeroth location being unused
@@ -1208,7 +1209,7 @@ bool Scenario::deserialize(Chk::SerializedChk* data)
     return false;
 }
 
-std::size_t Scenario::addSaveSection(MapData::Section section)
+std::size_t Scenario::addSaveSection(::MapData::Section section)
 {
     if ( hasSection(section.sectionName) )
     {
@@ -1229,7 +1230,7 @@ std::size_t Scenario::addSaveSection(MapData::Section section)
 void Scenario::addSaveSection(Chk::SectionName sectionName)
 {
     if ( !hasSection(sectionName) )
-        Scenario::addSaveSection(MapData::Section{sectionName, std::nullopt});
+        Scenario::addSaveSection(::MapData::Section{sectionName, std::nullopt});
 }
 
 void Scenario::removeSaveSection(Chk::SectionName sectionName)
@@ -1780,6 +1781,7 @@ void Scenario::markValidUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed,
         
         }
         break;
+        default: break;
     }
 }
 
@@ -1865,6 +1867,7 @@ size_t Scenario::findString(const StringType & str, Chk::Scope storageScope) con
                 size_t editorResult = findEditorString();
                 return editorResult != Chk::StringId::NoString ? editorResult : findGameString();
             }
+        default: break;
     }
     return size_t(Chk::StringId::NoString);
 }
@@ -2078,6 +2081,7 @@ void Scenario::deleteUnusedStrings(Chk::Scope storageScope)
         case Chk::Scope::Game: deleteUnusedGameStrings(); break;
         case Chk::Scope::Editor: deleteUnusedEditorStrings(); break;
         case Chk::Scope::Both: deleteUnusedGameStrings(); deleteUnusedEditorStrings(); break;
+        default: break;
     }
 }
 
@@ -2472,6 +2476,7 @@ size_t Scenario::getUnitNameStringId(Sc::Unit::Type unitType, Chk::UseExpSection
             case Chk::UseExpSection::No: return read.editorStringOverrides.unitName[unitType];
             case Chk::UseExpSection::YesIfAvailable: return read.editorStringOverrides.expUnitName[unitType] != 0 ? read.editorStringOverrides.expUnitName[unitType] : read.editorStringOverrides.unitName[unitType];
             case Chk::UseExpSection::NoIfOrigAvailable: return read.editorStringOverrides.unitName[unitType] != 0 ? read.editorStringOverrides.unitName[unitType] : read.editorStringOverrides.expUnitName[unitType];
+            default: break;
         }
     }
     return 0;
@@ -2610,6 +2615,7 @@ std::optional<StringType> Scenario::getString(size_t gameStringId, size_t editor
         case Chk::Scope::GameOverEditor: return gameStringId != 0 ? getString<StringType>(gameStringId, Chk::Scope::Game) : getString<StringType>(editorStringId, Chk::Scope::Editor);
         case Chk::Scope::Either:
         case Chk::Scope::EditorOverGame: return editorStringId != 0 ? getString<StringType>(editorStringId, Chk::Scope::Editor) : getString<StringType>(gameStringId, Chk::Scope::Game);
+        default: break;
     }
     return std::nullopt;
 }
@@ -3043,7 +3049,7 @@ void Scenario::syncKstringsToBytes(std::vector<u8> & stringBytes, u32 requestedC
         else
         {
             auto prop = read.editorStrings[i]->properties;
-            (u32 &)stringBytes[stringPropertiesStart+sizeof(u32)*i] = (u32 &)Chk::StringProperties(prop.red, prop.green, prop.blue, prop.isUsed, prop.hasPriority, prop.isBold, prop.isUnderlined, prop.isItalics, prop.size);
+            (u32 &)stringBytes[stringPropertiesStart+sizeof(u32)*i] = (u32)Chk::StringProperties(prop.red, prop.green, prop.blue, prop.isUsed, prop.hasPriority, prop.isBold, prop.isUnderlined, prop.isItalics, prop.size);
             (u32 &)stringBytes[sizeof(u32)+sizeof(u32)*i] = u32(stringBytes.size());
             stringBytes.insert(stringBytes.end(), read.editorStrings[i]->str.c_str(), read.editorStrings[i]->str.c_str()+read.editorStrings[i]->length()+1);
         }
@@ -3370,7 +3376,6 @@ bool Scenario::upgradeKstrToCurrent()
             const auto & location = read.locations[locationIndex];
             if ( location.stringId > strCapacity &&
                  location.stringId != Chk::StringId::NoString &&
-                 location.stringId < 65536 &&
                  size_t(65536-location.stringId) < read.editorStrings.size() )
             {
                 edit->editorStringOverrides.locationName[locationIndex] = 65536-location.stringId;
@@ -3380,7 +3385,6 @@ bool Scenario::upgradeKstrToCurrent()
 
         if ( read.scenarioProperties.scenarioNameStringId > strCapacity &&
             read.scenarioProperties.scenarioNameStringId != Chk::StringId::NoString &&
-            read.scenarioProperties.scenarioNameStringId < 65536 &&
             size_t(65536-read.scenarioProperties.scenarioNameStringId) < read.editorStrings.size() )
         {
             setScenarioNameStringId(65536-read.scenarioProperties.scenarioNameStringId, Chk::Scope::Editor);
@@ -3389,7 +3393,6 @@ bool Scenario::upgradeKstrToCurrent()
 
         if ( read.scenarioProperties.scenarioDescriptionStringId > strCapacity &&
             read.scenarioProperties.scenarioDescriptionStringId != Chk::StringId::NoString &&
-            read.scenarioProperties.scenarioDescriptionStringId < 65536 &&
             size_t(65536-read.scenarioProperties.scenarioDescriptionStringId) < read.editorStrings.size() )
         {
             setScenarioDescriptionStringId(65536-read.scenarioProperties.scenarioDescriptionStringId, Chk::Scope::Editor);
@@ -3400,7 +3403,6 @@ bool Scenario::upgradeKstrToCurrent()
         {
             if ( read.forces.forceString[i] > strCapacity &&
                 read.forces.forceString[i] != Chk::StringId::NoString &&
-                read.forces.forceString[i] < 65536 &&
                 size_t(65536-read.forces.forceString[i]) < read.editorStrings.size() )
             {
                 setForceNameStringId(i, 65536-read.forces.forceString[i], Chk::Scope::Editor);
@@ -3433,7 +3435,6 @@ bool Scenario::upgradeKstrToCurrent()
         {
             if ( read.origUnitSettings.nameStringId[i] > strCapacity &&
                 read.origUnitSettings.nameStringId[i] != Chk::StringId::NoString &&
-                read.origUnitSettings.nameStringId[i] < 65536 &&
                 size_t(65536-read.origUnitSettings.nameStringId[i]) < read.editorStrings.size() )
             {
                 setUnitNameStringId(i, 65536-read.origUnitSettings.nameStringId[i], Chk::UseExpSection::No, Chk::Scope::Editor);
@@ -3444,7 +3445,6 @@ bool Scenario::upgradeKstrToCurrent()
         {
             if ( read.unitSettings.nameStringId[i] > strCapacity &&
                 read.unitSettings.nameStringId[i] != Chk::StringId::NoString &&
-                read.unitSettings.nameStringId[i] < 65536 &&
                 size_t(65536-read.unitSettings.nameStringId[i]) < read.editorStrings.size() )
             {
                 setUnitNameStringId(i, 65536-read.unitSettings.nameStringId[i], Chk::UseExpSection::Yes, Chk::Scope::Editor);

@@ -1,8 +1,8 @@
 #include "debug.h"
 #include "common_files.h"
 #include <windows/windows_ui.h>
-#include <cross_cut/logger.h>
-#include <cross_cut/simple_icu.h>
+#include "cross_cut/logger.h"
+#include "cross_cut/simple_icu.h"
 #include <crtdbg.h>
 #include <cstdarg>
 #include <cstdio>

@@ -137,7 +137,7 @@ struct MapData
             for ( std::size_t i=0; i<saveSections.size(); ++i )
             {
                 if ( section.sectionName == saveSections[i].sectionName )
-                    return section;
+                    return saveSections[i];
             }
             throw std::logic_error("An internal error occured");
         }

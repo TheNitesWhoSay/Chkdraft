@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <cross_cut/logger.h>
+#include "cross_cut/logger.h"
 #include <mapping_core/mapping_core.h>
 #include <regex>
 
@@ -18,6 +18,11 @@ Logger logger; // An "extern Logger logger" may be declared in some of MappingCo
 /**
     This file purposefully tests several operations that involve truncating values, using underflows and overflows, the following pragmas disable warnings for these
 */
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wconstant-conversion"
+#pragma clang diagnostic ignored "-Winteger-overflow"
+#endif
+
 #pragma warning(push)
 #pragma warning(disable: 4305) // Disable warnings for '=' truncation of non-constants
 #pragma warning(disable: 4307) // Disable warnings for integral constant overflow
