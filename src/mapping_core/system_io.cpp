@@ -380,6 +380,10 @@ bool removeFiles(const std::string & firstFileName, const std::string & secondFi
     return success;
 }
 
+#ifdef __linux__
+#include <dlfcn.h>
+#endif
+
 std::optional<std::string> getModuleDirectory(bool includeTrailingSeparator)
 {
 #ifdef _WIN32
@@ -391,6 +395,11 @@ std::optional<std::string> getModuleDirectory(bool includeTrailingSeparator)
         if ( lastBackslashPos != std::string::npos && lastBackslashPos < modulePath.size() )
             return icux::toUtf8(modulePath.substr(0, lastBackslashPos)) + (includeTrailingSeparator ? getSystemPathSeparator() : "");
     }
+#elif defined (__linux__)
+    icux::codepoint cModulePath[MAX_PATH] = {};
+    Dl_info dlInfo {};
+    if ( dladdr(&getModuleDirectory, &dlInfo) != 0 )
+        return icux::toUtf8(dli_fname);
 #endif
     return std::nullopt;
 }
