@@ -1419,9 +1419,9 @@ namespace Chk {
         UseDefault playerUnitUsesDefault[Sc::Player::Total][Sc::Unit::TotalTypes] {};
 
         PUNI() {
-            memset(&playerUnitBuildable, (int)Chk::Available::Yes, Sc::Player::Total*Sc::Unit::TotalTypes);
-            memset(&defaultUnitBuildable, (int)Chk::Available::Yes, Sc::Unit::TotalTypes);
-            memset(&playerUnitUsesDefault, (int)Chk::Available::Yes, Sc::Player::Total*Sc::Unit::TotalTypes);
+            std::memset(&playerUnitBuildable, (int)Chk::Available::Yes, Sc::Player::Total*Sc::Unit::TotalTypes);
+            std::memset(&defaultUnitBuildable, (int)Chk::Available::Yes, Sc::Unit::TotalTypes);
+            std::memset(&playerUnitUsesDefault, (int)Chk::Available::Yes, Sc::Player::Total*Sc::Unit::TotalTypes);
         }
 
         REFLECT(PUNI, playerUnitBuildable, defaultUnitBuildable, playerUnitUsesDefault)
@@ -1439,7 +1439,7 @@ namespace Chk {
         UseDefault playerUpgradeUsesDefault[Sc::Player::Total][Sc::Upgrade::TotalOriginalTypes] {};
 
         UPGR() {
-            memset(&playerUpgradeUsesDefault, (int)Chk::UseDefault::Yes, Sc::Player::Total*Sc::Upgrade::TotalOriginalTypes);
+            std::memset(&playerUpgradeUsesDefault, (int)Chk::UseDefault::Yes, Sc::Player::Total*Sc::Upgrade::TotalOriginalTypes);
         }
 
         REFLECT(UPGR, playerMaxUpgradeLevel, playerStartUpgradeLevel, defaultMaxLevel, defaultStartLevel, playerUpgradeUsesDefault)
@@ -1460,8 +1460,8 @@ namespace Chk {
         UseDefault playerUsesDefaultsForTech[Sc::Player::Total][Sc::Tech::TotalOriginalTypes] {};
 
         PTEC() {
-            memset(&techAvailableByDefault, (int)Chk::Available::Yes, Sc::Tech::TotalOriginalTypes);
-            memset(&playerUsesDefaultsForTech, (int)Chk::UseDefault::Yes, Sc::Player::Total*Sc::Tech::TotalOriginalTypes);
+            std::memset(&techAvailableByDefault, (int)Chk::Available::Yes, Sc::Tech::TotalOriginalTypes);
+            std::memset(&playerUsesDefaultsForTech, (int)Chk::UseDefault::Yes, Sc::Player::Total*Sc::Tech::TotalOriginalTypes);
         }
 
         REFLECT(PTEC, techAvailableForPlayer, techResearchedForPlayer, techAvailableByDefault, techResearchedByDefault, playerUsesDefaultsForTech)
@@ -1554,7 +1554,7 @@ namespace Chk {
         u16 upgradeDamage[Sc::Weapon::TotalOriginal] {};
 
         UNIS() {
-            memset(&useDefault, (int)Chk::UseDefault::Yes, Sc::Unit::TotalTypes);
+            std::memset(&useDefault, (int)Chk::UseDefault::Yes, Sc::Unit::TotalTypes);
         }
 
         REFLECT(UNIS, useDefault, hitpoints, shieldPoints, armorLevel, buildTime, mineralCost, gasCost, nameStringId, baseDamage, upgradeDamage)
@@ -1570,7 +1570,7 @@ namespace Chk {
         u16 researchTimeFactor[Sc::Upgrade::TotalOriginalTypes] {};
 
         UPGS() {
-            memset(&useDefault, (int)Chk::UseDefault::Yes, Sc::Upgrade::TotalOriginalTypes);
+            std::memset(&useDefault, (int)Chk::UseDefault::Yes, Sc::Upgrade::TotalOriginalTypes);
         }
 
         REFLECT(UPGS, useDefault, baseMineralCost, mineralCostFactor, baseGasCost, gasCostFactor, baseResearchTime, researchTimeFactor)
@@ -1584,7 +1584,7 @@ namespace Chk {
         u16 energyCost[Sc::Tech::TotalOriginalTypes] {};
 
         TECS() {
-            memset(&useDefault, (int)Chk::UseDefault::Yes, Sc::Tech::TotalOriginalTypes);
+            std::memset(&useDefault, (int)Chk::UseDefault::Yes, Sc::Tech::TotalOriginalTypes);
         }
 
         REFLECT(TECS, useDefault, mineralCost, gasCost, researchTime, energyCost)
@@ -1614,7 +1614,7 @@ namespace Chk {
         UseDefault playerUpgradeUsesDefault[Sc::Player::Total][Sc::Upgrade::TotalTypes] {};
 
         PUPx() {
-            memset(&playerUpgradeUsesDefault, (int)Chk::UseDefault::Yes, Sc::Player::Total*Sc::Upgrade::TotalTypes);
+            std::memset(&playerUpgradeUsesDefault, (int)Chk::UseDefault::Yes, Sc::Player::Total*Sc::Upgrade::TotalTypes);
         }
 
         REFLECT(PUPx, playerMaxUpgradeLevel, playerStartUpgradeLevel, defaultMaxLevel, defaultStartLevel, playerUpgradeUsesDefault)
@@ -1640,8 +1640,8 @@ namespace Chk {
         UseDefault playerUsesDefaultsForTech[Sc::Player::Total][Sc::Tech::TotalTypes] {};
 
         PTEx() {
-            memset(&techAvailableByDefault, (int)Chk::Available::Yes, Sc::Tech::TotalTypes);
-            memset(&playerUsesDefaultsForTech, (int)Chk::UseDefault::Yes, Sc::Player::Total*Sc::Tech::TotalTypes);
+            std::memset(&techAvailableByDefault, (int)Chk::Available::Yes, Sc::Tech::TotalTypes);
+            std::memset(&playerUsesDefaultsForTech, (int)Chk::UseDefault::Yes, Sc::Player::Total*Sc::Tech::TotalTypes);
         }
 
         REFLECT(PTEx, techAvailableForPlayer, techResearchedForPlayer, techAvailableByDefault, techResearchedByDefault, playerUsesDefaultsForTech)
@@ -1660,7 +1660,7 @@ namespace Chk {
         u16 upgradeDamage[Sc::Weapon::Total] {};
 
         UNIx() {
-            memset(&useDefault, (int)Chk::UseDefault::Yes, Sc::Unit::TotalTypes);
+            std::memset(&useDefault, (int)Chk::UseDefault::Yes, Sc::Unit::TotalTypes);
         }
 
         REFLECT(UNIx, useDefault, hitpoints, shieldPoints, armorLevel, buildTime, mineralCost, gasCost, nameStringId, baseDamage, upgradeDamage)
@@ -1677,7 +1677,7 @@ namespace Chk {
         u16 researchTimeFactor[Sc::Upgrade::TotalTypes] {};
 
         UPGx() {
-            memset(&useDefault, (int)Chk::UseDefault::Yes, Sc::Upgrade::TotalTypes);
+            std::memset(&useDefault, (int)Chk::UseDefault::Yes, Sc::Upgrade::TotalTypes);
         }
 
         REFLECT(UPGx, useDefault, unused, baseMineralCost, mineralCostFactor, baseGasCost, gasCostFactor, baseResearchTime, researchTimeFactor)
@@ -1691,7 +1691,7 @@ namespace Chk {
         u16 energyCost[Sc::Tech::TotalTypes] {};
 
         TECx() {
-            memset(&useDefault, (int)Chk::UseDefault::Yes, Sc::Tech::TotalTypes);
+            std::memset(&useDefault, (int)Chk::UseDefault::Yes, Sc::Tech::TotalTypes);
         }
 
         REFLECT(TECx, useDefault, mineralCost, gasCost, researchTime, energyCost)
