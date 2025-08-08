@@ -354,11 +354,7 @@ bool makeFileCopy(const std::string & inFilePath, const std::string & outFilePat
 bool makeDirectory(const std::string & directory)
 {
     icux::filestring directoryPath = icux::toFilestring(directory);
-#ifdef WINDOWS_UTF16
-    return _wmkdir(directoryPath.c_str()) == 0 || GetLastError() == ERROR_ALREADY_EXISTS;
-#else
-    return _mkdir(directoryPath.c_str()) == 0 || GetLastError() == ERROR_ALREADY_EXISTS;
-#endif
+    return std::filesystem::create_directories(directoryPath.c_str());
 }
 
 bool removeFile(const std::string & filePath)

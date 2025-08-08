@@ -1,5 +1,6 @@
 #ifndef BASICS_H
 #define BASICS_H
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <memory>
