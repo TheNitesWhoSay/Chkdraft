@@ -505,17 +505,17 @@ namespace Sc {
         };
         
 #pragma pack(push, 1)
-        __declspec(align(1)) struct DatFile
+        struct alignas(1) DatFile
         {
             enum_t(IdRange, size_t, {
                 From0To105 = 106,
                 From106To201 = 96
             });
-            __declspec(align(1)) struct Dimensions {
+            struct alignas(1) Dimensions {
                 u16 width;
                 u16 height;
             };
-            __declspec(align(1)) struct Extent {
+            struct alignas(1) Extent {
                 u16 left;
                 u16 up;
                 u16 right;
@@ -577,7 +577,7 @@ namespace Sc {
             u8 broodWarUnitFlag[TotalTypes];
             u16 starEditAvailabilityFlags[TotalTypes];
         };
-        __declspec(align(1)) struct FlingyDatFile
+        struct alignas(1) FlingyDatFile
         {
             u16 sprite[TotalFlingies];
             u32 topSpeed[TotalFlingies];
@@ -1161,7 +1161,7 @@ namespace Sc {
         };
         
 #pragma pack(push, 1)
-        __declspec(align(1)) struct DatFile
+        struct alignas(1) DatFile
         {
             enum_t(IdRange, size_t, {
                 From0To129 = 130,
@@ -1175,7 +1175,7 @@ namespace Sc {
             u8 selectionCircleImage[IdRange::From130To516]; // Id 130-516 only
             u8 selectionCircleOffset[IdRange::From130To516]; // Id 130-516 only
         };
-        __declspec(align(1)) struct ImageDatFile
+        struct alignas(1) ImageDatFile
         {
             u32 grpFile[TotalImages]; // image.tbl index
             u8 graphicTurns[TotalImages];
@@ -1192,24 +1192,24 @@ namespace Sc {
             u32 landingDustOverlay[TotalImages];
             u32 liftOffOverlay[TotalImages];
         };
-        __declspec(align(1)) struct IScriptDatFileHeader
+        struct alignas(1) IScriptDatFileHeader
         {
             u16 isIdTableOffset = 0;
             // lots more...
         };
-        __declspec(align(1)) struct IScriptIdTableEntry // Last entry has ID = 0xFFFF, offset = 0x0000
+        struct alignas(1) IScriptIdTableEntry // Last entry has ID = 0xFFFF, offset = 0x0000
         {
             u16 id = 0; // Same as in images.dat
             u16 offset = 0;
         };
-        __declspec(align(1)) struct IScriptAnimationHeader
+        struct alignas(1) IScriptAnimationHeader
         {
             u32 scpe = 1162888019; // Hardcoded "SCPE"
             u16 animationCount = 0; // AnimationsOffset's size is animationCount & 0xFFFE
             u16 unknown = 0x0000;
             u16 animationsOffset[1] {0}; // Offset to each animation
         };
-        __declspec(align(1)) struct IScriptAnimation
+        struct alignas(1) IScriptAnimation
         {
             u8 code;
             u8 params[1]; // Size depends on the Op/code
@@ -1311,7 +1311,7 @@ namespace Sc {
         static std::vector<std::vector<ParamType>> OpParams;
         static std::vector<size_t> ParamSize;
         
-        __declspec(align(1)) struct PixelLine {
+        struct alignas(1) PixelLine {
             enum_t(Header, u8, {
                 // If (header & IsTransparentLine): place horizontal transparent line of (header & TransparentLineLength) pixels in length
                 IsTransparentLine = BIT_7,
@@ -1349,7 +1349,7 @@ namespace Sc {
 
             constexpr static size_t MinimumSize = 1;
         }; // 1 <= Size <= 64
-        __declspec(align(1)) struct PixelRow {
+        struct alignas(1) PixelRow {
             PixelLine adjacentHorizontalLines[1]; // One pixel row is made up of an indeterminate number of adjacent horizontal lines, these lines continue until you've placed the pixel at frameWidth-1
 
             inline u8 totalLines(u8 frameWidth, u16 maxRowLength) const {
@@ -1366,18 +1366,18 @@ namespace Sc {
 
             constexpr static size_t MinimumSize = 1;
         }; // Size >= 1
-        __declspec(align(1)) struct GrpFrame {
+        struct alignas(1) GrpFrame {
             u16 rowOffsets[1]; // u16 rowOffsets[frameHeight] // One frame is made up of frameHeight pixel rows
             // PixelRow rows[frameHeight] // One frame is made up of frameHeight pixel rows, the size of a PixelRow may vary
         }; // Size >= 3*frameHeight
-        __declspec(align(1)) struct GrpFrameHeader {
+        struct alignas(1) GrpFrameHeader {
             u8 xOffset;
             u8 yOffset;
             u8 frameWidth;
             u8 frameHeight;
             u32 frameOffset;
         };
-        __declspec(align(1)) struct GrpFile {
+        struct alignas(1) GrpFile {
             u16 numFrames;
             u16 grpWidth;
             u16 grpHeight;
@@ -1672,7 +1672,7 @@ namespace Sc {
         };
         
 #pragma pack(push, 1)
-        __declspec(align(1)) struct OriginalDatFile
+        struct alignas(1) OriginalDatFile
         {
             u16 mineralCost[TotalOriginalTypes];
             u16 mineralFactor[TotalOriginalTypes];
@@ -1686,7 +1686,7 @@ namespace Sc {
             u8 race[TotalOriginalTypes];
             u8 maxRepeats[TotalOriginalTypes];
         };
-        __declspec(align(1)) struct DatFile
+        struct alignas(1) DatFile
         {
             u16 mineralCost[TotalTypes];
             u16 mineralFactor[TotalTypes];
@@ -1778,7 +1778,7 @@ namespace Sc {
         };
         
 #pragma pack(push, 1)
-        __declspec(align(1)) struct OriginalDatFile
+        struct alignas(1) OriginalDatFile
         {
             u16 mineralCost[TotalOriginalTypes];
             u16 vespeneCost[TotalOriginalTypes];
@@ -1790,7 +1790,7 @@ namespace Sc {
             u8 race[TotalOriginalTypes];
             u8 unused[TotalOriginalTypes];
         };
-        __declspec(align(1)) struct DatFile
+        struct alignas(1) DatFile
         {
             u16 mineralCost[TotalTypes];
             u16 vespeneCost[TotalTypes];
@@ -2426,7 +2426,7 @@ namespace Sc {
         static const std::unordered_map<Sc::Ai::ScriptId, std::string> scriptIdStr;
         
 #pragma pack(push, 1)
-        __declspec(align(1)) struct Entry
+        struct alignas(1) Entry
         {
             enum_t(Flags, u32, { // u32
                 UseWithRunAiScriptAtLocation = 0x1,
@@ -2458,7 +2458,7 @@ namespace Sc {
 
     static constexpr size_t NumColors = 256;
 #pragma pack(push, 1)
-    __declspec(align(1)) struct SystemColor {
+    struct alignas(1) SystemColor {
 #ifdef _WIN32
         // RGBQUAD format
         u8 blue;
@@ -2648,7 +2648,7 @@ namespace Sc {
         });
         
 #pragma pack(push, 1)
-        __declspec(align(1)) struct DatEntry
+        struct alignas(1) DatEntry
         {
             u16 label;
             u32 graphics;
@@ -2729,7 +2729,7 @@ namespace Sc {
     {
     public:
 #pragma pack(push, 1)
-        __declspec(align(1)) struct PcxFile
+        struct alignas(1) PcxFile
         {
             u8 manufacturer;
             u8 verInfo;
@@ -2826,7 +2826,7 @@ namespace Sc {
         };
 
         #pragma pack(push, 1)
-        __declspec(align(1)) struct DirectionalLinks
+        struct alignas(1) DirectionalLinks
         {
             Link left = Link::None;
             Link top = Link::None;
@@ -2845,13 +2845,13 @@ namespace Sc {
                 return !isAllHardLinks() && !hasNoHardLinks();
             }
         };
-        __declspec(align(1)) struct Rect {
+        struct alignas(1) Rect {
             uint16_t left;
             uint16_t top;
             uint16_t right;
             uint16_t bottom;
         };
-        __declspec(align(1)) struct TileGroup {
+        struct alignas(1) TileGroup {
 
             enum_t(Flags, uint16_t, {
                 Walkable = BIT_0, // Overwritten for individual tiles based on VF4
@@ -3784,7 +3784,7 @@ namespace Sc {
 
         using TileGroup = Isom::TileGroup;
 #pragma pack(push, 1)
-        __declspec(align(1)) struct DoodadCv5 {
+        struct alignas(1) DoodadCv5 {
             u16 index; // Always 1 for doodads
             u16 flags; // 0x1000 = sprite overlay (in SC, receeding creep), 0x2000 = unit overlay, 0x4000 = overlay flipped (in SC, temporary creep)
             u16 overlayIndex; // Sprites.dat or Units.dat index, depending on overlay flags
@@ -3797,11 +3797,11 @@ namespace Sc {
             u16 unknown2; // Always 0
             u16 megaTileRef[16]; // To VF4/VX4
         };
-        __declspec(align(1)) struct DoodadPlacibility {
+        struct alignas(1) DoodadPlacibility {
             u16 tileGroup[256]; // [y*doodadTileWidth+x] tileGroup/cv5 index, 0 for place anywhere
         };
-        __declspec(align(1)) struct TileFlags {
-            __declspec(align(1))struct MiniTileFlags {
+        struct alignas(1) TileFlags {
+            struct alignas(1) MiniTileFlags {
                 enum_t(Flags, u16, {
                     Walkable = BIT_0,
                     MidElevation = BIT_1,
@@ -3827,8 +3827,8 @@ namespace Sc {
 
             MiniTileFlags miniTileFlags[4][4];
         };
-        __declspec(align(1)) struct TileGraphics {
-            __declspec(align(1))struct MiniTileGraphics {
+        struct alignas(1) TileGraphics {
+            struct alignas(1) MiniTileGraphics {
                 enum_t(Graphics, u16, {
                     Flipped = BIT_0,
                     Vr4Index = u16_max & x16BIT_0
@@ -3842,8 +3842,8 @@ namespace Sc {
 
             MiniTileGraphics miniTileGraphics[4][4];
         };
-        __declspec(align(1)) struct TileGraphicsEx {
-            __declspec(align(1))struct MiniTileGraphics {
+        struct alignas(1) TileGraphicsEx {
+            struct alignas(1) MiniTileGraphics {
                 enum_t(Graphics, u32, {
                     Flipped = BIT_0,
                     Vr4Index = u32_max & x32BIT_0
@@ -3884,42 +3884,42 @@ namespace Sc {
                 }
             } {}
         };
-        __declspec(align(1)) struct MiniTilePixels {
+        struct alignas(1) MiniTilePixels {
             u8 wpeIndex[8][8];
         };
-        __declspec(align(1)) struct WpeColor {
+        struct alignas(1) WpeColor {
             u8 red;
             u8 green;
             u8 blue;
             u8 null;
         };
 
-        __declspec(align(1)) struct Cv5Dat {
+        struct alignas(1) Cv5Dat {
             static constexpr size_t MaxTileGroups = 1024;
 
             TileGroup tileGroups[MaxTileGroups];
 
             static inline size_t tileGroupsSize(size_t cv5FileSize) { return cv5FileSize/sizeof(TileGroup); }
         };
-        __declspec(align(1)) struct Vf4Dat {
+        struct alignas(1) Vf4Dat {
             TileFlags tileFlags[1];
 
             static inline size_t size(size_t fileSize) { return fileSize/sizeof(TileFlags); }
         };
-        __declspec(align(1)) struct Vx4Dat {
+        struct alignas(1) Vx4Dat {
             TileGraphicsEx tileGraphics[1];
 
             static inline size_t size(bool extended, size_t fileSize) { return extended ? fileSize/sizeof(TileGraphicsEx) : fileSize/sizeof(TileGraphics); }
         };
-        __declspec(align(1)) struct Vr4Dat {
+        struct alignas(1) Vr4Dat {
             MiniTilePixels miniTilePixels[1];
 
             static inline size_t size(size_t fileSize) { return fileSize/sizeof(MiniTilePixels); }
         };
-        __declspec(align(1)) struct WpeDat {
+        struct alignas(1) WpeDat {
             WpeColor color[NumColors];
         };
-        __declspec(align(1)) struct DdData {
+        struct alignas(1) DdData {
             DoodadPlacibility placibility[512];
             
             static inline size_t size(size_t ddDataFileSize) { return ddDataFileSize/sizeof(DoodadPlacibility); }
