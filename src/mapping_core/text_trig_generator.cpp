@@ -526,12 +526,21 @@ inline void TextTrigGenerator::appendTrigger(StringBuffer & output, const Chk::T
     // Add Flags
     if ( trigger.flags > 0 )
     {
+        static std::string_view zeroes = "00000000000000000000000000000000";
+        static std::array<char, 256> num {};
+
         output += "\n\nFlags:\n";
-        char number[36];
-        _itoa_s(trigger.flags, number, 36, 2); // TODO: FIXME
-        size_t length = std::strlen(number);
-        output += std::string(32-length, '0');
-        output += std::string(number);
+        if ( auto [p, ec] = std::to_chars((char*)num.data(), (char*)num.data() + num.size(), trigger.flags, 2); ec == std::errc{} )
+        {
+            std::size_t totalChars = std::size_t(p-&num[0]);
+            if ( totalChars < 32 )
+                output << zeroes.substr(0, 32-totalChars);
+
+            output << std::string_view(&num[0], totalChars);
+        }
+        else
+            throw std::runtime_error("Failed to get string representation for flags!");
+
         output += ';';
     }
 
