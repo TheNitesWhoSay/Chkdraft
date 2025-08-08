@@ -5,9 +5,10 @@
 #include "escape_strings.h"
 #include "sc.h"
 #include <bitset>
-#include <string>
+#include <cstring>
 #include <iosfwd>
 #include <map>
+#include <string>
 
 #undef PlaySound
 
