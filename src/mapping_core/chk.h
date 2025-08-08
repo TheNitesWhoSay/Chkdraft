@@ -5,6 +5,7 @@
 #include "escape_strings.h"
 #include "sc.h"
 #include <bitset>
+#include <string>
 #include <iosfwd>
 #include <map>
 

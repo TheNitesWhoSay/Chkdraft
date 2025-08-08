@@ -48,7 +48,7 @@ bool MpqFile::isValid(const std::string & filePath) const
         return true;
 
     HANDLE mpqCheck = NULL;
-    bool opened = SFileOpenArchive(icux::toFilestring(filePath).c_str(), NULL, STREAM_FLAG_READ_ONLY, &mpqCheck);
+    bool opened = SFileOpenArchive(icux::toFilestring(filePath).c_str(), 0, STREAM_FLAG_READ_ONLY, &mpqCheck);
     if ( opened )
         SFileCloseArchive(mpqCheck);
 
@@ -61,7 +61,7 @@ bool MpqFile::create(const std::string & filePath)
         return true;
 
     close();
-    if ( SFileCreateArchive(icux::toFilestring(filePath).c_str(), NULL, 1000, &hMpq) )
+    if ( SFileCreateArchive(icux::toFilestring(filePath).c_str(), 0, 1000, &hMpq) )
     {
         this->filePath = filePath;
         this->madeChanges = true;
@@ -78,7 +78,7 @@ bool MpqFile::open(const std::string & filePath, bool readOnly, bool createIfNot
     close();
     if ( createIfNotFound && !::findFile(filePath) )
         return create(filePath);
-    else if ( SFileOpenArchive(icux::toFilestring(filePath).c_str(), NULL, (readOnly ? MPQ_OPEN_READ_ONLY : 0), &hMpq) )
+    else if ( SFileOpenArchive(icux::toFilestring(filePath).c_str(), 0, (readOnly ? MPQ_OPEN_READ_ONLY : 0), &hMpq) )
     {
         this->filePath = filePath;
         return true;
@@ -105,7 +105,7 @@ bool MpqFile::save()
                 for ( size_t assetIndex = 0; assetIndex < numAddedMpqAssets; assetIndex ++ )
                     filestringMpqPaths[assetIndex] = addedMpqAssetPaths[assetIndex].c_str();
 
-                if ( SUCCEEDED(SFileAddListFileEntries(hMpq, filestringMpqPaths.get(), (DWORD)numAddedMpqAssets)) &&
+                if ( SFileAddListFileEntries(hMpq, filestringMpqPaths.get(), (DWORD)numAddedMpqAssets) == ERROR_SUCCESS &&
                     SFileCompactArchive(hMpq, NULL, false) )
                 {
                     success = true;
@@ -135,7 +135,7 @@ void MpqFile::close()
                 for ( size_t assetIndex = 0; assetIndex < numAddedMpqAssets; assetIndex ++ )
                     filestringMpqPaths[assetIndex] = addedMpqAssetPaths[assetIndex].c_str();
 
-               if ( SUCCEEDED(SFileAddListFileEntries(hMpq, filestringMpqPaths.get(), (DWORD)numAddedMpqAssets)) &&
+               if ( SFileAddListFileEntries(hMpq, filestringMpqPaths.get(), (DWORD)numAddedMpqAssets) == ERROR_SUCCESS &&
                     SFileCompactArchive(hMpq, NULL, false) )
                {
                     addedMpqAssetPaths.clear();
@@ -162,7 +162,7 @@ bool MpqFile::findFile(const std::string & mpqPath) const
     {
         u32 bytesRead = 0;
         HANDLE openFile = NULL;
-        if ( SFileOpenFileEx(hMpq, mpqPath.c_str(), SFILE_OPEN_FROM_MPQ, &openFile) == TRUE )
+        if ( SFileOpenFileEx(hMpq, mpqPath.c_str(), SFILE_OPEN_FROM_MPQ, &openFile) )
         {
             SFileCloseFile(openFile);
             return true;
@@ -180,9 +180,9 @@ bool MpqFile::findFile(const std::string & filePath, const std::string & mpqPath
     {
         HANDLE tempMpq = NULL;
         HANDLE foundFile = NULL;
-        if ( SFileOpenArchive(icux::toFilestring(filePath).c_str(), NULL, STREAM_FLAG_READ_ONLY, &tempMpq) )
+        if ( SFileOpenArchive(icux::toFilestring(filePath).c_str(), 0, STREAM_FLAG_READ_ONLY, &tempMpq) )
         {
-            if ( SFileOpenFileEx(tempMpq, mpqPath.c_str(), SFILE_OPEN_FROM_MPQ, &foundFile) == TRUE )
+            if ( SFileOpenFileEx(tempMpq, mpqPath.c_str(), SFILE_OPEN_FROM_MPQ, &foundFile) )
             {
                 SFileCloseFile(foundFile);
                 success = true;
@@ -247,7 +247,7 @@ bool MpqFile::getFile(const std::string & mpqPath, ByteBuffer & fileData) const
         {
             size_t fileSize = (size_t)SFileGetFileSize(openFile, NULL);
             fileData.expand(fileSize);
-            bool success = SFileReadFile(openFile, (LPVOID)fileData.data(), (DWORD)fileSize, (LPDWORD)(&bytesRead), NULL);
+            bool success = SFileReadFile(openFile, (void*)fileData.data(), (DWORD)fileSize, (LPDWORD)(&bytesRead), NULL);
             SFileCloseFile(openFile);
             return success;
         }
@@ -265,7 +265,7 @@ std::optional<std::vector<u8>> MpqFile::getFile(const std::string & mpqPath) con
         {
             size_t fileSize = (size_t)SFileGetFileSize(openFile, NULL);
             auto fileData = std::make_optional<std::vector<u8>>(fileSize);
-            bool success = SFileReadFile(openFile, (LPVOID)&fileData.value()[0], (DWORD)fileSize, (LPDWORD)(&bytesRead), NULL);
+            bool success = SFileReadFile(openFile, (void*)&fileData.value()[0], (DWORD)fileSize, (LPDWORD)(&bytesRead), NULL);
             SFileCloseFile(openFile);
             return success ? fileData : std::nullopt;
         }
