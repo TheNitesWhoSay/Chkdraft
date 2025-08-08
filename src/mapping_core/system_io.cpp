@@ -382,6 +382,7 @@ bool removeFiles(const std::string & firstFileName, const std::string & secondFi
 
 #ifdef __linux__
 #include <dlfcn.h>
+#include <linux/limits.h>
 #endif
 
 std::optional<std::string> getModuleDirectory(bool includeTrailingSeparator)
@@ -396,10 +397,10 @@ std::optional<std::string> getModuleDirectory(bool includeTrailingSeparator)
             return icux::toUtf8(modulePath.substr(0, lastBackslashPos)) + (includeTrailingSeparator ? getSystemPathSeparator() : "");
     }
 #elif defined (__linux__)
-    icux::codepoint cModulePath[MAX_PATH] = {};
+    icux::codepoint cModulePath[PATH_MAX] = {};
     Dl_info dlInfo {};
-    if ( dladdr(&getModuleDirectory, &dlInfo) != 0 )
-        return icux::toUtf8(dli_fname);
+    if ( dladdr((const void*)&getModuleDirectory, &dlInfo) != 0 )
+        return icux::toUtf8(dlInfo.dli_fname);
 #endif
     return std::nullopt;
 }
