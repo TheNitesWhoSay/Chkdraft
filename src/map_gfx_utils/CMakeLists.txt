@@ -70,7 +70,6 @@ FetchContent_MakeAvailable(rarecpp)
 include_directories(${rarecpp_SOURCE_DIR}/include)
 
 set(Headers
-  test.h
   ../mapping_core/opengl/glfw/context.h
   ../mapping_core/opengl/glfw/window.h
   ../mapping_core/opengl/glad/utils.h
@@ -89,7 +88,7 @@ set(Headers
   ../mapping_core/opengl/gl/vertices.h
 )
 set(Sources
-  test.cpp
+  main.cpp
   ../mapping_core/opengl/stb/stb.cpp
 )
 
