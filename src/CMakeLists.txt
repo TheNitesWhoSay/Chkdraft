@@ -12,8 +12,8 @@ project(${This})
 
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/chkdraft
-    ${CMAKE_CURRENT_SOURCE_DIR}/chkdraft/mapping/opengl
-    ${CMAKE_CURRENT_SOURCE_DIR}/chkdraft/mapping/opengl/glad
+    ${CMAKE_CURRENT_SOURCE_DIR}/mapping_core/opengl
+    ${CMAKE_CURRENT_SOURCE_DIR}/mapping_core/opengl/glad
 )
 
 set(CMAKE_BUILD_PARALLEL_LEVEL)

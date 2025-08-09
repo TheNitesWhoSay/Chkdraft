@@ -16,8 +16,8 @@ cmake_path(GET SrcPath PARENT_PATH ChkdraftRootPath)
 include_directories(
     ${ChkdraftRootPath}/src
     ${ChkdraftRootPath}/src/chkdraft
-    ${ChkdraftRootPath}/src/chkdraft/mapping/opengl
-    ${ChkdraftRootPath}/src/chkdraft/mapping/opengl/glad
+    ${ChkdraftRootPath}/src/mapping_core/opengl
+    ${ChkdraftRootPath}/src/mapping_core/opengl/glad
 )
 
 include(FetchContent)
@@ -70,19 +70,6 @@ set(Headers
   mapping/selections.h
   mapping/settings.h
   mapping/wgl_render_context.h
-  mapping/opengl/gl/base.h
-  mapping/opengl/gl/context_semaphore.h
-  mapping/opengl/gl/font.h
-  mapping/opengl/gl/fps.h
-  mapping/opengl/gl/palette.h
-  mapping/opengl/gl/program.h
-  mapping/opengl/gl/shader.h
-  mapping/opengl/gl/texture.h
-  mapping/opengl/gl/uniform.h
-  mapping/opengl/gl/unique_resource.h
-  mapping/opengl/gl/vertices.h
-  mapping/opengl/glad/glad/gl.h
-  mapping/opengl/glad/KHR/khrplatform.h
   ui/chkd_controls/chkd_string_input.h
   ui/chkd_controls/cnd_act_grid.h
   ui/chkd_controls/cuwp_input.h
@@ -151,6 +138,19 @@ set(Headers
   ui/main_windows/main_toolbar.h
   ui/main_windows/maps.h
   ui/main_windows/mini_map.h
+  ../mapping_core/opengl/gl/base.h
+  ../mapping_core/opengl/gl/context_semaphore.h
+  ../mapping_core/opengl/gl/font.h
+  ../mapping_core/opengl/gl/fps.h
+  ../mapping_core/opengl/gl/palette.h
+  ../mapping_core/opengl/gl/program.h
+  ../mapping_core/opengl/gl/shader.h
+  ../mapping_core/opengl/gl/texture.h
+  ../mapping_core/opengl/gl/uniform.h
+  ../mapping_core/opengl/gl/unique_resource.h
+  ../mapping_core/opengl/gl/vertices.h
+  ../mapping_core/opengl/glad/glad/gl.h
+  ../mapping_core/opengl/glad/KHR/khrplatform.h
 )
 set(Sources
   chkdraft.cpp
@@ -164,7 +164,6 @@ set(Sources
   mapping/scr_graphics.cpp
   mapping/selections.cpp
   mapping/settings.cpp
-  mapping/opengl/glad/glad/gl.c
   ui/chkd_controls/chkd_string_input.cpp
   ui/chkd_controls/cnd_act_grid.cpp
   ui/chkd_controls/cuwp_input.cpp
@@ -233,6 +232,7 @@ set(Sources
   ui/main_windows/main_toolbar.cpp
   ui/main_windows/maps.cpp
   ui/main_windows/mini_map.cpp
+  ../mapping_core/opengl/glad/glad/gl.c
 )
 
 add_library(${This} STATIC ${Sources} ${Headers})

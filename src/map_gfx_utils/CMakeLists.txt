@@ -15,7 +15,11 @@ project(${This})
 set(MapGfxUtilsLibPath ${CMAKE_CURRENT_SOURCE_DIR})
 cmake_path(GET MapGfxUtilsLibPath PARENT_PATH SrcPath)
 cmake_path(GET SrcPath PARENT_PATH ChkdraftRootPath)
-include_directories(${ChkdraftRootPath}/src)
+include_directories(
+    ${ChkdraftRootPath}/src
+    ${ChkdraftRootPath}/src/mapping_core/opengl
+    ${ChkdraftRootPath}/src/mapping_core/opengl/glad
+)
 
 if ( PROJECT_IS_TOP_LEVEL )
   set(CMAKE_BUILD_PARALLEL_LEVEL)
