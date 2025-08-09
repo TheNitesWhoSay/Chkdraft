@@ -9,6 +9,16 @@
       "name": "casclib",
       "version>=": "2024-06-05"
     },
+    "freetype",
+    "harfbuzz",
+    {
+      "name": "glad",
+      "features": [ "extensions", "gl-api-33" ]
+    },
+    "glfw3",
+    "glm",
+    "libwebp",
+    "stb",
     {
       "name": "stormlib",
       "version>=": "9.26"

@@ -29,6 +29,34 @@ if ( PROJECT_IS_TOP_LEVEL )
   add_subdirectory(${ChkdraftRootPath}/src/mapping_core ${CMAKE_CURRENT_BINARY_DIR}/mapping_core_lib)
 endif()
 
+find_package(Freetype REQUIRED)
+get_target_property(FREETYPE_INCLUDE_DIRS freetype INTERFACE_INCLUDE_DIRECTORIES)
+include_directories(${FREETYPE_INCLUDE_DIRS})
+
+find_package(harfbuzz CONFIG REQUIRED)
+get_target_property(HARFBUZZ_INCLUDE_DIRS harfbuzz::harfbuzz INTERFACE_INCLUDE_DIRECTORIES)
+include_directories(${HARFBUZZ_INCLUDE_DIRS})
+
+find_package(WebP CONFIG REQUIRED)
+
+find_package(ICU COMPONENTS uc i18n REQUIRED)
+
+find_package(glad CONFIG REQUIRED)
+get_target_property(GLAD_INCLUDE_DIRS glad::glad INTERFACE_INCLUDE_DIRECTORIES)
+include_directories(${GLAD_INCLUDE_DIRS})
+
+find_package(glfw3 CONFIG REQUIRED)
+find_package(glm CONFIG REQUIRED)
+
+include(FetchContent)
+FetchContent_Declare(
+  stb
+  GIT_REPOSITORY https://github.com/nothings/stb.git
+  GIT_TAG ae721c5 # 2024-02-13
+)
+FetchContent_MakeAvailable(stb)
+include_directories(${stb_SOURCE_DIR}/include)
+
 include(FetchContent)
 FetchContent_Declare(
   rarecpp
@@ -49,4 +77,10 @@ add_compile_definitions(_UNICODE UNICODE CASCLIB_UNICODE STORMLIB_NO_AUTO_LINK)
 add_library(${This}Lib STATIC ${Sources} ${Headers})
 
 add_executable(${This} ${Sources} ${Headers})
-target_link_libraries(${This} PRIVATE CrossCut MappingCore)
+
+find_package(OpenGL REQUIRED)
+if (WIN32)
+target_link_libraries(${This} PRIVATE CrossCut MappingCore glad::glad glfw glm::glm Freetype::Freetype harfbuzz::harfbuzz harfbuzz::harfbuzz-subset ICU::uc ICU::i18n WebP::webp WebP::webpdecoder WebP::webpdemux ${OPENGL_LIBRARIES} Comctl32.lib Winmm.lib Msimg32.lib)
+else ()
+target_link_libraries(${This} PRIVATE CrossCut MappingCore glad::glad glfw glm::glm Freetype::Freetype harfbuzz::harfbuzz harfbuzz::harfbuzz-subset ICU::uc ICU::i18n WebP::webp WebP::webpdecoder WebP::webpdemux ${OPENGL_LIBRARIES})
+endif ()
