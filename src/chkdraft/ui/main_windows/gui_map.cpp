@@ -2,7 +2,7 @@
 #include "chkdraft/chkdraft.h"
 #include "ui/chkd_controls/move_to.h"
 #include "mapping/data_file_browsers.h"
-#include "mapping/scr_graphics.h"
+#include "mapping/sc_gl_graphics.h"
 #include "cross_cut/logger.h"
 #include <WindowsX.h>
 

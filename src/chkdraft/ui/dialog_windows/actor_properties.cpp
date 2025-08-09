@@ -2,7 +2,7 @@
 #include "chkdraft/chkdraft.h"
 #include "chkdraft/ui/chkd_controls/move_to.h"
 #include "chkdraft/ui/dialog_windows/map_settings/color_properties.h"
-#include "chkdraft/mapping/scr_graphics.h"
+#include "chkdraft/mapping/sc_gl_graphics.h"
 #include <CommCtrl.h>
 
 enum class ActorListColumn { DrawListIndex, Type, UnitSpriteIndex, Priority, Name };

@@ -1,6 +1,6 @@
 #include "terrain_palette.h"
 #include "chkdraft/chkdraft.h"
-#include "mapping/scr_graphics.h"
+#include "mapping/sc_gl_graphics.h"
 #include <WindowsX.h>
 
 #define START_TILES_YC 0

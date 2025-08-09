@@ -66,7 +66,7 @@ set(Headers
   mapping/game_clock.h
   mapping/memory_tiered_tasks.h
   mapping/sc_gdi_graphics.h
-  mapping/scr_graphics.h
+  mapping/sc_gl_graphics.h
   mapping/selections.h
   mapping/settings.h
   mapping/wgl_render_context.h
@@ -161,7 +161,7 @@ set(Sources
   mapping/clipboard.cpp
   mapping/data_file_browsers.cpp
   mapping/sc_gdi_graphics.cpp
-  mapping/scr_graphics.cpp
+  mapping/sc_gl_graphics.cpp
   mapping/selections.cpp
   mapping/settings.cpp
   ui/chkd_controls/chkd_string_input.cpp

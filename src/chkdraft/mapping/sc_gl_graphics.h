@@ -1,5 +1,5 @@
-#ifndef SCRGRAPHICS_H
-#define SCRGRAPHICS_H
+#ifndef SCGLGRAPHICS_H
+#define SCGLGRAPHICS_H
 #include "common_files/constants.h"
 #include "common_files/structs.h"
 #include "mapping/color_cycler.h"

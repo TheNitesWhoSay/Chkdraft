@@ -1,7 +1,7 @@
 #include "chkdraft.h"
 #include "mapping/data_file_browsers.h"
 #include "mapping/settings.h"
-#include "mapping/scr_graphics.h"
+#include "mapping/sc_gl_graphics.h"
 #include <shellapi.h>
 #include <fstream>
 #include <iostream>
