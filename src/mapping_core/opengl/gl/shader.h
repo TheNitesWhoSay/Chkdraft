@@ -74,7 +74,7 @@ namespace gl
     };
     
     template <Shader::Type ShaderType>
-    Shader shaderFromFile(const std::string & filePath, bool requireNonEmpty = true)
+    inline Shader shaderFromFile(const std::string & filePath, bool requireNonEmpty = true)
     {
         std::ifstream shaderFile {};
         shaderFile.open(filePath);
@@ -93,12 +93,12 @@ namespace gl
         return Shader(ShaderType, buffer.data(), buffer.size(), requireNonEmpty);
     }
 
-    Shader vertexShaderFromFile(const std::string & filePath, bool requireNonEmpty = true)
+    inline Shader vertexShaderFromFile(const std::string & filePath, bool requireNonEmpty = true)
     {
         return shaderFromFile<Shader::Type::vertex>(filePath, requireNonEmpty);
     }
 
-    Shader fragmentShaderFromFile(const std::string & filePath, bool requireNonEmpty = true)
+    inline Shader fragmentShaderFromFile(const std::string & filePath, bool requireNonEmpty = true)
     {
         return shaderFromFile<Shader::Type::fragment>(filePath, requireNonEmpty);
     }
