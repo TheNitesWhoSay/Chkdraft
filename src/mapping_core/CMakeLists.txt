@@ -91,4 +91,4 @@ add_definitions(-DUNICODE -D_UNICODE)
 find_package(StormLib CONFIG REQUIRED)
 
 
-target_link_libraries(${This} PRIVATE BZip2::BZip2 CascLib::casc_static StormLib::storm)
+target_link_libraries(${This} PRIVATE CrossCut BZip2::BZip2 CascLib::casc_static StormLib::storm)
