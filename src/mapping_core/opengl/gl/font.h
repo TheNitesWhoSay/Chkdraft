@@ -6,8 +6,10 @@
 #include <gl/vertices.h>
 #include <hb-ft.h>
 #include <cstdint>
+#include <memory>
 #include <stdexcept>
 #include <string_view>
+#include <vector>
 #include FT_FREETYPE_H
 #include FT_GLYPH_H
 
@@ -33,8 +35,10 @@ namespace gl
     private:
         struct FtLibrary
         {
-            FT_Library library = nullptr;
-
+            FT_Library library;
+            
+            FtLibrary() : library(nullptr) {}
+            
             ~FtLibrary()
             {
                 if ( library != nullptr )
@@ -83,12 +87,16 @@ namespace gl
                     "color = textColor * sampled;\n"
                 "}";
             
-            gl::uniform::Mat2 glyphScaling {"glyphScaling"};
-            gl::uniform::Mat4 textPosToNdc {"textPosToNdc"};
-            gl::uniform::Vec2 textPos {"textOrigin"};
-            gl::uniform::Int tex {"tex"};
-            gl::uniform::Vec4 textColor {"textColor"};
-
+            gl::uniform::Mat2 glyphScaling;
+            gl::uniform::Mat4 textPosToNdc;
+            gl::uniform::Vec2 textPos;
+            gl::uniform::Int tex;
+            gl::uniform::Vec4 textColor;
+            
+            TextShader()
+                : glyphScaling{"glyphScaling"}, textPosToNdc{"textPosToNdc"}, textPos{"textOrigin"}, tex{"tex"}, textColor{"textColor"}
+            {}
+            
             void load()
             {
                 gl::Program::create();
@@ -147,13 +155,18 @@ namespace gl
                     "color = textColor * sampled;\n"
                 "}";
             
-            gl::uniform::Mat2 glyphScaling {"glyphScaling"};
-            gl::uniform::Mat4 textPosToNdc {"textPosToNdc"};
-            gl::uniform::Vec2 textPos {"textOrigin"};
-            gl::uniform::Int tex {"tex"};
-            gl::uniform::Vec4 textColor {"textColor"};
-            gl::uniform::Vec2 lowerRightBound {"lowerRightBound"};
-
+            gl::uniform::Mat2 glyphScaling;
+            gl::uniform::Mat4 textPosToNdc;
+            gl::uniform::Vec2 textPos;
+            gl::uniform::Int tex;
+            gl::uniform::Vec4 textColor;
+            gl::uniform::Vec2 lowerRightBound;
+            
+            ClippedTextShader()
+                : glyphScaling{"glyphScaling"}, textPosToNdc{"textPosToNdc"}, textPos{"textOrigin"}, tex{"tex"}, textColor{"textColor"},
+                lowerRightBound {"lowerRightBound"}
+            {}
+            
             void load()
             {
                 gl::Program::create();
@@ -282,7 +295,7 @@ namespace gl
                     {
                         if ( found != glyphCache.end() )
                         {
-                            renderGlyphs.emplace_back(found->second.get(), gl::Rect2D<GLfloat>{left, top, right, bottom}).tex;
+                            renderGlyphs.emplace_back(found->second.get(), gl::Rect2D<GLfloat>{left, top, right, bottom});
                         }
                         else
                         {
@@ -492,7 +505,7 @@ namespace gl
                             {
                                 if ( found != glyphCache.end() )
                                 {
-                                    renderLine.renderGlyphs.emplace_back(found->second.get(), gl::Rect2D<GLfloat>{left, top, right, bottom}).tex;
+                                    renderLine.renderGlyphs.emplace_back(found->second.get(), gl::Rect2D<GLfloat>{left, top, right, bottom});
                                 }
                                 else
                                 {
@@ -555,7 +568,10 @@ namespace gl
 
             FT_Face ftFontFace = nullptr;
             if ( FT_New_Face(ftLibrary.library, fontFilePath.c_str(), 0, &ftFontFace) )
-                throw std::runtime_error("Failed to load font face from font file " + fontFilePath);
+            {
+                if ( FT_New_Face(ftLibrary.library, ("../" + fontFilePath).c_str(), 0, &ftFontFace) ) // Try one directory up
+                    throw std::runtime_error("Failed to load font face from font file " + fontFilePath);
+            }
 
             if ( FT_Set_Char_Size(ftFontFace, width, height, hozResolution, vertResolution) )
                 throw std::runtime_error("Failed to set font dimensions");
