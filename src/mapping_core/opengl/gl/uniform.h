@@ -18,7 +18,7 @@ namespace gl
 
             #ifdef WRAP_GL_DEBUG
             GLuint programId = 0;
-            constexpr void validateIsCurrentProgram()
+            void validateIsCurrentProgram()
             {
                 GLint currentProgram = 0;
                 glGetIntegerv(GL_CURRENT_PROGRAM, &currentProgram);

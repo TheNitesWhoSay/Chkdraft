@@ -72,5 +72,35 @@ namespace gl
 
         friend class gl::Program; // Program requires access to the underlying shaderId for the attach function and to perform diagnostics
     };
+    
+    template <Shader::Type ShaderType>
+    Shader shaderFromFile(const std::string & filePath, bool requireNonEmpty = true)
+    {
+        std::ifstream shaderFile {};
+        shaderFile.open(filePath);
+        if ( !shaderFile )
+        {
+            shaderFile.clear();
+            shaderFile.open("../" + filePath); // Try one directory up
+            if ( !shaderFile )
+                throw std::runtime_error("File not found!");
+        }
+
+        std::vector<char> buffer{std::istreambuf_iterator<char>(shaderFile), std::istreambuf_iterator<char>()};
+        if ( !shaderFile )
+            throw std::runtime_error("Read error!");
+
+        return Shader(ShaderType, buffer.data(), buffer.size(), requireNonEmpty);
+    }
+
+    Shader vertexShaderFromFile(const std::string & filePath, bool requireNonEmpty = true)
+    {
+        return shaderFromFile<Shader::Type::vertex>(filePath, requireNonEmpty);
+    }
+
+    Shader fragmentShaderFromFile(const std::string & filePath, bool requireNonEmpty = true)
+    {
+        return shaderFromFile<Shader::Type::fragment>(filePath, requireNonEmpty);
+    }
 
 }

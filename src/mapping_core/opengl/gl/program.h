@@ -88,9 +88,6 @@ namespace gl
 
         void use()
         {
-            //GL_INVALID_VALUE; // 1281
-            //GL_INVALID_OPERATION; // 1282
-            //GL_INVALID_FRAMEBUFFER_OPERATION; // 1286
             glUseProgram(*programId);
             if ( auto error = glGetError(); error != GL_NO_ERROR )
                 throw std::runtime_error("Error using program!");
