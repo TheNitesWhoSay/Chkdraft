@@ -18,7 +18,6 @@ cmake_path(GET SrcPath PARENT_PATH ChkdraftRootPath)
 include_directories(
     ${ChkdraftRootPath}/src
     ${ChkdraftRootPath}/src/mapping_core/opengl
-    ${ChkdraftRootPath}/src/mapping_core/opengl/glad
 )
 
 if ( PROJECT_IS_TOP_LEVEL )
