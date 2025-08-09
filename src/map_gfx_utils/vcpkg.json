@@ -1,0 +1,18 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg/master/scripts/vcpkg.schema.json",
+  "name": "map-gfx-utils",
+  "version": "0.1.0",
+  "dependencies": [
+    "icu",
+    "bzip2",
+    {
+      "name": "casclib",
+      "version>=": "2024-06-05"
+    },
+    {
+      "name": "stormlib",
+      "version>=": "9.26"
+    }
+  ],
+  "builtin-baseline": "821100d967e1737d96414a308e3f7cbe0d1abf18"
+}
