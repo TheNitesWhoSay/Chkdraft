@@ -1,5 +1,5 @@
 #pragma once
-#include <glad/gl.h>
+#include <glad/glad.h>
 #include "unique_resource.h"
 #include <fstream>
 #include <stdexcept>

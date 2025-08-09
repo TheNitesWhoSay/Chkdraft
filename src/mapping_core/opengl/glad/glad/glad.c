@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "gl.h"
+#include "glad.h"
 
 #ifndef GLAD_IMPL_UTIL_C_
 #define GLAD_IMPL_UTIL_C_

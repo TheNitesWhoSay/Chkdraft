@@ -1,5 +1,5 @@
 #pragma once
-#include <glad/gl.h>
+#include <glad/glad.h>
 #include <rarecpp/reflect.h>
 #include <array>
 #include <stdexcept>

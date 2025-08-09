@@ -6,7 +6,7 @@
 #include <cstring>
 #include <Windows.h>
 #include "memory_tiered_tasks.h"
-#include <glad/gl.h>
+#include <glad/glad.h>
 #include "gl/base.h"
 #include <glm/vec3.hpp>
 

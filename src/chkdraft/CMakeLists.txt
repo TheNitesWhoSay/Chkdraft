@@ -149,7 +149,7 @@ set(Headers
   ../mapping_core/opengl/gl/uniform.h
   ../mapping_core/opengl/gl/unique_resource.h
   ../mapping_core/opengl/gl/vertices.h
-  ../mapping_core/opengl/glad/glad/gl.h
+  ../mapping_core/opengl/glad/glad/glad.h
   ../mapping_core/opengl/glad/KHR/khrplatform.h
 )
 set(Sources
@@ -232,7 +232,7 @@ set(Sources
   ui/main_windows/main_toolbar.cpp
   ui/main_windows/maps.cpp
   ui/main_windows/mini_map.cpp
-  ../mapping_core/opengl/glad/glad/gl.c
+  ../mapping_core/opengl/glad/glad/glad.c
 )
 
 add_library(${This} STATIC ${Sources} ${Headers})
