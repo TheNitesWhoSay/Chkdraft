@@ -70,6 +70,7 @@ FetchContent_MakeAvailable(rarecpp)
 include_directories(${rarecpp_SOURCE_DIR}/include)
 
 set(Headers
+  screenshot.h
   ../mapping_core/opengl/glfw/context.h
   ../mapping_core/opengl/glfw/window.h
   ../mapping_core/opengl/glad/utils.h
@@ -89,6 +90,7 @@ set(Headers
 )
 set(Sources
   main.cpp
+  screenshot.cpp
   ../mapping_core/opengl/stb/stb.cpp
 )
 
