@@ -1,5 +1,5 @@
-#ifndef SCGRAPHICS_H
-#define SCGRAPHICS_H
+#ifndef SCGDIGRAPHICS_H
+#define SCGDIGRAPHICS_H
 #include <common_files/common_files.h>
 #include <windows/windows_ui.h>
 #include "clipboard.h"

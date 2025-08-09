@@ -4,7 +4,7 @@
 #include <windows/windows_ui.h>
 #include "mapping/clipboard.h"
 #include "mapping/map_animations.h"
-#include "mapping/sc_graphics.h"
+#include "mapping/sc_gdi_graphics.h"
 #include "mapping/selections.h"
 
 namespace Scr { class MapGraphics; }

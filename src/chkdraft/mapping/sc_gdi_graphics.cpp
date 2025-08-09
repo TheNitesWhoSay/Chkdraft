@@ -1,4 +1,4 @@
-#include "sc_graphics.h"
+#include "sc_gdi_graphics.h"
 #include <common_files/common_files.h>
 #include "chkdraft/chkdraft.h"
 #include <algorithm>

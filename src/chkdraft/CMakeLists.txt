@@ -65,7 +65,7 @@ set(Headers
   mapping/data_file_browsers.h
   mapping/game_clock.h
   mapping/memory_tiered_tasks.h
-  mapping/sc_graphics.h
+  mapping/sc_gdi_graphics.h
   mapping/scr_graphics.h
   mapping/selections.h
   mapping/settings.h
@@ -160,7 +160,7 @@ set(Sources
   mapping/chkd_plugins.cpp
   mapping/clipboard.cpp
   mapping/data_file_browsers.cpp
-  mapping/sc_graphics.cpp
+  mapping/sc_gdi_graphics.cpp
   mapping/scr_graphics.cpp
   mapping/selections.cpp
   mapping/settings.cpp
