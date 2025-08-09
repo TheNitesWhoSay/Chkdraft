@@ -71,9 +71,26 @@ include_directories(${rarecpp_SOURCE_DIR}/include)
 
 set(Headers
   test.h
+  ../mapping_core/opengl/glfw/context.h
+  ../mapping_core/opengl/glfw/window.h
+  ../mapping_core/opengl/glad/utils.h
+  ../mapping_core/opengl/gl/base.h
+  ../mapping_core/opengl/gl/camera.h
+  ../mapping_core/opengl/gl/context_semaphore.h
+  ../mapping_core/opengl/gl/font.h
+  ../mapping_core/opengl/gl/fps.h
+  ../mapping_core/opengl/gl/palette.h
+  ../mapping_core/opengl/gl/program.h
+  ../mapping_core/opengl/gl/shader.h
+  ../mapping_core/opengl/gl/texture.h
+  ../mapping_core/opengl/gl/uniform.h
+  ../mapping_core/opengl/gl/unique_resource.h
+  ../mapping_core/opengl/gl/utils.h
+  ../mapping_core/opengl/gl/vertices.h
 )
 set(Sources
   test.cpp
+  ../mapping_core/opengl/stb/stb.cpp
 )
 
 add_compile_definitions(_UNICODE UNICODE CASCLIB_UNICODE STORMLIB_NO_AUTO_LINK)
