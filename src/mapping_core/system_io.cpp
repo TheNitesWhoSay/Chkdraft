@@ -354,7 +354,7 @@ bool makeFileCopy(const std::string & inFilePath, const std::string & outFilePat
 bool makeDirectory(const std::string & directory)
 {
     icux::filestring directoryPath = icux::toFilestring(directory);
-    return std::filesystem::create_directories(directoryPath.c_str());
+    return std::filesystem::exists(directoryPath.c_str()) || std::filesystem::create_directories(directoryPath.c_str());
 }
 
 bool removeFile(const std::string & filePath)
