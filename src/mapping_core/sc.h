@@ -1333,7 +1333,7 @@ namespace Sc {
                 3.) Color at indexes 16-255 on the palette, sometimes remapped using shift for hallucinations
                         
                 Note that for palette (which is initially loaded from tileset\tilesetName.wpe)...
-                color values 248-254 will rotate rightwards every eight ticks (every change in GetTickCount(), ~16ms) on badlands, jungle, desert, iceworld, and twilight */
+                color values 248-254 will rotate rightwards every eight ticks (every change in GetTickCount(), ~15.615ms) on badlands, jungle, desert, iceworld, and twilight */
 
             u8 header; // See the Header enum
             u8 paletteIndex[1]; // For transparent lines this array is unused, for solid lines this is paletteIndex[1], for speckled lines this is paletteIndex[header]

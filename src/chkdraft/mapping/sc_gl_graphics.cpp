@@ -1521,7 +1521,7 @@ Scr::Animation & Scr::MapGraphics::getImage(const Chk::Sprite & sprite)
     return getImage(getImageId(sprite));
 }
 
-Scr::MapGraphics::MapGraphics(Sc::Data & scData, GuiMap & guiMap) : scData(scData), map(guiMap), initialTickCount(GetTickCount64()) {}
+Scr::MapGraphics::MapGraphics(Sc::Data & scData, GuiMap & guiMap) : scData(scData), map(guiMap) {}
 
 void Scr::MapGraphics::resetFps()
 {
@@ -2292,7 +2292,8 @@ void Scr::MapGraphics::drawTileVertices(Scr::Grp & tilesetGrp, s32 width, s32 he
         renderDat->shaders->waterShader.sampleTex2.setSlot(2);
         renderDat->shaders->waterShader.sampleTex3.setSlot(3);
         renderDat->shaders->waterShader.sampleTex4.setSlot(4);
-        renderDat->shaders->waterShader.data.set(0.0f, 0.0f, (GetTickCount64() - initialTickCount)/4000.0f);
+        auto msSinceEpoch = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - this->epoch).count();
+        renderDat->shaders->waterShader.data.set(0.0f, 0.0f, float(msSinceEpoch)/4000.0f);
 
         screenTex.bindToSlot(GL_TEXTURE0);
         renderDat->waterNormal[0]->texture[n1Frame].bindToSlot(GL_TEXTURE1);
@@ -4194,7 +4195,7 @@ void Scr::MapGraphics::render()
         drawSelectionRectangle({GLfloat(map.selections.startDrag.x), GLfloat(map.selections.startDrag.y), GLfloat(map.selections.endDrag.x), GLfloat(map.selections.endDrag.y)});
 }
 
-bool Scr::MapGraphics::updateGraphics(u64 ticks)
+bool Scr::MapGraphics::updateGraphics(u64 msSinceLastUpdate)
 {
     bool updated = false;
 
@@ -4212,7 +4213,7 @@ bool Scr::MapGraphics::updateGraphics(u64 ticks)
     // update HD water animation
     if ( loadSettings.visualQuality > VisualQuality::SD && renderDat->waterNormal[0] && renderDat->waterNormal[0]->frames > 0 )
     {
-        nIncrement += ticks;
+        nIncrement += msSinceLastUpdate;
         if ( nIncrement >= 4000 )
         {
             nIncrement = 0;
@@ -4229,7 +4230,7 @@ bool Scr::MapGraphics::updateGraphics(u64 ticks)
         }
     }
 
-    // If HD water is used, updates happen on every change to ticks/ever call to updateGraphics
+    // If HD water is used, updates happen on every call to updateGraphics
     bool drawHdWater = loadSettings.visualQuality > VisualQuality::SD &&
         (loadSettings.tileset == Sc::Terrain::Tileset::Badlands || loadSettings.tileset == Sc::Terrain::Tileset::Jungle ||
             loadSettings.tileset == Sc::Terrain::Tileset::Arctic || loadSettings.tileset == Sc::Terrain::Tileset::Twilight);

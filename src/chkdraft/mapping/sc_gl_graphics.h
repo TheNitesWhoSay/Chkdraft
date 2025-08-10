@@ -14,6 +14,7 @@
 #include <mapping_core/render/map_animations.h>
 #include <glm/glm.hpp>
 #include <rarecpp/reflect.h>
+#include <chrono>
 #include <cstdint>
 #include <filesystem>
 #include <memory>
@@ -862,7 +863,7 @@ namespace Scr {
         u32 n1Frame = 0;
         u32 n2Frame = 0;
         u32 nIncrement = 0;
-        u64 initialTickCount = 0;
+        std::chrono::system_clock::time_point epoch = std::chrono::system_clock::now();
         std::chrono::system_clock::time_point frameStart {};
 
         Sc::Data & scData;
@@ -975,7 +976,7 @@ namespace Scr {
 
         void render();
 
-        bool updateGraphics(u64 ticks); // Runs every few ms, with ticks being the ms since the last frame
+        bool updateGraphics(u64 msSinceLastUpdate);
     };
 }
 

@@ -1846,11 +1846,11 @@ void GuiMap::SnapSelEndDrag()
 bool GuiMap::UpdateGlGraphics()
 {
     auto currTickCount = GetTickCount64();
-    auto ticks = currTickCount - prevTickCount;
-    if ( ticks > 0 )
+    auto msSinceLastUpdate = currTickCount - prevTickCount;
+    if ( msSinceLastUpdate > 0 )
     {
         prevTickCount = currTickCount;
-        return scrGraphics->updateGraphics(ticks);
+        return scrGraphics->updateGraphics(msSinceLastUpdate);
     }
     return false;
 }
