@@ -1858,7 +1858,7 @@ bool GuiMap::UpdateGlGraphics()
 bool GuiMap::Animate()
 {
     if ( skin == GuiMap::Skin::ClassicGDI )
-        return chkd.colorCycler.cycleColors(GetTickCount64(), read.tileset, scGraphics.getPalette());
+        return chkd.colorCycler.cycleColors(read.tileset, scGraphics.getPalette());
     else if ( chkd.gameClock.tick() )
     {
         auto currentTick = chkd.gameClock.currentTick();
@@ -1990,7 +1990,7 @@ void GuiMap::PaintMiniMap(const WinLib::DeviceContext & dc)
 void GuiMap::Redraw(bool includeMiniMap)
 {
     if ( skin == GuiMap::Skin::ClassicGDI )
-        chkd.colorCycler.cycleColors(GetTickCount64(), read.tileset, scGraphics.getPalette());
+        chkd.colorCycler.cycleColors(read.tileset, scGraphics.getPalette());
     else if ( chkd.gameClock.tick() && CM != nullptr )
     {
         auto currentTick = chkd.gameClock.currentTick();

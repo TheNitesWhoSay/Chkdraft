@@ -1,13 +1,35 @@
 #ifndef COLORCYCLER_H
 #define COLORCYCLER_H
 #include <algorithm>
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 
 class ColorCycler
 {
+    class ColorCycleClock
+    {
+        std::chrono::system_clock::duration nsPerFrame = std::chrono::duration_cast<std::chrono::system_clock::duration>(
+            std::chrono::nanoseconds(std::chrono::nanoseconds::rep(15615000))); // avg 15.615ms
+        std::chrono::system_clock::time_point nextTick = std::chrono::system_clock::now();
+
+    public:
+        inline bool tick(std::chrono::system_clock::time_point now = std::chrono::system_clock::now())
+        {
+            if ( now < nextTick ) // Not a tick
+                return false;
+
+            if ( nextTick + nsPerFrame > now ) // This tick was started in real time
+                nextTick += std::chrono::system_clock::duration(nsPerFrame); // Keep ticks steady
+            else // The process is running behind, there may have been lag or the process/machine may have resumed after suspension
+                nextTick = now + nsPerFrame; // Push out the next tick by msPerFrame from now
+
+            return true;
+        }
+    };
+
     /**
-        A tileset has a set of between zero and eight rotators, after every tick (one change in GetTickCount: ~16ms), each rotator's ticksRemaining is decremented
+        A tileset has a set of between zero and eight rotators, after every tick (one change in GetTickCount: ~15.615ms), each rotator's ticksRemaining is decremented
 
         If a rotator's ticksRemaining reaches zero, palette colors from min to max are each rotated one index to the right "palette[index+1] = palette[index]",
         the rightmost entry "palette[paletteIndexMax]" wraps around to become the leftmost entry "palette[paletteIndexMin]"
@@ -30,7 +52,7 @@ class ColorCycler
     static constexpr size_t TotalRotatorSets = 4;
     static constexpr size_t MaxRotatersPerSet = 8;
 
-    std::uint64_t nextTickCount = 0; // Value from prev updates GetTickCount()+42
+    ColorCycleClock colorCycleClock {};
 
     static constexpr size_t TilesetRotationSet[8] {
         0, // badlands uses set 0
@@ -61,11 +83,13 @@ class ColorCycler
         }
     }; // All rotator sets
 
+    std::chrono::high_resolution_clock::time_point nextTick = std::chrono::high_resolution_clock::now();
+
 public:
-    inline bool cycleColors(std::uint64_t currTickCount, size_t tileset, auto & palette) // Returns true if the map should be redrawn
+    inline bool cycleColors(size_t tileset, auto & palette) // Returns true if the map should be redrawn
     {
         bool redraw = false;
-        if ( currTickCount >= nextTickCount )
+        if ( colorCycleClock.tick() )
         {
             size_t currentRotationSet = TilesetRotationSet[tileset];
             Rotator* rotatorSet = currentRotationSet < TotalRotatorSets ? RotatorSets[currentRotationSet] : NoRotators;
@@ -86,8 +110,6 @@ public:
                         rotator.ticksRemaining --; // Decrement the timer
                 }
             }
-
-            nextTickCount = currTickCount + 10;
         }
 
         return redraw;

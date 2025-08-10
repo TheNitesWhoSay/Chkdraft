@@ -4202,7 +4202,7 @@ bool Scr::MapGraphics::updateGraphics(u64 ticks)
     auto & tilesetGrp = renderDat->tiles->tilesetGrp;
     if ( tilesetGrp.palette )
     {
-        if ( colorCycler.cycleColors(GetTickCount64(), map.getTileset(), tilesetGrp.palette.value()) )
+        if ( colorCycler.cycleColors(map.getTileset(), tilesetGrp.palette.value()) )
         {
             tilesetGrp.palette->update();
             updated = true;
