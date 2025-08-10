@@ -60,10 +60,7 @@ set(Headers
   mapping/map_image.cpp
   mapping/chkd_plugins.h
   mapping/clipboard.h
-  mapping/color_cycler.h
   mapping/data_file_browsers.h
-  mapping/game_clock.h
-  mapping/memory_tiered_tasks.h
   mapping/sc_gdi_graphics.h
   mapping/sc_gl_graphics.h
   mapping/selections.h
@@ -150,6 +147,9 @@ set(Headers
   ../mapping_core/opengl/gl/vertices.h
   ../mapping_core/opengl/glad/glad/glad.h
   ../mapping_core/opengl/glad/KHR/khrplatform.h
+  ../mapping_core/render/color_cycler.h
+  ../mapping_core/render/game_clock.h
+  ../mapping_core/render/memory_tiered_tasks.h
 )
 set(Sources
   chkdraft.cpp

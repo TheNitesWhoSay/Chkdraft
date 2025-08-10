@@ -1,5 +1,5 @@
-#ifndef TICK_H
-#define TICK_H
+#ifndef GAMECLOCK_H
+#define GAMECLOCK_H
 #include <chrono>
 #include <cstdint>
 

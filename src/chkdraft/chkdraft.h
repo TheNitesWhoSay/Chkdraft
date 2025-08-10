@@ -2,11 +2,11 @@
 #define CHKDRAFT_H
 #include <windows/windows_ui.h>
 #include <common_files/common_files.h>
+#include <mapping_core/render/color_cycler.h>
+#include <mapping_core/render/game_clock.h>
 #include "cross_cut/logger.h"
 #include "ui/dialog_windows/dialog_windows.h"
 #include "mapping/chkd_plugins.h"
-#include "mapping/color_cycler.h"
-#include "mapping/game_clock.h"
 #include "ui/main_windows/main_toolbar.h"
 #include "ui/main_windows/main_plot.h"
 #include "ui/dialog_windows/new_map/new_map.h"

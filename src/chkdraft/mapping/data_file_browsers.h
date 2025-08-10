@@ -3,6 +3,7 @@
 #include <mapping_core/mapping_core.h>
 #include "settings.h"
 
+// A Sc::DataFile::Browser customized using Chkdraft's settings/settings file
 class ChkdDataFileBrowser : public Sc::DataFile::Browser
 {
     public:
