@@ -1,5 +1,8 @@
+#include <cross_cut/logger.h>
 #include <mapping_core/map_actor.h>
-#include "../chkdraft.h" // TODO: recheck whether there's a way this file could go in mapping_core too
+#include "map_animations.h"
+
+extern Logger logger;
 
 u16 & MapActor::getNewImageSlot(bool above, MapImage & image, AnimContext & animations)
 {
@@ -109,7 +112,7 @@ void MapActor::setAnim(Sc::Sprite::AnimHeader animHeader, std::uint64_t currentT
         if ( usedImages[i] != 0 )
         {
             MapImage* image = &animations.images[std::size_t(usedImages[i])].value();
-            const Sc::Sprite::IScriptAnimation* anim = chkd.scData.sprites.getAnimationHeader(image->iScriptId, animHeader);
+            const Sc::Sprite::IScriptAnimation* anim = animations.scData.sprites.getAnimationHeader(image->iScriptId, animHeader);
             if ( anim == nullptr )
             {
                 if ( i == primaryImageSlot && !silent )

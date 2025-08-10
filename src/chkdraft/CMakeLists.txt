@@ -54,10 +54,8 @@ set(Headers
   common_files/debug.h
   common_files/resource.h
   common_files/version.h
-  mapping/map_actor.cpp
+  mapping/clipboard_animations.h
   mapping/map_animations.h
-  mapping/map_animations.cpp
-  mapping/map_image.cpp
   mapping/chkd_plugins.h
   mapping/clipboard.h
   mapping/data_file_browsers.h
@@ -158,7 +156,11 @@ set(Sources
   common_files/version.cpp
   mapping/chkd_plugins.cpp
   mapping/clipboard.cpp
+  mapping/clipboard_animations.cpp
   mapping/data_file_browsers.cpp
+  mapping/map_actor.cpp
+  mapping/map_animations.cpp
+  mapping/map_image.cpp
   mapping/sc_gdi_graphics.cpp
   mapping/sc_gl_graphics.cpp
   mapping/selections.cpp

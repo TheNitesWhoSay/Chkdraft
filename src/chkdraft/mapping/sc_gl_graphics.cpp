@@ -3026,8 +3026,8 @@ void Scr::MapGraphics::drawActors()
         }
     }
 
-    const auto & clipboardUnitActors = map.clipboard.unitActors;
-    const auto & clipboardSpriteActors = map.clipboard.spriteActors;
+    const auto & clipboardUnitActors = map.clipboard.animations.getUnitActors();
+    const auto & clipboardSpriteActors = map.clipboard.animations.getSpriteActors();
     map.clipboard.animations.cleanDrawList();
     drawListSize = map.clipboard.animations.drawList.size();
     for ( std::size_t i=1; i<drawListSize; ++i )

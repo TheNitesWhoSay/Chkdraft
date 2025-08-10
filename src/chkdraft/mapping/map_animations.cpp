@@ -1,12 +1,14 @@
+#include <cross_cut/logger.h>
 #include "map_animations.h"
-#include "chkdraft.h"
 
-u32 iscriptIdFromUnit(Sc::Unit::Type unitType)
+extern Logger logger;
+
+u32 iscriptIdFromUnit(const Sc::Data & scData, Sc::Unit::Type unitType)
 {
-    return chkd.scData.sprites.getImage(
-        chkd.scData.sprites.getSprite(
-            chkd.scData.units.getFlingy(
-                chkd.scData.units.getUnit(
+    return scData.sprites.getImage(
+        scData.sprites.getSprite(
+            scData.units.getFlingy(
+                scData.units.getUnit(
                     size_t(unitType) < Sc::Unit::TotalTypes ? unitType : Sc::Unit::Type(0)
                 ).graphics
             ).sprite
@@ -14,44 +16,44 @@ u32 iscriptIdFromUnit(Sc::Unit::Type unitType)
     ).iScriptId;
 }
 
-u32 iscriptIdFromSprite(Sc::Sprite::Type spriteType)
+u32 iscriptIdFromSprite(const Sc::Data & scData, Sc::Sprite::Type spriteType)
 {
-    return chkd.scData.sprites.getImage(
-        chkd.scData.sprites.getSprite(
+    return scData.sprites.getImage(
+        scData.sprites.getSprite(
             size_t(spriteType) < Sc::Sprite::TotalSprites ? spriteType : Sc::Sprite::Type(0)
         ).imageFile
     ).iScriptId;
 }
 
-size_t getImageId(Sc::Unit::Type unitType)
+size_t getImageId(const Sc::Data & scData, Sc::Unit::Type unitType)
 {
-    u32 flingyId = u32(chkd.scData.units.getUnit(Sc::Unit::Type(unitType >= 228 ? 0 : unitType)).graphics);
-    u32 spriteId = u32(chkd.scData.units.getFlingy(flingyId >= 209 ? 0 : flingyId).sprite);
-    return chkd.scData.sprites.getSprite(spriteId >= 517 ? 0 : spriteId).imageFile;
+    u32 flingyId = u32(scData.units.getUnit(Sc::Unit::Type(unitType >= 228 ? 0 : unitType)).graphics);
+    u32 spriteId = u32(scData.units.getFlingy(flingyId >= 209 ? 0 : flingyId).sprite);
+    return scData.sprites.getSprite(spriteId >= 517 ? 0 : spriteId).imageFile;
 }
 
-size_t getImageId(Sc::Sprite::Type spriteType)
+size_t getImageId(const Sc::Data & scData, Sc::Sprite::Type spriteType)
 {
-    return chkd.scData.sprites.getSprite(spriteType >= 517 ? 0 : spriteType).imageFile;
+    return scData.sprites.getSprite(spriteType >= 517 ? 0 : spriteType).imageFile;
 }
 
-size_t getImageId(const Chk::Unit & unit)
+size_t getImageId(const Sc::Data & scData, const Chk::Unit & unit)
 {
-    return getImageId(unit.type);
+    return getImageId(scData, unit.type);
 }
 
-size_t getImageId(Sc::Sprite::Type spriteType, bool isDrawnAsSprite)
+size_t getImageId(const Sc::Data & scData, Sc::Sprite::Type spriteType, bool isDrawnAsSprite)
 {
     return isDrawnAsSprite ?
-        getImageId(spriteType) :
-        getImageId(Sc::Unit::Type(spriteType));
+        getImageId(scData, spriteType) :
+        getImageId(scData, Sc::Unit::Type(spriteType));
 }
 
-size_t getImageId(const Chk::Sprite & sprite)
+size_t getImageId(const Sc::Data & scData, const Chk::Sprite & sprite)
 {
     return sprite.isDrawnAsSprite() ?
-        getImageId(sprite.type) :
-        getImageId(Sc::Unit::Type(sprite.type));
+        getImageId(scData, sprite.type) :
+        getImageId(scData, Sc::Unit::Type(sprite.type));
 }
 
 struct ResourceLevel
@@ -182,7 +184,7 @@ void AnimContext::restartActor(ActorContext & context)
             .hiddenLeader = hiddenLeader,
             .drawIfCloaked = primaryImage.drawIfCloaked
         };
-        initializeImage(iScriptId, chkd.gameClock.currentTick(), actor, context.isUnit, actor.usedImages[0]);
+        initializeImage(iScriptId, gameClock.currentTick(), actor, context.isUnit, actor.usedImages[0]);
         if ( hiddenLeader )
             primaryImage.drawFunction = MapImage::DrawFunction::None;
     }
@@ -208,7 +210,7 @@ void AnimContext::initializeActor(MapActor & actor, u8 direction, u16 imageId, u
     image->owner = owner;
     image->xc = xc;
     image->yc = yc;
-    initializeImage(iScriptId, chkd.gameClock.currentTick(), actor, isUnit, imageIndex);
+    initializeImage(iScriptId, gameClock.currentTick(), actor, isUnit, imageIndex);
 }
 
 void AnimContext::initSpecialCases(MapActor & actor, std::size_t type, bool isUnit, bool isSpriteUnit)
@@ -223,11 +225,11 @@ void AnimContext::initSpecialCases(MapActor & actor, std::size_t type, bool isUn
     else if ( !isUnit && !isSpriteUnit && type == Sc::Sprite::Type::PsionicStorm )
     {
         MapImage* primaryImage = actor.primaryImage(*this);
-        const Sc::Sprite::IScriptAnimation* specialState2 = chkd.scData.sprites.getAnimationHeader(primaryImage->iScriptId, Sc::Sprite::AnimHeader::SpecialState2);
+        const Sc::Sprite::IScriptAnimation* specialState2 = scData.sprites.getAnimationHeader(primaryImage->iScriptId, Sc::Sprite::AnimHeader::SpecialState2);
         if ( specialState2 != nullptr )
         {
             primaryImage->animation = specialState2;
-            primaryImage->waitUntil = chkd.gameClock.currentTick();
+            primaryImage->waitUntil = gameClock.currentTick();
         }
     }
     else if ( ((isUnit || isSpriteUnit) && Sc::Unit::Type::ProtossNexus) || (!isUnit && type == Sc::Sprite::Type::ProtossNexus) )
@@ -245,14 +247,14 @@ void AnimContext::initSpecialCases(MapActor & actor, std::size_t type, bool isUn
 void AnimContext::initializeUnitActor(MapActor & actor, bool isClipboard, std::size_t unitIndex, const Chk::Unit & unit, s32 xc, s32 yc)
 {
     auto unitType = unit.type < Sc::Unit::TotalTypes ? unit.type : Sc::Unit::Type::TerranMarine;
-    const auto & unitDat = chkd.scData.units.getUnit(unitType);
+    const auto & unitDat = scData.units.getUnit(unitType);
     bool isSubUnit = unitDat.flags & Sc::Unit::Flags::Subunit;
     bool isFlyerOrLifted = unitDat.flags & Sc::Unit::Flags::Flyer ||
         unitDat.flags & Sc::Unit::Flags::FlyingBuilding && unit.isLifted();
 
     actor.elevation = unitDat.elevationLevel;
     u8 direction = unitDat.unitDirection == 32 ? ((std::rand() & 31) << 3) : (unitDat.unitDirection << 3);
-    u32 iScriptId = iscriptIdFromUnit(unitType);
+    u32 iScriptId = iscriptIdFromUnit(scData, unitType);
 
     std::uint64_t drawListValue = isClipboard ?
         (std::uint64_t(unitIndex) | FlagDrawUnit | FlagUnitActor | (isSubUnit ? FlagIsTurret : 0) |
@@ -260,7 +262,7 @@ void AnimContext::initializeUnitActor(MapActor & actor, bool isClipboard, std::s
         (std::uint64_t(unitIndex) | FlagDrawUnit | FlagUnitActor | (isSubUnit ? FlagIsTurret : 0) |
             (std::uint64_t(yc) << ShiftY) | (std::uint64_t(actor.elevation) << ShiftElevation));
 
-    initializeActor(actor, direction, getImageId(unit), unit.owner, xc, yc, iScriptId, true, false, drawListValue);
+    initializeActor(actor, direction, getImageId(scData, unit), unit.owner, xc, yc, iScriptId, true, false, drawListValue);
     initSpecialCases(actor, std::size_t(unitType), true);
 
     // Update draw func if applicable
@@ -271,16 +273,16 @@ void AnimContext::initializeUnitActor(MapActor & actor, bool isClipboard, std::s
 
     // Update anim if applicable
     if ( unitDat.flags & Sc::Unit::Flags::ResourceContainer )
-        actor.setAnim(ResourceLevel::animHeader(ResourceLevel::get(unit.resourceAmount)), chkd.gameClock.currentTick(), true, *this, true);
+        actor.setAnim(ResourceLevel::animHeader(ResourceLevel::get(unit.resourceAmount)), gameClock.currentTick(), true, *this, true);
     else if ( unitDat.flags & Sc::Unit::Flags::FlyingBuilding && unit.isLifted() )
     {
         actor.transitShadowTarget = 42;
-        actor.setAnim(Sc::Sprite::AnimHeader::LiftOff, chkd.gameClock.currentTick(), true, *this);
+        actor.setAnim(Sc::Sprite::AnimHeader::LiftOff, gameClock.currentTick(), true, *this);
     }
     else if ( unitDat.flags & Sc::Unit::Flags::Burrowable && unit.stateFlags & Chk::Unit::State::Burrow )
-        actor.setAnim(Sc::Sprite::AnimHeader::Burrow, chkd.gameClock.currentTick(), true, *this);
+        actor.setAnim(Sc::Sprite::AnimHeader::Burrow, gameClock.currentTick(), true, *this);
     else if ( unitDat.flags & Sc::Unit::Flags::Addon && unit.relationFlags & Chk::Unit::RelationFlag::AddonLink )
-        actor.setAnim(Sc::Sprite::AnimHeader::Landing, chkd.gameClock.currentTick(), true, *this);
+        actor.setAnim(Sc::Sprite::AnimHeader::Landing, gameClock.currentTick(), true, *this);
 }
 
 void AnimContext::initializeSpriteActor(MapActor & actor, bool isClipboard, std::size_t spriteIndex, const Chk::Sprite & sprite, s32 xc, s32 yc)
@@ -288,8 +290,8 @@ void AnimContext::initializeSpriteActor(MapActor & actor, bool isClipboard, std:
     bool isSpriteUnit = sprite.isUnit();
     auto spriteType = isSpriteUnit ? (Sc::Unit::Type(sprite.type) < Sc::Unit::TotalTypes ? sprite.type : Sc::Sprite::Type(0)) :
         (sprite.type < Sc::Sprite::TotalSprites ? sprite.type : Sc::Sprite::Type(0));
-    bool isSubUnit = isSpriteUnit && chkd.scData.units.getUnit(Sc::Unit::Type(spriteType)).flags & Sc::Unit::Flags::Subunit;
-    bool isFlyer = isSpriteUnit && chkd.scData.units.getUnit(Sc::Unit::Type(spriteType)).flags & Sc::Unit::Flags::Flyer;
+    bool isSubUnit = isSpriteUnit && scData.units.getUnit(Sc::Unit::Type(spriteType)).flags & Sc::Unit::Flags::Subunit;
+    bool isFlyer = isSpriteUnit && scData.units.getUnit(Sc::Unit::Type(spriteType)).flags & Sc::Unit::Flags::Flyer;
 
     actor.elevation = 4;
     if ( isSpriteUnit )
@@ -297,32 +299,32 @@ void AnimContext::initializeSpriteActor(MapActor & actor, bool isClipboard, std:
         if ( sprite.flags & Chk::Sprite::SpriteFlags::SpriteUnitDiabled )
             actor.elevation = 1;
         else
-            actor.elevation = chkd.scData.units.getUnit(Sc::Unit::Type(spriteType)).elevationLevel;
+            actor.elevation = scData.units.getUnit(Sc::Unit::Type(spriteType)).elevationLevel;
     }
 
-    u32 iScriptId = isSpriteUnit ? iscriptIdFromUnit(Sc::Unit::Type(spriteType)) : iscriptIdFromSprite(spriteType);
-    bool autoRestart = spriteType < chkd.scData.sprites.spriteAutoRestart.size() ? chkd.scData.sprites.spriteAutoRestart[spriteType] : true;
+    u32 iScriptId = isSpriteUnit ? iscriptIdFromUnit(scData, Sc::Unit::Type(spriteType)) : iscriptIdFromSprite(scData, spriteType);
+    bool autoRestart = spriteType < scData.sprites.spriteAutoRestart.size() ? scData.sprites.spriteAutoRestart[spriteType] : true;
     std::uint64_t drawListValue = isClipboard ?
         (std::uint64_t(spriteIndex) | (isSubUnit ? FlagIsTurret : 0) |
             MaskY | (std::uint64_t(actor.elevation) << ShiftElevation)) :
         (std::uint64_t(spriteIndex) | (isSpriteUnit ? FlagDrawUnit : 0) | (isSubUnit ? FlagIsTurret : 0) |
             (std::uint64_t(yc) << ShiftY) | (std::uint64_t(actor.elevation) << ShiftElevation));
 
-    initializeActor(actor, 0, getImageId(sprite), sprite.owner, xc, yc, iScriptId, false, autoRestart, drawListValue);
+    initializeActor(actor, 0, getImageId(scData, sprite), sprite.owner, xc, yc, iScriptId, false, autoRestart, drawListValue);
     initSpecialCases(actor, std::size_t(spriteType), false, isSpriteUnit);
 
     // Update anim if applicable
     if ( isSpriteUnit )
     {
         if ( sprite.flags & Chk::Sprite::SpriteFlags::SpriteUnitDiabled )
-            actor.setAnim(Sc::Sprite::AnimHeader::Disable, chkd.gameClock.currentTick(), false, *this, true);
+            actor.setAnim(Sc::Sprite::AnimHeader::Disable, gameClock.currentTick(), false, *this, true);
         else
-            actor.setAnim(Sc::Sprite::AnimHeader::Enable, chkd.gameClock.currentTick(), false, *this, true);
+            actor.setAnim(Sc::Sprite::AnimHeader::Enable, gameClock.currentTick(), false, *this, true);
     }
 }
 
-MapAnimations::MapAnimations(const Scenario & scenario)
-    : AnimContext(), scenario(scenario)
+MapAnimations::MapAnimations(const Sc::Data & scData, const GameClock & gameClock, const Scenario & scenario)
+    : AnimContext(scData, gameClock), scenario(scenario)
 {
 
 }
@@ -480,21 +482,21 @@ void MapAnimations::updateSpriteYc(std::size_t spriteIndex, u16 oldYc, u16 newYc
 void MapAnimations::updateUnitResourceAmount(std::size_t unitIndex, u32 oldResourceAmount, u32 newResourceAmount)
 {
     const auto & unit = scenario.read.units[unitIndex];
-    const auto & unitDat = chkd.scData.units.getUnit(unit.type);
+    const auto & unitDat = scData.units.getUnit(unit.type);
     auto & actor = scenario.view.units.attachedData(unitIndex);
     
     if ( unitDat.flags & Sc::Unit::Flags::ResourceContainer )
     {
         auto newResourceLevel = ResourceLevel::get(newResourceAmount);
         if ( ResourceLevel::get(oldResourceAmount) != newResourceLevel )
-            actor.setAnim(ResourceLevel::animHeader(newResourceLevel), chkd.gameClock.currentTick(), true, *this, true);
+            actor.setAnim(ResourceLevel::animHeader(newResourceLevel), gameClock.currentTick(), true, *this, true);
     }
 }
 
 void MapAnimations::updateUnitStateFlags(std::size_t unitIndex, u16 oldStateFlags, u16 newStateFlags)
 {
     const auto & unit = scenario.read.units[unitIndex];
-    const auto & unitDat = chkd.scData.units.getUnit(unit.type);
+    const auto & unitDat = scData.units.getUnit(unit.type);
     auto & actor = scenario.view.units.attachedData(unitIndex);
 
     bool wasLifted = oldStateFlags & Chk::Unit::State::InTransit;
@@ -504,12 +506,12 @@ void MapAnimations::updateUnitStateFlags(std::size_t unitIndex, u16 oldStateFlag
         if ( isLifted )
         {
             actor.transitShadowTarget = 42;
-            actor.setAnim(Sc::Sprite::AnimHeader::LiftOff, chkd.gameClock.currentTick(), true, *this);
+            actor.setAnim(Sc::Sprite::AnimHeader::LiftOff, gameClock.currentTick(), true, *this);
         }
         else
         {
             actor.transitShadowTarget = 0;
-            actor.setAnim(Sc::Sprite::AnimHeader::Landing, chkd.gameClock.currentTick(), true, *this);
+            actor.setAnim(Sc::Sprite::AnimHeader::Landing, gameClock.currentTick(), true, *this);
         }
     }
 
@@ -518,9 +520,9 @@ void MapAnimations::updateUnitStateFlags(std::size_t unitIndex, u16 oldStateFlag
     if ( wasBurrowed != isBurrowed && unitDat.flags & Sc::Unit::Flags::Burrowable )
     {
         if ( isBurrowed )
-            actor.setAnim(Sc::Sprite::AnimHeader::Burrow, chkd.gameClock.currentTick(), true, *this);
+            actor.setAnim(Sc::Sprite::AnimHeader::Burrow, gameClock.currentTick(), true, *this);
         else
-            actor.setAnim(Sc::Sprite::AnimHeader::Unburrow, chkd.gameClock.currentTick(), true, *this);
+            actor.setAnim(Sc::Sprite::AnimHeader::Unburrow, gameClock.currentTick(), true, *this);
     }
 
     bool wasHallucinated = oldStateFlags & Chk::Unit::State::Hallucinated;
@@ -541,7 +543,7 @@ void MapAnimations::updateUnitStateFlags(std::size_t unitIndex, u16 oldStateFlag
 void MapAnimations::updateUnitRelationFlags(std::size_t unitIndex, u16 oldRelationFlags, u16 newRelationFlags)
 {
     const auto & unit = scenario.read.units[unitIndex];
-    const auto & unitDat = chkd.scData.units.getUnit(unit.type);
+    const auto & unitDat = scData.units.getUnit(unit.type);
     auto & actor = scenario.view.units.attachedData(unitIndex);
 
     bool wasAttached = oldRelationFlags & Chk::Unit::RelationFlag::AddonLink;
@@ -549,9 +551,9 @@ void MapAnimations::updateUnitRelationFlags(std::size_t unitIndex, u16 oldRelati
     if ( wasAttached != isAttached && (unitDat.flags & Sc::Unit::Flags::Addon) )
     {
         if ( isAttached )
-            actor.setAnim(Sc::Sprite::AnimHeader::Landing, chkd.gameClock.currentTick(), true, *this);
+            actor.setAnim(Sc::Sprite::AnimHeader::Landing, gameClock.currentTick(), true, *this);
         else
-            actor.setAnim(Sc::Sprite::AnimHeader::LiftOff, chkd.gameClock.currentTick(), true, *this);
+            actor.setAnim(Sc::Sprite::AnimHeader::LiftOff, gameClock.currentTick(), true, *this);
     }
 }
 
@@ -571,12 +573,12 @@ void MapAnimations::updateSpriteFlags(std::size_t spriteIndex, u16 oldSpriteFlag
         if ( newSpriteFlags & Chk::Sprite::SpriteFlags::SpriteUnitDiabled )
         {
             actor.elevation = 1;
-            actor.setAnim(Sc::Sprite::AnimHeader::Disable, chkd.gameClock.currentTick(), false, *this, true);
+            actor.setAnim(Sc::Sprite::AnimHeader::Disable, gameClock.currentTick(), false, *this, true);
         }
         else
         {
-            actor.elevation = chkd.scData.units.getUnit(Sc::Unit::Type(sprite.type)).elevationLevel;
-            actor.setAnim(Sc::Sprite::AnimHeader::Enable, chkd.gameClock.currentTick(), false, *this, true);
+            actor.elevation = scData.units.getUnit(Sc::Unit::Type(sprite.type)).elevationLevel;
+            actor.setAnim(Sc::Sprite::AnimHeader::Enable, gameClock.currentTick(), false, *this, true);
         }
 
         if ( actor.elevation != oldElevation )
@@ -620,125 +622,6 @@ void MapAnimations::animate(uint64_t currentTick)
     
     for ( std::size_t i=0; i<spriteSize; ++i )
         scenario.view.sprites.attachedData(i).animate(currentTick, false, *this);
-
-    cleanDrawList();
-}
-
-ClipboardAnimations::ClipboardAnimations(Clipboard & clipboard)
-    : AnimContext(), clipboard(clipboard)
-{
-
-}
-
-void ClipboardAnimations::initClipboardUnits()
-{
-    clearClipboardUnits();
-    const auto & pasteUnits = clipboard.getUnits();
-    if ( !pasteUnits.empty() )
-        drawListDirty = true;
-
-    for ( std::size_t i=0; i<pasteUnits.size(); ++i ) // TODO: should sort pasteUnits by draw order first
-    {
-        const auto & pasteUnit = pasteUnits[i];
-        initializeUnitActor(clipboard.unitActors.emplace_back(), true, i, pasteUnit.unit, pasteUnit.xc, pasteUnit.yc);
-    }
-}
-
-void ClipboardAnimations::initClipboardSprites()
-{
-    clearClipboardSprites();
-    const auto & pasteSprites = clipboard.getSprites();
-    if ( !pasteSprites.empty() )
-        drawListDirty = true;
-
-    for ( std::size_t i=0; i<pasteSprites.size(); ++i ) // TODO: should sort pasteSprites by draw order first
-    {
-        const auto & pasteSprite = pasteSprites[i];
-        initializeSpriteActor(clipboard.spriteActors.emplace_back(), true, i, pasteSprite.sprite, pasteSprite.xc, pasteSprite.yc);
-    }
-}
-
-void ClipboardAnimations::clearClipboardUnits()
-{
-    drawListDirty = true;
-    for ( auto & unitActor : clipboard.unitActors )
-    {
-        drawList[unitActor.drawListIndex] = UnusedDrawEntry;
-        for ( auto usedImage : unitActor.usedImages )
-            removeImage(usedImage);
-    }
-    clipboard.unitActors.clear();
-}
-
-void ClipboardAnimations::clearClipboardSprites()
-{
-    drawListDirty = true;
-    for ( auto & spriteActor : clipboard.spriteActors )
-    {
-        drawList[spriteActor.drawListIndex] = UnusedDrawEntry;
-        for ( auto usedImage : spriteActor.usedImages )
-            removeImage(usedImage);
-    }
-    clipboard.spriteActors.clear();
-}
-
-void ClipboardAnimations::clearClipboardActors()
-{
-    clearClipboardUnits();
-    clearClipboardSprites();
-}
-
-void ClipboardAnimations::updateClipboardOwners(u8 newOwner)
-{
-    for ( auto & actor : clipboard.unitActors )
-    {
-        for ( auto usedImageIndex : actor.usedImages )
-        {
-            if ( usedImageIndex != 0 )
-                images[usedImageIndex]->owner = newOwner;
-        }
-    }
-
-    for ( auto & actor : clipboard.spriteActors )
-    {
-        for ( auto usedImageIndex : actor.usedImages )
-        {
-            if ( usedImageIndex != 0 )
-                images[usedImageIndex]->owner = newOwner;
-        }
-    }
-}
-
-void ClipboardAnimations::cleanDrawList()
-{
-    if ( drawListDirty )
-    {
-        std::sort(drawList.begin(), drawList.end());
-        for ( std::size_t i=1; i<drawList.size(); ++i )
-        {
-            if ( drawList[i] == UnusedDrawEntry )
-                break;
-            else
-            {
-                std::uint64_t drawItem = drawList[i];
-                std::uint32_t index = std::uint32_t(drawItem & MaskIndex);
-                if ( drawItem & FlagUnitActor )
-                    clipboard.unitActors[index].drawListIndex = i;
-                else
-                    clipboard.spriteActors[index].drawListIndex = i;
-            }
-        }
-        drawListDirty = false;
-    }
-}
-
-void ClipboardAnimations::animate(uint64_t currentTick)
-{
-    for ( auto & unitActor : clipboard.unitActors )
-        unitActor.animate(currentTick, true, *this);
-
-    for ( auto & spriteActor : clipboard.spriteActors )
-        spriteActor.animate(currentTick, false, *this);
 
     cleanDrawList();
 }

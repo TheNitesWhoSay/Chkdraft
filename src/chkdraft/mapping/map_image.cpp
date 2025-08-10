@@ -1,9 +1,13 @@
+#include <cross_cut/logger.h>
+#include <mapping_core/map_actor.h>
 #include <mapping_core/map_image.h>
-#include "../chkdraft.h" // TODO: recheck whether there's a way this file could go in mapping_core too
+#include "map_animations.h"
 
-u32 iscriptIdFromImage(u32 imageId)
+extern Logger logger;
+
+u32 iscriptIdFromImage(const Sc::Data & scData, u32 imageId)
 {
-    return chkd.scData.sprites.getImage(imageId).iScriptId;
+    return scData.sprites.getImage(imageId).iScriptId;
 }
 
 void MapImage::error(std::string_view message)
@@ -62,7 +66,8 @@ void Animator::setActorDirection(u8 direction)
 
 void Animator::initializeImage(std::size_t iScriptId)
 {
-    auto & imageDat = chkd.scData.sprites.getImage(currImage->imageId);
+    const auto & scData = context.animations.scData;
+    auto & imageDat = scData.sprites.getImage(currImage->imageId);
 
     currImage->remapping = imageDat.remapping;
     if ( currImage->remapping != 0 )
@@ -70,11 +75,11 @@ void Animator::initializeImage(std::size_t iScriptId)
 
     currImage->drawIfCloaked = imageDat.drawIfCloaked != 0;
     currImage->iScriptId = iScriptId;
-    currImage->animation = chkd.scData.sprites.getAnimationHeader(iScriptId, Sc::Sprite::AnimHeader::StarEditInit);
+    currImage->animation = scData.sprites.getAnimationHeader(iScriptId, Sc::Sprite::AnimHeader::StarEditInit);
     if ( currImage->animation == nullptr )
-        currImage->animation = chkd.scData.sprites.getAnimationHeader(iScriptId, Sc::Sprite::AnimHeader::Init);
+        currImage->animation = scData.sprites.getAnimationHeader(iScriptId, Sc::Sprite::AnimHeader::Init);
 
-    currImage->rotation = chkd.scData.sprites.getImage(currImage->imageId).graphicTurns != 0;
+    currImage->rotation = scData.sprites.getImage(currImage->imageId).graphicTurns != 0;
     if ( currImage->animation == nullptr )
         currImage->end();
     else
@@ -82,7 +87,7 @@ void Animator::initializeImage(std::size_t iScriptId)
         currImage->waitUntil = context.currentTick;
         animate(); // Advance until the first wait such that the image starts on the correct frame and all
         currImage->setDirection(context.actor.direction);
-        const Sc::Sprite::IScriptAnimation* built = chkd.scData.sprites.getAnimationHeader(iScriptId, Sc::Sprite::AnimHeader::Built);
+        const Sc::Sprite::IScriptAnimation* built = scData.sprites.getAnimationHeader(iScriptId, Sc::Sprite::AnimHeader::Built);
         if ( built )
         {
             currImage->waitUntil = context.currentTick;
@@ -118,39 +123,41 @@ void Animator::createOverlay(u16 imageId, s8 x, s8 y, bool above)
         logger.warn("CreateOverlay called but no image slots were available for the actor.");
         return;
     }
+    const auto & scData = context.animations.scData;
     overlayImageIndex = context.animations.createImage();
     this->currImage = &context.animations.images[this->currImageIndex].value(); // Ensure currImage still valid if images was resized
     primaryImage = context.actor.primaryImage(context.animations); // Ensure primaryImage still valid if images was resized
     //logger.info() << "PrimaryImage: " << usedImages[0] << ", " << primaryImage.xc << ", " << primaryImage.yc << '\n';
     auto & overlayImage = context.animations.images[overlayImageIndex].value();
-    overlayImage.rotation = chkd.scData.sprites.getImage(imageId).graphicTurns != 0;
+    overlayImage.rotation = scData.sprites.getImage(imageId).graphicTurns != 0;
     overlayImage.imageId = imageId;
     overlayImage.owner = primaryImage->owner;
     overlayImage.xc = primaryImage->xc + s32(x);
     overlayImage.yc = primaryImage->yc + s32(y);
-    overlayImage.remapping = chkd.scData.sprites.getImage(imageId).remapping;
+    overlayImage.remapping = scData.sprites.getImage(imageId).remapping;
     overlayImage.drawFunction = overlayImage.remapping != 0 ? MapImage::DrawFunction::Remap : MapImage::DrawFunction::Normal;
-    overlayImage.drawFunction = (MapImage::DrawFunction)chkd.scData.sprites.getImage(imageId).drawFunction;
+    overlayImage.drawFunction = (MapImage::DrawFunction)scData.sprites.getImage(imageId).drawFunction;
     //logger.info() << this << " creating overlay: " << &overlayImage << '\n';
     Animator {
         .context = this->context,
         .currImageIndex = overlayImageIndex,
         .currImage = &overlayImage
-    }.initializeImage(iscriptIdFromImage(imageId));
+    }.initializeImage(iscriptIdFromImage(scData, imageId));
     //logger.info() << "CreateOverlay: " << overlayImageIndex << ", " << imageId << ", " << "(" << overlayImage.xc << ", " << overlayImage.yc << ")\n";
 }
 
 void Animator::createSpriteOverlay(u16 spriteId, s8 x, s8 y, bool above)
 {
-    u16 imageId = chkd.scData.sprites.getSprite(spriteId).imageFile;
+    u16 imageId = context.animations.scData.sprites.getSprite(spriteId).imageFile;
     //logger.info() << "createSpriteOverlay " << imageId << ", " << x << ", " << y << '\n';
     createOverlay(imageId, x, y, above);
 }
 
 void Animator::animate()
 {
+    const auto & scData = context.animations.scData;
     auto & images = context.animations.images;
-    auto & iscript = chkd.scData.sprites.iscript;
+    auto & iscript = scData.sprites.iscript;
     size_t currOffset = std::distance((const u8*)&iscript[0], (const u8*)currImage->animation);
     if ( context.currentTick >= currImage->waitUntil )
     {
@@ -267,8 +274,8 @@ void Animator::animate()
                             u8 overlayType = iscript[currOffset+2];
                             u8 direction = iscript[currOffset+3];
                             Sc::Sprite::LoOffset offset {};
-                            const auto & loFiles = chkd.scData.sprites.loFiles;
-                            const auto & imageDat = chkd.scData.sprites.getImage(currImage->imageId);
+                            const auto & loFiles = scData.sprites.loFiles;
+                            const auto & imageDat = scData.sprites.getImage(currImage->imageId);
                             switch ( overlayType ) {
                                 case Sc::Sprite::OverlayType::Attack: offset = loFiles[imageDat.attackOverlay].xyOffset(currImage->frame, direction); break;
                                 case Sc::Sprite::OverlayType::Damage: offset = loFiles[imageDat.damageOverlay].xyOffset(currImage->frame, direction); break;

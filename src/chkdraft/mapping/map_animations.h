@@ -3,9 +3,8 @@
 #include "mapping_core/map_actor.h"
 #include "mapping_core/map_image.h"
 #include "mapping_core/mapping_core.h"
+#include "mapping_core/render/game_clock.h"
 #include <optional>
-
-class Clipboard;
 
 struct AnimContext
 {
@@ -17,6 +16,11 @@ protected:
     void initializeImage(u32 iScriptId, std::uint64_t currentTick, MapActor & actor, bool isUnit, std::size_t imageIndex);
 
 public:
+    const Sc::Data & scData;
+    const GameClock & gameClock;
+
+    AnimContext(const Sc::Data & scData, const GameClock & gameClock) : scData(scData), gameClock(gameClock) {}
+
     static constexpr std::uint64_t UnusedDrawEntry  = 0xFFFFFFFFFFFFFFFFull;
     static constexpr std::uint64_t MaskIndex        =         0xFFFFFFFFull;
     static constexpr std::uint64_t FlagDrawUnit     =        0x100000000ull;
@@ -29,9 +33,9 @@ public:
     static constexpr std::uint64_t ShiftIsTurret    = 34;
     static constexpr std::uint64_t ShiftY           = 35;
     static constexpr std::uint64_t ShiftElevation   = 48;
-
     static constexpr std::uint64_t MaskNonIndexDrawList = 0xFFFFFFFF00000000;
     // unitOrSpriteIndex | drawUnit << 32 | unitActor << 33 | isTurret << 34 | y << 35 | elevation << 48
+
     bool drawListDirty = true; // If true at the end of an anim tick, sort the draw list, then go through all entries to give the new drawListIndexes to actors
     std::vector<std::uint64_t> drawList { 0ull }; // Index 0 of drawList is unused, a value of 0xFFFFFFFF in a drawList entry indicates an unused index
     std::vector<std::optional<MapImage>> images {MapImage{}}; // contains the images associated with unitActors and spriteActors, image 0 is unused
@@ -54,7 +58,7 @@ protected:
     const Scenario & scenario;
 
 public:
-    MapAnimations(const Scenario & scenario);
+    MapAnimations(const Sc::Data & scData, const GameClock & gameClock, const Scenario & scenario);
 
     void addUnit(std::size_t unitIndex, MapActor & actor);
     void addSprite(std::size_t spriteIndex, MapActor & actor);
@@ -74,25 +78,6 @@ public:
     void updateUnitStateFlags(std::size_t unitIndex, u16 oldStateFlags, u16 newStateFlags);
     void updateUnitRelationFlags(std::size_t unitIndex, u16 oldRelationFlags, u16 newRelationFlags);
     void updateSpriteFlags(std::size_t spriteIndex, u16 oldSpriteFlags, u16 newSpriteFlags);
-
-    void cleanDrawList();
-    void animate(uint64_t currentTick);
-};
-
-class ClipboardAnimations : public AnimContext
-{
-protected:
-    Clipboard & clipboard;
-
-public:
-    ClipboardAnimations(Clipboard & clipboard);
-
-    void initClipboardUnits();
-    void initClipboardSprites();
-    void clearClipboardUnits();
-    void clearClipboardSprites();
-    void clearClipboardActors();
-    void updateClipboardOwners(u8 newOwner);
 
     void cleanDrawList();
     void animate(uint64_t currentTick);

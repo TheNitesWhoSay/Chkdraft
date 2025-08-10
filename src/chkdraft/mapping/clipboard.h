@@ -1,6 +1,6 @@
 #ifndef CLIPBOARD_H
 #define CLIPBOARD_H
-#include <chkdraft/mapping/map_animations.h>
+#include <chkdraft/mapping/clipboard_animations.h>
 #include <common_files/constants.h>
 #include <mapping_core/map_actor.h>
 #include <mapping_core/mapping_core.h>
@@ -155,10 +155,8 @@ class Clipboard
 
 public:
     ClipboardAnimations animations;
-    std::vector<MapActor> unitActors {};
-    std::vector<MapActor> spriteActors {};
 
-    Clipboard() : animations(*this) {}
+    Clipboard(const Sc::Data & scData, const GameClock & gameClock);
 
     bool hasTiles() const;
     bool hasDoodads() const;
