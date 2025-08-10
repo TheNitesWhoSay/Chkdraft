@@ -1,14 +1,14 @@
 #include "sc_gl_graphics.h"
-#include <chkdraft/ui/main_windows/gui_map.h>
-#include <mapping_core/render/memory_tiered_tasks.h>
 #include "cross_cut/logger.h"
+#include <mapping_core/opengl/glad/glad/glad.h>
+#include <mapping_core/opengl/gl/base.h>
+#include <mapping_core/render/memory_tiered_tasks.h>
 #include <rarecpp/json.h>
 #include <chrono>
 #include <cstring>
-#include <Windows.h>
-#include <glad/glad.h>
-#include "gl/base.h"
 #include <glm/vec3.hpp>
+
+#include <chkdraft/ui/main_windows/gui_map.h> // TODO: Eliminate this dependency
 
 extern Logger logger;
 

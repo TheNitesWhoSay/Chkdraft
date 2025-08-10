@@ -1,9 +1,18 @@
 #ifndef SCGLGRAPHICS_H
 #define SCGLGRAPHICS_H
-#include "common_files/constants.h"
 #include <mapping_core/mapping_core.h>
+#include <mapping_core/opengl/gl/context_semaphore.h>
+#include <mapping_core/opengl/gl/font.h>
+#include <mapping_core/opengl/gl/fps.h>
+#include <mapping_core/opengl/gl/palette.h>
+#include <mapping_core/opengl/gl/program.h>
+#include <mapping_core/opengl/gl/shader.h>
+#include <mapping_core/opengl/gl/texture.h>
+#include <mapping_core/opengl/gl/uniform.h>
+#include <mapping_core/opengl/gl/vertices.h>
 #include <mapping_core/render/color_cycler.h>
 #include <mapping_core/render/map_animations.h>
+#include <glm/glm.hpp>
 #include <rarecpp/reflect.h>
 #include <cstdint>
 #include <filesystem>
@@ -11,18 +20,8 @@
 #include <string>
 #include <string_view>
 #include <vector>
-#include "gl/context_semaphore.h"
-#include "gl/font.h"
-#include "gl/fps.h"
-#include "gl/palette.h"
-#include "gl/program.h"
-#include "gl/shader.h"
-#include "gl/texture.h"
-#include "gl/uniform.h"
-#include "gl/vertices.h"
-#include <glm/glm.hpp>
 
-class GuiMap;
+class GuiMap; // TODO: Eliminate this dependency
 
 namespace Scr {
 
