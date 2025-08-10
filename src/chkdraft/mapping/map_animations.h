@@ -6,8 +6,6 @@
 #include <optional>
 
 class Clipboard;
-struct PasteUnitNode;
-struct PasteSpriteNode;
 
 struct AnimContext
 {

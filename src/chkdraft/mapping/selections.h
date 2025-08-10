@@ -1,6 +1,6 @@
 #ifndef SELECTIONS_H
 #define SELECTIONS_H
-#include <common_files/structs.h>
+#include <common_files/constants.h>
 #include <mapping_core/basics.h>
 #include <mapping_core/chk.h>
 #include <mapping_core/sc.h>

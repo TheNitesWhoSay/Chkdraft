@@ -8,7 +8,6 @@
 #include "debug.h"
 #include "constants.h"
 #include "resource.h"
-#include "structs.h"
 #include "version.h"
 
 #include <Windows.h>

@@ -91,6 +91,14 @@ class Graphics
         u16 mapWidth; // In tiles
         u16 mapHeight; // In tiles
 
+        template <typename Color>
+        struct MapGrid // A simple grid that can be displayed over a map
+        {
+            struct { s16 x; s16 y; } size {0, 0};
+            struct { s32 x; s32 y; } offset {0, 0};
+            Color color {};
+        };
+
         MapGrid<Sc::SystemColor> grids[2]; // The grids drawn over the map
         bool tileNumsFromMTXM; // When false, tile nums are from TILE
         bool displayingIsomTypes; // Determine whether ISOM terrain types are showing

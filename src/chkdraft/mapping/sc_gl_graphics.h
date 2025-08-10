@@ -1,7 +1,6 @@
 #ifndef SCGLGRAPHICS_H
 #define SCGLGRAPHICS_H
 #include "common_files/constants.h"
-#include "common_files/structs.h"
 #include "mapping/color_cycler.h"
 #include "mapping/map_animations.h"
 #include <mapping_core/mapping_core.h>
@@ -896,16 +895,6 @@ namespace Scr {
         size_t getImageId(Sc::Sprite::Type spriteType, bool isDrawnAsSprite);
         size_t getImageId(const Chk::Unit & unit);
         size_t getImageId(const Chk::Sprite & sprite);
-        struct UnitInfo {
-            size_t imageId;
-            size_t imageFrame;
-            size_t subUnitImageId;
-            point subUnitOffset;
-            size_t subUnitFrame;
-            size_t overlayImageId;
-            size_t attachOverlayImageId;
-            size_t attachFrame;
-        };
         struct SelectInfo {
             size_t imageId;
             s32 yOffset;

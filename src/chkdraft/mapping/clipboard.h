@@ -2,7 +2,6 @@
 #define CLIPBOARD_H
 #include <chkdraft/mapping/map_animations.h>
 #include <common_files/constants.h>
-#include <common_files/structs.h>
 #include <mapping_core/map_actor.h>
 #include <mapping_core/mapping_core.h>
 #include <chrono>
@@ -95,6 +94,25 @@ struct FogBrush
 
 class Clipboard
 {
+    struct rect // Mirrors win32 RECT
+    {
+        s32 left;
+        s32 top;
+        s32 right;
+        s32 bottom;
+    };
+    struct points // Mirrors win32 POINTS
+    {
+        s16 x = 0;
+        s16 y = 0;
+        inline bool operator==(const points & rhs) const { return x == rhs.x && y == rhs.y; }
+        inline bool operator<(const points & rhs) const {
+            if ( y < rhs.y) return true;
+            else if ( y > rhs.y ) return false;
+            else return x < rhs.x;
+        }
+    };
+
     bool pasting = false;
     bool quickPaste = false; /* Controls whether you are using quick placement,
                                 as opposed to something saved on clipboard.     */

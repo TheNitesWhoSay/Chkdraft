@@ -53,7 +53,6 @@ set(Headers
   common_files/constants.h
   common_files/debug.h
   common_files/resource.h
-  common_files/structs.h
   common_files/version.h
   mapping/map_actor.cpp
   mapping/map_animations.h
