@@ -1,9 +1,9 @@
 #ifndef SCGLGRAPHICS_H
 #define SCGLGRAPHICS_H
 #include "common_files/constants.h"
-#include "mapping/map_animations.h"
 #include <mapping_core/mapping_core.h>
 #include <mapping_core/render/color_cycler.h>
+#include <mapping_core/render/map_animations.h>
 #include <rarecpp/reflect.h>
 #include <cstdint>
 #include <filesystem>

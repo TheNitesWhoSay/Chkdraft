@@ -55,7 +55,6 @@ set(Headers
   common_files/resource.h
   common_files/version.h
   mapping/clipboard_animations.h
-  mapping/map_animations.h
   mapping/chkd_plugins.h
   mapping/clipboard.h
   mapping/data_file_browsers.h
@@ -148,6 +147,7 @@ set(Headers
   ../mapping_core/render/color_cycler.h
   ../mapping_core/render/game_clock.h
   ../mapping_core/render/memory_tiered_tasks.h
+  ../mapping_core/render/map_animations.h
 )
 set(Sources
   chkdraft.cpp
@@ -158,9 +158,6 @@ set(Sources
   mapping/clipboard.cpp
   mapping/clipboard_animations.cpp
   mapping/data_file_browsers.cpp
-  mapping/map_actor.cpp
-  mapping/map_animations.cpp
-  mapping/map_image.cpp
   mapping/sc_gdi_graphics.cpp
   mapping/sc_gl_graphics.cpp
   mapping/selections.cpp
@@ -234,6 +231,9 @@ set(Sources
   ui/main_windows/maps.cpp
   ui/main_windows/mini_map.cpp
   ../mapping_core/opengl/glad/glad/glad.c
+  ../mapping_core/render/map_actor.cpp
+  ../mapping_core/render/map_animations.cpp
+  ../mapping_core/render/map_image.cpp
 )
 
 add_library(${This} STATIC ${Sources} ${Headers})

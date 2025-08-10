@@ -1,9 +1,9 @@
 #ifndef GUIMAP_H
 #define GUIMAP_H
 #include <common_files/common_files.h>
+#include <mapping_core/render/map_animations.h>
 #include <windows/windows_ui.h>
 #include "mapping/clipboard.h"
-#include "mapping/map_animations.h"
 #include "mapping/sc_gdi_graphics.h"
 #include "mapping/selections.h"
 
