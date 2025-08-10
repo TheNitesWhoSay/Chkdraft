@@ -10,7 +10,7 @@ bool GuiMap::doAutoBackups = false;
 
 GuiMap::GuiMap(Clipboard & clipboard, const std::string & filePath) : MapFile(filePath),
     Chk::IsomCache(read.tileset, read.dimensions.tileWidth, read.dimensions.tileHeight, chkd.scData.terrain.get(read.tileset)),
-    clipboard(clipboard), scrGraphics{std::make_unique<Scr::MapGraphics>(chkd.scData, *this)},
+    clipboard(clipboard), scrGraphics{std::make_unique<MapGraphics>(chkd.scData, *this)},
     animations(chkd.scData, chkd.gameClock, (const Scenario &)*this)
 {
     SetWinText(MapFile::getFileName());
@@ -27,7 +27,7 @@ GuiMap::GuiMap(Clipboard & clipboard, const std::string & filePath) : MapFile(fi
 
 GuiMap::GuiMap(Clipboard & clipboard, FileBrowserPtr<SaveType> fileBrowser) : MapFile(fileBrowser),
     Chk::IsomCache(read.tileset, read.dimensions.tileWidth, read.dimensions.tileHeight, chkd.scData.terrain.get(read.tileset)),
-    clipboard(clipboard), scrGraphics{std::make_unique<Scr::MapGraphics>(chkd.scData, *this)},
+    clipboard(clipboard), scrGraphics{std::make_unique<MapGraphics>(chkd.scData, *this)},
     animations(chkd.scData, chkd.gameClock, (const Scenario &)*this)
 {
     SetWinText(MapFile::getFileName());
@@ -45,7 +45,7 @@ GuiMap::GuiMap(Clipboard & clipboard, FileBrowserPtr<SaveType> fileBrowser) : Ma
 GuiMap::GuiMap(Clipboard & clipboard, Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex, DefaultTriggers defaultTriggers, SaveType saveType)
     : MapFile(tileset, width, height, terrainTypeIndex, saveType, &chkd.scData.terrain.get(tileset)),
     Chk::IsomCache(read.tileset, read.dimensions.tileWidth, read.dimensions.tileHeight, chkd.scData.terrain.get(read.tileset)),
-    clipboard(clipboard), scrGraphics{std::make_unique<Scr::MapGraphics>(chkd.scData, *this)},
+    clipboard(clipboard), scrGraphics{std::make_unique<MapGraphics>(chkd.scData, *this)},
     animations(chkd.scData, chkd.gameClock, (const Scenario &)*this)
 {
     refreshTileOccupationCache();
@@ -4044,22 +4044,22 @@ void GuiMap::SetSkin(GuiMap::Skin skin, bool reloadCurrent)
     if ( skin == this->skin && !reloadCurrent )
         return;
 
-    // Validate the skin and if remastered, turn it into Scr::GraphicsData::LoadSettings
-    Scr::GraphicsData::LoadSettings loadSettings {
-        .visualQuality = Scr::VisualQuality::SD,
-        .skinId = Scr::Skin::Id::Classic,
+    // Validate the skin and if remastered, turn it into GraphicsData::LoadSettings
+    GraphicsData::LoadSettings loadSettings {
+        .visualQuality = VisualQuality::SD,
+        .skinId = ::Skin::Id::Classic,
         .tileset = Sc::Terrain::Tileset(MapFile::getTileset() % Sc::Terrain::NumTilesets),
         .forceShowStars = false
     };
     switch ( skin )
     {
-        case Skin::ClassicGDI: loadSettings.visualQuality = Scr::VisualQuality::SD; loadSettings.skinId = Scr::Skin::Id::Classic; break;
-        case Skin::ClassicGL: loadSettings.visualQuality = Scr::VisualQuality::SD; loadSettings.skinId = Scr::Skin::Id::Classic; break;
-        case Skin::ScrSD: loadSettings.visualQuality = Scr::VisualQuality::SD; loadSettings.skinId = Scr::Skin::Id::Remastered; break;
-        case Skin::ScrHD2: loadSettings.visualQuality = Scr::VisualQuality::HD2; loadSettings.skinId = Scr::Skin::Id::Remastered; break;
-        case Skin::ScrHD: loadSettings.visualQuality = Scr::VisualQuality::HD; loadSettings.skinId = Scr::Skin::Id::Remastered; break;
-        case Skin::CarbotHD2: loadSettings.visualQuality = Scr::VisualQuality::HD2; loadSettings.skinId = Scr::Skin::Id::Carbot; break;
-        case Skin::CarbotHD: loadSettings.visualQuality = Scr::VisualQuality::HD; loadSettings.skinId = Scr::Skin::Id::Carbot; break;
+        case Skin::ClassicGDI: loadSettings.visualQuality = VisualQuality::SD; loadSettings.skinId = ::Skin::Id::Classic; break;
+        case Skin::ClassicGL: loadSettings.visualQuality = VisualQuality::SD; loadSettings.skinId = ::Skin::Id::Classic; break;
+        case Skin::ScrSD: loadSettings.visualQuality = VisualQuality::SD; loadSettings.skinId = ::Skin::Id::Remastered; break;
+        case Skin::ScrHD2: loadSettings.visualQuality = VisualQuality::HD2; loadSettings.skinId = ::Skin::Id::Remastered; break;
+        case Skin::ScrHD: loadSettings.visualQuality = VisualQuality::HD; loadSettings.skinId = ::Skin::Id::Remastered; break;
+        case Skin::CarbotHD2: loadSettings.visualQuality = VisualQuality::HD2; loadSettings.skinId = ::Skin::Id::Carbot; break;
+        case Skin::CarbotHD: loadSettings.visualQuality = VisualQuality::HD; loadSettings.skinId = ::Skin::Id::Carbot; break;
         default: throw std::logic_error("Unrecognized skin!");
     }
 
@@ -4076,7 +4076,7 @@ void GuiMap::SetSkin(GuiMap::Skin skin, bool reloadCurrent)
 
         if ( chkd.scrData == nullptr )
         {
-            chkd.scrData = std::make_unique<Scr::GraphicsData>();
+            chkd.scrData = std::make_unique<GraphicsData>();
             chkd.scrData->openGlContextSemaphore = chkd.maps.getContextSemaphore();
         }
         

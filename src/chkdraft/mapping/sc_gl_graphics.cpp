@@ -12,7 +12,7 @@
 
 extern Logger logger;
 
-void Scr::GraphicsData::Shaders::loadClassic()
+void GraphicsData::Shaders::loadClassic()
 {
     if ( !classicPaletteShader.hasShaders() )
         classicPaletteShader.load();
@@ -21,7 +21,7 @@ void Scr::GraphicsData::Shaders::loadClassic()
         solidColorShader.load();
 }
 
-void Scr::GraphicsData::Shaders::load(ArchiveCluster & archiveCluster)
+void GraphicsData::Shaders::load(ArchiveCluster & archiveCluster)
 {
     if ( waterShader.hasShaders() )
         return; // Already loaded remastered
@@ -109,7 +109,7 @@ void Scr::GraphicsData::Shaders::load(ArchiveCluster & archiveCluster)
         solidColorShader.load();
 }
 
-void Scr::GraphicsData::loadSkin(Skin & skin, ArchiveCluster & archiveCluster, VisualQuality visualQuality, ByteBuffer & fileData)
+void GraphicsData::loadSkin(Skin & skin, ArchiveCluster & archiveCluster, VisualQuality visualQuality, ByteBuffer & fileData)
 {
     auto path = std::filesystem::path(visualQuality.prefix) / "anim" / skin / "skin.json";
     if ( archiveCluster.getFile(path.string(), fileData) )
@@ -125,7 +125,7 @@ void Scr::GraphicsData::loadSkin(Skin & skin, ArchiveCluster & archiveCluster, V
     }
 }
 
-Scr::GraphicsData::DDS_HEADER::Format Scr::GraphicsData::DDS_HEADER::getFormat()
+GraphicsData::DDS_HEADER::Format GraphicsData::DDS_HEADER::getFormat()
 {
     if ( fileType != DDS )
         throw std::runtime_error("Error: Invalid header");
@@ -139,7 +139,7 @@ Scr::GraphicsData::DDS_HEADER::Format Scr::GraphicsData::DDS_HEADER::getFormat()
     }
 }
 
-gl::Texture Scr::GraphicsData::loadDdsTexture(u8* data, gl::ContextSemaphore* contextSemaphore)
+gl::Texture GraphicsData::loadDdsTexture(u8* data, gl::ContextSemaphore* contextSemaphore)
 {
     DDS_HEADER* header = (DDS_HEADER*)data;
     GLint mipMapCount = GLint(header->mipMapCount == 0 ? 1 : header->mipMapCount);
@@ -190,7 +190,7 @@ gl::Texture Scr::GraphicsData::loadDdsTexture(u8* data, gl::ContextSemaphore* co
     return texture;
 }
 
-void Scr::GraphicsData::loadDdsTextureSubImage(u8* data, gl::Texture & texture, GLint xOffset, GLint yOffset, GLsizei width, GLsizei height)
+void GraphicsData::loadDdsTextureSubImage(u8* data, gl::Texture & texture, GLint xOffset, GLint yOffset, GLsizei width, GLsizei height)
 {
     DDS_HEADER* header = (DDS_HEADER*)data;
     DDS_HEADER::Format format = header->getFormat();
@@ -208,7 +208,7 @@ void Scr::GraphicsData::loadDdsTextureSubImage(u8* data, gl::Texture & texture, 
     });
 }
 
-gl::Texture Scr::GraphicsData::loadBmpLuminanceTexture(u8* data, GLsizei width, GLsizei height, gl::ContextSemaphore* contextSemaphore)
+gl::Texture GraphicsData::loadBmpLuminanceTexture(u8* data, GLsizei width, GLsizei height, gl::ContextSemaphore* contextSemaphore)
 {
     if ( *((u32*)data) != Animation::MainSd::BMP )
         throw std::logic_error("Invalid BMP file type!");
@@ -231,7 +231,7 @@ gl::Texture Scr::GraphicsData::loadBmpLuminanceTexture(u8* data, GLsizei width, 
     return texture;
 }
 
-std::shared_ptr<Scr::Animation> Scr::GraphicsData::loadSdAnim(Sc::Data & scData, u8* data, u32 index, gl::ContextSemaphore* contextSemaphore)
+std::shared_ptr<Animation> GraphicsData::loadSdAnim(Sc::Data & scData, u8* data, u32 index, gl::ContextSemaphore* contextSemaphore)
 {
     auto & grp = scData.sprites.getGrp(scData.sprites.getImage(index).grpFile).get();
 
@@ -282,7 +282,7 @@ std::shared_ptr<Scr::Animation> Scr::GraphicsData::loadSdAnim(Sc::Data & scData,
     return animation;
 }
         
-std::shared_ptr<Scr::Animation> Scr::GraphicsData::loadHdAnim(bool halfAnim, ArchiveCluster & archiveCluster, const std::filesystem::path & path, ByteBuffer & fileData, gl::ContextSemaphore* contextSemaphore)
+std::shared_ptr<Animation> GraphicsData::loadHdAnim(bool halfAnim, ArchiveCluster & archiveCluster, const std::filesystem::path & path, ByteBuffer & fileData, gl::ContextSemaphore* contextSemaphore)
 {
     if ( archiveCluster.getFile(path.string(), fileData) )
     {
@@ -326,7 +326,7 @@ std::shared_ptr<Scr::Animation> Scr::GraphicsData::loadHdAnim(bool halfAnim, Arc
     return nullptr;
 }
 
-bool Scr::GraphicsData::loadGrp(ArchiveCluster & archiveCluster, const std::filesystem::path & path, Grp & grp, ByteBuffer & fileData, bool framedTex, bool mergedTex)
+bool GraphicsData::loadGrp(ArchiveCluster & archiveCluster, const std::filesystem::path & path, Grp & grp, ByteBuffer & fileData, bool framedTex, bool mergedTex)
 {
     if ( archiveCluster.getFile(path.string(), fileData) )
     {
@@ -460,7 +460,7 @@ bool Scr::GraphicsData::loadGrp(ArchiveCluster & archiveCluster, const std::file
     return false;
 }
 
-Scr::SpkGrp Scr::GraphicsData::loadStarGrp(ArchiveCluster & archiveCluster, const std::filesystem::path & path, ByteBuffer & fileData) // An individual starGrp is a texture
+SpkGrp GraphicsData::loadStarGrp(ArchiveCluster & archiveCluster, const std::filesystem::path & path, ByteBuffer & fileData) // An individual starGrp is a texture
 {
     if ( archiveCluster.getFile(path.string(), fileData) )
     {
@@ -492,7 +492,7 @@ Scr::SpkGrp Scr::GraphicsData::loadStarGrp(ArchiveCluster & archiveCluster, cons
         throw std::runtime_error("Failed to get stars \"" + path.string() + "\" from archives");
 }
 
-void Scr::GraphicsData::loadMaskedTiles(ArchiveCluster & archiveCluster, Sc::Terrain::Tileset tileset, Grp & tilesetGrp, Grp & tileMasks, std::vector<u16> & maskIds)
+void GraphicsData::loadMaskedTiles(ArchiveCluster & archiveCluster, Sc::Terrain::Tileset tileset, Grp & tilesetGrp, Grp & tileMasks, std::vector<u16> & maskIds)
 {
     GLint savedViewport[4] {};
     glGetIntegerv(GL_VIEWPORT, savedViewport);
@@ -624,7 +624,7 @@ void Scr::GraphicsData::loadMaskedTiles(ArchiveCluster & archiveCluster, Sc::Ter
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
         
-void Scr::GraphicsData::loadTileMasks(ArchiveCluster & archiveCluster, std::filesystem::path path, std::vector<u16> & maskIds)
+void GraphicsData::loadTileMasks(ArchiveCluster & archiveCluster, std::filesystem::path path, std::vector<u16> & maskIds)
 {
     auto tmskFile = archiveCluster.getFile(path.string());
     TileMask::File* file = (TileMask::File*)tmskFile->data();
@@ -638,14 +638,14 @@ void Scr::GraphicsData::loadTileMasks(ArchiveCluster & archiveCluster, std::file
     }
 }
 
-void Scr::GraphicsData::Data::Skin::Tileset::load(ArchiveCluster & archiveCluster, const LoadSettings & loadSettings, ByteBuffer & fileData)
+void GraphicsData::Data::Skin::Tileset::load(ArchiveCluster & archiveCluster, const LoadSettings & loadSettings, ByteBuffer & fileData)
 {
     constexpr std::string_view tilesetNames[8] { "badlands", "platform", "install", "ashworld", "jungle", "desert", "ice", "twilight" };
     std::string tilesetName = std::string(tilesetNames[size_t(loadSettings.tileset) % size_t(Sc::Terrain::NumTilesets)]);
     auto visualQuality = loadSettings.visualQuality;
-    auto skinName = Scr::Skin::skinNames[size_t(loadSettings.skinId)];
+    auto skinName = ::Skin::skinNames[size_t(loadSettings.skinId)];
     std::filesystem::path tilesetPath {};
-    if ( loadSettings.skinId != Scr::Skin::Id::Remastered && visualQuality > VisualQuality::SD )
+    if ( loadSettings.skinId != ::Skin::Id::Remastered && visualQuality > VisualQuality::SD )
         tilesetPath = std::filesystem::path(visualQuality.prefix) / skinName / "tileset" / (tilesetName + ".dds.vr4");
     else
         tilesetPath = std::filesystem::path(visualQuality.prefix) / "tileset" / (tilesetName + ".dds.vr4");
@@ -668,7 +668,7 @@ void Scr::GraphicsData::Data::Skin::Tileset::load(ArchiveCluster & archiveCluste
         loadGrp(archiveCluster, tilesetPath, tilesetGrp, fileData, false, true);
 }
 
-void Scr::GraphicsData::Data::Skin::loadClassicStars(Sc::Data & scData)
+void GraphicsData::Data::Skin::loadClassicStars(Sc::Data & scData)
 {
     if ( spk == nullptr )
     {
@@ -680,7 +680,7 @@ void Scr::GraphicsData::Data::Skin::loadClassicStars(Sc::Data & scData)
             {
                 u16 alignedWidth = (star.bitmap->width+3)/4*4;
                 u16 alignedHeight = (star.bitmap->height+3)/4*4;
-                auto & classicStar = starLayer.emplace_back(Scr::ClassicStar {
+                auto & classicStar = starLayer.emplace_back(ClassicStar {
                     .xc = star.xc,
                     .yc = star.yc,
                     .width = star.bitmap->width,
@@ -742,7 +742,7 @@ void Scr::GraphicsData::Data::Skin::loadClassicStars(Sc::Data & scData)
     }
 }
 
-void Scr::GraphicsData::Data::Skin::loadStars(ArchiveCluster & archiveCluster, std::filesystem::path texPrefix, ByteBuffer & fileData)
+void GraphicsData::Data::Skin::loadStars(ArchiveCluster & archiveCluster, std::filesystem::path texPrefix, ByteBuffer & fileData)
 {
     if ( spk == nullptr )
     {
@@ -906,11 +906,11 @@ void calculateAlphaEffectPalette(const auto & srcEffectRemapper, const auto & sr
     }
 }
 
-void Scr::GraphicsData::Data::Skin::loadClassicTiles(Sc::Data & scData, const LoadSettings & loadSettings)
+void GraphicsData::Data::Skin::loadClassicTiles(Sc::Data & scData, const LoadSettings & loadSettings)
 {
     auto tilesetIndex = size_t(loadSettings.tileset) % size_t(Sc::Terrain::NumTilesets);
     auto & tilesetGraphics = this->tiles[tilesetIndex];
-    tilesetGraphics = std::make_shared<Scr::GraphicsData::Data::Skin::Tileset>();
+    tilesetGraphics = std::make_shared<GraphicsData::Data::Skin::Tileset>();
     // Populate tileTextureData
     constexpr size_t width = 32*128;
     std::vector<u8> tileTextureData(size_t(width*4096), u8(0)); // 4096x4096 palette indexes (128x128 tiles)
@@ -997,7 +997,7 @@ void Scr::GraphicsData::Data::Skin::loadClassicTiles(Sc::Data & scData, const Lo
     }
 }
 
-void Scr::GraphicsData::Data::Skin::loadTiles(ArchiveCluster & archiveCluster, const LoadSettings & loadSettings, ByteBuffer & fileData)
+void GraphicsData::Data::Skin::loadTiles(ArchiveCluster & archiveCluster, const LoadSettings & loadSettings, ByteBuffer & fileData)
 {
     auto tilesetIndex = size_t(loadSettings.tileset) % size_t(Sc::Terrain::NumTilesets);
     if ( tiles[tilesetIndex] == nullptr )
@@ -1007,7 +1007,7 @@ void Scr::GraphicsData::Data::Skin::loadTiles(ArchiveCluster & archiveCluster, c
     }
 }
 
-void Scr::GraphicsData::Data::Skin::loadClassicImageFrame(std::size_t frameIndex, std::size_t imageIndex, Sc::Data & scData, std::vector<u8> & bitmapData, bool saveBinds)
+void GraphicsData::Data::Skin::loadClassicImageFrame(std::size_t frameIndex, std::size_t imageIndex, Sc::Data & scData, std::vector<u8> & bitmapData, bool saveBinds)
 {
     auto & classicImage = (*classicImages)[imageIndex];
     auto & imageDat = scData.sprites.getImage(imageIndex);
@@ -1094,7 +1094,7 @@ void Scr::GraphicsData::Data::Skin::loadClassicImageFrame(std::size_t frameIndex
     std::fill(&bitmapData[0], &bitmapData[0] + bitmapWidth * bitmapHeight, 0);
 }
 
-void Scr::GraphicsData::Data::Skin::loadClassicImages(Sc::Data & scData)
+void GraphicsData::Data::Skin::loadClassicImages(Sc::Data & scData)
 {
     if ( !tunitPalette )
     {
@@ -1110,7 +1110,7 @@ void Scr::GraphicsData::Data::Skin::loadClassicImages(Sc::Data & scData)
         tselectPalette->update();
     }
 
-    classicImages = std::make_shared<std::vector<std::shared_ptr<Scr::ClassicGrp>>>();
+    classicImages = std::make_shared<std::vector<std::shared_ptr<ClassicGrp>>>();
     classicImages->assign(999, nullptr);
     //std::vector<u8> bitmapData(size_t(60480), u8(0));
 
@@ -1122,7 +1122,7 @@ void Scr::GraphicsData::Data::Skin::loadClassicImages(Sc::Data & scData)
         size_t numFrames = size_t(grpFile.numFrames);
         if ( numFrames > 0 )
         {
-            auto classicImage = std::make_shared<Scr::ClassicGrp>();
+            auto classicImage = std::make_shared<ClassicGrp>();
             classicImage->frames.reserve(numFrames);
             for ( std::size_t frameIndex=0; frameIndex<numFrames; ++frameIndex )
                 classicImage->frames.emplace_back();
@@ -1136,14 +1136,14 @@ void Scr::GraphicsData::Data::Skin::loadClassicImages(Sc::Data & scData)
     }
 }
 
-void Scr::GraphicsData::Data::Skin::loadImages(Sc::Data & scData, ArchiveCluster & archiveCluster, std::filesystem::path texPrefix, const LoadSettings & loadSettings, ByteBuffer & fileData, gl::ContextSemaphore* contextSemaphore)
+void GraphicsData::Data::Skin::loadImages(Sc::Data & scData, ArchiveCluster & archiveCluster, std::filesystem::path texPrefix, const LoadSettings & loadSettings, ByteBuffer & fileData, gl::ContextSemaphore* contextSemaphore)
 {
     bool halfAnims = loadSettings.visualQuality.halfAnims;
     if ( this->images == nullptr )
         this->images = std::make_shared<std::vector<std::shared_ptr<Animation>>>(size_t(999), nullptr);
 
-    Scr::Skin skin {};
-    skin.skinName = Scr::Skin::skinNames[size_t(loadSettings.skinId)];
+    ::Skin skin {};
+    skin.skinName = ::Skin::skinNames[size_t(loadSettings.skinId)];
     loadSkin(skin, archiveCluster, loadSettings.visualQuality, fileData);
 
     std::filesystem::path animPrefix = texPrefix / "anim";
@@ -1246,7 +1246,7 @@ void Scr::GraphicsData::Data::Skin::loadImages(Sc::Data & scData, ArchiveCluster
     }
 }
 
-void Scr::GraphicsData::Data::loadWaterNormals(ArchiveCluster & archiveCluster, std::filesystem::path texPrefix, ByteBuffer & fileData)
+void GraphicsData::Data::loadWaterNormals(ArchiveCluster & archiveCluster, std::filesystem::path texPrefix, ByteBuffer & fileData)
 {
     for ( size_t i=0; i<std::size(waterNormal); ++i )
     {
@@ -1263,7 +1263,7 @@ void Scr::GraphicsData::Data::loadWaterNormals(ArchiveCluster & archiveCluster, 
     }
 }
 
-void Scr::GraphicsData::unload(const LoadSettings & loadSettings)
+void GraphicsData::unload(const LoadSettings & loadSettings)
 {
     auto visualQualityIndex = loadSettings.visualQuality.index();
     if ( visualQualityData[visualQualityIndex] != nullptr )
@@ -1305,9 +1305,9 @@ void Scr::GraphicsData::unload(const LoadSettings & loadSettings)
         shaders = nullptr;
 }
 
-bool Scr::GraphicsData::isLoaded(const LoadSettings & loadSettings)
+bool GraphicsData::isLoaded(const LoadSettings & loadSettings)
 {
-    bool isRemastered = loadSettings.skinId != Scr::Skin::Id::Classic;
+    bool isRemastered = loadSettings.skinId != Skin::Id::Classic;
 
     if ( shaders == nullptr )
         return false;
@@ -1324,7 +1324,7 @@ bool Scr::GraphicsData::isLoaded(const LoadSettings & loadSettings)
     }
 
     auto skinIndex = size_t(loadSettings.skinId);
-    if ( skinIndex >= Scr::Skin::total )
+    if ( skinIndex >= Skin::total )
         throw std::logic_error("Invalid skinId");
     else if ( data.skin[skinIndex] == nullptr )
         return false;
@@ -1340,9 +1340,9 @@ bool Scr::GraphicsData::isLoaded(const LoadSettings & loadSettings)
     return isRemastered ? skin.images != nullptr : skin.classicImages != nullptr;
 }
 
-std::shared_ptr<Scr::GraphicsData::RenderData> Scr::GraphicsData::load(Sc::Data & scData, ArchiveCluster & archiveCluster, const LoadSettings & loadSettings, ByteBuffer & fileData)
+std::shared_ptr<GraphicsData::RenderData> GraphicsData::load(Sc::Data & scData, ArchiveCluster & archiveCluster, const LoadSettings & loadSettings, ByteBuffer & fileData)
 {
-    bool isRemastered = loadSettings.skinId != Scr::Skin::Id::Classic;
+    bool isRemastered = loadSettings.skinId != Skin::Id::Classic;
 
     if ( shaders == nullptr )
         shaders = std::make_shared<Shaders>();
@@ -1362,8 +1362,8 @@ std::shared_ptr<Scr::GraphicsData::RenderData> Scr::GraphicsData::load(Sc::Data 
         data.loadWaterNormals(archiveCluster, visualQualityPrefix, fileData);
 
     auto skinIndex = size_t(loadSettings.skinId);
-    Scr::Skin skinDescriptor { .skinName = std::string(Scr::Skin::skinNames[skinIndex]) };
-    if ( skinIndex >= Scr::Skin::total )
+    Skin skinDescriptor { .skinName = std::string(Skin::skinNames[skinIndex]) };
+    if ( skinIndex >= Skin::total )
         throw std::logic_error("Invalid skinId");
     else if ( data.skin[skinIndex] == nullptr )
         data.skin[skinIndex] = std::make_shared<Data::Skin>();
@@ -1408,7 +1408,7 @@ std::shared_ptr<Scr::GraphicsData::RenderData> Scr::GraphicsData::load(Sc::Data 
     return renderData;
 }
 
-u32 Scr::MapGraphics::getPlayerColor(u8 player, bool hasCrgb)
+u32 MapGraphics::getPlayerColor(u8 player, bool hasCrgb)
 {
     if ( player >= 8 )
         return (u32 &)(scData.tunit.rgbaPalette[8*size_t(player) < scData.tunit.rgbaPalette.size() ? 8*size_t(player) : 8*size_t(player)%scData.tunit.rgbaPalette.size()]);
@@ -1436,38 +1436,38 @@ u32 Scr::MapGraphics::getPlayerColor(u8 player, bool hasCrgb)
     }
 }
 
-size_t Scr::MapGraphics::getImageId(Sc::Unit::Type unitType)
+size_t MapGraphics::getImageId(Sc::Unit::Type unitType)
 {
     u32 flingyId = u32(scData.units.getUnit(Sc::Unit::Type(unitType >= 228 ? 0 : unitType)).graphics);
     u32 spriteId = u32(scData.units.getFlingy(flingyId >= 209 ? 0 : flingyId).sprite);
     return scData.sprites.getSprite(spriteId >= 517 ? 0 : spriteId).imageFile;
 }
 
-size_t Scr::MapGraphics::getImageId(Sc::Sprite::Type spriteType)
+size_t MapGraphics::getImageId(Sc::Sprite::Type spriteType)
 {
     return scData.sprites.getSprite(spriteType >= 517 ? 0 : spriteType).imageFile;
 }
 
-size_t Scr::MapGraphics::getImageId(const Chk::Unit & unit)
+size_t MapGraphics::getImageId(const Chk::Unit & unit)
 {
     return getImageId(unit.type);
 }
 
-size_t Scr::MapGraphics::getImageId(Sc::Sprite::Type spriteType, bool isDrawnAsSprite)
+size_t MapGraphics::getImageId(Sc::Sprite::Type spriteType, bool isDrawnAsSprite)
 {
     return isDrawnAsSprite ?
         getImageId(spriteType) :
         getImageId(Sc::Unit::Type(spriteType));
 }
 
-size_t Scr::MapGraphics::getImageId(const Chk::Sprite & sprite)
+size_t MapGraphics::getImageId(const Chk::Sprite & sprite)
 {
     return sprite.isDrawnAsSprite() ?
         getImageId(sprite.type) :
         getImageId(Sc::Unit::Type(sprite.type));
 }
 
-Scr::MapGraphics::SelectInfo Scr::MapGraphics::getSelInfo(Sc::Unit::Type unitType)
+MapGraphics::SelectInfo MapGraphics::getSelInfo(Sc::Unit::Type unitType)
 {
     u32 flingyId = u32(scData.units.getUnit(Sc::Unit::Type(unitType >= 228 ? 0 : unitType)).graphics);
     u32 spriteId = u32(scData.units.getFlingy(flingyId >= 209 ? 0 : flingyId).sprite);
@@ -1479,7 +1479,7 @@ Scr::MapGraphics::SelectInfo Scr::MapGraphics::getSelInfo(Sc::Unit::Type unitTyp
     };
 }
 
-Scr::MapGraphics::SelectInfo Scr::MapGraphics::getSelInfo(Sc::Sprite::Type spriteType, bool isDrawnAsSprite)
+MapGraphics::SelectInfo MapGraphics::getSelInfo(Sc::Sprite::Type spriteType, bool isDrawnAsSprite)
 {
     auto & sprite = scData.sprites.getSprite(spriteType >= 517 ? 0 : spriteType);
     u32 selectionImageId = sprite.selectionCircleImage+561;
@@ -1489,46 +1489,46 @@ Scr::MapGraphics::SelectInfo Scr::MapGraphics::getSelInfo(Sc::Sprite::Type sprit
     };
 }
 
-Scr::Animation & Scr::MapGraphics::getImage(size_t imageId)
+Animation & MapGraphics::getImage(size_t imageId)
 {
     return *((*renderDat->images)[imageId]);
 }
 
-Scr::Animation & Scr::MapGraphics::getImage(Sc::Unit::Type unitType)
+Animation & MapGraphics::getImage(Sc::Unit::Type unitType)
 {
     return getImage(getImageId(unitType));
 }
 
-Scr::Animation & Scr::MapGraphics::getImage(Sc::Sprite::Type spriteType)
+Animation & MapGraphics::getImage(Sc::Sprite::Type spriteType)
 {
     return getImage(getImageId(spriteType));
 }
 
-Scr::Animation & Scr::MapGraphics::getImage(Sc::Sprite::Type spriteType, bool isDrawnAsSprite)
+Animation & MapGraphics::getImage(Sc::Sprite::Type spriteType, bool isDrawnAsSprite)
 {
     return isDrawnAsSprite ?
         getImage(spriteType) :
         getImage(Sc::Unit::Type(spriteType));
 }
 
-Scr::Animation & Scr::MapGraphics::getImage(const Chk::Unit & unit)
+Animation & MapGraphics::getImage(const Chk::Unit & unit)
 {
     return getImage(getImageId(unit));
 }
 
-Scr::Animation & Scr::MapGraphics::getImage(const Chk::Sprite & sprite)
+Animation & MapGraphics::getImage(const Chk::Sprite & sprite)
 {
     return getImage(getImageId(sprite));
 }
 
-Scr::MapGraphics::MapGraphics(Sc::Data & scData, GuiMap & map) : scData(scData), map(map) {}
+MapGraphics::MapGraphics(Sc::Data & scData, GuiMap & map) : scData(scData), map(map) {}
 
-void Scr::MapGraphics::resetFps()
+void MapGraphics::resetFps()
 {
     this->fps = gl::Fps();
 }
 
-void Scr::MapGraphics::updateGrid()
+void MapGraphics::updateGrid()
 {
     if ( gridSize > 0 && gridVertices )
     {
@@ -1576,7 +1576,7 @@ void Scr::MapGraphics::updateGrid()
     }
 }
 
-void Scr::MapGraphics::mapViewChanged()
+void MapGraphics::mapViewChanged()
 {
     windowDimensions = {
         .width = windowBounds.right - windowBounds.left,
@@ -1635,24 +1635,24 @@ void Scr::MapGraphics::mapViewChanged()
     updateGrid();
 }
 
-void Scr::MapGraphics::windowBoundsChanged(gl::Rect2D<s32> windowBounds)
+void MapGraphics::windowBoundsChanged(gl::Rect2D<s32> windowBounds)
 {
     std::swap(this->windowBounds, windowBounds);
     mapViewChanged();
 }
 
-GLfloat Scr::MapGraphics::getZoom()
+GLfloat MapGraphics::getZoom()
 {
     return this->zoom;
 }
 
-void Scr::MapGraphics::setZoom(GLfloat newZoom)
+void MapGraphics::setZoom(GLfloat newZoom)
 {
     this->zoom = newZoom;
     mapViewChanged();
 }
 
-void Scr::MapGraphics::skinChanged()
+void MapGraphics::skinChanged()
 {
     // Recalculate imageMargin
     imageMargin = {0, 0};
@@ -1690,13 +1690,13 @@ void Scr::MapGraphics::skinChanged()
     mapViewChanged();
 }
 
-bool Scr::MapGraphics::isClassicLoaded(Scr::GraphicsData & scrDat)
+bool MapGraphics::isClassicLoaded(GraphicsData & scrDat)
 {
-    return scrDat.visualQualityData[size_t(Scr::VisualQuality::SD.index())] != nullptr &&
-        scrDat.visualQualityData[size_t(Scr::VisualQuality::SD.index())]->skin[size_t(Scr::Skin::Id::Classic)] != nullptr;
+    return scrDat.visualQualityData[size_t(VisualQuality::SD.index())] != nullptr &&
+        scrDat.visualQualityData[size_t(VisualQuality::SD.index())]->skin[size_t(Skin::Id::Classic)] != nullptr;
 }
 
-void Scr::MapGraphics::initVertices()
+void MapGraphics::initVertices()
 {
     gridVertices.initialize({ gl::VertexAttribute{.size = 2} }); // Position.xy
     starVertices.initialize({
@@ -1743,24 +1743,24 @@ void Scr::MapGraphics::initVertices()
     });
 }
 
-void Scr::MapGraphics::setFont(gl::Font* textFont)
+void MapGraphics::setFont(gl::Font* textFont)
 {
     this->textFont = textFont;
 }
 
-void Scr::MapGraphics::setGridColor(uint32_t gridColor)
+void MapGraphics::setGridColor(uint32_t gridColor)
 {
     this->gridColor = gridColor | 0xFF000000;
     updateGrid();
 }
 
-void Scr::MapGraphics::setGridSize(s32 gridSize)
+void MapGraphics::setGridSize(s32 gridSize)
 {
     this->gridSize = gridSize;
     updateGrid();
 }
 
-void Scr::MapGraphics::load(Scr::GraphicsData & scrDat, const Scr::GraphicsData::LoadSettings & loadSettings, ArchiveCluster & archiveCluster, ByteBuffer & fileData)
+void MapGraphics::load(GraphicsData & scrDat, const GraphicsData::LoadSettings & loadSettings, ArchiveCluster & archiveCluster, ByteBuffer & fileData)
 {
     bool skinChanged = this->renderDat == nullptr ||
         this->loadSettings.skinId != loadSettings.skinId || this->loadSettings.visualQuality != loadSettings.visualQuality;
@@ -1776,7 +1776,7 @@ void Scr::MapGraphics::load(Scr::GraphicsData & scrDat, const Scr::GraphicsData:
     initVertices();
 }
 
-void Scr::MapGraphics::drawTestTex(gl::Texture & tex)
+void MapGraphics::drawTestTex(gl::Texture & tex)
 {
     static auto testVerts = [](){
         auto verts = std::make_shared<gl::VertexArray<6*4>>();
@@ -1805,7 +1805,7 @@ void Scr::MapGraphics::drawTestTex(gl::Texture & tex)
     testVerts->drawTriangles();
 }
 
-void Scr::MapGraphics::drawGrid()
+void MapGraphics::drawGrid()
 {
     // Grid lines are calculated in updateGrid()
     if ( this->gridSize > 0 )
@@ -1818,7 +1818,7 @@ void Scr::MapGraphics::drawGrid()
     }
 }
 
-void Scr::MapGraphics::drawClassicStars()
+void MapGraphics::drawClassicStars()
 {
     if ( renderDat->spk == nullptr )
         return;
@@ -1911,14 +1911,14 @@ void Scr::MapGraphics::drawClassicStars()
     }
 }
 
-void Scr::MapGraphics::drawStars(u32 multiplyColor)
+void MapGraphics::drawStars(u32 multiplyColor)
 {
     if ( renderDat->spk == nullptr )
         return;
 
-    Scr::SpkData::SpkHeader* spk = renderDat->spk->spk;
-    Scr::SpkGrp & stars = renderDat->spk->stars;
-    Scr::StarPosition* starPosition = (Scr::StarPosition*)&((u8*)spk)[spk->starOffset];
+    SpkData::SpkHeader* spk = renderDat->spk->spk;
+    SpkGrp & stars = renderDat->spk->stars;
+    StarPosition* starPosition = (StarPosition*)&((u8*)spk)[spk->starOffset];
     u32 starIndex = 0;
             
     renderDat->shaders->tileShader.use();
@@ -1953,7 +1953,7 @@ void Scr::MapGraphics::drawStars(u32 multiplyColor)
                 {
                     s32 xOffset = (-1 * Sc::Spk::scrollFactors[layer] * mapViewBounds.left) % (Sc::Spk::parallaxWidth*256);
                     s32 yOffset = (-1 * Sc::Spk::scrollFactors[layer] * mapViewBounds.top) % (Sc::Spk::parllaxHeight*256);
-                    Scr::StarPosition & currStarPos = starPosition[starIndex];
+                    StarPosition & currStarPos = starPosition[starIndex];
                     GLfloat left = currStarPos.width/-2.0f;
                     GLfloat top = currStarPos.height/-2.0f;
                     gl::Point2D<GLfloat> position { GLfloat(xc)+currStarPos.xOffset + (xOffset >> 8), GLfloat(yStart)+currStarPos.yOffset + (yOffset >> 8) };
@@ -1986,7 +1986,7 @@ void Scr::MapGraphics::drawStars(u32 multiplyColor)
     }
 }
 
-void Scr::MapGraphics::drawTileNums()
+void MapGraphics::drawTileNums()
 {
     textFont->textShader.use();
     textFont->textShader.glyphScaling.setMat2(glyphScaling);
@@ -2001,7 +2001,7 @@ void Scr::MapGraphics::drawTileNums()
     }
 }
 
-void Scr::MapGraphics::drawIsomTileNums()
+void MapGraphics::drawIsomTileNums()
 {
     lineVertices.vertices.clear();
     for ( s32 y=mapTileBounds.top; y<mapTileBounds.bottom; y++ )
@@ -2054,7 +2054,7 @@ void Scr::MapGraphics::drawIsomTileNums()
     }
 }
 
-void Scr::MapGraphics::drawTileBuildabilityVertices()
+void MapGraphics::drawTileBuildabilityVertices()
 {
     auto & solidColorShader = renderDat->shaders->solidColorShader;
     if ( !triangleVertices.vertices.empty() )
@@ -2073,7 +2073,7 @@ void Scr::MapGraphics::drawTileBuildabilityVertices()
     }
 }
 
-void Scr::MapGraphics::drawTileElevationVertices()
+void MapGraphics::drawTileElevationVertices()
 {
     auto & solidColorShader = renderDat->shaders->solidColorShader;
     if ( !triangleVertices.vertices.empty() )
@@ -2120,7 +2120,7 @@ void Scr::MapGraphics::drawTileElevationVertices()
     }
 }
 
-void Scr::MapGraphics::drawTileOverlays()
+void MapGraphics::drawTileOverlays()
 {
     const Sc::Terrain::Tiles & tiles = scData.terrain.get(map.getTileset());
 
@@ -2220,7 +2220,7 @@ void Scr::MapGraphics::drawTileOverlays()
     }
 }
 
-void Scr::MapGraphics::drawTileVertices(Scr::Grp & tilesetGrp, s32 width, s32 height, const glm::mat4x4 & positionTransformation, bool isBaseTerrain)
+void MapGraphics::drawTileVertices(Grp & tilesetGrp, s32 width, s32 height, const glm::mat4x4 & positionTransformation, bool isBaseTerrain)
 {
     if ( tileVertices.vertices.empty() )
         return;
@@ -2326,7 +2326,7 @@ void Scr::MapGraphics::drawTileVertices(Scr::Grp & tilesetGrp, s32 width, s32 he
             renderDat->shaders->tileShader.multiplyColor.setColor(0xFFFFFFFF);
             tilesetGrp.mergedTexture.bindToSlot(GL_TEXTURE0);
         }
-        else if ( loadSettings.skinId == Scr::Skin::Id::Classic ) // Classic
+        else if ( loadSettings.skinId == Skin::Id::Classic ) // Classic
         {
             renderDat->shaders->classicPaletteShader.use();
             renderDat->shaders->classicPaletteShader.posToNdc.setMat4(positionTransformation);
@@ -2362,7 +2362,7 @@ void Scr::MapGraphics::drawTileVertices(Scr::Grp & tilesetGrp, s32 width, s32 he
     }
 }
 
-void Scr::MapGraphics::drawTerrain()
+void MapGraphics::drawTerrain()
 {
     auto startOff = .6f/(128*renderDat->tiles->tilesetGrp.width);
     auto endOff = -.1f/(128*renderDat->tiles->tilesetGrp.width);
@@ -2397,7 +2397,7 @@ void Scr::MapGraphics::drawTerrain()
         drawTileVertices(renderDat->tiles->tilesetGrp, windowDimensions.width, windowDimensions.height, tileToNdc, true);
 }
 
-void Scr::MapGraphics::drawTilesetIndexed(s32 left, s32 top, s32 width, s32 height, s32 scrollY, std::optional<u16> selectedTile)
+void MapGraphics::drawTilesetIndexed(s32 left, s32 top, s32 width, s32 height, s32 scrollY, std::optional<u16> selectedTile)
 {
     auto & tilesetGrp = renderDat->tiles->tilesetGrp;
 
@@ -2613,7 +2613,7 @@ void Scr::MapGraphics::drawTilesetIndexed(s32 left, s32 top, s32 width, s32 heig
     }
 }
 
-void Scr::MapGraphics::drawTileSelection()
+void MapGraphics::drawTileSelection()
 {
     const Sc::Terrain::Tiles & tiles = scData.terrain.get(map->tileset);
     triangleVertices.clear();
@@ -2705,13 +2705,13 @@ void Scr::MapGraphics::drawTileSelection()
     }
 }
 
-void Scr::MapGraphics::prepareImageRendering(bool isSelections)
+void MapGraphics::prepareImageRendering(bool isSelections)
 {
     auto imageTranslation = glm::translate(glm::mat4x4(1.f), {-mapViewBounds.left, -mapViewBounds.top, 0.f});
     auto ndcScale = glm::scale(glm::mat4x4(1.f), {2.f/mapViewDimensions.width, -2.f/mapViewDimensions.height, 1.f});
     auto ndcTranslation = glm::translate(glm::mat4x4(1.f), {-1.f, 1.f, 0.f});
     auto imageToNdc = ndcTranslation * ndcScale * imageTranslation;
-    if ( loadSettings.skinId == Scr::Skin::Id::Classic )
+    if ( loadSettings.skinId == Skin::Id::Classic )
     {
         renderDat->shaders->classicPaletteShader.use();
         if ( isSelections )
@@ -2773,7 +2773,7 @@ void Scr::MapGraphics::prepareImageRendering(bool isSelections)
     }
 }
 
-void Scr::MapGraphics::drawImage(Scr::Animation & animation, s32 x, s32 y, u32 frameIndex, u32 multiplyColor, u32 playerColor, bool hallucinate, bool flipped)
+void MapGraphics::drawImage(Animation & animation, s32 x, s32 y, u32 frameIndex, u32 multiplyColor, u32 playerColor, bool hallucinate, bool flipped)
 {
     auto & frame = animation.frames[frameIndex >= animation.totalFrames ? 0 : frameIndex];
     
@@ -2801,7 +2801,7 @@ void Scr::MapGraphics::drawImage(Scr::Animation & animation, s32 x, s32 y, u32 f
     animVertices.drawTriangles();
 }
 
-void Scr::MapGraphics::drawSelectionImage(Scr::Animation & animation, s32 x, s32 y, u32 frameIndex, u32 colorSet, u32 multiplyColor, bool flipped)
+void MapGraphics::drawSelectionImage(Animation & animation, s32 x, s32 y, u32 frameIndex, u32 colorSet, u32 multiplyColor, bool flipped)
 {
     auto & frame = animation.frames[frameIndex >= animation.totalFrames ? 0 : frameIndex];
     
@@ -2830,7 +2830,7 @@ void Scr::MapGraphics::drawSelectionImage(Scr::Animation & animation, s32 x, s32
     animVertices.drawTriangles();
 }
 
-void Scr::MapGraphics::drawClassicImage(gl::Palette & palette, s32 x, s32 y, u32 frameIndex, u32 imageId, std::optional<Chk::PlayerColor> color, bool flipped)
+void MapGraphics::drawClassicImage(gl::Palette & palette, s32 x, s32 y, u32 frameIndex, u32 imageId, std::optional<Chk::PlayerColor> color, bool flipped)
 {
     if ( color )
         this->renderDat->shaders->classicPaletteShader.remapOffset.setValue(8*(color.value()%16));
@@ -2876,25 +2876,25 @@ void Scr::MapGraphics::drawClassicImage(gl::Palette & palette, s32 x, s32 y, u32
     animVertices.drawTriangles();
 }
 
-void Scr::MapGraphics::drawUnitSelection(Sc::Unit::Type unitType, s32 x, s32 y)
+void MapGraphics::drawUnitSelection(Sc::Unit::Type unitType, s32 x, s32 y)
 {
     auto [selImageId, selOffset] = getSelInfo(unitType);
-    if ( loadSettings.skinId == Scr::Skin::Id::Classic )
+    if ( loadSettings.skinId == Skin::Id::Classic )
         drawClassicImage(*renderDat->tiles->tilesetGrp.palette, x, y+selOffset, 0, selImageId, std::nullopt);
     else
         drawSelectionImage(getImage(selImageId), x, y+selOffset, 0, 0, 0xFF00F518);
 }
 
-void Scr::MapGraphics::drawSpriteSelection(Sc::Sprite::Type spriteType, s32 x, s32 y, bool isDrawnAsSprite)
+void MapGraphics::drawSpriteSelection(Sc::Sprite::Type spriteType, s32 x, s32 y, bool isDrawnAsSprite)
 {
     auto [selImageId, selOffset] = getSelInfo(spriteType, isDrawnAsSprite);
-    if ( loadSettings.skinId == Scr::Skin::Id::Classic )
+    if ( loadSettings.skinId == Skin::Id::Classic )
         drawClassicImage(*renderDat->tiles->tilesetGrp.palette, x, y+selOffset, 0, selImageId, std::nullopt);
     else
         drawSelectionImage(getImage(selImageId), x, y+selOffset, 0, 0, 0xFFFFFFFF);
 }
 
-void Scr::MapGraphics::drawImageSelections()
+void MapGraphics::drawImageSelections()
 {
     prepareImageRendering(true);
     auto & palette = renderDat->tiles->tilesetGrp.palette; // For SC:R there is no palette/this is std::nullopt
@@ -2918,7 +2918,7 @@ void Scr::MapGraphics::drawImageSelections()
     }
 }
 
-void Scr::MapGraphics::drawActor(const AnimContext & animations, const MapActor & mapActor, s32 xOffset, s32 yOffset, bool hasCrgb)
+void MapGraphics::drawActor(const AnimContext & animations, const MapActor & mapActor, s32 xOffset, s32 yOffset, bool hasCrgb)
 {
     for ( u16 imageIndex : mapActor.usedImages )
     {
@@ -2928,7 +2928,7 @@ void Scr::MapGraphics::drawActor(const AnimContext & animations, const MapActor 
         const std::optional<MapImage> & image = animations.images[imageIndex];
         if ( image && !image->hidden )
         {
-            if ( loadSettings.skinId == Scr::Skin::Id::Classic )
+            if ( loadSettings.skinId == Skin::Id::Classic )
             {
                 switch ( image->drawFunction )
                 {
@@ -3003,7 +3003,7 @@ void Scr::MapGraphics::drawActor(const AnimContext & animations, const MapActor 
     }
 }
 
-void Scr::MapGraphics::drawActors()
+void MapGraphics::drawActors()
 {
     bool hasCrgb = map->hasSection(Chk::SectionName::CRGB);
     prepareImageRendering();
@@ -3048,7 +3048,7 @@ void Scr::MapGraphics::drawActors()
     }
 }
 
-void Scr::MapGraphics::drawLocations()
+void MapGraphics::drawLocations()
 {
     auto selectedLocation = map.selections.getSelectedLocation();
     lineVertices.clear();
@@ -3184,7 +3184,7 @@ void Scr::MapGraphics::drawLocations()
     }
 }
 
-void Scr::MapGraphics::drawSelectionRectangle(const gl::Rect2D<GLfloat> & rectangle)
+void MapGraphics::drawSelectionRectangle(const gl::Rect2D<GLfloat> & rectangle)
 {
     auto & solidColorShader = renderDat->shaders->solidColorShader;
     solidColorShader.use();
@@ -3205,7 +3205,7 @@ void Scr::MapGraphics::drawSelectionRectangle(const gl::Rect2D<GLfloat> & rectan
     lineVertices.drawLines();
 }
 
-void Scr::MapGraphics::drawTemporaryLocations()
+void MapGraphics::drawTemporaryLocations()
 {
     auto start = map.selections.startDrag;
     auto end = map.selections.endDrag;
@@ -3261,7 +3261,7 @@ void Scr::MapGraphics::drawTemporaryLocations()
     }
 }
 
-void Scr::MapGraphics::drawFog()
+void MapGraphics::drawFog()
 {
     triangleVertices.clear();
     u8 currPlayer = map.getCurrPlayer();
@@ -3302,7 +3302,7 @@ void Scr::MapGraphics::drawFog()
     }
 }
 
-void Scr::MapGraphics::drawFogTileSelection()
+void MapGraphics::drawFogTileSelection()
 {
     triangleVertices.clear();
     lineVertices.vertices.clear();
@@ -3396,7 +3396,7 @@ void Scr::MapGraphics::drawFogTileSelection()
     }
 }
 
-void Scr::MapGraphics::drawDoodadSelection()
+void MapGraphics::drawDoodadSelection()
 {
     lineVertices.vertices.clear();
     const auto & tileset = scData.terrain.get(map->tileset);
@@ -3437,7 +3437,7 @@ void Scr::MapGraphics::drawDoodadSelection()
     }
 }
 
-void Scr::MapGraphics::drawFps()
+void MapGraphics::drawFps()
 {
     fps.update(frameStart);
     textFont->textShader.use();
@@ -3447,7 +3447,7 @@ void Scr::MapGraphics::drawFps()
     textFont->drawAffixedText<gl::Align::Center>(windowDimensions.width/2, 10.f, fps.displayNumber, " fps", "");
 }
 
-void Scr::MapGraphics::drawPastes()
+void MapGraphics::drawPastes()
 {
     const auto & images = map.clipboard.animations.images;
     auto layer = map.getLayer();
@@ -3730,14 +3730,14 @@ void Scr::MapGraphics::drawPastes()
             auto getDoodadImageId = [&](const auto & doodad) {
                 return doodad.isSprite() ? getImageId(Sc::Sprite::Type(doodad.overlayIndex)) : getImageId(Sc::Unit::Type(doodad.overlayIndex));
             };
-            auto getDoodadImage = [&](const auto & doodad) -> Scr::Animation & {
+            auto getDoodadImage = [&](const auto & doodad) -> Animation & {
                 return doodad.isSprite() ? getImage(Sc::Sprite::Type(doodad.overlayIndex)) : getImage(Sc::Unit::Type(doodad.overlayIndex));
             };
 
             prepareImageRendering();
             auto & palette = renderDat->tiles->tilesetGrp.palette;
 
-            if ( loadSettings.skinId == Scr::Skin::Id::Classic )
+            if ( loadSettings.skinId == Skin::Id::Classic )
             {
                 for ( auto & doodad : doodads )
                 {
@@ -3818,7 +3818,7 @@ void Scr::MapGraphics::drawPastes()
             prepareImageRendering();
             auto & palette = renderDat->tiles->tilesetGrp.palette;
 
-            if ( loadSettings.skinId == Scr::Skin::Id::Classic )
+            if ( loadSettings.skinId == Skin::Id::Classic )
             {
                 //for ( auto & pasteUnit : units )
                 //    drawClassicImage(*palette, paste.x+pasteUnit.xc, paste.y+pasteUnit.yc, 0, getImageId(pasteUnit.unit), (Chk::PlayerColor)pasteUnit.unit.owner);
@@ -3857,7 +3857,7 @@ void Scr::MapGraphics::drawPastes()
 
             auto & palette = renderDat->tiles->tilesetGrp.palette;
 
-            if ( loadSettings.skinId == Scr::Skin::Id::Classic )
+            if ( loadSettings.skinId == Skin::Id::Classic )
             {
                 //for ( auto & pasteSprite : sprites )
                 //{
@@ -3943,7 +3943,7 @@ void Scr::MapGraphics::drawPastes()
     }
 }
 
-void Scr::MapGraphics::drawEffectColors() // TODO: This code was used to help debug faux alpha-effect palettes, it can be removed at a future date
+void MapGraphics::drawEffectColors() // TODO: This code was used to help debug faux alpha-effect palettes, it can be removed at a future date
 {
     auto & solidColorShader = renderDat->shaders->solidColorShader;
     solidColorShader.use();
@@ -4145,7 +4145,7 @@ void Scr::MapGraphics::drawEffectColors() // TODO: This code was used to help de
     }
 }
 
-void Scr::MapGraphics::render()
+void MapGraphics::render()
 {
     this->frameStart = std::chrono::system_clock::now();
     auto layer = map.getLayer();
@@ -4195,7 +4195,7 @@ void Scr::MapGraphics::render()
         drawSelectionRectangle({GLfloat(map.selections.startDrag.x), GLfloat(map.selections.startDrag.y), GLfloat(map.selections.endDrag.x), GLfloat(map.selections.endDrag.y)});
 }
 
-bool Scr::MapGraphics::updateGraphics(u64 msSinceLastUpdate)
+bool MapGraphics::updateGraphics(u64 msSinceLastUpdate)
 {
     bool updated = false;
 

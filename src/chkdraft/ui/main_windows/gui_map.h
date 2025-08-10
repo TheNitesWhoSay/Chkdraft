@@ -7,7 +7,7 @@
 #include "mapping/sc_gdi_graphics.h"
 #include "mapping/selections.h"
 
-namespace Scr { class MapGraphics; }
+class MapGraphics;
 
 class GuiMap;
 typedef std::shared_ptr<GuiMap> GuiMapPtr;
@@ -36,7 +36,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCach
     public:
 /* Public Data  */  Clipboard & clipboard;
                     Selections selections {*this};
-                    std::unique_ptr<Scr::MapGraphics> scrGraphics;
+                    std::unique_ptr<MapGraphics> scrGraphics;
                     MapAnimations animations;
 
 /* Constructor  */  GuiMap(Clipboard & clipboard, const std::string & filePath);
@@ -318,7 +318,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCach
                     Chk::TileOccupationCache tileOccupationCache;
                     u8 currPlayer = 0;
                     double zoom = 1.0;
-					
+
                     bool dragging = false;
 
                     bool buildingsSnapToTile = true;
@@ -348,7 +348,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCach
                     bool cutCopyPasteFog = false;
 
                     bool skipEventRender = false;
-					
+
                     UINT_PTR panTimerID = 0;
                     int panStartX = -1;
                     int panStartY = -1;
