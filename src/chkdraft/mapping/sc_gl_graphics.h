@@ -919,7 +919,7 @@ namespace Scr {
         bool clipLocationNames = true; // If true, text is wrapped and restricted to location bounds
         uint32_t customSelColor = 0xFFFF0000; // 0xAABBGGRR
 
-        MapGraphics(Sc::Data & data, GuiMap & guiMap);
+        MapGraphics(Sc::Data & data, GuiMap & map);
 
         void resetFps();
         void updateGrid(); // Occurs when the map view, grid size or grid color changes

@@ -1521,7 +1521,7 @@ Scr::Animation & Scr::MapGraphics::getImage(const Chk::Sprite & sprite)
     return getImage(getImageId(sprite));
 }
 
-Scr::MapGraphics::MapGraphics(Sc::Data & scData, GuiMap & guiMap) : scData(scData), map(guiMap) {}
+Scr::MapGraphics::MapGraphics(Sc::Data & scData, GuiMap & map) : scData(scData), map(map) {}
 
 void Scr::MapGraphics::resetFps()
 {
