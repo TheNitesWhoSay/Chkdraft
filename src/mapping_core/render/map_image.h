@@ -1,6 +1,6 @@
 #ifndef MAPIMAGE_H
 #define MAPIMAGE_H
-#include "sc.h"
+#include "../sc.h"
 
 class MapActor;
 class AnimContext;

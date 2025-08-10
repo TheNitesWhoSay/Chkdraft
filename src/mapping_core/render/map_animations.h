@@ -1,9 +1,10 @@
 #ifndef MAPANIMATIONS_H
 #define MAPANIMATIONS_H
-#include "mapping_core/map_actor.h"
-#include "mapping_core/map_image.h"
-#include "mapping_core/mapping_core.h"
-#include "mapping_core/render/game_clock.h"
+#include "../sc.h"
+#include "../scenario.h"
+#include "game_clock.h"
+#include "map_actor.h"
+#include "map_image.h"
 #include <optional>
 
 struct AnimContext

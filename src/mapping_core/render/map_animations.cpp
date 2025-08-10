@@ -1,5 +1,5 @@
-#include <cross_cut/logger.h>
 #include "map_animations.h"
+#include <cross_cut/logger.h>
 
 extern Logger logger;
 

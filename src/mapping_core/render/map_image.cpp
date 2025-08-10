@@ -1,7 +1,7 @@
-#include <cross_cut/logger.h>
-#include <mapping_core/map_actor.h>
-#include <mapping_core/map_image.h>
+#include "map_image.h"
+#include "map_actor.h"
 #include "map_animations.h"
+#include <cross_cut/logger.h>
 
 extern Logger logger;
 

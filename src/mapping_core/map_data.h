@@ -3,7 +3,7 @@
 #include "basics.h"
 #include "chk.h"
 #include "escape_strings.h"
-#include "map_actor.h"
+#include "render/map_actor.h"
 #include <rarecpp/editor.h>
 #include <array>
 #include <optional>

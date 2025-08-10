@@ -46,10 +46,8 @@ set(Headers
   chk.h
   escape_strings.h
   file_browser.h
-  map_actor.h
   map_data.h
   map_file.h
-  map_image.h
   mapping_core.h
   mpq_asset_manager.h
   mpq_file.h

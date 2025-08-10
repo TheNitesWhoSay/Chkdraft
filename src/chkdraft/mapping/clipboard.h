@@ -2,8 +2,8 @@
 #define CLIPBOARD_H
 #include <chkdraft/mapping/clipboard_animations.h>
 #include <common_files/constants.h>
-#include <mapping_core/map_actor.h>
 #include <mapping_core/mapping_core.h>
+#include <mapping_core/render/map_actor.h>
 #include <chrono>
 #include <string>
 

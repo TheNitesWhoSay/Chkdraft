@@ -1,6 +1,6 @@
 #ifndef CLIPBOARDANIMATIONS_H
 #define CLIPBOARDANIMATIONS_H
-#include <mapping_core/map_actor.h>
+#include <mapping_core/render/map_actor.h>
 #include <mapping_core/render/map_animations.h>
 #include <mapping_core/sc.h>
 #include <vector>

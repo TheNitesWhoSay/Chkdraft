@@ -147,7 +147,9 @@ set(Headers
   ../mapping_core/render/color_cycler.h
   ../mapping_core/render/game_clock.h
   ../mapping_core/render/memory_tiered_tasks.h
+  ../mapping_core/render/map_actor.h
   ../mapping_core/render/map_animations.h
+  ../mapping_core/render/map_image.h
 )
 set(Sources
   chkdraft.cpp

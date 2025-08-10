@@ -1,10 +1,10 @@
 #ifndef MAPACTOR_H
 #define MAPACTOR_H
+#include "map_image.h"
+#include "../sc.h"
 #include <cstdint>
 #include <string_view>
 #include <vector>
-#include "map_image.h"
-#include "sc.h"
 
 class AnimContext;
 
