@@ -36,7 +36,9 @@ public:
         u32 u32FilterIndex = static_cast<u32>(filterIndex);
         if ( virtualizableBrowseForOpenPath(filePath, u32FilterIndex) )
         {
-            filterIndex = static_cast<FilterId>(filters[u32FilterIndex].filterId);
+            if ( u32FilterIndex < filters.size() )
+                filterIndex = static_cast<FilterId>(filters[u32FilterIndex].filterId);
+            
             return true;
         }
         return false;
@@ -46,7 +48,9 @@ public:
         u32 u32FilterIndex = static_cast<u32>(filterIndex);
         if ( virtualizableBrowseForSavePath(filePath, u32FilterIndex) )
         {
-            filterIndex = static_cast<FilterId>(filters[u32FilterIndex].filterId);
+            if ( u32FilterIndex < filters.size() )
+                filterIndex = static_cast<FilterId>(filters[u32FilterIndex].filterId);
+
             return true;
         }
         return false;

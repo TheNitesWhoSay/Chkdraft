@@ -14,6 +14,12 @@
 #ifdef _WIN32
 #include <Windows.h>
 #include <direct.h>
+#elif defined(__linux__)
+#include <dlfcn.h>
+#include <linux/limits.h>
+#include "portable_file_dialogs.h"
+#else
+#include "portable_file_dialogs.h"
 #endif
 
 bool hasExtension(const std::string & systemFilePath, const std::string & extension)
@@ -378,11 +384,6 @@ bool removeFiles(const std::string & firstFileName, const std::string & secondFi
     return success;
 }
 
-#ifdef __linux__
-#include <dlfcn.h>
-#include <linux/limits.h>
-#endif
-
 std::optional<std::string> getModuleDirectory(bool includeTrailingSeparator)
 {
 #ifdef _WIN32
@@ -546,7 +547,23 @@ bool browseForFile(std::string & filePath, uint32_t & filterIndex, const std::ve
 
     return success;
 #else
-    return false;
+    if ( !pfd::settings::available() )
+        return false;
+
+    std::vector<std::string> flatFilters {};
+    for ( auto & filterAndLabel : filtersAndLabels )
+    {
+        flatFilters.push_back(filterAndLabel.second);
+        flatFilters.push_back(filterAndLabel.first);
+    }
+    auto selection = pfd::open_file(title, initialDirectory, flatFilters, false).result();
+    if ( selection.empty() )
+        return false;
+    else
+    {
+        filePath = selection[0];
+        return true;
+    }
 #endif
 }
 
