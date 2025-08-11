@@ -241,8 +241,7 @@ bool findFile(const std::string & filePath)
             fclose(file);
         
         return result == 0 || result == EEXIST || result == EACCES;
-#else
-#ifdef WINDOWS_MULTIBYTE
+#elif defined(WINDOWS_MULTIBYTE)
         FILE* file = NULL;
         errno_t result = fopen_s(&file, fFilePath.c_str(), "r");
         if ( file != NULL )
@@ -256,7 +255,6 @@ bool findFile(const std::string & filePath)
             std::fclose(file);
             return true;
         }
-#endif
 #endif
     }
     return false;
