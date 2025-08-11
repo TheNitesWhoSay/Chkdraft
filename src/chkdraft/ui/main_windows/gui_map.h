@@ -7,7 +7,7 @@
 #include "mapping/sc_gdi_graphics.h"
 #include "mapping/selections.h"
 
-class MapGraphics;
+class GuiMapGraphics;
 
 class GuiMap;
 typedef std::shared_ptr<GuiMap> GuiMapPtr;
@@ -36,7 +36,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCach
     public:
 /* Public Data  */  Clipboard & clipboard;
                     Selections selections {*this};
-                    std::unique_ptr<MapGraphics> scrGraphics;
+                    std::unique_ptr<GuiMapGraphics> scrGraphics;
                     MapAnimations animations;
 
 /* Constructor  */  GuiMap(Clipboard & clipboard, const std::string & filePath);

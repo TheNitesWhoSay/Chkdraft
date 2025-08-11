@@ -58,6 +58,7 @@ set(Headers
   mapping/chkd_plugins.h
   mapping/clipboard.h
   mapping/data_file_browsers.h
+  mapping/gui_map_gl_graphics.h
   mapping/sc_gdi_graphics.h
   mapping/sc_gl_graphics.h
   mapping/selections.h
@@ -160,6 +161,7 @@ set(Sources
   mapping/clipboard.cpp
   mapping/clipboard_animations.cpp
   mapping/data_file_browsers.cpp
+  mapping/gui_map_gl_graphics.cpp
   mapping/sc_gdi_graphics.cpp
   mapping/sc_gl_graphics.cpp
   mapping/selections.cpp
