@@ -73,17 +73,22 @@ struct App
 
         // Begin setup code
         auto scData = std::make_unique<Sc::Data>();
-        if ( scData->load() )
-            std::cout << "Badlands has " << scData->terrain.get(Sc::Terrain::Tileset::Badlands).tileGroups.size() << " tile groups\n";
-        else
+        if ( !scData->load(
+            Sc::DataFile::BrowserPtr(new Sc::DataFile::Browser()),
+            Sc::DataFile::getDefaultDataFiles(),
+            ::getDefaultScPath() // "/home/nites/StarCraft",
+            //nullptr
+        ) )
+        {
             std::cout << "Failed to load scData!\n";
+        }
 
         GameClock gameClock {};
 
         //Scenario map(Sc::Terrain::Tileset::Installation, 64, 64, Sc::Isom::Brush::Installation::Default, SaveType::HybridScm, &scData->terrain.get(Sc::Terrain::Tileset::Installation));
         //map.addUnit(Chk::Unit{.xc = 64, .yc = 64, .type = Sc::Unit::Type::TerranBattlecruiser});
 
-        MapFile map(MapFile::getDefaultOpenMapBrowser());
+        MapFile map(MapFile::getDefaultOpenMapBrowser()); //MapFile map("/home/nites/hde.scx");
         MapAnimations animations(*scData, gameClock, map);
         auto & mapActor = map.view.units.attachedData(0);
         for ( std::size_t i=0; i<map.numUnits(); ++i )
@@ -112,8 +117,8 @@ struct App
             archiveCluster = Sc::DataFile::Browser{}.openScDataFiles(
                 includesRemastered,
                 Sc::DataFile::getDefaultDataFiles(),
-                ::getDefaultScPath(),
-                Sc::DataFile::Browser::getDefaultStarCraftBrowser()
+                ::getDefaultScPath(), // "/home/nites/StarCraft",
+                Sc::DataFile::Browser::getDefaultStarCraftBrowser() // nullptr
             );
         }
 
