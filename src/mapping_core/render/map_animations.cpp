@@ -131,7 +131,7 @@ void AnimContext::initializeImage(u32 iScriptId, std::uint64_t currentTick, MapA
 
 void AnimContext::clearActor(MapActor & actor)
 {
-    if ( actor.drawListIndex > 0 && actor.drawListIndex != UnusedDrawEntry && actor.drawListIndex < drawList.size() )
+    if ( actor.drawListIndex > 0 && actor.drawListIndex < drawList.size() )
         drawList[actor.drawListIndex] = UnusedDrawEntry;
 
     for ( auto usedImageIndex : actor.usedImages )

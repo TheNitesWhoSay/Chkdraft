@@ -573,7 +573,7 @@ bool browseForFile(std::string & filePath, uint32_t & filterIndex, const std::ve
         flatFilters.push_back(filterAndLabel.second);
         flatFilters.push_back(filterAndLabel.first);
     }
-    auto selection = pfd::open_file(title, initialDirectory, flatFilters, false).result();
+    auto selection = pfd::open_file(title, initialDirectory, flatFilters, opt::none).result();
     if ( selection.empty() )
         return false;
     else
