@@ -463,7 +463,15 @@ PromptResult getYesNo(const std::string & text, const std::string & caption)
         default: return PromptResult::Unknown;
     }
 #else
-    return PromptResult::Unknown;
+    if ( !pfd::settings::available() )
+        return false;
+
+    auto button = pfd::message(caption, text, pfd::choice::yes_no).result();
+    switch ( button ) {
+        case pfd::button::yes: return PromptResult::Yes;
+        case pfd::button::no: return PromptResult::No;
+        default: return PromptResult::Unknown;
+    }
 #endif
 }
 
@@ -478,7 +486,16 @@ PromptResult getYesNoCancel(const std::string & text, const std::string & captio
         default: return PromptResult::Unknown;
     }
 #else
-    return PromptResult::Unknown;
+    if ( !pfd::settings::available() )
+        return false;
+
+    auto button = pfd::message(caption, text, pfd::choice::yes_no_cancel).result();
+    switch ( button ) {
+        case pfd::button::yes: return PromptResult::Yes;
+        case pfd::button::no: return PromptResult::No;
+        case pfd::button::cancel: return PromptResult::Cancel;
+        default: return PromptResult::Unknown;
+    }
 #endif
 }
 
