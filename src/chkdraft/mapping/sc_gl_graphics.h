@@ -22,8 +22,6 @@
 #include <string_view>
 #include <vector>
 
-class GuiMap; // TODO: Eliminate this dependency
-
 inline namespace DataStructs
 {
     struct Grp
@@ -839,6 +837,7 @@ struct GraphicsData
 
 class MapGraphics
 {
+protected:
     gl::Size2D<s32> imageMargin {};
     gl::Rect2D<s32> windowBounds {};
     gl::Size2D<s32> windowDimensions {};
@@ -865,7 +864,8 @@ class MapGraphics
     std::chrono::system_clock::time_point frameStart {};
 
     Sc::Data & scData;
-    GuiMap & map; // Reference to the map this instance of graphics renders
+    Scenario & map; // Reference to the map this instance of graphics renders
+    MapAnimations & animations; // Reference to the animations belonging to the map this instance of graphics renders
     gl::Font* textFont = nullptr;
     GraphicsData::LoadSettings loadSettings {};
     std::shared_ptr<GraphicsData::RenderData> renderDat = nullptr;
@@ -917,7 +917,7 @@ public:
     bool clipLocationNames = true; // If true, text is wrapped and restricted to location bounds
     uint32_t customSelColor = 0xFFFF0000; // 0xAABBGGRR
 
-    MapGraphics(Sc::Data & data, GuiMap & map);
+    MapGraphics(Sc::Data & data, Scenario & map, MapAnimations & animations);
 
     void resetFps();
     void updateGrid(); // Occurs when the map view, grid size or grid color changes
@@ -951,7 +951,6 @@ public:
     void drawTileVertices(Grp & tilesetGrp, s32 width, s32 height, const glm::mat4x4 & positionTransformation, bool isBaseTerrain = false);
     void drawTerrain();
     void drawTilesetIndexed(s32 left, s32 top, s32 width, s32 height, s32 scrollY, std::optional<u16> selectedTile);
-    void drawTileSelection();
     void prepareImageRendering(bool isSelections = false);
     void drawImage(Animation & animation, s32 x, s32 y, u32 frame, u32 multiplyColor, u32 playerColor, bool hallucinate, bool flipped = false);
     void drawSelectionImage(Animation & animation, s32 x, s32 y, u32 frame, u32 colorSet, u32 multiplyColor, bool flipped = false);
@@ -960,19 +959,13 @@ public:
     void drawSpriteSelection(Sc::Sprite::Type spriteType, s32 x, s32 y, bool isDrawnAsSprite);
     void drawImageSelections();
     void drawActor(const AnimContext & animContext, const MapActor & mapActor, s32 xOffset, s32 yOffset, bool hasCrgb);
-    void drawActors();
-    void drawLocations();
-    void drawTemporaryLocations();
+    void drawActors(bool hasCrgb);
+    void drawLocations(bool showAnywhere = false, u16 selectedLocation = 0xFFFF);
     void drawSelectionRectangle(const gl::Rect2D<GLfloat> & rectangle);
-    void drawFog();
-    void drawFogTileSelection();
-    void drawDoodadSelection();
+    void drawFog(u8 player);
     void drawFps();
-    void drawPastes();
 
     void drawEffectColors();
-
-    void render();
 
     bool updateGraphics(u64 msSinceLastUpdate);
 };

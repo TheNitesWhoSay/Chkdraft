@@ -8,8 +8,6 @@
 #include <cstring>
 #include <glm/vec3.hpp>
 
-#include <chkdraft/ui/main_windows/gui_map.h> // TODO: Eliminate this dependency
-
 extern Logger logger;
 
 void GraphicsData::Shaders::loadClassic()
@@ -1521,7 +1519,7 @@ Animation & MapGraphics::getImage(const Chk::Sprite & sprite)
     return getImage(getImageId(sprite));
 }
 
-MapGraphics::MapGraphics(Sc::Data & scData, GuiMap & map) : scData(scData), map(map) {}
+MapGraphics::MapGraphics(Sc::Data & scData, Scenario & map, MapAnimations & animations) : scData(scData), map(map), animations(animations) {}
 
 void MapGraphics::resetFps()
 {
@@ -2613,98 +2611,6 @@ void MapGraphics::drawTilesetIndexed(s32 left, s32 top, s32 width, s32 height, s
     }
 }
 
-void MapGraphics::drawTileSelection()
-{
-    const Sc::Terrain::Tiles & tiles = scData.terrain.get(map->tileset);
-    triangleVertices.clear();
-    lineVertices.clear();
-    
-    auto selTiles = map.selections.renderTiles.tiles;
-    if ( !map.view.tiles.sel().empty() )
-    {
-        auto tileWidth = map.getTileWidth();
-        auto xBegin = map.selections.renderTiles.xBegin;
-        auto xEnd = map.selections.renderTiles.xEnd;
-        auto yBegin = map.selections.renderTiles.yBegin;
-        auto yEnd = map.selections.renderTiles.yEnd;
-        for ( std::size_t y=yBegin; y<yEnd; ++y )
-        {
-            for ( std::size_t x=xBegin; x<xEnd; ++x )
-            {
-                auto selTile = selTiles[y*tileWidth + x];
-                if ( selTile )
-                {
-                    auto neighbors = *selTile;
-                    gl::Rect2D<GLfloat> rect {
-                        GLfloat(32*x),
-                        GLfloat(32*y),
-                        GLfloat(32*x+32),
-                        GLfloat(32*y+32),
-                    };
-                    triangleVertices.vertices.insert(triangleVertices.vertices.end(), {
-                        rect.left, rect.top,
-                        rect.right, rect.top,
-                        rect.left, rect.bottom,
-                        rect.left, rect.bottom,
-                        rect.right, rect.bottom,
-                        rect.right, rect.top
-                    });
-
-                    if ( neighbors != TileNeighbor::None ) // Need to draw tile edge line
-                    {
-                        if ( (neighbors & TileNeighbor::Top) == TileNeighbor::Top )
-                        {
-                            lineVertices.vertices.insert(lineVertices.vertices.end(), {
-                                rect.left, rect.top,
-                                rect.right, rect.top,
-                            });
-                        }
-                        if ( (neighbors & TileNeighbor::Right) == TileNeighbor::Right )
-                        {
-                            lineVertices.vertices.insert(lineVertices.vertices.end(), {
-                                rect.right, rect.top,
-                                rect.right, rect.bottom,
-                            });
-                        }
-                        if ( (neighbors & TileNeighbor::Bottom) == TileNeighbor::Bottom )
-                        {
-                            lineVertices.vertices.insert(lineVertices.vertices.end(), {
-                                rect.right, rect.bottom,
-                                rect.left, rect.bottom,
-                            });
-                        }
-                        if ( (neighbors & TileNeighbor::Left) == TileNeighbor::Left )
-                        {
-                            lineVertices.vertices.insert(lineVertices.vertices.end(), {
-                                rect.left, rect.bottom,
-                                rect.left, rect.top,
-                            });
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    if ( !triangleVertices.vertices.empty() )
-    {
-        auto & solidColorShader = renderDat->shaders->solidColorShader;
-        solidColorShader.use();
-        solidColorShader.posToNdc.setMat4(gameToNdc);
-        solidColorShader.solidColor.setColor(0x30640000); // MiniTile color: 0xAABBGGRR
-        triangleVertices.bind();
-        triangleVertices.bufferData(gl::UsageHint::DynamicDraw);
-        triangleVertices.drawTriangles();
-        if ( !lineVertices.vertices.empty() )
-        {
-            solidColorShader.solidColor.setColor(0xFFFFFF00); // Line color: 0xAABBGGRR
-            lineVertices.bind();
-            lineVertices.bufferData(gl::UsageHint::DynamicDraw);
-            lineVertices.drawLines();
-        }
-    }
-}
-
 void MapGraphics::prepareImageRendering(bool isSelections)
 {
     auto imageTranslation = glm::translate(glm::mat4x4(1.f), {-mapViewBounds.left, -mapViewBounds.top, 0.f});
@@ -3003,60 +2909,36 @@ void MapGraphics::drawActor(const AnimContext & animations, const MapActor & map
     }
 }
 
-void MapGraphics::drawActors()
+void MapGraphics::drawActors(bool hasCrgb)
 {
-    bool hasCrgb = map->hasSection(Chk::SectionName::CRGB);
-    prepareImageRendering();
-
     const auto & unitActors = map.view.units.readAttachedData();
     const auto & spriteActors = map.view.sprites.readAttachedData();
-    map.animations.cleanDrawList();
-    std::size_t drawListSize = map.animations.drawList.size();
+    animations.cleanDrawList();
+    std::size_t drawListSize = animations.drawList.size();
     for ( std::size_t i=1; i<drawListSize; ++i )
     {
-        std::uint64_t drawEntry = map.animations.drawList[i];
+        std::uint64_t drawEntry = animations.drawList[i];
         if ( drawEntry == MapAnimations::UnusedDrawEntry )
             break;
         else
         {
             std::size_t index = static_cast<std::size_t>(drawEntry & MapAnimations::MaskIndex);
             if ( drawEntry & MapAnimations::FlagUnitActor )
-                drawActor(map.animations, unitActors[index], 0, 0, hasCrgb);
+                drawActor(animations, unitActors[index], 0, 0, hasCrgb);
             else
-                drawActor(map.animations, spriteActors[index], 0, 0, hasCrgb);
-        }
-    }
-
-    const auto & clipboardUnitActors = map.clipboard.animations.getUnitActors();
-    const auto & clipboardSpriteActors = map.clipboard.animations.getSpriteActors();
-    map.clipboard.animations.cleanDrawList();
-    drawListSize = map.clipboard.animations.drawList.size();
-    for ( std::size_t i=1; i<drawListSize; ++i )
-    {
-        std::uint64_t drawEntry = map.clipboard.animations.drawList[i];
-        if ( drawEntry == MapAnimations::UnusedDrawEntry )
-            break;
-        else
-        {
-            std::size_t index = static_cast<std::size_t>(drawEntry & MapAnimations::MaskIndex);
-            point paste = map.selections.endDrag;
-            if ( drawEntry & MapAnimations::FlagUnitActor )
-                drawActor(map.clipboard.animations, clipboardUnitActors[index], paste.x, paste.y, hasCrgb);
-            else
-                drawActor(map.clipboard.animations, clipboardSpriteActors[index], paste.x, paste.y, hasCrgb);
+                drawActor(animations, spriteActors[index], 0, 0, hasCrgb);
         }
     }
 }
 
-void MapGraphics::drawLocations()
+void MapGraphics::drawLocations(bool showAnywhere, u16 selectedLocation)
 {
-    auto selectedLocation = map.selections.getSelectedLocation();
     lineVertices.clear();
     triangleVertices.clear();
     triangleVertices2.clear();
     for ( size_t i=0; i<map->locations.size(); ++i )
     {
-        if ( i == Chk::LocationId::Anywhere && map.LockAnywhere() )
+        if ( i == Chk::LocationId::Anywhere && !showAnywhere )
             continue;
 
         const auto & location = map->locations[i];
@@ -3140,7 +3022,7 @@ void MapGraphics::drawLocations()
 
         for ( size_t i=0; i<map->locations.size(); ++i )
         {
-            if ( i == Chk::LocationId::Anywhere && map.LockAnywhere() )
+            if ( i == Chk::LocationId::Anywhere && !showAnywhere )
                 continue;
 
             const auto & location = map->locations[i];
@@ -3205,67 +3087,10 @@ void MapGraphics::drawSelectionRectangle(const gl::Rect2D<GLfloat> & rectangle)
     lineVertices.drawLines();
 }
 
-void MapGraphics::drawTemporaryLocations()
-{
-    auto start = map.selections.startDrag;
-    auto end = map.selections.endDrag;
-    auto selectedLocation = map.selections.getSelectedLocation();
-    if ( map.selections.getLocationFlags() == LocSelFlags::None ) // Draw location creation preview
-    {
-        drawSelectionRectangle({ GLfloat(start.x), GLfloat(start.y), GLfloat(end.x), GLfloat(end.y) });
-    }
-    else if ( selectedLocation != NO_LOCATION && selectedLocation < map.numLocations() ) // Draw location resize/movement graphics
-    {
-        auto locFlags = map.selections.getLocationFlags();
-        const Chk::Location & loc = map.getLocation((size_t)selectedLocation);
-        s32 locLeft = loc.left;
-        s32 locRight = loc.right;
-        s32 locTop = loc.top;
-        s32 locBottom = loc.bottom;
-        s32 dragX = end.x-start.x;
-        s32 dragY = end.y-start.y;
-        if ( locFlags != LocSelFlags::Middle )
-        {
-            if ( locTop > locBottom )
-            {
-                if ( (locFlags & LocSelFlags::North) == LocSelFlags::North )
-                    locFlags = LocSelFlags(locFlags&(~LocSelFlags::North)|LocSelFlags::South);
-                else if ( (locFlags & LocSelFlags::South) == LocSelFlags::South )
-                    locFlags = LocSelFlags(locFlags&(~LocSelFlags::South)|LocSelFlags::North);
-            }
-
-            if ( locLeft > locRight )
-            {
-                if ( (locFlags & LocSelFlags::West) == LocSelFlags::West )
-                    locFlags = LocSelFlags(locFlags&(~LocSelFlags::West)|LocSelFlags::East);
-                else if ( (locFlags & LocSelFlags::East) == LocSelFlags::East )
-                    locFlags = LocSelFlags(locFlags&(~LocSelFlags::East)|LocSelFlags::West);
-            }
-        }
-
-        switch ( locFlags )
-        {
-            case LocSelFlags::North: drawSelectionRectangle({ GLfloat(loc.left), GLfloat(loc.top+dragY), GLfloat(loc.right), GLfloat(loc.bottom) }); break;
-            case LocSelFlags::South: drawSelectionRectangle({ GLfloat(loc.left), GLfloat(loc.top), GLfloat(loc.right), GLfloat(loc.bottom+dragY) }); break;
-            case LocSelFlags::East: drawSelectionRectangle({ GLfloat(loc.left), GLfloat(loc.top), GLfloat(loc.right+dragX), GLfloat(loc.bottom) }); break;
-            case LocSelFlags::West: drawSelectionRectangle({ GLfloat(loc.left+dragX), GLfloat(loc.top), GLfloat(loc.right), GLfloat(loc.bottom) }); break;
-            case LocSelFlags::NorthWest: drawSelectionRectangle({ GLfloat(loc.left+dragX), GLfloat(loc.top+dragY), GLfloat(loc.right), GLfloat(loc.bottom) }); break;
-            case LocSelFlags::NorthEast: drawSelectionRectangle({ GLfloat(loc.left), GLfloat(loc.top+dragY), GLfloat(loc.right+dragX), GLfloat(loc.bottom) }); break;
-            case LocSelFlags::SouthWest: drawSelectionRectangle({ GLfloat(loc.left+dragX), GLfloat(loc.top), GLfloat(loc.right), GLfloat(loc.bottom+dragY) }); break;
-            case LocSelFlags::SouthEast: drawSelectionRectangle({ GLfloat(loc.left), GLfloat(loc.top), GLfloat(loc.right+dragX), GLfloat(loc.bottom+dragY) }); break;
-
-            case LocSelFlags::Middle:
-                drawSelectionRectangle({ GLfloat(loc.left+dragX), GLfloat(loc.top+dragY), GLfloat(loc.right+dragX), GLfloat(loc.bottom+dragY) });
-                break;
-        }
-    }
-}
-
-void MapGraphics::drawFog()
+void MapGraphics::drawFog(u8 player)
 {
     triangleVertices.clear();
-    u8 currPlayer = map.getCurrPlayer();
-    u8 currPlayerMask = u8Bits[currPlayer];
+    u8 currPlayerMask = u8Bits[player];
     for ( s32 y=mapTileBounds.top; y<=mapTileBounds.bottom; ++y )
     {
         for ( s32 x=mapTileBounds.left; x<=mapTileBounds.right; ++x )
@@ -3302,141 +3127,6 @@ void MapGraphics::drawFog()
     }
 }
 
-void MapGraphics::drawFogTileSelection()
-{
-    triangleVertices.clear();
-    lineVertices.vertices.clear();
-    u8 currPlayer = map.getCurrPlayer();
-    u8 currPlayerMask = u8Bits[currPlayer];
-
-    auto selFogTiles = map.selections.renderFogTiles.tiles;
-    if ( !map.view.tileFog.sel().empty() )
-    {
-        auto tileWidth = map.getTileWidth();
-        auto xBegin = map.selections.renderFogTiles.xBegin;
-        auto xEnd = map.selections.renderFogTiles.xEnd;
-        auto yBegin = map.selections.renderFogTiles.yBegin;
-        auto yEnd = map.selections.renderFogTiles.yEnd;
-        for ( std::size_t y=yBegin; y<yEnd; ++y )
-        {
-            for ( std::size_t x=xBegin; x<xEnd; ++x )
-            {
-                auto selTile = selFogTiles[y*tileWidth + x];
-                if ( selTile )
-                {
-                    auto neighbors = *selTile;
-                    gl::Rect2D<GLfloat> rect {
-                        GLfloat(x*32),
-                        GLfloat(y*32),
-                        GLfloat(x*32+32),
-                        GLfloat(y*32+32),
-                    };
-                    triangleVertices.vertices.insert(triangleVertices.vertices.begin(), {
-                        rect.left, rect.top,
-                        rect.right, rect.top,
-                        rect.left, rect.bottom,
-                        rect.left, rect.bottom,
-                        rect.right, rect.bottom,
-                        rect.right, rect.top
-                    });
-
-                    if ( neighbors != TileNeighbor::None ) // Some edges need to be drawn
-                    {
-                        if ( (neighbors & TileNeighbor::Top) == TileNeighbor::Top )
-                        {
-                            lineVertices.vertices.insert(lineVertices.vertices.end(), {
-                                rect.left, rect.top,
-                                rect.right, rect.top,
-                            });
-                        }
-                        if ( (neighbors & TileNeighbor::Right) == TileNeighbor::Right )
-                        {
-                            lineVertices.vertices.insert(lineVertices.vertices.end(), {
-                                rect.right, rect.top,
-                                rect.right, rect.bottom,
-                            });
-                        }
-                        if ( (neighbors & TileNeighbor::Bottom) == TileNeighbor::Bottom )
-                        {
-                            lineVertices.vertices.insert(lineVertices.vertices.end(), {
-                                rect.right, rect.bottom,
-                                rect.left, rect.bottom,
-                            });
-                        }
-                        if ( (neighbors & TileNeighbor::Left) == TileNeighbor::Left )
-                        {
-                            lineVertices.vertices.insert(lineVertices.vertices.end(), {
-                                rect.left, rect.bottom,
-                                rect.left, rect.top,
-                            });
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    if ( !triangleVertices.vertices.empty() )
-    {
-        auto & solidColorShader = renderDat->shaders->solidColorShader;
-        solidColorShader.use();
-        solidColorShader.posToNdc.setMat4(gameToNdc);
-        solidColorShader.solidColor.setColor(0x300080FF); // Tile color: 0xAABBGGRR
-        triangleVertices.bind();
-        triangleVertices.bufferData(gl::UsageHint::DynamicDraw);
-        triangleVertices.drawTriangles();
-
-        if ( !lineVertices.vertices.empty() )
-        {
-            solidColorShader.solidColor.setColor(0xFFFF32FF); // Rectangle color: 0xAABBGGRR
-            lineVertices.bind();
-            lineVertices.bufferData(gl::UsageHint::DynamicDraw);
-            lineVertices.drawLines();
-        }
-    }
-}
-
-void MapGraphics::drawDoodadSelection()
-{
-    lineVertices.vertices.clear();
-    const auto & tileset = scData.terrain.get(map->tileset);
-    for ( auto index : map.view.doodads.sel() )
-    {
-        const auto & selDoodad = map.getDoodad(index);
-        if ( auto doodadGroupIndex = tileset.getDoodadGroupIndex(selDoodad.type) )
-        {
-            const auto & doodad = (Sc::Terrain::DoodadCv5 &)tileset.tileGroups[size_t(*doodadGroupIndex)];
-            s32 doodadWidth = 32*s32(doodad.tileWidth);
-            s32 doodadHeight = 32*s32(doodad.tileHeight);
-            s32 left = (s32(selDoodad.xc) - doodadWidth/2 + 16)/32*32;
-            s32 top = (s32(selDoodad.yc) - doodadHeight/2 + 16)/32*32;
-            s32 right = left + doodadWidth;
-            s32 bottom = top + doodadHeight;
-
-            lineVertices.vertices.insert(lineVertices.vertices.begin(), {
-                GLfloat(left), GLfloat(top),
-                GLfloat(right), GLfloat(top),
-                GLfloat(right), GLfloat(top),
-                GLfloat(right), GLfloat(bottom),
-                GLfloat(left), GLfloat(bottom),
-                GLfloat(right), GLfloat(bottom),
-                GLfloat(left), GLfloat(top),
-                GLfloat(left), GLfloat(bottom)
-            });
-        }
-    }
-    if ( !lineVertices.vertices.empty() )
-    {
-        auto & solidColorShader = renderDat->shaders->solidColorShader;
-        solidColorShader.use();
-        solidColorShader.posToNdc.setMat4(gameToNdc);
-        solidColorShader.solidColor.setColor(0xFF0000FF); // Rectangle color: 0xAABBGGRR
-        lineVertices.bind();
-        lineVertices.bufferData(gl::UsageHint::DynamicDraw);
-        lineVertices.drawLines();
-    }
-}
-
 void MapGraphics::drawFps()
 {
     fps.update(frameStart);
@@ -3445,502 +3135,6 @@ void MapGraphics::drawFps()
     textFont->textShader.textPosToNdc.setMat4(unscrolledWindowToNdc);
     textFont->setColor(0.f, 1.f, 1.f);
     textFont->drawAffixedText<gl::Align::Center>(windowDimensions.width/2, 10.f, fps.displayNumber, " fps", "");
-}
-
-void MapGraphics::drawPastes()
-{
-    const auto & images = map.clipboard.animations.images;
-    auto layer = map.getLayer();
-    auto subLayer = map.getSubLayer();
-    auto drawPasteTerrain = [&](point paste) {
-        if ( subLayer == TerrainSubLayer::Isom && layer != Layer::CutCopyPaste )
-        {
-            auto diamond = Chk::IsomDiamond::fromMapCoordinates(paste.x, paste.y);
-
-            s32 diamondCenterX = s32(diamond.x)*64;
-            s32 diamondCenterY = s32(diamond.y)*32;
-            
-            auto & solidColorShader = renderDat->shaders->solidColorShader;
-            solidColorShader.use();
-            solidColorShader.posToNdc.setMat4(gameToNdc);
-            solidColorShader.solidColor.setColor(0xFF0000FF); // Rectangle color: 0xAABBGGRR
-            lineVertices.vertices = {
-                GLfloat(diamondCenterX-64), GLfloat(diamondCenterY),
-                GLfloat(diamondCenterX), GLfloat(diamondCenterY-32),
-                GLfloat(diamondCenterX), GLfloat(diamondCenterY-32),
-                GLfloat(diamondCenterX+64), GLfloat(diamondCenterY),
-                GLfloat(diamondCenterX-64), GLfloat(diamondCenterY),
-                GLfloat(diamondCenterX), GLfloat(diamondCenterY+32),
-                GLfloat(diamondCenterX), GLfloat(diamondCenterY+32),
-                GLfloat(diamondCenterX+64), GLfloat(diamondCenterY),
-            };
-            lineVertices.bind();
-            lineVertices.bufferData(gl::UsageHint::DynamicDraw);
-            lineVertices.drawLines();
-        }
-        else if ( subLayer == TerrainSubLayer::Rectangular || layer == Layer::CutCopyPaste )
-        {
-            point center { paste.x+16, paste.y+16 };
-            const Sc::Terrain::Tiles & tiles = scData.terrain.get(map->tileset);
-            auto & pasteTiles = map.clipboard.getTiles();
-            tileVertices.vertices.clear();
-            lineVertices.vertices.clear();
-            for ( auto & tile : pasteTiles )
-            {
-                u16 tileIndex = tile.value;
-                size_t groupIndex = Sc::Terrain::Tiles::getGroupIndex(tileIndex);
-                if ( groupIndex < tiles.tileGroups.size() )
-                {
-                    const Sc::Terrain::TileGroup & tileGroup = tiles.tileGroups[groupIndex];
-                    u32 megaTileIndex = tileGroup.megaTileIndex[tiles.getGroupMemberIndex(tileIndex)];
-                    auto texX = GLfloat(megaTileIndex%128);
-                    auto texY = GLfloat(megaTileIndex/128);
-                    gl::Rect2D<GLfloat> rect {
-                        GLfloat((tile.xc + center.x)/32),
-                        GLfloat((tile.yc + center.y)/32),
-                        GLfloat((tile.xc + 32 + center.x)/32),
-                        GLfloat((tile.yc + 32 + center.y)/32)
-                    };
-                    tileVertices.vertices.insert(tileVertices.vertices.end(), {
-                        rect.left , rect.top   , texX    , texY,
-                        rect.right, rect.top   , texX+1.f, texY,
-                        rect.left , rect.bottom, texX    , texY+1.f,
-                        rect.left , rect.bottom, texX    , texY+1.f,
-                        rect.right, rect.bottom, texX+1.f, texY+1.f,
-                        rect.right, rect.top   , texX+1.f, texY
-                    });
-
-                    if ( tile.neighbors != TileNeighbor::None ) // Some edges need to be drawn
-                    {
-                        if ( (tile.neighbors & TileNeighbor::Top) == TileNeighbor::Top )
-                        {
-                            lineVertices.vertices.insert(lineVertices.vertices.end(), {
-                                rect.left*32, rect.top*32,
-                                rect.right*32, rect.top*32,
-                            });
-                        }
-                        if ( (tile.neighbors & TileNeighbor::Right) == TileNeighbor::Right )
-                        {
-                            lineVertices.vertices.insert(lineVertices.vertices.end(), {
-                                rect.right*32, rect.top*32,
-                                rect.right*32, rect.bottom*32,
-                            });
-                        }
-                        if ( (tile.neighbors & TileNeighbor::Bottom) == TileNeighbor::Bottom )
-                        {
-                            lineVertices.vertices.insert(lineVertices.vertices.end(), {
-                                rect.right*32, rect.bottom*32,
-                                rect.left*32, rect.bottom*32,
-                            });
-                        }
-                        if ( (tile.neighbors & TileNeighbor::Left) == TileNeighbor::Left )
-                        {
-                            lineVertices.vertices.insert(lineVertices.vertices.end(), {
-                                rect.left*32, rect.bottom*32,
-                                rect.left*32, rect.top*32,
-                            });
-                        }
-                    }
-                }
-            }
-            drawTileVertices(renderDat->tiles->tilesetGrp, windowDimensions.width, windowDimensions.height, tileToNdc);
-            if ( !lineVertices.vertices.empty() )
-            {
-                auto & solidColorShader = renderDat->shaders->solidColorShader;
-                solidColorShader.use();
-                solidColorShader.posToNdc.setMat4(gameToNdc);
-                solidColorShader.solidColor.setColor(0xFFFFFF00); // Line color: 0xAABBGGRR
-                lineVertices.bind();
-                lineVertices.bufferData(gl::UsageHint::DynamicDraw);
-                lineVertices.drawLines();
-            }
-        }
-    };
-    auto drawPasteFog = [&](point paste) {
-        triangleVertices.clear();
-        lineVertices.vertices.clear();
-        point center { paste.x+16, paste.y+16 };
-        u8 currPlayer = map.getCurrPlayer();
-        u8 currPlayerMask = u8Bits[currPlayer];
-        auto fogTiles = map.clipboard.getFogTiles();
-        for ( auto & fogTile : fogTiles )
-        {
-            gl::Rect2D<GLfloat> rect {
-                GLfloat((fogTile.xc + center.x)/32*32),
-                GLfloat((fogTile.yc + center.y)/32*32),
-                GLfloat((fogTile.xc + 32 + center.x)/32*32),
-                GLfloat((fogTile.yc + 32 + center.y)/32*32)
-            };
-            if ( (fogTile.value & currPlayerMask) != 0 )
-            {
-                triangleVertices.vertices.insert(triangleVertices.vertices.begin(), {
-                    rect.left, rect.top,
-                    rect.right, rect.top,
-                    rect.left, rect.bottom,
-                    rect.left, rect.bottom,
-                    rect.right, rect.bottom,
-                    rect.right, rect.top
-                });
-            }
-
-            if ( fogTile.neighbors != TileNeighbor::None ) // Some edges need to be drawn
-            {
-                if ( (fogTile.neighbors & TileNeighbor::Top) == TileNeighbor::Top )
-                {
-                    lineVertices.vertices.insert(lineVertices.vertices.end(), {
-                        rect.left, rect.top,
-                        rect.right, rect.top,
-                    });
-                }
-                if ( (fogTile.neighbors & TileNeighbor::Right) == TileNeighbor::Right )
-                {
-                    lineVertices.vertices.insert(lineVertices.vertices.end(), {
-                        rect.right, rect.top,
-                        rect.right, rect.bottom,
-                    });
-                }
-                if ( (fogTile.neighbors & TileNeighbor::Bottom) == TileNeighbor::Bottom )
-                {
-                    lineVertices.vertices.insert(lineVertices.vertices.end(), {
-                        rect.right, rect.bottom,
-                        rect.left, rect.bottom,
-                    });
-                }
-                if ( (fogTile.neighbors & TileNeighbor::Left) == TileNeighbor::Left )
-                {
-                    lineVertices.vertices.insert(lineVertices.vertices.end(), {
-                        rect.left, rect.bottom,
-                        rect.left, rect.top,
-                    });
-                }
-            }
-        }
-
-        if ( !triangleVertices.vertices.empty() )
-        {
-            auto & solidColorShader = renderDat->shaders->solidColorShader;
-            solidColorShader.use();
-            solidColorShader.posToNdc.setMat4(gameToNdc);
-            solidColorShader.solidColor.setColor(0x60000000); // Tile color: 0xAABBGGRR
-            triangleVertices.bind();
-            triangleVertices.bufferData(gl::UsageHint::DynamicDraw);
-            triangleVertices.drawTriangles();
-
-            if ( !lineVertices.vertices.empty() )
-            {
-                solidColorShader.solidColor.setColor(0xFFFF32FF); // Rectangle color: 0xAABBGGRR
-                lineVertices.bind();
-                lineVertices.bufferData(gl::UsageHint::DynamicDraw);
-                lineVertices.drawLines();
-            }
-        }
-    };
-    auto drawPasteDoodads = [&](point paste) {
-        bool allowIllegalDoodads = map.AllowIllegalDoodadPlacement();
-        const auto & doodads = map.clipboard.getDoodads();
-        if ( !doodads.empty() )
-        {
-            const Sc::Terrain::Tiles & tiles = scData.terrain.get(map->tileset);
-            point center { paste.x, paste.y };
-            tileVertices.vertices.clear();
-            triangleVertices.clear();
-            triangleVertices2.clear();
-            for ( auto & doodad : doodads )
-            {
-                auto tileWidth = doodad.tileWidth;
-                auto tileHeight = doodad.tileHeight;
-                bool evenWidth = tileWidth%2 == 0;
-                bool evenHeight = tileHeight %2 == 0;
-                auto xStart = evenWidth ? -16*doodad.tileWidth + (center.x+doodad.tileX*32+16)/32*32 : -16*(doodad.tileWidth-1) + (center.x + doodad.tileX*32)/32*32;
-                auto yStart = evenHeight ? -16*doodad.tileHeight + (center.y+doodad.tileY*32+16)/32*32 : -16*(doodad.tileHeight-1) + (center.y+doodad.tileY*32)/32*32;
-                auto xTileStart = xStart/32;
-                auto yTileStart = yStart/32;
-                const auto & placability = tiles.doodadPlacibility[doodad.doodadId];
-                for ( u16 y=0; y<tileHeight; ++y )
-                {
-                    for ( u16 x=0; x<tileWidth; ++x )
-                    {
-                        if ( doodad.tileIndex[x][y] != 0 )
-                        {
-                            u16 tileIndex = doodad.tileIndex[x][y];
-                            size_t groupIndex = Sc::Terrain::Tiles::getGroupIndex(tileIndex);
-                            if ( groupIndex < tiles.tileGroups.size() )
-                            {
-                                const Sc::Terrain::TileGroup & tileGroup = tiles.tileGroups[groupIndex];
-                                u32 megaTileIndex = tileGroup.megaTileIndex[tiles.getGroupMemberIndex(tileIndex)];
-                                auto texX = GLfloat(megaTileIndex%128);
-                                auto texY = GLfloat(megaTileIndex/128);
-                                gl::Rect2D<GLfloat> rect {
-                                    GLfloat(xTileStart + x),
-                                    GLfloat(yTileStart + y),
-                                    GLfloat(xTileStart + x + 1),
-                                    GLfloat(yTileStart + y + 1)
-                                };
-                                tileVertices.vertices.insert(tileVertices.vertices.begin(), {
-                                    rect.left , rect.top   , texX    , texY,
-                                    rect.right, rect.top   , texX+1.f, texY,
-                                    rect.left , rect.bottom, texX    , texY+1.f,
-                                    rect.left , rect.bottom, texX    , texY+1.f,
-                                    rect.right, rect.bottom, texX+1.f, texY+1.f,
-                                    rect.right, rect.top   , texX+1.f, texY
-                                });
-                                if ( placability.tileGroup[y*tileWidth+x] != 0 )
-                                {
-                                    size_t tileXc = xTileStart + x;
-                                    size_t tileYc = yTileStart + y;
-                                    if ( tileXc < map->dimensions.tileWidth && tileYc < map->dimensions.tileHeight )
-                                    {
-                                        u16 existingTileGroup = map.getTile(tileXc, tileYc) / 16;
-                                        bool placeable = existingTileGroup == placability.tileGroup[y*tileWidth+x] || allowIllegalDoodads;
-                                        auto & verts = placeable ? triangleVertices : triangleVertices2;
-                                        verts.vertices.insert(verts.vertices.begin(), {
-                                            rect.left*32, rect.top*32,
-                                            rect.right*32, rect.top*32,
-                                            rect.left*32, rect.bottom*32,
-                                            rect.left*32, rect.bottom*32,
-                                            rect.right*32, rect.bottom*32,
-                                            rect.right*32, rect.top*32
-                                        });
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            drawTileVertices(renderDat->tiles->tilesetGrp, windowDimensions.width, windowDimensions.height, tileToNdc);
-            auto & solidColorShader = renderDat->shaders->solidColorShader;
-            solidColorShader.use();
-            solidColorShader.posToNdc.setMat4(gameToNdc);
-            if ( !triangleVertices.vertices.empty() )
-            {
-                solidColorShader.solidColor.setColor(0x30008000); // Doodad tile shading: 0xAABBGGRR
-                triangleVertices.bind();
-                triangleVertices.bufferData(gl::UsageHint::DynamicDraw);
-                triangleVertices.drawTriangles();
-            }
-            if ( !triangleVertices2.vertices.empty() )
-            {
-                solidColorShader.solidColor.setColor(0x200000FF); // Doodad tile shading: 0xAABBGGRR
-                triangleVertices2.bind();
-                triangleVertices2.bufferData(gl::UsageHint::DynamicDraw);
-                triangleVertices2.drawTriangles();
-            }
-            
-            auto getDoodadImageId = [&](const auto & doodad) {
-                return doodad.isSprite() ? getImageId(Sc::Sprite::Type(doodad.overlayIndex)) : getImageId(Sc::Unit::Type(doodad.overlayIndex));
-            };
-            auto getDoodadImage = [&](const auto & doodad) -> Animation & {
-                return doodad.isSprite() ? getImage(Sc::Sprite::Type(doodad.overlayIndex)) : getImage(Sc::Unit::Type(doodad.overlayIndex));
-            };
-
-            prepareImageRendering();
-            auto & palette = renderDat->tiles->tilesetGrp.palette;
-
-            if ( loadSettings.skinId == Skin::Id::Classic )
-            {
-                for ( auto & doodad : doodads )
-                {
-                    auto tileWidth = doodad.tileWidth;
-                    auto tileHeight = doodad.tileHeight;
-                    bool evenWidth = tileWidth%2 == 0;
-                    bool evenHeight = tileHeight %2 == 0;
-                    auto xStart = evenWidth ? -16*doodad.tileWidth + (center.x+doodad.tileX*32+16)/32*32 : -16*(doodad.tileWidth-1) + (center.x + doodad.tileX*32)/32*32;
-                    auto yStart = evenHeight ? -16*doodad.tileHeight + (center.y+doodad.tileY*32+16)/32*32 : -16*(doodad.tileHeight-1) + (center.y+doodad.tileY*32)/32*32;
-                    if ( doodad.overlayIndex != 0 )
-                        drawClassicImage(*palette, s32(xStart+tileWidth*16), s32(yStart+tileHeight*16), 0, getDoodadImageId(doodad), (Chk::PlayerColor)doodad.owner);
-                }
-            }
-            else
-            {
-                bool hasCrgb = map->hasSection(Chk::SectionName::CRGB);
-                for ( auto & doodad : doodads )
-                {
-                    auto tileWidth = doodad.tileWidth;
-                    auto tileHeight = doodad.tileHeight;
-                    bool evenWidth = tileWidth%2 == 0;
-                    bool evenHeight = tileHeight %2 == 0;
-                    auto xStart = evenWidth ? -16*doodad.tileWidth + (center.x+doodad.tileX*32+16)/32*32 : -16*(doodad.tileWidth-1) + (center.x + doodad.tileX*32)/32*32;
-                    auto yStart = evenHeight ? -16*doodad.tileHeight + (center.y+doodad.tileY*32+16)/32*32 : -16*(doodad.tileHeight-1) + (center.y+doodad.tileY*32)/32*32;
-                    if ( doodad.overlayIndex != 0 )
-                        drawImage(getDoodadImage(doodad), s32(xStart+tileWidth*16), s32(yStart+tileHeight*16), 0, 0, 0xFFFFFFFF, getPlayerColor(doodad.owner, hasCrgb), false);
-                }
-            }
-        }
-    };
-    auto drawPasteUnits = [&](point paste) {
-        if ( paste.x != -1 && paste.y != -1 && (map.clipboard.hasUnits() || map.clipboard.hasQuickUnits()) )
-        {
-            auto & units = map.clipboard.getUnits();
-            
-            lineVertices.vertices.clear();
-            lineVertices2.vertices.clear();
-            for ( auto & pasteUnit : units )
-            {
-                if ( pasteUnit.unit.type < Sc::Unit::TotalTypes )
-                {
-                    const auto & unitDat = scData.units.getUnit(pasteUnit.unit.type);
-                    bool isValidPlacement = map.isValidUnitPlacement(pasteUnit.unit.type, paste.x + pasteUnit.xc, paste.y + pasteUnit.yc);
-                    bool isBuilding = (unitDat.flags & Sc::Unit::Flags::Building) == Sc::Unit::Flags::Building;
-                    auto & vertices = isValidPlacement ? lineVertices : lineVertices2;
-                    gl::Rect2D<GLfloat> rect {};
-                    if ( isBuilding )
-                    {
-                        rect = {
-                            GLfloat(paste.x + pasteUnit.xc - unitDat.starEditPlacementBoxWidth/2),
-                            GLfloat(paste.y + pasteUnit.yc - unitDat.starEditPlacementBoxHeight/2),
-                            GLfloat(paste.x + pasteUnit.xc + unitDat.starEditPlacementBoxWidth/2),
-                            GLfloat(paste.y + pasteUnit.yc + unitDat.starEditPlacementBoxHeight/2)
-                        };
-                    }
-                    else
-                    {
-                        rect = {
-                            GLfloat(paste.x + pasteUnit.xc - unitDat.unitSizeLeft),
-                            GLfloat(paste.y + pasteUnit.yc - unitDat.unitSizeUp),
-                            GLfloat(paste.x + pasteUnit.xc + unitDat.unitSizeRight),
-                            GLfloat(paste.y + pasteUnit.yc + unitDat.unitSizeDown)
-                        };
-                    }
-                    vertices.vertices.insert(vertices.vertices.end(), {
-                        rect.left, rect.top,
-                        rect.right, rect.top,
-                        rect.right, rect.top,
-                        rect.right, rect.bottom,
-                        rect.right, rect.bottom,
-                        rect.left, rect.bottom,
-                        rect.left, rect.bottom,
-                        rect.left, rect.top,
-                    });
-                }
-            }
-
-            prepareImageRendering();
-            auto & palette = renderDat->tiles->tilesetGrp.palette;
-
-            if ( loadSettings.skinId == Skin::Id::Classic )
-            {
-                //for ( auto & pasteUnit : units )
-                //    drawClassicImage(*palette, paste.x+pasteUnit.xc, paste.y+pasteUnit.yc, 0, getImageId(pasteUnit.unit), (Chk::PlayerColor)pasteUnit.unit.owner);
-            }
-            else
-            {
-                //for ( auto & pasteUnit : units )
-                //    drawImage(getImage(pasteUnit.unit), paste.x+pasteUnit.xc, paste.y+pasteUnit.yc, 0, 0xFFFFFFFF, getPlayerColor(pasteUnit.unit.owner), false);
-            }
-
-            auto & solidColorShader = renderDat->shaders->solidColorShader;
-            solidColorShader.use();
-            solidColorShader.posToNdc.setMat4(gameToNdc);
-            if ( !lineVertices.vertices.empty() )
-            {
-                solidColorShader.solidColor.setColor(0xFF00FF00); // Rectangle color: 0xAABBGGRR
-                lineVertices.bind();
-                lineVertices.bufferData(gl::UsageHint::DynamicDraw);
-                lineVertices.drawLines();
-            }
-            if ( !lineVertices2.vertices.empty() )
-            {
-                solidColorShader.solidColor.setColor(0xFF0000FF); // Rectangle color: 0xAABBGGRR
-                lineVertices2.bind();
-                lineVertices2.bufferData(gl::UsageHint::DynamicDraw);
-                lineVertices2.drawLines();
-            }
-        }
-    };
-    auto drawPasteSprites = [&](point paste) {
-        if ( paste.x != -1 && paste.y != -1 && (map.clipboard.hasSprites() || map.clipboard.hasQuickSprites()) )
-        {
-            auto & sprites = map.clipboard.getSprites();
-
-            prepareImageRendering();
-
-            auto & palette = renderDat->tiles->tilesetGrp.palette;
-
-            if ( loadSettings.skinId == Skin::Id::Classic )
-            {
-                //for ( auto & pasteSprite : sprites )
-                //{
-                //    drawClassicImage(*palette, paste.x+pasteSprite.xc, paste.y+pasteSprite.yc, 0,//pasteSprite.anim.frame,
-                //        getImageId(pasteSprite.sprite), (Chk::PlayerColor)pasteSprite.sprite.owner);
-                //}
-            }
-            else
-            {
-                //for ( auto & pasteSprite : sprites )
-                //{
-                //    drawImage(getImage(pasteSprite.sprite), paste.x+pasteSprite.xc/*+pasteSprite.anim.xOffset*/, paste.y+pasteSprite.yc/*+pasteSprite.anim.yOffset*/,
-                //        images[pasteSprite.testAnim.usedImages[0]]->frame, 0xFFFFFFFF, getPlayerColor(pasteSprite.sprite.owner), false);
-                //}
-            }
-        }
-    };
-
-    switch ( layer )
-    {
-        case Layer::Terrain: drawPasteTerrain(map.selections.endDrag); break;
-        case Layer::Doodads: drawPasteDoodads(map.selections.endDrag); break;
-        case Layer::Units: drawPasteUnits(map.selections.endDrag); break;
-        case Layer::Sprites: drawPasteSprites(map.selections.endDrag); break;
-        case Layer::FogEdit:
-        {
-            const auto brushWidth = map.clipboard.getFogBrush().width;
-            const auto brushHeight = map.clipboard.getFogBrush().height;
-            s32 hoverTileX = (map.selections.endDrag.x + (brushWidth % 2 == 0 ? 16 : 0))/32;
-            s32 hoverTileY = (map.selections.endDrag.y + (brushHeight % 2 == 0 ? 16 : 0))/32;
-
-            const auto startX = 32*(hoverTileX - brushWidth/2);
-            const auto startY = 32*(hoverTileY - brushHeight/2);
-            const auto endX = startX+32+brushWidth;
-            const auto endY = startY+32+brushHeight;
-            gl::Rect2D<GLfloat> rect {
-                GLfloat(startX), GLfloat(startY),
-                GLfloat(endX), GLfloat(endY)
-            };
-
-            auto & solidColorShader = renderDat->shaders->solidColorShader;
-            solidColorShader.use();
-            solidColorShader.posToNdc.setMat4(gameToNdc);
-            solidColorShader.solidColor.setColor(0xFF0000FF); // Rectangle color: 0xAABBGGRR
-            lineVertices.vertices = {
-                rect.left, rect.top,
-                rect.right, rect.top,
-                rect.right, rect.top,
-                rect.right, rect.bottom,
-                rect.right, rect.bottom,
-                rect.left, rect.bottom,
-                rect.left, rect.bottom,
-                rect.left, rect.top,
-            };
-            lineVertices.bind();
-            lineVertices.bufferData(gl::UsageHint::DynamicDraw);
-            lineVertices.drawLines();
-        }
-        break;
-        case Layer::CutCopyPaste:
-        {
-            point paste = map.selections.endDrag;
-            bool pastingTerrain = map.getCutCopyPasteTerrain() && map.clipboard.hasTiles();
-            bool pastingDoodads = map.getCutCopyPasteDoodads() && map.clipboard.hasDoodads();
-            bool pastingFog = map.getCutCopyPasteFog() && map.clipboard.hasFogTiles();
-            if ( pastingTerrain || pastingDoodads || pastingFog )
-            {
-                paste.x = (paste.x+16)/32*32;
-                paste.y = (paste.y+16)/32*32;
-            }
-            if ( pastingTerrain )
-                drawPasteTerrain(paste);
-            if ( pastingDoodads )
-                drawPasteDoodads(paste);
-            if ( pastingFog )
-                drawPasteFog(paste);
-            if ( map.getCutCopyPasteUnits() )
-                drawPasteUnits(paste);
-            if ( map.getCutCopyPasteSprites() )
-                drawPasteSprites(paste);
-        }
-        break;
-    }
 }
 
 void MapGraphics::drawEffectColors() // TODO: This code was used to help debug faux alpha-effect palettes, it can be removed at a future date
@@ -4143,56 +3337,6 @@ void MapGraphics::drawEffectColors() // TODO: This code was used to help debug f
             triangleVertices.drawTriangles();
         }
     }
-}
-
-void MapGraphics::render()
-{
-    this->frameStart = std::chrono::system_clock::now();
-    auto layer = map.getLayer();
-
-    if ( loadSettings.skinId == Skin::Id::Classic )
-        drawClassicStars();
-    else
-        drawStars(0xFFFFFFFF);
-
-    drawTerrain();
-    if ( displayElevations || displayBuildability )
-        drawTileOverlays();
-
-    drawGrid();
-    drawImageSelections();
-    drawActors();
-
-    switch ( layer ) {
-        case Layer::Locations: drawLocations(); break;
-        case Layer::FogEdit: case Layer::CutCopyPaste: drawFog(); break;
-    }
-
-    if ( displayTileNums )
-        drawTileNums();
-    
-    if ( displayIsomNums )
-        drawIsomTileNums();
-
-    if ( fpsEnabled )
-        drawFps();
-
-    if ( map.selections.hasTiles() && (layer == Layer::Terrain || layer == Layer::CutCopyPaste) )
-        drawTileSelection();
-    else if ( layer == Layer::Locations )
-        drawTemporaryLocations();
-
-    if ( layer == Layer::Doodads || layer == Layer::CutCopyPaste )
-        drawDoodadSelection();
-
-    if ( layer == Layer::CutCopyPaste )
-        drawFogTileSelection();
-
-    if ( map.clipboard.isPasting() )
-        drawPastes();
-
-    if ( layer != Layer::Locations && map.isDragging() && !map.clipboard.isPasting() )
-        drawSelectionRectangle({GLfloat(map.selections.startDrag.x), GLfloat(map.selections.startDrag.y), GLfloat(map.selections.endDrag.x), GLfloat(map.selections.endDrag.y)});
 }
 
 bool MapGraphics::updateGraphics(u64 msSinceLastUpdate)
