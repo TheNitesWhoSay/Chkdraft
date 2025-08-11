@@ -1,6 +1,6 @@
 #include "sc_gl_graphics.h"
 #include "cross_cut/logger.h"
-#include <mapping_core/opengl/glad/glad/glad.h>
+#include <glad/glad.h>
 #include <mapping_core/opengl/gl/base.h>
 #include <mapping_core/render/memory_tiered_tasks.h>
 #include <rarecpp/json.h>

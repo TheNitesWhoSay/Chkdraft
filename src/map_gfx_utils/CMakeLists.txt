@@ -87,11 +87,22 @@ set(Headers
   ../mapping_core/opengl/gl/unique_resource.h
   ../mapping_core/opengl/gl/utils.h
   ../mapping_core/opengl/gl/vertices.h
+  ../mapping_core/render/color_cycler.h
+  ../mapping_core/render/game_clock.h
+  ../mapping_core/render/memory_tiered_tasks.h
+  ../mapping_core/render/map_actor.h
+  ../mapping_core/render/map_animations.h
+  ../mapping_core/render/map_image.h
+  ../mapping_core/render/sc_gl_graphics.h
 )
 set(Sources
   main.cpp
   screenshot.cpp
   ../mapping_core/opengl/stb/stb.cpp
+  ../mapping_core/render/map_actor.cpp
+  ../mapping_core/render/map_animations.cpp
+  ../mapping_core/render/map_image.cpp
+  ../mapping_core/render/sc_gl_graphics.cpp
 )
 
 add_compile_definitions(_UNICODE UNICODE CASCLIB_UNICODE STORMLIB_NO_AUTO_LINK)
