@@ -60,7 +60,6 @@ set(Headers
   mapping/data_file_browsers.h
   mapping/gui_map_gl_graphics.h
   mapping/sc_gdi_graphics.h
-  mapping/sc_gl_graphics.h
   mapping/selections.h
   mapping/settings.h
   mapping/wgl_render_context.h
@@ -151,6 +150,7 @@ set(Headers
   ../mapping_core/render/map_actor.h
   ../mapping_core/render/map_animations.h
   ../mapping_core/render/map_image.h
+  ../mapping_core/render/sc_gl_graphics.h
 )
 set(Sources
   chkdraft.cpp
@@ -163,7 +163,6 @@ set(Sources
   mapping/data_file_browsers.cpp
   mapping/gui_map_gl_graphics.cpp
   mapping/sc_gdi_graphics.cpp
-  mapping/sc_gl_graphics.cpp
   mapping/selections.cpp
   mapping/settings.cpp
   ui/chkd_controls/chkd_string_input.cpp
@@ -238,6 +237,7 @@ set(Sources
   ../mapping_core/render/map_actor.cpp
   ../mapping_core/render/map_animations.cpp
   ../mapping_core/render/map_image.cpp
+  ../mapping_core/render/sc_gl_graphics.cpp
 )
 
 add_library(${This} STATIC ${Sources} ${Headers})

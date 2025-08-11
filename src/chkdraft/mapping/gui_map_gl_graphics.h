@@ -1,6 +1,6 @@
 #ifndef GUIMAPGLGRAPHICS_H
 #define GUIMAPGLGRAPHICS_H
-#include "sc_gl_graphics.h"
+#include <mapping_core/render/sc_gl_graphics.h>
 
 class GuiMap;
 
