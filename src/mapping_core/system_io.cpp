@@ -464,7 +464,7 @@ PromptResult getYesNo(const std::string & text, const std::string & caption)
     }
 #else
     if ( !pfd::settings::available() )
-        return false;
+        return PromptResult::Unknown;
 
     auto button = pfd::message(caption, text, pfd::choice::yes_no).result();
     switch ( button ) {
@@ -487,7 +487,7 @@ PromptResult getYesNoCancel(const std::string & text, const std::string & captio
     }
 #else
     if ( !pfd::settings::available() )
-        return false;
+        return PromptResult::Unknown;
 
     auto button = pfd::message(caption, text, pfd::choice::yes_no_cancel).result();
     switch ( button ) {
