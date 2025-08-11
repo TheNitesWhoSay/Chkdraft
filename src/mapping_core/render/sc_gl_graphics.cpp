@@ -971,8 +971,21 @@ void GraphicsData::Data::Skin::loadClassicTiles(Sc::Data & scData, const LoadSet
     // Load palette
     tilesetGrp.palette.emplace();
     std::memcpy(&(tilesetGrp.palette.value())[0], &tiles.staticSystemColorPalette[0], 4*256);
-    for ( size_t i=0; i<256; ++i )
-        std::swap(((u8*)&tilesetGrp.palette.value()[i])[0], (((u8*)&tilesetGrp.palette.value()[i])[2])); // red-blue swap
+    if ( offsetof(Sc::Terrain::WpeColor, red) == offsetof(Sc::SystemColor, blue) &&
+        offsetof(Sc::Terrain::WpeColor, green) == offsetof(Sc::SystemColor, green) &&
+        offsetof(Sc::Terrain::WpeColor, blue) == offsetof(Sc::SystemColor, red) )
+    {
+        // If the above condition was satisified, then this same swap was first done in sc.cpp
+        // This is needed for GDI drawing, but for OpenGL the RGBA format is specified, requiring a swap back
+        for ( size_t i=0; i<256; ++i )
+            std::swap(((u8*)&tilesetGrp.palette.value()[i])[0], (((u8*)&tilesetGrp.palette.value()[i])[2])); // red-blue swap
+    }
+    else if ( offsetof(Sc::Terrain::WpeColor, red) != offsetof(Sc::SystemColor, red) ||
+        offsetof(Sc::Terrain::WpeColor, green) != offsetof(Sc::SystemColor, green) ||
+        offsetof(Sc::Terrain::WpeColor, blue) != offsetof(Sc::SystemColor, blue) )
+    {
+        throw std::logic_error("Unrecognized color swap required to load system colors, please update the code!");
+    }
 
     tilesetGrp.palette->update();
 
