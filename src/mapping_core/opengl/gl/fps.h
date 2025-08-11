@@ -1,3 +1,6 @@
+#ifndef FPS_H
+#define FPS_H
+
 #include <array>
 #include <cstddef>
 #include <chrono>
@@ -49,3 +52,5 @@ namespace gl
         }
     };
 }
+
+#endif
