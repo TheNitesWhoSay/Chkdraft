@@ -412,7 +412,11 @@ bool getDefaultScPath(std::string & data)
 
 std::string getDefaultScPath()
 {
+#ifdef _WIN32
     return "C:\\Program Files (x86)\\StarCraft"; // TODO: More logic
+#else
+    return "";
+#endif
 }
 
 // Windows registry functions

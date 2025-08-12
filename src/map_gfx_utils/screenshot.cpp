@@ -4,15 +4,12 @@
 #include <webp/encode.h>
 #include <filesystem>
 #include <fstream>
+#include <iostream>
 
-std::optional<std::string> saveOpenGlViewportImage()
+std::optional<std::string> saveOpenGlViewportImage(GLint x, GLint y, GLint width, GLint height)
 {
-    GLint viewport[4] {};
-    glGetIntegerv(GL_VIEWPORT, &viewport[0]);
-    auto width = viewport[2];
-    auto height = viewport[3];
     std::vector<GLubyte> pixelData(width*height*3, GLbyte(0));
-    glReadPixels(viewport[0], viewport[1], width, height, GL_RGB, GL_UNSIGNED_BYTE, &pixelData[0]);
+    glReadPixels(x, y, width, height, GL_RGB, GL_UNSIGNED_BYTE, &pixelData[0]);
 
     struct EncodedWebP {
         uint8_t* data = nullptr;
@@ -21,7 +18,19 @@ std::optional<std::string> saveOpenGlViewportImage()
         ~EncodedWebP() { if ( data != nullptr ) WebPFree(data); }
     };
     EncodedWebP output {};
-    output.size = WebPEncodeLosslessRGB(&pixelData[3*width*(height-1)], width, height, -3*width, &output.data);
+
+    auto start = std::chrono::high_resolution_clock::now();
+    if ( width == 16384 ) width = 16383; // 1-off from maximum, clip the last pixel-column
+    if ( height == 16384 ) height = 16383; // 1-off from maximum, clip the last pixel-row
+    output.size = WebPEncodeLosslessRGB(&pixelData[0], width, height, 3*width, &output.data); // 22658
+    auto end = std::chrono::high_resolution_clock::now();
+    if ( output.size == 0 )
+    {
+        std::cout << "Image creation failed!\n";
+        return std::nullopt;
+    }
+    else
+        std::cout << "Created image in " << std::chrono::duration_cast<std::chrono::milliseconds>(end-start) << '\n';
 
 #ifdef WIN32
     auto testPath = std::filesystem::path("c:/misc/test.webp");

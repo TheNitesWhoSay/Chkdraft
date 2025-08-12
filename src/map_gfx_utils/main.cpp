@@ -3,7 +3,6 @@
 #include <glfw/window.h>
 #include <glad/glad.h>
 #include <glad/utils.h>
-#include <gl/fps.h>
 #include <gl/utils.h>
 #include <cross_cut/logger.h>
 #include <mapping_core/mapping_core.h>
@@ -13,33 +12,98 @@
 
 Logger logger {};
 
-struct App
+enum class RenderSkin
 {
-    glfw::Window window {};
+    ClassicGL,
+    ScrSD,
+    ScrHD2,
+    ScrHD,
+    CarbotHD2,
+    CarbotHD
+};
 
-    void clearWindow()
+// A StarCraft map including the MapFile (scx/scm/chk), a game clock, animations, and graphics
+class ScMap : public MapFile
+{
+    void init()
     {
-        gl::clearColor(0.2f, 0.3f, 0.3f, 1.0f, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    }
-
-    void processInput()
-    {
-        if ( window.getKey(GLFW_KEY_ESCAPE) == GLFW_PRESS )
-            window.setWindowShouldClose(true);
-        else if ( window.getKey(GLFW_KEY_S) == GLFW_PRESS )
+        if ( Scenario::numUnits() > 0 || Scenario::numSprites() > 0 )
         {
-            if ( auto saved = saveOpenGlViewportImage() )
-                std::cout << "Saved screenshot to " << *saved << '\n';
+            for ( std::size_t i=0; i<Scenario::numUnits(); ++i )
+                animations.addUnit(i, Scenario::view.units.attachedData(i));
+
+            for ( std::size_t i=0; i<Scenario::numSprites(); ++i )
+                animations.addSprite(i, Scenario::view.sprites.attachedData(i));
         }
+
+        this->graphics.windowBoundsChanged({
+            .left = 0, .top = 0, .right = 800, .bottom = 600
+        });
     }
 
-    void createMainWindow()
+public:
+    GameClock gameClock {};
+    MapAnimations animations;
+    MapGraphics graphics;
+
+    // Load map at filePath
+    ScMap(Sc::Data & scData, const std::string & filePath) :
+        MapFile(filePath),
+        animations(scData, gameClock, static_cast<const Scenario &>(*this)),
+        graphics(scData, static_cast<Scenario &>(*this), animations) { init(); }
+
+    // Load map selected from browser
+    ScMap(Sc::Data & scData, FileBrowserPtr<SaveType> fileBrowser /*= MapFile::getDefaultOpenMapBrowser()*/) :
+        MapFile(fileBrowser),
+        animations(scData, gameClock, static_cast<const Scenario &>(*this)),
+        graphics(scData, static_cast<Scenario &>(*this), animations) { init(); }
+
+    // Create a new map
+    ScMap(Sc::Data & scData, Sc::Terrain::Tileset tileset, u16 width = 64, u16 height = 64, size_t terrainTypeIndex = 0, SaveType saveType = SaveType::HybridScm, const Sc::Terrain::Tiles* tilesetData = nullptr) :
+        MapFile(tileset, width, height, terrainTypeIndex, saveType, tilesetData),
+        animations(scData, gameClock, static_cast<const Scenario &>(*this)),
+        graphics(scData, static_cast<Scenario &>(*this), animations) { init(); }
+
+    // Creates an uninitialized map that must be manually loaded before use
+    ScMap(Sc::Data & scData) :
+        MapFile(),
+        animations(scData, gameClock, static_cast<const Scenario &>(*this)),
+        graphics(scData, static_cast<Scenario &>(*this), animations) { init(); }
+};
+
+/* A renderer has one set of draw settings (including the skin) active at a time,
+    maps (which have chk data and an anim state) can be passed to a renderer to save screenshots or display the map;
+    multiple maps may be used with the same renderer.
+   
+   Batching Considerations:
+    - Renderer settings besides the skin can be changed without load time or additional memory use
+    - Initial loads of skins is expensive, once a skin is loaded, switching skins is ~free, however
+       the VRAM/RAM that the skin requires will not be free'd until the renderer is disposed of.
+    - Image Textures (per-skin):
+        - Initial Load: Long, happens first time using a skin
+        - Memory: Collectively these take up a lot, images stay in VRAM/RAM till disposing of the renderer
+    - Tileset Textures (per-skin, per-tileset):
+        - Initial Load: Short, happens first time using a tileset on a given skin
+        - Memory: Relatively small, tileset textures stay in VRAM/RAM till disposing of the renderer
+    - If tight on memory, load a renderer for a single skin and go through a batch of maps...
+       whilst on a map, vary the draw settings (except for the skin) and the anim state and get all the images you want
+       then free the renderer, create a new renderer for the next skin, and go through that batch of maps for that skin */
+struct Renderer
+{
+    glfw::Context glfwContext {};
+    glfw::Window window {};
+    const Sc::Data & scData;
+    ScMap* displayedMap = nullptr;
+
+    Renderer(const Sc::Data & scData) : scData(scData) {}
+
+    void initialize()
     {
         constexpr int initialWidth = 800;
         constexpr int initialHeight = 600;
         window.setVersionHint(3, 3);
         window.setCoreProfileHint();
-        //glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE); // Use this to create a hidden window
+        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE); // Use this to create a hidden window
         window.create(initialWidth, initialHeight, "MapGfxUtils");
         window.enableForwarding(this);
 
@@ -52,12 +116,7 @@ struct App
         gl::setViewport(0, 0, initialWidth, initialHeight);
 
         window.setFrameBufferSizeCallback<[](GLFWwindow* window, int width, int height) { gl::setViewport(0, 0, width, height); }>();
-    }
 
-    void run()
-    {
-        glfw::Context glfwContext {};
-        createMainWindow();
         glViewport(0, 0, GLsizei(800), GLsizei(600));
         window.swapBuffers();
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -70,43 +129,45 @@ struct App
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    }
 
-        // Begin setup code
-        auto scData = std::make_unique<Sc::Data>();
-        if ( !scData->load(
-            Sc::DataFile::BrowserPtr(new Sc::DataFile::Browser()),
-            Sc::DataFile::getDefaultDataFiles(),
-            ::getDefaultScPath() // "/home/nites/StarCraft",
-            //nullptr
-        ) )
+    void processInput()
+    {
+        if ( window.getKey(GLFW_KEY_ESCAPE) == GLFW_PRESS )
+            window.setWindowShouldClose(true);
+        else if ( window.getKey(GLFW_KEY_S) == GLFW_PRESS )
         {
-            std::cout << "Failed to load scData!\n";
+            auto tileWidth = displayedMap->getTileWidth();
+            auto tileHeight = displayedMap->getTileHeight();
+            if ( auto saved = saveOpenGlViewportImage(0, 0, tileWidth*32, tileHeight*32) )
+                std::cout << "Saved screenshot to " << *saved << '\n';
         }
+    }
 
-        GameClock gameClock {};
+    void clearWindow()
+    {
+        gl::clearColor(0.0f, 0.0f, 0.0f, 1.0f, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    }
 
-        //Scenario map(Sc::Terrain::Tileset::Installation, 64, 64, Sc::Isom::Brush::Installation::Default, SaveType::HybridScm, &scData->terrain.get(Sc::Terrain::Tileset::Installation));
-        //map.addUnit(Chk::Unit{.xc = 64, .yc = 64, .type = Sc::Unit::Type::TerranBattlecruiser});
-
-        MapFile map(MapFile::getDefaultOpenMapBrowser()); //MapFile map("/home/nites/hde.scx");
-        MapAnimations animations(*scData, gameClock, map);
-        auto & mapActor = map.view.units.attachedData(0);
-        for ( std::size_t i=0; i<map.numUnits(); ++i )
-            animations.addUnit(i, map.view.units.attachedData(i));
-        for ( std::size_t i=0; i<map.numSprites(); ++i )
-            animations.addSprite(i, map.view.sprites.attachedData(i));
-
-        MapGraphics mapGraphics(*scData, map, animations);
-        mapGraphics.windowBoundsChanged({
-            .left = 0, .top = 0, .right = 800, .bottom = 600
-        });
+    void loadSkin(RenderSkin skin, ScMap & map)
+    {
+        // Validate the skin and if remastered, turn it into GraphicsData::LoadSettings
         GraphicsData::LoadSettings loadSettings {
             .visualQuality = VisualQuality::SD,
             .skinId = ::Skin::Id::Classic,
-            .tileset = map.getTileset(),
+            .tileset = Sc::Terrain::Tileset(map.getTileset() % Sc::Terrain::NumTilesets),
             .forceShowStars = false
         };
-        auto fileData = ByteBuffer(1024*1024*120); // 120MB
+        switch ( skin )
+        {
+            case RenderSkin::ClassicGL: loadSettings.visualQuality = VisualQuality::SD; loadSettings.skinId = ::Skin::Id::Classic; break;
+            case RenderSkin::ScrSD: loadSettings.visualQuality = VisualQuality::SD; loadSettings.skinId = ::Skin::Id::Remastered; break;
+            case RenderSkin::ScrHD2: loadSettings.visualQuality = VisualQuality::HD2; loadSettings.skinId = ::Skin::Id::Remastered; break;
+            case RenderSkin::ScrHD: loadSettings.visualQuality = VisualQuality::HD; loadSettings.skinId = ::Skin::Id::Remastered; break;
+            case RenderSkin::CarbotHD2: loadSettings.visualQuality = VisualQuality::HD2; loadSettings.skinId = ::Skin::Id::Carbot; break;
+            case RenderSkin::CarbotHD: loadSettings.visualQuality = VisualQuality::HD; loadSettings.skinId = ::Skin::Id::Carbot; break;
+            default: throw std::logic_error("Unrecognized skin!");
+        }
 
         bool includesRemastered = false;
         std::shared_ptr<ArchiveCluster> archiveCluster = nullptr;
@@ -122,36 +183,215 @@ struct App
             );
         }
 
+        auto loadBuffer = ByteBuffer(1024*1024*120); // 120MB
         std::unique_ptr<GraphicsData> graphicsData = std::make_unique<GraphicsData>();
-        mapGraphics.load(*graphicsData, loadSettings, *archiveCluster, fileData);
-        mapGraphics.updateGraphics(1000);
-        // End setup code
+        map.graphics.load(*graphicsData, loadSettings, *archiveCluster, loadBuffer);
+    }
 
-        gl::Fps fps {};
+    void saveMapImage(ScMap & map)
+    {
+        auto tileWidth = int(map.getTileWidth());
+        auto tileHeight = int(map.getTileHeight());
+        auto imageWidth = 32*tileWidth;
+        auto imageHeight = 32*tileHeight;
+        if ( imageWidth > 16384 || imageHeight > 16384 )
+        {
+            logger.error("Larger image dimension handling required");
+            return;
+        }
+
+        GLint savedViewport[4] {};
+        glGetIntegerv(GL_VIEWPORT, savedViewport);
+
+        GLuint framebuffer = 0;
+        glGenFramebuffers(1, &framebuffer);
+        glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+        GLuint renderbuffer = 0;
+        glGenRenderbuffers(1, &renderbuffer);
+        glBindRenderbuffer(GL_RENDERBUFFER, renderbuffer);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, imageWidth, imageHeight);
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_RENDERBUFFER, renderbuffer);
+        glDrawBuffer(GL_COLOR_ATTACHMENT1);
+
+        glViewport(0, 0, imageWidth, imageHeight);
+        map.graphics.windowBoundsChanged({.left = 0, .top = 0, .right = imageWidth, .bottom = imageHeight});
+
+        renderMap(map);
+
+        glFlush();
+
+        auto start = std::chrono::high_resolution_clock::now();
+        glReadBuffer(GL_COLOR_ATTACHMENT1);
+        saveOpenGlViewportImage(0, 0, imageWidth, imageHeight);
+        auto end = std::chrono::high_resolution_clock::now();
+        std::cout << "Saved image in " << std::chrono::duration_cast<std::chrono::milliseconds>(end-start) << '\n';
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+        window.pollEvents();
+        window.swapBuffers();
+
+        map.graphics.windowBoundsChanged({ savedViewport[0], savedViewport[1], savedViewport[2], savedViewport[3] });
+        glViewport(savedViewport[0], savedViewport[1], savedViewport[2], savedViewport[3]);
+    }
+
+    void displayInGui(ScMap & map, bool autoAnimate) // Note that this method is blocking, close the window or press escape to continue
+    {
+        displayedMap = &map;
+        bool hasCrgb = map->hasSection(Chk::SectionName::CRGB);
         while ( !window.shouldClose() )
         {
-            fps.update(std::chrono::system_clock::now());
             processInput();
-            //clearWindow();
-            glClearColor(0.f, 0.f, 0.f, 0.f);
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            // Begin drawing code
-            mapGraphics.drawTerrain();
-            mapGraphics.prepareImageRendering();
-            mapGraphics.drawActors(map->hasSection(Chk::SectionName::CRGB));
-            // End drawing code
+            renderMap(map);
 
             glFlush();
-            //gl::unbind();
             window.pollEvents();
             window.swapBuffers();
+
+            if ( autoAnimate && map.gameClock.tick() )
+                map.animations.animate(map.gameClock.currentTick());
         }
+    }
+
+    // Renders the map with the current settings
+    void renderMap(ScMap & map)
+    {
+        clearWindow();
+        map.graphics.drawTerrain();
+        map.graphics.prepareImageRendering();
+        map.graphics.drawActors(map->hasSection(Chk::SectionName::CRGB));
+    }
+};
+
+struct GfxUtil
+{
+    std::unique_ptr<Sc::Data> scData = nullptr;
+
+    void loadScData(const std::string & expectedScPath = ::getDefaultScPath())
+    {
+        auto loadScData = std::make_unique<Sc::Data>();
+        if ( loadScData->load(
+            std::make_shared<Sc::DataFile::Browser>(),
+            Sc::DataFile::getDefaultDataFiles(),
+            expectedScPath) )
+        {
+            std::swap(this->scData, loadScData);
+        }
+    }
+
+    std::unique_ptr<Renderer> createRenderer(RenderSkin skin, ScMap & map)
+    {
+        if ( !scData )
+        {
+            logger.error("scData should be loaded prior to creating a renderer");
+            return nullptr;
+        }
+        auto renderer = std::make_unique<Renderer>(*this->scData);
+        renderer->initialize();
+        renderer->loadSkin(skin, map);
+        return renderer;
+    }
+
+    // Load map selected from browser
+    std::unique_ptr<ScMap> loadMap()
+    {
+        if ( !scData )
+        {
+            logger.error("scData should be loaded prior to loading a map");
+            return nullptr;
+        }
+
+        try {
+            auto result = std::make_unique<ScMap>(*scData, MapFile::getDefaultOpenMapBrowser());
+            return result;
+        } catch ( std::exception & e ) {
+            logger.error(e.what());
+            return nullptr;
+        }
+    }
+
+    // Load map at filePath
+    std::unique_ptr<ScMap> loadMap(const std::string & mapFilePath)
+    {
+        if ( !scData )
+        {
+            logger.error("scData should be loaded prior to loading a map");
+            return nullptr;
+        }
+
+        try {
+            auto result = std::make_unique<ScMap>(*scData, mapFilePath);
+            return result;
+        } catch ( std::exception & e ) {
+            logger.error(e.what());
+            return nullptr;
+        }
+    }
+
+    // Create a new map
+    std::unique_ptr<ScMap> createMap(Sc::Terrain::Tileset tileset, u16 width = 64, u16 height = 64, size_t terrainTypeIndex = std::numeric_limits<size_t>::max(), SaveType saveType = SaveType::HybridScm)
+    {
+        if ( !scData )
+        {
+            logger.error("scData should be loaded prior to creating a map");
+            return nullptr;
+        }
+
+        try {
+            if ( terrainTypeIndex == std::numeric_limits<size_t>::max() )
+            {
+                switch ( Sc::Terrain::Tileset(size_t(tileset) % Sc::Terrain::NumTilesets) )
+                {
+                    case Sc::Terrain::Tileset::Badlands: terrainTypeIndex = Sc::Isom::Brush::Badlands::Default; break;
+                    case Sc::Terrain::Tileset::SpacePlatform: terrainTypeIndex = Sc::Isom::Brush::Space::Default; break;
+                    case Sc::Terrain::Tileset::Installation: terrainTypeIndex = Sc::Isom::Brush::Installation::Default; break;
+                    case Sc::Terrain::Tileset::Ashworld: terrainTypeIndex = Sc::Isom::Brush::Ashworld::Default; break;
+                    case Sc::Terrain::Tileset::Jungle: terrainTypeIndex = Sc::Isom::Brush::Jungle::Default; break;
+                    case Sc::Terrain::Tileset::Desert: terrainTypeIndex = Sc::Isom::Brush::Desert::Default; break;
+                    case Sc::Terrain::Tileset::Arctic: terrainTypeIndex = Sc::Isom::Brush::Arctic::Default; break;
+                    case Sc::Terrain::Tileset::Twilight: terrainTypeIndex = Sc::Isom::Brush::Twilight::Default; break;
+                }
+            }
+            auto result = std::make_unique<ScMap>(*scData, tileset, width, height, terrainTypeIndex, saveType, &(scData->terrain.get(tileset)));
+            return result;
+        } catch ( std::exception & e ) {
+            logger.error(e.what());
+            return nullptr;
+        }
+    }
+
+    // Creates an uninitialized map that must be manually loaded before use
+    std::unique_ptr<ScMap> createUninitializedMap()
+    {
+        if ( !scData )
+        {
+            logger.error("scData should be loaded prior to creating a map");
+            return nullptr;
+        }
+
+        try {
+            auto result = std::make_unique<ScMap>(*scData);
+            return result;
+        } catch ( std::exception & e ) {
+            logger.error(e.what());
+            return nullptr;
+        }
+    }
+
+    void run()
+    {
+        loadScData();
+        //auto map = loadMap();
+        auto map = loadMap("C:\\Users\\Nites\\Documents\\StarCraft\\Maps\\Download\\LotR March of Sauron L7.scx");
+        auto renderer = createRenderer(RenderSkin::ClassicGL, *map);
+        //renderer->displayInGui(*map, true);
+        renderer->saveMapImage(*map);
     }
 };
 
 int main()
 {
-    App{}.run();
+    GfxUtil{}.run();
     return 0;
 }
