@@ -4,6 +4,6 @@
 #include <string>
 #include <glad/glad.h>
 
-std::optional<std::string> saveOpenGlViewportImage(GLint x, GLint y, GLint width, GLint height);
+std::optional<std::string> saveOpenGlViewportImage(GLint x, GLint y, GLint width, GLint height, const std::string & outputFilePath);
 
 #endif

@@ -138,13 +138,6 @@ struct Renderer
     {
         if ( window.getKey(GLFW_KEY_ESCAPE) == GLFW_PRESS )
             window.setWindowShouldClose(true);
-        else if ( window.getKey(GLFW_KEY_S) == GLFW_PRESS )
-        {
-            auto tileWidth = displayedMap->getTileWidth();
-            auto tileHeight = displayedMap->getTileHeight();
-            if ( auto saved = saveOpenGlViewportImage(0, 0, tileWidth*32, tileHeight*32) )
-                std::cout << "Saved screenshot to " << *saved << '\n';
-        }
     }
 
     void clearWindow()
@@ -197,18 +190,65 @@ struct Renderer
         this->renderSkin = skin;
     }
 
-    void saveMapImage(ScMap & map)
+    void saveMapImage(ScMap & map, std::string outputFilePath = "")
     {
-        map.graphics.setZoom(1.f);
-        auto tileWidth = int(map.getTileWidth());
-        auto tileHeight = int(map.getTileHeight());
-        auto imageWidth = 32*tileWidth;
-        auto imageHeight = 32*tileHeight;
+        int tileWidth = int(map.getTileWidth());
+        int tileHeight = int(map.getTileHeight());
+        int maxTileDimension = std::max(tileWidth, tileHeight);
+        int zoomSizeMultiplier = 1;
+        switch ( renderSkin )
+        {
+            case RenderSkin::ClassicGL: zoomSizeMultiplier = 1; break;
+            case RenderSkin::ScrSD: zoomSizeMultiplier = 1; break;
+            case RenderSkin::ScrHD2: zoomSizeMultiplier = 2; break;
+            case RenderSkin::ScrHD: zoomSizeMultiplier = 4; break;
+            case RenderSkin::CarbotHD2: zoomSizeMultiplier = 2; break;
+            case RenderSkin::CarbotHD: zoomSizeMultiplier = 4; break;
+        }
+
+        // HD and HD2 are best 400% and 200% zoomed respectively, and can be smoothly halved until they fit in one image
+        int pixelSizeMultiplier = 32 * zoomSizeMultiplier;
+        while ( zoomSizeMultiplier > 1 && pixelSizeMultiplier*maxTileDimension > 16384 )
+        {
+            zoomSizeMultiplier /= 2;
+            pixelSizeMultiplier = 32 * zoomSizeMultiplier;
+        }
+
+        map.graphics.setZoom(float(zoomSizeMultiplier));
+        auto imageWidth = pixelSizeMultiplier*tileWidth;
+        auto imageHeight = pixelSizeMultiplier*tileHeight;
         if ( imageWidth > 16384 || imageHeight > 16384 )
         {
-            logger.error("Larger image dimension handling required");
+            logger.error() << "Max image dimensions exceeded, failed to generate image for map \"" << map.getFilePath() << "\"\n";
             return;
         }
+
+        if ( outputFilePath.empty() )
+        {
+            #ifdef WIN32
+            outputFilePath = "c:/misc/";
+            #else
+            outputFilePath = std::string(getenv("HOME")) + "/";
+            #endif
+
+            switch ( renderSkin )
+            {
+                case RenderSkin::ClassicGL: outputFilePath += "Classic "; break;
+                case RenderSkin::ScrSD: outputFilePath += "SD "; break;
+                case RenderSkin::ScrHD2: outputFilePath += "HD2 "; break;
+                case RenderSkin::ScrHD: outputFilePath += "HD "; break;
+                case RenderSkin::CarbotHD2: outputFilePath += "CarbotHD2 "; break;
+                case RenderSkin::CarbotHD: outputFilePath += "CarbotHD "; break;
+            }
+            outputFilePath += std::to_string(imageWidth) + "x" + std::to_string(imageHeight);
+            outputFilePath += " - ";
+            auto mapFileName = map.getFileName();
+            if ( outputFilePath.size() + mapFileName.size() > 260 )
+                outputFilePath += mapFileName.substr(0, 260-mapFileName.size()-5) + ".webp";
+            else
+                outputFilePath += mapFileName + ".webp";
+        }
+
 
         GLint savedViewport[4] {};
         glGetIntegerv(GL_VIEWPORT, savedViewport);
@@ -233,7 +273,7 @@ struct Renderer
 
         auto start = std::chrono::high_resolution_clock::now();
         glReadBuffer(GL_COLOR_ATTACHMENT1);
-        saveOpenGlViewportImage(0, 0, imageWidth, imageHeight);
+        saveOpenGlViewportImage(0, 0, imageWidth, imageHeight, outputFilePath);
         auto end = std::chrono::high_resolution_clock::now();
         std::cout << "Saved image in " << std::chrono::duration_cast<std::chrono::milliseconds>(end-start) << '\n';
 
@@ -268,7 +308,7 @@ struct Renderer
         }
     }
 
-    // Renders the map with the current settings
+    // Renders the map with the current settings, see GuiMapGraphics::render
     void renderMap(ScMap & map)
     {
         clearWindow();
@@ -392,20 +432,17 @@ struct GfxUtil
             return nullptr;
         }
     }
-
-    void run()
-    {
-        loadScData();
-        //auto map = loadMap();
-        auto map = loadMap("C:\\Users\\Nites\\Documents\\StarCraft\\Maps\\Download\\LotR March of Sauron L7.scx");
-        auto renderer = createRenderer(RenderSkin::ClassicGL, *map);
-        renderer->displayInGui(*map, true);
-        //renderer->saveMapImage(*map);
-    }
 };
 
 int main()
 {
-    GfxUtil{}.run();
+    GfxUtil gfxUtil {};
+
+    gfxUtil.loadScData();
+    //auto map = gfxUtil.loadMap();
+    auto map = gfxUtil.loadMap("C:\\Users\\Nites\\Documents\\StarCraft\\Maps\\Download\\LotR March of Sauron L7.scx");
+    auto renderer = gfxUtil.createRenderer(RenderSkin::ClassicGL, *map);
+    //renderer->displayInGui(*map, true);
+    renderer->saveMapImage(*map);
     return 0;
 }

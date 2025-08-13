@@ -6,7 +6,7 @@
 #include <fstream>
 #include <iostream>
 
-std::optional<std::string> saveOpenGlViewportImage(GLint x, GLint y, GLint width, GLint height)
+std::optional<std::string> saveOpenGlViewportImage(GLint x, GLint y, GLint width, GLint height, const std::string & outputFilePath)
 {
     std::vector<GLubyte> pixelData(width*height*3, GLbyte(0));
     glReadPixels(x, y, width, height, GL_RGB, GL_UNSIGNED_BYTE, &pixelData[0]);
@@ -32,15 +32,11 @@ std::optional<std::string> saveOpenGlViewportImage(GLint x, GLint y, GLint width
     else
         std::cout << "Created image in " << std::chrono::duration_cast<std::chrono::milliseconds>(end-start) << '\n';
 
-#ifdef WIN32
-    auto testPath = std::filesystem::path("c:/misc/test.webp");
-#else
-    auto testPath = std::filesystem::path(std::string(getenv("HOME")) + "/test.webp");
-#endif
-    std::ofstream outFile(testPath, std::ios_base::binary|std::ios_base::out);
+    auto outputPath = std::filesystem::path(outputFilePath);
+    std::ofstream outFile(outputPath, std::ios_base::binary|std::ios_base::out);
     outFile.write(reinterpret_cast<const char*>(&output.data[0]), std::streamsize(output.size));
     output = {};
     bool success = outFile.good();
     outFile.close();
-    return success ? std::make_optional<std::string>((const char*)testPath.u8string().c_str()) : std::nullopt;
+    return success ? std::make_optional<std::string>((const char*)outputPath.u8string().c_str()) : std::nullopt;
 }
