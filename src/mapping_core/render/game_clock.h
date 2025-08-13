@@ -36,6 +36,8 @@ public:
         return true;
     }
 
+    inline void setTickCount(std::uint64_t tickCount) { this->tickCount = tickCount; }
+
     inline std::uint64_t currentTick() const { return tickCount; }
 };
 

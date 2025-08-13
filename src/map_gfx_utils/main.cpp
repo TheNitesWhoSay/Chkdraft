@@ -70,6 +70,20 @@ public:
         MapFile(),
         animations(scData, gameClock, static_cast<const Scenario &>(*this)),
         graphics(scData, static_cast<Scenario &>(*this), animations) { init(); }
+
+    void simulateAnim(std::uint64_t ticks)
+    {
+        auto start = std::chrono::high_resolution_clock::now();
+        auto startTick = gameClock.currentTick();
+        for ( auto i=startTick; i<startTick+ticks; ++i )
+        {
+            gameClock.setTickCount(i);
+            animations.animate(i);
+        }
+        auto finish = std::chrono::high_resolution_clock::now();
+        logger.info() << "Simulated " << ticks << " ticks (" << (42*ticks) << "ms game time) in "
+            << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms of real time.\n";
+    }
 };
 
 /* A renderer has one set of draw settings (including the skin) active at a time,
@@ -441,6 +455,7 @@ int main()
     gfxUtil.loadScData();
     //auto map = gfxUtil.loadMap();
     auto map = gfxUtil.loadMap("C:\\Users\\Nites\\Documents\\StarCraft\\Maps\\Download\\LotR March of Sauron L7.scx");
+    map->simulateAnim(1000);
     auto renderer = gfxUtil.createRenderer(RenderSkin::ClassicGL, *map);
     //renderer->displayInGui(*map, true);
     renderer->saveMapImage(*map);
