@@ -94,6 +94,11 @@ namespace glfw
                 glfwSetFramebufferSizeCallback(window, F);
         }
 
+        inline void show()
+        {
+            glfwShowWindow(window);
+        }
+
         inline bool shouldClose()
         {
             return glfwWindowShouldClose(window) != 0;

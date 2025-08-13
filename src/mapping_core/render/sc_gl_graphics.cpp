@@ -499,12 +499,13 @@ void GraphicsData::loadMaskedTiles(ArchiveCluster & archiveCluster, Sc::Terrain:
     glDisable(GL_BLEND);
 
     GLuint vao = 0;
+    glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
 
     GLuint vbo = 0;
     glGenBuffers(1, &vbo);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-            
+
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4*sizeof(float), (void*)0);
     glEnableVertexAttribArray(0); // Position
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4*sizeof(float), (void*)(2*sizeof(GLfloat)));
@@ -1634,11 +1635,12 @@ void MapGraphics::mapViewChanged()
     auto mapViewToNdcScale = glm::scale(glm::mat4x4(1.f), {2.f/mapViewDimensions.width, -2.f/mapViewDimensions.height, 1.f});
     auto ndcTranslation = glm::translate(glm::mat4x4(1.f), {-1.f, 1.f, 0.f});
     auto visualQualityScale = glm::scale(glm::mat4x4(1.f), {1.f/loadSettings.visualQuality.scale, 1.f/loadSettings.visualQuality.scale, 1.f});
+    glm::mat4x4 flip = verticallyFlipped ? glm::scale(glm::mat4x4(1.f), {1.f, -1.f, 1.f}) : glm::mat4x4(1.f);
 
-    gameToNdc = halfFragTranslation * ndcTranslation * mapViewToNdcScale * gameTranslation;
-    starToNdc = halfFragTranslation * ndcTranslation * mapViewToNdcScale * visualQualityScale;
-    tileToNdc = halfFragTranslation * ndcTranslation * mapViewToNdcScale * gameTranslation * tileScale;
-    glyphScaling = glm::mat2x2({2.f/windowDimensions.width, 0.f}, {0.f, -2.f/windowDimensions.height});
+    gameToNdc = flip * halfFragTranslation * ndcTranslation * mapViewToNdcScale * gameTranslation;
+    starToNdc = flip * halfFragTranslation * ndcTranslation * mapViewToNdcScale * visualQualityScale;
+    tileToNdc = flip * halfFragTranslation * ndcTranslation * mapViewToNdcScale * gameTranslation * tileScale;
+    glyphScaling = glm::mat2x2({2.f/windowDimensions.width, 0.f}, {0.f, (verticallyFlipped ? 2.f : -2.f)/windowDimensions.height});
     unscrolledWindowToNdc = halfFragTranslation * ndcTranslation * windowToNdcScale;
 
     auto tileTexScale = glm::scale(glm::mat4x4(1.f), {1.f/128.f, 1.f/128.f, 1.f});
@@ -1660,6 +1662,12 @@ GLfloat MapGraphics::getZoom()
 void MapGraphics::setZoom(GLfloat newZoom)
 {
     this->zoom = newZoom;
+    mapViewChanged();
+}
+
+void MapGraphics::setVerticallyFlipped(bool verticallyFlipped)
+{
+    this->verticallyFlipped = verticallyFlipped;
     mapViewChanged();
 }
 
@@ -2252,6 +2260,8 @@ void MapGraphics::drawTileVertices(Grp & tilesetGrp, s32 width, s32 height, cons
         if ( framebuffer == 0 )
             glGenFramebuffers(1, &framebuffer);
 
+        GLint prevBoundFrameBuffer = 0;
+        glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &prevBoundFrameBuffer);
         glBindFramebuffer(GL_FRAMEBUFFER, framebuffer); // Note: also attaching a render-buffer here *might* improve performance if needed
                 
         gl::Texture screenTex {};
@@ -2288,7 +2298,7 @@ void MapGraphics::drawTileVertices(Grp & tilesetGrp, s32 width, s32 height, cons
         glBindVertexArray(0);
                 
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glBindFramebuffer(GL_FRAMEBUFFER, prevBoundFrameBuffer);
         glViewport(savedViewport[0], savedViewport[1], savedViewport[2], savedViewport[3]);
                 
         glEnable(GL_BLEND);
@@ -2627,8 +2637,8 @@ void MapGraphics::drawTilesetIndexed(s32 left, s32 top, s32 width, s32 height, s
 void MapGraphics::prepareImageRendering(bool isSelections)
 {
     auto imageTranslation = glm::translate(glm::mat4x4(1.f), {-mapViewBounds.left, -mapViewBounds.top, 0.f});
-    auto ndcScale = glm::scale(glm::mat4x4(1.f), {2.f/mapViewDimensions.width, -2.f/mapViewDimensions.height, 1.f});
-    auto ndcTranslation = glm::translate(glm::mat4x4(1.f), {-1.f, 1.f, 0.f});
+    auto ndcScale = glm::scale(glm::mat4x4(1.f), {2.f/mapViewDimensions.width, (verticallyFlipped ? 2.f : -2.f)/mapViewDimensions.height, 1.f});
+    auto ndcTranslation = glm::translate(glm::mat4x4(1.f), {-1.f, (verticallyFlipped ? -1.f : 1.f), 0.f});
     auto imageToNdc = ndcTranslation * ndcScale * imageTranslation;
     if ( loadSettings.skinId == Skin::Id::Classic )
     {

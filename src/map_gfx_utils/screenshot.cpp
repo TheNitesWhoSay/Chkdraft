@@ -20,9 +20,9 @@ std::optional<std::string> saveOpenGlViewportImage(GLint x, GLint y, GLint width
     EncodedWebP output {};
 
     auto start = std::chrono::high_resolution_clock::now();
-    if ( width == 16384 ) width = 16383; // 1-off from maximum, clip the last pixel-column
-    if ( height == 16384 ) height = 16383; // 1-off from maximum, clip the last pixel-row
-    output.size = WebPEncodeLosslessRGB(&pixelData[0], width, height, 3*width, &output.data); // 22658
+    auto clipWidth = width == 16384 ? 16383 : width; // 1-off from maximum, clip the last pixel-column
+    auto clipHeight = height == 16384 ? 16383 : height; // 1-off from maximum, clip the last pixel-row
+    output.size = WebPEncodeLosslessRGB(&pixelData[0], clipWidth, clipHeight, 3*width, &output.data); // 22658
     auto end = std::chrono::high_resolution_clock::now();
     if ( output.size == 0 )
     {

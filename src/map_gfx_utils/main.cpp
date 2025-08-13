@@ -19,7 +19,8 @@ enum class RenderSkin
     ScrHD2,
     ScrHD,
     CarbotHD2,
-    CarbotHD
+    CarbotHD,
+    Unknown
 };
 
 // A StarCraft map including the MapFile (scx/scm/chk), a game clock, animations, and graphics
@@ -94,6 +95,8 @@ struct Renderer
     glfw::Window window {};
     const Sc::Data & scData;
     ScMap* displayedMap = nullptr;
+    std::unique_ptr<GraphicsData> graphicsData;
+    RenderSkin renderSkin = RenderSkin::Unknown;
 
     Renderer(const Sc::Data & scData) : scData(scData) {}
 
@@ -151,6 +154,9 @@ struct Renderer
 
     void loadSkin(RenderSkin skin, ScMap & map)
     {
+        if ( this->renderSkin == skin )
+            return;
+
         // Validate the skin and if remastered, turn it into GraphicsData::LoadSettings
         GraphicsData::LoadSettings loadSettings {
             .visualQuality = VisualQuality::SD,
@@ -183,13 +189,17 @@ struct Renderer
             );
         }
 
+        if ( graphicsData == nullptr )
+            graphicsData = std::make_unique<GraphicsData>();
+
         auto loadBuffer = ByteBuffer(1024*1024*120); // 120MB
-        std::unique_ptr<GraphicsData> graphicsData = std::make_unique<GraphicsData>();
         map.graphics.load(*graphicsData, loadSettings, *archiveCluster, loadBuffer);
+        this->renderSkin = skin;
     }
 
     void saveMapImage(ScMap & map)
     {
+        map.graphics.setZoom(1.f);
         auto tileWidth = int(map.getTileWidth());
         auto tileHeight = int(map.getTileHeight());
         auto imageWidth = 32*tileWidth;
@@ -216,6 +226,7 @@ struct Renderer
         glViewport(0, 0, imageWidth, imageHeight);
         map.graphics.windowBoundsChanged({.left = 0, .top = 0, .right = imageWidth, .bottom = imageHeight});
 
+        map.graphics.setVerticallyFlipped(true);
         renderMap(map);
 
         glFlush();
@@ -231,12 +242,15 @@ struct Renderer
         window.pollEvents();
         window.swapBuffers();
 
+        map.graphics.setVerticallyFlipped(false);
         map.graphics.windowBoundsChanged({ savedViewport[0], savedViewport[1], savedViewport[2], savedViewport[3] });
         glViewport(savedViewport[0], savedViewport[1], savedViewport[2], savedViewport[3]);
     }
 
     void displayInGui(ScMap & map, bool autoAnimate) // Note that this method is blocking, close the window or press escape to continue
     {
+        window.show();
+
         displayedMap = &map;
         bool hasCrgb = map->hasSection(Chk::SectionName::CRGB);
         while ( !window.shouldClose() )
@@ -385,8 +399,8 @@ struct GfxUtil
         //auto map = loadMap();
         auto map = loadMap("C:\\Users\\Nites\\Documents\\StarCraft\\Maps\\Download\\LotR March of Sauron L7.scx");
         auto renderer = createRenderer(RenderSkin::ClassicGL, *map);
-        //renderer->displayInGui(*map, true);
-        renderer->saveMapImage(*map);
+        renderer->displayInGui(*map, true);
+        //renderer->saveMapImage(*map);
     }
 };
 

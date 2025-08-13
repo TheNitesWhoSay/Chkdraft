@@ -855,6 +855,7 @@ protected:
     glm::mat4 gridToNdc {};
     glm::mat2 glyphScaling {};
     GLfloat zoom = 1.f;
+    bool verticallyFlipped = false;
     Chk::PlayerColor prevMappedColor = std::numeric_limits<Chk::PlayerColor>::max(); // Update palette only when the drawn units/sprites use a new player
 
     u32 n1Frame = 0;
@@ -921,11 +922,12 @@ public:
 
     void resetFps();
     void updateGrid(); // Occurs when the map view, grid size or grid color changes
-    void mapViewChanged(); // Occurs when the window bounds, zoom-level or skin changes
+    void mapViewChanged(); // Occurs when the window bounds, zoom-level, vertical-flip, or skin changes
     void windowBoundsChanged(gl::Rect2D<s32> windowBounds);
     void skinChanged();
     GLfloat getZoom();
     void setZoom(GLfloat newZoom);
+    void setVerticallyFlipped(bool verticallyFlipped);
         
     bool isClassicLoaded(GraphicsData & scrDat);
 
