@@ -23,13 +23,14 @@ enum class RenderSkin
     ScrHD,
     CarbotHD2,
     CarbotHD,
-    Unknown
+    Total,
+    Unknown,
 };
 
 // A StarCraft map including the MapFile (scx/scm/chk), a game clock, animations, and graphics
-class ScMap : public MapFile
+struct ScMap : MapFile
 {
-    void init()
+    void initAnims() // Initializes the animations for all the units and sprites in the map
     {
         if ( Scenario::numUnits() > 0 || Scenario::numSprites() > 0 )
         {
@@ -45,7 +46,6 @@ class ScMap : public MapFile
         });
     }
 
-public:
     GameClock gameClock {};
     MapAnimations animations;
     MapGraphics graphics;
@@ -54,27 +54,32 @@ public:
     ScMap(Sc::Data & scData, const std::string & filePath) :
         MapFile(filePath),
         animations(scData, gameClock, static_cast<const Scenario &>(*this)),
-        graphics(scData, static_cast<Scenario &>(*this), animations) { init(); }
+        graphics(scData, static_cast<Scenario &>(*this), animations) { initAnims(); }
 
     // Load map selected from browser
     ScMap(Sc::Data & scData, FileBrowserPtr<SaveType> fileBrowser /*= MapFile::getDefaultOpenMapBrowser()*/) :
         MapFile(fileBrowser),
         animations(scData, gameClock, static_cast<const Scenario &>(*this)),
-        graphics(scData, static_cast<Scenario &>(*this), animations) { init(); }
+        graphics(scData, static_cast<Scenario &>(*this), animations) { initAnims(); }
 
     // Create a new map
     ScMap(Sc::Data & scData, Sc::Terrain::Tileset tileset, u16 width = 64, u16 height = 64, size_t terrainTypeIndex = 0, SaveType saveType = SaveType::HybridScm, const Sc::Terrain::Tiles* tilesetData = nullptr) :
         MapFile(tileset, width, height, terrainTypeIndex, saveType, tilesetData),
         animations(scData, gameClock, static_cast<const Scenario &>(*this)),
-        graphics(scData, static_cast<Scenario &>(*this), animations) { init(); }
+        graphics(scData, static_cast<Scenario &>(*this), animations) { initAnims(); }
 
     // Creates an uninitialized map that must be manually loaded before use
     ScMap(Sc::Data & scData) :
         MapFile(),
         animations(scData, gameClock, static_cast<const Scenario &>(*this)),
-        graphics(scData, static_cast<Scenario &>(*this), animations) { init(); }
+        graphics(scData, static_cast<Scenario &>(*this), animations) { initAnims(); }
 
-    void simulateAnim(std::uint64_t ticks)
+    struct Simulation {
+        int ticks = 0;
+        int gameTimeSimulatedMs = 0;
+        int realTimeSpentMs = 0;
+    };
+    Simulation simulateAnim(std::uint64_t ticks)
     {
         auto start = std::chrono::high_resolution_clock::now();
         auto startTick = gameClock.currentTick();
@@ -84,8 +89,11 @@ public:
             animations.animate(i);
         }
         auto finish = std::chrono::high_resolution_clock::now();
-        logger.info() << "Simulated " << ticks << " ticks (" << (42*ticks) << "ms game time) in "
-            << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms of real time.\n";
+        return Simulation {
+            .ticks = int(ticks),
+            .gameTimeSimulatedMs = 42*int(ticks),
+            .realTimeSpentMs = int(std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count())
+        };
     }
 };
 
@@ -110,14 +118,18 @@ struct Renderer
 {
     glfw::Context glfwContext {};
     glfw::Window window {};
+    std::string starCraftDirectory;
     const Sc::Data & scData;
     ScMap* displayedMap = nullptr;
     std::unique_ptr<GraphicsData> graphicsData;
     RenderSkin renderSkin = RenderSkin::Unknown;
+    bool showGui = false;
 
     struct Options {
+        bool drawStars = false;
         bool drawTerrain = true;
         bool drawActors = true; // Units & sprites
+        std::optional<u8> drawFogPlayer = std::nullopt; // Zero-based
         bool drawLocations = false;
         bool displayFps = false;
     };
@@ -161,7 +173,7 @@ struct Renderer
     void processInput()
     {
         if ( window.getKey(GLFW_KEY_ESCAPE) == GLFW_PRESS )
-            window.setWindowShouldClose(true);
+            showGui = false;
     }
 
     void clearWindow()
@@ -169,16 +181,13 @@ struct Renderer
         gl::clearColor(0.0f, 0.0f, 0.0f, 1.0f, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
 
-    void loadSkin(RenderSkin skin, ScMap & map)
+    bool loadSkinAndTileSet(RenderSkin skin, ScMap & map)
     {
-        if ( this->renderSkin == skin )
-            return;
-
         // Validate the skin and if remastered, turn it into GraphicsData::LoadSettings
         GraphicsData::LoadSettings loadSettings {
             .visualQuality = VisualQuality::SD,
             .skinId = ::Skin::Id::Classic,
-            .tileset = Sc::Terrain::Tileset(map.getTileset() % Sc::Terrain::NumTilesets),
+            .tileset = Sc::Terrain::Tileset(int(map->tileset) % int(Sc::Terrain::NumTilesets)),
             .forceShowStars = false
         };
         switch ( skin )
@@ -196,15 +205,8 @@ struct Renderer
         std::shared_ptr<ArchiveCluster> archiveCluster = nullptr;
         if ( loadSettings.skinId == ::Skin::Id::Classic ) // ClassicGL relies only on the general scData loaded earlier
             archiveCluster = std::make_shared<ArchiveCluster>(std::vector<ArchiveFilePtr>{});
-        else
-        {
-            archiveCluster = Sc::DataFile::Browser{}.openScDataFiles(
-                includesRemastered,
-                Sc::DataFile::getDefaultDataFiles(),
-                ::getDefaultScPath(), // "/home/nites/StarCraft",
-                Sc::DataFile::Browser::getDefaultStarCraftBrowser() // nullptr
-            );
-        }
+        else // Remastered skins usually need to load something more
+            archiveCluster = Sc::DataFile::Browser{}.openScDataFiles(includesRemastered, Sc::DataFile::getDefaultDataFiles(), starCraftDirectory, nullptr);
 
         if ( graphicsData == nullptr )
         {
@@ -218,7 +220,7 @@ struct Renderer
         this->renderSkin = skin;
     }
 
-    void saveMapImage(ScMap & map, const Options & options, std::string outputFilePath = "")
+    void encodeMapImageAsWebP(ScMap & map, const Options & options, auto use)
     {
         int tileWidth = int(map.getTileWidth());
         int tileHeight = int(map.getTileHeight());
@@ -251,33 +253,6 @@ struct Renderer
             return;
         }
 
-        if ( outputFilePath.empty() )
-        {
-            #ifdef WIN32
-            outputFilePath = "c:/misc/";
-            #else
-            outputFilePath = std::string(getenv("HOME")) + "/";
-            #endif
-
-            switch ( renderSkin )
-            {
-                case RenderSkin::ClassicGL: outputFilePath += "Classic "; break;
-                case RenderSkin::ScrSD: outputFilePath += "SD "; break;
-                case RenderSkin::ScrHD2: outputFilePath += "HD2 "; break;
-                case RenderSkin::ScrHD: outputFilePath += "HD "; break;
-                case RenderSkin::CarbotHD2: outputFilePath += "CarbotHD2 "; break;
-                case RenderSkin::CarbotHD: outputFilePath += "CarbotHD "; break;
-            }
-            outputFilePath += std::to_string(imageWidth) + "x" + std::to_string(imageHeight);
-            outputFilePath += " - ";
-            auto mapFileName = map.getFileName();
-            if ( outputFilePath.size() + mapFileName.size() > 260 )
-                outputFilePath += mapFileName.substr(0, 260-mapFileName.size()-5) + ".webp";
-            else
-                outputFilePath += mapFileName + ".webp";
-        }
-
-
         GLint savedViewport[4] {};
         glGetIntegerv(GL_VIEWPORT, savedViewport);
 
@@ -301,9 +276,9 @@ struct Renderer
 
         auto start = std::chrono::high_resolution_clock::now();
         glReadBuffer(GL_COLOR_ATTACHMENT1);
-        saveOpenGlViewportImage(0, 0, imageWidth, imageHeight, outputFilePath);
-        auto end = std::chrono::high_resolution_clock::now();
-        std::cout << "Saved image in " << std::chrono::duration_cast<std::chrono::milliseconds>(end-start) << '\n';
+        EncodedWebP encodedMapImage {};
+        if ( encodeOpenGlViewportImage(0, 0, imageWidth, imageHeight, encodedMapImage) )
+            use(encodedMapImage);
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -315,14 +290,101 @@ struct Renderer
         glViewport(savedViewport[0], savedViewport[1], savedViewport[2], savedViewport[3]);
     }
 
+    struct SaveWebpResult
+    {
+        int loadSkinAndTilesetTimeMs = 0;
+        int encodeTimeMs = 0; // Time for WebPEncodeLosslessRGB https://developers.google.com/speed/webp/docs/api , usually dwarves other times
+        int outFileTimeMs = 0; // Time to output to disk
+        std::string outputFilePath;
+    };
+
+    std::optional<SaveWebpResult> saveMapImageAsWebP(ScMap & map, const Options & options, const std::string & outputFilePath)
+    {
+        SaveWebpResult result {};
+        auto preResourceLoading = std::chrono::high_resolution_clock::now();
+        if ( loadSkinAndTileSet(this->renderSkin, map) )
+        {
+            auto postResourceLoading = std::chrono::high_resolution_clock::now();
+            result.loadSkinAndTilesetTimeMs = std::chrono::duration_cast<std::chrono::milliseconds>(postResourceLoading-preResourceLoading).count();
+        }
+
+        if ( outputFilePath.empty() )
+        {
+            #ifdef WIN32
+            std::string genFilePath = "c:/misc/";
+            #else
+            std::string genFilePath = std::string(getenv("HOME")) + "/";
+            #endif
+
+            switch ( renderSkin )
+            {
+                case RenderSkin::ClassicGL: genFilePath += "Classic"; break;
+                case RenderSkin::ScrSD: genFilePath += "SD"; break;
+                case RenderSkin::ScrHD2: genFilePath += "HD2"; break;
+                case RenderSkin::ScrHD: genFilePath += "HD"; break;
+                case RenderSkin::CarbotHD2: genFilePath += "CarbotHD2"; break;
+                case RenderSkin::CarbotHD: genFilePath += "CarbotHD"; break;
+            }
+
+            auto mapFileName = map.getFileName();
+            if ( !mapFileName.empty() )
+            {
+                genFilePath += " - ";
+                if ( genFilePath.size() + mapFileName.size() > 260 )
+                    genFilePath += mapFileName.substr(0, 260-mapFileName.size()-5);
+                else
+                    genFilePath += mapFileName;
+            }
+            genFilePath += ".webp";
+            std::swap(result.outputFilePath, genFilePath);
+        }
+        else
+            result.outputFilePath = outputFilePath;
+
+        bool success = false;
+        encodeMapImageAsWebP(map, options, [&](EncodedWebP & encodedWebP) {
+
+            result.encodeTimeMs = encodedWebP.encodeTimeMs;
+
+            auto startFileIo = std::chrono::high_resolution_clock::now();
+            auto outputPath = std::filesystem::path(result.outputFilePath);
+            std::ofstream outFile(outputPath, std::ios_base::binary|std::ios_base::out);
+            outFile.write(reinterpret_cast<const char*>(&encodedWebP.data[0]), std::streamsize(encodedWebP.size));
+            encodedWebP = {};
+            success = outFile.good();
+            outFile.close();
+            auto finishFileIo = std::chrono::high_resolution_clock::now();
+
+            result.outFileTimeMs = std::chrono::duration_cast<std::chrono::milliseconds>(finishFileIo-startFileIo).count();
+
+            if ( success && outputFilePath.empty() ) // Auto-gen'd, so log the filePath
+                logger.info() << "Saved map image to: \"" << result.outputFilePath << "\"\n";
+            else if ( !success )
+                logger.error() << "Failed to write map image to file: \"" << result.outputFilePath << "\"\n";
+        });
+        return success ? std::optional<SaveWebpResult>(std::move(result)) : std::nullopt;
+    }
+
+    void getMapImageAsWebP(ScMap & map, const Options & options, EncodedWebP & encodedWebP)
+    {
+        encodeMapImageAsWebP(map, options, [&encodedWebP](EncodedWebP & data) {
+            encodedWebP.swap(data);
+        });
+    }
+
     void displayInGui(ScMap & map, const Options & options, bool autoAnimate) // Note that this method is blocking, close the window or press escape to continue
     {
+        loadSkinAndTileSet(this->renderSkin, map);
         window.show();
 
         displayedMap = &map;
         bool hasCrgb = map->hasSection(Chk::SectionName::CRGB);
+
+        window.pollEvents();
+        processInput();
+        showGui = true;
         auto last = std::chrono::system_clock::now();
-        while ( !window.shouldClose() )
+        while ( showGui && !window.shouldClose() )
         {
             auto now = std::chrono::system_clock::now();
             processInput();
@@ -340,6 +402,7 @@ struct Renderer
                 last = now;
             }
         }
+        showGui = false;
     }
 
     // Renders the map with the current settings, see GuiMapGraphics::render
@@ -348,8 +411,19 @@ struct Renderer
         clearWindow();
         map.graphics.setFrameStart(frameStart);
 
+        if ( options.drawStars && map->tileset == Sc::Terrain::Tileset::SpacePlatform )
+        {
+            if ( renderSkin == RenderSkin::ClassicGL )
+                map.graphics.drawClassicStars();
+            else
+                map.graphics.drawStars(0xFFFFFFFF);
+        }
+
         if ( options.drawTerrain )
             map.graphics.drawTerrain();
+
+        if ( options.drawFogPlayer )
+            map.graphics.drawFog(options.drawFogPlayer.value());
 
         if ( options.drawActors )
         {
@@ -368,17 +442,29 @@ struct Renderer
 struct GfxUtil
 {
     std::unique_ptr<Sc::Data> scData = nullptr;
+    std::string starCraftDirectory {};
 
     void loadScData(const std::string & expectedScPath = ::getDefaultScPath())
     {
-        auto loadScData = std::make_unique<Sc::Data>();
-        if ( loadScData->load(
-            std::make_shared<Sc::DataFile::Browser>(),
-            Sc::DataFile::getDefaultDataFiles(),
-            expectedScPath) )
+        if ( scData != nullptr )
+            throw std::logic_error("loadScData called twice");
+
+        bool isRemastered = false;
+        bool declinedBrowse = false;
+
+        Sc::DataFile::Browser scBrowser {};
+        bool foundStarCraftDirectory = Sc::DataFile::Browser{}.findStarCraftDirectory(this->starCraftDirectory, isRemastered, declinedBrowse,
+            expectedScPath, Sc::DataFile::Browser::getDefaultStarCraftBrowser());
+
+        if ( !foundStarCraftDirectory )
         {
-            std::swap(this->scData, loadScData);
+            logger.error("Failed to load data from StarCraft");
+            throw std::runtime_error("Failed to load data from StarCraft");
         }
+
+        auto loadScData = std::make_unique<Sc::Data>();
+        if ( loadScData->load(std::make_shared<Sc::DataFile::Browser>(), Sc::DataFile::getDefaultDataFiles(), expectedScPath, nullptr) )
+            std::swap(this->scData, loadScData);
     }
 
     std::unique_ptr<Renderer> createRenderer(RenderSkin skin, ScMap & map)
@@ -389,9 +475,18 @@ struct GfxUtil
             return nullptr;
         }
         auto renderer = std::make_unique<Renderer>(*this->scData);
+        renderer->starCraftDirectory = this->starCraftDirectory;
         renderer->initialize();
-        renderer->loadSkin(skin, map);
+        renderer->loadSkinAndTileSet(skin, map);
         return renderer;
+    }
+
+    // Providing a map to createRenderer would prevent loading two tilesets prior to the first render
+    // This doesn't matter in batch but if running just for one map use the other overload
+    std::unique_ptr<Renderer> createRenderer(RenderSkin skin)
+    {
+        auto dummyMap = createMap(Sc::Terrain::Tileset::Badlands, 64, 64);
+        return createRenderer(skin, *dummyMap);
     }
 
     // Load map selected from browser
@@ -462,6 +557,23 @@ struct GfxUtil
         }
     }
 
+    std::unique_ptr<ScMap> createBlankMap()
+    {
+        if ( !scData )
+        {
+            logger.error("scData should be loaded prior to creating a map");
+            return nullptr;
+        }
+
+        try {
+            auto result = std::make_unique<ScMap>(*scData);
+            return result;
+        } catch ( std::exception & e ) {
+            logger.error(e.what());
+            return nullptr;
+        }
+    }
+
     // Creates an uninitialized map that must be manually loaded before use
     std::unique_ptr<ScMap> createUninitializedMap()
     {
@@ -481,23 +593,122 @@ struct GfxUtil
     }
 };
 
-int main()
+struct MapTimings
 {
-    GfxUtil gfxUtil {};
+    int totalTimeMs = 0;
+    int mapLoadTimeMs = 0;
+    int loadSkinAndTilesetTimeMs = 0;
+    int animRealTimeMs = 0;
+    int animGameTimeMs = 0;
+    int animTicks = 0;
+    int encodeTimeMs = 0; // Time for WebPEncodeLosslessRGB https://developers.google.com/speed/webp/docs/api , usually dwarves other times
+    int outFileTimeMs = 0; // Time to write to disk
 
-    gfxUtil.loadScData();
-    //auto map = gfxUtil.loadMap();
-    auto map = gfxUtil.loadMap("C:\\Users\\Nites\\Documents\\StarCraft\\Maps\\Download\\LotR March of Sauron L7.scx");
-    map->simulateAnim(20);
-    auto renderer = gfxUtil.createRenderer(RenderSkin::ClassicGL, *map);
+    MapTimings(std::chrono::high_resolution_clock::time_point mapStartTime,
+        std::chrono::high_resolution_clock::time_point mapLoadTime,
+        ScMap::Simulation animSimTimes,
+        std::optional<Renderer::SaveWebpResult> saveWebpResult,
+        std::chrono::high_resolution_clock::time_point mapFinishTime) :
+            totalTimeMs(std::chrono::duration_cast<std::chrono::milliseconds>(mapFinishTime-mapStartTime).count()),
+            mapLoadTimeMs(std::chrono::duration_cast<std::chrono::milliseconds>(mapLoadTime-mapStartTime).count()),
+            loadSkinAndTilesetTimeMs(saveWebpResult ? saveWebpResult->loadSkinAndTilesetTimeMs : -1),
+            animRealTimeMs(animSimTimes.realTimeSpentMs),
+            animGameTimeMs(animSimTimes.gameTimeSimulatedMs),
+            animTicks(animSimTimes.ticks),
+            encodeTimeMs(saveWebpResult ? saveWebpResult->encodeTimeMs : -1),
+            outFileTimeMs(saveWebpResult ? saveWebpResult->outFileTimeMs : -1)
+    {}
 
+    inline friend std::ostream & operator<<(std::ostream & os, const MapTimings & time)
+    {
+        os << "Load skin+tileset: " << time.loadSkinAndTilesetTimeMs << "ms\n"
+            << "Map load: " << time.mapLoadTimeMs << "ms\n"
+            << "Animation: " << time.animRealTimeMs << "ms (simulated " << time.animTicks << " ticks = " << time.animGameTimeMs << "ms of game time)\n"
+            << "WebPEncodeLosslessRGB: " << time.encodeTimeMs << "ms\n"
+            << "File output: " << time.outFileTimeMs << "ms\n"
+            << "Total: " << time.totalTimeMs << "ms\n";
+
+        return os;
+    }
+};
+
+/** If a map is coming not from the filesystem but from something that can be loaded in memory... Or if using a parser more robust than chkd...
+    This serves as an example of how to place such data into a map for rendering
+
+    All the Chk:: data structures are packed so you should be able to allocate a vector then push binary data into it if desired
+*/
+std::unique_ptr<ScMap> exampleLoadFromMemory(GfxUtil & gfxUtil, Sc::Terrain::Tileset tileset)
+{
+    auto scMap = gfxUtil.createBlankMap();
+
+    std::vector<Chk::Unit> units {};
+    std::vector<Chk::Sprite> sprites {};
+    for ( std::size_t i=0; i<Sc::Unit::TotalTypes; ++i )
+    {
+        int x = i%32;
+        int y = i/32;
+        units.push_back(Chk::Unit {0, u16(x*64+64), u16(y*64+64), Sc::Unit::Type(i), 0, 0, 0, Sc::Player::Id::Player1});
+    }
+    for ( std::size_t i=0; i<Sc::Sprite::TotalSprites; ++i )
+    {
+        int x = i%32;
+        int y = i/32;
+        //sprites.push_back(Chk::Sprite {Sc::Sprite::Type(i), u16(x*64+64), u16(y*64+64), Sc::Player::Id::Player1, 0, Chk::Sprite::SpriteFlags::DrawAsSprite});
+    }
+
+    std::vector<u16> mtxmTerrain(std::size_t(64*64), u16(0));
+    std::iota(mtxmTerrain.begin(), mtxmTerrain.end(), 0); // Fills with ascending tile ids starting from 0
+
+    scMap->initData(MapData {
+        .sprites = std::move(sprites),
+        .units = std::move(units),
+        .dimensions { .tileWidth = 64, .tileHeight = 64 },
+        .tileset = tileset,
+        .tiles = std::move(mtxmTerrain),
+    });
+    scMap->initAnims();
+    
+    return scMap;
+}
+
+void testRender(GfxUtil & gfxUtil, Renderer & renderer, Sc::Terrain::Tileset tileset, const std::string & outFilePath)
+{
     Renderer::Options options {
+        .drawStars = true,
         .drawTerrain = true,
         .drawActors = true,
+        .drawFogPlayer = std::nullopt,
         .drawLocations = false,
         .displayFps = false
     };
-    //renderer->displayInGui(*map, options, true);
-    renderer->saveMapImage(*map, options);
+
+    auto mapStartTime = std::chrono::high_resolution_clock::now();
+    //auto map = gfxUtil.loadMap(); // Use a browser
+    //auto map = gfxUtil.loadMap("C:/misc/SimpleLoc.scx"); // Use an absolute file path
+    auto map = exampleLoadFromMemory(gfxUtil, tileset); // Use something you already have in memory
+    auto mapLoadTime = std::chrono::high_resolution_clock::now();
+
+    auto animTime = map->simulateAnim(52); // Simulate n anim ticks occuring, need at least 52 to extend all the tanks
+
+    //renderer.displayInGui(*map, options, true);
+    auto imageTimes = renderer.saveMapImageAsWebP(*map, options, outFilePath);
+    auto mapFinishTime = std::chrono::high_resolution_clock::now();
+    logger << MapTimings(mapStartTime, mapLoadTime, animTime, imageTimes, mapFinishTime) << std::endl;
+}
+
+int main()
+{
+    auto startInitialLoad = std::chrono::high_resolution_clock::now();
+    GfxUtil gfxUtil {};
+    gfxUtil.loadScData(); // Could provide a path string to this method
+    auto renderer = gfxUtil.createRenderer(RenderSkin::ClassicGL);
+    auto endInitialLoad = std::chrono::high_resolution_clock::now();
+
+    logger.info() << "Initial load completed in " << std::chrono::duration_cast<std::chrono::milliseconds>(endInitialLoad-startInitialLoad).count() << "ms" << std::endl;
+
+    testRender(gfxUtil, *renderer, Sc::Terrain::Tileset::SpacePlatform, "C:/misc/space.webp");
+    testRender(gfxUtil, *renderer, Sc::Terrain::Tileset::Jungle, "C:/misc/jungle.webp");
+    testRender(gfxUtil, *renderer, Sc::Terrain::Tileset::SpacePlatform, "C:/misc/space2.webp");
+
     return 0;
 }
