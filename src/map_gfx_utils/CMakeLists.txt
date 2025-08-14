@@ -96,6 +96,7 @@ set(Headers
   ../mapping_core/render/sc_gl_graphics.h
 )
 set(Sources
+  lato.ttf.cpp
   main.cpp
   screenshot.cpp
   ../mapping_core/opengl/stb/stb.cpp

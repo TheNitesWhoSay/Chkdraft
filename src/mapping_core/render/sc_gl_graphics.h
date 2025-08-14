@@ -928,6 +928,7 @@ public:
     GLfloat getZoom();
     void setZoom(GLfloat newZoom);
     void setVerticallyFlipped(bool verticallyFlipped);
+    void setFrameStart(std::chrono::system_clock::time_point frameStart);
         
     bool isClassicLoaded(GraphicsData & scrDat);
 

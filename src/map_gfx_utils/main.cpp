@@ -10,6 +10,9 @@
 #include <mapping_core/render/sc_gl_graphics.h>
 #include <iostream>
 
+extern const std::uint8_t* latoFontDataPtr;
+extern const int latoFontDataSize;
+
 Logger logger {};
 
 enum class RenderSkin
@@ -112,6 +115,13 @@ struct Renderer
     std::unique_ptr<GraphicsData> graphicsData;
     RenderSkin renderSkin = RenderSkin::Unknown;
 
+    struct Options {
+        bool drawTerrain = true;
+        bool drawActors = true; // Units & sprites
+        bool drawLocations = false;
+        bool displayFps = false;
+    };
+
     Renderer(const Sc::Data & scData) : scData(scData) {}
 
     void initialize()
@@ -197,14 +207,18 @@ struct Renderer
         }
 
         if ( graphicsData == nullptr )
+        {
             graphicsData = std::make_unique<GraphicsData>();
+            graphicsData->defaultFont = gl::Font::loadStatic(latoFontDataPtr, std::size_t(latoFontDataSize), 0, 12);
+        }
 
         auto loadBuffer = ByteBuffer(1024*1024*120); // 120MB
         map.graphics.load(*graphicsData, loadSettings, *archiveCluster, loadBuffer);
+        map.graphics.setFont(graphicsData->defaultFont.get());
         this->renderSkin = skin;
     }
 
-    void saveMapImage(ScMap & map, std::string outputFilePath = "")
+    void saveMapImage(ScMap & map, const Options & options, std::string outputFilePath = "")
     {
         int tileWidth = int(map.getTileWidth());
         int tileHeight = int(map.getTileHeight());
@@ -281,7 +295,7 @@ struct Renderer
         map.graphics.windowBoundsChanged({.left = 0, .top = 0, .right = imageWidth, .bottom = imageHeight});
 
         map.graphics.setVerticallyFlipped(true);
-        renderMap(map);
+        renderMap(map, options);
 
         glFlush();
 
@@ -301,34 +315,53 @@ struct Renderer
         glViewport(savedViewport[0], savedViewport[1], savedViewport[2], savedViewport[3]);
     }
 
-    void displayInGui(ScMap & map, bool autoAnimate) // Note that this method is blocking, close the window or press escape to continue
+    void displayInGui(ScMap & map, const Options & options, bool autoAnimate) // Note that this method is blocking, close the window or press escape to continue
     {
         window.show();
 
         displayedMap = &map;
         bool hasCrgb = map->hasSection(Chk::SectionName::CRGB);
+        auto last = std::chrono::system_clock::now();
         while ( !window.shouldClose() )
         {
+            auto now = std::chrono::system_clock::now();
             processInput();
 
-            renderMap(map);
+            renderMap(map, options, now);
 
             glFlush();
             window.pollEvents();
             window.swapBuffers();
 
             if ( autoAnimate && map.gameClock.tick() )
+            {
                 map.animations.animate(map.gameClock.currentTick());
+                map.graphics.updateGraphics(std::chrono::duration_cast<std::chrono::milliseconds>(now-last).count());
+                last = now;
+            }
         }
     }
 
     // Renders the map with the current settings, see GuiMapGraphics::render
-    void renderMap(ScMap & map)
+    void renderMap(ScMap & map, const Options & options, std::chrono::system_clock::time_point frameStart = std::chrono::system_clock::now())
     {
         clearWindow();
-        map.graphics.drawTerrain();
-        map.graphics.prepareImageRendering();
-        map.graphics.drawActors(map->hasSection(Chk::SectionName::CRGB));
+        map.graphics.setFrameStart(frameStart);
+
+        if ( options.drawTerrain )
+            map.graphics.drawTerrain();
+
+        if ( options.drawActors )
+        {
+            map.graphics.prepareImageRendering();
+            map.graphics.drawActors(map->hasSection(Chk::SectionName::CRGB));
+        }
+
+        if ( options.drawLocations )
+            map.graphics.drawLocations();
+
+        if ( options.displayFps )
+            map.graphics.drawFps();
     }
 };
 
@@ -455,9 +488,16 @@ int main()
     gfxUtil.loadScData();
     //auto map = gfxUtil.loadMap();
     auto map = gfxUtil.loadMap("C:\\Users\\Nites\\Documents\\StarCraft\\Maps\\Download\\LotR March of Sauron L7.scx");
-    map->simulateAnim(1000);
+    map->simulateAnim(20);
     auto renderer = gfxUtil.createRenderer(RenderSkin::ClassicGL, *map);
-    //renderer->displayInGui(*map, true);
-    renderer->saveMapImage(*map);
+
+    Renderer::Options options {
+        .drawTerrain = true,
+        .drawActors = true,
+        .drawLocations = false,
+        .displayFps = false
+    };
+    //renderer->displayInGui(*map, options, true);
+    renderer->saveMapImage(*map, options);
     return 0;
 }

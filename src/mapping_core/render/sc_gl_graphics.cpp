@@ -1671,6 +1671,11 @@ void MapGraphics::setVerticallyFlipped(bool verticallyFlipped)
     mapViewChanged();
 }
 
+void MapGraphics::setFrameStart(std::chrono::system_clock::time_point frameStart)
+{
+    this->frameStart = frameStart;
+}
+
 void MapGraphics::skinChanged()
 {
     // Recalculate imageMargin
@@ -3041,6 +3046,7 @@ void MapGraphics::drawLocations(bool showAnywhere, u16 selectedLocation)
         textFont->clippedTextShader.use();
         textFont->clippedTextShader.glyphScaling.setMat2(glyphScaling);
         textFont->clippedTextShader.textPosToNdc.setMat4(gameToNdc);
+        textFont->clippedTextShader.verticalFlip.setValue(verticallyFlipped ? -1.f : 1.f);
         textFont->setColor(255, 255, 0);
 
         for ( size_t i=0; i<map->locations.size(); ++i )
@@ -3059,7 +3065,7 @@ void MapGraphics::drawLocations(bool showAnywhere, u16 selectedLocation)
                 u32 visualBottom = std::max(location.top, location.bottom);
                 u32 locationWidth = visualRight - visualLeft;
                 u32 locationHeight = visualBottom - visualTop;
-                s32 clipWidth = s32(locationWidth)*windowDimensions.width/mapViewDimensions.width; // Convert from game to window cordinates
+                s32 clipWidth = s32(locationWidth)*windowDimensions.width/mapViewDimensions.width; // Convert from game to window coordinates
                 s32 clipHeight = s32(locationHeight)*windowDimensions.height/mapViewDimensions.height;
                 if ( clipWidth > 2 && clipHeight > 2 ) // There is some space in which to potentially draw text
                 {
