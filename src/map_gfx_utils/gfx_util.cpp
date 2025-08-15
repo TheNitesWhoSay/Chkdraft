@@ -5,7 +5,7 @@ Logger logger {};
 
 std::string getDefaultFolder()
 {
-#ifdef WIN32
+#ifdef _WIN32
     return "c:/misc/";
 #else
     return std::string(getenv("HOME")) + "/";
