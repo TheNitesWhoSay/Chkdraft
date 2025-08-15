@@ -4,7 +4,7 @@
 
 namespace glad
 {
-    void loadGL() // If using GLFW this requires a current context to have been set
+    inline void loadGL() // If using GLFW this requires a current context to have been set
     {
         int version = gladLoadGL();
         if ( version == 0 )

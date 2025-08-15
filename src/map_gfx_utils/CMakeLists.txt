@@ -70,6 +70,10 @@ FetchContent_MakeAvailable(rarecpp)
 include_directories(${rarecpp_SOURCE_DIR}/include)
 
 set(Headers
+  gfx_util.h
+  map_timings.h
+  renderer.h
+  sc_map.h
   screenshot.h
   ../mapping_core/opengl/glfw/context.h
   ../mapping_core/opengl/glfw/window.h
@@ -96,8 +100,11 @@ set(Headers
   ../mapping_core/render/sc_gl_graphics.h
 )
 set(Sources
+  gfx_util.cpp
   lato.ttf.cpp
   main.cpp
+  renderer.cpp
+  sc_map.cpp
   screenshot.cpp
   ../mapping_core/opengl/stb/stb.cpp
   ../mapping_core/render/map_actor.cpp
