@@ -2,7 +2,7 @@
 #include "chkdraft/chkdraft.h"
 #include "ui/chkd_controls/move_to.h"
 #include "mapping/settings.h"
-#include "mapping/sc_graphics.h"
+#include "mapping/sc_gdi_graphics.h"
 #include <string>
 
 #undef PlaySound

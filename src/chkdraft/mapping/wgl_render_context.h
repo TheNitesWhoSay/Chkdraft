@@ -1,7 +1,7 @@
 #pragma once
 // As an abstraction depending on both OpenGL and windows code it should not be organizationally grouped with either
 #include <gl/context_semaphore.h>
-#include <glad/gl.h>
+#include <glad/glad.h>
 #include <windows/device_context.h>
 #include <memory>
 #include <wingdi.h>

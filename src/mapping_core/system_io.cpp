@@ -14,6 +14,12 @@
 #ifdef _WIN32
 #include <Windows.h>
 #include <direct.h>
+#elif defined(__linux__)
+#include <dlfcn.h>
+#include <linux/limits.h>
+#include "portable_file_dialogs.h"
+#else
+#include "portable_file_dialogs.h"
 #endif
 
 bool hasExtension(const std::string & systemFilePath, const std::string & extension)
@@ -241,8 +247,7 @@ bool findFile(const std::string & filePath)
             fclose(file);
         
         return result == 0 || result == EEXIST || result == EACCES;
-#else
-#ifdef WINDOWS_MULTIBYTE
+#elif defined(WINDOWS_MULTIBYTE)
         FILE* file = NULL;
         errno_t result = fopen_s(&file, fFilePath.c_str(), "r");
         if ( file != NULL )
@@ -256,7 +261,6 @@ bool findFile(const std::string & filePath)
             std::fclose(file);
             return true;
         }
-#endif
 #endif
     }
     return false;
@@ -380,11 +384,6 @@ bool removeFiles(const std::string & firstFileName, const std::string & secondFi
     return success;
 }
 
-#ifdef __linux__
-#include <dlfcn.h>
-#include <linux/limits.h>
-#endif
-
 std::optional<std::string> getModuleDirectory(bool includeTrailingSeparator)
 {
 #ifdef _WIN32
@@ -413,7 +412,11 @@ bool getDefaultScPath(std::string & data)
 
 std::string getDefaultScPath()
 {
+#ifdef _WIN32
     return "C:\\Program Files (x86)\\StarCraft"; // TODO: More logic
+#else
+    return "";
+#endif
 }
 
 // Windows registry functions
@@ -464,7 +467,15 @@ PromptResult getYesNo(const std::string & text, const std::string & caption)
         default: return PromptResult::Unknown;
     }
 #else
-    return PromptResult::Unknown;
+    if ( !pfd::settings::available() )
+        return PromptResult::Unknown;
+
+    auto button = pfd::message(caption, text, pfd::choice::yes_no).result();
+    switch ( button ) {
+        case pfd::button::yes: return PromptResult::Yes;
+        case pfd::button::no: return PromptResult::No;
+        default: return PromptResult::Unknown;
+    }
 #endif
 }
 
@@ -479,7 +490,16 @@ PromptResult getYesNoCancel(const std::string & text, const std::string & captio
         default: return PromptResult::Unknown;
     }
 #else
-    return PromptResult::Unknown;
+    if ( !pfd::settings::available() )
+        return PromptResult::Unknown;
+
+    auto button = pfd::message(caption, text, pfd::choice::yes_no_cancel).result();
+    switch ( button ) {
+        case pfd::button::yes: return PromptResult::Yes;
+        case pfd::button::no: return PromptResult::No;
+        case pfd::button::cancel: return PromptResult::Cancel;
+        default: return PromptResult::Unknown;
+    }
 #endif
 }
 
@@ -548,7 +568,23 @@ bool browseForFile(std::string & filePath, uint32_t & filterIndex, const std::ve
 
     return success;
 #else
-    return false;
+    if ( !pfd::settings::available() )
+        return false;
+
+    std::vector<std::string> flatFilters {};
+    for ( auto & filterAndLabel : filtersAndLabels )
+    {
+        flatFilters.push_back(filterAndLabel.second);
+        flatFilters.push_back(filterAndLabel.first);
+    }
+    auto selection = pfd::open_file(title, initialDirectory, flatFilters, pfd::opt::none).result();
+    if ( selection.empty() )
+        return false;
+    else
+    {
+        filePath = selection[0];
+        return true;
+    }
 #endif
 }
 

@@ -127,4 +127,10 @@ constexpr u32 TreeTypeEvent = (0xB0000000);
 ## WM_APP through 0xBFFF         ##
 \*###############################*/
 
+struct point // Mirrors win32 POINT
+{
+    s32 x;
+    s32 y;
+};
+
 #endif

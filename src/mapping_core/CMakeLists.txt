@@ -32,7 +32,7 @@ include(FetchContent)
 FetchContent_Declare(
   rarecpp
   GIT_REPOSITORY https://github.com/TheNitesWhoSay/RareCpp.git
-  GIT_TAG 4acbf69 # release-2.5.0TODO
+  GIT_TAG fb9b90f # release-2.5.0TODO
 )
 FetchContent_MakeAvailable(rarecpp)
 include_directories(${rarecpp_SOURCE_DIR}/include)
@@ -46,10 +46,8 @@ set(Headers
   chk.h
   escape_strings.h
   file_browser.h
-  map_actor.h
   map_data.h
   map_file.h
-  map_image.h
   mapping_core.h
   mpq_asset_manager.h
   mpq_file.h
@@ -91,4 +89,4 @@ add_definitions(-DUNICODE -D_UNICODE)
 find_package(StormLib CONFIG REQUIRED)
 
 
-target_link_libraries(${This} PRIVATE BZip2::BZip2 CascLib::casc_static StormLib::storm)
+target_link_libraries(${This} PRIVATE CrossCut BZip2::BZip2 CascLib::casc_static StormLib::storm)
