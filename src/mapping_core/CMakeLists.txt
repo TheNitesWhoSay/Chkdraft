@@ -3,7 +3,9 @@ cmake_minimum_required (VERSION 3.20)
 
 cmake_policy(SET CMP0091 NEW)
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-set(VCPKG_TARGET_TRIPLET x64-windows-static)
+if (WIN32)
+  set(VCPKG_TARGET_TRIPLET x64-windows-static)
+endif ()
 set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
 
 set(This MappingCore)
@@ -19,8 +21,10 @@ if ( PROJECT_IS_TOP_LEVEL )
   set(CMAKE_BUILD_PARALLEL_LEVEL)
   set(CMAKE_C_STANDARD 99)
   set(CMAKE_CXX_STANDARD 20)
-  add_compile_options(/permissive-)
-  add_compile_definitions(_UNICODE UNICODE NOMINMAX)
+  if ( "${CMAKE_CXX_COMPILER_ID}" MATCHES "MSVC" )
+    add_compile_options(/permissive-)
+  endif ()
+  add_compile_definitions(_UNICODE UNICODE NOMINMAX _CRT_SECURE_NO_WARNINGS)
   add_subdirectory(${ChkdraftRootPath}/src/cross_cut ${CMAKE_CURRENT_BINARY_DIR}/cross_cut_lib)
 endif()
 
@@ -28,7 +32,7 @@ include(FetchContent)
 FetchContent_Declare(
   rarecpp
   GIT_REPOSITORY https://github.com/TheNitesWhoSay/RareCpp.git
-  GIT_TAG 4acbf69 # release-2.5.0TODO
+  GIT_TAG fb9b90f # release-2.5.0TODO
 )
 FetchContent_MakeAvailable(rarecpp)
 include_directories(${rarecpp_SOURCE_DIR}/include)
@@ -42,10 +46,8 @@ set(Headers
   chk.h
   escape_strings.h
   file_browser.h
-  map_actor.h
   map_data.h
   map_file.h
-  map_image.h
   mapping_core.h
   mpq_asset_manager.h
   mpq_file.h
@@ -87,4 +89,4 @@ add_definitions(-DUNICODE -D_UNICODE)
 find_package(StormLib CONFIG REQUIRED)
 
 
-target_link_libraries(${This} PRIVATE BZip2::BZip2 CascLib::casc_static StormLib::storm)
+target_link_libraries(${This} PRIVATE CrossCut BZip2::BZip2 CascLib::casc_static StormLib::storm)

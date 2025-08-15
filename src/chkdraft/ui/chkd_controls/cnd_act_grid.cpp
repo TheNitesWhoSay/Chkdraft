@@ -1,6 +1,6 @@
 #include "cnd_act_grid.h"
 #include <string>
-#include <cross_cut/logger.h>
+#include "cross_cut/logger.h"
 
 extern Logger logger;
 

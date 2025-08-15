@@ -5,8 +5,10 @@
 #include "escape_strings.h"
 #include "sc.h"
 #include <bitset>
+#include <cstring>
 #include <iosfwd>
 #include <map>
+#include <string>
 
 #undef PlaySound
 
@@ -93,7 +95,7 @@ namespace Chk {
         Yes = 1 // Technology is researched
     });
     
-    __declspec(align(1)) struct Unit {
+    struct alignas(1) Unit {
         enum_t(RelationFlag, u16, { // u16
             NydusLink = BIT_9,
             AddonLink = BIT_10
@@ -312,7 +314,7 @@ namespace Chk {
 
     using IsomDiamond = IsomRect::IsomDiamond;
 
-    __declspec(align(1)) struct Doodad
+    struct alignas(1) Doodad
     {
         enum_t(Enabled, u8, {
             Enabled = 0, // Doodad is enabled
@@ -328,7 +330,7 @@ namespace Chk {
         REFLECT(Doodad, type, xc, yc, owner, enabled)
     };
 
-    __declspec(align(1)) struct Sprite
+    struct alignas(1) Sprite
     {
         enum_t(SpriteFlags, u16, {
             
@@ -444,7 +446,7 @@ namespace Chk {
         Yes = 1 // CUWP slot is used
     });
 
-    __declspec(align(1)) struct Cuwp
+    struct alignas(1) Cuwp
     {
         enum_t(State, u16, { // u16
             Cloak = BIT_0,
@@ -512,7 +514,7 @@ namespace Chk {
         Anywhere = 64
     });
     
-    __declspec(align(1)) struct Location
+    struct alignas(1) Location
     {
         enum_t(Elevation, u16, {
             LowElevation = BIT_0,
@@ -565,7 +567,7 @@ namespace Chk {
 
     constexpr u32 MaximumTriggers = 894785; // 894784 real triggers at 2400 bytes each could fit in MaxChkSectionSize: s32_max, maybe last couple bytes would be padded adding a partial trigger
 
-    __declspec(align(1)) struct Condition
+    struct alignas(1) Condition
     {
         static constexpr size_t NumConditionTypes = 24;
         static constexpr size_t MaxArguments = 9;
@@ -729,7 +731,7 @@ namespace Chk {
         static bool conditionUsesLocationArg[NumConditionTypes];
     }; // 20 (0x14) bytes
 
-    __declspec(align(1)) struct Action
+    struct alignas(1) Action
     {
         static constexpr size_t NumActionTypes = 60;
         static constexpr size_t NumBriefingActionTypes = 10;
@@ -1028,17 +1030,17 @@ namespace Chk {
         bool hasSoundArgument() const;
         bool hasBriefingStringArgument() const;
         bool hasBriefingSoundArgument() const;
-        inline bool switchUsed(size_t switchId) const;
-        inline bool locationUsed(size_t locationId) const;
-        inline bool stringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyTrigger) const;
-        inline bool gameStringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyTrigger) const;
-        inline bool commentStringUsed(size_t stringId) const;
-        inline bool briefingStringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyBriefingTrigger) const;
-        inline void markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed) const;
-        inline void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::AnyTrigger) const;
-        inline void markUsedGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::AnyTrigger) const;
-        inline void markUsedCommentStrings(std::bitset<Chk::MaxStrings> & stringIdUsed) const;
-        inline void markUsedBriefingStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::AnyBriefingTrigger) const;
+        bool switchUsed(size_t switchId) const;
+        bool locationUsed(size_t locationId) const;
+        bool stringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyTrigger) const;
+        bool gameStringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyTrigger) const;
+        bool commentStringUsed(size_t stringId) const;
+        bool briefingStringUsed(size_t stringId, u32 userMask = Chk::StringUserFlag::AnyBriefingTrigger) const;
+        void markUsedLocations(std::bitset<Chk::TotalLocations+1> & locationIdUsed) const;
+        void markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::AnyTrigger) const;
+        void markUsedGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::AnyTrigger) const;
+        void markUsedCommentStrings(std::bitset<Chk::MaxStrings> & stringIdUsed) const;
+        void markUsedBriefingStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask = Chk::StringUserFlag::AnyBriefingTrigger) const;
         void remapLocationIds(const std::map<u32, u32> & locationIdRemappings);
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void remapBriefingStringIds(const std::map<u32, u32> & stringIdRemappings);
@@ -1064,7 +1066,7 @@ namespace Chk {
         static bool briefingActionUsesSoundArg[NumBriefingActionTypes];
     }; // 32 (0x20) bytes
 
-    __declspec(align(1)) struct Trigger
+    struct alignas(1) Trigger
     {
         static constexpr size_t MaxConditions = 16;
         static constexpr size_t MaxActions = 64;
@@ -1231,7 +1233,7 @@ namespace Chk {
 
     constexpr u32 UnusedExtendedTrigDataIndexCheck = 0xFEFEFEFE; // If potentialIndex & this == 0, potentialIndex is unusable
 
-    __declspec(align(1)) struct ExtendedTrigData
+    struct alignas(1) ExtendedTrigData
     {
         enum_t(GroupId, u32, {
             None = u32_max
@@ -1255,7 +1257,7 @@ namespace Chk {
         bool isBlank() const;
     };
 
-    __declspec(align(1)) struct TriggerGroupHeader // TODO: Unused? or at least, it doesn't yet figure into serialization
+    struct alignas(1) TriggerGroupHeader // TODO: Unused? or at least, it doesn't yet figure into serialization
     {
         enum_t(Flags, u32, {
             groupExpanded = BIT_27,
@@ -1271,13 +1273,13 @@ namespace Chk {
         u32 bodyOffset; // Distance from section start to trigger group body, 0 if numTriggers+numGroups = 0
     };
 
-    __declspec(align(1)) struct TriggerGroupBody
+    struct alignas(1) TriggerGroupBody
     {
         //u32 extendedTrigDataIndex[header.numTriggers];
         //u32 groupIndex[header.numGroups];
     };
 
-    __declspec(align(1)) struct TriggerGroup
+    struct alignas(1) TriggerGroup
     {
         enum_t(Id, u32, {
             TopLevelGroup = 0xFFFFFFFF
@@ -1297,7 +1299,7 @@ namespace Chk {
         REFLECT(TriggerGroup, groupExpanded, groupHidden, templateInstanceId, commentStringId, notesStringId, parentGroupId, extendedTrigDataIndexes, groupIndexes)
     };
 
-    __declspec(align(1)) struct StringProperties {
+    struct alignas(1) StringProperties {
         u8 red;
         u8 green;
         u8 blue;
@@ -1306,34 +1308,37 @@ namespace Chk {
         StringProperties();
         StringProperties(u8 red, u8 green, u8 blue, bool isUsed, bool hasPriority, bool isBold, bool isUnderlined, bool isItalics, u32 size);
         
+        inline operator u32() const { return (u32(red) << 24) | (u32(green) << 16) | (u32(blue) << 8) | u32(flags); }
+
         class InvalidSize : public std::exception
         {
             public:
-                InvalidSize(u32 size, u32 baseFontSize, u32 fontStepSize) : error(error) { }
+                InvalidSize(u32 size, u32 baseFontSize, u32 fontStepSize)
+                    : error(std::to_string(size) + ", " + std::to_string(baseFontSize) + ", " + std::to_string(fontStepSize)) {}
                 virtual const char* what() const throw() { return error.c_str(); }
-                const std::string error;
+                const std::string error {};
             private:
                 InvalidSize(); // Disallow ctor
         };
     };
     
-    __declspec(align(1)) struct TYPE {
+    struct alignas(1) TYPE {
         Type scenarioType {Chk::Type::RAWS};
     }; // Size: 4 (not validated)
 
-    __declspec(align(1)) struct VER {
+    struct alignas(1) VER {
         Version version {Chk::Version::StarCraft_Hybrid};
     }; // Size: 2 (validated)
     
-    __declspec(align(1)) struct IVER {
+    struct alignas(1) IVER {
         IVersion version {Chk::IVersion::Current};
     }; // Size: 2 (not validated)
     
-    __declspec(align(1)) struct IVE2 {
+    struct alignas(1) IVE2 {
         I2Version version {Chk::I2Version::StarCraft_1_04};
     }; // Size: 2 (not validated)
     
-    __declspec(align(1)) struct VCOD {
+    struct alignas(1) VCOD {
         u32 seedValues[TotalValidationSeeds] {
             0x77CA1934, 0x7168DC99, 0xC3BF600A, 0xA775E7A7, 0xA67D291F, 0xBB3AB0D7, 0xED2431CC, 0x0B134C17, 0xB7A22065, 0x6B18BD91, 0xDD5DC38D, 0x37D57AE2,
             0xD46459F6, 0x0F129A63, 0x462E5C43, 0x2AF874E3, 0x06376A08, 0x3BD6F637, 0x1663940E, 0xEC5C6745, 0xB7F77BD7, 0x9ED4FC1A, 0x8C3FFA73, 0x0FE1C02E,
@@ -1370,7 +1375,7 @@ namespace Chk {
         REFLECT(VCOD, seedValues, opCodes)
     }; // Size: 1040 (validated)
     
-    __declspec(align(1)) struct IOWN {
+    struct alignas(1) IOWN {
         Sc::Player::SlotType slotType[Sc::Player::Total] {
             Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen,
             Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen,
@@ -1378,7 +1383,7 @@ namespace Chk {
         };
     }; // Size: 12 (not validated)
     
-    __declspec(align(1)) struct OWNR {
+    struct alignas(1) OWNR {
         Sc::Player::SlotType slotType[Sc::Player::Total] {
             Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen,
             Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen, Sc::Player::SlotType::GameOpen,
@@ -1386,18 +1391,18 @@ namespace Chk {
         };
     }; // Size: 12 (validated)
     
-    __declspec(align(1)) struct ERA {
+    struct alignas(1) ERA {
         Sc::Terrain::Tileset tileset {Sc::Terrain::Tileset::Badlands};
     }; // Size: 2 (validated)
     
-    __declspec(align(1)) struct DIM {
+    struct alignas(1) DIM {
         u16 tileWidth {64};
         u16 tileHeight {64};
 
         REFLECT(DIM, tileWidth, tileHeight)
     }; // Size: 4 (validated)
     
-    __declspec(align(1)) struct SIDE {
+    struct alignas(1) SIDE {
         Race playerRaces[Sc::Player::Total] {
             Chk::Race::Terran  , Chk::Race::Zerg    , Chk::Race::Protoss , Chk::Race::Terran,
             Chk::Race::Zerg    , Chk::Race::Protoss , Chk::Race::Terran  , Chk::Race::Zerg,
@@ -1405,25 +1410,25 @@ namespace Chk {
         };
     }; // Size: 12 (validated)
     
-    __declspec(align(1)) struct MTXM {
+    struct alignas(1) MTXM {
         //u16 tiles[0]; // u16 tiles[tileWidth][tileHeight];
     }; // Size <= 256*256*2 (validated)
     
-    __declspec(align(1)) struct PUNI {
+    struct alignas(1) PUNI {
         Available playerUnitBuildable[Sc::Player::Total][Sc::Unit::TotalTypes] {};
         Available defaultUnitBuildable[Sc::Unit::TotalTypes] {};
         UseDefault playerUnitUsesDefault[Sc::Player::Total][Sc::Unit::TotalTypes] {};
 
         PUNI() {
-            memset(&playerUnitBuildable, (int)Chk::Available::Yes, Sc::Player::Total*Sc::Unit::TotalTypes);
-            memset(&defaultUnitBuildable, (int)Chk::Available::Yes, Sc::Unit::TotalTypes);
-            memset(&playerUnitUsesDefault, (int)Chk::Available::Yes, Sc::Player::Total*Sc::Unit::TotalTypes);
+            std::memset(&playerUnitBuildable, (int)Chk::Available::Yes, Sc::Player::Total*Sc::Unit::TotalTypes);
+            std::memset(&defaultUnitBuildable, (int)Chk::Available::Yes, Sc::Unit::TotalTypes);
+            std::memset(&playerUnitUsesDefault, (int)Chk::Available::Yes, Sc::Player::Total*Sc::Unit::TotalTypes);
         }
 
         REFLECT(PUNI, playerUnitBuildable, defaultUnitBuildable, playerUnitUsesDefault)
     }; // Size: 5700 (validated)
     
-    __declspec(align(1)) struct UPGR {
+    struct alignas(1) UPGR {
         u8 playerMaxUpgradeLevel[Sc::Player::Total][Sc::Upgrade::TotalOriginalTypes] {};
         u8 playerStartUpgradeLevel[Sc::Player::Total][Sc::Upgrade::TotalOriginalTypes] {};
         u8 defaultMaxLevel[Sc::Upgrade::TotalOriginalTypes] {
@@ -1435,13 +1440,13 @@ namespace Chk {
         UseDefault playerUpgradeUsesDefault[Sc::Player::Total][Sc::Upgrade::TotalOriginalTypes] {};
 
         UPGR() {
-            memset(&playerUpgradeUsesDefault, (int)Chk::UseDefault::Yes, Sc::Player::Total*Sc::Upgrade::TotalOriginalTypes);
+            std::memset(&playerUpgradeUsesDefault, (int)Chk::UseDefault::Yes, Sc::Player::Total*Sc::Upgrade::TotalOriginalTypes);
         }
 
         REFLECT(UPGR, playerMaxUpgradeLevel, playerStartUpgradeLevel, defaultMaxLevel, defaultStartLevel, playerUpgradeUsesDefault)
     }; // Size: 1748 (validated)
     
-    __declspec(align(1)) struct PTEC {
+    struct alignas(1) PTEC {
         Available techAvailableForPlayer[Sc::Player::Total][Sc::Tech::TotalOriginalTypes] {};
         Researched techResearchedForPlayer[Sc::Player::Total][Sc::Tech::TotalOriginalTypes] {};
         Available techAvailableByDefault[Sc::Tech::TotalOriginalTypes] {};
@@ -1456,38 +1461,38 @@ namespace Chk {
         UseDefault playerUsesDefaultsForTech[Sc::Player::Total][Sc::Tech::TotalOriginalTypes] {};
 
         PTEC() {
-            memset(&techAvailableByDefault, (int)Chk::Available::Yes, Sc::Tech::TotalOriginalTypes);
-            memset(&playerUsesDefaultsForTech, (int)Chk::UseDefault::Yes, Sc::Player::Total*Sc::Tech::TotalOriginalTypes);
+            std::memset(&techAvailableByDefault, (int)Chk::Available::Yes, Sc::Tech::TotalOriginalTypes);
+            std::memset(&playerUsesDefaultsForTech, (int)Chk::UseDefault::Yes, Sc::Player::Total*Sc::Tech::TotalOriginalTypes);
         }
 
         REFLECT(PTEC, techAvailableForPlayer, techResearchedForPlayer, techAvailableByDefault, techResearchedByDefault, playerUsesDefaultsForTech)
     }; // Size: 912 (validated)
     
-    __declspec(align(1)) struct UNIT {
+    struct alignas(1) UNIT {
         //Unit units[0]; // Unit units[numUnits];
     }; // Size: Multiple of 36 (validated)
     
-    __declspec(align(1)) struct ISOM {
+    struct alignas(1) ISOM {
         //IsomRect isomRect[0]; // IsomRect isomRects[tileWidth/2 + 1][tileHeight + 1]; // Access x*2, width*y
     }; // Size: (tileWidth / 2 + 1) * (tileHeight + 1) * 8 (not validated)
     
-    __declspec(align(1)) struct TILE {
+    struct alignas(1) TILE {
         //u16 tiles[0]; // u16 tiles[tileWidth][tileHeight];
     }; // Size: tileWidth*tileHeight*2 (not validated)
     
-    __declspec(align(1)) struct DD2 {
+    struct alignas(1) DD2 {
         //Doodad doodads[0]; // Doodad doodads[numDoodads];
     }; // Size: Multiple of 8 (not validated)
     
-    __declspec(align(1)) struct THG2 {
+    struct alignas(1) THG2 {
         //Sprite sprites[0]; // Sprite sprites[numSprites];
     }; // Size: Multiple of 10 (not validated)
     
-    __declspec(align(1)) struct MASK {
+    struct alignas(1) MASK {
         //u8 tileFog[0]; // u8 tileFog[tileWidth][tileHeight];
     }; // Size: tileWidth*tileHeight (not validated)
     
-    __declspec(align(1)) struct STR {
+    struct alignas(1) STR {
         u16 numStrings {1024}; // Number of strings in the section (default 1024)
         // u16 stringOffsets[0]; // u16 stringOffsets[numStrings]; // stringId: 1 = stringOffsets[0];
                                  // Offsets to each string within the string section (not within stringData, but within the whole section)
@@ -1495,34 +1500,34 @@ namespace Chk {
         // Possible non-string data appended after stringData
     }; // Size >= 1 (validated)
     
-    __declspec(align(1)) struct UPRP {
+    struct alignas(1) UPRP {
         Cuwp createUnitProperties[Sc::Unit::MaxCuwps] {};
     }; // Size: 1280 (validated)
     
-    __declspec(align(1)) struct UPUS {
+    struct alignas(1) UPUS {
         CuwpUsed cuwpUsed[Sc::Unit::MaxCuwps] {};
     }; // Size: 64 (validated
     
-    __declspec(align(1)) struct MRGN {
+    struct alignas(1) MRGN {
         Location locations[TotalLocations] {}; // If this is a vanilla map, only the first 64 locations are usable
     }; // Size: 1280 in Original, 5100 in Hybrid or Broodwar (validated)
     
-    __declspec(align(1)) struct TRIG {
+    struct alignas(1) TRIG {
         // Trigger triggers[0]; // Trigger[numTriggers] triggers;
     }; // Size: Multiple of 2400 (validated)
 
-    __declspec(align(1)) struct MBRF {
+    struct alignas(1) MBRF {
         // Trigger triggers[0]; // Chk::Trigger[numTriggers];
     }; // Size: Multiple of 2400 (validated)
     
-    __declspec(align(1)) struct SPRP {
+    struct alignas(1) SPRP {
         u16 scenarioNameStringId {1};
         u16 scenarioDescriptionStringId {2};
 
         REFLECT(SPRP, scenarioNameStringId, scenarioDescriptionStringId)
     }; // Size: 4 (validated)
     
-    __declspec(align(1)) struct FORC {
+    struct alignas(1) FORC {
         Force playerForce[Sc::Player::TotalSlots] {
             Chk::Force::Force1, Chk::Force::Force1, Chk::Force::Force1, Chk::Force::Force1,
             Chk::Force::Force1, Chk::Force::Force1, Chk::Force::Force1, Chk::Force::Force1
@@ -1533,11 +1538,11 @@ namespace Chk {
         REFLECT(FORC, playerForce, forceString, flags)
     }; // Size <= 20 (validated)
     
-    __declspec(align(1)) struct WAV {
+    struct alignas(1) WAV {
         u32 soundPathStringId[TotalSounds] {};
     }; // Size: 2048 (not validated)
     
-    __declspec(align(1)) struct UNIS {
+    struct alignas(1) UNIS {
         UseDefault useDefault[Sc::Unit::TotalTypes] {};
         u32 hitpoints[Sc::Unit::TotalTypes] {}; // Displayed value is hitpoints / 256
         u16 shieldPoints[Sc::Unit::TotalTypes] {};
@@ -1550,13 +1555,13 @@ namespace Chk {
         u16 upgradeDamage[Sc::Weapon::TotalOriginal] {};
 
         UNIS() {
-            memset(&useDefault, (int)Chk::UseDefault::Yes, Sc::Unit::TotalTypes);
+            std::memset(&useDefault, (int)Chk::UseDefault::Yes, Sc::Unit::TotalTypes);
         }
 
         REFLECT(UNIS, useDefault, hitpoints, shieldPoints, armorLevel, buildTime, mineralCost, gasCost, nameStringId, baseDamage, upgradeDamage)
     }; // Size: 4048 (validated)
 
-    __declspec(align(1)) struct UPGS {
+    struct alignas(1) UPGS {
         UseDefault useDefault[Sc::Upgrade::TotalOriginalTypes] {};
         u16 baseMineralCost[Sc::Upgrade::TotalOriginalTypes] {};
         u16 mineralCostFactor[Sc::Upgrade::TotalOriginalTypes] {};
@@ -1566,13 +1571,13 @@ namespace Chk {
         u16 researchTimeFactor[Sc::Upgrade::TotalOriginalTypes] {};
 
         UPGS() {
-            memset(&useDefault, (int)Chk::UseDefault::Yes, Sc::Upgrade::TotalOriginalTypes);
+            std::memset(&useDefault, (int)Chk::UseDefault::Yes, Sc::Upgrade::TotalOriginalTypes);
         }
 
         REFLECT(UPGS, useDefault, baseMineralCost, mineralCostFactor, baseGasCost, gasCostFactor, baseResearchTime, researchTimeFactor)
     }; // Size: 598 (validated)
     
-    __declspec(align(1)) struct TECS {
+    struct alignas(1) TECS {
         UseDefault useDefault[Sc::Tech::TotalOriginalTypes] {};
         u16 mineralCost[Sc::Tech::TotalOriginalTypes] {};
         u16 gasCost[Sc::Tech::TotalOriginalTypes] {};
@@ -1580,24 +1585,24 @@ namespace Chk {
         u16 energyCost[Sc::Tech::TotalOriginalTypes] {};
 
         TECS() {
-            memset(&useDefault, (int)Chk::UseDefault::Yes, Sc::Tech::TotalOriginalTypes);
+            std::memset(&useDefault, (int)Chk::UseDefault::Yes, Sc::Tech::TotalOriginalTypes);
         }
 
         REFLECT(TECS, useDefault, mineralCost, gasCost, researchTime, energyCost)
     }; // Size: 216 (validated)
     
-    __declspec(align(1)) struct SWNM {
+    struct alignas(1) SWNM {
         u32 switchName[TotalSwitches] {};
     }; // Size: 1024 (not validated)
     
-    __declspec(align(1)) struct COLR {
+    struct alignas(1) COLR {
         PlayerColor playerColor[Sc::Player::TotalSlots] {
             PlayerColor::Red, PlayerColor::Blue, PlayerColor::Teal, PlayerColor::Purple,
             PlayerColor::Orange, PlayerColor::Brown, PlayerColor::White, PlayerColor::Yellow
         };
     }; // Size: 8 (validated)
     
-    __declspec(align(1)) struct PUPx {
+    struct alignas(1) PUPx {
         u8 playerMaxUpgradeLevel[Sc::Player::Total][Sc::Upgrade::TotalTypes] {};
         u8 playerStartUpgradeLevel[Sc::Player::Total][Sc::Upgrade::TotalTypes] {};
         u8 defaultMaxLevel[Sc::Upgrade::TotalTypes] {
@@ -1610,13 +1615,13 @@ namespace Chk {
         UseDefault playerUpgradeUsesDefault[Sc::Player::Total][Sc::Upgrade::TotalTypes] {};
 
         PUPx() {
-            memset(&playerUpgradeUsesDefault, (int)Chk::UseDefault::Yes, Sc::Player::Total*Sc::Upgrade::TotalTypes);
+            std::memset(&playerUpgradeUsesDefault, (int)Chk::UseDefault::Yes, Sc::Player::Total*Sc::Upgrade::TotalTypes);
         }
 
         REFLECT(PUPx, playerMaxUpgradeLevel, playerStartUpgradeLevel, defaultMaxLevel, defaultStartLevel, playerUpgradeUsesDefault)
     }; // Size: 2318 (validated)
     
-    __declspec(align(1)) struct PTEx {
+    struct alignas(1) PTEx {
         Available techAvailableForPlayer[Sc::Player::Total][Sc::Tech::TotalTypes] {};
         Researched techResearchedForPlayer[Sc::Player::Total][Sc::Tech::TotalTypes] {};
         Available techAvailableByDefault[Sc::Tech::TotalTypes] {};
@@ -1636,14 +1641,14 @@ namespace Chk {
         UseDefault playerUsesDefaultsForTech[Sc::Player::Total][Sc::Tech::TotalTypes] {};
 
         PTEx() {
-            memset(&techAvailableByDefault, (int)Chk::Available::Yes, Sc::Tech::TotalTypes);
-            memset(&playerUsesDefaultsForTech, (int)Chk::UseDefault::Yes, Sc::Player::Total*Sc::Tech::TotalTypes);
+            std::memset(&techAvailableByDefault, (int)Chk::Available::Yes, Sc::Tech::TotalTypes);
+            std::memset(&playerUsesDefaultsForTech, (int)Chk::UseDefault::Yes, Sc::Player::Total*Sc::Tech::TotalTypes);
         }
 
         REFLECT(PTEx, techAvailableForPlayer, techResearchedForPlayer, techAvailableByDefault, techResearchedByDefault, playerUsesDefaultsForTech)
     }; // Size: 1672 (validated)
     
-    __declspec(align(1)) struct UNIx {
+    struct alignas(1) UNIx {
         UseDefault useDefault[Sc::Unit::TotalTypes] {};
         u32 hitpoints[Sc::Unit::TotalTypes] {}; // Displayed value is hitpoints / 256
         u16 shieldPoints[Sc::Unit::TotalTypes] {};
@@ -1656,13 +1661,13 @@ namespace Chk {
         u16 upgradeDamage[Sc::Weapon::Total] {};
 
         UNIx() {
-            memset(&useDefault, (int)Chk::UseDefault::Yes, Sc::Unit::TotalTypes);
+            std::memset(&useDefault, (int)Chk::UseDefault::Yes, Sc::Unit::TotalTypes);
         }
 
         REFLECT(UNIx, useDefault, hitpoints, shieldPoints, armorLevel, buildTime, mineralCost, gasCost, nameStringId, baseDamage, upgradeDamage)
     }; // Size: 4168 (validated)
     
-    __declspec(align(1)) struct UPGx {
+    struct alignas(1) UPGx {
         UseDefault useDefault[Sc::Upgrade::TotalTypes] {};
         u8 unused {};
         u16 baseMineralCost[Sc::Upgrade::TotalTypes] {};
@@ -1673,13 +1678,13 @@ namespace Chk {
         u16 researchTimeFactor[Sc::Upgrade::TotalTypes] {};
 
         UPGx() {
-            memset(&useDefault, (int)Chk::UseDefault::Yes, Sc::Upgrade::TotalTypes);
+            std::memset(&useDefault, (int)Chk::UseDefault::Yes, Sc::Upgrade::TotalTypes);
         }
 
         REFLECT(UPGx, useDefault, unused, baseMineralCost, mineralCostFactor, baseGasCost, gasCostFactor, baseResearchTime, researchTimeFactor)
     }; // Size: 794 (validated)
     
-    __declspec(align(1)) struct TECx {
+    struct alignas(1) TECx {
         UseDefault useDefault[Sc::Tech::TotalTypes] {};
         u16 mineralCost[Sc::Tech::TotalTypes] {};
         u16 gasCost[Sc::Tech::TotalTypes] {};
@@ -1687,13 +1692,13 @@ namespace Chk {
         u16 energyCost[Sc::Tech::TotalTypes] {};
 
         TECx() {
-            memset(&useDefault, (int)Chk::UseDefault::Yes, Sc::Tech::TotalTypes);
+            std::memset(&useDefault, (int)Chk::UseDefault::Yes, Sc::Tech::TotalTypes);
         }
 
         REFLECT(TECx, useDefault, mineralCost, gasCost, researchTime, energyCost)
     }; // Size: 396 (validated)
     
-    __declspec(align(1)) struct OSTR {
+    struct alignas(1) OSTR {
         u32 version {1}; // Current version: 1
         u32 scenarioName {};
         u32 scenarioDescription {};
@@ -1707,7 +1712,7 @@ namespace Chk {
         REFLECT(OSTR, version, scenarioName, scenarioDescription, forceName, unitName, expUnitName, soundPath, switchName, locationName)
     };
 
-    __declspec(align(1)) struct KSTR {
+    struct alignas(1) KSTR {
         static constexpr const u32 CurrentVersion = 3;
 
         u32 version {CurrentVersion}; // Current version: 3
@@ -1724,19 +1729,19 @@ namespace Chk {
         MaxIndex = 0x00FEFEFE
     });
 
-    __declspec(align(1)) struct KTRG {
+    struct alignas(1) KTRG {
         u32 version {2}; // Current version: 2
         //ExtendedTrigData extendedTrigData[numTrigs];
     }; // Size: 4+20*numTrigs
 
-    __declspec(align(1)) struct KTGP {
+    struct alignas(1) KTGP {
         u32 version {1}; // Current version: 1
         u32 numGroups {0}; // The number of trigger groupings in this section
         //TriggerGroupHeader headers[numGroups];
         //TriggerGroupBody bodies[numGroups];
     };
 
-    __declspec(align(1)) struct CRGB {
+    struct alignas(1) CRGB {
         u8 playerColor[8][3] {
             {0, 0, 0}, {0, 0, 1}, {0, 0, 2}, {0, 0, 3},
             {0, 0, 4}, {0, 0, 5}, {0, 0, 6}, {0, 0, 7}
@@ -1843,7 +1848,7 @@ namespace Chk {
     using SectionSize = s32;
     static constexpr Chk::SectionSize MaxChkSectionSize = s32_max;
 
-    __declspec(align(1)) struct SectionHeader {
+    struct alignas(1) SectionHeader {
         SectionName name;
         SectionSize sizeInBytes;
     };
@@ -1851,12 +1856,12 @@ namespace Chk {
     constexpr u32 CHK = 541804611; // "CHK " = 43|48|4B|20
     using Size = u64;
 
-    __declspec(align(1)) struct ChkHeader { // Not used by a Scenario.chk file, used by serializations
+    struct alignas(1) ChkHeader { // Not used by a Scenario.chk file, used by serializations
         u32 name; // Set to CHK
         Size sizeInBytes;
     };
 
-    __declspec(align(1)) struct SerializedChk {
+    struct alignas(1) SerializedChk {
         ChkHeader header;
         u8 data[1]; // u8 data[sizeInBytes]
     };

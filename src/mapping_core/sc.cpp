@@ -1,11 +1,13 @@
 #include "sc.h"
 #include <rarecpp/json.h>
-#include <cross_cut/logger.h>
+#include "cross_cut/logger.h"
 #include "mpq_file.h"
 #include "casc_archive.h"
 #include <algorithm>
 #include <chrono>
+#include <list>
 #include <set>
+#include <stdexcept>
 #include <tuple>
 
 extern Logger logger;
@@ -109,7 +111,7 @@ ArchiveClusterPtr Sc::DataFile::Browser::openScDataFiles(
     {
         Priority dataFilePriority = dataFileDescriptor.getPriority();
         if ( dataFilePriority != dataFileDescriptor.getPriority() )
-            throw std::exception("The dataFilePriority provided in the dataFile key must match the dataFilePriority in the associated descriptor.");
+            throw std::runtime_error("The dataFilePriority provided in the dataFile key must match the dataFilePriority in the associated descriptor.");
 
         const std::string & fileName = dataFileDescriptor.getFileName();
         const std::string & expectedFilePath = dataFileDescriptor.getExpectedFilePath();

@@ -12,8 +12,8 @@ project(${This})
 
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/chkdraft
-    ${CMAKE_CURRENT_SOURCE_DIR}/chkdraft/mapping/opengl
-    ${CMAKE_CURRENT_SOURCE_DIR}/chkdraft/mapping/opengl/glad
+    ${CMAKE_CURRENT_SOURCE_DIR}/mapping_core/opengl
+    ${CMAKE_CURRENT_SOURCE_DIR}/mapping_core/opengl/glad
 )
 
 set(CMAKE_BUILD_PARALLEL_LEVEL)
@@ -26,7 +26,7 @@ include(FetchContent)
 FetchContent_Declare(
   rarecpp
   GIT_REPOSITORY https://github.com/TheNitesWhoSay/RareCpp.git
-  GIT_TAG 4acbf69 # release-2.5.0TODO
+  GIT_TAG fb9b90f # release-2.5.0TODO
 )
 FetchContent_MakeAvailable(rarecpp)
 include_directories(${rarecpp_SOURCE_DIR}/include)

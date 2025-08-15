@@ -1,6 +1,6 @@
 #include "text_trig_compiler.h"
 #include <rarecpp/string_buffer.h>
-#include <cross_cut/logger.h>
+#include "cross_cut/logger.h"
 #include "escape_strings.h"
 #include "math.h"
 #include <cstdio>
@@ -145,6 +145,7 @@ template <class MapType> std::optional<Chk::Condition::ArgField> TextTrigCompile
         case Chk::Condition::ArgType::Player: dataTypesToLoad |= ScenarioDataFlag::Groups; break;
         case Chk::Condition::ArgType::Switch: dataTypesToLoad |= ScenarioDataFlag::Switches; break;
         case Chk::Condition::ArgType::TypeIndex: dataTypesToLoad |= ScenarioDataFlag::Switches; break;
+        default: break;
     }
 
     if ( !loadCompiler(chk, scData, trigIndex, trigIndex+1, (ScenarioDataFlag)dataTypesToLoad) )
@@ -215,6 +216,7 @@ template <class MapType> std::optional<Chk::Action::ArgField> TextTrigCompiler::
         case Chk::Action::ArgType::Switch: dataTypesToLoad |= ScenarioDataFlag::Switches; break;
         case Chk::Action::ArgType::Number: dataTypesToLoad |= ScenarioDataFlag::Groups | ScenarioDataFlag::Locations | ScenarioDataFlag::Scripts; break;
         case Chk::Action::ArgType::TypeIndex: dataTypesToLoad |= ScenarioDataFlag::Units; break;
+        default: break;
     }
 
     if ( !loadCompiler(chk, scData, trigIndex, trigIndex+1, (ScenarioDataFlag)dataTypesToLoad) )
@@ -1980,6 +1982,7 @@ std::optional<Chk::Condition::ArgField> TextTrigCompiler::parseConditionArg(std:
         case Chk::Condition::ArgType::MemoryBitmask:
             returnMsg( Chk::Condition::ArgField::LocationId, parseLong(text, currCondition.locationId, pos, end),
                 "Expected: 4-byte amount" );
+        case Chk::Condition::ArgType::NoType: break;
     }
     CHKD_ERR("INTERNAL ERROR: Invalid argIndex or argument unhandled, report this");
     return std::nullopt;
@@ -2100,6 +2103,8 @@ std::optional<Chk::Action::ArgField> TextTrigCompiler::parseActionArg(std::strin
         case Chk::Action::ArgType::MemoryBitmask:
             returnMsg( Chk::Action::ArgField::LocationId, parseLong(text, currAction.locationId, pos, end),
                 "Expected: 4-byte number");
+
+        case Chk::Action::ArgType::BriefingSlot: case Chk::Action::ArgType::NoType: break;
     }
     CHKD_ERR("INTERNAL ERROR: Invalid argIndex or argument unhandled, report this");
     return std::nullopt;
@@ -2855,7 +2860,7 @@ bool TextTrigCompiler::parsePlayer(std::string & text, std::vector<RawString> & 
             if ( upperStr.compare(2, 4, "AYER") == 0 )
             {
                 const char* argPtr = &upperStr.c_str()[6];
-                if ( number = atoi(argPtr) ) // Player number
+                if ( (number = atoi(argPtr)) ) // Player number
                 {
                     if ( number < 13 && number > 0 )
                     {
@@ -2868,7 +2873,7 @@ bool TextTrigCompiler::parsePlayer(std::string & text, std::vector<RawString> & 
         else if ( currChar > 47 && currChar < 58 ) // Number
         {
             const char* argPtr = &upperStr.c_str()[2];
-            if ( number = atoi(argPtr) ) // Player number
+            if ( (number = atoi(argPtr)) ) // Player number
             {
                 if ( number < 13 && number > 0 )
                 {
@@ -2887,7 +2892,7 @@ bool TextTrigCompiler::parsePlayer(std::string & text, std::vector<RawString> & 
             {
                 const char* argPtr = &upperStr.c_str()[5];
 
-                if ( number = atoi(argPtr) ) // Force number
+                if ( (number = atoi(argPtr)) ) // Force number
                 {
                     if ( number < 5 )
                     {
@@ -2906,7 +2911,7 @@ bool TextTrigCompiler::parsePlayer(std::string & text, std::vector<RawString> & 
         {
             const char* argPtr = &upperStr.c_str()[2];
 
-            if ( number = atoi(argPtr) ) // Force number
+            if ( (number = atoi(argPtr)) ) // Force number
             {
                 if ( number < 5 )
                 {
@@ -2956,7 +2961,7 @@ bool TextTrigCompiler::parsePlayer(std::string & text, std::vector<RawString> & 
         if ( upperStr.compare(1, 2, "D:") == 0 )
         {
             const char* argPtr = &upperStr.c_str()[3];
-            if ( number = atoi(argPtr) ) // Player number
+            if ( (number = atoi(argPtr)) ) // Player number
             {
                 dest = number;
                 return true;
@@ -3017,7 +3022,7 @@ bool TextTrigCompiler::parsePlayer(std::string & text, std::vector<RawString> & 
     else if ( currChar > 47 && currChar < 58 ) // Pure number
     {
         const char* argPtr = upperStr.c_str();
-        if ( number = atoi(argPtr) )
+        if ( (number = atoi(argPtr)) )
         {
             dest = number;
             return true;
@@ -3222,6 +3227,7 @@ Chk::Condition::Type TextTrigCompiler::extendedToRegularConditionType(Chk::Condi
     case Chk::Condition::VirtualType::MemoryMasked:
         return (Chk::Condition::Type)Chk::Condition::ExtendedBaseType::MemoryMasked;
         break;
+    default: break;
     }
     return (Chk::Condition::Type)conditionType;
 }
@@ -3237,6 +3243,7 @@ Chk::Action::Type TextTrigCompiler::extendedToRegularActionType(Chk::Action::Vir
     case Chk::Action::VirtualType::SetMemoryMasked:
         return (Chk::Action::Type)Chk::Action::ExtendedBaseType::SetMemoryMasked;
         break;
+    default: break;
     }
     return (Chk::Action::Type)actionType;
 }
@@ -3678,13 +3685,13 @@ template <class MapType> bool TextTrigCompiler::prepLocationTable(const MapType 
             locNode.locationName = "Anywhere";
             locationTable.insert( std::pair<size_t, LocationTableNode>(strHash(locNode.locationName), locNode) );
         }
-        else if ( auto gameString = map.getLocationName<RawString>(i, Chk::Scope::Game) )
+        else if ( auto gameString = map.template getLocationName<RawString>(i, Chk::Scope::Game) )
         {
             locNode.locationId = u8(i);
             locNode.locationName = *gameString;
             locationTable.insert( std::pair<size_t, LocationTableNode>(strHash(locNode.locationName), locNode) );
         }
-        else if ( auto editorString = map.getLocationName<RawString>(i, Chk::Scope::Editor) )
+        else if ( auto editorString = map.template getLocationName<RawString>(i, Chk::Scope::Editor) )
         {
             locNode.locationId = u8(i);
             locNode.locationName = *editorString;
@@ -3706,15 +3713,15 @@ template <class MapType> bool TextTrigCompiler::prepUnitTable(const MapType & ma
     for ( u16 unitId=0; unitId<Sc::Unit::TotalTypes; unitId++ )
     {
         unitNode.unitType = (Sc::Unit::Type)unitId;
-        auto gameString = map.getUnitName<RawString>((Sc::Unit::Type)unitId, true, Chk::UseExpSection::Auto, Chk::Scope::Game);
-        auto editorString = map.getUnitName<RawString>((Sc::Unit::Type)unitId, true, Chk::UseExpSection::Auto, Chk::Scope::Editor);
+        auto gameString = map.template getUnitName<RawString>((Sc::Unit::Type)unitId, true, Chk::UseExpSection::Auto, Chk::Scope::Game);
+        auto editorString = map.template getUnitName<RawString>((Sc::Unit::Type)unitId, true, Chk::UseExpSection::Auto, Chk::Scope::Editor);
         
-        if ( auto gameString = map.getUnitName<RawString>((Sc::Unit::Type)unitId, true, Chk::UseExpSection::Auto, Chk::Scope::Game) )
+        if ( auto gameString = map.template getUnitName<RawString>((Sc::Unit::Type)unitId, true, Chk::UseExpSection::Auto, Chk::Scope::Game) )
         {
             unitNode.unitName = *gameString;
             unitTable.insert( std::pair<size_t, UnitTableNode>(strHash(unitNode.unitName), unitNode) );
         }
-        else if ( auto editorString = map.getUnitName<RawString>((Sc::Unit::Type)unitId, true, Chk::UseExpSection::Auto, Chk::Scope::Editor) )
+        else if ( auto editorString = map.template getUnitName<RawString>((Sc::Unit::Type)unitId, true, Chk::UseExpSection::Auto, Chk::Scope::Editor) )
         {
             unitNode.unitName = *editorString;
             unitTable.insert( std::pair<size_t, UnitTableNode>(strHash(unitNode.unitName), unitNode) );
@@ -3738,13 +3745,13 @@ template <class MapType> bool TextTrigCompiler::prepSwitchTable(const MapType & 
     size_t stringId = 0;
     for ( size_t switchIndex=0; switchIndex<Chk::TotalSwitches; switchIndex++ )
     {
-        if ( auto gameString = map.getSwitchName<RawString>(switchIndex, Chk::Scope::Game) )
+        if ( auto gameString = map.template getSwitchName<RawString>(switchIndex, Chk::Scope::Game) )
         {
             switchNode.switchId = u8(switchIndex);
             switchNode.switchName = *gameString;
             switchTable.insert( std::pair<size_t, SwitchTableNode>(strHash(switchNode.switchName), switchNode) );
         }
-        else if ( auto editorString = map.getSwitchName<RawString>(switchIndex, Chk::Scope::Editor) )
+        else if ( auto editorString = map.template getSwitchName<RawString>(switchIndex, Chk::Scope::Editor) )
         {
             switchNode.switchId = u8(switchIndex);
             switchNode.switchName = *editorString;
@@ -3763,13 +3770,13 @@ template <class MapType> bool TextTrigCompiler::prepGroupTable(const MapType & m
     GroupTableNode groupNode = {};
     for ( u32 i=0; i<Chk::TotalForces; i++ )
     {
-        if ( auto gameString = map.getForceName<RawString>((Chk::Force)i, Chk::Scope::Game) )
+        if ( auto gameString = map.template getForceName<RawString>((Chk::Force)i, Chk::Scope::Game) )
         {
             groupNode.groupId = i + 18;
             groupNode.groupName = *gameString;
             groupTable.insert(std::pair<size_t, GroupTableNode>(strHash(groupNode.groupName), groupNode));
         }
-        else if ( auto editorString = map.getForceName<RawString>((Chk::Force)i, Chk::Scope::Editor) )
+        else if ( auto editorString = map.template getForceName<RawString>((Chk::Force)i, Chk::Scope::Editor) )
         {
             groupNode.groupId = i + 18;
             groupNode.groupName = *editorString;
@@ -3793,7 +3800,7 @@ template <class MapType> bool TextTrigCompiler::prepStringTable(const MapType & 
     {
         if ( stringUsed[stringId] )
         {
-            if ( auto rawString = map.getString<RawString>(stringId, scope) )
+            if ( auto rawString = map.template getString<RawString>(stringId, scope) )
             {
                 auto node = std::make_unique<StringTableNode>();
                 node->unused = false;
@@ -3836,7 +3843,7 @@ template bool TextTrigCompiler::prepStringTable<LiteScenario>(const LiteScenario
 
 template <class MapType> void TextTrigCompiler::prepTriggerString(const MapType & scenario, std::unordered_multimap<size_t, std::unique_ptr<StringTableNode>> & stringHashTable, const u32 & stringId, const bool & inReplacedRange, const Chk::Scope & scope)
 {
-    if ( auto rawString = scenario.getString<RawString>(stringId, scope) )
+    if ( auto rawString = scenario.template getString<RawString>(stringId, scope) )
     {
         size_t hash = strHash(*rawString);
         bool exists = false;
@@ -3895,7 +3902,7 @@ template <class MapType> bool TextTrigCompiler::buildNewMap(MapType & scenario, 
         scenario.deleteUnusedStrings(Chk::Scope::Both);
         for ( auto str : unassignedStrings )
         {
-            str->stringId = (u32)scenario.addString<RawString>(str->scStr.str, Chk::Scope::Game);
+            str->stringId = (u32)scenario.template addString<RawString>(str->scStr.str, Chk::Scope::Game);
             if ( str->stringId != Chk::StringId::NoString )
             {
                 for ( auto assignee : str->assignees )
@@ -4058,6 +4065,7 @@ template <class MapType> std::optional<Chk::Action::ArgField> BriefingTextTrigCo
         case Chk::Action::ArgType::Switch: dataTypesToLoad |= ScenarioDataFlag::Switches; break;
         case Chk::Action::ArgType::Number: dataTypesToLoad |= ScenarioDataFlag::Groups | ScenarioDataFlag::Locations | ScenarioDataFlag::Scripts; break;
         case Chk::Action::ArgType::TypeIndex: dataTypesToLoad |= ScenarioDataFlag::Units; break;
+        default: break;
     }
 
     if ( !loadCompiler(chk, scData, trigIndex, trigIndex+1, (ScenarioDataFlag)dataTypesToLoad) )
@@ -4173,6 +4181,7 @@ bool BriefingTextTrigCompiler::parseBriefingTriggers(std::string & text, std::ve
                     }
                 }
                 break;
+                default: break;
             }
         }
     }
@@ -4565,7 +4574,7 @@ template <class MapType> bool BriefingTextTrigCompiler::buildNewMap(MapType & sc
         scenario.deleteUnusedStrings(Chk::Scope::Both);
         for ( auto str : unassignedStrings )
         {
-            str->stringId = (u32)scenario.addString<RawString>(str->scStr.str, Chk::Scope::Game);
+            str->stringId = (u32)scenario.template addString<RawString>(str->scStr.str, Chk::Scope::Game);
             if ( str->stringId != Chk::StringId::NoString )
             {
                 for ( const auto & assignee : str->assignees )

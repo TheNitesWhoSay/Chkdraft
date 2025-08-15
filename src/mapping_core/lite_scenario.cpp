@@ -1,7 +1,7 @@
 #include "lite_scenario.h"
 #include "sha256.h"
 #include "math.h"
-#include <cross_cut/logger.h>
+#include "cross_cut/logger.h"
 #include <algorithm>
 #include <cstdio>
 #include <exception>
@@ -399,12 +399,12 @@ void LiteScenario::clear()
     origTechnologyCosts = Chk::TECS{};
     origTechnologyAvailability = Chk::PTEC{};
 
-    memset(&createUnitProperties, 0, sizeof(Chk::Cuwp)*Sc::Unit::MaxCuwps);
-    memset(&createUnitPropertiesUsed, 0, sizeof(Chk::CuwpUsed)*Sc::Unit::MaxCuwps);
+    std::memset(&createUnitProperties, 0, sizeof(Chk::Cuwp)*Sc::Unit::MaxCuwps);
+    std::memset(&createUnitPropertiesUsed, 0, sizeof(Chk::CuwpUsed)*Sc::Unit::MaxCuwps);
     triggers.clear();
     briefingTriggers.clear();
-    memset(&switchNames, 0, sizeof(u32)*Chk::TotalSwitches);
-    memset(&soundPaths, 0, sizeof(u32)*Chk::TotalSounds);
+    std::memset(&switchNames, 0, sizeof(u32)*Chk::TotalSwitches);
+    std::memset(&soundPaths, 0, sizeof(u32)*Chk::TotalSounds);
     triggerExtensions.clear();
     triggerGroupings.clear();
 

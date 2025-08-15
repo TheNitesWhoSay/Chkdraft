@@ -1,6 +1,6 @@
 #include "basics.h"
 #include "system_io.h"
-#include <cross_cut/simple_icu.h>
+#include "cross_cut/simple_icu.h"
 #include <algorithm>
 #include <cstdio>
 #include <fstream>
@@ -14,6 +14,12 @@
 #ifdef _WIN32
 #include <Windows.h>
 #include <direct.h>
+#elif defined(__linux__)
+#include <dlfcn.h>
+#include <linux/limits.h>
+#include "portable_file_dialogs.h"
+#else
+#include "portable_file_dialogs.h"
 #endif
 
 bool hasExtension(const std::string & systemFilePath, const std::string & extension)
@@ -241,8 +247,7 @@ bool findFile(const std::string & filePath)
             fclose(file);
         
         return result == 0 || result == EEXIST || result == EACCES;
-#else
-#ifdef WINDOWS_MULTIBYTE
+#elif defined(WINDOWS_MULTIBYTE)
         FILE* file = NULL;
         errno_t result = fopen_s(&file, fFilePath.c_str(), "r");
         if ( file != NULL )
@@ -256,7 +261,6 @@ bool findFile(const std::string & filePath)
             std::fclose(file);
             return true;
         }
-#endif
 #endif
     }
     return false;
@@ -354,11 +358,7 @@ bool makeFileCopy(const std::string & inFilePath, const std::string & outFilePat
 bool makeDirectory(const std::string & directory)
 {
     icux::filestring directoryPath = icux::toFilestring(directory);
-#ifdef WINDOWS_UTF16
-    return _wmkdir(directoryPath.c_str()) == 0 || GetLastError() == ERROR_ALREADY_EXISTS;
-#else
-    return _mkdir(directoryPath.c_str()) == 0 || GetLastError() == ERROR_ALREADY_EXISTS;
-#endif
+    return std::filesystem::exists(directoryPath.c_str()) || std::filesystem::create_directories(directoryPath.c_str());
 }
 
 bool removeFile(const std::string & filePath)
@@ -395,6 +395,11 @@ std::optional<std::string> getModuleDirectory(bool includeTrailingSeparator)
         if ( lastBackslashPos != std::string::npos && lastBackslashPos < modulePath.size() )
             return icux::toUtf8(modulePath.substr(0, lastBackslashPos)) + (includeTrailingSeparator ? getSystemPathSeparator() : "");
     }
+#elif defined (__linux__)
+    icux::codepoint cModulePath[PATH_MAX] = {};
+    Dl_info dlInfo {};
+    if ( dladdr((const void*)&getModuleDirectory, &dlInfo) != 0 )
+        return icux::toUtf8(dlInfo.dli_fname);
 #endif
     return std::nullopt;
 }
@@ -407,7 +412,11 @@ bool getDefaultScPath(std::string & data)
 
 std::string getDefaultScPath()
 {
+#ifdef _WIN32
     return "C:\\Program Files (x86)\\StarCraft"; // TODO: More logic
+#else
+    return "";
+#endif
 }
 
 // Windows registry functions
@@ -458,7 +467,15 @@ PromptResult getYesNo(const std::string & text, const std::string & caption)
         default: return PromptResult::Unknown;
     }
 #else
-    return PromptResult::Unknown;
+    if ( !pfd::settings::available() )
+        return PromptResult::Unknown;
+
+    auto button = pfd::message(caption, text, pfd::choice::yes_no).result();
+    switch ( button ) {
+        case pfd::button::yes: return PromptResult::Yes;
+        case pfd::button::no: return PromptResult::No;
+        default: return PromptResult::Unknown;
+    }
 #endif
 }
 
@@ -473,7 +490,16 @@ PromptResult getYesNoCancel(const std::string & text, const std::string & captio
         default: return PromptResult::Unknown;
     }
 #else
-    return PromptResult::Unknown;
+    if ( !pfd::settings::available() )
+        return PromptResult::Unknown;
+
+    auto button = pfd::message(caption, text, pfd::choice::yes_no_cancel).result();
+    switch ( button ) {
+        case pfd::button::yes: return PromptResult::Yes;
+        case pfd::button::no: return PromptResult::No;
+        case pfd::button::cancel: return PromptResult::Cancel;
+        default: return PromptResult::Unknown;
+    }
 #endif
 }
 
@@ -542,7 +568,23 @@ bool browseForFile(std::string & filePath, uint32_t & filterIndex, const std::ve
 
     return success;
 #else
-    return false;
+    if ( !pfd::settings::available() )
+        return false;
+
+    std::vector<std::string> flatFilters {};
+    for ( auto & filterAndLabel : filtersAndLabels )
+    {
+        flatFilters.push_back(filterAndLabel.second);
+        flatFilters.push_back(filterAndLabel.first);
+    }
+    auto selection = pfd::open_file(title, initialDirectory, flatFilters, pfd::opt::none).result();
+    if ( selection.empty() )
+        return false;
+    else
+    {
+        filePath = selection[0];
+        return true;
+    }
 #endif
 }
 
@@ -621,7 +663,7 @@ bool lastErrorIndicatedFileNotFound()
     return ::GetLastError() == ERROR_FILE_NOT_FOUND;
 #else
     return false;
-#endif;
+#endif
 }
 
 bool lastErrorIndicatedBadFormat()
@@ -630,7 +672,7 @@ bool lastErrorIndicatedBadFormat()
     return ::GetLastError() == ERROR_BAD_FORMAT;
 #else
     return false;
-#endif;
+#endif
 }
 
 unsigned long getLastError()
@@ -639,5 +681,5 @@ unsigned long getLastError()
     return ::GetLastError();
 #else
     return 0;
-#endif;
+#endif
 }

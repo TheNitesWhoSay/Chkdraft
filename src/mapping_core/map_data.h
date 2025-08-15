@@ -3,7 +3,7 @@
 #include "basics.h"
 #include "chk.h"
 #include "escape_strings.h"
-#include "map_actor.h"
+#include "render/map_actor.h"
 #include <rarecpp/editor.h>
 #include <array>
 #include <optional>
@@ -137,7 +137,7 @@ struct MapData
             for ( std::size_t i=0; i<saveSections.size(); ++i )
             {
                 if ( section.sectionName == saveSections[i].sectionName )
-                    return section;
+                    return saveSections[i];
             }
             throw std::logic_error("An internal error occured");
         }

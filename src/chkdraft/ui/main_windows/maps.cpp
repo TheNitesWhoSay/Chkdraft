@@ -5,7 +5,7 @@
 #include <string>
 #include <utility>
 
-Maps::Maps() : currentlyActiveMap(nullptr), mappingEnabled(false), UntitledNumber(0), lastUsedMapID(0),
+Maps::Maps() : currentlyActiveMap(nullptr), clipboard(chkd.scData, chkd.gameClock), mappingEnabled(false), UntitledNumber(0), lastUsedMapID(0),
     nonStandardCursor(false), currCursor(nullptr), standardCursor(NULL), sizeAllCursor(NULL),
     neswCursor(NULL), nwseCursor(NULL), nsCursor(NULL), weCursor(NULL)
 {

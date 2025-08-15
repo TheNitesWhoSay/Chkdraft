@@ -591,6 +591,12 @@ void Clipboard::updateFogMiddle(point middle)
     }
 }
 
+Clipboard::Clipboard(const Sc::Data & scData, const GameClock & gameClock)
+    : animations(scData, gameClock, *this)
+{
+
+}
+
 bool Clipboard::hasTiles() const
 {
     return copyTiles.size() > 0;
