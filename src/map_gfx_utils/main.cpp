@@ -10,8 +10,7 @@
 #include <mapping_core/render/sc_gl_graphics.h>
 #include <iostream>
 
-extern const std::uint8_t* latoFontDataPtr;
-extern const int latoFontDataSize;
+void getLatoFontData(std::uint8_t const* & latoFontDataPtr, int & latoFontDataSize);
 
 Logger logger {};
 
@@ -220,6 +219,9 @@ struct Renderer
         if ( graphicsData == nullptr )
         {
             graphicsData = std::make_unique<GraphicsData>();
+            const std::uint8_t* latoFontDataPtr = nullptr;
+            int latoFontDataSize = 0;
+            getLatoFontData(latoFontDataPtr, latoFontDataSize);
             graphicsData->defaultFont = gl::Font::loadStatic(latoFontDataPtr, std::size_t(latoFontDataSize), 0, 12);
         }
 
@@ -244,6 +246,8 @@ struct Renderer
             case RenderSkin::ScrHD: zoomSizeMultiplier = 4; break;
             case RenderSkin::CarbotHD2: zoomSizeMultiplier = 2; break;
             case RenderSkin::CarbotHD: zoomSizeMultiplier = 4; break;
+            case RenderSkin::Unknown: case RenderSkin::Total:
+                throw std::logic_error("encodeMapImageAsWebP called without properly initializing the renderer skin!");
         }
 
         // HD and HD2 are best 400% and 200% zoomed respectively, and can be smoothly halved until they fit in one image
