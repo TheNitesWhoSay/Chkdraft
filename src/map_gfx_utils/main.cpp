@@ -97,6 +97,15 @@ struct ScMap : MapFile
     }
 };
 
+std::string getDefaultFolder()
+{
+#ifdef WIN32
+    return "c:/misc/";
+#else
+    return std::string(getenv("HOME")) + "/";
+#endif
+}
+
 /* A renderer has one set of draw settings (including the skin) active at a time,
     maps (which have chk data and an anim state) can be passed to a renderer to save screenshots or display the map;
     multiple maps may be used with the same renderer.
@@ -218,6 +227,7 @@ struct Renderer
         map.graphics.load(*graphicsData, loadSettings, *archiveCluster, loadBuffer);
         map.graphics.setFont(graphicsData->defaultFont.get());
         this->renderSkin = skin;
+        return true;
     }
 
     void encodeMapImageAsWebP(ScMap & map, const Options & options, auto use)
@@ -310,12 +320,7 @@ struct Renderer
 
         if ( outputFilePath.empty() )
         {
-            #ifdef WIN32
-            std::string genFilePath = "c:/misc/";
-            #else
-            std::string genFilePath = std::string(getenv("HOME")) + "/";
-            #endif
-
+            std::string genFilePath = getDefaultFolder();
             switch ( renderSkin )
             {
                 case RenderSkin::ClassicGL: genFilePath += "Classic"; break;
@@ -463,7 +468,7 @@ struct GfxUtil
         }
 
         auto loadScData = std::make_unique<Sc::Data>();
-        if ( loadScData->load(std::make_shared<Sc::DataFile::Browser>(), Sc::DataFile::getDefaultDataFiles(), expectedScPath, nullptr) )
+        if ( loadScData->load(std::make_shared<Sc::DataFile::Browser>(), Sc::DataFile::getDefaultDataFiles(), this->starCraftDirectory, nullptr) )
             std::swap(this->scData, loadScData);
     }
 
@@ -706,9 +711,9 @@ int main()
 
     logger.info() << "Initial load completed in " << std::chrono::duration_cast<std::chrono::milliseconds>(endInitialLoad-startInitialLoad).count() << "ms" << std::endl;
 
-    testRender(gfxUtil, *renderer, Sc::Terrain::Tileset::SpacePlatform, "C:/misc/space.webp");
-    testRender(gfxUtil, *renderer, Sc::Terrain::Tileset::Jungle, "C:/misc/jungle.webp");
-    testRender(gfxUtil, *renderer, Sc::Terrain::Tileset::SpacePlatform, "C:/misc/space2.webp");
+    testRender(gfxUtil, *renderer, Sc::Terrain::Tileset::SpacePlatform, getDefaultFolder() + "space.webp");
+    testRender(gfxUtil, *renderer, Sc::Terrain::Tileset::Jungle, getDefaultFolder() + "jungle.webp");
+    testRender(gfxUtil, *renderer, Sc::Terrain::Tileset::SpacePlatform, getDefaultFolder() + "space2.webp");
 
     return 0;
 }
