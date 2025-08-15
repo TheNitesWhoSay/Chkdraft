@@ -333,6 +333,8 @@ struct Renderer
                 case RenderSkin::ScrHD: genFilePath += "HD"; break;
                 case RenderSkin::CarbotHD2: genFilePath += "CarbotHD2"; break;
                 case RenderSkin::CarbotHD: genFilePath += "CarbotHD"; break;
+                case RenderSkin::Unknown: case RenderSkin::Total:
+                    throw std::logic_error("saveMapImageAsWebP called without properly initializing the renderer skin!");
             }
 
             auto mapFileName = map.getFileName();
