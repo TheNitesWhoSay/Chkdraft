@@ -243,10 +243,16 @@ std::string MapFile::getTemporaryMpqPath()
                 nextAssetFileId ++;
             } while ( ::findFile(assetFilePath) ); // Try again if the file already exists
         }
-        else // Use the C library to find an appropriate temporary location
+        else // Use the C++ library to find an appropriate temporary location
         {
-            char* temporaryFilePath = tmpnam(nullptr);
-            assetFilePath = std::string(temporaryFilePath != NULL ? temporaryFilePath : "");
+            std::error_code ec {};
+            auto tempDirectoryPath = std::filesystem::temp_directory_path(ec);
+            auto tempDirectoryPathStr = std::string((const char*)tempDirectoryPath.u8string().c_str());
+            do
+            {
+                assetFilePath = makeSystemFilePath(tempDirectoryPathStr, std::to_string(nextAssetFileId) + ".mpq");
+                nextAssetFileId ++;
+            } while ( ::findFile(assetFilePath) ); // Try again if the file already exists
         }
     }
 
