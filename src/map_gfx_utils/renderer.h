@@ -20,23 +20,23 @@ enum class RenderSkin
     Unknown,
 };
 
-/* A renderer has one set of draw settings (including the skin) active at a time,
-maps (which have chk data and an anim state) can be passed to a renderer to save screenshots or display the map;
-multiple maps may be used with the same renderer.
-
-Batching Considerations:
-- Renderer settings besides the skin can be changed without load time or additional memory use
-- Initial loads of skins is expensive, once a skin is loaded, switching skins is ~free, however
-the VRAM/RAM that the skin requires will not be free'd until the renderer is disposed of.
-- Image Textures (per-skin):
-- Initial Load: Long, happens first time using a skin
-- Memory: Collectively these take up a lot, images stay in VRAM/RAM till disposing of the renderer
-- Tileset Textures (per-skin, per-tileset):
-- Initial Load: Short, happens first time using a tileset on a given skin
-- Memory: Relatively small, tileset textures stay in VRAM/RAM till disposing of the renderer
-- If tight on memory, load a renderer for a single skin and go through a batch of maps...
-whilst on a map, vary the draw settings (except for the skin) and the anim state and get all the images you want
-then free the renderer, create a new renderer for the next skin, and go through that batch of maps for that skin */
+/* A renderer has one skin+tileset active at a time,
+    maps (which have chk data and an anim state) can be passed to a renderer to save screenshots or display the map;
+    multiple maps may be used with the same renderer.
+   
+   Batching Considerations:
+    - Renderer options besides the skin can be changed without load time or additional memory use
+    - Initial loads of skins is expensive, once a skin is loaded, switching skins is ~free, however
+       the VRAM/RAM that the skin requires will not be free'd until the renderer is disposed of.
+    - Image Textures (per-skin):
+        - Initial Load: Long, happens first time using a skin
+        - Memory: Collectively these take up a lot, images stay in VRAM/RAM till disposing of the renderer
+    - Tileset Textures (per-skin, per-tileset):
+        - Initial Load: Short, happens first time using a tileset on a given skin
+        - Memory: Relatively small, tileset textures stay in VRAM/RAM till disposing of the renderer
+    - If tight on memory, load a renderer for a single skin and go through a batch of maps...
+       whilst on a map, vary the draw settings (except for the skin) and the anim state and get all the images you want
+       then free the renderer, create a new renderer for the next skin, and go through that batch of maps for that skin */
 struct Renderer
 {
     glfw::Context glfwContext {};
