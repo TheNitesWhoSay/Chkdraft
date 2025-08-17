@@ -40,6 +40,7 @@
 #define IDD_ACTORPROPERTIES             164
 #define IDI_ICON_SMALL                  169
 #define IDD_DIALOG_SELPROFILE           170
+#define IDD_DIALOG_EDITPROFILES         172
 #define IDC_LIST_TILESET                1007
 #define IDC_LIST_DEFAULTTERRAIN         1008
 #define IDC_EDIT_TRIGTEXT               1009
@@ -168,6 +169,7 @@
 #define IDC_MAPSETTINGSTABS             1110
 #define IDC_TRIGEDITTABS                1110
 #define IDC_TRIGMODIFYTABS              1110
+#define IDC_PROFILE_TABS                1110
 #define IDC_EDITOLDPASS                 1111
 #define IDC_EDITCUWPLIFE                1112
 #define IDC_CHECKCUWPINVINCIBLE         1113
@@ -422,7 +424,7 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        172
+#define _APS_NEXT_RESOURCE_VALUE        174
 #define _APS_NEXT_COMMAND_VALUE         40684
 #define _APS_NEXT_CONTROL_VALUE         1160
 #define _APS_NEXT_SYMED_VALUE           101

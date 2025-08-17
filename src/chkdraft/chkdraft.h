@@ -10,6 +10,7 @@
 #include "ui/main_windows/main_toolbar.h"
 #include "ui/main_windows/main_plot.h"
 #include "ui/dialog_windows/new_map/new_map.h"
+#include "ui/dialog_windows/profiles/edit_profiles.h"
 #include "ui/main_windows/maps.h"
 
 struct GraphicsData;
@@ -48,6 +49,7 @@ class Chkdraft : public WinLib::ClassWindow
                     ChangePasswordDialog changePasswordWindow; // Modeless password editor
                     EnterPasswordDialog enterPasswordWindow; // Modeless login window
                     AboutWindow aboutWindow; // Modeless about window
+                    EditProfilesWindow editProfilesWindow; // Modeless edit profiles window
 
 /* Constructors */  Chkdraft();
                     

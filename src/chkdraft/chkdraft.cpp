@@ -65,6 +65,8 @@ void Chkdraft::OnLoadTest()
     // TODO: Something like this goes somewhere
     //SelectProfile selectProfile {};
     //selectProfile.CreateThis(getHandle());
+
+    OpenEditProfilesDialog();
 }
 
 void Chkdraft::PreLoadTest()
@@ -297,7 +299,11 @@ void Chkdraft::OpenFindProfileDialog()
 
 void Chkdraft::OpenEditProfilesDialog()
 {
-    // TODO
+    if ( editProfilesWindow.getHandle() == NULL )
+        editProfilesWindow.CreateThis(getHandle());
+
+    if ( editProfilesWindow.getHandle() != NULL )
+        ShowWindow(editProfilesWindow.getHandle(), SW_SHOW);
 }
 
 void Chkdraft::UpdateLogLevelCheckmarks(LogLevel logLevel)
