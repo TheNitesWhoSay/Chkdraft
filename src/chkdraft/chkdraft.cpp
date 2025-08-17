@@ -9,6 +9,7 @@
 #include <chrono>
 #include <regex>
 #include "ui/chkd_controls/chkd_string_input.h"
+#include "ui/dialog_windows/profiles/select_profile.h"
 #include <CommCtrl.h>
 
 void Chkdraft::OnLoadTest()
@@ -60,6 +61,10 @@ void Chkdraft::OnLoadTest()
     //CM->addSprite(Chk::Sprite{.type = Sc::Sprite::Type(65), .xc = 250, .yc = 250, .flags = Chk::Sprite::SpriteFlags::DrawAsSprite});
     //CM->clipboard.addQuickSprite(Chk::Sprite{.type = Sc::Sprite::Type(65), .flags = Chk::Sprite::SpriteFlags::DrawAsSprite});
     //CM->clipboard.beginPasting(true, *CM);
+    
+    // TODO: Something like this goes somewhere
+    //SelectProfile selectProfile {};
+    //selectProfile.CreateThis(getHandle());
 }
 
 void Chkdraft::PreLoadTest()
@@ -283,6 +288,16 @@ void Chkdraft::OpenBackupsDirectory()
         int result = 0;
         WinLib::executeOpen(*backupsFolderPath, result);
     }
+}
+
+void Chkdraft::OpenFindProfileDialog()
+{
+    // TODO
+}
+
+void Chkdraft::OpenEditProfilesDialog()
+{
+    // TODO
 }
 
 void Chkdraft::UpdateLogLevelCheckmarks(LogLevel logLevel)
@@ -641,6 +656,8 @@ LRESULT Chkdraft::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     case ID_FILE_NEW1: newMap.CreateThis(hWnd); break;
     case ID_FILE_OPEN1: maps.OpenMap(); break;
     case ID_ADVANCED_OPENBACKUPDATABASE: OpenBackupsDirectory(); break;
+    case ID_PROFILES_FINDPROFILE: OpenFindProfileDialog(); break;
+    case ID_PROFILES_EDITPROFILES: OpenEditProfilesDialog(); break;
     case ID_FILE_CLOSE1: maps.CloseActive(); break;
     case ID_FILE_SAVE1: maps.SaveCurr(false); break;
     case ID_FILE_SAVEAS1: maps.SaveCurr(true); break;

@@ -39,6 +39,7 @@
 #define IDD_DIALOG_DIMENSIONS           163
 #define IDD_ACTORPROPERTIES             164
 #define IDI_ICON_SMALL                  169
+#define IDD_DIALOG_SELPROFILE           170
 #define IDC_LIST_TILESET                1007
 #define IDC_LIST_DEFAULTTERRAIN         1008
 #define IDC_EDIT_TRIGTEXT               1009
@@ -151,11 +152,13 @@
 #define ID_REFRESH_TEXTTRIGS            1104
 #define IDC_BUTTON_ADVANCED             1104
 #define IDC_BUTTON_GRAPHICS             1104
+#define IDC_BUTTON_FINDPROFILE          1104
 #define IDC_BUTTON2                     1105
 #define IDC_INVERTY                     1105
 #define IDC_CHANGEPASSAPPLY             1105
 #define IDC_BUTTON_LIT                  1105
 #define IDC_BUTTON_PAUSEPLAY            1105
+#define IDC_BUTTON_EDITPROFILES         1105
 #define IDC_BUTTON3                     1106
 #define IDC_INVERTXY                    1106
 #define IDC_LOWGROUND                   1107
@@ -196,6 +199,7 @@
 #define ID_RESIZE_CHANGETILESET         1139
 #define IDC_LIST1                       1140
 #define IDC_LISTBOX_IMAGES              1140
+#define IDC_LIST_PROFILES               1140
 #define IDC_LIST2                       1141
 #define IDC_LIST_TERRAIN                1141
 #define IDC_CHECK_SMOOTHBORDER          1142
@@ -408,13 +412,18 @@
 #define ID_SKIN_CARBOTHD                40676
 #define ID_VIEW_DISPLAYFPS              40677
 #define ID_VIEW_LOCATIONS               40678
+#define ID_FILE_PROFILES                40679
+#define ID_PROFILES_FINDPROFILE         40680
+#define ID_PROFILES_EDITPROFILES        40681
+#define ID_PROFILES_DEFAULT             40682
+#define ID_PROFILES_LOADPROFILE         40683
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        170
-#define _APS_NEXT_COMMAND_VALUE         40679
+#define _APS_NEXT_RESOURCE_VALUE        172
+#define _APS_NEXT_COMMAND_VALUE         40684
 #define _APS_NEXT_CONTROL_VALUE         1160
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

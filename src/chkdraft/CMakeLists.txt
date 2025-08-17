@@ -109,6 +109,7 @@ set(Headers
   ui/dialog_windows/map_settings/string_editor/string_guide.h
   ui/dialog_windows/map_settings/string_editor/string_preview.h
   ui/dialog_windows/new_map/new_map.h
+  ui/dialog_windows/profiles/select_profile.h
   ui/dialog_windows/text_trig/briefing_text_trig.h
   ui/dialog_windows/text_trig/lit.h
   ui/dialog_windows/text_trig/text_trig.h
@@ -210,6 +211,7 @@ set(Sources
   ui/dialog_windows/map_settings/string_editor/string_guide.cpp
   ui/dialog_windows/map_settings/string_editor/string_preview.cpp
   ui/dialog_windows/new_map/new_map.cpp
+  ui/dialog_windows/profiles/select_profile.cpp
   ui/dialog_windows/text_trig/briefing_text_trig.cpp
   ui/dialog_windows/text_trig/lit.cpp
   ui/dialog_windows/text_trig/text_trig.cpp

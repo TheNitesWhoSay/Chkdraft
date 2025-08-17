@@ -65,6 +65,8 @@ class Chkdraft : public WinLib::ClassWindow
                     void OpenLogFile();
                     void OpenLogFileDirectory();
                     void OpenBackupsDirectory();
+                    void OpenFindProfileDialog();
+                    void OpenEditProfilesDialog();
                     void UpdateLogLevelCheckmarks(LogLevel logLevel);
                     void SetLogLevel(LogLevel newLogLevel);
 
