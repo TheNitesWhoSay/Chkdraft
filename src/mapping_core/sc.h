@@ -31,6 +31,7 @@ namespace Sc {
             PatchRt = 200,
             BrooDat = 300,
             StarDat = 400,
+            AutoPriorityStart,
             MinimumPriority = u32_max
         };
         
@@ -71,7 +72,13 @@ namespace Sc {
             bool optionalIfCascFound;
         };
         
-        static std::vector<Descriptor> getDefaultDataFiles();
+        enum class RemasteredDescriptor {
+            No,
+            Yes,
+            Either
+        };
+
+        static std::vector<Descriptor> getDefaultDataFiles(RemasteredDescriptor remasteredDescriptor = RemasteredDescriptor::Either);
         
         class Browser // An extensible, system independent browser for retrieving a set of StarCraft data files given their descriptors and possibly a specialized browser for the StarCraft directory
         {

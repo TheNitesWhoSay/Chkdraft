@@ -2,9 +2,20 @@
 #include "chkdraft.h"
 
 enum_t(Id, u32, {
-    WIN_PROFILEPATHS = ID_FIRST,
-    WIN_CUSTOMDATFILES,
-    WIN_EDITORSETTINGS
+    ProfileTabs = IDC_PROFILE_TABS,
+    ProfilePaths = ID_FIRST,
+    CustomDatFiles,
+    EditorSettings,
+    GroupProfiles,
+    ListProfiles,
+    ButtonAddProfile,
+    ButtonCloneProfile,
+    ButtonRenameProfile,
+    ButtonFindProfile,
+    ButtonDeleteProfile,
+
+    CheckDefaultProfile,
+    CheckAutoLoadOnStart
 });
 
 bool EditProfilesWindow::CreateThis(HWND hParent)
@@ -17,7 +28,7 @@ void EditProfilesWindow::DestroyThis()
     currTab = Tab::ProfilePaths;
     chkd.FocusThis();
     ClassDialog::Hide();
-    profilePathsWindow.DestroyThis();
+    profileGeneralWindow.DestroyThis();
     customDatFilesWindow.DestroyThis();
     editorSettingsWindow.DestroyThis();
     ClassDialog::DestroyDialog();
@@ -28,15 +39,15 @@ void EditProfilesWindow::ChangeTab(Tab tab)
 {
     tabs.SetCurSel((u32)tab);
 
-    ShowWindow(GetDlgItem(tabs.getHandle(), Id::WIN_PROFILEPATHS), SW_HIDE);
-    ShowWindow(GetDlgItem(tabs.getHandle(), Id::WIN_CUSTOMDATFILES), SW_HIDE);
-    ShowWindow(GetDlgItem(tabs.getHandle(), Id::WIN_EDITORSETTINGS), SW_HIDE);
+    ShowWindow(GetDlgItem(tabs.getHandle(), Id::ProfilePaths), SW_HIDE);
+    ShowWindow(GetDlgItem(tabs.getHandle(), Id::CustomDatFiles), SW_HIDE);
+    ShowWindow(GetDlgItem(tabs.getHandle(), Id::EditorSettings), SW_HIDE);
 
     switch ( tab )
     {
-        case Tab::ProfilePaths: ShowWindow(GetDlgItem(tabs.getHandle(), Id::WIN_PROFILEPATHS), SW_SHOW); break;
-        case Tab::CustomDatFiles: ShowWindow(GetDlgItem(tabs.getHandle(), Id::WIN_CUSTOMDATFILES), SW_SHOW); break;
-        case Tab::EditorSettings: ShowWindow(GetDlgItem(tabs.getHandle(), Id::WIN_EDITORSETTINGS), SW_SHOW); break;
+        case Tab::ProfilePaths: ShowWindow(GetDlgItem(tabs.getHandle(), Id::ProfilePaths), SW_SHOW); break;
+        case Tab::CustomDatFiles: ShowWindow(GetDlgItem(tabs.getHandle(), Id::CustomDatFiles), SW_SHOW); break;
+        case Tab::EditorSettings: ShowWindow(GetDlgItem(tabs.getHandle(), Id::EditorSettings), SW_SHOW); break;
     }
 
     currTab = tab;
@@ -44,9 +55,37 @@ void EditProfilesWindow::ChangeTab(Tab tab)
 
 void EditProfilesWindow::RefreshWindow()
 {
-    profilePathsWindow.RefreshWindow();
+    profileGeneralWindow.RefreshWindow();
     customDatFilesWindow.RefreshWindow();
     editorSettingsWindow.RefreshWindow();
+
+    listProfiles.ClearSel();
+    listProfiles.ClearItems();
+    auto & editProfile = getEditProfile();
+    std::vector<std::string> profileNames {};
+    for ( auto & profile : chkd.profiles.profiles )
+        profileNames.push_back(profile->profileName);
+
+    int selIndex = -1;
+    if ( !editProfileName.empty() )
+    {
+        for ( std::size_t i=0; i<std::size(profileNames); ++i )
+        {
+            if ( editProfileName.compare(profileNames[i]) == 0 )
+            {
+                selIndex = static_cast<int>(i);
+                break;
+            }
+        }
+    }
+    listProfiles.AddStrings(profileNames);
+    if ( selIndex == -1 )
+        editProfileName.clear();
+    else
+        listProfiles.SetCurSel(selIndex);
+
+    checkIsDefaultProfile.SetCheck(editProfile.isDefaultProfile);
+    checkAutoLoadOnStart.SetCheck(editProfile.autoLoadOnStart);
 }
 
 BOOL EditProfilesWindow::DlgNotify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
@@ -58,9 +97,9 @@ BOOL EditProfilesWindow::DlgNotify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
         Tab selectedTab = (Tab)tabs.GetCurSel();
         switch ( selectedTab )
         {
-        case Tab::ProfilePaths: ShowWindow(GetDlgItem(tabs.getHandle(), Id::WIN_PROFILEPATHS), SW_SHOW); break;
-        case Tab::CustomDatFiles: ShowWindow(GetDlgItem(tabs.getHandle(), Id::WIN_CUSTOMDATFILES), SW_SHOW); break;
-        case Tab::EditorSettings: ShowWindow(GetDlgItem(tabs.getHandle(), Id::WIN_EDITORSETTINGS), SW_SHOW); break;
+        case Tab::ProfilePaths: ShowWindow(GetDlgItem(tabs.getHandle(), Id::ProfilePaths), SW_SHOW); break;
+        case Tab::CustomDatFiles: ShowWindow(GetDlgItem(tabs.getHandle(), Id::CustomDatFiles), SW_SHOW); break;
+        case Tab::EditorSettings: ShowWindow(GetDlgItem(tabs.getHandle(), Id::EditorSettings), SW_SHOW); break;
         }
     }
     break;
@@ -70,9 +109,9 @@ BOOL EditProfilesWindow::DlgNotify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
         Tab selectedTab = (Tab)tabs.GetCurSel();
         switch ( selectedTab )
         {
-        case Tab::ProfilePaths: ShowWindow(GetDlgItem(tabs.getHandle(), Id::WIN_PROFILEPATHS), SW_HIDE); break;
-        case Tab::CustomDatFiles: ShowWindow(GetDlgItem(tabs.getHandle(), Id::WIN_CUSTOMDATFILES), SW_HIDE); break;
-        case Tab::EditorSettings: ShowWindow(GetDlgItem(tabs.getHandle(), Id::WIN_EDITORSETTINGS), SW_HIDE); break;
+        case Tab::ProfilePaths: ShowWindow(GetDlgItem(tabs.getHandle(), Id::ProfilePaths), SW_HIDE); break;
+        case Tab::CustomDatFiles: ShowWindow(GetDlgItem(tabs.getHandle(), Id::CustomDatFiles), SW_HIDE); break;
+        case Tab::EditorSettings: ShowWindow(GetDlgItem(tabs.getHandle(), Id::EditorSettings), SW_HIDE); break;
         }
     }
     break;
@@ -108,9 +147,19 @@ BOOL EditProfilesWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPar
 
         case WM_INITDIALOG:
             {
+                groupProfiles.CreateThis(hWnd, 4, 0, 275, 98, "Profiles", Id::GroupProfiles);
                 const std::vector<std::string> tabTitles = {
-                    "Profile Paths", "Custom Dat", "Editor Settings"
+                    "General", "Data Files" //, "Map Auto-Load", "View", "Editor"
                 };
+                listProfiles.CreateThis(hWnd, 8, 14, 267, 84, false, false, true, false, true, Id::ListProfiles);
+                buttonRenameProfile.CreateThis(hWnd, 281, 6, 100, 20, "Rename Profile", Id::ButtonRenameProfile, false, false);
+                buttonCloneProfile.CreateThis(hWnd, 281, buttonRenameProfile.Bottom()+2, 100, 20, "Clone Profile", Id::ButtonCloneProfile, false, false);
+                buttonDeleteProfile.CreateThis(hWnd, 281, buttonCloneProfile.Bottom()+2, 100, 20, "Delete Profile", Id::ButtonDeleteProfile, false, false);
+                buttonAddProfile.CreateThis(hWnd, buttonRenameProfile.Right()+2, 6, 100, 20, "Add Profile", Id::ButtonAddProfile, false, false);
+                buttonFindProfile.CreateThis(hWnd, buttonRenameProfile.Right()+2, buttonAddProfile.Bottom()+2, 100, 20, "Find Profile...", Id::ButtonFindProfile, false, false);
+                
+                checkIsDefaultProfile.CreateThis(hWnd, buttonFindProfile.Left(), buttonFindProfile.Bottom()+2, 100, 20, true, "Default Profile", Id::CheckDefaultProfile);
+                checkAutoLoadOnStart.CreateThis(hWnd, checkIsDefaultProfile.Left(), checkIsDefaultProfile.Bottom()+2, 125, 20, true, "Auto-Load On Start", Id::CheckAutoLoadOnStart);
 
                 tabs.FindThis(getHandle(), IDC_PROFILE_TABS);
                 HICON icon = WinLib::ResourceManager::getIcon(IDI_PROGRAM_ICON, 16, 16);
@@ -124,12 +173,13 @@ BOOL EditProfilesWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPar
                 for ( u32 i=0; i<tabTitles.size(); i++ )
                     tabs.InsertTab(i, tabTitles[i]);
                 
-                profilePathsWindow.CreateThis(tabs.getHandle(), Id::WIN_PROFILEPATHS);
-                customDatFilesWindow.CreateThis(tabs.getHandle(), Id::WIN_CUSTOMDATFILES);
-                editorSettingsWindow.CreateThis(tabs.getHandle(), Id::WIN_EDITORSETTINGS);
+                profileGeneralWindow.CreateThis(tabs.getHandle(), Id::ProfilePaths);
+                customDatFilesWindow.CreateThis(tabs.getHandle(), Id::CustomDatFiles);
+                editorSettingsWindow.CreateThis(tabs.getHandle(), Id::EditorSettings);
+
                 WindowsItem::defaultChildFonts();
                 ChangeTab(Tab::ProfilePaths);
-                RedrawWindow(hWnd, NULL, NULL, RDW_INVALIDATE);
+                RefreshWindow();
             }
             break;
 
@@ -143,4 +193,17 @@ BOOL EditProfilesWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPar
     }
 
     return TRUE;
+}
+
+ChkdProfile & EditProfilesWindow::getEditProfile()
+{
+    for ( auto & profile : chkd.profiles.profiles )
+    {
+        if ( this->editProfileName == profile->profileName )
+        {
+            return *(profile);
+        }
+    }
+    this->editProfileName = chkd.profiles().profileName;
+    return chkd.profiles();
 }

@@ -1,6 +1,6 @@
 #include "trig_modify_text.h"
 #include "chkdraft/chkdraft.h"
-#include "mapping/settings.h"
+#include "mapping/chkd_profiles.h"
 
 enum_t(Id, u32, {
     TAB_META = 0,
@@ -64,7 +64,7 @@ void TrigModifyTextWindow::SetTrigIndex(u32 trigIndex)
 void TrigModifyTextWindow::RefreshWindow(u32 trigIndex)
 {
     this->trigIndex = trigIndex;
-    TextTrigGenerator textTrigs(Settings::useAddressesForMemory, Settings::deathTableStart);
+    TextTrigGenerator textTrigs(chkd.profiles().triggers.useAddressesForMemory, chkd.profiles().triggers.deathTableStart);
     trigText.clear();
     if ( textTrigs.generateTextTrigs((Scenario &)*CM, trigIndex, trigText) )
         editText.SetText(trigText);
@@ -164,7 +164,8 @@ bool TrigModifyTextWindow::CompileEditText(std::string & newText)
     {
         if ( trigIndex < CM->numTriggers() )
         {
-            TextTrigCompiler compiler(Settings::useAddressesForMemory, Settings::deathTableStart); // All data for compilation is gathered on-the-fly, no need to check for updates
+            // All data for compilation is gathered on-the-fly, no need to check for updates
+            TextTrigCompiler compiler(chkd.profiles().triggers.useAddressesForMemory, chkd.profiles().triggers.deathTableStart);
             if ( compiler.compileTrigger(newText, (Scenario &)*CM, chkd.scData, trigIndex) )
                 return true;
             else

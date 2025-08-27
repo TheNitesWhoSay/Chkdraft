@@ -1,7 +1,7 @@
 #include "triggers.h"
 #include "chkdraft/chkdraft.h"
 #include "ui/chkd_controls/move_to.h"
-#include "mapping/settings.h"
+#include "mapping/chkd_profiles.h"
 #include "mapping/sc_gdi_graphics.h"
 #include <string>
 
@@ -34,7 +34,8 @@ enum_t(Id, u32, {
 });
 
 TriggersWindow::TriggersWindow() : currTrigger(NO_TRIGGER), displayAll(true), numVisibleTrigs(0),
-    changeGroupHighlightOnly(false), trigListDc(std::nullopt), drawingAll(false), textTrigGenerator(Settings::useAddressesForMemory, Settings::deathTableStart, true),
+    changeGroupHighlightOnly(false), trigListDc(std::nullopt), drawingAll(false),
+    textTrigGenerator(chkd.profiles().triggers.useAddressesForMemory, chkd.profiles().triggers.deathTableStart, true),
     countTillCachePurge(0)
 {
     for ( u8 i=0; i<Chk::Trigger::MaxOwners; i++ )

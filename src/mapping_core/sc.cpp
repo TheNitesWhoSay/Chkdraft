@@ -81,14 +81,29 @@ void Sc::DataFile::Descriptor::setExpectedFilePath(const std::string & expectedF
     this->expectedFilePath = expectedFilePath;
 }
 
-std::vector<Sc::DataFile::Descriptor> Sc::DataFile::getDefaultDataFiles()
+std::vector<Sc::DataFile::Descriptor> Sc::DataFile::getDefaultDataFiles(RemasteredDescriptor remasteredDescriptor)
 {
-    return std::vector<Descriptor> {
-        Descriptor(Priority::RemasteredCasc, true, false, "Data", "", nullptr),
-        Descriptor(Priority::PatchRt, false, true, patchRtFileName, "", std::make_shared<FileBrowser<u32>>(getPatchRtFilter(), "")),
-        Descriptor(Priority::BrooDat, false, true, brooDatFileName, "", std::make_shared<FileBrowser<u32>>(getBrooDatFilter(), "")),
-        Descriptor(Priority::StarDat, false, true, starDatFileName, "", std::make_shared<FileBrowser<u32>>(getStarDatFilter(), ""))
-    };
+    switch ( remasteredDescriptor )
+    {
+    case RemasteredDescriptor::No:
+        return std::vector<Descriptor> {
+            Descriptor(Priority::PatchRt, false, true, patchRtFileName, "", std::make_shared<FileBrowser<u32>>(getPatchRtFilter(), "")),
+            Descriptor(Priority::BrooDat, false, true, brooDatFileName, "", std::make_shared<FileBrowser<u32>>(getBrooDatFilter(), "")),
+            Descriptor(Priority::StarDat, false, true, starDatFileName, "", std::make_shared<FileBrowser<u32>>(getStarDatFilter(), ""))
+        };
+    case RemasteredDescriptor::Yes:
+        return std::vector<Descriptor> {
+            Descriptor(Priority::RemasteredCasc, true, false, "Data", "", nullptr)
+        };
+    case RemasteredDescriptor::Either:
+    default:
+        return std::vector<Descriptor> {
+            Descriptor(Priority::RemasteredCasc, true, false, "Data", "", nullptr),
+            Descriptor(Priority::PatchRt, false, true, patchRtFileName, "", std::make_shared<FileBrowser<u32>>(getPatchRtFilter(), "")),
+            Descriptor(Priority::BrooDat, false, true, brooDatFileName, "", std::make_shared<FileBrowser<u32>>(getBrooDatFilter(), "")),
+            Descriptor(Priority::StarDat, false, true, starDatFileName, "", std::make_shared<FileBrowser<u32>>(getStarDatFilter(), ""))
+        };
+    }
 }
 
 ArchiveClusterPtr Sc::DataFile::Browser::openScDataFiles(

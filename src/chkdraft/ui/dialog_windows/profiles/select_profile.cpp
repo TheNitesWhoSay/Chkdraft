@@ -74,7 +74,9 @@ BOOL SelectProfile::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
         case WM_INITDIALOG:
             {
                 listBoxProfiles.FindThis(hWnd, IDC_LIST_PROFILES);
-                listBoxProfiles.AddStrings(std::vector<std::string>{"first", "second", "third"});
+                listBoxProfiles.AddStrings(std::vector<std::string>{"Default", "QuickTest",
+                    "Lol a really long text string that probably overflows the width",
+                    "Cosmonarchy", "ScrModMemes", "More", "And More"});
             }
             break;
     }

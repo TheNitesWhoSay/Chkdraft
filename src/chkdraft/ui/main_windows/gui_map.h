@@ -3,6 +3,7 @@
 #include <common_files/common_files.h>
 #include <mapping_core/render/map_animations.h>
 #include <windows/windows_ui.h>
+#include <mapping/chkd_skin.h>
 #include "mapping/clipboard.h"
 #include "mapping/sc_gdi_graphics.h"
 #include "mapping/selections.h"
@@ -215,18 +216,8 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCach
                     ChkdPalette & getPalette();
                     ChkdPalette & getStaticPalette();
 
-                    enum class Skin
-                    {
-                        ClassicGDI,
-                        ClassicGL,
-                        ScrSD,
-                        ScrHD2,
-                        ScrHD,
-                        CarbotHD2,
-                        CarbotHD
-                    };
-                    GuiMap::Skin GetSkin();
-                    void SetSkin(GuiMap::Skin skin, bool reloadCurrent = false);
+                    ChkdSkin GetSkin();
+                    void SetSkin(ChkdSkin skin, bool reloadCurrent = false);
 
                     point getLastMousePosition() { return lastMousePosition; }
 
@@ -299,7 +290,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCach
                     void afterAction(std::size_t actionIndex) override;
 
 /* Private Data */  Graphics scGraphics {*this, selections};
-                    GuiMap::Skin skin = Skin::ClassicGDI;
+                    ChkdSkin skin = ChkdSkin::ClassicGDI;
                     std::shared_ptr<WinLib::DeviceContext> openGlDc;
                     u64 prevTickCount = GetTickCount64();
                     std::optional<RareEdit::Editor<Tracked>> brushAction {};

@@ -16,7 +16,16 @@ protected:
 private:
     void CreateSubWindows(HWND hWnd);
     
-    WinLib::TextControl testText;
+    WinLib::TextControl textUsedDataFiles;
+    WinLib::ListViewControl listUsedDataFiles;
+    WinLib::TextControl textAvailableDataFiles;
+    WinLib::ListViewControl listAvailableDataFiles;
+    WinLib::ButtonControl buttonUseDataFile;
+    WinLib::ButtonControl buttonRemoveDataFile;
+    WinLib::ButtonControl buttonMoveDataFileUp;
+    WinLib::ButtonControl buttonMoveDataFileDown;
+    WinLib::ButtonControl buttonBrowseDataFile;
+    WinLib::ButtonControl buttonToggleRelativePath;
 };
 
 #endif

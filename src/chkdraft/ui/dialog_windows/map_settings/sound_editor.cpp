@@ -349,7 +349,8 @@ void SoundEditorWindow::BrowseButtonPressed()
         std::make_pair<std::string, std::string>("*.wav;*.ogg", "All StarCraft Compatible Sounds"),
         std::make_pair<std::string, std::string>("*.*", "All Files")
     };
-    std::string initPath = makeSystemFilePath(Settings::starCraftPath, "Maps");
+    std::string initPath = makeSystemFilePath(
+        chkd.profiles().useRemastered ? chkd.profiles().remastered.starCraftPath : chkd.profiles().classic.starCraftPath, "Maps");
 
     u32 filterIndex = 2; // All StarCraft Compatible Sounds
     std::string soundFilePath;

@@ -10,9 +10,11 @@ namespace WinLib {
 
     }
 
-    bool ListViewControl::CreateThis(HWND hParent, int x, int y, int width, int height, bool editable, bool ownerDrawn, u64 id)
+    bool ListViewControl::CreateThis(HWND hParent, int x, int y, int width, int height, bool editable, bool ownerDrawn, u64 id, bool noHeaderSingleSel)
     {
         u32 style = WS_CHILD|LVS_REPORT|LVS_SHOWSELALWAYS;
+        if ( noHeaderSingleSel )
+            style |= LVS_NOCOLUMNHEADER|LVS_SINGLESEL;
         if ( editable )
             style |= LVS_EDITLABELS;
         if ( ownerDrawn )

@@ -92,7 +92,7 @@ void TerrainPaletteWindow::DoPaint()
 {
     if ( CM != nullptr )
     {
-        if ( CM->GetSkin() == GuiMap::Skin::ClassicGDI )
+        if ( CM->GetSkin() == ChkdSkin::ClassicGDI )
         {
             WinLib::DeviceContext dc(WindowsItem::getHandle(), cliWidth(), cliHeight());
             dc.setFont(4, 14, "Microsoft Sans Serif");

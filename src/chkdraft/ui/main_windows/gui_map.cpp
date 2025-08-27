@@ -1,6 +1,7 @@
 #include "gui_map.h"
 #include "chkdraft/chkdraft.h"
 #include "ui/chkd_controls/move_to.h"
+#include "mapping/chkd_profiles.h"
 #include "mapping/data_file_browsers.h"
 #include "mapping/gui_map_gl_graphics.h"
 #include "cross_cut/logger.h"
@@ -1857,7 +1858,7 @@ bool GuiMap::UpdateGlGraphics()
 
 bool GuiMap::Animate()
 {
-    if ( skin == GuiMap::Skin::ClassicGDI )
+    if ( skin == ChkdSkin::ClassicGDI )
         return chkd.colorCycler.cycleColors(read.tileset, scGraphics.getPalette());
     else if ( chkd.gameClock.tick() )
     {
@@ -1875,7 +1876,7 @@ bool GuiMap::Animate()
 
 void GuiMap::PaintMap(GuiMapPtr currMap, bool pasting)
 {
-    if ( CM.get() == this && this->skin != GuiMap::Skin::ClassicGDI )
+    if ( CM.get() == this && this->skin != ChkdSkin::ClassicGDI )
     {
         RECT cliRect {};
         if ( getClientRect(cliRect) )
@@ -1989,7 +1990,7 @@ void GuiMap::PaintMiniMap(const WinLib::DeviceContext & dc)
 
 void GuiMap::Redraw(bool includeMiniMap)
 {
-    if ( skin == GuiMap::Skin::ClassicGDI )
+    if ( skin == ChkdSkin::ClassicGDI )
         chkd.colorCycler.cycleColors(read.tileset, scGraphics.getPalette());
     else if ( chkd.gameClock.tick() && CM != nullptr )
     {
@@ -2705,15 +2706,15 @@ void GuiMap::UpdateGridColorMenu()
 
 void GuiMap::UpdateSkinMenuItems()
 {
-    chkd.mainMenu.SetCheck(ID_SKIN_CLASSICGDI, skin == GuiMap::Skin::ClassicGDI);
-    chkd.mainMenu.SetCheck(ID_SKIN_CLASSICOPENGL, skin == GuiMap::Skin::ClassicGL);
+    chkd.mainMenu.SetCheck(ID_SKIN_CLASSICGDI, skin == ChkdSkin::ClassicGDI);
+    chkd.mainMenu.SetCheck(ID_SKIN_CLASSICOPENGL, skin == ChkdSkin::Classic);
     
-    chkd.mainMenu.SetCheck(ID_SKIN_REMASTEREDSD, skin == GuiMap::Skin::ScrSD);
-    chkd.mainMenu.SetCheck(ID_SKIN_REMASTEREDHD2, skin == GuiMap::Skin::ScrHD2);
-    chkd.mainMenu.SetCheck(ID_SKIN_REMASTEREDHD, skin == GuiMap::Skin::ScrHD);
+    chkd.mainMenu.SetCheck(ID_SKIN_REMASTEREDSD, skin == ChkdSkin::RemasteredSD);
+    chkd.mainMenu.SetCheck(ID_SKIN_REMASTEREDHD2, skin == ChkdSkin::RemasteredHD2);
+    chkd.mainMenu.SetCheck(ID_SKIN_REMASTEREDHD, skin == ChkdSkin::RemasteredHD);
     
-    chkd.mainMenu.SetCheck(ID_SKIN_CARBOTHD2, skin == GuiMap::Skin::CarbotHD2);
-    chkd.mainMenu.SetCheck(ID_SKIN_CARBOTHD, skin == GuiMap::Skin::CarbotHD);
+    chkd.mainMenu.SetCheck(ID_SKIN_CARBOTHD2, skin == ChkdSkin::CarbotHD2);
+    chkd.mainMenu.SetCheck(ID_SKIN_CARBOTHD, skin == ChkdSkin::CarbotHD);
 }
 
 void GuiMap::UpdateTerrainViewMenuItems()
@@ -3052,7 +3053,7 @@ LRESULT GuiMap::DoSize(HWND hWnd, WPARAM wParam, LPARAM lParam)
 {
     LRESULT result = ClassWindow::WndProc(hWnd, WM_SIZE, wParam, lParam);
     Scroll(true, true, true);
-    if ( skin != GuiMap::Skin::ClassicGDI )
+    if ( skin != ChkdSkin::ClassicGDI )
     {
         RECT rcCli {};
         ClassWindow::getClientRect(rcCli);
@@ -3976,16 +3977,13 @@ LRESULT GuiMap::ConfirmWindowClose(HWND hWnd)
 
 bool GuiMap::GetBackupPath(time_t currTime, std::string & outFilePath)
 {
-    if ( auto moduleDirectory = getModuleDirectory() )
+    if ( auto backupsPath = GetBackupsPath() )
     {
         tm* currTimes = localtime(&currTime);
         int year = currTimes->tm_year + 1900, month = currTimes->tm_mon + 1, day = currTimes->tm_mday,
             hour = currTimes->tm_hour, minute = currTimes->tm_min, seconds = currTimes->tm_sec;
 
-        makeDirectory(*moduleDirectory + "\\chkd");
-        makeDirectory(*moduleDirectory + "\\chkd\\Backups");
-
-        outFilePath = *moduleDirectory + "\\chkd\\Backups\\" +
+        outFilePath = *backupsPath +
             std::to_string(year) + std::string(month <= 9 ? "-0" : "-") + std::to_string(month) +
             std::string(day <= 9 ? "-0" : "-") + std::to_string(day) + std::string(hour <= 9 ? " 0" : " ") +
             std::to_string(hour) + std::string(minute <= 9 ? "h0" : "h") + std::to_string(minute) +
@@ -4019,27 +4017,12 @@ bool GuiMap::TryBackup(bool & outCopyFailed)
     return false;
 }
 
-GuiMap::Skin GuiMap::GetSkin()
+ChkdSkin GuiMap::GetSkin()
 {
     return this->skin;
 }
 
-std::string_view getSkinName(GuiMap::Skin skin)
-{
-    switch ( skin )
-    {
-        case GuiMap::Skin::ClassicGDI: return "Classic GDI";
-        case GuiMap::Skin::ClassicGL: return "Classic OpenGL";
-        case GuiMap::Skin::ScrSD: return "Remastered SD";
-        case GuiMap::Skin::ScrHD2: return "Remastered HD2";
-        case GuiMap::Skin::ScrHD: return "Remastered HD";
-        case GuiMap::Skin::CarbotHD2: return "Carbot HD2";
-        case GuiMap::Skin::CarbotHD: return "Carbot HD";
-        default: throw std::logic_error("Invalid skin passed to getSkinName");
-    }
-}
-
-void GuiMap::SetSkin(GuiMap::Skin skin, bool reloadCurrent)
+void GuiMap::SetSkin(ChkdSkin skin, bool reloadCurrent)
 {
     if ( skin == this->skin && !reloadCurrent )
         return;
@@ -4053,17 +4036,17 @@ void GuiMap::SetSkin(GuiMap::Skin skin, bool reloadCurrent)
     };
     switch ( skin )
     {
-        case Skin::ClassicGDI: loadSettings.visualQuality = VisualQuality::SD; loadSettings.skinId = ::Skin::Id::Classic; break;
-        case Skin::ClassicGL: loadSettings.visualQuality = VisualQuality::SD; loadSettings.skinId = ::Skin::Id::Classic; break;
-        case Skin::ScrSD: loadSettings.visualQuality = VisualQuality::SD; loadSettings.skinId = ::Skin::Id::Remastered; break;
-        case Skin::ScrHD2: loadSettings.visualQuality = VisualQuality::HD2; loadSettings.skinId = ::Skin::Id::Remastered; break;
-        case Skin::ScrHD: loadSettings.visualQuality = VisualQuality::HD; loadSettings.skinId = ::Skin::Id::Remastered; break;
-        case Skin::CarbotHD2: loadSettings.visualQuality = VisualQuality::HD2; loadSettings.skinId = ::Skin::Id::Carbot; break;
-        case Skin::CarbotHD: loadSettings.visualQuality = VisualQuality::HD; loadSettings.skinId = ::Skin::Id::Carbot; break;
+        case ChkdSkin::ClassicGDI: loadSettings.visualQuality = VisualQuality::SD; loadSettings.skinId = ::Skin::Id::Classic; break;
+        case ChkdSkin::Classic: loadSettings.visualQuality = VisualQuality::SD; loadSettings.skinId = ::Skin::Id::Classic; break;
+        case ChkdSkin::RemasteredSD: loadSettings.visualQuality = VisualQuality::SD; loadSettings.skinId = ::Skin::Id::Remastered; break;
+        case ChkdSkin::RemasteredHD2: loadSettings.visualQuality = VisualQuality::HD2; loadSettings.skinId = ::Skin::Id::Remastered; break;
+        case ChkdSkin::RemasteredHD: loadSettings.visualQuality = VisualQuality::HD; loadSettings.skinId = ::Skin::Id::Remastered; break;
+        case ChkdSkin::CarbotHD2: loadSettings.visualQuality = VisualQuality::HD2; loadSettings.skinId = ::Skin::Id::Carbot; break;
+        case ChkdSkin::CarbotHD: loadSettings.visualQuality = VisualQuality::HD; loadSettings.skinId = ::Skin::Id::Carbot; break;
         default: throw std::logic_error("Unrecognized skin!");
     }
 
-    if ( skin != Skin::ClassicGDI ) // Prepare OpenGL
+    if ( skin != ChkdSkin::ClassicGDI ) // Prepare OpenGL
     {
         chkd.maps.setGlRenderTarget(this->openGlDc, *this);
 
@@ -4094,8 +4077,8 @@ void GuiMap::SetSkin(GuiMap::Skin skin, bool reloadCurrent)
         this->scrGraphics->setFont(chkd.scrData->defaultFont.get());
     }
 
-    bool isRemastered = skin != Skin::ClassicGDI && skin != Skin::ClassicGL;
-    if ( skin != Skin::ClassicGDI )
+    bool isRemastered = skin != ChkdSkin::ClassicGDI && skin != ChkdSkin::Classic;
+    if ( skin != ChkdSkin::ClassicGDI )
     {
         // Perform the data load (requires an OpenGL context)
         if ( chkd.scrData->isLoaded(loadSettings) )
@@ -4104,16 +4087,16 @@ void GuiMap::SetSkin(GuiMap::Skin skin, bool reloadCurrent)
             ArchiveCluster archiveCluster {std::vector<ArchiveFilePtr>{}};
             this->scrGraphics->load(*chkd.scrData, loadSettings, archiveCluster, fileData);
             this->scrGraphics->resetFps();
-            logger.info() << "Switched to skin: " << getSkinName(skin) << '\n';
+            logger.info() << "Switched to skin: " << getSkinUserText(skin) << '\n';
         }
         else
         {
-            logger.info() << "Loading " + std::string(getSkinName(skin)) + " skin...\n";
+            logger.info() << "Loading " + std::string(getSkinUserText(skin)) + " skin...\n";
             auto begin = std::chrono::high_resolution_clock::now();
             bool includesRemastered = false;
             
             std::shared_ptr<ArchiveCluster> archiveCluster = nullptr;
-            if ( skin == Skin::ClassicGL ) // ClassicGL relies on chkd.scData loaded earlier and does not require the dat files at this point
+            if ( skin == ChkdSkin::Classic ) // Classic relies on chkd.scData loaded earlier and does not require the dat files at this point
                 archiveCluster = std::make_shared<ArchiveCluster>(std::vector<ArchiveFilePtr>{}); // TODO: If eliminating GDI, move load of GRPs/tilesets here
             else
             {
@@ -4135,7 +4118,7 @@ void GuiMap::SetSkin(GuiMap::Skin skin, bool reloadCurrent)
         }
     }
     else
-        logger.info() << "Switched to skin: " << getSkinName(skin) << '\n';
+        logger.info() << "Switched to skin: " << getSkinUserText(skin) << '\n';
 
     // Set the maps skin
     this->skin = skin;

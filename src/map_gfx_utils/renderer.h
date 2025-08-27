@@ -10,10 +10,10 @@
 
 enum class RenderSkin
 {
-    ClassicGL,
-    ScrSD,
-    ScrHD2,
-    ScrHD,
+    Classic,
+    RemasteredSD,
+    RemasteredHD2,
+    RemasteredHD,
     CarbotHD2,
     CarbotHD,
     Total,
@@ -75,10 +75,10 @@ struct Renderer
         int zoomSizeMultiplier = 1;
         switch ( renderSkin )
         {
-        case RenderSkin::ClassicGL: zoomSizeMultiplier = 1; break;
-        case RenderSkin::ScrSD: zoomSizeMultiplier = 1; break;
-        case RenderSkin::ScrHD2: zoomSizeMultiplier = 2; break;
-        case RenderSkin::ScrHD: zoomSizeMultiplier = 4; break;
+        case RenderSkin::Classic: zoomSizeMultiplier = 1; break;
+        case RenderSkin::RemasteredSD: zoomSizeMultiplier = 1; break;
+        case RenderSkin::RemasteredHD2: zoomSizeMultiplier = 2; break;
+        case RenderSkin::RemasteredHD: zoomSizeMultiplier = 4; break;
         case RenderSkin::CarbotHD2: zoomSizeMultiplier = 2; break;
         case RenderSkin::CarbotHD: zoomSizeMultiplier = 4; break;
         case RenderSkin::Unknown: case RenderSkin::Total:

@@ -65,10 +65,10 @@ bool Renderer::loadSkinAndTileSet(RenderSkin skin, ScMap & map)
     };
     switch ( skin )
     {
-    case RenderSkin::ClassicGL: loadSettings.visualQuality = VisualQuality::SD; loadSettings.skinId = ::Skin::Id::Classic; break;
-    case RenderSkin::ScrSD: loadSettings.visualQuality = VisualQuality::SD; loadSettings.skinId = ::Skin::Id::Remastered; break;
-    case RenderSkin::ScrHD2: loadSettings.visualQuality = VisualQuality::HD2; loadSettings.skinId = ::Skin::Id::Remastered; break;
-    case RenderSkin::ScrHD: loadSettings.visualQuality = VisualQuality::HD; loadSettings.skinId = ::Skin::Id::Remastered; break;
+    case RenderSkin::Classic: loadSettings.visualQuality = VisualQuality::SD; loadSettings.skinId = ::Skin::Id::Classic; break;
+    case RenderSkin::RemasteredSD: loadSettings.visualQuality = VisualQuality::SD; loadSettings.skinId = ::Skin::Id::Remastered; break;
+    case RenderSkin::RemasteredHD2: loadSettings.visualQuality = VisualQuality::HD2; loadSettings.skinId = ::Skin::Id::Remastered; break;
+    case RenderSkin::RemasteredHD: loadSettings.visualQuality = VisualQuality::HD; loadSettings.skinId = ::Skin::Id::Remastered; break;
     case RenderSkin::CarbotHD2: loadSettings.visualQuality = VisualQuality::HD2; loadSettings.skinId = ::Skin::Id::Carbot; break;
     case RenderSkin::CarbotHD: loadSettings.visualQuality = VisualQuality::HD; loadSettings.skinId = ::Skin::Id::Carbot; break;
     default: throw std::logic_error("Unrecognized skin!");
@@ -76,7 +76,7 @@ bool Renderer::loadSkinAndTileSet(RenderSkin skin, ScMap & map)
 
     bool includesRemastered = false;
     std::shared_ptr<ArchiveCluster> archiveCluster = nullptr;
-    if ( loadSettings.skinId == ::Skin::Id::Classic ) // ClassicGL relies only on the general scData loaded earlier
+    if ( loadSettings.skinId == ::Skin::Id::Classic ) // Classic relies only on the general scData loaded earlier
         archiveCluster = std::make_shared<ArchiveCluster>(std::vector<ArchiveFilePtr>{});
     else // Remastered skins usually need to load something more
         archiveCluster = Sc::DataFile::Browser{}.openScDataFiles(includesRemastered, Sc::DataFile::getDefaultDataFiles(), starCraftDirectory, nullptr);
@@ -112,10 +112,10 @@ std::optional<Renderer::SaveWebpResult> Renderer::saveMapImageAsWebP(ScMap & map
         std::string genFilePath = getDefaultFolder();
         switch ( renderSkin )
         {
-        case RenderSkin::ClassicGL: genFilePath += "Classic"; break;
-        case RenderSkin::ScrSD: genFilePath += "SD"; break;
-        case RenderSkin::ScrHD2: genFilePath += "HD2"; break;
-        case RenderSkin::ScrHD: genFilePath += "HD"; break;
+        case RenderSkin::Classic: genFilePath += "Classic"; break;
+        case RenderSkin::RemasteredSD: genFilePath += "SD"; break;
+        case RenderSkin::RemasteredHD2: genFilePath += "HD2"; break;
+        case RenderSkin::RemasteredHD: genFilePath += "HD"; break;
         case RenderSkin::CarbotHD2: genFilePath += "CarbotHD2"; break;
         case RenderSkin::CarbotHD: genFilePath += "CarbotHD"; break;
         case RenderSkin::Unknown: case RenderSkin::Total:
@@ -209,7 +209,7 @@ void Renderer::renderMap(ScMap & map, const Options & options, std::chrono::syst
 
     if ( options.drawStars && map->tileset == Sc::Terrain::Tileset::SpacePlatform )
     {
-        if ( renderSkin == RenderSkin::ClassicGL )
+        if ( renderSkin == RenderSkin::Classic )
             map.graphics.drawClassicStars();
         else
             map.graphics.drawStars(0xFFFFFFFF);

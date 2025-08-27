@@ -1,7 +1,7 @@
 #include "briefing_triggers.h"
 #include "chkdraft/chkdraft.h"
 #include "ui/chkd_controls/move_to.h"
-#include "mapping/settings.h"
+#include "mapping/chkd_profiles.h"
 #include "mapping/sc_gdi_graphics.h"
 #include <string>
 

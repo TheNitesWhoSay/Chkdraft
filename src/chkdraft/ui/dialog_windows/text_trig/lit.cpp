@@ -1,6 +1,6 @@
 #include "lit.h"
 #include "chkdraft/chkdraft.h"
-#include "mapping/settings.h"
+#include "mapping/chkd_profiles.h"
 #include <filesystem>
 #include <fstream>
 #include <string>

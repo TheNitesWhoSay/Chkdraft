@@ -1,6 +1,6 @@
 #include "chkdraft.h"
+#include "mapping/chkd_profiles.h"
 #include "mapping/data_file_browsers.h"
-#include "mapping/settings.h"
 #include "mapping/gui_map_gl_graphics.h"
 #include <shellapi.h>
 #include <fstream>
@@ -12,8 +12,65 @@
 #include "ui/dialog_windows/profiles/select_profile.h"
 #include <CommCtrl.h>
 
+enum_t(Id, u32, {
+    IDR_MAIN_TOOLBAR = ID_FIRST,
+    IDR_MAIN_STATUS,
+    IDR_MAIN_MDI,
+    IDR_MAIN_PLOT,
+    PreDynamicMenus,
+    MenuDefaultProfile,
+    PostDynamicMenus,
+    NextToLastId = PostDynamicMenus+500,
+    ID_MDI_FIRSTCHILD = (NextToLastId+500) // Keep this higher than all other main window identifiers
+});
+
 void Chkdraft::OnLoadTest()
 {
+    /*Profile profile {
+        .profileName = "QuickTest",
+        .additionalProfileDirectories {
+            "C:\\misc", "C:\\Users\\Nites\\Desktop\\Star"
+        },
+        .isDefaultProfile = false,
+        .autoLoadOnStart = false,
+        .useRemastered = true,
+        .remastered {
+            .starCraftPath = "C:\\Program Files (x86)\\StarCraft",
+            .cascPath = "C:\\Program Files (x86)\\StarCraft",
+            .dataFiles {
+                "C:\\Program Files (x86)\\StarCraft",
+            },
+            .defaultSkin = ChkdSkin::CarbotHD2
+        },
+        .classic {
+            .starCraftPath = "C:\\Users\\Nites\\Desktop\\StarCraft 1.16.1",
+            .starDatPath = "C:\\Users\\Nites\\Desktop\\StarCraft 1.16.1\\StarDat.mpq",
+            .brooDatPath = "C:\\Users\\Nites\\Desktop\\StarCraft 1.16.1\\BrooDat.mpq",
+            .patchRtPath = "C:\\Users\\Nites\\Desktop\\StarCraft 1.16.1\\patch_rt.mpq",
+            .dataFiles {
+                "C:\\Users\\Nites\\Desktop\\StarCraft 1.16.1\\patch_rt.mpq",
+                "C:\\Users\\Nites\\Desktop\\StarCraft 1.16.1\\BrooDat.mpq",
+                "C:\\Users\\Nites\\Desktop\\StarCraft 1.16.1\\StarDat.mpq"
+            },
+            .defaultSkin = ChkdSkin::Classic
+        },
+        .history {
+            .maxMemoryUseMb = 500,
+            .maxActions = 500
+        },
+        .triggers {
+            .useAddressesForMemory = true,
+            .deathTableStart = 0x58A364
+        },
+        .logger {
+            .defaultLogLevel = LogLevel::Info
+        }
+    };*/
+    //if ( auto inFile = fileToString("C:\\Users\\Nites\\Desktop\\QuickTest.profile.json") )
+    //{
+    //    auto profile = Json::read<ChkdProfile>(*inFile);
+    //    logger.info() << Json::pretty(profile) << std::endl;
+    //}
     /*auto & map = []() -> GuiMap & {
         auto map = chkd.maps.NewMap(Sc::Terrain::Tileset::Jungle, 96, 96, Sc::Isom::Brush::Jungle::Default);
         //map->addUnit(Chk::Unit {map->getNextClassId(), 192, 64, Sc::Unit::Type::StartLocation, 0, 0, 0, Sc::Player::Id::Player2});
@@ -46,7 +103,7 @@ void Chkdraft::OnLoadTest()
         //CM->addSprite(Chk::Sprite {Sc::Sprite::Type(i), u16(x*64+64), u16(y*64+64), Sc::Player::Id::Player1, 0, Chk::Sprite::SpriteFlags::DrawAsSprite});
     }
     //CM->setZoom(4.0);
-    //CM->SetSkin(GuiMap::Skin::ClassicGL);
+    //CM->SetSkin(ChkdSkin::Classic);
     CM->ToggleDisplayFps();*/
     //maps.ChangeLayer(Layer::Units);
     //maps.ChangeLayer(Layer::Sprites);
@@ -62,11 +119,19 @@ void Chkdraft::OnLoadTest()
     //CM->clipboard.addQuickSprite(Chk::Sprite{.type = Sc::Sprite::Type(65), .flags = Chk::Sprite::SpriteFlags::DrawAsSprite});
     //CM->clipboard.beginPasting(true, *CM);
     
-    // TODO: Something like this goes somewhere
-    //SelectProfile selectProfile {};
-    //selectProfile.CreateThis(getHandle());
-
     OpenEditProfilesDialog();
+
+    // TODO: Something like this goes somewhere
+
+    auto file = GetSubMenu(mainMenu.getHandle(), 0);
+    auto profiles = GetSubMenu(file, 4);
+    AppendMenu(profiles, MF_STRING|MF_UNCHECKED, (UINT_PTR)Id::MenuDefaultProfile, icux::toUistring("Default").c_str());
+    AppendMenu(profiles, MF_STRING|MF_CHECKED, (UINT_PTR)Id::MenuDefaultProfile, icux::toUistring("QuickTest").c_str());
+    AppendMenu(profiles, MF_STRING|MF_UNCHECKED, (UINT_PTR)Id::MenuDefaultProfile, icux::toUistring("Lol a really long text string that probably overflows the width").c_str());
+    AppendMenu(profiles, MF_STRING|MF_UNCHECKED, (UINT_PTR)Id::MenuDefaultProfile, icux::toUistring("Cosmonarchy").c_str());
+    AppendMenu(profiles, MF_STRING|MF_UNCHECKED, (UINT_PTR)Id::MenuDefaultProfile, icux::toUistring("ScrModMemes").c_str());
+    AppendMenu(profiles, MF_STRING|MF_UNCHECKED, (UINT_PTR)Id::MenuDefaultProfile, icux::toUistring("More").c_str());
+    AppendMenu(profiles, MF_STRING|MF_UNCHECKED, (UINT_PTR)Id::MenuDefaultProfile, icux::toUistring("And More").c_str());
 }
 
 void Chkdraft::PreLoadTest()
@@ -74,18 +139,9 @@ void Chkdraft::PreLoadTest()
 
 }
 
-enum_t(Id, u32, {
-    IDR_MAIN_TOOLBAR = ID_FIRST,
-    IDR_MAIN_STATUS,
-    IDR_MAIN_MDI,
-    IDR_MAIN_PLOT,
-    NextToLastId,
-    ID_MDI_FIRSTCHILD = (NextToLastId+500) // Keep this higher than all other main window identifiers
-});
-
 #define ifmapopen(dothis) if ( CM != nullptr ) dothis;
 
-Chkdraft::Chkdraft() : currDialog(NULL), editFocused(false), logFile(nullptr, nullptr, logger.getLogLevel())
+Chkdraft::Chkdraft() : profiles(), currDialog(NULL), editFocused(false), logFile(nullptr, nullptr, logger.getLogLevel())
 {
     
 }
@@ -112,7 +168,16 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
     mainPlot.loggerWindow.Refresh();
     UpdateWindow();
 
-    scData.load(Sc::DataFile::BrowserPtr(new ChkdDataFileBrowser()), ChkdDataFileBrowser::getDataFileDescriptors(), ChkdDataFileBrowser::getExpectedStarCraftDirectory());
+    if ( profiles().autoLoadOnStart )
+    {
+        scData.load(Sc::DataFile::BrowserPtr(new ChkdDataFileBrowser()), ChkdDataFileBrowser::getDataFileDescriptors(),
+            ChkdDataFileBrowser::getExpectedStarCraftDirectory());
+    }
+    else
+    {
+        SelectProfile selectProfile {};
+        selectProfile.CreateThis(getHandle());
+    }
     mainPlot.leftBar.mainTree.unitTree.UpdateUnitTree();
     mainPlot.leftBar.mainTree.spriteTree.UpdateSpriteTree();
     ParseCmdLine(lpCmdLine);
@@ -333,8 +398,8 @@ void Chkdraft::UpdateLogLevelCheckmarks(LogLevel logLevel)
 void Chkdraft::SetLogLevel(LogLevel newLogLevel)
 {
     logger.setLogLevel(newLogLevel);
-    Settings::logLevel = newLogLevel;
-    Settings::updateSettingsFile();
+    profiles().logger.defaultLogLevel = newLogLevel;
+    profiles.saveCurrProfile();
     UpdateLogLevelCheckmarks(newLogLevel);
 }
 
@@ -574,13 +639,13 @@ void Chkdraft::KeyListener(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
             {
                 switch ( wParam )
                 {
-                    case '1': if ( CM != nullptr ) CM->SetSkin(GuiMap::Skin::ClassicGDI); return; break;
-                    case '2': if ( CM != nullptr ) CM->SetSkin(GuiMap::Skin::ClassicGL); return; break;
-                    case '3': if ( CM != nullptr ) CM->SetSkin(GuiMap::Skin::ScrSD); return; break;
-                    case '4': if ( CM != nullptr ) CM->SetSkin(GuiMap::Skin::ScrHD2); return; break;
-                    case '5': if ( CM != nullptr ) CM->SetSkin(GuiMap::Skin::ScrHD); return; break;
-                    case '6': if ( CM != nullptr ) CM->SetSkin(GuiMap::Skin::CarbotHD2); return; break;
-                    case '7': if ( CM != nullptr ) CM->SetSkin(GuiMap::Skin::CarbotHD); return; break;
+                    case '1': if ( CM != nullptr ) CM->SetSkin(ChkdSkin::ClassicGDI); return; break;
+                    case '2': if ( CM != nullptr ) CM->SetSkin(ChkdSkin::Classic); return; break;
+                    case '3': if ( CM != nullptr ) CM->SetSkin(ChkdSkin::RemasteredSD); return; break;
+                    case '4': if ( CM != nullptr ) CM->SetSkin(ChkdSkin::RemasteredHD2); return; break;
+                    case '5': if ( CM != nullptr ) CM->SetSkin(ChkdSkin::RemasteredHD); return; break;
+                    case '6': if ( CM != nullptr ) CM->SetSkin(ChkdSkin::CarbotHD2); return; break;
+                    case '7': if ( CM != nullptr ) CM->SetSkin(ChkdSkin::CarbotHD); return; break;
                     case 'U': if ( CM != nullptr ) maps.SetGrid(8, 8); return; break;
                     case 'F': if ( CM != nullptr ) maps.SetGrid(16, 16); return; break;
                     case 'G': if ( CM != nullptr ) maps.SetGrid(32, 32); return; break;
@@ -713,13 +778,13 @@ LRESULT Chkdraft::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     case ID_ZOOM_25:  CM->setZoom(defaultZooms[8]); break;
     case ID_ZOOM_10:  CM->setZoom(defaultZooms[9]); break;
         // Skin
-    case ID_SKIN_CLASSICGDI: CM->SetSkin(GuiMap::Skin::ClassicGDI); break;
-    case ID_SKIN_CLASSICOPENGL: CM->SetSkin(GuiMap::Skin::ClassicGL); break;
-    case ID_SKIN_REMASTEREDSD: CM->SetSkin(GuiMap::Skin::ScrSD); break;
-    case ID_SKIN_REMASTEREDHD2: CM->SetSkin(GuiMap::Skin::ScrHD2); break;
-    case ID_SKIN_REMASTEREDHD: CM->SetSkin(GuiMap::Skin::ScrHD); break;
-    case ID_SKIN_CARBOTHD2: CM->SetSkin(GuiMap::Skin::CarbotHD2); break;
-    case ID_SKIN_CARBOTHD: CM->SetSkin(GuiMap::Skin::CarbotHD); break;
+    case ID_SKIN_CLASSICGDI: CM->SetSkin(ChkdSkin::ClassicGDI); break;
+    case ID_SKIN_CLASSICOPENGL: CM->SetSkin(ChkdSkin::Classic); break;
+    case ID_SKIN_REMASTEREDSD: CM->SetSkin(ChkdSkin::RemasteredSD); break;
+    case ID_SKIN_REMASTEREDHD2: CM->SetSkin(ChkdSkin::RemasteredHD2); break;
+    case ID_SKIN_REMASTEREDHD: CM->SetSkin(ChkdSkin::RemasteredHD); break;
+    case ID_SKIN_CARBOTHD2: CM->SetSkin(ChkdSkin::CarbotHD2); break;
+    case ID_SKIN_CARBOTHD: CM->SetSkin(ChkdSkin::CarbotHD); break;
         // Terrain
     case ID_TERRAIN_DISPLAYTILEBUILDABILITY: CM->ToggleDisplayBuildability(); break;
     case ID_TERRAIN_DISPLAYTILEELEVATIONS: CM->ToggleDisplayElevations(); break;

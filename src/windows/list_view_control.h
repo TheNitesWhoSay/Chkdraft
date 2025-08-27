@@ -8,7 +8,7 @@ namespace WinLib {
     {
         public:
             virtual ~ListViewControl();
-            bool CreateThis(HWND hParent, int x, int y, int width, int height, bool editable, bool ownerDrawn, u64 id);
+            bool CreateThis(HWND hParent, int x, int y, int width, int height, bool editable, bool ownerDrawn, u64 id, bool noHeaderSingleSel = false);
             bool AddColumn(int insertAt, const std::string & title, int width, int alignmentFlags);
             bool SetColumnWidth(int column, int width);
             void AddRow(int numColumns, LPARAM lParam);

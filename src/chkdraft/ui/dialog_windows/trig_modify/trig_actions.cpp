@@ -2,7 +2,7 @@
 #include "chkdraft/chkdraft.h"
 #include "ui/chkd_controls/chkd_string_input.h"
 #include "ui/chkd_controls/cuwp_input.h"
-#include "mapping/settings.h"
+#include "mapping/chkd_profiles.h"
 #include <CommCtrl.h>
 
 #define TOP_ACTION_PADDING 50
@@ -66,7 +66,7 @@ void TrigActionsWindow::RefreshWindow(u32 trigIndex)
     gridActions.ClearItems();
     this->trigIndex = trigIndex;
     const auto & trig = CM->getTrigger(trigIndex);
-    TextTrigGenerator ttg(Settings::useAddressesForMemory, Settings::deathTableStart, true);
+    TextTrigGenerator ttg(chkd.profiles().triggers.useAddressesForMemory, chkd.profiles().triggers.deathTableStart, true);
     if ( ttg.loadScenario((Scenario &)*CM) )
     {
         for ( u8 y = 0; y<Chk::Trigger::MaxActions; y++ )
@@ -379,7 +379,7 @@ void TrigActionsWindow::RefreshActionAreas()
 void TrigActionsWindow::UpdateActionName(u8 actionNum, const std::string & newText, bool refreshImmediately)
 {
     const auto & trig = CM->getTrigger(trigIndex);
-    TextTrigCompiler ttc(Settings::useAddressesForMemory, Settings::deathTableStart);
+    TextTrigCompiler ttc(chkd.profiles().triggers.useAddressesForMemory, chkd.profiles().triggers.deathTableStart);
     Chk::Action::Type newType = Chk::Action::Type::NoAction;
     SuggestionItem suggestion = suggestions.Take();
     if ( suggestion.data )
@@ -401,7 +401,7 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
 {
     RawString rawUpdateText, rawSuggestText;
     SuggestionItem suggestion = suggestions.Take();
-    TextTrigCompiler ttc(Settings::useAddressesForMemory, Settings::deathTableStart);
+    TextTrigCompiler ttc(chkd.profiles().triggers.useAddressesForMemory, chkd.profiles().triggers.deathTableStart);
     auto & trig = CM->getTrigger(trigIndex);
     const Chk::Action & action = trig.action(actionNum);
     if ( action.actionType < Chk::Action::NumActionTypes )
@@ -643,7 +643,7 @@ void TrigActionsWindow::DrawSelectedAction()
         if ( gridActions.GetFocusedItem(focusedX, focusedY) )
         {
             u8 actionNum = (u8)focusedY;
-            TextTrigGenerator ttg(Settings::useAddressesForMemory, Settings::deathTableStart, true);
+            TextTrigGenerator ttg(chkd.profiles().triggers.useAddressesForMemory, chkd.profiles().triggers.deathTableStart, true);
             ttg.loadScenario((Scenario &)*CM);
             ChkdString str = chkd.trigEditorWindow.triggersWindow.GetActionString(actionNum, trig, ttg);
             ttg.clearScenario();

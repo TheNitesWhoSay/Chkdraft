@@ -1,7 +1,7 @@
 #include "chkd_plugins.h"
 #include "chkdraft/chkdraft.h"
 #include <mapping_core/text_trig_compiler.h>
-#include "settings.h"
+#include "chkd_profiles.h"
 
 LRESULT CALLBACK PluginProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -42,7 +42,7 @@ LRESULT CALLBACK PluginProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
                                     std::string textBuf(inputText.get());
 
-                                    TextTrigCompiler compiler(Settings::useAddressesForMemory, Settings::deathTableStart);
+                                    TextTrigCompiler compiler(chkd.profiles().triggers.useAddressesForMemory, chkd.profiles().triggers.deathTableStart);
                                     if ( compiler.compileTriggers(textBuf, (Scenario &)*map, chkd.scData, 0, map->numTriggers()) )
                                         return TRUE;
                                     else

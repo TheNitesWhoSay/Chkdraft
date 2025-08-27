@@ -1,6 +1,6 @@
 #include "text_trig.h"
 #include "chkdraft/chkdraft.h"
-#include "mapping/settings.h"
+#include "mapping/chkd_profiles.h"
 #include <string>
 
 TextTrigWindow::~TextTrigWindow()
@@ -25,7 +25,7 @@ void TextTrigWindow::RefreshWindow()
 {
     updateMenus();
     std::string trigString;
-    TextTrigGenerator textTrigs(Settings::useAddressesForMemory, Settings::deathTableStart);
+    TextTrigGenerator textTrigs(chkd.profiles().triggers.useAddressesForMemory, chkd.profiles().triggers.deathTableStart);
     if ( textTrigs.generateTextTrigs((Scenario &)*CM, trigString) )
     {
         auto start = std::chrono::high_resolution_clock::now();
@@ -39,7 +39,7 @@ void TextTrigWindow::RefreshWindow()
 
 void TextTrigWindow::updateMenus()
 {
-    if ( Settings::useAddressesForMemory )
+    if ( chkd.profiles().triggers.useAddressesForMemory )
         textTrigMenu.SetCheck(ID_OPTIONS_USEADDRESSESFORMEMORY, true);
     else
         textTrigMenu.SetCheck(ID_OPTIONS_USEADDRESSESFORMEMORY, false);
@@ -50,8 +50,8 @@ BOOL TextTrigWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
     switch ( LOWORD(wParam) )
     {
     case ID_OPTIONS_USEADDRESSESFORMEMORY:
-        Settings::useAddressesForMemory = !Settings::useAddressesForMemory;
-        Settings::updateSettingsFile();
+        chkd.profiles().triggers.useAddressesForMemory = !chkd.profiles().triggers.useAddressesForMemory;
+        chkd.profiles.saveCurrProfile();
         RefreshWindow();
         break;
     case ID_REFRESH_TEXTTRIGS:
@@ -144,7 +144,8 @@ bool TextTrigWindow::CompileEditText(Scenario & map)
 {
     if ( auto trigText = editControl.GetWinText() )
     {
-        TextTrigCompiler compiler(Settings::useAddressesForMemory, Settings::deathTableStart); // All data for compilation is gathered on-the-fly, no need to check for updates
+        // All data for compilation is gathered on-the-fly, no need to check for updates
+        TextTrigCompiler compiler(chkd.profiles().triggers.useAddressesForMemory, chkd.profiles().triggers.deathTableStart);
         auto edit = CM->operator()(ActionDescriptor::CompileTextTrigs);
         CM->skipEventRendering();
         if ( compiler.compileTriggers(*trigText, map, chkd.scData, 0, map.numTriggers()) )
