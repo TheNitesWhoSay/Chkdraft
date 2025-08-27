@@ -1,12 +1,9 @@
 #include "grid_view.h"
-#include "cross_cut/logger.h"
 #include <iostream>
 #include <string>
 #include "cross_cut/simple_icu.h"
 #include <CommCtrl.h>
 #include <WindowsX.h>
-
-extern Logger logger;
 
 namespace WinLib {
 

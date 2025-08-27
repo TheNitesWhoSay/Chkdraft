@@ -1,7 +1,7 @@
 #include <chkdraft/chkdraft.h>
 #include <chkdraft/mapping/chkd_profiles.h>
 
-Chkdraft chkd; // The main instance of Chkdraft
+Chkdraft chkd {}; // The main instance of Chkdraft
 
 #ifdef _DEBUG
 Logger logger(LogLevel::Debug); // The primary logger
