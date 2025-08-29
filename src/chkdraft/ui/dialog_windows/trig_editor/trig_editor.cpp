@@ -147,7 +147,7 @@ BOOL TrigEditorWindow::DlgNotify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
     break;
     case TCN_SELCHANGING:
     {
-        chkd.trigEditorWindow.SetWinText("Trigger Editor");
+        chkd.trigEditorWindow->SetWinText("Trigger Editor");
         Tab selectedTab = (Tab)tabs.GetCurSel();
         switch ( selectedTab )
         {

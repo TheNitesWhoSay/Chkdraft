@@ -137,7 +137,7 @@ void TrigModifyTextWindow::Compile(bool silent, bool saveAfter)
                     else if ( !silent )
                         WinLib::Message("Success", "Compiler");
 
-                    chkd.trigEditorWindow.triggersWindow.RefreshGroupList();
+                    chkd.trigEditorWindow->triggersWindow.RefreshGroupList();
                     RefreshWindow(trigIndex);
                 }
             }

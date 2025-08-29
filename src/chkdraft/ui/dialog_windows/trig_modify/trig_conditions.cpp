@@ -134,7 +134,7 @@ void TrigConditionsWindow::CndActEnableToggled(u8 conditionNum)
             editCondition.toggleDisabled();
 
             RefreshWindow(trigIndex);
-            chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
+            chkd.trigEditorWindow->triggersWindow.RefreshWindow(false);
 
             gridConditions.SetEnabledCheck(conditionNum, !editCondition->isDisabled());
         }
@@ -305,7 +305,7 @@ bool TrigConditionsWindow::TransformCondition(std::size_t triggerIndex, std::siz
 void TrigConditionsWindow::RefreshConditionAreas()
 {
     RefreshWindow(trigIndex);
-    chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
+    chkd.trigEditorWindow->triggersWindow.RefreshWindow(false);
 }
 
 void TrigConditionsWindow::UpdateConditionName(u8 conditionNum, const std::string & newText, bool refreshImmediately)
@@ -457,7 +457,7 @@ void TrigConditionsWindow::DrawSelectedCondition()
             TextTrigGenerator ttg(chkd.profiles().triggers.useAddressesForMemory, chkd.profiles().triggers.deathTableStart, true);
             std::string str;
             ttg.loadScenario((Scenario &)*CM);
-            str = chkd.trigEditorWindow.triggersWindow.GetConditionString(conditionNum, trig, ttg);
+            str = chkd.trigEditorWindow->triggersWindow.GetConditionString(conditionNum, trig, ttg);
             ttg.clearScenario();
 
             UINT width = 0, height = 0;
@@ -828,7 +828,7 @@ void TrigConditionsWindow::NewSelection(u16 gridItemX, u16 gridItemY)
 
     }
     DoSize();
-    chkd.trigEditorWindow.triggersWindow.trigModifyWindow.RedrawThis(); // TODO: This fixes some drawing issues but intensifies flashing & should be replaced
+    chkd.trigEditorWindow->triggersWindow.trigModifyWindow.RedrawThis(); // TODO: This fixes some drawing issues but intensifies flashing & should be replaced
 }
 
 void TrigConditionsWindow::NewSuggestion(std::string & str)

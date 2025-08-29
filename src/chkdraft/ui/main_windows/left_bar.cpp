@@ -128,8 +128,8 @@ void LeftBar::NotifyTreeItemSelected(LPARAM newValue)
             if ( CM->GetSelectedLocation() != u16(itemData) )
             {
                 CM->selections.selectLocation(u16(itemData));
-                if ( chkd.locationWindow.getHandle() != nullptr )
-                    chkd.locationWindow.RefreshLocationInfo();
+                if ( chkd.locationWindow->getHandle() != nullptr )
+                    chkd.locationWindow->RefreshLocationInfo();
                 CM->viewLocation(u16(itemData));
             }
             break;
@@ -187,15 +187,15 @@ LRESULT LeftBar::Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
             LPARAM itemType = item.lParam&TreeTypePortion;
             if ( itemType == TreeTypeLocation )
             {
-                if ( chkd.locationWindow.getHandle() == NULL )
+                if ( chkd.locationWindow->getHandle() == NULL )
                 {
-                    if ( chkd.locationWindow.CreateThis(chkd.getHandle()) )
-                        ShowWindow(chkd.locationWindow.getHandle(), SW_SHOWNORMAL);
+                    if ( chkd.locationWindow->CreateThis(chkd.getHandle()) )
+                        ShowWindow(chkd.locationWindow->getHandle(), SW_SHOWNORMAL);
                 }
                 else
                 {
-                    chkd.locationWindow.RefreshLocationInfo();
-                    ShowWindow(chkd.locationWindow.getHandle(), SW_SHOW);
+                    chkd.locationWindow->RefreshLocationInfo();
+                    ShowWindow(chkd.locationWindow->getHandle(), SW_SHOW);
                 }
             }
         }

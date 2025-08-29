@@ -140,7 +140,7 @@ GuiMap::GuiMap(Clipboard & clipboard, Sc::Terrain::Tileset tileset, u16 width, u
 GuiMap::~GuiMap()
 {
     chkd.maps.releaseRenderContext(this->openGlDc);
-    chkd.tilePropWindow.DestroyThis();
+    chkd.tilePropWindow->DestroyThis();
 }
 
 bool GuiMap::CanExit()
@@ -809,8 +809,8 @@ void GuiMap::stackSelected()
             edit->units.append(addedUnits);
         }
 
-        if ( chkd.unitWindow.getHandle() != nullptr )
-            chkd.unitWindow.RepopulateList();
+        if ( chkd.unitWindow->getHandle() != nullptr )
+            chkd.unitWindow->RepopulateList();
     }
     else if ( currLayer == Layer::Sprites && selections.hasSprites() && Scenario::numSprites() + (size_t(stackSize)*selections.numSprites()) < 4000 )
     {
@@ -822,8 +822,8 @@ void GuiMap::stackSelected()
             edit->sprites.append(addedSprites);
         }
 
-        if ( chkd.spriteWindow.getHandle() != nullptr )
-            chkd.spriteWindow.RepopulateList();
+        if ( chkd.spriteWindow->getHandle() != nullptr )
+            chkd.spriteWindow->RepopulateList();
     }
 }
 
@@ -1083,15 +1083,15 @@ void GuiMap::doubleClickLocation(s32 xPos, s32 yPos)
     
         if ( xPos >= locLeft && xPos <= locRight && yPos >= locTop && yPos <= locBottom )
         {
-            if ( chkd.locationWindow.getHandle() == NULL )
+            if ( chkd.locationWindow->getHandle() == NULL )
             {
-                chkd.locationWindow.CreateThis(chkd.getHandle());
-                ShowWindow(chkd.locationWindow.getHandle(), SW_SHOWNORMAL);
+                chkd.locationWindow->CreateThis(chkd.getHandle());
+                ShowWindow(chkd.locationWindow->getHandle(), SW_SHOWNORMAL);
             }
             else
             {
-                chkd.locationWindow.RefreshLocationInfo();
-                ShowWindow(chkd.locationWindow.getHandle(), SW_SHOW);
+                chkd.locationWindow->RefreshLocationInfo();
+                ShowWindow(chkd.locationWindow->getHandle(), SW_SHOW);
             }
         }
     }
@@ -1108,12 +1108,12 @@ void GuiMap::openTileProperties(s32 xClick, s32 yClick)
     }
 
     RedrawWindow(getHandle(), NULL, NULL, RDW_INVALIDATE);
-    if ( chkd.tilePropWindow.getHandle() != NULL )
-        chkd.tilePropWindow.UpdateTile();
+    if ( chkd.tilePropWindow->getHandle() != NULL )
+        chkd.tilePropWindow->UpdateTile();
     else
-        chkd.tilePropWindow.CreateThis(chkd.getHandle());
+        chkd.tilePropWindow->CreateThis(chkd.getHandle());
 
-    ShowWindow(chkd.tilePropWindow.getHandle(), SW_SHOW);
+    ShowWindow(chkd.tilePropWindow->getHandle(), SW_SHOW);
 }
 
 void GuiMap::EdgeDrag(HWND hWnd, int x, int y)
@@ -1202,23 +1202,23 @@ void GuiMap::refreshScenario(bool clearSelections)
     chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree(currLayer == Layer::Locations);
     chkd.mainPlot.leftBar.blockSelections = false;
     
-    if ( chkd.unitWindow.getHandle() != nullptr )
-        chkd.unitWindow.RepopulateList();
-    if ( chkd.spriteWindow.getHandle() != nullptr )
-        chkd.spriteWindow.RepopulateList();
-    if ( chkd.locationWindow.getHandle() != NULL )
+    if ( chkd.unitWindow->getHandle() != nullptr )
+        chkd.unitWindow->RepopulateList();
+    if ( chkd.spriteWindow->getHandle() != nullptr )
+        chkd.spriteWindow->RepopulateList();
+    if ( chkd.locationWindow->getHandle() != NULL )
     {
         if ( CM->numLocations() == 0 )
-            chkd.locationWindow.DestroyThis();
+            chkd.locationWindow->DestroyThis();
         else
-            chkd.locationWindow.RefreshLocationInfo();
+            chkd.locationWindow->RefreshLocationInfo();
     }
-    if ( chkd.mapSettingsWindow.getHandle() != NULL )
-        chkd.mapSettingsWindow.RefreshWindow();
-    if ( chkd.dimensionsWindow.getHandle() != NULL )
-        chkd.dimensionsWindow.RefreshWindow();
-    chkd.trigEditorWindow.RefreshWindow();
-    chkd.briefingTrigEditorWindow.RefreshWindow();
+    if ( chkd.mapSettingsWindow->getHandle() != NULL )
+        chkd.mapSettingsWindow->RefreshWindow();
+    if ( chkd.dimensionsWindow->getHandle() != NULL )
+        chkd.dimensionsWindow->RefreshWindow();
+    chkd.trigEditorWindow->RefreshWindow();
+    chkd.briefingTrigEditorWindow->RefreshWindow();
     
     scGraphics.updatePalette();
     Redraw(true);
@@ -1262,17 +1262,17 @@ void GuiMap::selectAll()
         edit->tiles.selectAll();
     };
     auto selectAllUnits = [&]() {
-        chkd.unitWindow.SetChangeHighlightOnly(true);
+        chkd.unitWindow->SetChangeHighlightOnly(true);
         for ( u16 i=0; i<Scenario::numUnits(); i++ )
         {
             if ( !selections.unitIsSelected(i) )
             {
-                if ( chkd.unitWindow.getHandle() != nullptr )
-                    chkd.unitWindow.FocusAndSelectIndex(i);
+                if ( chkd.unitWindow->getHandle() != nullptr )
+                    chkd.unitWindow->FocusAndSelectIndex(i);
             }
         }
         edit->units.selectAll();
-        chkd.unitWindow.SetChangeHighlightOnly(false);
+        chkd.unitWindow->SetChangeHighlightOnly(false);
         Redraw(true);
     };
     auto selectAllDoodads = [&]() {
@@ -1283,18 +1283,18 @@ void GuiMap::selectAll()
         }
     };
     auto selectAllSprites = [&]() {
-        chkd.spriteWindow.SetChangeHighlightOnly(true);
+        chkd.spriteWindow->SetChangeHighlightOnly(true);
 
         for ( size_t i=0; i<Scenario::numSprites(); ++i )
         {
             if ( !selections.spriteIsSelected(i) )
             {
                 edit->sprites.select(i);
-                if ( chkd.spriteWindow.getHandle() != nullptr )
-                    chkd.spriteWindow.FocusAndSelectIndex(u16(i));
+                if ( chkd.spriteWindow->getHandle() != nullptr )
+                    chkd.spriteWindow->FocusAndSelectIndex(u16(i));
             }
         }
-        chkd.spriteWindow.SetChangeHighlightOnly(false);
+        chkd.spriteWindow->SetChangeHighlightOnly(false);
     };
     auto selectAllFog = [&]() {
         edit->tileFog.selectAll();
@@ -1405,15 +1405,15 @@ void GuiMap::deleteSelection()
     };
     auto deleteUnitSelection = [&]() {
         setActionDescription(ActionDescriptor::DeleteUnits);
-        if ( chkd.unitWindow.getHandle() != nullptr )
-            SendMessage(chkd.unitWindow.getHandle(), WM_COMMAND, MAKEWPARAM(IDC_BUTTON_DELETE, NULL), 0);
+        if ( chkd.unitWindow->getHandle() != nullptr )
+            SendMessage(chkd.unitWindow->getHandle(), WM_COMMAND, MAKEWPARAM(IDC_BUTTON_DELETE, NULL), 0);
         else
             unlinkAndDeleteSelectedUnits();
     };
     auto deleteLocationSelection = [&]() {
         setActionDescription(ActionDescriptor::DeleteLocations);
-        if ( chkd.locationWindow.getHandle() != NULL )
-            chkd.locationWindow.DestroyThis();
+        if ( chkd.locationWindow->getHandle() != NULL )
+            chkd.locationWindow->DestroyThis();
                 
         u16 index = selections.getSelectedLocation();
         if ( index != NO_LOCATION && index < Scenario::numLocations() )
@@ -1440,8 +1440,8 @@ void GuiMap::deleteSelection()
     };
     auto deleteSpriteSelection = [&]() {
         setActionDescription(ActionDescriptor::DeleteSprites);
-        if ( chkd.spriteWindow.getHandle() != nullptr )
-            SendMessage(chkd.spriteWindow.getHandle(), WM_COMMAND, MAKEWPARAM(IDC_BUTTON_DELETE, NULL), 0);
+        if ( chkd.spriteWindow->getHandle() != nullptr )
+            SendMessage(chkd.spriteWindow->getHandle(), WM_COMMAND, MAKEWPARAM(IDC_BUTTON_DELETE, NULL), 0);
         else if ( selections.hasSprites() )
             edit->sprites.removeSelection();
     };
@@ -1517,10 +1517,10 @@ void GuiMap::PlayerChanged(u8 newPlayer)
         {
             CM->changeUnitOwner(unitIndex, newPlayer);
 
-            if ( chkd.unitWindow.getHandle() != nullptr )
-                chkd.unitWindow.ChangeUnitsDisplayedOwner(unitIndex, newPlayer);
+            if ( chkd.unitWindow->getHandle() != nullptr )
+                chkd.unitWindow->ChangeUnitsDisplayedOwner(unitIndex, newPlayer);
         }
-        chkd.unitWindow.ChangeDropdownPlayer(newPlayer);
+        chkd.unitWindow->ChangeDropdownPlayer(newPlayer);
         Redraw(true);
     }
     else if ( currLayer == Layer::Sprites )
@@ -1531,10 +1531,10 @@ void GuiMap::PlayerChanged(u8 newPlayer)
             const Chk::Sprite & sprite = Scenario::getSprite(spriteIndex);
             edit->sprites[spriteIndex].owner = newPlayer;
 
-            if ( chkd.spriteWindow.getHandle() != nullptr )
-                chkd.spriteWindow.ChangeSpritesDisplayedOwner(int(spriteIndex), newPlayer);
+            if ( chkd.spriteWindow->getHandle() != nullptr )
+                chkd.spriteWindow->ChangeSpritesDisplayedOwner(int(spriteIndex), newPlayer);
         }
-        chkd.spriteWindow.ChangeDropdownPlayer(newPlayer);
+        chkd.spriteWindow->ChangeDropdownPlayer(newPlayer);
         Redraw(true);
     }
 }
@@ -2088,8 +2088,8 @@ void GuiMap::ToggleDisplayBuildability()
     scGraphics.ToggleDisplayBuildability();
     UpdateTerrainViewMenuItems();
     Redraw(false);
-    if ( chkd.terrainPalWindow.getHandle() != NULL )
-        RedrawWindow(chkd.terrainPalWindow.getHandle(), NULL, NULL, RDW_INVALIDATE);
+    if ( chkd.terrainPalWindow->getHandle() != NULL )
+        RedrawWindow(chkd.terrainPalWindow->getHandle(), NULL, NULL, RDW_INVALIDATE);
 }
 
 bool GuiMap::DisplayingBuildability()
@@ -2102,8 +2102,8 @@ void GuiMap::ToggleDisplayElevations()
     scGraphics.ToggleDisplayElevations();
     UpdateTerrainViewMenuItems();
     Redraw(false);
-    if ( chkd.terrainPalWindow.getHandle() != NULL )
-        RedrawWindow(chkd.terrainPalWindow.getHandle(), NULL, NULL, RDW_INVALIDATE);
+    if ( chkd.terrainPalWindow->getHandle() != NULL )
+        RedrawWindow(chkd.terrainPalWindow->getHandle(), NULL, NULL, RDW_INVALIDATE);
 }
 
 bool GuiMap::DisplayingElevations()
@@ -2123,8 +2123,8 @@ void GuiMap::ToggleTileNumSource(bool MTXMoverTILE)
     scGraphics.ToggleTileNumSource(MTXMoverTILE);
     UpdateTerrainViewMenuItems();
     Redraw(false);
-    if ( chkd.terrainPalWindow.getHandle() != NULL )
-        RedrawWindow(chkd.terrainPalWindow.getHandle(), NULL, NULL, RDW_INVALIDATE);
+    if ( chkd.terrainPalWindow->getHandle() != NULL )
+        RedrawWindow(chkd.terrainPalWindow->getHandle(), NULL, NULL, RDW_INVALIDATE);
 }
 
 bool GuiMap::DisplayingTileNums()
@@ -2889,31 +2889,31 @@ void GuiMap::ReturnKeyPress()
     {
         if ( selections.hasUnits() )
         {
-            if ( chkd.unitWindow.getHandle() == nullptr )
-                chkd.unitWindow.CreateThis(chkd.getHandle());
-            ShowWindow(chkd.unitWindow.getHandle(), SW_SHOW);
+            if ( chkd.unitWindow->getHandle() == nullptr )
+                chkd.unitWindow->CreateThis(chkd.getHandle());
+            ShowWindow(chkd.unitWindow->getHandle(), SW_SHOW);
         }
     }
     else if ( currLayer == Layer::Sprites )
     {
         if ( selections.hasSprites() )
         {
-            if ( chkd.spriteWindow.getHandle() == nullptr )
-                chkd.spriteWindow.CreateThis(chkd.getHandle());
-            ShowWindow(chkd.spriteWindow.getHandle(), SW_SHOW);
+            if ( chkd.spriteWindow->getHandle() == nullptr )
+                chkd.spriteWindow->CreateThis(chkd.getHandle());
+            ShowWindow(chkd.spriteWindow->getHandle(), SW_SHOW);
         }
     }
     else if ( currLayer == Layer::Locations )
     {
         if ( selections.getSelectedLocation() != NO_LOCATION )
         {
-            if ( chkd.locationWindow.getHandle() == NULL )
+            if ( chkd.locationWindow->getHandle() == NULL )
             {
-                if ( chkd.locationWindow.CreateThis(chkd.getHandle()) )
-                    ShowWindow(chkd.locationWindow.getHandle(), SW_SHOWNORMAL);
+                if ( chkd.locationWindow->CreateThis(chkd.getHandle()) )
+                    ShowWindow(chkd.locationWindow->getHandle(), SW_SHOWNORMAL);
             }
             else
-                ShowWindow(chkd.locationWindow.getHandle(), SW_SHOW);
+                ShowWindow(chkd.locationWindow->getHandle(), SW_SHOW);
         }
     }
 }
@@ -3027,14 +3027,14 @@ void GuiMap::ActivateMap(HWND deactivate, HWND activate)
     if ( getHandle() == deactivate )
         destroyBrush();
 
-    chkd.tilePropWindow.DestroyThis();
-    chkd.unitWindow.DestroyThis();
-    chkd.spriteWindow.DestroyThis();
-    chkd.locationWindow.DestroyThis();
-    chkd.mapSettingsWindow.DestroyThis();
-    chkd.terrainPalWindow.DestroyThis();
-    chkd.trigEditorWindow.DestroyThis();
-    chkd.briefingTrigEditorWindow.DestroyThis();
+    chkd.tilePropWindow->DestroyThis();
+    chkd.unitWindow->DestroyThis();
+    chkd.spriteWindow->DestroyThis();
+    chkd.locationWindow->DestroyThis();
+    chkd.mapSettingsWindow->DestroyThis();
+    chkd.terrainPalWindow->DestroyThis();
+    chkd.trigEditorWindow->DestroyThis();
+    chkd.briefingTrigEditorWindow->DestroyThis();
     
     if ( activate != NULL )
     {
@@ -3171,7 +3171,7 @@ void GuiMap::LButtonDown(int x, int y, WPARAM wParam)
         return;
     }
 
-    chkd.tilePropWindow.DestroyThis();
+    chkd.tilePropWindow->DestroyThis();
     
     if ( currLayer == Layer::FogEdit )
     {
@@ -3253,8 +3253,8 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
 
     lastMousePosition = {mapHoverX, mapHoverY};
     
-    if ( lButtonDown && ctrl && currLayer == Layer::Terrain && chkd.terrainPalWindow.getHandle() != nullptr )
-        chkd.terrainPalWindow.SelectTile(Scenario::getTilePx((std::size_t)mapHoverX, (std::size_t)mapHoverY));
+    if ( lButtonDown && ctrl && currLayer == Layer::Terrain && chkd.terrainPalWindow->getHandle() != nullptr )
+        chkd.terrainPalWindow->SelectTile(Scenario::getTilePx((std::size_t)mapHoverX, (std::size_t)mapHoverY));
     
     if ( currLayer == Layer::FogEdit )
     {
@@ -3416,9 +3416,9 @@ void GuiMap::LButtonUp(HWND hWnd, int x, int y, WPARAM wParam)
     if ( y < 0 ) y = 0;
     x = s16(x/getZoom() + screenLeft);
     y = s16(y/getZoom() + screenTop);
-    if ( wParam == MK_CONTROL && currLayer == Layer::Terrain && chkd.terrainPalWindow.getHandle() != nullptr )
+    if ( wParam == MK_CONTROL && currLayer == Layer::Terrain && chkd.terrainPalWindow->getHandle() != nullptr )
     {
-        chkd.terrainPalWindow.SelectTile(Scenario::getTilePx((std::size_t)x, (std::size_t)y));
+        chkd.terrainPalWindow->SelectTile(Scenario::getTilePx((std::size_t)x, (std::size_t)y));
         UnlockCursor();
     }
 
@@ -3700,8 +3700,8 @@ void GuiMap::FinalizeLocationDrag(HWND hWnd, int mapX, int mapY, WPARAM wParam)
                     }
                 }
                 Redraw(false);
-                if ( chkd.locationWindow.getHandle() != NULL )
-                    chkd.locationWindow.RefreshLocationInfo();
+                if ( chkd.locationWindow->getHandle() != NULL )
+                    chkd.locationWindow->RefreshLocationInfo();
 
                 selections.setDrags(-1, -1);
             }
@@ -3711,8 +3711,8 @@ void GuiMap::FinalizeLocationDrag(HWND hWnd, int mapX, int mapY, WPARAM wParam)
     {
         selections.selectLocation(selections.startDrag.x, selections.startDrag.y, !LockAnywhere());
         selections.setDrags(-1, -1);
-        if ( chkd.locationWindow.getHandle() != NULL )
-            chkd.locationWindow.RefreshLocationInfo();
+        if ( chkd.locationWindow->getHandle() != NULL )
+            chkd.locationWindow->RefreshLocationInfo();
     
         Redraw(false);
     }
@@ -3727,16 +3727,16 @@ void GuiMap::FinalizeUnitSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam)
     if ( wParam != MK_CONTROL )
         // Remove selected units
     {
-        if ( chkd.unitWindow.getHandle() != nullptr )
+        if ( chkd.unitWindow->getHandle() != nullptr )
         {
-            chkd.unitWindow.SetChangeHighlightOnly(true);
+            chkd.unitWindow->SetChangeHighlightOnly(true);
             for ( auto unitIndex : view.units.sel() )
-                chkd.unitWindow.DeselectIndex(unitIndex);
+                chkd.unitWindow->DeselectIndex(unitIndex);
             
-            chkd.unitWindow.SetChangeHighlightOnly(false);
+            chkd.unitWindow->SetChangeHighlightOnly(false);
         }
         edit->units.clearSelections();
-        chkd.unitWindow.UpdateEnabledState();
+        chkd.unitWindow->UpdateEnabledState();
     }
         
     size_t numUnits = Scenario::numUnits();
@@ -3771,17 +3771,17 @@ void GuiMap::FinalizeUnitSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam)
             else
                 edit->units.select(i);
 
-            if ( chkd.unitWindow.getHandle() != nullptr )
+            if ( chkd.unitWindow->getHandle() != nullptr )
             {
-                chkd.unitWindow.SetChangeHighlightOnly(true);
+                chkd.unitWindow->SetChangeHighlightOnly(true);
                 if ( wasSelected )
-                    chkd.unitWindow.DeselectIndex((u16)i);
+                    chkd.unitWindow->DeselectIndex((u16)i);
                 else
-                    chkd.unitWindow.FocusAndSelectIndex((u16)i);
+                    chkd.unitWindow->FocusAndSelectIndex((u16)i);
                 
-                chkd.unitWindow.SetChangeHighlightOnly(false);
+                chkd.unitWindow->SetChangeHighlightOnly(false);
             }
-            chkd.unitWindow.UpdateEnabledState();
+            chkd.unitWindow->UpdateEnabledState();
         }
     }
 }
@@ -3832,16 +3832,16 @@ void GuiMap::FinalizeSpriteSelection(HWND hWnd, int mapX, int mapY, WPARAM wPara
     selections.sortDragPoints();
     if ( wParam != MK_CONTROL )
     {
-        if ( chkd.spriteWindow.getHandle() != nullptr )
+        if ( chkd.spriteWindow->getHandle() != nullptr )
         {
-            chkd.spriteWindow.SetChangeHighlightOnly(true);
+            chkd.spriteWindow->SetChangeHighlightOnly(true);
             for ( auto spriteIndex : view.sprites.sel() )
-                chkd.spriteWindow.DeselectIndex(u16(spriteIndex));
+                chkd.spriteWindow->DeselectIndex(u16(spriteIndex));
             
-            chkd.spriteWindow.SetChangeHighlightOnly(false);
+            chkd.spriteWindow->SetChangeHighlightOnly(false);
         }
         edit->sprites.clearSelections();
-        chkd.spriteWindow.UpdateEnabledState();
+        chkd.spriteWindow->UpdateEnabledState();
     }
 
     size_t numSprites = Scenario::numSprites();
@@ -3860,17 +3860,17 @@ void GuiMap::FinalizeSpriteSelection(HWND hWnd, int mapX, int mapY, WPARAM wPara
             else
                 edit->sprites.select(i);
 
-            if ( chkd.spriteWindow.getHandle() != nullptr )
+            if ( chkd.spriteWindow->getHandle() != nullptr )
             {
-                chkd.spriteWindow.SetChangeHighlightOnly(true);
+                chkd.spriteWindow->SetChangeHighlightOnly(true);
                 if ( wasSelected )
-                    chkd.spriteWindow.DeselectIndex((u16)i);
+                    chkd.spriteWindow->DeselectIndex((u16)i);
                 else
-                    chkd.spriteWindow.FocusAndSelectIndex((u16)i);
+                    chkd.spriteWindow->FocusAndSelectIndex((u16)i);
                 
-                chkd.spriteWindow.SetChangeHighlightOnly(false);
+                chkd.spriteWindow->SetChangeHighlightOnly(false);
             }
-            chkd.spriteWindow.UpdateEnabledState();
+            chkd.spriteWindow->UpdateEnabledState();
         }
     }
 }
@@ -4126,8 +4126,8 @@ void GuiMap::SetSkin(ChkdSkin skin, bool reloadCurrent)
     UpdateSkinMenuItems();
     windowBoundsChanged();
     this->Redraw(true);
-    if ( chkd.terrainPalWindow.getHandle() != NULL )
-        chkd.terrainPalWindow.RedrawThis();
+    if ( chkd.terrainPalWindow->getHandle() != NULL )
+        chkd.terrainPalWindow->RedrawThis();
 }
 
 void GuiMap::destroyBrush()

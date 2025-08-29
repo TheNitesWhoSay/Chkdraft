@@ -213,7 +213,7 @@ void UnitSettingsWindow::RefreshWindow()
             
         auto unitName = CM->getUnitName<ChkdString>(selectedUnitType, true);
         editUnitName.SetText(*unitName);
-        chkd.mapSettingsWindow.SetWinText("Map Settings - [" + Sc::Unit::defaultDisplayNames[(u16)selectedUnitType] + ']');
+        chkd.mapSettingsWindow->SetWinText("Map Settings - [" + Sc::Unit::defaultDisplayNames[(u16)selectedUnitType] + ']');
     }
     else
         DisableUnitEditing();
@@ -296,7 +296,7 @@ void UnitSettingsWindow::CreateSubWindows(HWND hParent)
 void UnitSettingsWindow::DisableUnitEditing()
 {
     isDisabled = true;
-    chkd.mapSettingsWindow.SetWinText("Map Settings");
+    chkd.mapSettingsWindow->SetWinText("Map Settings");
     DisableUnitProperties();
     checkUseUnitDefaults.DisableThis();
     checkEnabledByDefault.DisableThis();
@@ -409,8 +409,8 @@ void UnitSettingsWindow::CheckReplaceUnitName()
             auto edit = CM->operator()(ActionDescriptor::UpdateUnitName);
             CM->setUnitName<ChkdString>((Sc::Unit::Type)selectedUnitType, *newUnitName);
             CM->deleteUnusedStrings(Chk::Scope::Both);
-            chkd.unitWindow.RepopulateList();
-            RedrawWindow(chkd.unitWindow.getHandle(), NULL, NULL, RDW_INVALIDATE);
+            chkd.unitWindow->RepopulateList();
+            RedrawWindow(chkd.unitWindow->getHandle(), NULL, NULL, RDW_INVALIDATE);
 
             possibleUnitNameUpdate = false;
         }
@@ -436,8 +436,8 @@ void UnitSettingsWindow::SetDefaultUnitProperties()
         editUnitName.DisableThis();
         CM->deleteString(origName);
         CM->deleteString(expName);
-        chkd.unitWindow.RepopulateList();
-        RedrawWindow(chkd.unitWindow.getHandle(), NULL, NULL, RDW_INVALIDATE);
+        chkd.unitWindow->RepopulateList();
+        RedrawWindow(chkd.unitWindow->getHandle(), NULL, NULL, RDW_INVALIDATE);
 
         u32 groundWeapon = (u32)chkd.scData.units.getUnit(selectedUnitType).groundWeapon,
             airWeapon    = (u32)chkd.scData.units.getUnit(selectedUnitType).airWeapon;
@@ -565,8 +565,8 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 }
 
                 RefreshWindow();
-                chkd.unitWindow.RepopulateList();
-                RedrawWindow(chkd.unitWindow.getHandle(), NULL, NULL, RDW_INVALIDATE);
+                chkd.unitWindow->RepopulateList();
+                RedrawWindow(chkd.unitWindow->getHandle(), NULL, NULL, RDW_INVALIDATE);
             }
         }
         break;
@@ -584,8 +584,8 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                     CM->deleteUnusedStrings(Chk::Scope::Both);
                     auto unitName = CM->getUnitName<ChkdString>(selectedUnitType, true);
                     editUnitName.SetText(*unitName);
-                    chkd.unitWindow.RepopulateList();
-                    RedrawWindow(chkd.unitWindow.getHandle(), NULL, NULL, RDW_INVALIDATE);
+                    chkd.unitWindow->RepopulateList();
+                    RedrawWindow(chkd.unitWindow->getHandle(), NULL, NULL, RDW_INVALIDATE);
                 }
                 else
                     editUnitName.EnableThis();
@@ -770,9 +770,9 @@ LRESULT UnitSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
             {
                 RefreshWindow();
                 if ( selectedUnitType != Sc::Unit::Type::NoUnit )
-                    chkd.mapSettingsWindow.SetWinText(std::string("Map Settings - [") + Sc::Unit::defaultDisplayNames[(u16)selectedUnitType] + ']');
+                    chkd.mapSettingsWindow->SetWinText(std::string("Map Settings - [") + Sc::Unit::defaultDisplayNames[(u16)selectedUnitType] + ']');
                 else
-                    chkd.mapSettingsWindow.SetWinText("Map Settings");
+                    chkd.mapSettingsWindow->SetWinText("Map Settings");
             }
             else
                 CheckReplaceUnitName();

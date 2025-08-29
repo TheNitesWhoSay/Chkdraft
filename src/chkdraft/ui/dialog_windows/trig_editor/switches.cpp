@@ -58,7 +58,7 @@ void SwitchesWindow::RefreshWindow()
 
         if ( selectedSwitch >= 0 && selectedSwitch < 256 )
         {
-            chkd.trigEditorWindow.SetWinText("Trigger Editor - [Switch " + std::to_string(selectedSwitch + 1) + "]");
+            chkd.trigEditorWindow->SetWinText("Trigger Editor - [Switch " + std::to_string(selectedSwitch + 1) + "]");
 
             EnableEditing();
             size_t switchNameStringId = CM->getSwitchNameStringId(selectedSwitch, Chk::Scope::Game);
@@ -218,7 +218,7 @@ void SwitchesWindow::EditSwitchNameFocusLost()
             ChkdString temp(*editText);
             CM->setSwitchName(selectedSwitch, temp);
             CM->deleteUnusedStrings(Chk::Scope::Both);
-            chkd.mapSettingsWindow.RefreshWindow();
+            chkd.mapSettingsWindow->RefreshWindow();
         }
     }
 }

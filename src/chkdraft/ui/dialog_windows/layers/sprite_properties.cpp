@@ -618,13 +618,13 @@ void SpritePropertiesWindow::NotifyGraphicsPressed()
     u16 firstSprite = CM->selections.getFirstSprite();
     if ( std::size_t(firstSprite) < CM->numSprites() )
     {
-        if ( chkd.actorWindow.getHandle() == NULL )
-            chkd.actorWindow.CreateThis(chkd.getHandle());
+        if ( chkd.actorWindow->getHandle() == NULL )
+            chkd.actorWindow->CreateThis(chkd.getHandle());
 
         NotifyClosePressed();
-        ::ShowWindow(chkd.actorWindow.getHandle(), SW_SHOW);
-        chkd.actorWindow.FocusAndSelectIndex(CM->view.sprites.attachedData(firstSprite).drawListIndex);
-        chkd.actorWindow.FocusThis();
+        ::ShowWindow(chkd.actorWindow->getHandle(), SW_SHOW);
+        chkd.actorWindow->FocusAndSelectIndex(CM->view.sprites.attachedData(firstSprite).drawListIndex);
+        chkd.actorWindow->FocusThis();
     }
 }
 

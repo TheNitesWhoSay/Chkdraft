@@ -157,7 +157,7 @@ bool Maps::OpenMap(const std::string & fileName)
                 EnableMapping();
 
                 if ( newMap->isProtected() && newMap->hasPassword() )
-                    chkd.enterPasswordWindow.CreateThis(chkd.getHandle());
+                    chkd.enterPasswordWindow->CreateThis(chkd.getHandle());
                 else if ( newMap->isProtected() )
                     mb("Map is protected and will be opened as view only");
 
@@ -336,7 +336,7 @@ void Maps::ChangeLayer(Layer newLayer)
 
         currentlyActiveMap->setLayer(newLayer);
 
-        chkd.tilePropWindow.DestroyThis();
+        chkd.tilePropWindow->DestroyThis();
         currentlyActiveMap->Redraw(false);
         std::string layerString;
         if ( chkd.mainToolbar.layerBox.GetItemText((int)newLayer, layerString) )
@@ -728,11 +728,11 @@ void Maps::properties()
             }
 
             RedrawWindow(currentlyActiveMap->getHandle(), NULL, NULL, RDW_INVALIDATE);
-            if ( chkd.tilePropWindow.getHandle() != NULL )
-                chkd.tilePropWindow.UpdateTile();
+            if ( chkd.tilePropWindow->getHandle() != NULL )
+                chkd.tilePropWindow->UpdateTile();
             else
-                chkd.tilePropWindow.CreateThis(chkd.getHandle());
-            ShowWindow(chkd.tilePropWindow.getHandle(), SW_SHOW);
+                chkd.tilePropWindow->CreateThis(chkd.getHandle());
+            ShowWindow(chkd.tilePropWindow->getHandle(), SW_SHOW);
         }
     }
     else
@@ -905,19 +905,19 @@ void Maps::DisableMapping()
     {
         mappingEnabled = false;
         
-        chkd.unitWindow.DestroyThis();
-        chkd.spriteWindow.DestroyThis();
-        chkd.actorWindow.DestroyThis();
-        chkd.locationWindow.DestroyThis();
-        chkd.terrainPalWindow.DestroyThis();
-        chkd.tilePropWindow.DestroyThis();
-        chkd.textTrigWindow.DestroyThis();
-        chkd.mapSettingsWindow.DestroyThis();
-        chkd.trigEditorWindow.DestroyThis();
-        chkd.briefingTrigEditorWindow.DestroyThis();
-        chkd.changePasswordWindow.DestroyThis();
-        chkd.enterPasswordWindow.DestroyThis();
-        chkd.dimensionsWindow.DestroyThis();
+        chkd.unitWindow->DestroyThis();
+        chkd.spriteWindow->DestroyThis();
+        chkd.actorWindow->DestroyThis();
+        chkd.locationWindow->DestroyThis();
+        chkd.terrainPalWindow->DestroyThis();
+        chkd.tilePropWindow->DestroyThis();
+        chkd.textTrigWindow->DestroyThis();
+        chkd.mapSettingsWindow->DestroyThis();
+        chkd.trigEditorWindow->DestroyThis();
+        chkd.briefingTrigEditorWindow->DestroyThis();
+        chkd.changePasswordWindow->DestroyThis();
+        chkd.enterPasswordWindow->DestroyThis();
+        chkd.dimensionsWindow->DestroyThis();
 
         int toolbarItems[] =
         {
@@ -955,7 +955,7 @@ void Maps::DisableMapping()
         chkd.statusBar.SetText(2, "");
         chkd.statusBar.SetText(3, "");
 
-        chkd.changePasswordWindow.Hide();
+        chkd.changePasswordWindow->Hide();
     }
 }
 

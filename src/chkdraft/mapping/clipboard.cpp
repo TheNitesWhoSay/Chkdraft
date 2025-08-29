@@ -388,8 +388,8 @@ void Clipboard::pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap & map, bool allo
                     lastPasteNydus = std::nullopt;
             }
             map.addUnit(pasteUnit.unit);
-            if ( chkd.unitWindow.getHandle() != nullptr )
-                chkd.unitWindow.AddUnitItem((u16)numUnits, pasteUnit.unit);
+            if ( chkd.unitWindow->getHandle() != nullptr )
+                chkd.unitWindow->AddUnitItem((u16)numUnits, pasteUnit.unit);
         }
     }
     if ( !pastedAddons.empty() )
@@ -442,8 +442,8 @@ void Clipboard::pasteSprites(s32 mapClickX, s32 mapClickY, GuiMap & map, point p
             this->prevPaste.y = pasteSprite.sprite.yc;
             size_t numSprites = map.numSprites();
             map.addSprite(pasteSprite.sprite);
-            if ( chkd.spriteWindow.getHandle() != nullptr )
-                chkd.spriteWindow.AddSpriteItem((u16)numSprites, pasteSprite.sprite);
+            if ( chkd.spriteWindow->getHandle() != nullptr )
+                chkd.spriteWindow->AddSpriteItem((u16)numSprites, pasteSprite.sprite);
         }
     }
 }
@@ -957,8 +957,8 @@ void Clipboard::endPasting(GuiMap* map)
             ClearQuickItems();
             quickPaste = false;
             
-            if ( chkd.terrainPalWindow.getHandle() != nullptr )
-                RedrawWindow(chkd.terrainPalWindow.getHandle(), NULL, NULL, RDW_INVALIDATE);
+            if ( chkd.terrainPalWindow->getHandle() != nullptr )
+                RedrawWindow(chkd.terrainPalWindow->getHandle(), NULL, NULL, RDW_INVALIDATE);
         }
 
         prevPaste.x = -1;

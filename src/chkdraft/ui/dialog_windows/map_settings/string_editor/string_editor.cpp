@@ -95,15 +95,15 @@ void StringEditorWindow::RefreshWindow()
         if ( toSelect != -1 && listStrings.SetCurSel(toSelect) ) // Attempt selection
         {
             if ( extended )
-                chkd.mapSettingsWindow.SetWinText("Map Settings - [Extended String #" + std::to_string(currSelString) + "]");
+                chkd.mapSettingsWindow->SetWinText("Map Settings - [Extended String #" + std::to_string(currSelString) + "]");
             else
-                chkd.mapSettingsWindow.SetWinText("Map Settings - [String #" + std::to_string(currSelString) + "]");
+                chkd.mapSettingsWindow->SetWinText("Map Settings - [String #" + std::to_string(currSelString) + "]");
         }
         else
         {
             currSelString = 0; // Clear currSelString if selection fails
             editString.SetText("");
-            chkd.mapSettingsWindow.SetWinText("Map Settings");
+            chkd.mapSettingsWindow->SetWinText("Map Settings");
         }
     }
 }
@@ -199,19 +199,19 @@ LRESULT StringEditorWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                         addUseItem("Switches", stringUserToUsageCount.find(Chk::StringUserFlag::Switch)->second);
 
                         if ( extended )
-                            chkd.mapSettingsWindow.SetWinText("Map Settings - [Extended String #" + std::to_string(currSelString) + "]");
+                            chkd.mapSettingsWindow->SetWinText("Map Settings - [Extended String #" + std::to_string(currSelString) + "]");
                         else
-                            chkd.mapSettingsWindow.SetWinText("Map Settings - [String #" + std::to_string(currSelString) + "]");
+                            chkd.mapSettingsWindow->SetWinText("Map Settings - [String #" + std::to_string(currSelString) + "]");
                     }
                     else
-                        chkd.mapSettingsWindow.SetWinText("Map Settings");
+                        chkd.mapSettingsWindow->SetWinText("Map Settings");
                 }
                 else
-                    chkd.mapSettingsWindow.SetWinText("Map Settings");
+                    chkd.mapSettingsWindow->SetWinText("Map Settings");
                 return 0;
             }
             else
-                chkd.mapSettingsWindow.SetWinText("Map Settings");
+                chkd.mapSettingsWindow->SetWinText("Map Settings");
             editString.SetText("");
         }
         break;

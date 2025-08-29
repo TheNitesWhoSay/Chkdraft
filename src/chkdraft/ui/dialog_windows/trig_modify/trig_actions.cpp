@@ -170,7 +170,7 @@ void TrigActionsWindow::CndActEnableToggled(u8 actionNum)
             editAction.toggleDisabled();
 
             RefreshWindow(trigIndex);
-            chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
+            chkd.trigEditorWindow->triggersWindow.RefreshWindow(false);
 
             gridActions.SetEnabledCheck(actionNum, !editAction->isDisabled());
         }
@@ -373,7 +373,7 @@ bool TrigActionsWindow::TransformAction(std::size_t triggerIndex, std::size_t ac
 void TrigActionsWindow::RefreshActionAreas()
 {
     RefreshWindow(trigIndex);
-    chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
+    chkd.trigEditorWindow->triggersWindow.RefreshWindow(false);
 }
 
 void TrigActionsWindow::UpdateActionName(u8 actionNum, const std::string & newText, bool refreshImmediately)
@@ -645,7 +645,7 @@ void TrigActionsWindow::DrawSelectedAction()
             u8 actionNum = (u8)focusedY;
             TextTrigGenerator ttg(chkd.profiles().triggers.useAddressesForMemory, chkd.profiles().triggers.deathTableStart, true);
             ttg.loadScenario((Scenario &)*CM);
-            ChkdString str = chkd.trigEditorWindow.triggersWindow.GetActionString(actionNum, trig, ttg);
+            ChkdString str = chkd.trigEditorWindow->triggersWindow.GetActionString(actionNum, trig, ttg);
             ttg.clearScenario();
 
             UINT width = 0, height = 0;
@@ -1119,7 +1119,7 @@ void TrigActionsWindow::ButtonEditString()
             }
 
             if ( result > 0 )
-                chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
+                chkd.trigEditorWindow->triggersWindow.RefreshWindow(false);
 
             SetFocus(gridActions.getHandle());
         }
@@ -1169,7 +1169,7 @@ void TrigActionsWindow::ButtonEditSound()
             }
 
             if ( result > 0 )
-                chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
+                chkd.trigEditorWindow->triggersWindow.RefreshWindow(false);
 
             SetFocus(gridActions.getHandle());
         }
@@ -1347,7 +1347,7 @@ void TrigActionsWindow::NewSelection(u16 gridItemX, u16 gridItemY)
 
     }
     DoSize();
-    chkd.trigEditorWindow.triggersWindow.trigModifyWindow.RedrawThis(); // TODO: This fixes some drawing issues but intensifies flashing & should be replaced
+    chkd.trigEditorWindow->triggersWindow.trigModifyWindow.RedrawThis(); // TODO: This fixes some drawing issues but intensifies flashing & should be replaced
 }
 
 void TrigActionsWindow::NewSuggestion(std::string & str)

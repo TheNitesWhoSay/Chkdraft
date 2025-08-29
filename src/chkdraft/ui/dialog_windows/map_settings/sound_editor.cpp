@@ -208,15 +208,15 @@ void SoundEditorWindow::UpdateWindowText()
 
         if ( soundEntry.soundIndex == u16_max )
         {
-            chkd.mapSettingsWindow.SetWinText("Map Settings - [Sound #null, String #" + std::to_string(soundStringId) + soundStatusString + "]");
+            chkd.mapSettingsWindow->SetWinText("Map Settings - [Sound #null, String #" + std::to_string(soundStringId) + soundStatusString + "]");
         }
         else
         {
-            chkd.mapSettingsWindow.SetWinText("Map Settings - [Sound #" + std::to_string(soundEntry.soundIndex) + ", String #" + std::to_string(soundStringId) + soundStatusString + "]");
+            chkd.mapSettingsWindow->SetWinText("Map Settings - [Sound #" + std::to_string(soundEntry.soundIndex) + ", String #" + std::to_string(soundStringId) + soundStatusString + "]");
         }
     }
     else
-        chkd.mapSettingsWindow.SetWinText("Map Settings");
+        chkd.mapSettingsWindow->SetWinText("Map Settings");
 }
 
 void SoundEditorWindow::UpdateCustomStringList()

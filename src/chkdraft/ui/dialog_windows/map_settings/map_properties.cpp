@@ -400,7 +400,7 @@ LRESULT MapPropertiesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
             if ( wParam == TRUE )
             {
                 RefreshWindow();
-                chkd.mapSettingsWindow.SetWinText("Map Settings");
+                chkd.mapSettingsWindow->SetWinText("Map Settings");
             }
             else if ( !refreshing )
             {

@@ -159,7 +159,7 @@ void BriefingTrigActionsWindow::CndActEnableToggled(u8 actionNum)
             editAction.toggleDisabled();
 
             RefreshWindow(briefingTrigIndex);
-            chkd.briefingTrigEditorWindow.briefingTriggersWindow.RefreshWindow(false);
+            chkd.briefingTrigEditorWindow->briefingTriggersWindow.RefreshWindow(false);
 
             gridActions.SetEnabledCheck(actionNum, !editAction->isDisabled());
         }
@@ -339,7 +339,7 @@ bool BriefingTrigActionsWindow::TransformAction(std::size_t briefingTriggerIndex
 void BriefingTrigActionsWindow::RefreshActionAreas()
 {
     RefreshWindow(briefingTrigIndex);
-    chkd.briefingTrigEditorWindow.briefingTriggersWindow.RefreshWindow(false);
+    chkd.briefingTrigEditorWindow->briefingTriggersWindow.RefreshWindow(false);
 }
 
 void BriefingTrigActionsWindow::UpdateActionName(u8 actionNum, const std::string & newText, bool refreshImmediately)
@@ -551,7 +551,7 @@ void BriefingTrigActionsWindow::DrawSelectedAction()
             u8 actionNum = (u8)focusedY;
             BriefingTextTrigGenerator ttg {true};
             ttg.loadScenario((Scenario &)*CM);
-            ChkdString str = chkd.briefingTrigEditorWindow.briefingTriggersWindow.GetActionString(actionNum, briefingTrig, ttg);
+            ChkdString str = chkd.briefingTrigEditorWindow->briefingTriggersWindow.GetActionString(actionNum, briefingTrig, ttg);
             ttg.clearScenario();
 
             UINT width = 0, height = 0;
@@ -884,7 +884,7 @@ void BriefingTrigActionsWindow::ButtonEditString()
             }
 
             if ( result > 0 )
-                chkd.briefingTrigEditorWindow.briefingTriggersWindow.RefreshWindow(false);
+                chkd.briefingTrigEditorWindow->briefingTriggersWindow.RefreshWindow(false);
 
             SetFocus(gridActions.getHandle());
         }
@@ -934,7 +934,7 @@ void BriefingTrigActionsWindow::ButtonEditSound()
             }
 
             if ( result > 0 )
-                chkd.briefingTrigEditorWindow.briefingTriggersWindow.RefreshWindow(false);
+                chkd.briefingTrigEditorWindow->briefingTriggersWindow.RefreshWindow(false);
 
             SetFocus(gridActions.getHandle());
         }
@@ -1056,7 +1056,7 @@ void BriefingTrigActionsWindow::NewSelection(u16 gridItemX, u16 gridItemY)
 
     }
     DoSize();
-    chkd.briefingTrigEditorWindow.briefingTriggersWindow.briefingTrigModifyWindow.RedrawThis(); // TODO: This fixes some drawing issues but intensifies flashing & should be replaced
+    chkd.briefingTrigEditorWindow->briefingTriggersWindow.briefingTrigModifyWindow.RedrawThis(); // TODO: This fixes some drawing issues but intensifies flashing & should be replaced
 }
 
 void BriefingTrigActionsWindow::NewSuggestion(std::string & str)

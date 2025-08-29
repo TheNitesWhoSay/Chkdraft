@@ -143,7 +143,22 @@ void Chkdraft::PreLoadTest()
 
 Chkdraft::Chkdraft() : profiles(), currDialog(NULL), editFocused(false), logFile(nullptr, nullptr, logger.getLogLevel())
 {
-    
+    unitWindow.emplace();
+    spriteWindow.emplace();
+    actorWindow.emplace();
+    locationWindow.emplace();
+    terrainPalWindow.emplace();
+    tilePropWindow.emplace();
+    textTrigWindow.emplace();
+    briefingTextTrigWindow.emplace();
+    mapSettingsWindow.emplace();
+    trigEditorWindow.emplace();
+    briefingTrigEditorWindow.emplace();
+    dimensionsWindow.emplace();
+    changePasswordWindow.emplace();
+    enterPasswordWindow.emplace();
+    aboutWindow.emplace();
+    editProfilesWindow.emplace();
 }
 
 Chkdraft::~Chkdraft()
@@ -364,11 +379,11 @@ void Chkdraft::OpenFindProfileDialog()
 
 void Chkdraft::OpenEditProfilesDialog()
 {
-    if ( editProfilesWindow.getHandle() == NULL )
-        editProfilesWindow.CreateThis(getHandle());
+    if ( editProfilesWindow->getHandle() == NULL )
+        editProfilesWindow->CreateThis(getHandle());
 
-    if ( editProfilesWindow.getHandle() != NULL )
-        ShowWindow(editProfilesWindow.getHandle(), SW_SHOW);
+    if ( editProfilesWindow->getHandle() != NULL )
+        ShowWindow(editProfilesWindow->getHandle(), SW_SHOW);
 }
 
 void Chkdraft::UpdateLogLevelCheckmarks(LogLevel logLevel)
@@ -412,85 +427,85 @@ bool Chkdraft::DlgKeyListener(HWND hWnd, UINT & msg, WPARAM wParam, LPARAM lPara
                 switch ( wParam )
                 {
                     case VK_TAB:
-                        if ( trigEditorWindow.triggersWindow.trigModifyWindow.conditionsWindow.getHandle() != NULL &&
-                            (GetParent(GetParent(hWnd)) == trigEditorWindow.triggersWindow.trigModifyWindow.conditionsWindow.getHandle() ||
-                             GetParent(hWnd) == trigEditorWindow.triggersWindow.trigModifyWindow.conditionsWindow.getHandle()) )
+                        if ( trigEditorWindow->triggersWindow.trigModifyWindow.conditionsWindow.getHandle() != NULL &&
+                            (GetParent(GetParent(hWnd)) == trigEditorWindow->triggersWindow.trigModifyWindow.conditionsWindow.getHandle() ||
+                             GetParent(hWnd) == trigEditorWindow->triggersWindow.trigModifyWindow.conditionsWindow.getHandle()) )
                         {
                             msg = WM_NULL; // Dirty fix to prevent tabs from being focused
-                            trigEditorWindow.triggersWindow.trigModifyWindow.conditionsWindow.ProcessKeyDown(wParam, lParam);
+                            trigEditorWindow->triggersWindow.trigModifyWindow.conditionsWindow.ProcessKeyDown(wParam, lParam);
                             return true;
                         }
-                        else if ( trigEditorWindow.triggersWindow.trigModifyWindow.actionsWindow.getHandle() != NULL &&
-                            (GetParent(GetParent(hWnd)) == trigEditorWindow.triggersWindow.trigModifyWindow.actionsWindow.getHandle() ||
-                            GetParent(hWnd) == trigEditorWindow.triggersWindow.trigModifyWindow.actionsWindow.getHandle()) )
+                        else if ( trigEditorWindow->triggersWindow.trigModifyWindow.actionsWindow.getHandle() != NULL &&
+                            (GetParent(GetParent(hWnd)) == trigEditorWindow->triggersWindow.trigModifyWindow.actionsWindow.getHandle() ||
+                            GetParent(hWnd) == trigEditorWindow->triggersWindow.trigModifyWindow.actionsWindow.getHandle()) )
                         {
                             msg = WM_NULL; // Dirty fix to prevent tabs from being focused
-                            trigEditorWindow.triggersWindow.trigModifyWindow.actionsWindow.ProcessKeyDown(wParam, lParam);
+                            trigEditorWindow->triggersWindow.trigModifyWindow.actionsWindow.ProcessKeyDown(wParam, lParam);
                             return true;
                         }
-                        else if ( briefingTrigEditorWindow.briefingTriggersWindow.briefingTrigModifyWindow.briefingActionsWindow.getHandle() != NULL &&
-                            (GetParent(GetParent(hWnd)) == briefingTrigEditorWindow.briefingTriggersWindow.briefingTrigModifyWindow.briefingActionsWindow.getHandle() ||
-                            GetParent(hWnd) == briefingTrigEditorWindow.briefingTriggersWindow.briefingTrigModifyWindow.briefingActionsWindow.getHandle()) )
+                        else if ( briefingTrigEditorWindow->briefingTriggersWindow.briefingTrigModifyWindow.briefingActionsWindow.getHandle() != NULL &&
+                            (GetParent(GetParent(hWnd)) == briefingTrigEditorWindow->briefingTriggersWindow.briefingTrigModifyWindow.briefingActionsWindow.getHandle() ||
+                            GetParent(hWnd) == briefingTrigEditorWindow->briefingTriggersWindow.briefingTrigModifyWindow.briefingActionsWindow.getHandle()) )
                         {
                             msg = WM_NULL; // Dirty fix to prevent tabs from being focused
-                            briefingTrigEditorWindow.briefingTriggersWindow.briefingTrigModifyWindow.briefingActionsWindow.ProcessKeyDown(wParam, lParam);
+                            briefingTrigEditorWindow->briefingTriggersWindow.briefingTrigModifyWindow.briefingActionsWindow.ProcessKeyDown(wParam, lParam);
                             return true;
                         }
                         break;
                     case VK_RETURN:
-                        if ( GetParent(GetParent(hWnd)) == trigEditorWindow.triggersWindow.trigModifyWindow.conditionsWindow.getHandle() ||
-                             GetParent(hWnd) == trigEditorWindow.triggersWindow.trigModifyWindow.conditionsWindow.getHandle() )
+                        if ( GetParent(GetParent(hWnd)) == trigEditorWindow->triggersWindow.trigModifyWindow.conditionsWindow.getHandle() ||
+                             GetParent(hWnd) == trigEditorWindow->triggersWindow.trigModifyWindow.conditionsWindow.getHandle() )
                         {
-                            trigEditorWindow.triggersWindow.trigModifyWindow.conditionsWindow.ProcessKeyDown(wParam, lParam);
+                            trigEditorWindow->triggersWindow.trigModifyWindow.conditionsWindow.ProcessKeyDown(wParam, lParam);
                             return true;
                         }
-                        else if ( GetParent(GetParent(hWnd)) == trigEditorWindow.triggersWindow.trigModifyWindow.actionsWindow.getHandle() ||
-                            GetParent(hWnd) == trigEditorWindow.triggersWindow.trigModifyWindow.actionsWindow.getHandle() )
+                        else if ( GetParent(GetParent(hWnd)) == trigEditorWindow->triggersWindow.trigModifyWindow.actionsWindow.getHandle() ||
+                            GetParent(hWnd) == trigEditorWindow->triggersWindow.trigModifyWindow.actionsWindow.getHandle() )
                         {
-                            trigEditorWindow.triggersWindow.trigModifyWindow.actionsWindow.ProcessKeyDown(wParam, lParam);
+                            trigEditorWindow->triggersWindow.trigModifyWindow.actionsWindow.ProcessKeyDown(wParam, lParam);
                             return true;
                         }
-                        else if ( GetParent(GetParent(hWnd)) == briefingTrigEditorWindow.briefingTriggersWindow.briefingTrigModifyWindow.briefingActionsWindow.getHandle() ||
-                            GetParent(hWnd) == briefingTrigEditorWindow.briefingTriggersWindow.briefingTrigModifyWindow.briefingActionsWindow.getHandle() )
+                        else if ( GetParent(GetParent(hWnd)) == briefingTrigEditorWindow->briefingTriggersWindow.briefingTrigModifyWindow.briefingActionsWindow.getHandle() ||
+                            GetParent(hWnd) == briefingTrigEditorWindow->briefingTriggersWindow.briefingTrigModifyWindow.briefingActionsWindow.getHandle() )
                         {
-                            briefingTrigEditorWindow.briefingTriggersWindow.briefingTrigModifyWindow.briefingActionsWindow.ProcessKeyDown(wParam, lParam);
+                            briefingTrigEditorWindow->briefingTriggersWindow.briefingTrigModifyWindow.briefingActionsWindow.ProcessKeyDown(wParam, lParam);
                             return true;
                         }
-                        if ( GetParent(hWnd) == unitWindow.getHandle() )
+                        if ( GetParent(hWnd) == unitWindow->getHandle() )
                         {
-                            unitWindow.DestroyThis();
+                            unitWindow->DestroyThis();
                             return true;
                         }
-                        else if ( GetParent(hWnd) == spriteWindow.getHandle() )
+                        else if ( GetParent(hWnd) == spriteWindow->getHandle() )
                         {
-                            spriteWindow.DestroyThis();
+                            spriteWindow->DestroyThis();
                             return true;
                         }
-                        else if ( GetParent(hWnd) == actorWindow.getHandle() )
+                        else if ( GetParent(hWnd) == actorWindow->getHandle() )
                         {
-                            actorWindow.DestroyThis();
+                            actorWindow->DestroyThis();
                             return true;
                         }
-                        else if ( GetParent(hWnd) == locationWindow.getHandle() )
+                        else if ( GetParent(hWnd) == locationWindow->getHandle() )
                         {
-                            locationWindow.DestroyThis();
+                            locationWindow->DestroyThis();
                             return true;
                         }
-                        else if ( GetParent(hWnd) == enterPasswordWindow.getHandle())
+                        else if ( GetParent(hWnd) == enterPasswordWindow->getHandle())
                         {
-                            enterPasswordWindow.ButtonLogin();
+                            enterPasswordWindow->ButtonLogin();
                             return true;
                         }
                         break;
                     case VK_DELETE:
-                        if ( GetParent(hWnd) == unitWindow.getHandle() )
+                        if ( GetParent(hWnd) == unitWindow->getHandle() )
                         {
-                            SendMessage(unitWindow.getHandle(), WM_COMMAND, MAKEWPARAM(IDC_BUTTON_DELETE, 0), 0);
+                            SendMessage(unitWindow->getHandle(), WM_COMMAND, MAKEWPARAM(IDC_BUTTON_DELETE, 0), 0);
                             return true;
                         }
-                        else if ( GetParent(hWnd) == spriteWindow.getHandle() )
+                        else if ( GetParent(hWnd) == spriteWindow->getHandle() )
                         {
-                            SendMessage(spriteWindow.getHandle(), WM_COMMAND, MAKEWPARAM(IDC_BUTTON_DELETE, 0), 0);
+                            SendMessage(spriteWindow->getHandle(), WM_COMMAND, MAKEWPARAM(IDC_BUTTON_DELETE, 0), 0);
                             return true;
                         }
                         break;
@@ -516,11 +531,11 @@ bool Chkdraft::DlgKeyListener(HWND hWnd, UINT & msg, WPARAM wParam, LPARAM lPara
                         break;
                     case 'X': case 'C': case 'V':
                         if ( GetKeyState(VK_CONTROL) & 0x8000 && (
-                            GetParent(hWnd) == unitWindow.getHandle() ||
-                            GetParent(hWnd) == spriteWindow.getHandle() ||
-                            GetParent(hWnd) == locationWindow.getHandle() ||
-                            GetParent(hWnd) == terrainPalWindow.getHandle() ||
-                            GetParent(hWnd) == tilePropWindow.getHandle() ) )
+                            GetParent(hWnd) == unitWindow->getHandle() ||
+                            GetParent(hWnd) == spriteWindow->getHandle() ||
+                            GetParent(hWnd) == locationWindow->getHandle() ||
+                            GetParent(hWnd) == terrainPalWindow->getHandle() ||
+                            GetParent(hWnd) == tilePropWindow->getHandle() ) )
                         {
                             KeyListener(hWnd, msg, wParam, lParam);
                             return true;
@@ -840,17 +855,17 @@ LRESULT Chkdraft::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     case ID_CUTCOPYPASTE_FILLSIMILARTILES: maps.clipboard.toggleFillSimilarTiles(); break;
 
         // Scenario
-    case ID_TRIGGERS_CLASSICMAPTRIGGERS: trigEditorWindow.CreateThis(getHandle()); break;
-    case ID_TRIGGERS_CLASSICMISSIONBRIEFING: briefingTrigEditorWindow.CreateThis(getHandle()); break;
-    case ID_SCENARIO_MAPDIMENSIONS: dimensionsWindow.CreateThis(getHandle()); break;
+    case ID_TRIGGERS_CLASSICMAPTRIGGERS: trigEditorWindow->CreateThis(getHandle()); break;
+    case ID_TRIGGERS_CLASSICMISSIONBRIEFING: briefingTrigEditorWindow->CreateThis(getHandle()); break;
+    case ID_SCENARIO_MAPDIMENSIONS: dimensionsWindow->CreateThis(getHandle()); break;
     case ID_SCENARIO_DESCRIPTION: case ID_SCENARIO_FORCES: case ID_SCENARIO_UNITSETTINGS:
     case ID_SCENARIO_UPGRADESETTINGS: case ID_SCENARIO_TECHSETTINGS: case ID_SCENARIO_STRINGS:
     case ID_SCENARIO_SOUNDEDITOR: OpenMapSettings(LOWORD(wParam)); break;
 
         // Tools
-    case ID_TRIGGERS_TRIGGEREDITOR: textTrigWindow.CreateThis(getHandle()); break;
-    case ID_TRIGGERS_MISSIONBRIEFINGEDITOR: briefingTextTrigWindow.CreateThis(getHandle()); break;
-    case ID_TOOLS_PASSWORD: ifmapopen(changePasswordWindow.CreateThis(getHandle())) break;
+    case ID_TRIGGERS_TRIGGEREDITOR: textTrigWindow->CreateThis(getHandle()); break;
+    case ID_TRIGGERS_MISSIONBRIEFINGEDITOR: briefingTextTrigWindow->CreateThis(getHandle()); break;
+    case ID_TOOLS_PASSWORD: ifmapopen(changePasswordWindow->CreateThis(getHandle())) break;
     case ID_TOOLS_MPQRECOMPILER: runMpqRecompiler(); break;
     case ID_SCRIPTS_REPAIRSOUNDS: repairSounds(); break;
     case ID_SCRIPTS_REPAIRSTRINGS_MIN: repairStrings(false); break;
@@ -863,7 +878,7 @@ LRESULT Chkdraft::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     case ID_WINDOW_CLOSE: maps.destroyActive(); break;
 
         // Help
-    case ID_HELP_ABOUT: aboutWindow.CreateThis(getHandle()); break;
+    case ID_HELP_ABOUT: aboutWindow->CreateThis(getHandle()); break;
     case ID_HELP_STARCRAFT_WIKI: OpenWebPage("http://www.staredit.net/wiki/index.php?title=Main_Page"); break;
     case ID_HELP_SUPPORT_FORUM: OpenWebPage("http://www.staredit.net/forums/"); break;
     case ID_HELP_CHKDRAFTGITHUB: OpenWebPage("https://github.com/TheNitesWhoSay/Chkdraft/"); break;
@@ -984,46 +999,46 @@ bool Chkdraft::CreateSubWindows()
 
 void Chkdraft::MinimizeDialogs()
 {
-    ShowWindow(unitWindow.getHandle(), SW_HIDE);
-    ShowWindow(spriteWindow.getHandle(), SW_HIDE);
-    ShowWindow(actorWindow.getHandle(), SW_HIDE);
-    ShowWindow(locationWindow.getHandle(), SW_HIDE);
-    ShowWindow(terrainPalWindow.getHandle(), SW_HIDE);
-    ShowWindow(mapSettingsWindow.getHandle(), SW_HIDE);
-    ShowWindow(trigEditorWindow.getHandle(), SW_HIDE);
-    ShowWindow(briefingTrigEditorWindow.getHandle(), SW_HIDE);
+    ShowWindow(unitWindow->getHandle(), SW_HIDE);
+    ShowWindow(spriteWindow->getHandle(), SW_HIDE);
+    ShowWindow(actorWindow->getHandle(), SW_HIDE);
+    ShowWindow(locationWindow->getHandle(), SW_HIDE);
+    ShowWindow(terrainPalWindow->getHandle(), SW_HIDE);
+    ShowWindow(mapSettingsWindow->getHandle(), SW_HIDE);
+    ShowWindow(trigEditorWindow->getHandle(), SW_HIDE);
+    ShowWindow(briefingTrigEditorWindow->getHandle(), SW_HIDE);
 }
 
 void Chkdraft::RestoreDialogs()
 {
-    ShowWindow(unitWindow.getHandle(), SW_SHOW);
-    ShowWindow(spriteWindow.getHandle(), SW_SHOW);
-    ShowWindow(actorWindow.getHandle(), SW_SHOW);
-    ShowWindow(locationWindow.getHandle(), SW_SHOW);
-    ShowWindow(terrainPalWindow.getHandle(), SW_SHOW);
-    ShowWindow(mapSettingsWindow.getHandle(), SW_SHOW);
-    ShowWindow(trigEditorWindow.getHandle(), SW_SHOW);
-    ShowWindow(briefingTrigEditorWindow.getHandle(), SW_SHOW);
+    ShowWindow(unitWindow->getHandle(), SW_SHOW);
+    ShowWindow(spriteWindow->getHandle(), SW_SHOW);
+    ShowWindow(actorWindow->getHandle(), SW_SHOW);
+    ShowWindow(locationWindow->getHandle(), SW_SHOW);
+    ShowWindow(terrainPalWindow->getHandle(), SW_SHOW);
+    ShowWindow(mapSettingsWindow->getHandle(), SW_SHOW);
+    ShowWindow(trigEditorWindow->getHandle(), SW_SHOW);
+    ShowWindow(briefingTrigEditorWindow->getHandle(), SW_SHOW);
 }
 
 void Chkdraft::OpenMapSettings(u16 menuId)
 {
-    if ( mapSettingsWindow.getHandle() == NULL )
-        mapSettingsWindow.CreateThis(getHandle());
+    if ( mapSettingsWindow->getHandle() == NULL )
+        mapSettingsWindow->CreateThis(getHandle());
                                     
-    if ( mapSettingsWindow.getHandle() != NULL )
+    if ( mapSettingsWindow->getHandle() != NULL )
     {
         switch ( menuId )
         {
-            case ID_SCENARIO_DESCRIPTION: mapSettingsWindow.ChangeTab(MapSettingsWindow::Tab::MapProperties); break;
-            case ID_SCENARIO_FORCES: mapSettingsWindow.ChangeTab(MapSettingsWindow::Tab::Forces); break;
-            case ID_SCENARIO_UNITSETTINGS: mapSettingsWindow.ChangeTab(MapSettingsWindow::Tab::UnitSettings); break;
-            case ID_SCENARIO_UPGRADESETTINGS: mapSettingsWindow.ChangeTab(MapSettingsWindow::Tab::UpgradeSettings); break;
-            case ID_SCENARIO_TECHSETTINGS: mapSettingsWindow.ChangeTab(MapSettingsWindow::Tab::TechSettings); break;
-            case ID_SCENARIO_STRINGS: mapSettingsWindow.ChangeTab(MapSettingsWindow::Tab::StringEditor); break;
-            case ID_SCENARIO_SOUNDEDITOR: mapSettingsWindow.ChangeTab(MapSettingsWindow::Tab::SoundEditor); break;
+            case ID_SCENARIO_DESCRIPTION: mapSettingsWindow->ChangeTab(MapSettingsWindow::Tab::MapProperties); break;
+            case ID_SCENARIO_FORCES: mapSettingsWindow->ChangeTab(MapSettingsWindow::Tab::Forces); break;
+            case ID_SCENARIO_UNITSETTINGS: mapSettingsWindow->ChangeTab(MapSettingsWindow::Tab::UnitSettings); break;
+            case ID_SCENARIO_UPGRADESETTINGS: mapSettingsWindow->ChangeTab(MapSettingsWindow::Tab::UpgradeSettings); break;
+            case ID_SCENARIO_TECHSETTINGS: mapSettingsWindow->ChangeTab(MapSettingsWindow::Tab::TechSettings); break;
+            case ID_SCENARIO_STRINGS: mapSettingsWindow->ChangeTab(MapSettingsWindow::Tab::StringEditor); break;
+            case ID_SCENARIO_SOUNDEDITOR: mapSettingsWindow->ChangeTab(MapSettingsWindow::Tab::SoundEditor); break;
         }
-        ShowWindow(mapSettingsWindow.getHandle(), SW_SHOW);
+        ShowWindow(mapSettingsWindow->getHandle(), SW_SHOW);
     }
 }
 
@@ -1065,8 +1080,8 @@ void Chkdraft::ComboSelChanged(HWND hCombo, u16 comboId)
             maps.ChangeSubLayer(TerrainSubLayer::Rectangular);
         else if ( itemIndex == 3 ) // Tileset indexed
         {
-            terrainPalWindow.CreateThis(getHandle());
-            ShowWindow(terrainPalWindow.getHandle(), SW_SHOW);
+            terrainPalWindow->CreateThis(getHandle());
+            ShowWindow(terrainPalWindow->getHandle(), SW_SHOW);
             maps.ChangeSubLayer(TerrainSubLayer::Rectangular);
         }
         else if ( itemIndex == 4 ) // Cut/Copy/Paste
