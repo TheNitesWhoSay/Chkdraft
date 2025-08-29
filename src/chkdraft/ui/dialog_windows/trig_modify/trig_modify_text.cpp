@@ -166,7 +166,7 @@ bool TrigModifyTextWindow::CompileEditText(std::string & newText)
         {
             // All data for compilation is gathered on-the-fly, no need to check for updates
             TextTrigCompiler compiler(chkd.profiles().triggers.useAddressesForMemory, chkd.profiles().triggers.deathTableStart);
-            if ( compiler.compileTrigger(newText, (Scenario &)*CM, chkd.scData, trigIndex) )
+            if ( compiler.compileTrigger(newText, (Scenario &)*CM, *chkd.scData, trigIndex) )
                 return true;
             else
                 WinLib::Message("Compilation failed.", "Error!");

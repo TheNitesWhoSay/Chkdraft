@@ -106,7 +106,7 @@ bool MapPropertiesWindow::CreateThis(HWND hParent, u64 windowId)
         dropMapTileset.CreateThis(hMapProperties, 5, 205, 185, 400, false, false, Id::CB_MAPTILESET, tilesetNames);
         textNewMapTerrain.CreateThis(hMapProperties, 195, 185, 100, 20, "[New] Terrain", 0);
 
-        const auto & tileset = chkd.scData.terrain.get(Sc::Terrain::Tileset(currTileset));
+        const auto & tileset = chkd.scData->terrain.get(Sc::Terrain::Tileset(currTileset));
         dropNewMapTerrain.CreateThis(hMapProperties, 195, 205, 185, 400, false, false, Id::CB_NEWMAPTERRAIN, {});
         for ( const auto & brushType : tileset.brushes )
             dropNewMapTerrain.AddItem(std::string(brushType.name), brushType.index);
@@ -198,7 +198,7 @@ void MapPropertiesWindow::RefreshWindow()
         dropMapTileset.ClearEditSel();
 
         std::vector<std::string> initTerrains {};
-        const auto & tileset = chkd.scData.terrain.get(Sc::Terrain::Tileset(tilesetIndex));
+        const auto & tileset = chkd.scData->terrain.get(Sc::Terrain::Tileset(tilesetIndex));
         dropNewMapTerrain.ClearItems();
         for ( const auto & brushType : tileset.brushes )
             dropNewMapTerrain.AddItem(std::string(brushType.name), brushType.index);
@@ -302,7 +302,7 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             {
                 while ( SendMessage(hMapNewTerrain, CB_DELETESTRING, 0, 0) != CB_ERR );
 
-                const auto & tileset = chkd.scData.terrain.get(Sc::Terrain::Tileset(currTileset));
+                const auto & tileset = chkd.scData->terrain.get(Sc::Terrain::Tileset(currTileset));
                 for ( const auto & brushType : tileset.brushes )
                     SendMessage(hMapNewTerrain, CB_ADDSTRING, 0, (LPARAM)icux::toUistring(std::string(brushType.name)).c_str());
 

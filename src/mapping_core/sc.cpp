@@ -144,6 +144,8 @@ ArchiveClusterPtr Sc::DataFile::Browser::openScDataFiles(
         if ( !expectedFilePath.empty() && findFile(expectedFilePath) )
         {
             dataFile = openDataFile(expectedFilePath, dataFileDescriptor);
+            if ( dataFile && dataFileDescriptor.isCasc() )
+                includesRemastered = true;
         }
         else if ( !skipStarCraftBrowse && expectedInScDirectory &&
             (foundStarCraftDirectory || (foundStarCraftDirectory = findStarCraftDirectory(scDirectory, foundRemastered, declinedScBrowser, expectedStarCraftDirectory, starCraftBrowser)))

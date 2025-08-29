@@ -2,7 +2,7 @@
 #include <chkdraft/ui/main_windows/gui_map.h>
 
 GuiMapGraphics::GuiMapGraphics(Sc::Data & data, GuiMap & guiMap)
-    : MapGraphics(data, static_cast<Scenario &>(guiMap), guiMap.animations), guiMap(guiMap)
+    : MapGraphics(data, static_cast<Scenario &>(guiMap), guiMap.animations.value()), guiMap(guiMap)
 {
 
 }

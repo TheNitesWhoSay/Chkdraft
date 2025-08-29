@@ -88,8 +88,8 @@ ChkdPalette & Graphics::getStaticPalette()
 
 void Graphics::updatePalette()
 {
-    palette = chkd.scData.terrain.getColorPalette(map.getTileset());
-    staticPalette = chkd.scData.terrain.getStaticColorPalette(map.getTileset());
+    palette = chkd.scData->terrain.getColorPalette(map.getTileset());
+    staticPalette = chkd.scData->terrain.getStaticColorPalette(map.getTileset());
 }
 
 void Graphics::DrawMap(const WinLib::DeviceContext & dc, u16 bitWidth, u16 bitHeight, s32 screenLeft, s32 screenTop, ChkdBitmap & bitmap, bool showAnywhere)
@@ -141,11 +141,11 @@ void Graphics::DrawStars(ChkdBitmap & bitmap)
     {
         for ( s32 starOriginLeft = 0; starOriginLeft < this->screenWidth; starOriginLeft += Sc::Spk::parallaxWidth )
         {
-            for ( int layerIndex = int(chkd.scData.spk.layerStars.size())-1; layerIndex >= 0; --layerIndex ) // There are five separate layers of stars
+            for ( int layerIndex = int(chkd.scData->spk.layerStars.size())-1; layerIndex >= 0; --layerIndex ) // There are five separate layers of stars
             {
                 s32 xOffset = (-1 * Sc::Spk::scrollFactors[layerIndex] * this->screenLeft) % (Sc::Spk::parallaxWidth*256);
                 s32 yOffset = (-1 * Sc::Spk::scrollFactors[layerIndex] * this->screenTop) % (Sc::Spk::parllaxHeight*256);
-                auto & layer = chkd.scData.spk.layerStars[layerIndex];
+                auto & layer = chkd.scData->spk.layerStars[layerIndex];
                 for ( auto & star : layer )
                 {
                     s32 width = (s32)star.bitmap->width;
@@ -218,7 +218,7 @@ void Graphics::DrawStars(ChkdBitmap & bitmap)
 void Graphics::DrawTerrain(ChkdBitmap & bitmap)
 {
     Sc::Terrain::Tileset tileset = map.getTileset();
-    const Sc::Terrain::Tiles & tiles = chkd.scData.terrain.get(tileset);
+    const Sc::Terrain::Tiles & tiles = chkd.scData->terrain.get(tileset);
     u32 maxRowY = screenHeight > (s32)mapHeight*32 || (screenTop+screenHeight)/32+1 > mapHeight ? mapHeight : (screenTop+screenHeight)/32+1;
     u32 maxRowX = screenWidth > (s32)mapWidth*32 || (screenLeft+screenWidth)/32+1 > mapWidth ? mapWidth : (screenLeft+screenWidth)/32+1;
 
@@ -252,7 +252,7 @@ void Graphics::DrawTileElevations(ChkdBitmap & bitmap)
     BITMAPINFO bmi = GetBMI(32, 32);
     
     Sc::Terrain::Tileset tileset = map.getTileset();
-    const Sc::Terrain::Tiles & tiles = chkd.scData.terrain.get(tileset);
+    const Sc::Terrain::Tiles & tiles = chkd.scData->terrain.get(tileset);
 
     for ( yc=screenTop/32; yc<maxRowY; yc++ )
     {
@@ -464,7 +464,7 @@ void Graphics::DrawFog(ChkdBitmap & bitmap)
 
     u8 currPlayerMask = u8Bits[currPlayer];
     Sc::Terrain::Tileset tileset = map.getTileset();
-    const Sc::Terrain::Tiles & tiles = chkd.scData.terrain.get(tileset);
+    const Sc::Terrain::Tiles & tiles = chkd.scData->terrain.get(tileset);
     u32 maxRowY = screenHeight > (s32)mapHeight*32 || (screenTop+screenHeight)/32+1 > mapHeight ? mapHeight : (screenTop+screenHeight)/32+1;
     u32 maxRowX = screenWidth > (s32)mapWidth*32 || (screenLeft+screenWidth)/32+1 > mapWidth ? mapWidth : (screenLeft+screenWidth)/32+1;
 
@@ -1197,50 +1197,50 @@ void UnitToBits(ChkdBitmap & bitmap, ChkdPalette & palette, u8 color, u16 bitWid
     };
 
     Sc::Unit::Type drawnUnitId = unitID < 228 ? (Sc::Unit::Type)unitID : Sc::Unit::Type::TerranMarine; // Extended units use ID:0's graphics (for now)
-    auto & unitDat = chkd.scData.units.getUnit(Sc::Unit::Type(drawnUnitId));
-    u16 imageId = chkd.scData.sprites.getSprite(chkd.scData.units.getFlingy(unitDat.graphics).sprite).imageFile;
-    u32 grpId = chkd.scData.sprites.getImage(imageId).grpFile;
+    auto & unitDat = chkd.scData->units.getUnit(Sc::Unit::Type(drawnUnitId));
+    u16 imageId = chkd.scData->sprites.getSprite(chkd.scData->units.getFlingy(unitDat.graphics).sprite).imageFile;
+    u32 grpId = chkd.scData->sprites.getImage(imageId).grpFile;
     u16 subUnitImageId = unitDat.subunit1 == 228 ? std::numeric_limits<u16>::max() :
-        chkd.scData.sprites.getSprite(chkd.scData.units.getFlingy(chkd.scData.units.getUnit(unitDat.subunit1).graphics).sprite).imageFile;
-    u32 subUnitGrpId = unitDat.subunit1 == 228 ? std::numeric_limits<u32>::max() : chkd.scData.sprites.getImage(subUnitImageId).grpFile;
+        chkd.scData->sprites.getSprite(chkd.scData->units.getFlingy(chkd.scData->units.getUnit(unitDat.subunit1).graphics).sprite).imageFile;
+    u32 subUnitGrpId = unitDat.subunit1 == 228 ? std::numeric_limits<u32>::max() : chkd.scData->sprites.getImage(subUnitImageId).grpFile;
 
-    if ( (size_t)grpId < chkd.scData.sprites.numGrps() )
+    if ( (size_t)grpId < chkd.scData->sprites.numGrps() )
     {
         Sc::SystemColor remapped[8];
         if ( selected )
         {
-            u32 selectionGrpId = chkd.scData.sprites.getImage(chkd.scData.sprites.getSprite(chkd.scData.units.getFlingy(chkd.scData.units.getUnit(drawnUnitId).graphics).sprite).selectionCircleImage+561).grpFile;
-            if ( selectionGrpId < chkd.scData.sprites.numGrps() )
+            u32 selectionGrpId = chkd.scData->sprites.getImage(chkd.scData->sprites.getSprite(chkd.scData->units.getFlingy(chkd.scData->units.getUnit(drawnUnitId).graphics).sprite).selectionCircleImage+561).grpFile;
+            if ( selectionGrpId < chkd.scData->sprites.numGrps() )
             {
-                const Sc::Sprite::GrpFile & selCirc = chkd.scData.sprites.getGrp(selectionGrpId).get();
-                u16 offsetY = unitYC + chkd.scData.sprites.getSprite(chkd.scData.units.getFlingy(chkd.scData.units.getUnit(drawnUnitId).graphics).sprite).selectionCircleOffset;
+                const Sc::Sprite::GrpFile & selCirc = chkd.scData->sprites.getGrp(selectionGrpId).get();
+                u16 offsetY = unitYC + chkd.scData->sprites.getSprite(chkd.scData->units.getFlingy(chkd.scData->units.getUnit(drawnUnitId).graphics).sprite).selectionCircleOffset;
                 std::memcpy(remapped, &palette[0], sizeof(remapped));
-                std::memcpy(&palette[0], &chkd.scData.tselect.bgraPalette[0], sizeof(remapped));
+                std::memcpy(&palette[0], &chkd.scData->tselect.bgraPalette[0], sizeof(remapped));
                 GrpToBits(bitmap, palette, bitWidth, bitHeight, xStart, yStart, selCirc, unitXC, offsetY, frame, 0, false);
                 std::memcpy(&palette[0], remapped, sizeof(remapped));
             }
         }
         
-        const Sc::Sprite::GrpFile & curr = chkd.scData.sprites.getGrp(grpId).get();
+        const Sc::Sprite::GrpFile & curr = chkd.scData->sprites.getGrp(grpId).get();
         std::memcpy(remapped, &palette[8], sizeof(remapped));
-        std::memcpy(&palette[8], &chkd.scData.tunit.bgraPalette[color < 16 ? 8*color : 8*(color%16)], sizeof(remapped));
-        GrpToBits(bitmap, palette, bitWidth, bitHeight, xStart, yStart, curr, unitXC, unitYC, lifted ? getLiftedFrame(drawnUnitId) : getPreferredFrame(drawnUnitId), color, chkd.scData.sprites.imageFlipped(imageId));
-        if ( (size_t)subUnitGrpId < chkd.scData.sprites.numGrps() )
+        std::memcpy(&palette[8], &chkd.scData->tunit.bgraPalette[color < 16 ? 8*color : 8*(color%16)], sizeof(remapped));
+        GrpToBits(bitmap, palette, bitWidth, bitHeight, xStart, yStart, curr, unitXC, unitYC, lifted ? getLiftedFrame(drawnUnitId) : getPreferredFrame(drawnUnitId), color, chkd.scData->sprites.imageFlipped(imageId));
+        if ( (size_t)subUnitGrpId < chkd.scData->sprites.numGrps() )
         {
-            const Sc::Sprite::GrpFile & subUnit = chkd.scData.sprites.getGrp(subUnitGrpId).get();
+            const Sc::Sprite::GrpFile & subUnit = chkd.scData->sprites.getGrp(subUnitGrpId).get();
             auto offset = getSubUnitOffset(unitDat.subunit1);
             GrpToBits(bitmap, palette, bitWidth, bitHeight, s64(xStart)+offset.x, s64(yStart)+offset.y, subUnit, unitXC, unitYC, getPreferredFrame(unitDat.subunit1), color, false);
         }
         if ( auto overlay = getOverlay(drawnUnitId) )
         {
-            const Sc::Sprite::GrpFile & overlayGrp = chkd.scData.sprites.getGrp(chkd.scData.sprites.getImage(*overlay).grpFile).get();
+            const Sc::Sprite::GrpFile & overlayGrp = chkd.scData->sprites.getGrp(chkd.scData->sprites.getImage(*overlay).grpFile).get();
             GrpToBits(bitmap, palette, bitWidth, bitHeight, xStart, yStart, overlayGrp, unitXC, unitYC, 0, color, false);
         }
         if ( attached )
         {
             if ( auto attachment = getAttachedOverlay(drawnUnitId) )
             {
-                const Sc::Sprite::GrpFile & overlayGrp = chkd.scData.sprites.getGrp(chkd.scData.sprites.getImage(*attachment).grpFile).get();
+                const Sc::Sprite::GrpFile & overlayGrp = chkd.scData->sprites.getGrp(chkd.scData->sprites.getImage(*attachment).grpFile).get();
                 GrpToBits(bitmap, palette, bitWidth, bitHeight, xStart, yStart, overlayGrp, unitXC, unitYC, getAttachedOverlayPreferredFrame(drawnUnitId), color, false);
             }
         }
@@ -1251,33 +1251,33 @@ void UnitToBits(ChkdBitmap & bitmap, ChkdPalette & palette, u8 color, u16 bitWid
 void SpriteToBits(ChkdBitmap & bitmap, ChkdPalette & palette, u8 color, u16 bitWidth, u16 bitHeight,
                    s32 xStart, s32 yStart, u16 spriteID, u16 spriteXC, u16 spriteYC, bool flipped, bool selected)
 {
-    if ( spriteID >= chkd.scData.sprites.numSprites() )
+    if ( spriteID >= chkd.scData->sprites.numSprites() )
         spriteID = 0;
 
-    const Sc::Sprite::GrpFile & curr = chkd.scData.sprites.getGrp(chkd.scData.sprites.getImage(
-        chkd.scData.sprites.getSprite(spriteID).imageFile
+    const Sc::Sprite::GrpFile & curr = chkd.scData->sprites.getGrp(chkd.scData->sprites.getImage(
+        chkd.scData->sprites.getSprite(spriteID).imageFile
     ).grpFile).get();
 
     Sc::SystemColor remapped[8];
     if ( selected )
     {
         u32 selectionGrpId = spriteID >= 130 && spriteID <= 517 ?
-            chkd.scData.sprites.getImage(chkd.scData.sprites.getSprite(spriteID).selectionCircleImage+561).grpFile :
-            chkd.scData.sprites.getImage(chkd.scData.sprites.getSprite(130).selectionCircleImage+561).grpFile;
+            chkd.scData->sprites.getImage(chkd.scData->sprites.getSprite(spriteID).selectionCircleImage+561).grpFile :
+            chkd.scData->sprites.getImage(chkd.scData->sprites.getSprite(130).selectionCircleImage+561).grpFile;
 
-        if ( selectionGrpId < chkd.scData.sprites.numGrps() )
+        if ( selectionGrpId < chkd.scData->sprites.numGrps() )
         {
-            const Sc::Sprite::GrpFile & selCirc = chkd.scData.sprites.getGrp(selectionGrpId).get();
-            u16 offsetY = spriteYC + chkd.scData.sprites.getSprite(spriteID).selectionCircleOffset;
+            const Sc::Sprite::GrpFile & selCirc = chkd.scData->sprites.getGrp(selectionGrpId).get();
+            u16 offsetY = spriteYC + chkd.scData->sprites.getSprite(spriteID).selectionCircleOffset;
             std::memcpy(remapped, &palette[0], sizeof(remapped));
-            std::memcpy(&palette[0], &chkd.scData.tselect.bgraPalette[0], sizeof(remapped));
+            std::memcpy(&palette[0], &chkd.scData->tselect.bgraPalette[0], sizeof(remapped));
             GrpToBits(bitmap, palette, bitWidth, bitHeight, xStart, yStart, selCirc, spriteXC, offsetY, 0, 0, false);
             std::memcpy(&palette[0], remapped, sizeof(remapped));
         }
     }
 
     std::memcpy(remapped, &palette[8], sizeof(remapped));
-    std::memcpy(&palette[8], &chkd.scData.tunit.bgraPalette[color < 16 ? 8*color : 8*(color%16)], sizeof(remapped));
+    std::memcpy(&palette[8], &chkd.scData->tunit.bgraPalette[color < 16 ? 8*color : 8*(color%16)], sizeof(remapped));
     GrpToBits(bitmap, palette, bitWidth, bitHeight, xStart, yStart, curr, spriteXC, spriteYC, 0, color, flipped);
     std::memcpy(&palette[8], remapped, sizeof(remapped));
 }
@@ -1518,7 +1518,7 @@ void DrawTileBuildability(const WinLib::DeviceContext & dc, ChkdPalette & palett
     u16 bottomTile = (screenTop+height+31)/32;
     
     Sc::Terrain::Tileset tileset = map.getTileset();
-    const Sc::Terrain::Tiles & tiles = chkd.scData.terrain.get(tileset);
+    const Sc::Terrain::Tiles & tiles = chkd.scData->terrain.get(tileset);
 
     for ( u16 y=topTile; y<bottomTile; ++y )
     {
@@ -1550,7 +1550,7 @@ void DrawTileSel(const WinLib::DeviceContext & dc, ChkdPalette & palette, u16 wi
     RECT rect, rcBorder;
     
     Sc::Terrain::Tileset tileset = map.getTileset();
-    const Sc::Terrain::Tiles & tiles = chkd.scData.terrain.get(tileset);
+    const Sc::Terrain::Tiles & tiles = chkd.scData->terrain.get(tileset);
 
     BITMAPINFO bmi = GetBMI(32, 32);
     rcBorder.left   = (0      + screenLeft)/32 - 1;
@@ -1706,7 +1706,7 @@ void DrawDoodadSel(const WinLib::DeviceContext & dc, u16 width, u16 height, u32 
     for ( auto index : map.view.doodads.sel() )
     {
         const auto & selDoodad = map.getDoodad(index);
-        const auto & tileset = chkd.scData.terrain.get(CM->getTileset());
+        const auto & tileset = chkd.scData->terrain.get(CM->getTileset());
         if ( auto doodadGroupIndex = tileset.getDoodadGroupIndex(selDoodad.type) )
         {
             const auto & doodad = (Sc::Terrain::DoodadCv5 &)tileset.tileGroups[size_t(*doodadGroupIndex)];
@@ -1759,7 +1759,7 @@ void DrawPasteGraphics(const WinLib::DeviceContext & dc, ChkdPalette & palette, 
     
             RECT rect, rcShade;
             Sc::Terrain::Tileset tileset = map.getTileset();
-            const Sc::Terrain::Tiles & tiles = chkd.scData.terrain.get(tileset);
+            const Sc::Terrain::Tiles & tiles = chkd.scData->terrain.get(tileset);
     
             BITMAPINFO bmi = GetBMI(32, 32);
             rcShade.left   = -32;
@@ -1834,7 +1834,7 @@ void DrawPasteGraphics(const WinLib::DeviceContext & dc, ChkdPalette & palette, 
     
         RECT rect {}, rcShade {};
         Sc::Terrain::Tileset tileset = map.getTileset();
-        const Sc::Terrain::Tiles & tiles = chkd.scData.terrain.get(tileset);
+        const Sc::Terrain::Tiles & tiles = chkd.scData->terrain.get(tileset);
     
         BITMAPINFO bmi = GetBMI(32, 32);
         rcShade.left   = -32;
@@ -1906,7 +1906,7 @@ void DrawPasteGraphics(const WinLib::DeviceContext & dc, ChkdPalette & palette, 
             BITMAPINFO bmi = GetBMI(width, height);
             dc.getDiBits(0, height, &graphicBits[0], &bmi);
 
-            const Sc::Terrain::Tiles & tiles = chkd.scData.terrain.get(map.getTileset());
+            const Sc::Terrain::Tiles & tiles = chkd.scData->terrain.get(map.getTileset());
             POINT center { paste.x, paste.y };
             for ( auto & doodad : doodads )
             {
@@ -1954,7 +1954,7 @@ void DrawPasteGraphics(const WinLib::DeviceContext & dc, ChkdPalette & palette, 
                         }
                         else // Overlay is unit index
                         {
-                            auto spriteIndex = chkd.scData.units.getFlingy(chkd.scData.units.getUnit(Sc::Unit::Type(doodad.overlayIndex)).graphics).sprite;
+                            auto spriteIndex = chkd.scData->units.getFlingy(chkd.scData->units.getUnit(Sc::Unit::Type(doodad.overlayIndex)).graphics).sprite;
                             SpriteToBits(graphicBits, palette, Chk::PlayerColor::Azure_NeutralColor, width, height,
                                 0, 0, spriteIndex, u16(xStart+tileWidth*16), u16(yStart+tileHeight*16), doodad.overlayFlipped(), false);
                         }
@@ -2002,7 +2002,7 @@ void DrawPasteGraphics(const WinLib::DeviceContext & dc, ChkdPalette & palette, 
             {
                 if ( pasteUnit.unit.type < Sc::Unit::TotalTypes )
                 {
-                    const auto & unitDat = chkd.scData.units.getUnit(pasteUnit.unit.type);
+                    const auto & unitDat = chkd.scData->units.getUnit(pasteUnit.unit.type);
                     bool isValidPlacement = map.isValidUnitPlacement(pasteUnit.unit.type, paste.x + pasteUnit.xc, paste.y + pasteUnit.yc);
                     bool isBuilding = (unitDat.flags & Sc::Unit::Flags::Building) == Sc::Unit::Flags::Building;
                     if ( isBuilding )
@@ -2309,7 +2309,7 @@ void DrawMiniMapUnits(ChkdBitmap & bitmap, u16 bitWidth, u16 bitHeight, u16 xSiz
             );
 
         if ( bitIndex < MINI_MAP_MAXBIT )
-            bitmap[bitIndex] = chkd.scData.tminimap.bgraPalette[color];
+            bitmap[bitIndex] = chkd.scData->tminimap.bgraPalette[color];
     }
     
     for ( const auto & sprite : map->sprites )
@@ -2326,7 +2326,7 @@ void DrawMiniMapUnits(ChkdBitmap & bitmap, u16 bitWidth, u16 bitHeight, u16 xSiz
                 + (u32)((sprite.xc / 32)*scale) + xOffset);
 
             if ( bitIndex < MINI_MAP_MAXBIT )
-                bitmap[bitIndex] = chkd.scData.tminimap.bgraPalette[color];
+                bitmap[bitIndex] = chkd.scData->tminimap.bgraPalette[color];
         }
     }
 }
@@ -2364,7 +2364,7 @@ void DrawMiniMap(const WinLib::DeviceContext & dc, const ChkdPalette & palette, 
         yOffset = (u16)((128-ySize*scale)/2);
     
     Sc::Terrain::Tileset tileset = map.getTileset();
-    const Sc::Terrain::Tiles & tiles = chkd.scData.terrain.get(tileset);
+    const Sc::Terrain::Tiles & tiles = chkd.scData->terrain.get(tileset);
     DrawMiniMapTiles(graphicBits, palette, 128, 128, xSize, ySize, xOffset, yOffset, scale, tiles, map);
     DrawMiniMapUnits(graphicBits, 128, 128, xSize, ySize, xOffset, yOffset, scale, tiles, map);
     if ( map.getLayer() == Layer::FogEdit )

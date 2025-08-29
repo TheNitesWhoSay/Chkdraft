@@ -148,7 +148,7 @@ bool TextTrigWindow::CompileEditText(Scenario & map)
         TextTrigCompiler compiler(chkd.profiles().triggers.useAddressesForMemory, chkd.profiles().triggers.deathTableStart);
         auto edit = CM->operator()(ActionDescriptor::CompileTextTrigs);
         CM->skipEventRendering();
-        if ( compiler.compileTriggers(*trigText, map, chkd.scData, 0, map.numTriggers()) )
+        if ( compiler.compileTriggers(*trigText, map, *chkd.scData, 0, map.numTriggers()) )
             return true;
         else
             WinLib::Message("Compilation failed.", "Error!");

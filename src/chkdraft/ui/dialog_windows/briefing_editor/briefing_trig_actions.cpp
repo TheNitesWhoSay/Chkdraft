@@ -474,7 +474,7 @@ void BriefingTrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const s
                 if ( parseChkdStr(chkdNewText, rawUpdateText) )
                 {
                     Chk::Action tempAction {};
-                    if ( auto result = ttc.parseBriefingActionArg(rawUpdateText, argument, tempAction, (Scenario &)*CM, chkd.scData, briefingTrigIndex, actionNum, !suggestion.str.empty()) )
+                    if ( auto result = ttc.parseBriefingActionArg(rawUpdateText, argument, tempAction, (Scenario &)*CM, *chkd.scData, briefingTrigIndex, actionNum, !suggestion.str.empty()) )
                     {
                         madeChange = true;
                         copyArg(*result, tempAction);
@@ -483,7 +483,7 @@ void BriefingTrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const s
                 if ( !madeChange && !suggestion.str.empty() && parseChkdStr(suggestion.str, rawSuggestText) )
                 {
                     Chk::Action tempAction {};
-                    if ( auto result = ttc.parseBriefingActionArg(rawSuggestText, argument, tempAction, (Scenario &)*CM, chkd.scData, briefingTrigIndex, actionNum, false) )
+                    if ( auto result = ttc.parseBriefingActionArg(rawSuggestText, argument, tempAction, (Scenario &)*CM, *chkd.scData, briefingTrigIndex, actionNum, false) )
                     {
                         madeChange = true;
                         copyArg(*result, tempAction);

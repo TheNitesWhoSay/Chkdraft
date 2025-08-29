@@ -24,7 +24,7 @@ class Chkdraft : public WinLib::ClassWindow
                     void PreLoadTest(); // Write testing code that runs before data & UI loads here
 
 /*  Main Items  */  ChkdProfiles profiles {};
-                    Sc::Data scData; // Data from StarCraft files
+                    std::optional<Sc::Data> scData = std::make_optional<Sc::Data>(); // Data from StarCraft files
                     std::unique_ptr<GraphicsData> scrData; // Remastered graphics data from StarCraft files
                     ColorCycler colorCycler {}; // Graphics palette color cycler
                     Maps maps; // Main map container
@@ -74,6 +74,7 @@ class Chkdraft : public WinLib::ClassWindow
                     void OpenEditProfilesDialog();
                     void UpdateLogLevelCheckmarks(LogLevel logLevel);
                     void SetLogLevel(LogLevel newLogLevel);
+                    void OnProfileChange();
 
     protected:
 

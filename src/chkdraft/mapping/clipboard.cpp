@@ -57,7 +57,7 @@ bool WindowsClipboardToString(std::string & str)
 PasteDoodadNode::PasteDoodadNode(u16 startTileGroup, s32 tileX, s32 tileY)
     : tileX(tileX), tileY(tileY)
 {
-    const auto & tileset = chkd.scData.terrain.get(CM->getTileset());
+    const auto & tileset = chkd.scData->terrain.get(CM->getTileset());
     const auto & doodad = (Sc::Terrain::DoodadCv5 &)tileset.tileGroups[startTileGroup];
     this->doodadId = doodad.ddDataIndex;
     this->tileWidth = doodad.tileWidth;
@@ -86,7 +86,7 @@ PasteDoodadNode::PasteDoodadNode(u16 startTileGroup, s32 tileX, s32 tileY)
 
 PasteDoodadNode::PasteDoodadNode(const Chk::Doodad & doodad)
 {
-    const auto & tileset = chkd.scData.terrain.get(CM->getTileset());
+    const auto & tileset = chkd.scData->terrain.get(CM->getTileset());
     if ( auto doodadGroupIndex = tileset.getDoodadGroupIndex(doodad.type) )
     {
         const auto & doodadDat = (Sc::Terrain::DoodadCv5 &)tileset.tileGroups[*doodadGroupIndex];
@@ -355,7 +355,7 @@ void Clipboard::pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap & map, bool allo
             pasteUnit.unit.relationFlags = 0;
             if ( pasteUnit.unit.type < Sc::Unit::TotalTypes )
             {
-                const auto & dat = chkd.scData.units.getUnit(pasteUnit.unit.type);
+                const auto & dat = chkd.scData->units.getUnit(pasteUnit.unit.type);
                 if ( (dat.flags & Sc::Unit::Flags::Addon) == Sc::Unit::Flags::Addon ||
                     pasteUnit.unit.type == Sc::Unit::Type::TerranCommandCenter ||
                     pasteUnit.unit.type == Sc::Unit::Type::TerranScienceFacility ||
@@ -404,7 +404,7 @@ void Clipboard::pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap & map, bool allo
                 {
                     if ( map.autoSwappingAddonPlayers() && building.owner != pastedAddon.owner )
                     {
-                        if ( (chkd.scData.units.getUnit(pastedAddon.type).flags & Sc::Unit::Flags::Addon) == Sc::Unit::Flags::Addon )
+                        if ( (chkd.scData->units.getUnit(pastedAddon.type).flags & Sc::Unit::Flags::Addon) == Sc::Unit::Flags::Addon )
                             edit->units[pastedAddonIndex].owner = building.owner;
                         else
                             edit->units[*buildingOpt].owner = pastedAddon.owner;

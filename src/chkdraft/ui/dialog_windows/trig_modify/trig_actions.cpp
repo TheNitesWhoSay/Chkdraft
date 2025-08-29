@@ -276,12 +276,12 @@ void TrigActionsWindow::FocusGrid()
 
 void TrigActionsWindow::InitializeScriptTable()
 {
-    size_t numScripts = chkd.scData.ai.numEntries();
+    size_t numScripts = chkd.scData->ai.numEntries();
     for ( size_t i = 0; i < numScripts; i++ )
     {
         std::string scriptName;
-        const Sc::Ai::Entry & entry = chkd.scData.ai.getEntry(i);
-        if ( chkd.scData.ai.getName(i, scriptName) )
+        const Sc::Ai::Entry & entry = chkd.scData->ai.getEntry(i);
+        if ( chkd.scData->ai.getName(i, scriptName) )
         {
             char* scriptStringPtr = (char*)&entry.identifier;
             char scriptIdString[5] = {scriptStringPtr[0], scriptStringPtr[1], scriptStringPtr[2], scriptStringPtr[3], '\0'};
@@ -516,7 +516,7 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
                     if ( parseChkdStr(chkdNewText, rawUpdateText) )
                     {
                         Chk::Action tempAction {};
-                        if ( auto result = ttc.parseActionArg(rawUpdateText, argument, tempAction, (Scenario &)*CM, chkd.scData, trigIndex, actionNum, !suggestion.str.empty()) )
+                        if ( auto result = ttc.parseActionArg(rawUpdateText, argument, tempAction, (Scenario &)*CM, *chkd.scData, trigIndex, actionNum, !suggestion.str.empty()) )
                         {
                             madeChange = true;
                             copyArg(*result, tempAction);
@@ -525,7 +525,7 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
                     if ( !madeChange && !suggestion.str.empty() && parseChkdStr(suggestion.str, rawSuggestText) )
                     {
                         Chk::Action tempAction {};
-                        if ( auto result = ttc.parseActionArg(rawSuggestText, argument, tempAction, (Scenario &)*CM, chkd.scData, trigIndex, actionNum, false) )
+                        if ( auto result = ttc.parseActionArg(rawSuggestText, argument, tempAction, (Scenario &)*CM, *chkd.scData, trigIndex, actionNum, false) )
                         {
                             madeChange = true;
                             copyArg(*result, tempAction);
@@ -568,7 +568,7 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
                 if ( parseChkdStr(chkdNewText, rawUpdateText) )
                 {
                     Chk::Action tempAction {};
-                    if ( auto result = ttc.parseActionArg(rawUpdateText, argument, tempAction, (Scenario &)*CM, chkd.scData, trigIndex, actionNum, !suggestion.str.empty()) )
+                    if ( auto result = ttc.parseActionArg(rawUpdateText, argument, tempAction, (Scenario &)*CM, *chkd.scData, trigIndex, actionNum, !suggestion.str.empty()) )
                     {
                         madeChange = true;
                         copyArg(*result, tempAction);
@@ -577,7 +577,7 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
                 if ( !madeChange && !suggestion.str.empty() && parseChkdStr(suggestion.str, rawSuggestText) )
                 {
                     Chk::Action tempAction {};
-                    if ( auto result = ttc.parseActionArg(rawSuggestText, argument, tempAction, (Scenario &)*CM, chkd.scData, trigIndex, actionNum, false) )
+                    if ( auto result = ttc.parseActionArg(rawSuggestText, argument, tempAction, (Scenario &)*CM, *chkd.scData, trigIndex, actionNum, false) )
                     {
                         madeChange = true;
                         copyArg(*result, tempAction);
@@ -959,12 +959,12 @@ void TrigActionsWindow::SuggestDuration(u32 currDuration)
 void TrigActionsWindow::SuggestScript(u32 currScript)
 {
     suggestions.AddItem(SuggestionItem{uint32_t(Sc::Ai::ScriptId::NoScript), std::string("No Script")});
-    size_t numScripts = chkd.scData.ai.numEntries();
+    size_t numScripts = chkd.scData->ai.numEntries();
     for ( size_t i = 0; i < numScripts; i++ )
     {
         std::string scriptName;
-        const Sc::Ai::Entry & entry = chkd.scData.ai.getEntry(i);
-        if ( chkd.scData.ai.getName(i, scriptName) )
+        const Sc::Ai::Entry & entry = chkd.scData->ai.getEntry(i);
+        if ( chkd.scData->ai.getName(i, scriptName) )
         {
             char* scriptStringPtr = (char*)&entry.identifier;
             char scriptIdString[5] = {scriptStringPtr[0], scriptStringPtr[1], scriptStringPtr[2], scriptStringPtr[3], '\0'};

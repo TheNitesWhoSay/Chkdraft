@@ -162,7 +162,7 @@ bool BriefingTrigModifyTextWindow::CompileEditText(std::string & newText)
         if ( briefingTrigIndex < CM->numBriefingTriggers() )
         {
             BriefingTextTrigCompiler compiler {}; // All data for compilation is gathered on-the-fly, no need to check for updates
-            if ( compiler.compileBriefingTrigger(newText, (Scenario &)*CM, chkd.scData, briefingTrigIndex) )
+            if ( compiler.compileBriefingTrigger(newText, (Scenario &)*CM, *chkd.scData, briefingTrigIndex) )
                 return true;
             else
                 WinLib::Message("Compilation failed.", "Error!");

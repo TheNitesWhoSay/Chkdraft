@@ -185,7 +185,7 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
 
     if ( profiles().autoLoadOnStart )
     {
-        scData.load(Sc::DataFile::BrowserPtr(new ChkdDataFileBrowser()), ChkdDataFileBrowser::getDataFileDescriptors(),
+        scData.emplace().load(Sc::DataFile::BrowserPtr(new ChkdDataFileBrowser()), ChkdDataFileBrowser::getDataFileDescriptors(),
             ChkdDataFileBrowser::getExpectedStarCraftDirectory());
     }
     else
@@ -418,6 +418,88 @@ void Chkdraft::SetLogLevel(LogLevel newLogLevel)
     UpdateLogLevelCheckmarks(newLogLevel);
 }
 
+void Chkdraft::OnProfileChange()
+{
+    // Destroy all modeless dialogs
+    unitWindow->DestroyThis();
+    spriteWindow->DestroyThis();
+    actorWindow->DestroyThis();
+    locationWindow->DestroyThis();
+    terrainPalWindow->DestroyThis();
+    tilePropWindow->DestroyThis();
+    textTrigWindow->DestroyThis();
+    briefingTextTrigWindow->DestroyThis();
+    mapSettingsWindow->DestroyThis();
+    trigEditorWindow->DestroyThis();
+    briefingTrigEditorWindow->DestroyThis();
+    dimensionsWindow->DestroyThis();
+    changePasswordWindow->DestroyThis();
+    enterPasswordWindow->DestroyThis();
+    aboutWindow->DestroyThis();
+    editProfilesWindow->DestroyThis();
+
+    // Update the log level
+    SetLogLevel(profiles().logger.defaultLogLevel);
+
+    // Cancel active pastings
+    maps.endPaste();
+
+    // For each map.. clear selections, record the prev sel skin, set the skin to classic GDI (or none, if possible), reset map remastered graphics
+    std::unordered_map<GuiMap*, ChkdSkin> previousSkin {};
+    maps.enumMaps([&](GuiMap & map) {
+        map.selections.clear();
+        previousSkin.insert(std::make_pair(&map, map.GetSkin()));
+        map.SetSkin(ChkdSkin::ClassicGDI, false);
+        map.scrGraphics = std::make_unique<GuiMapGraphics>(*chkd.scData, map);
+    });
+
+    // Set scrGraphicsData to nullptr
+    scrData = nullptr;
+
+    // Perform the actual data reload
+    scData.emplace().load(Sc::DataFile::BrowserPtr(new ChkdDataFileBrowser()), ChkdDataFileBrowser::getDataFileDescriptors(),
+        ChkdDataFileBrowser::getExpectedStarCraftDirectory());
+    
+    // Re-initialize the clipboard & clipboard anims
+    maps.clipboard.emplace(*scData, gameClock);
+
+    // For each map.. refresh the isom cache, refresh the tile occupation cache, re-init GDI graphics, re-init anims, attempt restoring previous skin selection, redraw map & minimap
+    maps.enumMaps([&](GuiMap & map) {
+        map.OnScDataRefresh(); // Refresh isom cache, tile occupation cache, gdi graphics
+        auto found = previousSkin.find(&map);
+        if ( found != previousSkin.end() )
+            map.SetSkin(found->second, false);
+
+        map.Redraw(true);
+    });
+
+    // TODO: when such settings have been added to profiles, set all the map view & editor settings
+    
+    // Rebuild the main tree
+    chkd.mainPlot.leftBar.mainTree.isomTree.UpdateIsomTree();
+    chkd.mainPlot.leftBar.mainTree.doodadTree.UpdateDoodadTree();
+    chkd.mainPlot.leftBar.mainTree.unitTree.UpdateUnitTree();
+    chkd.mainPlot.leftBar.mainTree.spriteTree.UpdateSpriteTree();
+
+    // Re-initialize/re-ctor all the modeless dialogs
+    unitWindow.emplace();
+    spriteWindow.emplace();
+    actorWindow.emplace();
+    locationWindow.emplace();
+    terrainPalWindow.emplace();
+    tilePropWindow.emplace();
+    textTrigWindow.emplace();
+    briefingTextTrigWindow.emplace();
+    mapSettingsWindow.emplace();
+    trigEditorWindow.emplace();
+    briefingTrigEditorWindow.emplace();
+    dimensionsWindow.emplace();
+    changePasswordWindow.emplace();
+    enterPasswordWindow.emplace();
+    aboutWindow.emplace();
+    editProfilesWindow.emplace();
+}
+
 bool Chkdraft::DlgKeyListener(HWND hWnd, UINT & msg, WPARAM wParam, LPARAM lParam)
 {
     switch ( msg )
@@ -545,7 +627,7 @@ bool Chkdraft::DlgKeyListener(HWND hWnd, UINT & msg, WPARAM wParam, LPARAM lPara
             }
             break;
         case WM_KEYUP:
-            if ( wParam == VK_SPACE && CM != nullptr && maps.clipboard.isPasting() )
+            if ( wParam == VK_SPACE && CM != nullptr && maps.clipboard->isPasting() )
             {
                 UnlockCursor();
                 return true;
@@ -675,7 +757,7 @@ void Chkdraft::KeyListener(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 switch ( wParam )
                 {
                     case VK_SPACE:
-                        if ( CM != nullptr && !maps.clipboard.isPasting() )
+                        if ( CM != nullptr && !maps.clipboard->isPasting() )
                             UnlockCursor();
                         return; break;
                 }
@@ -852,7 +934,7 @@ LRESULT Chkdraft::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     case ID_CUTCOPYPASTE_SNAPSELECTIONTOGRID: CM->SetCutCopyPasteSnap(GuiMap::Snap::SnapToGrid); break;
     case ID_CUTCOPYPASTE_NOSNAP: CM->SetCutCopyPasteSnap(GuiMap::Snap::NoSnap); break;
     case ID_CUTCOPYPASTE_INCLUDEDOODADTILES: CM->ToggleIncludeDoodadTiles(); break;
-    case ID_CUTCOPYPASTE_FILLSIMILARTILES: maps.clipboard.toggleFillSimilarTiles(); break;
+    case ID_CUTCOPYPASTE_FILLSIMILARTILES: maps.clipboard->toggleFillSimilarTiles(); break;
 
         // Scenario
     case ID_TRIGGERS_CLASSICMAPTRIGGERS: trigEditorWindow->CreateThis(getHandle()); break;
@@ -1088,7 +1170,7 @@ void Chkdraft::ComboSelChanged(HWND hCombo, u16 comboId)
             maps.ChangeSubLayer(TerrainSubLayer::Rectangular);
     }
     else if ( hCombo == mainToolbar.brushWidth.getHandle() )
-        maps.clipboard.setFogBrushSize(itemIndex+1, mainToolbar.brushHeight.GetSel()+1);
+        maps.clipboard->setFogBrushSize(itemIndex+1, mainToolbar.brushHeight.GetSel()+1);
     else if ( hCombo == mainToolbar.brushHeight.getHandle() )
-        maps.clipboard.setFogBrushSize(mainToolbar.brushWidth.GetSel()+1, itemIndex+1);
+        maps.clipboard->setFogBrushSize(mainToolbar.brushWidth.GetSel()+1, itemIndex+1);
 }

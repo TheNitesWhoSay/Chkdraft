@@ -384,7 +384,7 @@ void TrigConditionsWindow::UpdateConditionArg(u8 conditionNum, u8 argNum, const 
             if ( parseChkdStr(ChkdString(newText), rawUpdateText) )
             {
                 Chk::Condition tempCondition {};
-                if ( auto result = ttc.parseConditionArg(rawUpdateText, argument, tempCondition, (Scenario &)*CM, chkd.scData, trigIndex, !suggestion.str.empty()) )
+                if ( auto result = ttc.parseConditionArg(rawUpdateText, argument, tempCondition, (Scenario &)*CM, *chkd.scData, trigIndex, !suggestion.str.empty()) )
                 {
                     madeChanges = true;
                     copyArg(*result, tempCondition);
@@ -393,7 +393,7 @@ void TrigConditionsWindow::UpdateConditionArg(u8 conditionNum, u8 argNum, const 
             if ( !madeChanges && !suggestion.str.empty() && parseChkdStr(ChkdString(suggestion.str), rawSuggestText) )
             {
                 Chk::Condition tempCondition {};
-                if ( auto result = ttc.parseConditionArg(rawSuggestText, argument, tempCondition, (Scenario &)*CM, chkd.scData, trigIndex, false) )
+                if ( auto result = ttc.parseConditionArg(rawSuggestText, argument, tempCondition, (Scenario &)*CM, *chkd.scData, trigIndex, false) )
                 {
                     madeChanges = true;
                     copyArg(*result, tempCondition);

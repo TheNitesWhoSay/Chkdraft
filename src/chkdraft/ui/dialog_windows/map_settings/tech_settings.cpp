@@ -76,10 +76,10 @@ void TechSettingsWindow::RefreshWindow()
         checkUseDefaultCosts.SetCheck(techUsesDefaultCosts);
         if ( techUsesDefaultCosts )
         {
-            editMineralCosts.SetEditNum<u16>(chkd.scData.techs.getTech(tech).mineralCost);
-            editGasCosts.SetEditNum<u16>(chkd.scData.techs.getTech(tech).vespeneCost);
-            editTimeCosts.SetEditNum<u16>(chkd.scData.techs.getTech(tech).researchTime/15);
-            editEnergyCosts.SetEditNum<u16>(chkd.scData.techs.getTech(tech).energyCost);
+            editMineralCosts.SetEditNum<u16>(chkd.scData->techs.getTech(tech).mineralCost);
+            editGasCosts.SetEditNum<u16>(chkd.scData->techs.getTech(tech).vespeneCost);
+            editTimeCosts.SetEditNum<u16>(chkd.scData->techs.getTech(tech).researchTime/15);
+            editEnergyCosts.SetEditNum<u16>(chkd.scData->techs.getTech(tech).energyCost);
             DisableTechCosts();
         }
         else
@@ -271,7 +271,7 @@ void TechSettingsWindow::SetDefaultTechCosts()
     if ( selectedTech > 0 && selectedTech < 44 && CM != nullptr )
     {
         Sc::Tech::Type tech = (Sc::Tech::Type)selectedTech;
-        const Sc::Tech::DatEntry & techDat = chkd.scData.techs.getTech(tech);
+        const Sc::Tech::DatEntry & techDat = chkd.scData->techs.getTech(tech);
 
         CM->setTechMineralCost((Sc::Tech::Type)tech, techDat.mineralCost);
         CM->setTechGasCost((Sc::Tech::Type)tech, techDat.vespeneCost);

@@ -172,13 +172,13 @@ bool ActorPropertiesWindow::AddActor(bool isUnit, bool isSpriteUnit, std::size_t
 {
     std::string actorName = (isUnit || isSpriteUnit) ?
         Sc::Unit::defaultDisplayNames[unitOrSpriteType < Sc::Unit::defaultDisplayNames.size() ? unitOrSpriteType : 0] :
-        chkd.scData.sprites.spriteNames[unitOrSpriteType < chkd.scData.sprites.spriteNames.size() ? unitOrSpriteType : 0];
+        chkd.scData->sprites.spriteNames[unitOrSpriteType < chkd.scData->sprites.spriteNames.size() ? unitOrSpriteType : 0];
 
     listActors.AddRow(4, actor.drawListIndex);
     listActors.SetItemText(actor.drawListIndex, (int)ActorListColumn::DrawListIndex, std::to_string(actor.drawListIndex));
     listActors.SetItemText(actor.drawListIndex, (int)ActorListColumn::Type, isUnit ? "Unit" : (isSpriteUnit ? "Sprite Unit" : "Sprite"));
     listActors.SetItemText(actor.drawListIndex, (int)ActorListColumn::UnitSpriteIndex, std::to_string(unitOrSpriteIndex));
-    listActors.SetItemText(actor.drawListIndex, (int)ActorListColumn::Priority, std::to_string(CM->animations.drawList[actor.drawListIndex]));
+    listActors.SetItemText(actor.drawListIndex, (int)ActorListColumn::Priority, std::to_string(CM->animations->drawList[actor.drawListIndex]));
     listActors.SetItemText(actor.drawListIndex, (int)ActorListColumn::Name, actorName);
     return true;
 }
@@ -219,7 +219,7 @@ void ActorPropertiesWindow::RepopulateList()
     listActors.DeleteAllItems();
     if ( CM != nullptr )
     {
-        CM->animations.cleanDrawList();
+        CM->animations->cleanDrawList();
         Selections & selections = CM->selections;
         
         listActors.AddRow(4, 0);
@@ -230,7 +230,7 @@ void ActorPropertiesWindow::RepopulateList()
         listActors.SetItemText(0, (int)ActorListColumn::Name, "");
         auto & unitActors = CM->view.units.readAttachedData();
         auto & spriteActors = CM->view.sprites.readAttachedData();
-        auto & drawList = CM->animations.drawList;
+        auto & drawList = CM->animations->drawList;
         for ( std::size_t i=1; i<drawList.size(); ++i )
         {
             std::uint64_t drawEntry = drawList[i];
@@ -254,7 +254,7 @@ void ActorPropertiesWindow::RepopulateList()
             }
         }
 
-        if ( selectedActorIndex > CM->animations.drawList.size() )
+        if ( selectedActorIndex > CM->animations->drawList.size() )
             selectedActorIndex = noSelectedActor;
 
         if ( selectedActorIndex != noSelectedActor )
@@ -277,7 +277,7 @@ void ActorPropertiesWindow::EnableActorEditing()
 {
     if ( selectedActorIndex != noSelectedActor )
     {
-        if ( selectedActorIndex == 0 || selectedActorIndex > CM->animations.drawList.size() )
+        if ( selectedActorIndex == 0 || selectedActorIndex > CM->animations->drawList.size() )
         {
             selectedActorIndex = noSelectedActor;
             DisableActorEditing();
@@ -389,7 +389,7 @@ void ActorPropertiesWindow::UpdateActorFieldText()
     auto primaryImageSlot = actor->primaryImageSlot;
     int primaryImageIndex = -1;
     selectedImageSlot = -1;
-    auto & images = CM->animations.images;
+    auto & images = CM->animations->images;
     for ( std::size_t i=0; i<std::size(actor->usedImages); ++i )
     {
         imageStrings[i] = "";
@@ -398,12 +398,12 @@ void ActorPropertiesWindow::UpdateActorFieldText()
         {
             auto image = images[imageListIndex];
             std::string imageStr {};
-            bool hasImageDat = image->imageId < chkd.scData.sprites.numImages();
+            bool hasImageDat = image->imageId < chkd.scData->sprites.numImages();
             if ( hasImageDat )
             {
-                const auto & imageDat = chkd.scData.sprites.getImage(image->imageId);
-                if ( imageDat.grpFile < chkd.scData.sprites.imagesTbl->numStrings() )
-                    imageStr = getArchiveFileName(chkd.scData.sprites.imagesTbl->getString(imageDat.grpFile));
+                const auto & imageDat = chkd.scData->sprites.getImage(image->imageId);
+                if ( imageDat.grpFile < chkd.scData->sprites.imagesTbl->numStrings() )
+                    imageStr = getArchiveFileName(chkd.scData->sprites.imagesTbl->getString(imageDat.grpFile));
             }
             std::string display = "[" + std::to_string(imageListIndex) + "] " +
                 (imageStr.empty() ? "ImageId:" + std::to_string(image->imageId) : imageStr);
@@ -508,8 +508,8 @@ void ActorPropertiesWindow::ActorDirectionUpdated()
             actor->direction = *newDirection;
             for ( std::size_t i=0; i<std::size(actor->usedImages); ++i )
             {
-                if ( actor->usedImages[i] != 0 && actor->usedImages[i] < CM->animations.images.size() )
-                    CM->animations.images[actor->usedImages[i]]->setDirection(*newDirection);
+                if ( actor->usedImages[i] != 0 && actor->usedImages[i] < CM->animations->images.size() )
+                    CM->animations->images[actor->usedImages[i]]->setDirection(*newDirection);
             }
         }
     }
@@ -522,13 +522,13 @@ void ActorPropertiesWindow::ActorElevationUpdated()
         MapActor* actor = getActiveActor();
         if ( actor != nullptr && actor->elevation != *newElevation )
         {
-            auto & drawList = CM->animations.drawList;
+            auto & drawList = CM->animations->drawList;
             actor->elevation = *newElevation;
             auto & drawListEntry = drawList[actor->drawListIndex];
             drawListEntry = (drawListEntry & (~MapAnimations::MaskElevation)) | (std::uint64_t(actor->elevation) << MapAnimations::ShiftElevation);
             auto newDrawListValue = drawListEntry;
-            CM->animations.drawListDirty = true;
-            CM->animations.cleanDrawList();
+            CM->animations->drawListDirty = true;
+            CM->animations->cleanDrawList();
             for ( std::size_t i=1; i<drawList.size(); ++i )
             {
                 if ( drawList[i] == newDrawListValue )
@@ -558,11 +558,11 @@ void ActorPropertiesWindow::ImageIdUpdated()
             {
                 ActorContext actorContext {
                     .currentTick = chkd.gameClock.currentTick(),
-                    .animations = CM->animations,
+                    .animations = *CM->animations,
                     .actor = *actor,
-                    .isUnit = (CM->animations.drawList[actor->drawListIndex] & MapAnimations::FlagUnitActor) == MapAnimations::FlagUnitActor
+                    .isUnit = (CM->animations->drawList[actor->drawListIndex] & MapAnimations::FlagUnitActor) == MapAnimations::FlagUnitActor
                 };
-                CM->animations.restartActor(actorContext);
+                CM->animations->restartActor(actorContext);
             }
         }
     }
@@ -581,11 +581,11 @@ void ActorPropertiesWindow::ImageIscriptIdUpdated()
             {
                 ActorContext actorContext {
                     .currentTick = chkd.gameClock.currentTick(),
-                    .animations = CM->animations,
+                    .animations = *CM->animations,
                     .actor = *actor,
-                    .isUnit = (CM->animations.drawList[actor->drawListIndex] & MapAnimations::FlagUnitActor) == MapAnimations::FlagUnitActor
+                    .isUnit = (CM->animations->drawList[actor->drawListIndex] & MapAnimations::FlagUnitActor) == MapAnimations::FlagUnitActor
                 };
-                CM->animations.restartActor(actorContext);
+                CM->animations->restartActor(actorContext);
             }
         }
     }
@@ -693,7 +693,7 @@ void ActorPropertiesWindow::AnimationSelectionChanged()
         if ( actor != nullptr && int(actor->lastSetAnim) != newAnimSel )
         {
             actor->setAnim(Sc::Sprite::AnimHeader(newAnimSel), chkd.gameClock.currentTick(),
-                (CM->animations.drawList[actor->drawListIndex] & MapAnimations::FlagUnitActor), CM->animations);
+                (CM->animations->drawList[actor->drawListIndex] & MapAnimations::FlagUnitActor), *CM->animations);
         }
     }
 }
@@ -1016,7 +1016,7 @@ BOOL ActorPropertiesWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 
 MapActor* ActorPropertiesWindow::getActiveActor()
 {
-    if ( selectedActorIndex == noSelectedActor || selectedActorIndex == 0 || selectedActorIndex > CM->animations.drawList.size() )
+    if ( selectedActorIndex == noSelectedActor || selectedActorIndex == 0 || selectedActorIndex > CM->animations->drawList.size() )
     {
         selectedActorIndex = noSelectedActor;
         DisableActorEditing();
@@ -1024,7 +1024,7 @@ MapActor* ActorPropertiesWindow::getActiveActor()
     }
 
     const MapActor* actor = nullptr;
-    auto drawEntry = CM->animations.drawList[selectedActorIndex];
+    auto drawEntry = CM->animations->drawList[selectedActorIndex];
     auto unitOrSpriteIndex = drawEntry & MapAnimations::MaskIndex;
     if ( drawEntry != MapAnimations::UnusedDrawEntry )
     {
@@ -1042,7 +1042,7 @@ MapImage* ActorPropertiesWindow::getActiveImage()
 {
     if ( const MapActor* actor = getActiveActor() )
     {
-        if ( this->selectedImageIndex >= CM->animations.images.size() )
+        if ( this->selectedImageIndex >= CM->animations->images.size() )
         {
             this->selectedImageSlot = -1;
             this->selectedImageIndex = 0;
@@ -1050,7 +1050,7 @@ MapImage* ActorPropertiesWindow::getActiveImage()
         }
         else
         {
-            auto & entry = CM->animations.images[this->selectedImageIndex];
+            auto & entry = CM->animations->images[this->selectedImageIndex];
             return entry ? &entry.value() : nullptr;
         }
     }

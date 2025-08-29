@@ -52,7 +52,7 @@ void UnitTree::insertUnits(const Sc::Unit::UnitGroup & unitGroup, HTREEITEM hPar
 
 void UnitTree::InsertAllUnits(HTREEITEM hParent)
 {
-    for ( const auto & unitGroup : chkd.scData.units.unitGroups )
+    for ( const auto & unitGroup : chkd.scData->units.unitGroups )
         insertUnits(unitGroup, hParent);
 }
 

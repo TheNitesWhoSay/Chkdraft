@@ -38,7 +38,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCach
 /* Public Data  */  Clipboard & clipboard;
                     Selections selections {*this};
                     std::unique_ptr<GuiMapGraphics> scrGraphics;
-                    MapAnimations animations;
+                    std::optional<MapAnimations> animations;
 
 /* Constructor  */  GuiMap(Clipboard & clipboard, const std::string & filePath);
                     GuiMap(Clipboard & clipboard, FileBrowserPtr<SaveType> fileBrowser = getDefaultOpenMapBrowser());
@@ -218,6 +218,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCach
 
                     ChkdSkin GetSkin();
                     void SetSkin(ChkdSkin skin, bool reloadCurrent = false);
+                    void OnScDataRefresh();
 
                     point getLastMousePosition() { return lastMousePosition; }
 
@@ -289,7 +290,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCach
 
                     void afterAction(std::size_t actionIndex) override;
 
-/* Private Data */  Graphics scGraphics {*this, selections};
+/* Private Data */  std::optional<Graphics> scGraphics {};
                     ChkdSkin skin = ChkdSkin::ClassicGDI;
                     std::shared_ptr<WinLib::DeviceContext> openGlDc;
                     u64 prevTickCount = GetTickCount64();

@@ -11,7 +11,7 @@ class Maps : public WinLib::MdiClient
     public:
         GuiMapPtr currentlyActiveMap;
 
-        Clipboard clipboard;
+        std::optional<Clipboard> clipboard;
 
         Maps();
         virtual ~Maps();
@@ -61,6 +61,14 @@ class Maps : public WinLib::MdiClient
         // If not created, creates the rendering context with the given device context (which is also created if null); targets the given/new device context
         void setGlRenderTarget(std::shared_ptr<WinLib::DeviceContext> & deviceContext, WinLib::WindowsItem & windowsItem);
         gl::ContextSemaphore* getContextSemaphore();
+
+        void enumMaps(auto && func)
+        {
+            for ( auto & map : openMaps )
+            {
+                func(*map.second);
+            }
+        }
 
     protected:
         u16 NextId();

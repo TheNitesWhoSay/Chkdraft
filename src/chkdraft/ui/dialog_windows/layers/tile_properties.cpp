@@ -83,7 +83,7 @@ BOOL TilePropWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
         case WM_PAINT:
             {
-                const Sc::Terrain::Tiles & tiles = chkd.scData.terrain.get(CM->getTileset());
+                const Sc::Terrain::Tiles & tiles = chkd.scData->terrain.get(CM->getTileset());
                 if ( auto tile = editTileValue.GetEditNum<u16>() )
                 {
                     BITMAPINFO bmi = GetBMI(32, 32);

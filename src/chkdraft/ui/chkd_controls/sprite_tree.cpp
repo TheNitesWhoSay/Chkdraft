@@ -23,9 +23,9 @@ void SpriteTree::addToTree(HTREEITEM parent, const Sc::Sprite::SpriteGroup & spr
     
     for ( const auto & memberSprite : spriteGroup.memberSprites )
     {
-        const auto & spriteDat = chkd.scData.sprites.getSprite(memberSprite.spriteIndex);
-        const auto & imageDat = chkd.scData.sprites.getImage(spriteDat.imageFile);
-        const auto & imageFileStr = chkd.scData.sprites.imagesTbl->getString(imageDat.grpFile);
+        const auto & spriteDat = chkd.scData->sprites.getSprite(memberSprite.spriteIndex);
+        const auto & imageDat = chkd.scData->sprites.getImage(spriteDat.imageFile);
+        const auto & imageFileStr = chkd.scData->sprites.imagesTbl->getString(imageDat.grpFile);
         std::string imageFileName = std::string("[") + (memberSprite.isUnit ? "u" : "") +
             std::to_string(memberSprite.spriteIndex) + "] " + memberSprite.spriteName;
 
@@ -40,6 +40,6 @@ void SpriteTree::UpdateSpriteTree()
 {
     EmptySubTree(hSpriteRoot);
 
-    for ( auto & spriteGroup : chkd.scData.sprites.spriteGroups )
+    for ( auto & spriteGroup : chkd.scData->sprites.spriteGroups )
         addToTree(hSpriteRoot, spriteGroup);
 }

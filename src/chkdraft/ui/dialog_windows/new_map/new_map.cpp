@@ -68,7 +68,7 @@ BOOL NewMap::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 HWND hInitialTerrain = GetDlgItem(hWnd, IDC_LIST_DEFAULTTERRAIN);
                 HWND hDefaultTrigs = GetDlgItem(hWnd, Id::COMBO_TRIGS);
                 SendMessage(hInitialTerrain, LB_RESETCONTENT, 0, 0);
-                const auto & tileset = chkd.scData.terrain.get(Sc::Terrain::Tileset(itemIndex));
+                const auto & tileset = chkd.scData->terrain.get(Sc::Terrain::Tileset(itemIndex));
                 for ( const auto & brushType : tileset.brushes )
                 {
                     LRESULT insertionIndex = SendMessage(hInitialTerrain, LB_ADDSTRING, 0, (LPARAM)icux::toUistring(std::string(brushType.name)).c_str());
@@ -123,7 +123,7 @@ BOOL NewMap::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 listInitialTerrain.FindThis(hWnd, IDC_LIST_DEFAULTTERRAIN);
 
                 std::vector<std::string> badlandsTerrainTypes {};
-                const auto & tileset = chkd.scData.terrain.get(Sc::Terrain::Tileset::Badlands);
+                const auto & tileset = chkd.scData->terrain.get(Sc::Terrain::Tileset::Badlands);
                 HWND hInitialTerrain = listInitialTerrain.getHandle();
                 for ( const auto & brushType : tileset.brushes )
                 {

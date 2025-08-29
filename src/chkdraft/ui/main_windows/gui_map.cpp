@@ -10,10 +10,11 @@
 bool GuiMap::doAutoBackups = false;
 
 GuiMap::GuiMap(Clipboard & clipboard, const std::string & filePath) : MapFile(filePath),
-    Chk::IsomCache(read.tileset, read.dimensions.tileWidth, read.dimensions.tileHeight, chkd.scData.terrain.get(read.tileset)),
-    clipboard(clipboard), scrGraphics{std::make_unique<GuiMapGraphics>(chkd.scData, *this)},
-    animations(chkd.scData, chkd.gameClock, (const Scenario &)*this)
+    Chk::IsomCache(read.tileset, read.dimensions.tileWidth, read.dimensions.tileHeight, chkd.scData->terrain.get(read.tileset)),
+    clipboard(clipboard), scrGraphics{std::make_unique<GuiMapGraphics>(*chkd.scData, *this)}
 {
+    animations.emplace(*chkd.scData, chkd.gameClock, (const Scenario &)*this);
+    scGraphics.emplace(*this, selections);
     SetWinText(MapFile::getFileName());
     int layerSel = chkd.mainToolbar.layerBox.GetSel();
     if ( layerSel != CB_ERR )
@@ -27,10 +28,11 @@ GuiMap::GuiMap(Clipboard & clipboard, const std::string & filePath) : MapFile(fi
 }
 
 GuiMap::GuiMap(Clipboard & clipboard, FileBrowserPtr<SaveType> fileBrowser) : MapFile(fileBrowser),
-    Chk::IsomCache(read.tileset, read.dimensions.tileWidth, read.dimensions.tileHeight, chkd.scData.terrain.get(read.tileset)),
-    clipboard(clipboard), scrGraphics{std::make_unique<GuiMapGraphics>(chkd.scData, *this)},
-    animations(chkd.scData, chkd.gameClock, (const Scenario &)*this)
+    Chk::IsomCache(read.tileset, read.dimensions.tileWidth, read.dimensions.tileHeight, chkd.scData->terrain.get(read.tileset)),
+    clipboard(clipboard), scrGraphics{std::make_unique<GuiMapGraphics>(*chkd.scData, *this)}
 {
+    animations.emplace(*chkd.scData, chkd.gameClock, (const Scenario &)*this);
+    scGraphics.emplace(*this, selections);
     SetWinText(MapFile::getFileName());
     int layerSel = chkd.mainToolbar.layerBox.GetSel();
     if ( layerSel != CB_ERR )
@@ -44,14 +46,15 @@ GuiMap::GuiMap(Clipboard & clipboard, FileBrowserPtr<SaveType> fileBrowser) : Ma
 }
 
 GuiMap::GuiMap(Clipboard & clipboard, Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex, DefaultTriggers defaultTriggers, SaveType saveType)
-    : MapFile(tileset, width, height, terrainTypeIndex, saveType, &chkd.scData.terrain.get(tileset)),
-    Chk::IsomCache(read.tileset, read.dimensions.tileWidth, read.dimensions.tileHeight, chkd.scData.terrain.get(read.tileset)),
-    clipboard(clipboard), scrGraphics{std::make_unique<GuiMapGraphics>(chkd.scData, *this)},
-    animations(chkd.scData, chkd.gameClock, (const Scenario &)*this)
+    : MapFile(tileset, width, height, terrainTypeIndex, saveType, &chkd.scData->terrain.get(tileset)),
+    Chk::IsomCache(read.tileset, read.dimensions.tileWidth, read.dimensions.tileHeight, chkd.scData->terrain.get(read.tileset)),
+    clipboard(clipboard), scrGraphics{std::make_unique<GuiMapGraphics>(*chkd.scData, *this)}
 {
+    animations.emplace(*chkd.scData, chkd.gameClock, (const Scenario &)*this);
+    scGraphics.emplace(*this, selections);
     refreshTileOccupationCache();
 
-    scGraphics.updatePalette();
+    scGraphics->updatePalette();
     int layerSel = chkd.mainToolbar.layerBox.GetSel();
     if ( layerSel != CB_ERR )
         currLayer = (Layer)layerSel;
@@ -238,7 +241,7 @@ void GuiMap::validateTileOccupiers(size_t tileX, size_t tileY, uint16_t tileValu
     auto edit = createAction(ActionDescriptor::ValidateTileOccupiers);
     bool cacheRefreshNeeded = false;
     bool tileOccupiedByValidDoodad = false;
-    const auto & tileset = chkd.scData.terrain.get(Scenario::getTileset());
+    const auto & tileset = chkd.scData->terrain.get(Scenario::getTileset());
     if ( !allowIllegalDoodads )
     {
         for ( int doodadIndex=int(read.doodads.size())-1; doodadIndex>=0; --doodadIndex )
@@ -301,7 +304,7 @@ void GuiMap::validateTileOccupiers(size_t tileX, size_t tileY, uint16_t tileValu
             const auto & unit = read.units[unitIndex];
             if ( unit.type < Sc::Unit::TotalTypes )
             {
-                const auto & unitDat = chkd.scData.units.getUnit(unit.type);
+                const auto & unitDat = chkd.scData->units.getUnit(unit.type);
                 bool isBuilding = (unitDat.flags & Sc::Unit::Flags::Building) == Sc::Unit::Flags::Building;
                 bool isFlyer = (unitDat.flags & Sc::Unit::Flags::Flyer) == Sc::Unit::Flags::Flyer;
                 bool isFlyingBuilding = isBuilding &&
@@ -362,8 +365,8 @@ void GuiMap::validateTileOccupiers(size_t tileX, size_t tileY, uint16_t tileValu
 void GuiMap::setTileset(Sc::Terrain::Tileset tileset)
 {
     Scenario::setTileset(tileset);
-    scGraphics.updatePalette();
-    (Chk::IsomCache &)(*this) = {read.tileset, Scenario::getTileWidth(), Scenario::getTileHeight(), chkd.scData.terrain.get(read.tileset)};
+    scGraphics->updatePalette();
+    (Chk::IsomCache &)(*this) = {read.tileset, Scenario::getTileWidth(), Scenario::getTileHeight(), chkd.scData->terrain.get(read.tileset)};
 }
 
 // From Scenario.cpp
@@ -401,7 +404,7 @@ void GuiMap::setDimensions(u16 newTileWidth, u16 newTileHeight, u16 sizeValidati
     auto destMapData = std::make_unique<Scenario>(this->getTileset(), u16(this->getTileWidth()), u16(this->getTileHeight()));
     Scenario & destMap = *destMapData;
     auto editDest = destMap.operator()(ActionDescriptor::ResizeMap);
-    SimpleCache destMapCache(destMap, read.tileset, newTileWidth, newTileHeight, chkd.scData.terrain.get(read.tileset));
+    SimpleCache destMapCache(destMap, read.tileset, newTileWidth, newTileHeight, chkd.scData->terrain.get(read.tileset));
     
     editDest->tiles = read.tiles;
     editDest->editorTiles = read.editorTiles;
@@ -539,7 +542,7 @@ void GuiMap::setDimensions(u16 newTileWidth, u16 newTileHeight, u16 sizeValidati
     if ( anywhereWasStandardDimensions )
         Scenario::matchAnywhereToDimensions();
 
-    (Chk::IsomCache &)(*this) = {read.tileset, Scenario::getTileWidth(), Scenario::getTileHeight(), chkd.scData.terrain.get(read.tileset)};
+    (Chk::IsomCache &)(*this) = {read.tileset, Scenario::getTileWidth(), Scenario::getTileHeight(), chkd.scData->terrain.get(read.tileset)};
 }
 
 bool GuiMap::placeIsomTerrain(Chk::IsomDiamond isomDiamond, size_t terrainType, size_t brushExtent)
@@ -756,7 +759,7 @@ void GuiMap::convertSelectionToTerrain()
             Chk::Doodad doodad = this->getDoodad(doodadIndex);
             Scenario::deleteDoodad(doodadIndex);
 
-            const auto & tileset = chkd.scData.terrain.get(Scenario::getTileset());
+            const auto & tileset = chkd.scData->terrain.get(Scenario::getTileset());
             if ( auto doodadGroupIndex = tileset.getDoodadGroupIndex(doodad.type) )
             {
                 const auto & doodadDat = (Sc::Terrain::DoodadCv5 &)tileset.tileGroups[*doodadGroupIndex];
@@ -834,7 +837,7 @@ void GuiMap::createLocation()
         auto edit = createAction(ActionDescriptor::CreateLocationForUnit);
         u16 firstUnitId = selections.getFirstUnit();
         const Chk::Unit & unit = Scenario::getUnit(firstUnitId);
-        const auto & unitDat = chkd.scData.units.getUnit(unit.type);
+        const auto & unitDat = chkd.scData->units.getUnit(unit.type);
         Chk::Location newLocation {};
         newLocation.left = unit.xc - unitDat.unitSizeLeft;
         newLocation.top = unit.yc - unitDat.unitSizeUp;
@@ -867,7 +870,7 @@ void GuiMap::createInvertedLocation()
         auto edit = createAction(ActionDescriptor::CreateInvertedLocationForUnit);
         u16 firstUnitId = selections.getFirstUnit();
         const Chk::Unit & unit = Scenario::getUnit(firstUnitId);
-        const auto & unitDat = chkd.scData.units.getUnit(unit.type);
+        const auto & unitDat = chkd.scData->units.getUnit(unit.type);
         Chk::Location newLocation {};
         newLocation.left = unit.xc + unitDat.unitSizeRight;
         newLocation.top = unit.yc + unitDat.unitSizeDown;
@@ -900,7 +903,7 @@ void GuiMap::createMobileInvertedLocation()
         auto edit = createAction(ActionDescriptor::CreateMobileInvertedLocationForUnit);
         u16 firstUnitId = selections.getFirstUnit();
         const Chk::Unit & unit = Scenario::getUnit(firstUnitId);
-        const auto & unitDat = chkd.scData.units.getUnit(unit.type);
+        const auto & unitDat = chkd.scData->units.getUnit(unit.type);
 
         s32 width = (unitDat.unitSizeRight > unitDat.unitSizeLeft ? -1 : 0) - 2*std::min(unitDat.unitSizeLeft, unitDat.unitSizeRight);
         s32 height = (unitDat.unitSizeDown > unitDat.unitSizeUp ? -1 : 0) - 2*std::min(unitDat.unitSizeUp, unitDat.unitSizeDown);
@@ -1220,7 +1223,7 @@ void GuiMap::refreshScenario(bool clearSelections)
     chkd.trigEditorWindow->RefreshWindow();
     chkd.briefingTrigEditorWindow->RefreshWindow();
     
-    scGraphics.updatePalette();
+    scGraphics->updatePalette();
     Redraw(true);
 }
 
@@ -1359,7 +1362,7 @@ void GuiMap::deleteSelection()
             auto selDoodad = view.doodads.sel()[i];
             const auto & doodad = read.doodads[selDoodad];
 
-            const auto & tileset = chkd.scData.terrain.get(Scenario::getTileset());
+            const auto & tileset = chkd.scData->terrain.get(Scenario::getTileset());
             if ( auto doodadGroupIndex = tileset.getDoodadGroupIndex(doodad.type) )
             {
                 const auto & doodadDat = (Sc::Terrain::DoodadCv5 &)tileset.tileGroups[*doodadGroupIndex];
@@ -1555,12 +1558,12 @@ void GuiMap::moveSelection(Direction direction, bool useGrid)
     {
         u16 gridOffX = 0, gridOffY = 0;
         u16 gridWidth = 32, gridHeight = 32;
-        if ( !scGraphics.GetGridSize(0, gridWidth, gridHeight) || gridWidth == 0 || gridHeight == 0 )
+        if ( !scGraphics->GetGridSize(0, gridWidth, gridHeight) || gridWidth == 0 || gridHeight == 0 )
         {
             gridWidth = 32;
             gridHeight = 32;
         }
-        scGraphics.GetGridOffset(0, gridOffX, gridOffY);
+        scGraphics->GetGridOffset(0, gridOffX, gridOffY);
         switch ( currLayer )
         {
         case Layer::Units:
@@ -1702,7 +1705,7 @@ void GuiMap::moveSelection(Direction direction, bool useGrid)
 bool GuiMap::pastingToGrid()
 {
     u16 gridWidth = 32, gridHeight = 32;
-    if ( scGraphics.GetGridSize(0, gridWidth, gridHeight) && (gridWidth == 0 || gridHeight == 0) )
+    if ( scGraphics->GetGridSize(0, gridWidth, gridHeight) && (gridWidth == 0 || gridHeight == 0) )
         return false;
 
     switch ( currLayer )
@@ -1808,7 +1811,7 @@ void GuiMap::SnapSelEndDrag()
 {
     auto snapToGrid = [&]() {
         u16 gridWidth = 32, gridHeight = 32;
-        if ( scGraphics.GetGridSize(0, gridWidth, gridHeight) )
+        if ( scGraphics->GetGridSize(0, gridWidth, gridHeight) )
             selections.snapEndDrag(gridWidth, gridHeight);
     };
     switch ( currLayer )
@@ -1819,7 +1822,7 @@ void GuiMap::SnapSelEndDrag()
                 const auto & firstUnit = clipboard.getUnits().begin()->unit;
                 if ( firstUnit.type < Sc::Unit::TotalTypes )
                 {
-                    const auto & dat = chkd.scData.units.getUnit(firstUnit.type);
+                    const auto & dat = chkd.scData->units.getUnit(firstUnit.type);
                     if ( (dat.flags & Sc::Unit::Flags::Building) == Sc::Unit::Flags::Building && buildingsSnapToTile )
                     {
                         bool oddTileWidth = (dat.starEditPlacementBoxWidth/32)%2 > 0;
@@ -1859,12 +1862,12 @@ bool GuiMap::UpdateGlGraphics()
 bool GuiMap::Animate()
 {
     if ( skin == ChkdSkin::ClassicGDI )
-        return chkd.colorCycler.cycleColors(read.tileset, scGraphics.getPalette());
+        return chkd.colorCycler.cycleColors(read.tileset, scGraphics->getPalette());
     else if ( chkd.gameClock.tick() )
     {
         auto currentTick = chkd.gameClock.currentTick();
         clipboard.animations.animate(currentTick);
-        animations.animate(currentTick);
+        animations->animate(currentTick);
         UpdateGlGraphics();
         return true;
     }
@@ -1887,12 +1890,12 @@ void GuiMap::PaintMap(GuiMapPtr currMap, bool pasting)
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             
             // TODO: scGraphics is likely being deprecated, this section is a temporary copy-over
-            scrGraphics->useGameTileNums = scGraphics.mtxmOverTile();
-            scrGraphics->displayIsomNums = scGraphics.DisplayingIsomNums();
-            scrGraphics->displayTileNums = scGraphics.DisplayingTileNums();
-            scrGraphics->displayBuildability = scGraphics.DisplayingBuildability();
-            scrGraphics->displayElevations = scGraphics.DisplayingElevations();
-            scrGraphics->clipLocationNames = scGraphics.ClippingLocationNames();
+            scrGraphics->useGameTileNums = scGraphics->mtxmOverTile();
+            scrGraphics->displayIsomNums = scGraphics->DisplayingIsomNums();
+            scrGraphics->displayTileNums = scGraphics->DisplayingTileNums();
+            scrGraphics->displayBuildability = scGraphics->DisplayingBuildability();
+            scrGraphics->displayElevations = scGraphics->DisplayingElevations();
+            scrGraphics->clipLocationNames = scGraphics->ClippingLocationNames();
             
             SnapSelEndDrag();
             scrGraphics->render();
@@ -1940,7 +1943,7 @@ void GuiMap::PaintMap(GuiMapPtr currMap, bool pasting)
                 RedrawWindow(chkd.mainPlot.leftBar.miniMap.getHandle(), NULL, NULL, RDW_INVALIDATE | RDW_UPDATENOW);
 
             // Terrain, Grid, Units, Sprites, Debug
-            scGraphics.DrawMap(mapBuffer, bitmapWidth, bitmapHeight, screenLeft, screenTop, graphicBits, !lockAnywhere);
+            scGraphics->DrawMap(mapBuffer, bitmapWidth, bitmapHeight, screenLeft, screenTop, graphicBits, !lockAnywhere);
         }
 
         if ( mapBuffer )
@@ -1950,7 +1953,7 @@ void GuiMap::PaintMap(GuiMapPtr currMap, bool pasting)
             if ( currMap == nullptr || currMap.get() == this )
             { // Drag, paste & hover graphics
                 SnapSelEndDrag();
-                scGraphics.DrawTools(toolsBuffer, scaledWidth, scaledHeight,
+                scGraphics->DrawTools(toolsBuffer, scaledWidth, scaledHeight,
                     screenLeft, screenTop, selections, pasting, clipboard, *this);
 
                 if ( currLayer != Layer::Locations && dragging && !clipboard.isPasting() )
@@ -1991,11 +1994,11 @@ void GuiMap::PaintMiniMap(const WinLib::DeviceContext & dc)
 void GuiMap::Redraw(bool includeMiniMap)
 {
     if ( skin == ChkdSkin::ClassicGDI )
-        chkd.colorCycler.cycleColors(read.tileset, scGraphics.getPalette());
+        chkd.colorCycler.cycleColors(read.tileset, scGraphics->getPalette());
     else if ( chkd.gameClock.tick() && CM != nullptr )
     {
         auto currentTick = chkd.gameClock.currentTick();
-        CM->animations.animate(currentTick);
+        CM->animations->animate(currentTick);
         clipboard.animations.animate(currentTick);
         CM->UpdateGlGraphics(); // Color cycling or HD water
     }
@@ -2044,16 +2047,16 @@ bool GuiMap::SetGridSize(s16 xSize, s16 ySize)
 
     bool success = false;
     u16 oldXSize = 0, oldYSize = 0;
-    if ( scGraphics.GetGridSize(0, oldXSize, oldYSize) )
+    if ( scGraphics->GetGridSize(0, oldXSize, oldYSize) )
     {
         if ( oldXSize == xSize && oldYSize == ySize )
         {
-            success = scGraphics.SetGridSize(0, 0, 0);
+            success = scGraphics->SetGridSize(0, 0, 0);
             scrGraphics->setGridSize(0); // TODO: interface shouldn't have varying sizes if it's not used
         }
         else
         {
-            success = scGraphics.SetGridSize(0, xSize, ySize);
+            success = scGraphics->SetGridSize(0, xSize, ySize);
             scrGraphics->setGridSize(xSize); // TODO: interface shouldn't have varying sizes if it's not used
         }
 
@@ -2071,10 +2074,10 @@ bool GuiMap::SetGridColor(u8 red, u8 green, u8 blue)
     scrGraphics->setGridColor(u32(red) | (u32(green) << 8) | (u32(blue) << 16));
 
     bool success = false;
-    if ( scGraphics.SetGridColor(0, red, green, blue) )
+    if ( scGraphics->SetGridColor(0, red, green, blue) )
     {
         u16 xSize = 0, ySize = 0;
-        if ( scGraphics.GetGridSize(0, xSize, ySize) && (xSize == 0 || ySize == 0) )
+        if ( scGraphics->GetGridSize(0, xSize, ySize) && (xSize == 0 || ySize == 0) )
             success = SetGridSize(32, 32);
 
         UpdateGridColorMenu();
@@ -2085,7 +2088,7 @@ bool GuiMap::SetGridColor(u8 red, u8 green, u8 blue)
 
 void GuiMap::ToggleDisplayBuildability()
 {
-    scGraphics.ToggleDisplayBuildability();
+    scGraphics->ToggleDisplayBuildability();
     UpdateTerrainViewMenuItems();
     Redraw(false);
     if ( chkd.terrainPalWindow->getHandle() != NULL )
@@ -2094,12 +2097,12 @@ void GuiMap::ToggleDisplayBuildability()
 
 bool GuiMap::DisplayingBuildability()
 {
-    return scGraphics.DisplayingBuildability();
+    return scGraphics->DisplayingBuildability();
 }
 
 void GuiMap::ToggleDisplayElevations()
 {
-    scGraphics.ToggleDisplayElevations();
+    scGraphics->ToggleDisplayElevations();
     UpdateTerrainViewMenuItems();
     Redraw(false);
     if ( chkd.terrainPalWindow->getHandle() != NULL )
@@ -2108,19 +2111,19 @@ void GuiMap::ToggleDisplayElevations()
 
 bool GuiMap::DisplayingElevations()
 {
-    return scGraphics.DisplayingElevations();
+    return scGraphics->DisplayingElevations();
 }
 
 void GuiMap::ToggleDisplayIsomValues()
 {
-    scGraphics.ToggleDisplayIsomValues();
+    scGraphics->ToggleDisplayIsomValues();
     UpdateTerrainViewMenuItems();
     Redraw(false);
 }
 
 void GuiMap::ToggleTileNumSource(bool MTXMoverTILE)
 {
-    scGraphics.ToggleTileNumSource(MTXMoverTILE);
+    scGraphics->ToggleTileNumSource(MTXMoverTILE);
     UpdateTerrainViewMenuItems();
     Redraw(false);
     if ( chkd.terrainPalWindow->getHandle() != NULL )
@@ -2129,7 +2132,7 @@ void GuiMap::ToggleTileNumSource(bool MTXMoverTILE)
 
 bool GuiMap::DisplayingTileNums()
 {
-    return scGraphics.DisplayingTileNums();
+    return scGraphics->DisplayingTileNums();
 }
 
 void GuiMap::ToggleDisplayFps()
@@ -2154,9 +2157,9 @@ bool GuiMap::isValidUnitPlacement(Sc::Unit::Type unitType, s32 x, s32 y)
     if ( unitType >= Sc::Unit::TotalTypes )
         return true; // Extended units placement isn't checked for validity
 
-    bool placementIsBuilding = (chkd.scData.units.getUnit(unitType).flags & Sc::Unit::Flags::Building) == Sc::Unit::Flags::Building;
-    bool placementIsFlyer = (chkd.scData.units.getUnit(unitType).flags & Sc::Unit::Flags::Flyer) == Sc::Unit::Flags::Flyer;
-    bool placementIsResourceDepot = (chkd.scData.units.getUnit(unitType).flags & Sc::Unit::Flags::ResourceDepot) == Sc::Unit::Flags::ResourceDepot;
+    bool placementIsBuilding = (chkd.scData->units.getUnit(unitType).flags & Sc::Unit::Flags::Building) == Sc::Unit::Flags::Building;
+    bool placementIsFlyer = (chkd.scData->units.getUnit(unitType).flags & Sc::Unit::Flags::Flyer) == Sc::Unit::Flags::Flyer;
+    bool placementIsResourceDepot = (chkd.scData->units.getUnit(unitType).flags & Sc::Unit::Flags::ResourceDepot) == Sc::Unit::Flags::ResourceDepot;
 
     bool validateOnWalkableTerrain = !placementIsFlyer && !placementIsBuilding && !placeUnitsAnywhere;
     bool validateOnBuildableTerrain = placementIsBuilding && !placeBuildingsAnywhere;
@@ -2169,7 +2172,7 @@ bool GuiMap::isValidUnitPlacement(Sc::Unit::Type unitType, s32 x, s32 y)
 
     if ( performValidation )
     {
-        const auto & placementDat = chkd.scData.units.getUnit(unitType);
+        const auto & placementDat = chkd.scData->units.getUnit(unitType);
         s32 placementLeft   = x - s32(placementDat.unitSizeLeft),
             placementRight  = x + s32(placementDat.unitSizeRight),
             placementTop    = y - s32(placementDat.unitSizeUp),
@@ -2187,7 +2190,7 @@ bool GuiMap::isValidUnitPlacement(Sc::Unit::Type unitType, s32 x, s32 y)
                 return false;
             }
 
-            const auto & tileset = chkd.scData.terrain.get(this->getTileset());
+            const auto & tileset = chkd.scData->terrain.get(this->getTileset());
             s32 xTileMin = std::max(0, placementLeft/32);
             s32 xTileMax = std::min(s32(read.dimensions.tileWidth-1), placementRight/32);
             s32 yTileMin = std::max(0, placementTop/32);
@@ -2232,7 +2235,7 @@ bool GuiMap::isValidUnitPlacement(Sc::Unit::Type unitType, s32 x, s32 y)
             {
                 if ( unit.type < Sc::Unit::TotalTypes )
                 {
-                    const auto & unitDat = chkd.scData.units.getUnit(unit.type);
+                    const auto & unitDat = chkd.scData->units.getUnit(unit.type);
                     auto datFlags = unitDat.flags;
                     bool isBuilding = (datFlags & Sc::Unit::Flags::Building) == Sc::Unit::Flags::Building;
                     bool isFlyer = (datFlags & Sc::Unit::Flags::Flyer) == Sc::Unit::Flags::Flyer;
@@ -2256,7 +2259,7 @@ bool GuiMap::isValidUnitPlacement(Sc::Unit::Type unitType, s32 x, s32 y)
         }
         if ( validateMineralDistance )
         {
-            const auto & placementDat = chkd.scData.units.getUnit(unitType);
+            const auto & placementDat = chkd.scData->units.getUnit(unitType);
             s32 xPlacementTileMin = std::max(0, (x - s32(placementDat.unitSizeLeft))/32),
                 xPlacementTileMax = std::min(s32(read.dimensions.tileWidth-1), (x + s32(placementDat.unitSizeRight))/32),
                 yPlacementTileMin = std::max(0, (y - s32(placementDat.unitSizeUp))/32),
@@ -2266,7 +2269,7 @@ bool GuiMap::isValidUnitPlacement(Sc::Unit::Type unitType, s32 x, s32 y)
             {
                 if ( unit.type < Sc::Unit::TotalTypes )
                 {
-                    const auto & unitDat = chkd.scData.units.getUnit(unit.type);
+                    const auto & unitDat = chkd.scData->units.getUnit(unit.type);
                     bool isResource = (unitDat.flags & Sc::Unit::Flags::ResourceContainer) == Sc::Unit::Flags::ResourceContainer;
 
                     if ( isResource )
@@ -2349,13 +2352,13 @@ std::optional<u16> GuiMap::getLinkableUnitIndex(Sc::Unit::Type unitType, s32 x, 
             return std::nullopt;
     }
 
-    const auto & checkDat = chkd.scData.units.getUnit(unitType);
+    const auto & checkDat = chkd.scData->units.getUnit(unitType);
     for ( size_t unitIndex = 0; unitIndex < numUnits(); ++unitIndex )
     {
         const auto & unit = read.units[unitIndex];
         if ( unit.relationClassId == 0 && (unit.type == unitTypeToLocate || unit.type == otherUnitTypeToLocate ) )
         { // Correct unit type which doesn't already have a relation
-            const auto & dat = chkd.scData.units.getUnit(unit.type);
+            const auto & dat = chkd.scData->units.getUnit(unit.type);
             auto unitOriginX = unit.xc - dat.starEditPlacementBoxWidth/2;
             auto unitOriginY = unit.yc - dat.starEditPlacementBoxHeight/2;
             auto checkOriginX = x - checkDat.starEditPlacementBoxWidth/2;
@@ -2425,8 +2428,8 @@ void GuiMap::ToggleSpriteSnap()
 
 void GuiMap::ToggleLocationNameClip()
 {
-    scGraphics.ToggleLocationNameClip();
-    chkd.mainMenu.SetCheck(ID_LOCATIONS_CLIPNAMES, scGraphics.ClippingLocationNames());
+    scGraphics->ToggleLocationNameClip();
+    chkd.mainMenu.SetCheck(ID_LOCATIONS_CLIPNAMES, scGraphics->ClippingLocationNames());
     Redraw(false);
 }
 
@@ -2497,8 +2500,8 @@ bool GuiMap::GetSnapIntervals(u32 & x, u32 & y, u32 & xOffset, u32 & yOffset)
         else
         {
             u16 gridWidth = 0, gridHeight = 0, gridXOffset = 0, gridYOffset = 0;
-            if ( scGraphics.GetGridSize(0, gridWidth, gridHeight) &&
-                 scGraphics.GetGridOffset(0, gridXOffset, gridYOffset) &&
+            if ( scGraphics->GetGridSize(0, gridWidth, gridHeight) &&
+                 scGraphics->GetGridOffset(0, gridXOffset, gridYOffset) &&
                  (gridWidth > 0 || gridHeight > 0) )
             {
                 x = gridWidth;
@@ -2611,7 +2614,7 @@ bool GuiMap::GetIncludeDoodadTiles()
 
 void GuiMap::UpdateLocationMenuItems()
 {
-    chkd.mainMenu.SetCheck(ID_LOCATIONS_CLIPNAMES, scGraphics.ClippingLocationNames());
+    chkd.mainMenu.SetCheck(ID_LOCATIONS_CLIPNAMES, scGraphics->ClippingLocationNames());
     chkd.mainMenu.SetCheck(ID_LOCATIONS_SNAPTOTILE, snapLocations && locSnapTileOverGrid);
     chkd.mainMenu.SetCheck(ID_LOCATIONS_SNAPTOACTIVEGRID, snapLocations && !locSnapTileOverGrid);
     chkd.mainMenu.SetCheck(ID_LOCATIONS_NOSNAP, !snapLocations);
@@ -2649,7 +2652,7 @@ void GuiMap::UpdateZoomMenuItems()
 void GuiMap::UpdateGridSizesMenu()
 {
     u16 gridWidth = 0, gridHeight = 0;
-    scGraphics.GetGridSize(0, gridWidth, gridHeight);
+    scGraphics->GetGridSize(0, gridWidth, gridHeight);
 
     chkd.mainMenu.SetCheck(ID_GRID_ULTRAFINE, false);
     chkd.mainMenu.SetCheck(ID_GRID_FINE, false);
@@ -2678,7 +2681,7 @@ void GuiMap::UpdateGridSizesMenu()
 void GuiMap::UpdateGridColorMenu()
 {
     u8 red = 0, green = 0, blue = 0;
-    scGraphics.GetGridColor(0, red, green, blue);
+    scGraphics->GetGridColor(0, red, green, blue);
 
     chkd.mainMenu.SetCheck(ID_COLOR_BLACK, false);
     chkd.mainMenu.SetCheck(ID_COLOR_GREY, false);
@@ -2719,19 +2722,19 @@ void GuiMap::UpdateSkinMenuItems()
 
 void GuiMap::UpdateTerrainViewMenuItems()
 {
-    chkd.mainMenu.SetCheck(ID_TERRAIN_DISPLAYTILEBUILDABILITY, scGraphics.DisplayingBuildability());
-    chkd.mainMenu.SetCheck(ID_TERRAIN_DISPLAYTILEELEVATIONS, scGraphics.DisplayingElevations());
+    chkd.mainMenu.SetCheck(ID_TERRAIN_DISPLAYTILEBUILDABILITY, scGraphics->DisplayingBuildability());
+    chkd.mainMenu.SetCheck(ID_TERRAIN_DISPLAYTILEELEVATIONS, scGraphics->DisplayingElevations());
     
-    if ( scGraphics.DisplayingIsomNums() )
+    if ( scGraphics->DisplayingIsomNums() )
         chkd.mainMenu.SetCheck(ID_TERRAIN_DISPLAYISOMVALUES, true);
     else
         chkd.mainMenu.SetCheck(ID_TERRAIN_DISPLAYISOMVALUES, false);
 
     chkd.mainMenu.SetCheck(ID_TERRAIN_DISPLAYTILEVALUES, false);
     chkd.mainMenu.SetCheck(ID_TERRAIN_DISPLAYTILEVALUESMTXM, false);
-    if ( scGraphics.DisplayingTileNums() )
+    if ( scGraphics->DisplayingTileNums() )
     {
-        if ( scGraphics.mtxmOverTile() )
+        if ( scGraphics->mtxmOverTile() )
             chkd.mainMenu.SetCheck(ID_TERRAIN_DISPLAYTILEVALUESMTXM, true);
         else
             chkd.mainMenu.SetCheck(ID_TERRAIN_DISPLAYTILEVALUES, true);
@@ -2930,12 +2933,12 @@ void GuiMap::skipEventRendering()
 
 ChkdPalette & GuiMap::getPalette()
 {
-    return scGraphics.getPalette();
+    return scGraphics->getPalette();
 }
 
 ChkdPalette & GuiMap::getStaticPalette()
 {
-    return scGraphics.getStaticPalette();
+    return scGraphics->getStaticPalette();
 }
 
 LRESULT GuiMap::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -2943,7 +2946,7 @@ LRESULT GuiMap::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     switch ( msg )
     {
         case WM_CONTEXTMENU: ContextMenu(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)); break;
-        case WM_PAINT: PaintMap(CM, chkd.maps.clipboard.isPasting()); break;
+        case WM_PAINT: PaintMap(CM, chkd.maps.clipboard->isPasting()); break;
         case WM_MDIACTIVATE: ActivateMap((HWND)wParam, (HWND)lParam); return ClassWindow::WndProc(hWnd, msg, wParam, lParam); break;
         case WM_ERASEBKGND: return 1; break; // Prevent background from showing
         case WM_HSCROLL: return HorizontalScroll(hWnd, msg, wParam, lParam); break;
@@ -3180,7 +3183,7 @@ void GuiMap::LButtonDown(int x, int y, WPARAM wParam)
         clipboard.initFogBrush(mapClickX, mapClickY, *this, shiftOrCtrl);
         clipboard.doPaste(currLayer, currTerrainSubLayer, mapClickX, mapClickY, *this, false);
     }
-    if ( chkd.maps.clipboard.isPasting() )
+    if ( chkd.maps.clipboard->isPasting() )
     {
         if ( currLayer == Layer::Terrain || currLayer == Layer::CutCopyPaste )
             refreshTileOccupationCache();
@@ -3202,7 +3205,7 @@ void GuiMap::LButtonDown(int x, int y, WPARAM wParam)
         if ( currLayer == Layer::CutCopyPaste )
         {
             setActionDescription(ActionDescriptor::UpdateMiscSelection);
-            if ( snapCutCopyPasteSel && (cutCopyPasteSnapTileOverGrid || scGraphics.GetGridSize(0, gridWidth, gridHeight)) )
+            if ( snapCutCopyPasteSel && (cutCopyPasteSnapTileOverGrid || scGraphics->GetGridSize(0, gridWidth, gridHeight)) )
                 selections.snapDrags(gridWidth, gridHeight, nonZeroDragSnap);
         }
         else if ( currLayer == Layer::Locations )
@@ -3270,7 +3273,7 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
         GetClientRect(hWnd, &rcMap);
 
         // If pasting, move paste
-        if ( chkd.maps.clipboard.isPasting() )
+        if ( chkd.maps.clipboard->isPasting() )
         {
             s32 xc = mapHoverX, yc = mapHoverY;
             if ( panCurrentX <= rcMap.left )
@@ -3284,7 +3287,7 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
 
             selections.endDrag = {xc, yc};
             SnapSelEndDrag();
-            if ( !chkd.maps.clipboard.isPreviousPasteLoc(u16(xc), u16(yc)) )
+            if ( !chkd.maps.clipboard->isPreviousPasteLoc(u16(xc), u16(yc)) )
                 paste((s16)xc, (s16)yc);
         }
 
@@ -3298,7 +3301,7 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
         }
 
         selections.endDrag = { mapHoverX, mapHoverY };
-        if ( currLayer == Layer::Terrain && !chkd.maps.clipboard.isPasting() )
+        if ( currLayer == Layer::Terrain && !chkd.maps.clipboard->isPasting() )
             selections.endDrag = { (mapHoverX+16)/32*32, (mapHoverY+16)/32*32 };
         else if ( currLayer == Layer::Locations )
         {
@@ -3309,7 +3312,7 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
         else if ( currLayer == Layer::CutCopyPaste && snapCutCopyPasteSel )
         {
             u16 gridWidth = 32, gridHeight = 32;
-            if ( cutCopyPasteSnapTileOverGrid || scGraphics.GetGridSize(0, gridWidth, gridHeight) )
+            if ( cutCopyPasteSnapTileOverGrid || scGraphics->GetGridSize(0, gridWidth, gridHeight) )
                 selections.snapDrags(gridWidth, gridHeight, false);
         }
         else if ( currLayer == Layer::Units )
@@ -3319,9 +3322,9 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
             SnapSelEndDrag();
         }
         Animate();
-        PaintMap(nullptr, chkd.maps.clipboard.isPasting());
+        PaintMap(nullptr, chkd.maps.clipboard->isPasting());
     }
-    else if ( chkd.maps.clipboard.isPasting() == true ) // Not fog, and lButton is not down
+    else if ( chkd.maps.clipboard->isPasting() == true ) // Not fog, and lButton is not down
     {
         if ( GetKeyState(VK_SPACE) & 0x8000 )
         {
@@ -3340,7 +3343,7 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
         {
             selections.endDrag = {mapHoverX, mapHoverY};
             u16 gridWidth = 32, gridHeight = 32;
-            if ( snapCutCopyPasteSel && (cutCopyPasteSnapTileOverGrid || scGraphics.GetGridSize(0, gridWidth, gridHeight))
+            if ( snapCutCopyPasteSel && (cutCopyPasteSnapTileOverGrid || scGraphics->GetGridSize(0, gridWidth, gridHeight))
                 && gridWidth > 0 && gridHeight > 0 )
             {
                 selections.snapDrags(gridWidth, gridHeight, false);
@@ -3350,7 +3353,7 @@ void GuiMap::MouseMove(HWND hWnd, int x, int y, WPARAM wParam)
             selections.endDrag = {mapHoverX, mapHoverY};
                    
         Animate();     
-        PaintMap(nullptr, chkd.maps.clipboard.isPasting());
+        PaintMap(nullptr, chkd.maps.clipboard->isPasting());
     }
 }
 
@@ -3364,7 +3367,7 @@ void GuiMap::MouseHover(HWND hWnd, int x, int y, WPARAM wParam)
             break;
     
         default:
-            if ( chkd.maps.clipboard.isPasting() == true || (CM->getLayer() == Layer::FogEdit && dragging) )
+            if ( chkd.maps.clipboard->isPasting() == true || (CM->getLayer() == Layer::FogEdit && dragging) )
             {
                 RECT rcMap;
                 GetClientRect(hWnd, &rcMap);
@@ -3454,7 +3457,7 @@ void GuiMap::LButtonUp(HWND hWnd, int x, int y, WPARAM wParam)
         Redraw(false);
     }
 
-    if ( !chkd.maps.clipboard.isPasting() || (currLayer == Layer::FogEdit && !dragging) )
+    if ( !chkd.maps.clipboard->isPasting() || (currLayer == Layer::FogEdit && !dragging) )
         ClipCursor(NULL);
 }
 
@@ -3749,17 +3752,17 @@ void GuiMap::FinalizeUnitSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam)
         
         if ( (u16)unit.type < (u16)Sc::Unit::TotalTypes )
         {
-            unitLeft = unit.xc - chkd.scData.units.getUnit(unit.type).unitSizeLeft;
-            unitRight = unit.xc + chkd.scData.units.getUnit(unit.type).unitSizeRight;
-            unitTop = unit.yc - chkd.scData.units.getUnit(unit.type).unitSizeUp;
-            unitBottom = unit.yc + chkd.scData.units.getUnit(unit.type).unitSizeDown;
+            unitLeft = unit.xc - chkd.scData->units.getUnit(unit.type).unitSizeLeft;
+            unitRight = unit.xc + chkd.scData->units.getUnit(unit.type).unitSizeRight;
+            unitTop = unit.yc - chkd.scData->units.getUnit(unit.type).unitSizeUp;
+            unitBottom = unit.yc + chkd.scData->units.getUnit(unit.type).unitSizeDown;
         }
         else
         {
-            unitLeft = unit.xc - chkd.scData.units.getUnit(Sc::Unit::Type::TerranMarine).unitSizeLeft;
-            unitRight = unit.xc + chkd.scData.units.getUnit(Sc::Unit::Type::TerranMarine).unitSizeRight;
-            unitTop = unit.yc - chkd.scData.units.getUnit(Sc::Unit::Type::TerranMarine).unitSizeUp;
-            unitBottom = unit.yc + chkd.scData.units.getUnit(Sc::Unit::Type::TerranMarine).unitSizeDown;
+            unitLeft = unit.xc - chkd.scData->units.getUnit(Sc::Unit::Type::TerranMarine).unitSizeLeft;
+            unitRight = unit.xc + chkd.scData->units.getUnit(Sc::Unit::Type::TerranMarine).unitSizeRight;
+            unitTop = unit.yc - chkd.scData->units.getUnit(Sc::Unit::Type::TerranMarine).unitSizeUp;
+            unitBottom = unit.yc + chkd.scData->units.getUnit(Sc::Unit::Type::TerranMarine).unitSizeDown;
         }
     
         if ( selections.startDrag.x <= unitRight && selections.endDrag.x >= unitLeft
@@ -3798,7 +3801,7 @@ void GuiMap::FinalizeDoodadSelection(HWND hWnd, int mapX, int mapY, WPARAM wPara
     for ( size_t i=0; i<numDoodads; i++ )
     {
         const Chk::Doodad & doodad = Scenario::getDoodad(i);
-        const auto & tileset = chkd.scData.terrain.get(getTileset());
+        const auto & tileset = chkd.scData->terrain.get(getTileset());
         if ( auto doodadGroupIndex = tileset.getDoodadGroupIndex(doodad.type) )
         {
             const auto & doodadDat = (Sc::Terrain::DoodadCv5 &)tileset.tileGroups[size_t(*doodadGroupIndex)];
@@ -3913,7 +3916,7 @@ void GuiMap::FinalizeCutCopyPasteSelection(HWND hWnd, int mapX, int mapY, WPARAM
     if ( snapCutCopyPasteSel )
     {
         u16 gridWidth = 32, gridHeight = 32;
-        if ( cutCopyPasteSnapTileOverGrid || scGraphics.GetGridSize(0, gridWidth, gridHeight) )
+        if ( cutCopyPasteSnapTileOverGrid || scGraphics->GetGridSize(0, gridWidth, gridHeight) )
         {
             selections.snapDrags(gridWidth, gridHeight, (wParam & MK_CONTROL) == MK_CONTROL);
             snapped = true;
@@ -4130,6 +4133,29 @@ void GuiMap::SetSkin(ChkdSkin skin, bool reloadCurrent)
         chkd.terrainPalWindow->RedrawThis();
 }
 
+void GuiMap::OnScDataRefresh()
+{
+    auto newTileOccupationCache = Scenario::getTileOccupationCache(chkd.scData->terrain.get(Scenario::getTileset()), chkd.scData->units);
+    this->tileOccupationCache.swap(newTileOccupationCache);
+
+    (Chk::IsomCache &)(*this) = {read.tileset, Scenario::getTileWidth(), Scenario::getTileHeight(), chkd.scData->terrain.get(read.tileset)};
+    
+    animations.emplace(*chkd.scData, chkd.gameClock, (const Scenario &)*this);
+    for ( std::size_t i=0; i<numSprites(); ++i )
+        this->view.sprites.attachedData(i) = {};
+
+    for ( std::size_t i=0; i<numUnits(); ++i )
+        this->view.units.attachedData(i) = {};
+
+    for ( std::size_t i=0; i<numSprites(); ++i )
+        this->elementAdded(Scenario::sprites_path{}, i);
+
+    for ( std::size_t i=0; i<numUnits(); ++i )
+        this->elementAdded(Scenario::units_path{}, i);
+
+    scGraphics.emplace(*this, selections);
+}
+
 void GuiMap::destroyBrush()
 {
     if ( brushAction )
@@ -4138,7 +4164,7 @@ void GuiMap::destroyBrush()
 
 void GuiMap::refreshTileOccupationCache()
 {
-    auto newTileOccupationCache = Scenario::getTileOccupationCache(chkd.scData.terrain.get(Scenario::getTileset()), chkd.scData.units);
+    auto newTileOccupationCache = Scenario::getTileOccupationCache(chkd.scData->terrain.get(Scenario::getTileset()), chkd.scData->units);
     this->tileOccupationCache.swap(newTileOccupationCache);
 }
 
@@ -4156,18 +4182,18 @@ void GuiMap::windowBoundsChanged()
 
 void GuiMap::elementAdded(units_path, std::size_t index)
 {
-    animations.addUnit(index, view.units.attachedData(index));
+    animations->addUnit(index, view.units.attachedData(index));
 }
 
 void GuiMap::elementRemoved(units_path, std::size_t index)
 {
-    animations.removeUnit(index, view.units.attachedData(index));
+    animations->removeUnit(index, view.units.attachedData(index));
 }
 
 void GuiMap::elementMoved(units_path, std::size_t oldIndex, std::size_t newIndex)
 {
     if ( oldIndex != newIndex )
-        animations.updateUnitIndex(oldIndex, newIndex);
+        animations->updateUnitIndex(oldIndex, newIndex);
 }
 
 void GuiMap::valueChanged(unit_type_path path, Sc::Unit::Type oldType, Sc::Unit::Type newType)
@@ -4175,7 +4201,7 @@ void GuiMap::valueChanged(unit_type_path path, Sc::Unit::Type oldType, Sc::Unit:
     if ( oldType != newType )
     {
         std::size_t unitIndex = static_cast<std::size_t>(path.template index<0>());
-        animations.updateUnitType(unitIndex, newType);
+        animations->updateUnitType(unitIndex, newType);
     }
 }
 
@@ -4184,7 +4210,7 @@ void GuiMap::valueChanged(unit_owner_path path, u8 oldOwner, u8 newOwner)
     if ( oldOwner != newOwner )
     {
         std::size_t unitIndex = static_cast<std::size_t>(path.template index<0>());
-        animations.updateUnitOwner(unitIndex, newOwner);
+        animations->updateUnitOwner(unitIndex, newOwner);
     }
 }
 
@@ -4193,7 +4219,7 @@ void GuiMap::valueChanged(unit_xc_path path, u16 oldXc, u16 newXc)
     if ( oldXc != newXc )
     {
         std::size_t unitIndex = static_cast<std::size_t>(path.template index<0>());
-        animations.updateUnitXc(unitIndex, oldXc, newXc);
+        animations->updateUnitXc(unitIndex, oldXc, newXc);
     }
 }
 
@@ -4202,7 +4228,7 @@ void GuiMap::valueChanged(unit_yc_path path, u16 oldYc, u16 newYc)
     if ( oldYc != newYc )
     {
         std::size_t unitIndex = static_cast<std::size_t>(path.template index<0>());
-        animations.updateUnitYc(unitIndex, oldYc, newYc);
+        animations->updateUnitYc(unitIndex, oldYc, newYc);
     }
 }
 
@@ -4211,7 +4237,7 @@ void GuiMap::valueChanged(unit_resource_path path, u32 oldResourceAmount, u32 ne
     if ( oldResourceAmount != newResourceAmount )
     {
         std::size_t unitIndex = static_cast<std::size_t>(path.template index<0>());
-        animations.updateUnitResourceAmount(unitIndex, oldResourceAmount, newResourceAmount);
+        animations->updateUnitResourceAmount(unitIndex, oldResourceAmount, newResourceAmount);
     }
 }
 
@@ -4220,7 +4246,7 @@ void GuiMap::valueChanged(unit_state_path path, u16 oldStateFlags, u16 newStateF
     if ( oldStateFlags != newStateFlags )
     {
         std::size_t unitIndex = static_cast<std::size_t>(path.template index<0>());
-        animations.updateUnitStateFlags(unitIndex, oldStateFlags, newStateFlags);
+        animations->updateUnitStateFlags(unitIndex, oldStateFlags, newStateFlags);
     }
 }
 
@@ -4229,24 +4255,24 @@ void GuiMap::valueChanged(unit_relation_flags_path path, u16 oldRelationFlags, u
     if ( oldRelationFlags != newRelationFlags )
     {
         std::size_t unitIndex = static_cast<std::size_t>(path.template index<0>());
-        animations.updateUnitRelationFlags(unitIndex, oldRelationFlags, newRelationFlags);
+        animations->updateUnitRelationFlags(unitIndex, oldRelationFlags, newRelationFlags);
     }
 }
 
 void GuiMap::elementAdded(sprites_path, std::size_t index)
 {
-    animations.addSprite(index, view.sprites.attachedData(index));
+    animations->addSprite(index, view.sprites.attachedData(index));
 }
 
 void GuiMap::elementRemoved(sprites_path, std::size_t index)
 {
-    animations.removeSprite(index, view.sprites.attachedData(index));
+    animations->removeSprite(index, view.sprites.attachedData(index));
 }
 
 void GuiMap::elementMoved(sprites_path, std::size_t oldIndex, std::size_t newIndex)
 {
     if ( oldIndex != newIndex )
-        animations.updateSpriteIndex(oldIndex, newIndex);
+        animations->updateSpriteIndex(oldIndex, newIndex);
 }
 
 void GuiMap::valueChanged(sprite_type_path path, Sc::Sprite::Type oldType, Sc::Sprite::Type newType)
@@ -4254,7 +4280,7 @@ void GuiMap::valueChanged(sprite_type_path path, Sc::Sprite::Type oldType, Sc::S
     if ( oldType != newType )
     {
         std::size_t spriteIndex = static_cast<std::size_t>(path.template index<0>());
-        animations.updateSpriteType(spriteIndex, newType);
+        animations->updateSpriteType(spriteIndex, newType);
     }
 }
 
@@ -4263,7 +4289,7 @@ void GuiMap::valueChanged(sprite_owner_path path, u8 oldOwner, u8 newOwner)
     if ( oldOwner != newOwner )
     {
         std::size_t spriteIndex = static_cast<std::size_t>(path.template index<0>());
-        animations.updateSpriteOwner(spriteIndex, newOwner);
+        animations->updateSpriteOwner(spriteIndex, newOwner);
     }
 }
 
@@ -4272,7 +4298,7 @@ void GuiMap::valueChanged(sprite_flags_path path, u16 oldFlags, u16 newFlags)
     if ( oldFlags != newFlags )
     {
         std::size_t spriteIndex = static_cast<std::size_t>(path.template index<0>());
-        animations.updateSpriteFlags(spriteIndex, oldFlags, newFlags);
+        animations->updateSpriteFlags(spriteIndex, oldFlags, newFlags);
     }
 }
 
@@ -4281,7 +4307,7 @@ void GuiMap::valueChanged(sprite_xc_path path, u16 oldXc, u16 newXc)
     if ( oldXc != newXc )
     {
         std::size_t spriteIndex = static_cast<std::size_t>(path.template index<0>());
-        animations.updateSpriteXc(spriteIndex, oldXc, newXc);
+        animations->updateSpriteXc(spriteIndex, oldXc, newXc);
     }
 }
 
@@ -4290,7 +4316,7 @@ void GuiMap::valueChanged(sprite_yc_path path, u16 oldYc, u16 newYc)
     if ( oldYc != newYc )
     {
         std::size_t spriteIndex = static_cast<std::size_t>(path.template index<0>());
-        animations.updateSpriteYc(spriteIndex, oldYc, newYc);
+        animations->updateSpriteYc(spriteIndex, oldYc, newYc);
     }
 }
 
