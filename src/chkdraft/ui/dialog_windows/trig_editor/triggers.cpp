@@ -154,7 +154,7 @@ void TriggersWindow::RefreshGroupList()
         changeGroupHighlightOnly = true; // Begin selection
         if ( displayAll )
             listGroups.SelectItem(selectAllIndex);
-        for ( u8 i=0; i<28; i++ )
+        for ( u8 i=0; i<Chk::Trigger::MaxOwners; i++ )
         {
             if ( groupSelected[i] )
                 listGroups.SelectItem(i);
@@ -1108,7 +1108,7 @@ bool TriggersWindow::ShowTrigger(const Chk::Trigger & trigger)
 
 void TriggersWindow::ClearGroups()
 {
-    for ( u8 i=0; i<28; i++ )
+    for ( u8 i=0; i<Chk::Trigger::MaxOwners; i++ )
         groupSelected[i] = false;
 }
 

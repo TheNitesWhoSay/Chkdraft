@@ -1049,7 +1049,7 @@ template <class MapType> bool TextTrigGenerator::prepGroupTable(const MapType & 
         }
     }
 
-    for ( size_t i=22; i<28; i++ )
+    for ( size_t i=22; i<Chk::Trigger::MaxOwners; i++ )
     {
         groupName = upperGroups[i-22];
         groupTable.push_back( groupName );
