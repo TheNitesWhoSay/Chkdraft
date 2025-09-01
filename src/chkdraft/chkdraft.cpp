@@ -18,7 +18,7 @@ enum_t(Id, u32, {
     IDR_MAIN_MDI,
     IDR_MAIN_PLOT,
     PreDynamicMenus,
-    MenuDefaultProfile,
+    MenuFirstProfile,
     PostDynamicMenus,
     NextToLastId = PostDynamicMenus+500,
     ID_MDI_FIRSTCHILD = (NextToLastId+500) // Keep this higher than all other main window identifiers
@@ -120,18 +120,6 @@ void Chkdraft::OnLoadTest()
     //CM->clipboard.beginPasting(true, *CM);
     
     OpenEditProfilesDialog();
-
-    // TODO: Something like this goes somewhere
-
-    auto file = GetSubMenu(mainMenu.getHandle(), 0);
-    auto profiles = GetSubMenu(file, 4);
-    AppendMenu(profiles, MF_STRING|MF_UNCHECKED, (UINT_PTR)Id::MenuDefaultProfile, icux::toUistring("Default").c_str());
-    AppendMenu(profiles, MF_STRING|MF_CHECKED, (UINT_PTR)Id::MenuDefaultProfile+1, icux::toUistring("QuickTest").c_str());
-    AppendMenu(profiles, MF_STRING|MF_UNCHECKED, (UINT_PTR)Id::MenuDefaultProfile+2, icux::toUistring("Lol a really long text string that probably overflows the width").c_str());
-    AppendMenu(profiles, MF_STRING|MF_UNCHECKED, (UINT_PTR)Id::MenuDefaultProfile+3, icux::toUistring("Cosmonarchy").c_str());
-    AppendMenu(profiles, MF_STRING|MF_UNCHECKED, (UINT_PTR)Id::MenuDefaultProfile+4, icux::toUistring("ScrModMemes").c_str());
-    AppendMenu(profiles, MF_STRING|MF_UNCHECKED, (UINT_PTR)Id::MenuDefaultProfile+5, icux::toUistring("More").c_str());
-    AppendMenu(profiles, MF_STRING|MF_UNCHECKED, (UINT_PTR)Id::MenuDefaultProfile+6, icux::toUistring("And More").c_str());
 }
 
 void Chkdraft::PreLoadTest()
@@ -502,6 +490,16 @@ void Chkdraft::OnProfileLoad()
 
 void Chkdraft::ProfilesReload()
 {
+    for ( const auto & profile : profiles.profiles )
+    {
+        auto & menuId = profile->menuId;
+        if ( menuId != 0 )
+        {
+            DeleteMenu(profilesMenu, UINT(menuId), MF_BYCOMMAND);
+            menuId = 0;
+        }
+    }
+
     std::string currProfilePath {};
     std::string currProfileName {};
     if ( auto currProfile = profiles.getCurrProfile() )
@@ -544,6 +542,21 @@ void Chkdraft::ProfilesReload()
 
     if ( profiles.getCurrProfile() != nullptr )
         OnProfileLoad();
+
+    AddProfilesToMenu();
+}
+
+void Chkdraft::AddProfilesToMenu()
+{
+    u32 menuId = Id::MenuFirstProfile;
+    auto currProfile = profiles.getCurrProfile();
+    for ( auto & profile : profiles.profiles )
+    {
+        profile->menuId = menuId;
+        UINT flags = MF_STRING | (currProfile != nullptr && profile.get() == currProfile ? MF_CHECKED : MF_UNCHECKED);
+        AppendMenu(profilesMenu, flags, (UINT_PTR)menuId, icux::toUistring(profile->profileName).c_str());
+        ++menuId;
+    }
 }
 
 bool Chkdraft::DlgKeyListener(HWND hWnd, UINT & msg, WPARAM wParam, LPARAM lParam)
@@ -1119,6 +1132,10 @@ bool Chkdraft::CreateSubWindows()
                 WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_VSCROLL | WS_HSCROLL,
                 0, 0, 0, 0, (HMENU)Id::IDR_MAIN_MDI) )
         {
+            auto fileMenu = GetSubMenu(mainMenu.getHandle(), 0);
+            profilesMenu = GetSubMenu(fileMenu, 4);
+            AddProfilesToMenu();
+
             mainPlot.leftBar.SetWidth(360);
             return true;
         }

@@ -73,10 +73,10 @@ struct TriggerSettings
 struct ChkdProfile
 {
     NOTE(profilePath, Json::Ignore)
-    std::string profilePath;
+    std::string profilePath {};
 
     NOTE(menuId, Json::Ignore)
-    std::uint64_t menuId;
+    std::uint64_t menuId = 0;
 
     std::string profileName {};
     std::vector<std::string> additionalProfileDirectories {};

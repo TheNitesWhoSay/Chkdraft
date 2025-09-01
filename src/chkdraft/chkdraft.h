@@ -76,6 +76,7 @@ class Chkdraft : public WinLib::ClassWindow
                     void SetLogLevel(LogLevel newLogLevel);
                     void OnProfileLoad();
                     void ProfilesReload(); // Reloads profile settings from disk & reloads the currently selected profile
+                    void AddProfilesToMenu();
 
     protected:
 
@@ -95,6 +96,7 @@ class Chkdraft : public WinLib::ClassWindow
     private:
 
 /*     Data     */  HWND currDialog;
+                    HMENU profilesMenu = NULL;
                     bool editFocused;
                     Logger logFile;
                     std::string logFilePath;
