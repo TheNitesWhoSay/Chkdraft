@@ -136,6 +136,8 @@ ChkdProfile* ChkdProfiles::loadProfile(const std::string & filePath)
 
 void ChkdProfiles::loadProfiles()
 {
+    current = nullptr;
+    profiles.clear();
     if ( auto settingsPath = GetSettingsPath() )
     {
         std::unordered_set<std::string> visitedPaths {};

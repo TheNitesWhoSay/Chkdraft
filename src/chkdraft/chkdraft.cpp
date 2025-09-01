@@ -126,12 +126,12 @@ void Chkdraft::OnLoadTest()
     auto file = GetSubMenu(mainMenu.getHandle(), 0);
     auto profiles = GetSubMenu(file, 4);
     AppendMenu(profiles, MF_STRING|MF_UNCHECKED, (UINT_PTR)Id::MenuDefaultProfile, icux::toUistring("Default").c_str());
-    AppendMenu(profiles, MF_STRING|MF_CHECKED, (UINT_PTR)Id::MenuDefaultProfile, icux::toUistring("QuickTest").c_str());
-    AppendMenu(profiles, MF_STRING|MF_UNCHECKED, (UINT_PTR)Id::MenuDefaultProfile, icux::toUistring("Lol a really long text string that probably overflows the width").c_str());
-    AppendMenu(profiles, MF_STRING|MF_UNCHECKED, (UINT_PTR)Id::MenuDefaultProfile, icux::toUistring("Cosmonarchy").c_str());
-    AppendMenu(profiles, MF_STRING|MF_UNCHECKED, (UINT_PTR)Id::MenuDefaultProfile, icux::toUistring("ScrModMemes").c_str());
-    AppendMenu(profiles, MF_STRING|MF_UNCHECKED, (UINT_PTR)Id::MenuDefaultProfile, icux::toUistring("More").c_str());
-    AppendMenu(profiles, MF_STRING|MF_UNCHECKED, (UINT_PTR)Id::MenuDefaultProfile, icux::toUistring("And More").c_str());
+    AppendMenu(profiles, MF_STRING|MF_CHECKED, (UINT_PTR)Id::MenuDefaultProfile+1, icux::toUistring("QuickTest").c_str());
+    AppendMenu(profiles, MF_STRING|MF_UNCHECKED, (UINT_PTR)Id::MenuDefaultProfile+2, icux::toUistring("Lol a really long text string that probably overflows the width").c_str());
+    AppendMenu(profiles, MF_STRING|MF_UNCHECKED, (UINT_PTR)Id::MenuDefaultProfile+3, icux::toUistring("Cosmonarchy").c_str());
+    AppendMenu(profiles, MF_STRING|MF_UNCHECKED, (UINT_PTR)Id::MenuDefaultProfile+4, icux::toUistring("ScrModMemes").c_str());
+    AppendMenu(profiles, MF_STRING|MF_UNCHECKED, (UINT_PTR)Id::MenuDefaultProfile+5, icux::toUistring("More").c_str());
+    AppendMenu(profiles, MF_STRING|MF_UNCHECKED, (UINT_PTR)Id::MenuDefaultProfile+6, icux::toUistring("And More").c_str());
 }
 
 void Chkdraft::PreLoadTest()
@@ -418,7 +418,7 @@ void Chkdraft::SetLogLevel(LogLevel newLogLevel)
     UpdateLogLevelCheckmarks(newLogLevel);
 }
 
-void Chkdraft::OnProfileChange()
+void Chkdraft::OnProfileLoad()
 {
     // Destroy all modeless dialogs
     unitWindow->DestroyThis();
@@ -498,6 +498,52 @@ void Chkdraft::OnProfileChange()
     enterPasswordWindow.emplace();
     aboutWindow.emplace();
     editProfilesWindow.emplace();
+}
+
+void Chkdraft::ProfilesReload()
+{
+    std::string currProfilePath {};
+    std::string currProfileName {};
+    if ( auto currProfile = profiles.getCurrProfile() )
+    {
+        currProfilePath = currProfile->profilePath;
+        currProfileName = currProfile->profileName;
+    }
+
+    profiles.loadProfiles();
+    bool currentSet = false;
+    if ( auto currProfile = profiles.getCurrProfile() )
+    {
+        if ( currProfile->profilePath.compare(currProfilePath) == 0 )
+            currentSet = true;
+    }
+    if ( !currentSet )
+    {
+        for ( std::size_t i=0; i<profiles.profiles.size(); ++i )
+        {
+            if ( profiles[i].profilePath.compare(currProfilePath) == 0 )
+            {
+                profiles.setCurrProfile(i);
+                currentSet = true;
+                break;
+            }
+        }
+        if ( !currentSet )
+        {
+            for ( std::size_t i=0; i<profiles.profiles.size(); ++i )
+            {
+                if ( profiles[i].profileName.compare(currProfileName) == 0 )
+                {
+                    profiles.setCurrProfile(i);
+                    currentSet = true;
+                    break;
+                }
+            }
+        }
+    }
+
+    if ( profiles.getCurrProfile() != nullptr )
+        OnProfileLoad();
 }
 
 bool Chkdraft::DlgKeyListener(HWND hWnd, UINT & msg, WPARAM wParam, LPARAM lParam)
@@ -824,6 +870,7 @@ LRESULT Chkdraft::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     case ID_FILE_NEW1: newMap.CreateThis(hWnd); break;
     case ID_FILE_OPEN1: maps.OpenMap(); break;
     case ID_ADVANCED_OPENBACKUPDATABASE: OpenBackupsDirectory(); break;
+    case ID_PROFILES_RELOAD: ProfilesReload(); break;
     case ID_PROFILES_FINDPROFILE: OpenFindProfileDialog(); break;
     case ID_PROFILES_EDITPROFILES: OpenEditProfilesDialog(); break;
     case ID_FILE_CLOSE1: maps.CloseActive(); break;

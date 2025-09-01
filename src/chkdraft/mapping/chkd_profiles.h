@@ -75,6 +75,9 @@ struct ChkdProfile
     NOTE(profilePath, Json::Ignore)
     std::string profilePath;
 
+    NOTE(menuId, Json::Ignore)
+    std::uint64_t menuId;
+
     std::string profileName {};
     std::vector<std::string> additionalProfileDirectories {};
     bool isDefaultProfile = false;
