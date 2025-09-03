@@ -36,11 +36,13 @@ bool ChkdDataFileBrowser::findStarCraftDirectory(std::string & starCraftDirector
     {
         if ( !isRemastered && chkd.profiles().classic.starCraftPath != starCraftDirectory )
         {
+            chkd.profiles().useRemastered = false;
             chkd.profiles().classic.starCraftPath = starCraftDirectory;
             profileUpdated = true;
         }
         else if ( isRemastered && chkd.profiles().remastered.starCraftPath != starCraftDirectory )
         {
+            chkd.profiles().useRemastered = true;
             chkd.profiles().remastered.starCraftPath = starCraftDirectory;
             profileUpdated = true;
         }

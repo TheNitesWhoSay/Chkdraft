@@ -1,5 +1,7 @@
 #include "edit_profiles.h"
 #include "chkdraft.h"
+#include "chkdraft/ui/chkd_controls/input_dialog.h"
+#include <filesystem>
 
 enum_t(Id, u32, {
     ProfileTabs = IDC_PROFILE_TABS,
@@ -88,6 +90,171 @@ void EditProfilesWindow::RefreshWindow()
     checkAutoLoadOnStart.SetCheck(editProfile.autoLoadOnStart);
 }
 
+void EditProfilesWindow::addProfileClicked()
+{
+    if ( auto newName = InputDialog::getInput(getHandle(), "Add Profile", "New Profile Name:", "") )
+    {
+        if ( chkd.profiles.nameUsed(*newName) )
+            logger.error() << "A profile named " << (*newName) << " already exists!" << std::endl;
+        else if ( auto settingsPath = GetSettingsPath() )
+        {
+            auto & newProfile = chkd.profiles.profiles.emplace_back(std::make_unique<ChkdProfile>());
+            newProfile->profileName = *newName;
+            this->editProfileName = newProfile->profileName;
+            newProfile->profilePath = makeSystemFilePath(*settingsPath, newProfile->profileName + ".profile.json");
+            newProfile->saveProfile();
+            chkd.UpdateProfilesMenu();
+            RefreshWindow();
+        }
+    }
+}
+
+void EditProfilesWindow::cloneProfileClicked()
+{
+    const auto & editProfile = getEditProfile();
+    if ( auto newName = InputDialog::getInput(getHandle(), "Clone Profile", "New Profile Name:", "") )
+    {
+        if ( chkd.profiles.nameUsed(*newName) )
+            logger.error() << "A profile named " << (*newName) << " already exists!" << std::endl;
+        else
+        {
+            auto & newProfile = chkd.profiles.profiles.emplace_back(std::make_unique<ChkdProfile>(editProfile));
+            newProfile->profileName = *newName;
+            this->editProfileName = newProfile->profileName;
+
+            std::string directory = getSystemFileDirectory(newProfile->profilePath);
+            newProfile->profilePath = makeExtSystemFilePath(makeSystemFilePath(directory, newProfile->profileName), ".profile.json");
+            for ( int i=1; std::filesystem::exists(newProfile->profilePath); ++i )
+                newProfile->profilePath = makeExtSystemFilePath(makeSystemFilePath(directory, newProfile->profileName + std::to_string(i)), ".profile.json");
+
+            newProfile->saveProfile();
+            chkd.UpdateProfilesMenu();
+            RefreshWindow();
+        }
+    }
+}
+
+void EditProfilesWindow::renameProfileClicked()
+{
+    auto & editProfile = getEditProfile();
+    if ( auto newName = InputDialog::getInput(getHandle(), "Rename Profile", "Profile Name:", editProfile.profileName) )
+    {
+        if ( newName != editProfile.profileName )
+        {
+            if ( chkd.profiles.nameUsed(*newName) )
+                logger.error() << "A profile named " << (*newName) << " already exists!" << std::endl;
+            else
+            {
+                editProfile.profileName = *newName;
+                this->editProfileName = editProfile.profileName;
+
+                std::string prevPath = editProfile.profilePath;
+                std::string directory = getSystemFileDirectory(prevPath);
+                editProfile.profilePath = makeExtSystemFilePath(makeSystemFilePath(directory, editProfile.profileName), ".profile.json");
+                for ( int i=1; std::filesystem::exists(editProfile.profilePath); ++i )
+                    editProfile.profilePath = makeExtSystemFilePath(makeSystemFilePath(directory, editProfile.profileName + std::to_string(i)), ".profile.json");
+
+                std::filesystem::rename(prevPath, editProfile.profilePath);
+                editProfile.saveProfile();
+                RefreshWindow();
+                chkd.ProfileNameUpdated(editProfile);
+            }
+        }
+    }
+}
+
+void EditProfilesWindow::findProfileClicked()
+{
+    std::string profilePath {};
+    u32 filterIndex = 0;
+    if ( auto settingsPath = GetSettingsPath() )
+    {
+        if ( browseForFile(profilePath, filterIndex, {{"*.profile.json", "Chkd Profile"}}, *settingsPath, "Find Profile", true, false) &&
+            profilePath.ends_with(".profile.json") )
+        {
+            if ( chkd.profiles.loadProfile(profilePath) != nullptr )
+            {
+                for ( auto & profile : chkd.profiles.profiles )
+                {
+                    profile->additionalProfileDirectories.push_back(getSystemFileDirectory(profilePath));
+                    profile->saveProfile();
+                }
+                RefreshWindow();
+                chkd.UpdateProfilesMenu();
+            }
+        }
+    }
+}
+
+void EditProfilesWindow::deleteProfileClicked()
+{
+    if ( chkd.profiles.profiles.size() == 1 )
+    {
+        logger.error("Cannot delete the last profile");
+        return;
+    }
+
+    auto & editProfile = getEditProfile();
+    std::size_t editProfileIndex = std::numeric_limits<std::size_t>::max();
+    for ( std::size_t i=0; i<chkd.profiles.profiles.size(); ++i )
+    {
+        if ( chkd.profiles[i].profilePath == editProfile.profilePath )
+        {
+            editProfileIndex = i;
+            break;
+        }
+    }
+    chkd.RemoveProfileFromMenu(editProfile);
+
+    bool wasCurrentProfile = editProfile.profilePath == chkd.profiles().profilePath;
+    if ( wasCurrentProfile )
+    {
+        for ( std::size_t i=0; i<chkd.profiles.profiles.size(); ++i )
+        {
+            if ( i != editProfileIndex )
+            {
+                chkd.profiles.setCurrProfile(i);
+                break;
+            }
+        }
+    }
+
+    std::string profilePath = editProfile.profilePath;
+    chkd.profiles.profiles.erase(std::next(chkd.profiles.profiles.begin(), static_cast<std::ptrdiff_t>(editProfileIndex)));
+    std::filesystem::remove(profilePath);
+    chkd.UpdateProfilesMenu();
+    if ( wasCurrentProfile )
+        chkd.OnProfileLoad();
+    else
+        RefreshWindow();
+}
+
+void EditProfilesWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
+{
+    switch ( idFrom )
+    {
+        case Id::ButtonAddProfile: addProfileClicked(); break;
+        case Id::ButtonCloneProfile: cloneProfileClicked(); break;
+        case Id::ButtonRenameProfile: renameProfileClicked(); break;
+        case Id::ButtonFindProfile: findProfileClicked(); break;
+        case Id::ButtonDeleteProfile: deleteProfileClicked(); break;
+        case Id::CheckDefaultProfile:
+        {
+            auto & editProfile = getEditProfile();
+            editProfile.isDefaultProfile = checkIsDefaultProfile.isChecked();
+            editProfile.saveProfile();
+        }
+        break;
+        case Id::CheckAutoLoadOnStart:
+        {
+            auto & editProfile = getEditProfile();
+            editProfile.autoLoadOnStart = checkAutoLoadOnStart.isChecked();
+            editProfile.saveProfile();
+        }
+        break;
+    }
+}
+
 BOOL EditProfilesWindow::DlgNotify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
 {
     switch ( nmhdr->code )
@@ -124,14 +291,28 @@ BOOL EditProfilesWindow::DlgNotify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
 
 BOOL EditProfilesWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 {
-    switch ( LOWORD(wParam) )
+    switch ( HIWORD(wParam) )
     {
-    case IDCANCEL:
-        EndDialog(hWnd, IDCANCEL);
-        break;
-    default:
-        return FALSE;
-        break;
+        case LBN_SELCHANGE:
+            if ( LOWORD(wParam) == Id::ListProfiles )
+            {
+                std::string newSelProfile {};
+                if ( listProfiles.GetCurSelString(newSelProfile) )
+                {
+                    this->editProfileName = newSelProfile;
+                    RefreshWindow();
+                }
+            }
+            break;
+        default:
+            switch ( LOWORD(wParam) )
+            {
+                case IDCANCEL:
+                    EndDialog(hWnd, IDCANCEL);
+                    break;
+            }
+            return FALSE;
+            break;
     }
     return TRUE;
 }

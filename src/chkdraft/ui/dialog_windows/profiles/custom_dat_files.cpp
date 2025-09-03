@@ -1,4 +1,5 @@
 #include "custom_dat_files.h"
+#include <chkdraft.h>
 
 enum_t(Id, u32, {
     TextUsedDataFiles = ID_FIRST,
@@ -38,7 +39,57 @@ void CustomDatFilesWindow::DestroyThis()
 
 void CustomDatFilesWindow::RefreshWindow()
 {
+    auto & editProfile = getEditProfile();
 
+    std::vector<std::string> availableDataFiles {};
+    std::set<std::string> usedDataFiles {};
+    listUsedDataFiles.DeleteAllItems();
+    if ( editProfile.useRemastered )
+    {
+        for ( const auto & datFilePath : editProfile.remastered.dataFiles )
+            listUsedDataFiles.AddRow();
+
+        int row = 0;
+        for ( const auto & datFilePath : editProfile.remastered.dataFiles )
+        {
+            listUsedDataFiles.SetItemText(row, 0, datFilePath);
+            usedDataFiles.insert(fixSystemPathSeparators(datFilePath));
+            ++row;
+        }
+    }
+    else
+    {
+        for ( const auto & datFilePath : editProfile.classic.dataFiles )
+            listUsedDataFiles.AddRow();
+
+        int row = 0;
+        for ( const auto & datFilePath : editProfile.classic.dataFiles )
+        {
+            listUsedDataFiles.SetItemText(row, 0, datFilePath);
+            usedDataFiles.insert(fixSystemPathSeparators(datFilePath));
+            ++row;
+        }
+    }
+    
+    if ( !editProfile.remastered.cascPath.empty() && !usedDataFiles.contains(fixSystemPathSeparators(editProfile.remastered.cascPath)) )
+        availableDataFiles.push_back(editProfile.remastered.cascPath);
+    if ( !editProfile.classic.starDatPath.empty() && !usedDataFiles.contains(fixSystemPathSeparators(editProfile.classic.starDatPath)) )
+        availableDataFiles.push_back(editProfile.classic.starDatPath);
+    if ( !editProfile.classic.brooDatPath.empty() && !usedDataFiles.contains(fixSystemPathSeparators(editProfile.classic.brooDatPath)) )
+        availableDataFiles.push_back(editProfile.classic.brooDatPath);
+    if ( !editProfile.classic.patchRtPath.empty() && !usedDataFiles.contains(fixSystemPathSeparators(editProfile.classic.patchRtPath)) )
+        availableDataFiles.push_back(editProfile.classic.patchRtPath);
+
+    listAvailableDataFiles.DeleteAllItems();
+    for ( auto & availableDataFile : availableDataFiles )
+        listAvailableDataFiles.AddRow();
+
+    int row = 0;
+    for ( auto & availableDataFile : availableDataFiles )
+    {
+        listAvailableDataFiles.SetItemText(row, 0, availableDataFile);
+        ++row;
+    }
 }
 
 LRESULT CustomDatFilesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -69,20 +120,20 @@ void CustomDatFilesWindow::CreateSubWindows(HWND hWnd)
     
     buttonToggleRelativePath.CreateThis(hWnd, 5, 295, 120, 20, "Toggle Relative Path", Id::ButtonToggleRelativePath, false, false);
     buttonBrowseDataFile.CreateThis(hWnd, 130, 295, 60, 20, "Browse...", Id::ButtonBrowseDataFile, false, false);
-    
-    listUsedDataFiles.AddColumn(0, "", 500, 0);
-    listUsedDataFiles.AddRow();
-    listUsedDataFiles.AddRow();
-    listUsedDataFiles.AddRow();
-    listUsedDataFiles.AddRow();
-    listUsedDataFiles.SetItemText(0, 0, "C:\\misc\\mod.mpq");
-    listUsedDataFiles.SetItemText(1, 0, "C:\\Users\\Nites\\Desktop\\Sc 1.16.1\\patch_rt.mpq");
-    listUsedDataFiles.SetItemText(2, 0, "C:\\Users\\Nites\\Desktop\\Sc 1.16.1\\BrooDat.mpq");
-    listUsedDataFiles.SetItemText(3, 0, "C:\\Users\\Nites\\Desktop\\Sc 1.16.1\\StarDat.mpq");
 
+    listUsedDataFiles.AddColumn(0, "", 500, 0);
     listAvailableDataFiles.AddColumn(0, "", 500, 0);
-    listAvailableDataFiles.AddRow();
-    listAvailableDataFiles.AddRow();
-    listAvailableDataFiles.SetItemText(0, 0, "(MapMpq)");
-    listAvailableDataFiles.SetItemText(1, 0, "C:\\Program Files (x86)\\StarCraft (CASC)");
+}
+
+ChkdProfile & CustomDatFilesWindow::getEditProfile()
+{
+    for ( auto & profile : chkd.profiles.profiles )
+    {
+        if ( this->editProfileName == profile->profileName )
+        {
+            return *(profile);
+        }
+    }
+    this->editProfileName = chkd.profiles().profileName;
+    return chkd.profiles();
 }

@@ -69,6 +69,7 @@ set(Headers
   ui/chkd_controls/cuwp_input.h
   ui/chkd_controls/doodad_tree.h
   ui/chkd_controls/history_tree.h
+  ui/chkd_controls/input_dialog.h
   ui/chkd_controls/isom_tree.h
   ui/chkd_controls/location_tree.h
   ui/chkd_controls/main_tree.h
@@ -176,6 +177,7 @@ set(Sources
   ui/chkd_controls/cuwp_input.cpp
   ui/chkd_controls/doodad_tree.cpp
   ui/chkd_controls/history_tree.cpp
+  ui/chkd_controls/input_dialog.cpp
   ui/chkd_controls/isom_tree.cpp
   ui/chkd_controls/location_tree.cpp
   ui/chkd_controls/main_tree.cpp

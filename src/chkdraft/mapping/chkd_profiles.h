@@ -82,7 +82,7 @@ struct ChkdProfile
     std::vector<std::string> additionalProfileDirectories {};
     bool isDefaultProfile = false;
     bool autoLoadOnStart = false;
-    bool useRemastered = false;
+    bool useRemastered = true;
     RemasteredSettings remastered {};
     ClassicSettings classic {};
     HistorySettings history {};
@@ -93,6 +93,7 @@ struct ChkdProfile
         remastered, classic, history, logger, triggers)
 
     void fixPathsToForwardSlash();
+    void saveProfile();
 };
 
 class ChkdProfiles
@@ -116,6 +117,7 @@ public:
     ChkdProfile* loadProfile(const std::string & filePath);
     void loadProfiles();
     ChkdProfiles();
+    bool nameUsed(const std::string & profileName) const;
 };
 
 #endif

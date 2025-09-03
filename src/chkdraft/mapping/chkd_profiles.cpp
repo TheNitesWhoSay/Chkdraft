@@ -88,6 +88,9 @@ void ChkdProfile::fixPathsToForwardSlash()
                 c = '/';
         }
     };
+
+    for ( auto & additionalProfileDirectory : additionalProfileDirectories )
+        fixPathToForwardSlash(additionalProfileDirectory);
     
     fixPathToForwardSlash(remastered.starCraftPath);
     fixPathToForwardSlash(remastered.cascPath);
@@ -102,15 +105,23 @@ void ChkdProfile::fixPathsToForwardSlash()
         fixPathToForwardSlash(dataFile);
 }
 
-void ChkdProfiles::saveCurrProfile()
+void ChkdProfile::saveProfile()
 {
-    current->fixPathsToForwardSlash();
-    std::ofstream outFile(icux::toFilestring(current->profilePath), std::ios_base::out | std::ios_base::binary);
-    outFile << Json::pretty(*current);
+    fixPathsToForwardSlash();
+    std::ofstream outFile(icux::toFilestring(this->profilePath), std::ios_base::out | std::ios_base::binary);
+    outFile << Json::pretty(*this);
     if ( !outFile.good() )
-        Error("Failed to save profile \"" + current->profilePath + "\"");
+        Error("Failed to save profile \"" + this->profilePath + "\"");
 
     outFile.close();
+}
+
+void ChkdProfiles::saveCurrProfile()
+{
+    if ( current != nullptr )
+        current->saveProfile();
+    else
+        throw std::logic_error("Cannot saveCurrProfile when there is no current profile!");
 }
 
 ChkdProfile* ChkdProfiles::loadProfile(const std::string & filePath)
@@ -121,6 +132,17 @@ ChkdProfile* ChkdProfiles::loadProfile(const std::string & filePath)
     try {
 
         inFile >> Json::in(*chkdProfile);
+        for ( auto & existingProfile : profiles )
+        {
+            if ( chkdProfile.get() != existingProfile.get() &&
+                 (std::filesystem::path(chkdProfile->profilePath) == std::filesystem::path(existingProfile->profilePath) ||
+                 chkdProfile->profileName == existingProfile->profileName) )
+            {
+                chkdProfile = nullptr;
+                this->profiles.pop_back();
+                return nullptr;
+            }
+        }
         if ( !current && chkdProfile->isDefaultProfile )
             current = chkdProfile.get();
 
@@ -144,35 +166,38 @@ void ChkdProfiles::loadProfiles()
         for ( const auto & item : std::filesystem::directory_iterator{std::filesystem::path(*settingsPath)} )
         {
             auto pathString = item.path().string();
-            if ( !item.is_directory() && pathString.ends_with(".profile.json") && !visitedPaths.contains(pathString) )
+            if ( !item.is_directory() && pathString.ends_with(".profile.json") && !visitedPaths.contains(fixSystemPathSeparators(pathString)) )
             {
-                visitedPaths.insert(pathString);
+                visitedPaths.insert(fixSystemPathSeparators(pathString));
                 loadProfile(pathString);
             }
         }
+
         bool loadedAdditionalProfiles = false;
         do
         {
-            for ( auto & profile : this->profiles )
+            for ( std::size_t i=0; i<this->profiles.size(); ++i )
             {
+                auto & profile = this->profiles[i];
                 for ( auto & additionalProfileDirectory : profile->additionalProfileDirectories )
                 {
-                    if ( !visitedPaths.contains(additionalProfileDirectory) )
+                    if ( !visitedPaths.contains(fixSystemPathSeparators(additionalProfileDirectory)) )
                     {
-                        visitedPaths.insert(additionalProfileDirectory);
+                        visitedPaths.insert(fixSystemPathSeparators(additionalProfileDirectory));
                         for ( const auto & item : std::filesystem::directory_iterator{std::filesystem::path(additionalProfileDirectory)} )
                         {
                             auto pathString = item.path().string();
-                            if ( !item.is_directory() && pathString.ends_with(".profile.json") && !visitedPaths.contains(pathString) )
+                            if ( !item.is_directory() && pathString.ends_with(".profile.json") && !visitedPaths.contains(fixSystemPathSeparators(pathString)) )
                             {
-                                visitedPaths.insert(pathString);
+                                visitedPaths.insert(fixSystemPathSeparators(pathString));
                                 loadProfile(pathString);
                             }
                         }
                     }
                 }
             }
-        } while ( loadedAdditionalProfiles ); 
+        } while ( loadedAdditionalProfiles );
+
         if ( this->profiles.empty() ) // Create a profile and make it the default
         {
             auto & defaultProfile = profiles.emplace_back(std::make_unique<ChkdProfile>());
@@ -197,4 +222,14 @@ void ChkdProfiles::loadProfiles()
 ChkdProfiles::ChkdProfiles()
 {
     loadProfiles();
+}
+
+bool ChkdProfiles::nameUsed(const std::string & profileName) const
+{
+    for ( auto & profile : profiles )
+    {
+        if ( profile->profileName == profileName )
+            return true;
+    }
+    return false;
 }

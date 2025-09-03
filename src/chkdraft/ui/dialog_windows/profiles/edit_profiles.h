@@ -18,12 +18,21 @@ public:
         EditorSettings,
     };
 
+    EditProfilesWindow() : profileGeneralWindow(editProfileName), customDatFilesWindow(editProfileName) {}
     bool CreateThis(HWND hParent);
     void DestroyThis();
     void ChangeTab(Tab tab);
     void RefreshWindow();
 
 protected:
+    void addProfileClicked();
+    void cloneProfileClicked();
+    void renameProfileClicked();
+    void findProfileClicked();
+    void deleteProfileClicked();
+
+    void NotifyButtonClicked(int idFrom, HWND hWndFrom) override; // Sent when a button or checkbox is clicked
+
     BOOL DlgNotify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr);
     BOOL DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam);
     BOOL DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);

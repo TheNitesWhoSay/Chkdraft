@@ -41,6 +41,7 @@
 #define IDI_ICON_SMALL                  169
 #define IDD_DIALOG_SELPROFILE           170
 #define IDD_DIALOG_EDITPROFILES         172
+#define IDD_DIALOG_INPUTSTRING          174
 #define IDC_LIST_TILESET                1007
 #define IDC_LIST_DEFAULTTERRAIN         1008
 #define IDC_EDIT_TRIGTEXT               1009
@@ -222,6 +223,7 @@
 #define IDC_CHECK_PRIMARYIMAGE          1157
 #define IDC_CHECK_FLIPPED               1158
 #define IDC_CHECK_ROTATIONENABLED       1159
+#define IDC_STATIC_PROMPT               1160
 #define ID_FILE_NEW1                    40025
 #define ID_FILE_OPEN1                   40026
 #define ID_ADVANCED_OPENBACKUPDATABASE  40027
@@ -425,9 +427,9 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        174
+#define _APS_NEXT_RESOURCE_VALUE        175
 #define _APS_NEXT_COMMAND_VALUE         40685
-#define _APS_NEXT_CONTROL_VALUE         1160
+#define _APS_NEXT_CONTROL_VALUE         1161
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

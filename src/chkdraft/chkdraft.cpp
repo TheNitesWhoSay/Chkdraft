@@ -408,6 +408,8 @@ void Chkdraft::SetLogLevel(LogLevel newLogLevel)
 
 void Chkdraft::OnProfileLoad()
 {
+    logger.info() << "Loading new profile: \"" << profiles().profileName << "\"" << std::endl;
+
     // Destroy all modeless dialogs
     unitWindow->DestroyThis();
     spriteWindow->DestroyThis();
@@ -543,19 +545,56 @@ void Chkdraft::ProfilesReload()
     if ( profiles.getCurrProfile() != nullptr )
         OnProfileLoad();
 
-    AddProfilesToMenu();
+    UpdateProfilesMenu();
+    if ( editProfilesWindow && editProfilesWindow->getHandle() != NULL )
+        editProfilesWindow->RefreshWindow();
 }
 
-void Chkdraft::AddProfilesToMenu()
+void Chkdraft::UpdateProfilesMenu()
 {
     u32 menuId = Id::MenuFirstProfile;
     auto currProfile = profiles.getCurrProfile();
     for ( auto & profile : profiles.profiles )
     {
-        profile->menuId = menuId;
-        UINT flags = MF_STRING | (currProfile != nullptr && profile.get() == currProfile ? MF_CHECKED : MF_UNCHECKED);
-        AppendMenu(profilesMenu, flags, (UINT_PTR)menuId, icux::toUistring(profile->profileName).c_str());
-        ++menuId;
+        if ( profile->menuId == 0 )
+        {
+            profile->menuId = menuId;
+            UINT flags = MF_STRING | (currProfile != nullptr && profile.get() == currProfile ? MF_CHECKED : MF_UNCHECKED);
+            AppendMenu(profilesMenu, flags, (UINT_PTR)menuId, icux::toUistring(profile->profileName).c_str());
+            ++menuId;
+        }
+        else
+        {
+            MENUITEMINFO menuItemInfo {};
+            menuItemInfo.cbSize = sizeof(MENUITEMINFO);
+            menuItemInfo.fMask = MIIM_STATE;
+            menuItemInfo.fState = (currProfile != nullptr && profile.get() == currProfile ? MFS_CHECKED : MFS_UNCHECKED);
+            SetMenuItemInfo(profilesMenu, profile->menuId, FALSE, &menuItemInfo);
+        }
+    }
+}
+
+void Chkdraft::RemoveProfileFromMenu(ChkdProfile & profile)
+{
+    auto & menuId = profile.menuId;
+    if ( menuId != 0 )
+    {
+        DeleteMenu(profilesMenu, UINT(menuId), MF_BYCOMMAND);
+        menuId = 0;
+    }
+}
+
+void Chkdraft::ProfileNameUpdated(const ChkdProfile & profile)
+{
+    u32 menuId = profile.menuId;
+    if ( menuId != 0 )
+    {
+        icux::uistring uiProfileName = icux::toUistring(profile.profileName);
+        MENUITEMINFO menuItemInfo {};
+        menuItemInfo.cbSize = sizeof(MENUITEMINFO);
+        menuItemInfo.fMask = MIIM_STRING;
+        menuItemInfo.dwTypeData = uiProfileName.data();
+        SetMenuItemInfo(profilesMenu, menuId, FALSE, &menuItemInfo);
     }
 }
 
@@ -1033,7 +1072,22 @@ LRESULT Chkdraft::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
         case CBN_KILLFOCUS: editFocused = false; break;
         case CBN_EDITCHANGE: ComboEditChanged((HWND)lParam, LOWORD(wParam)); SetFocus(getHandle()); break;
         case CBN_SELCHANGE: ComboSelChanged((HWND)lParam, LOWORD(wParam)); SetFocus(getHandle()); break;
-        default: return ClassWindow::Command(hWnd, wParam, lParam); break;
+        default:
+            if ( LOWORD(wParam) >= Id::MenuFirstProfile && LOWORD(wParam) < Id::PostDynamicMenus )
+            {
+                for ( std::size_t i=0; i<profiles.profiles.size(); ++i )
+                {
+                    if ( profiles[i].menuId == LOWORD(wParam) )
+                    {
+                        profiles.setCurrProfile(i);
+                        this->OnProfileLoad();
+                        this->UpdateProfilesMenu();
+                        return 0;
+                    }
+                }
+            }
+            return ClassWindow::Command(hWnd, wParam, lParam);
+            break;
         }
         break;
     }
@@ -1134,7 +1188,7 @@ bool Chkdraft::CreateSubWindows()
         {
             auto fileMenu = GetSubMenu(mainMenu.getHandle(), 0);
             profilesMenu = GetSubMenu(fileMenu, 4);
-            AddProfilesToMenu();
+            UpdateProfilesMenu();
 
             mainPlot.leftBar.SetWidth(360);
             return true;

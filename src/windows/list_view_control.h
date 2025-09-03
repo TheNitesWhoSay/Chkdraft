@@ -26,6 +26,7 @@ namespace WinLib {
             //bool SortItems(WPARAM value, LPARAM function);
         
             int GetItemRow(int lParam);
+            int GetNumRows();
             int GetNumColumns();
             int GetColumnWidth(int column);
             bool GetItemAt(int xCoord, int yCoord, int & itemRow, int & itemColumn);

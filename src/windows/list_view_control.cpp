@@ -164,6 +164,11 @@ namespace WinLib {
         return (int)SendMessage(getHandle(), LVM_GETCOLUMNWIDTH, column, 0);
     }
 
+    int ListViewControl::GetNumRows()
+    {
+        return (int)SendMessage(getHandle(), LVM_GETITEMCOUNT, 0, 0);
+    }
+
     int ListViewControl::GetNumColumns()
     {
         HWND header = (HWND)SendMessage(getHandle(), LVM_GETHEADER, 0, 0);

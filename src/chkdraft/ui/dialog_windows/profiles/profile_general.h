@@ -1,11 +1,13 @@
 #ifndef PROFILEGENERAL_H
 #define PROFILEGENERAL_H
+#include <chkdraft/mapping/chkd_profiles.h>
 #include <common_files/common_files.h>
 #include <windows/windows_ui.h>
 
 class ProfileGeneralWindow : public WinLib::ClassWindow
 {
 public:
+    ProfileGeneralWindow(std::string & editProfileName) : editProfileName(editProfileName) {}
     bool CreateThis(HWND hParent, u64 windowId);
     void DestroyThis();
     void RefreshWindow();
@@ -15,6 +17,8 @@ protected:
 
 private:
     void CreateSubWindows(HWND hWnd);
+    ChkdProfile & getEditProfile();
+    std::string & editProfileName;
 
     WinLib::CheckBoxControl checkUseRemastered;
 
