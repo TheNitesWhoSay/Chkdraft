@@ -116,6 +116,15 @@ void Scenario::EditAction::deleteString(size_t stringId)
     }
 }
 
+void Scenario::EditAction::deleteSoundReferences(size_t stringId)
+{
+    if ( read.actionType < Chk::Action::NumActionTypes )
+    {
+        if ( Chk::Action::actionUsesSoundArg[read.actionType] && read.soundStringId == stringId )
+            edit.soundStringId = 0;
+    }
+}
+
 Scenario::EditCondition Scenario::EditTrigger::editCondition(std::size_t conditionIndex)
 {
     return EditCondition(this, view.conditions[conditionIndex]);
@@ -253,6 +262,12 @@ void Scenario::EditTrigger::deleteString(size_t stringId)
         editAction(i).deleteString(stringId);
 }
 
+void Scenario::EditTrigger::deleteSoundReferences(size_t stringId)
+{
+    for ( size_t i=0; i<Chk::Trigger::MaxActions; i++ )
+        editAction(i).deleteSoundReferences(stringId);
+}
+
 void Scenario::EditTrigger::alignConditionsTop()
 {
     for ( u8 i=0; i<Chk::Trigger::MaxConditions; i++ )
@@ -347,6 +362,15 @@ void Scenario::EditBriefingAction::deleteBriefingString(size_t stringId)
     }
 }
 
+void Scenario::EditBriefingAction::deleteBriefingSoundReferences(size_t stringId)
+{
+    if ( read.actionType < Chk::Action::NumBriefingActionTypes )
+    {
+        if ( Chk::Action::briefingActionUsesSoundArg[read.actionType] && read.soundStringId == stringId )
+            edit.soundStringId = 0;
+    }
+}
+
 Scenario::EditBriefingAction Scenario::EditBriefingTrigger::editBriefingAction(std::size_t actionIndex)
 {
     return EditBriefingAction(this, view.actions[actionIndex]);
@@ -374,6 +398,12 @@ void Scenario::EditBriefingTrigger::deleteBriefingString(size_t stringId)
 {
     for ( size_t i=0; i<Chk::Trigger::MaxActions; i++ )
         editBriefingAction(i).deleteBriefingString(stringId);
+}
+
+void Scenario::EditBriefingTrigger::deleteBriefingSoundReferences(size_t stringId)
+{
+    for ( size_t i=0; i<Chk::Trigger::MaxActions; i++ )
+        editBriefingAction(i).deleteBriefingSoundReferences(stringId);
 }
 
 void Scenario::EditBriefingTrigger::alignActionsTop()
@@ -2088,9 +2118,6 @@ void Scenario::deleteUnusedStrings(Chk::Scope storageScope)
 void Scenario::deleteString(size_t stringId, Chk::Scope storageScope, bool deleteOnlyIfUnused)
 {
     auto edit = createAction(ActionDescriptor::DeleteString);
-    auto deleteGameString = [&](){
-        return false;
-    };
     if ( (storageScope & Chk::Scope::Game) == Chk::Scope::Game )
     {
         if ( !deleteOnlyIfUnused || !stringUsed(stringId, Chk::Scope::Game) )
@@ -7319,6 +7346,20 @@ void Scenario::setSoundStringId(size_t soundIndex, size_t soundStringId)
 {
     if ( soundIndex < Chk::TotalSounds )
         createAction(ActionDescriptor::AddSound)->soundPaths[soundIndex] = (u32)soundStringId;
+}
+
+void Scenario::deleteSoundReferences(size_t stringId)
+{
+    auto edit = createAction(ActionDescriptor::RemoveSound);
+    for ( size_t i=0; i<Chk::TotalSounds; i++ )
+    {
+        if ( read.soundPaths[i] == stringId )
+            edit->soundPaths[i] = 0;
+    }
+    for ( std::size_t i=0; i<read.triggers.size(); ++i )
+        editTrigger(i).deleteSoundReferences(stringId);
+    for ( std::size_t i=0; i<read.briefingTriggers.size(); ++i )
+        editBriefingTrigger(i).deleteBriefingSoundReferences(stringId);
 }
 
 bool Scenario::triggerSwitchUsed(size_t switchId) const

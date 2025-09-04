@@ -31,6 +31,7 @@ struct Scenario : RareEdit::Tracked<MapData, Scenario, DescriptorIndex>
         void remapStringIds(const std::map<u32, u32> & stringIdRemappings);
         void deleteLocation(size_t locationId);
         void deleteString(size_t stringId);
+        void deleteSoundReferences(size_t stringId);
     };
 
     struct EditTrigger : RareEdit::TrackedElement<Chk::Trigger, PATH(root->triggers[0])>
@@ -58,6 +59,7 @@ struct Scenario : RareEdit::Tracked<MapData, Scenario, DescriptorIndex>
         void remapStringIds(const std::map<u32, u32>& stringIdRemappings);
         void deleteLocation(size_t locationId);
         void deleteString(size_t stringId);
+        void deleteSoundReferences(size_t stringId);
 
         void alignConditionsTop();
         void alignActionsTop();
@@ -70,6 +72,7 @@ struct Scenario : RareEdit::Tracked<MapData, Scenario, DescriptorIndex>
         void toggleDisabled();
         void remapBriefingStringIds(const std::map<u32, u32> & stringIdRemappings);
         void deleteBriefingString(size_t stringId);
+        void deleteBriefingSoundReferences(size_t stringId);
     };
 
     struct EditBriefingTrigger : RareEdit::TrackedElement<Chk::Trigger, PATH(root->briefingTriggers[0])>
@@ -82,6 +85,7 @@ struct Scenario : RareEdit::Tracked<MapData, Scenario, DescriptorIndex>
 
         void remapBriefingStringIds(const std::map<u32, u32>& stringIdRemappings);
         void deleteBriefingString(size_t stringId);
+        void deleteBriefingSoundReferences(size_t stringId);
 
         void alignActionsTop();
     };
@@ -486,6 +490,7 @@ struct Scenario : RareEdit::Tracked<MapData, Scenario, DescriptorIndex>
     bool stringIsSound(size_t stringId) const;
     size_t getSoundStringId(size_t soundIndex) const;
     void setSoundStringId(size_t soundIndex, size_t soundStringId);
+    void deleteSoundReferences(size_t stringId);
 
     bool triggerSwitchUsed(size_t switchId) const;
     bool triggerLocationUsed(size_t locationId) const;
