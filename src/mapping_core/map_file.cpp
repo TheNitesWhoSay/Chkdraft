@@ -475,7 +475,8 @@ bool MapFile::removeSoundByStringId(size_t soundStringId, bool removeIfUsed)
     if ( soundStringId != Chk::StringId::UnusedSound )
     {
         auto soundString = Scenario::getString<RawString>(soundStringId, Chk::Scope::Game);
-        Scenario::deleteString(soundStringId);
+        Scenario::deleteSoundReferences(soundStringId);
+        Scenario::deleteString(soundStringId, Chk::Scope::Both, true);
         if ( soundString )
             result = MpqAssetManager::removeAsset(*soundString);
     }

@@ -486,15 +486,17 @@ void SoundEditorWindow::MapSoundSelectionChanged()
     else
     {
         buttonDeleteSound.EnableThis();
-        LPARAM soundStringId = 0;
         if ( selectedSoundEntry >= 0 && selectedSoundEntry < soundEntries.size() )
         {
-            if ( !CM->stringIsSound(size_t(soundEntries[selectedSoundEntry].stringId)) )
-                buttonDeleteSound.DisableThis();
-
-            SoundStatus soundStatus = CM->getSoundStatus(size_t(soundStringId));
+            SoundStatus soundStatus = CM->getSoundStatus(size_t(soundEntries[selectedSoundEntry].stringId));
             if ( soundStatus == SoundStatus::PendingMatch || soundStatus == SoundStatus::CurrentMatch || soundStatus == SoundStatus::VirtualFile )
                 buttonExtractSound.EnableThis();
+            
+            if ( !CM->stringIsSound(size_t(soundEntries[selectedSoundEntry].stringId)) &&
+                soundStatus != SoundStatus::PendingMatch && soundStatus != SoundStatus::CurrentMatch )
+            {
+                buttonDeleteSound.DisableThis();
+            }
         }
         buttonPlaySound.EnableThis();
     }

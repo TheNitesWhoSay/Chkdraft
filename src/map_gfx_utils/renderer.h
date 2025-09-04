@@ -67,7 +67,7 @@ struct Renderer
 
     bool loadSkinAndTileSet(RenderSkin skin, ScMap & map);
 
-    void encodeMapImageAsWebP(ScMap & map, const Options & options, auto use)
+    int encodeMapImageAsWebP(ScMap & map, const Options & options, auto use) // Returns the time spent in the renderMap(..) function in ms
     {
         int tileWidth = int(map.getTileWidth());
         int tileHeight = int(map.getTileHeight());
@@ -99,7 +99,7 @@ struct Renderer
         if ( imageWidth > 16384 || imageHeight > 16384 )
         {
             throw std::logic_error("Map image dimensions exceed maximum for webp format!");
-            return;
+            return -1;
         }
 
         GLint savedViewport[4] {};
@@ -119,11 +119,12 @@ struct Renderer
         map.graphics.windowBoundsChanged({.left = 0, .top = 0, .right = imageWidth, .bottom = imageHeight});
 
         map.graphics.setVerticallyFlipped(true);
+        auto start = std::chrono::high_resolution_clock::now();
         renderMap(map, options);
+        auto end = std::chrono::high_resolution_clock::now();
 
         glFlush();
 
-        auto start = std::chrono::high_resolution_clock::now();
         glReadBuffer(GL_COLOR_ATTACHMENT1);
         EncodedWebP encodedMapImage {};
         if ( encodeOpenGlViewportImage(0, 0, imageWidth, imageHeight, encodedMapImage) )
@@ -137,11 +138,13 @@ struct Renderer
         map.graphics.setVerticallyFlipped(false);
         map.graphics.windowBoundsChanged({ savedViewport[0], savedViewport[1], savedViewport[2], savedViewport[3] });
         glViewport(savedViewport[0], savedViewport[1], savedViewport[2], savedViewport[3]);
+        return std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
     }
 
     struct SaveWebpResult
     {
         int loadSkinAndTilesetTimeMs = 0;
+        int renderTimeMs = 0;
         int encodeTimeMs = 0; // Time for WebPEncodeLosslessRGB https://developers.google.com/speed/webp/docs/api , usually dwarves other times
         int outFileTimeMs = 0; // Time to output to disk
         std::string outputFilePath;
@@ -149,7 +152,7 @@ struct Renderer
 
     std::optional<SaveWebpResult> saveMapImageAsWebP(ScMap & map, const Options & options, const std::string & outputFilePath);
 
-    void getMapImageAsWebP(ScMap & map, const Options & options, EncodedWebP & encodedWebP);
+    int getMapImageAsWebP(ScMap & map, const Options & options, EncodedWebP & encodedWebP); // Returns time spend in renderMap(..) in ms
 
     void displayInGui(ScMap & map, const Options & options, bool autoAnimate);
 
