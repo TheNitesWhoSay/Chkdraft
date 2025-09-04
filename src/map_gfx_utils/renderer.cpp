@@ -138,7 +138,7 @@ std::optional<Renderer::SaveWebpResult> Renderer::saveMapImageAsWebP(ScMap & map
         result.outputFilePath = outputFilePath;
 
     bool success = false;
-    encodeMapImageAsWebP(map, options, [&](EncodedWebP & encodedWebP) {
+    result.renderTimeMs = encodeMapImageAsWebP(map, options, [&](EncodedWebP & encodedWebP) {
 
         result.encodeTimeMs = encodedWebP.encodeTimeMs;
 
@@ -161,9 +161,9 @@ std::optional<Renderer::SaveWebpResult> Renderer::saveMapImageAsWebP(ScMap & map
     return success ? std::optional<SaveWebpResult>(std::move(result)) : std::nullopt;
 }
 
-void Renderer::getMapImageAsWebP(ScMap & map, const Options & options, EncodedWebP & encodedWebP)
+int Renderer::getMapImageAsWebP(ScMap & map, const Options & options, EncodedWebP & encodedWebP)
 {
-    encodeMapImageAsWebP(map, options, [&encodedWebP](EncodedWebP & data) {
+    return encodeMapImageAsWebP(map, options, [&encodedWebP](EncodedWebP & data) {
         encodedWebP.swap(data);
     });
 }

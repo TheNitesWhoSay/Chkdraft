@@ -2,6 +2,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <stdexcept>
+#include <string>
 
 namespace glfw
 {
@@ -9,6 +10,10 @@ namespace glfw
     {
         Context()
         {
+            glfwSetErrorCallback([](int errorCode, const char* description) {
+                throw std::runtime_error("A glfw error occured: [" + std::to_string(errorCode) + "] " + description);
+            });
+
             if ( glfwInit() == GLFW_FALSE )
                 throw std::runtime_error("Failed to initialize glfw!");
         }
