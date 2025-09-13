@@ -10,9 +10,33 @@ public:
     ProfileGeneralWindow(std::string & editProfileName) : editProfileName(editProfileName) {}
     bool CreateThis(HWND hParent, u64 windowId);
     void DestroyThis();
+    void DisableRemasteredGroup();
+    void EnableRemasteredGroup();
+    void DisableClassicGroup();
+    void EnableClassicGroup();
     void RefreshWindow();
 
 protected:
+    void ToggleUseRemastered();
+    void BrowseScrPath();
+    void BrowseCascPath();
+    void BrowseScPath();
+    void BrowseStarDatPath();
+    void BrowseBrooDatPath();
+    void BrowsePatchRtDatPath();
+    void ToggleUseDefaultDeathTableStart();
+    void ToggleUseAddressesForMemory();
+    void ScrSkinSelUpdated();
+    void ScSkinSelUpdated();
+    void LogLevelSelUpdated();
+
+    void NotifyButtonClicked(int idFrom, HWND hWndFrom) override; // Sent when a button or checkbox is clicked
+    void NotifyEditUpdated(int idFrom, HWND hWndFrom) override; // Sent when edit text changes, before redraw
+    void NotifyEditFocusLost(int idFrom, HWND hWndFrom) override; // Sent when focus changes or the window is hidden
+    void NotifyComboSelChanged(int idFrom, HWND hWndFrom) override; // Sent when combo is changed by selection
+    void NotifyComboEditUpdated(int idFrom, HWND hWndFrom) override; // Sent when combo is changed by text edits
+    void NotifyComboEditFocusLost(int idFrom, HWND hWndFrom) override; // Sent when focus changes or the window is hidden
+    void NotifyWindowHidden() override; // Sent when the window is hidden
     LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 private:
@@ -60,6 +84,31 @@ private:
     WinLib::TextControl textMaxHistActions;
     WinLib::EditControl editMaxHistActions;
 
+    void CheckReplaceScrPath();
+    void CheckReplaceCascPath();
+    void CheckReplaceScPath();
+    void CheckReplaceStarDatPath();
+    void CheckReplaceBrooDatPath();
+    void CheckReplacePatchRtPath();
+    void CheckReplaceLogLevel();
+    void CheckReplaceMaxHistMemory();
+    void CheckReplaceMaxHistActions();
+    void CheckReplaceDeathTableStart();
+
+    void CheckEditUpdates();
+
+    bool possibleScrPathUpdate = false;
+    bool possibleCascPathUpdate = false;
+    bool possibleScPathUpdate = false;
+    bool possibleStarDatPathUpdate = false;
+    bool possibleBrooDatPathUpdate = false;
+    bool possiblePatchRtPathUpdate = false;
+    bool possibleLogLevelUpdate = false;
+    bool possibleMaxHistMemoryUpdate = false;
+    bool possibleMaxHistActionsUpdate = false;
+    bool possibleDeathTableStartUpdate = false;
+
+    bool refreshing = false;
 };
 
 #endif

@@ -4,7 +4,16 @@
 
 std::string ChkdDataFileBrowser::GetExpectedStarCraftDirectory()
 {
-    return "TODO"; // TODO: fetch from profiles
+    if ( chkd.profiles.getCurrProfile() != nullptr )
+    {
+        const std::string & remasteredScPath = chkd.profiles().remastered.starCraftPath;
+        const std::string & classicScPath = chkd.profiles().classic.starCraftPath;
+        if ( !remasteredScPath.empty () )
+            return remasteredScPath;
+        else if ( !classicScPath.empty() )
+            return classicScPath;
+    }
+    return "";
 }
 
 ChkdDataFileBrowser::ChkdDataFileBrowser() : profileUpdated(false)

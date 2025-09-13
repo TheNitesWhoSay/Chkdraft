@@ -45,6 +45,7 @@ namespace Sc {
         static std::vector<FilterEntry<u32>> getBrooDatFilter();
         static std::vector<FilterEntry<u32>> getPatchRtFilter();
         static std::vector<FilterEntry<u32>> getStarCraftExeFilter();
+        static std::vector<FilterEntry<u32>> getCascBuildInfoFilter();
         
         class Descriptor // Describes a data files priority in relation to other data files, the file name and path, whether it's expected in StarCraft's directory, and what file browser to use
         {
@@ -100,6 +101,7 @@ namespace Sc {
             virtual ArchiveFilePtr openDataFile(const std::string & dataFilePath, const Descriptor & dataFileDescriptor);
 
             static FileBrowserPtr<u32> getDefaultStarCraftBrowser();
+            static FileBrowserPtr<u32> getNoPromptNoDefaultStarCraftBrowser();
         };
         using BrowserPtr = std::shared_ptr<Browser>;
     };

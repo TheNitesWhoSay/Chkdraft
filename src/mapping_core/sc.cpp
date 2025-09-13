@@ -34,6 +34,10 @@ std::vector<FilterEntry<u32>> Sc::DataFile::getStarCraftExeFilter()
 {
     return std::vector<FilterEntry<u32>> { FilterEntry<u32>(starCraftFileName, "StarCraft Executable") };
 }
+std::vector<FilterEntry<u32>> Sc::DataFile::getCascBuildInfoFilter()
+{
+    return std::vector<FilterEntry<u32>> { FilterEntry<u32>(buildInfoFileName, "Casc Build Info") };
+}
 
 Sc::DataFile::Descriptor::Descriptor(Priority priority, bool isCasc, bool isOptionalIfCascFound, const std::string & fileName, const std::string & expectedFilePath, FileBrowserPtr<u32> browser, bool expectedInScDirectory)
     : priority(priority), fileName(fileName), expectedFilePath(expectedFilePath), browser(browser), expectedInScDirectory(expectedInScDirectory), isCascDataFile(isCasc), optionalIfCascFound(isOptionalIfCascFound)
@@ -254,6 +258,11 @@ ArchiveFilePtr Sc::DataFile::Browser::openDataFile(const std::string & dataFileP
 FileBrowserPtr<u32> Sc::DataFile::Browser::getDefaultStarCraftBrowser()
 {
     return FileBrowserPtr<u32>(new FileBrowser<u32>(getStarCraftExeFilter(), getDefaultScPath()));
+}
+
+FileBrowserPtr<u32> Sc::DataFile::Browser::getNoPromptNoDefaultStarCraftBrowser()
+{
+    return FileBrowserPtr<u32>(new NoPromptFileBrowser<u32>(getStarCraftExeFilter(), ""));
 }
 
 bool Sc::Unit::load(ArchiveCluster & archiveCluster)

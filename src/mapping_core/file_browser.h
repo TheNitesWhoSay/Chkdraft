@@ -142,6 +142,22 @@ private:
 };
 
 template <typename FilterId>
+class NoPromptFileBrowser : public FileBrowser<FilterId>
+{
+public:
+    NoPromptFileBrowser() = default;
+    NoPromptFileBrowser(const std::vector<FilterEntry<FilterId>> & filters, const std::string & initialDirectory)
+        : FileBrowser<FilterId>(filters, initialDirectory) {}
+    NoPromptFileBrowser(const std::vector<FilterEntry<FilterId>> & filters, const std::string & title, bool pathMustExist, bool provideOverwritePrompt)
+        : FileBrowser<FilterId>(filters, title, pathMustExist, provideOverwritePrompt) {}
+
+    virtual bool promptTryBrowse(const std::string & tryBrowseMessage) const override { return true; }
+    virtual bool promptOpenRetry(const std::string & openRetryMessage) const override { return false; }
+    virtual bool promptSaveRetry(const std::string & saveRetryMessage) const override { return false; }
+    virtual bool confirmOverwrite(const std::string & confirmOverwriteMessage) const override { return true; }
+};
+
+template <typename FilterId>
 class FilterEntry
 {
 public:
