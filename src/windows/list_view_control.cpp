@@ -277,9 +277,32 @@ namespace WinLib {
 
         int result = SendMessage(getHandle(), LVM_GETNEXTITEM, currentSelection, LVNI_SELECTED|LVNI_ABOVE);
         if ( result == -1 )
-            return SendMessage(getHandle(), LVM_GETNEXTITEM, currentSelection, LVNI_SELECTED|LVNI_BELOW);
-        else
-            return result;
+        {
+            result = SendMessage(getHandle(), LVM_GETNEXTITEM, currentSelection, LVNI_SELECTED|LVNI_BELOW);
+            if ( result == -1 )
+                result = SendMessage(getHandle(), LVM_GETNEXTITEM, currentSelection, LVNI_SELECTED);
+        }
+        return result;
+    }
+
+    std::string ListViewControl::GetSelectedItemText()
+    {
+        int focused = GetNextSelection();
+        if ( focused != -1 )
+        {
+            std::vector<wchar_t> textBuffer(std::size_t{2000});
+            LVITEM item {};
+            item.mask = LVIF_TEXT;
+            item.iItem = focused;
+            item.pszText = &textBuffer[0];
+            item.cchTextMax = textBuffer.size();
+            if ( ListView_GetItem(getHandle(), &item) == TRUE )
+            {
+                std::wstring text = &textBuffer[0];
+                return icux::toUtf8(text);
+            }
+        }
+        return "";
     }
 
 }

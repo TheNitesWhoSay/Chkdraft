@@ -35,6 +35,7 @@ namespace WinLib {
             bool GetItemRect(int x, int y, RECT & rect);
             int GetFocusedItem();
             int GetNextSelection(int currentSelection = -1); // Gets the focused & selected item (if any), else the first selected item
+            std::string GetSelectedItemText(); // Gets the text of the item associated with the result of GetNextSelection()
 
         private:
         

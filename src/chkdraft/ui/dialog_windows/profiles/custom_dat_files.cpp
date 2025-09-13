@@ -71,14 +71,17 @@ void CustomDatFilesWindow::RefreshWindow()
         }
     }
     
-    if ( !editProfile.remastered.cascPath.empty() && !usedDataFiles.contains(fixSystemPathSeparators(editProfile.remastered.cascPath)) )
-        availableDataFiles.push_back(editProfile.remastered.cascPath);
-    if ( !editProfile.classic.starDatPath.empty() && !usedDataFiles.contains(fixSystemPathSeparators(editProfile.classic.starDatPath)) )
-        availableDataFiles.push_back(editProfile.classic.starDatPath);
-    if ( !editProfile.classic.brooDatPath.empty() && !usedDataFiles.contains(fixSystemPathSeparators(editProfile.classic.brooDatPath)) )
-        availableDataFiles.push_back(editProfile.classic.brooDatPath);
-    if ( !editProfile.classic.patchRtPath.empty() && !usedDataFiles.contains(fixSystemPathSeparators(editProfile.classic.patchRtPath)) )
-        availableDataFiles.push_back(editProfile.classic.patchRtPath);
+    for ( const auto & profile : chkd.profiles.profiles )
+    {
+        if ( !profile->remastered.cascPath.empty() && !usedDataFiles.contains(fixSystemPathSeparators(profile->remastered.cascPath)) )
+            availableDataFiles.push_back(profile->remastered.cascPath);
+        if ( !profile->classic.starDatPath.empty() && !usedDataFiles.contains(fixSystemPathSeparators(profile->classic.starDatPath)) )
+            availableDataFiles.push_back(profile->classic.starDatPath);
+        if ( !profile->classic.brooDatPath.empty() && !usedDataFiles.contains(fixSystemPathSeparators(profile->classic.brooDatPath)) )
+            availableDataFiles.push_back(profile->classic.brooDatPath);
+        if ( !profile->classic.patchRtPath.empty() && !usedDataFiles.contains(fixSystemPathSeparators(profile->classic.patchRtPath)) )
+            availableDataFiles.push_back(profile->classic.patchRtPath);
+    }
 
     listAvailableDataFiles.DeleteAllItems();
     for ( auto & availableDataFile : availableDataFiles )
@@ -90,6 +93,98 @@ void CustomDatFilesWindow::RefreshWindow()
         listAvailableDataFiles.SetItemText(row, 0, availableDataFile);
         ++row;
     }
+}
+
+void CustomDatFilesWindow::MoveUpButtonClicked()
+{
+    if ( operateOnUsedFiles )
+    {
+        std::string selectedItem = listUsedDataFiles.GetSelectedItemText();
+        if ( !selectedItem.empty() )
+        {
+            logger.info("TODO: Move used file \"" + selectedItem + "\" up");
+        }
+    }
+}
+
+void CustomDatFilesWindow::MoveDownButtonClicked()
+{
+    if ( operateOnUsedFiles )
+    {
+        std::string selectedItem = listUsedDataFiles.GetSelectedItemText();
+        if ( !selectedItem.empty() )
+        {
+            logger.info("TODO: Move used file \"" + selectedItem + "\" down");
+        }
+    }
+}
+
+void CustomDatFilesWindow::MoveLeftButtonClicked()
+{
+    if ( !operateOnUsedFiles ) // Operating on available files
+    {
+        std::string selectedItem = listAvailableDataFiles.GetSelectedItemText();
+        if ( !selectedItem.empty() )
+        {
+            logger.info("TODO: Move available file \"" + selectedItem + "\" to used files");
+        }
+    }
+}
+
+void CustomDatFilesWindow::MoveRightButtonClicked()
+{
+    if ( operateOnUsedFiles )
+    {
+        std::string selectedItem = listUsedDataFiles.GetSelectedItemText();
+        if ( !selectedItem.empty() )
+        {
+            logger.info("TODO: Move used file \"" + selectedItem + "\" to available files");
+        }
+    }
+}
+
+void CustomDatFilesWindow::ToggleRelativePathClicked()
+{
+    if ( operateOnUsedFiles )
+    {
+        std::string selectedItem = listUsedDataFiles.GetSelectedItemText();
+        if ( !selectedItem.empty() )
+        {
+            logger.info("TODO: Toggle file uses relative path \"" + selectedItem + "\"");
+        }
+    }
+}
+
+void CustomDatFilesWindow::BrowseClicked()
+{
+    logger.info("TODO: Browse...");
+}
+
+void CustomDatFilesWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
+{
+    switch ( idFrom )
+    {
+    case Id::ButtonMoveDataFileUp: MoveUpButtonClicked(); break;
+    case Id::ButtonMoveDataFileDown: MoveDownButtonClicked(); break;
+    case Id::ButtonUseDataFile: MoveLeftButtonClicked(); break;
+    case Id::ButtonRemoveDataFile: MoveRightButtonClicked(); break;
+    case Id::ButtonToggleRelativePath: ToggleRelativePathClicked(); break;
+    case Id::ButtonBrowseDataFile: BrowseClicked(); break;
+    }
+}
+
+LRESULT CustomDatFilesWindow::Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
+{
+    switch ( nmhdr->code )
+    {
+    case NM_SETFOCUS:
+        if ( idFrom == Id::ListUsedDataFiles )
+            operateOnUsedFiles = true;
+        else if ( idFrom == Id::ListAvailableDataFiles )
+            operateOnUsedFiles = false;
+        break;
+    }
+    return ClassWindow::Notify(hWnd, idFrom, nmhdr);
 }
 
 LRESULT CustomDatFilesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)

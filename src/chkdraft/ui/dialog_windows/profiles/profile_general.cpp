@@ -321,7 +321,6 @@ void ProfileGeneralWindow::BrowseScPath()
             logger.debug() << "Updated classic starCraftPath to " << editProfile.classic.starCraftPath << std::endl;
         }
     }
-    logger.info("BrowseScPath");
 }
 
 void ProfileGeneralWindow::BrowseStarDatPath()
