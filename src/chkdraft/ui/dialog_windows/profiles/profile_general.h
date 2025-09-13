@@ -18,6 +18,7 @@ public:
 
 protected:
     void ToggleUseRemastered();
+    void AddOrReplaceDataFilePath(bool isRemastered, const std::string & oldPath, const std::string & newPath);
     void BrowseScrPath();
     void BrowseCascPath();
     void BrowseScPath();
