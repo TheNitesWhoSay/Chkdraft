@@ -18,6 +18,10 @@ public:
         EditorSettings,
     };
 
+    ProfileGeneralWindow profileGeneralWindow;
+    CustomDatFilesWindow customDatFilesWindow;
+    ProfileEditorSettingsWindow editorSettingsWindow;
+
     EditProfilesWindow() : profileGeneralWindow(editProfileName), customDatFilesWindow(editProfileName) {}
     bool CreateThis(HWND hParent);
     void DestroyThis();
@@ -50,10 +54,6 @@ private:
 
     Tab currTab = Tab::ProfilePaths;
     WinLib::TabControl tabs;
-
-    ProfileGeneralWindow profileGeneralWindow;
-    CustomDatFilesWindow customDatFilesWindow;
-    ProfileEditorSettingsWindow editorSettingsWindow;
 
     std::string editProfileName {};
     ChkdProfile & getEditProfile();

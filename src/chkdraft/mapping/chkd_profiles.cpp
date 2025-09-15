@@ -206,12 +206,14 @@ void ChkdProfiles::loadProfiles()
             defaultProfile->isDefaultProfile = true;
             defaultProfile->autoLoadOnStart = true;
             this->current = this->profiles[0].get();
+            std::filesystem::current_path(getSystemFileDirectory(this->current->profilePath));
             this->saveCurrProfile();
         }
         else if ( this->current == nullptr ) // No default profile located, make the first profile found the default
         {
             this->current = this->profiles[0].get();
             this->current->isDefaultProfile = true;
+            std::filesystem::current_path(getSystemFileDirectory(this->current->profilePath));
             this->saveCurrProfile();
         }
     }

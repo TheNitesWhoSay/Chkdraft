@@ -1,5 +1,6 @@
 #include "custom_dat_files.h"
 #include <chkdraft.h>
+#include <filesystem>
 
 enum_t(Id, u32, {
     TextUsedDataFiles = ID_FIRST,
@@ -102,7 +103,25 @@ void CustomDatFilesWindow::MoveUpButtonClicked()
         std::string selectedItem = listUsedDataFiles.GetSelectedItemText();
         if ( !selectedItem.empty() )
         {
-            logger.info("TODO: Move used file \"" + selectedItem + "\" up");
+            auto & editProfile = getEditProfile();
+            auto & dataFiles = editProfile.useRemastered ? editProfile.remastered.dataFiles : editProfile.classic.dataFiles;
+
+            int dataFileIndex = -1;
+            for ( std::size_t i=0; i<dataFiles.size(); ++i )
+            {
+                if ( selectedItem == dataFiles[i] )
+                {
+                    dataFileIndex = int(i);
+                    break;
+                }
+            }
+            if ( dataFileIndex > 0 ) // Can't move index 0 or not found (-1) up
+            {
+                std::swap(dataFiles[dataFileIndex], dataFiles[dataFileIndex-1]);
+                editProfile.saveProfile();
+                RefreshWindow();
+                listUsedDataFiles.SelectRow(dataFileIndex-1);
+            }
         }
     }
 }
@@ -114,7 +133,25 @@ void CustomDatFilesWindow::MoveDownButtonClicked()
         std::string selectedItem = listUsedDataFiles.GetSelectedItemText();
         if ( !selectedItem.empty() )
         {
-            logger.info("TODO: Move used file \"" + selectedItem + "\" down");
+            auto & editProfile = getEditProfile();
+            auto & dataFiles = editProfile.useRemastered ? editProfile.remastered.dataFiles : editProfile.classic.dataFiles;
+
+            std::size_t dataFileIndex = dataFiles.size();
+            for ( std::size_t i=0; i<dataFiles.size(); ++i )
+            {
+                if ( selectedItem == dataFiles[i] )
+                {
+                    dataFileIndex = i;
+                    break;
+                }
+            }
+            if ( dataFileIndex < dataFiles.size()-1 ) // Can't move last entry or invalid entry (dataFiles.size()) down
+            {
+                std::swap(dataFiles[dataFileIndex], dataFiles[dataFileIndex+1]);
+                editProfile.saveProfile();
+                RefreshWindow();
+                listUsedDataFiles.SelectRow(dataFileIndex+1);
+            }
         }
     }
 }
@@ -126,7 +163,13 @@ void CustomDatFilesWindow::MoveLeftButtonClicked()
         std::string selectedItem = listAvailableDataFiles.GetSelectedItemText();
         if ( !selectedItem.empty() )
         {
-            logger.info("TODO: Move available file \"" + selectedItem + "\" to used files");
+            auto & editProfile = getEditProfile();
+            auto & dataFiles = editProfile.useRemastered ? editProfile.remastered.dataFiles : editProfile.classic.dataFiles;
+            dataFiles.push_back(selectedItem);
+            editProfile.saveProfile();
+            operateOnUsedFiles = true;
+            RefreshWindow();
+            listUsedDataFiles.SelectRow(listUsedDataFiles.GetNumRows()-1);
         }
     }
 }
@@ -138,7 +181,20 @@ void CustomDatFilesWindow::MoveRightButtonClicked()
         std::string selectedItem = listUsedDataFiles.GetSelectedItemText();
         if ( !selectedItem.empty() )
         {
-            logger.info("TODO: Move used file \"" + selectedItem + "\" to available files");
+            auto & editProfile = getEditProfile();
+            auto & dataFiles = editProfile.useRemastered ? editProfile.remastered.dataFiles : editProfile.classic.dataFiles;
+            for ( std::size_t i=0; i<dataFiles.size(); ++i )
+            {
+                if ( dataFiles[i] == selectedItem )
+                {
+                    dataFiles.erase(std::next(dataFiles.begin(), i));
+                    editProfile.saveProfile();
+                    operateOnUsedFiles = false;
+                    RefreshWindow();
+                    listAvailableDataFiles.SelectRowByText(selectedItem);
+                    return;
+                }
+            }
         }
     }
 }
@@ -150,14 +206,52 @@ void CustomDatFilesWindow::ToggleRelativePathClicked()
         std::string selectedItem = listUsedDataFiles.GetSelectedItemText();
         if ( !selectedItem.empty() )
         {
-            logger.info("TODO: Toggle file uses relative path \"" + selectedItem + "\"");
+            auto & editProfile = getEditProfile();
+            auto & dataFiles = editProfile.useRemastered ? editProfile.remastered.dataFiles : editProfile.classic.dataFiles;
+            auto profileDirectory = std::filesystem::path(getSystemFileDirectory(editProfile.profilePath, true));
+            auto dataFilePath = std::filesystem::path(selectedItem);
+            std::filesystem::current_path(profileDirectory);
+            auto result = dataFilePath.is_relative() ? std::filesystem::canonical(dataFilePath) :
+                std::filesystem::proximate(dataFilePath, profileDirectory).string();
+
+            int sel = listUsedDataFiles.GetNextSelection();
+            if ( sel != -1 && sel < dataFiles.size() )
+            {
+                dataFiles[sel] = result.string();
+                editProfile.saveProfile();
+                RefreshWindow();
+                listUsedDataFiles.SelectRow(sel);
+            }
         }
     }
 }
 
 void CustomDatFilesWindow::BrowseClicked()
 {
-    logger.info("TODO: Browse...");
+    // Setup a filter for "All StarCraft Data Files" followed by MPQ files, followed by CASC files
+    auto browser = NoPromptFileBrowser<u32>(Sc::DataFile::getDatFileFilter(), "");
+    std::string datFilePath {};
+    u32 filterIndex = 0;
+    if ( browser.browseForOpenPath(datFilePath, filterIndex) )
+    {
+        auto & editProfile = getEditProfile();
+        auto & dataFiles = editProfile.useRemastered ? editProfile.remastered.dataFiles : editProfile.classic.dataFiles;
+        if ( filterIndex == 0 ) // MPQ
+        {
+            dataFiles.push_back(datFilePath);
+            editProfile.saveProfile();
+            RefreshWindow();
+        }
+        else // Casc
+        {
+            if ( datFilePath.ends_with(Sc::DataFile::buildInfoFileName) )
+                datFilePath = makeSystemFilePath(getSystemFileDirectory(datFilePath), "Data");
+
+            dataFiles.push_back(datFilePath);
+            editProfile.saveProfile();
+            RefreshWindow();
+        }
+    }
 }
 
 void CustomDatFilesWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)

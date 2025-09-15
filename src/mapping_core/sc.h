@@ -41,6 +41,7 @@ namespace Sc {
         static const std::string brooDatFileName;
         static const std::string patchRtFileName;
         
+        static std::vector<FilterEntry<u32>> getDatFileFilter();
         static std::vector<FilterEntry<u32>> getStarDatFilter();
         static std::vector<FilterEntry<u32>> getBrooDatFilter();
         static std::vector<FilterEntry<u32>> getPatchRtFilter();

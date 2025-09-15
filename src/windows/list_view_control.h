@@ -22,6 +22,7 @@ namespace WinLib {
             bool DeleteAllItems();
             bool FocusItem(int index);
             bool SelectRow(int index);
+            bool SelectRowByText(const std::string & text);
             void RedrawHeader();
             //bool SortItems(WPARAM value, LPARAM function);
         

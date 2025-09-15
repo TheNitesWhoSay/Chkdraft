@@ -18,6 +18,13 @@ const std::string Sc::DataFile::starDatFileName = "StarDat.mpq";
 const std::string Sc::DataFile::brooDatFileName = "BrooDat.mpq";
 const std::string Sc::DataFile::patchRtFileName = "patch_rt.mpq";
 
+std::vector<FilterEntry<u32>> Sc::DataFile::getDatFileFilter()
+{
+    return std::vector<FilterEntry<u32>> {
+        FilterEntry<u32>(0, "*.mpq", "MPQ File"),
+        FilterEntry<u32>(1, buildInfoFileName, "Casc Build Info")
+    };
+}
 std::vector<FilterEntry<u32>> Sc::DataFile::getStarDatFilter()
 {
     return std::vector<FilterEntry<u32>> { FilterEntry<u32>(starDatFileName, starDatFileName + " Archive") };

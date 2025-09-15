@@ -139,6 +139,33 @@ namespace WinLib {
         return SendMessage(getHandle(), LVM_SETITEMSTATE, index, (LPARAM)&item) == TRUE;
     }
 
+    bool ListViewControl::SelectRowByText(const std::string & text)
+    {
+        icux::uistring uiText = icux::toUistring(text);
+        std::vector<icux::codepoint> textBuffer(std::size_t{2000});
+        LVITEM item {};
+        item.mask = LVIF_TEXT;
+        item.iItem = 0;
+        item.pszText = &textBuffer[0];
+        item.cchTextMax = textBuffer.size();
+        int numRows = GetNumRows();
+        for ( int i=0; i<numRows; ++i )
+        {
+            item.iItem = i;
+            if ( ListView_GetItem(getHandle(), &item) == TRUE )
+            {
+                if ( icux::uistring(&textBuffer[0]) == uiText )
+                {
+                    LVITEM item = { };
+                    item.stateMask = LVIS_SELECTED;
+                    item.state = LVIS_SELECTED;
+                    return SendMessage(getHandle(), LVM_SETITEMSTATE, i, (LPARAM)&item) == TRUE;
+                }
+            }
+        }
+        return false;
+    }
+
     void ListViewControl::RedrawHeader()
     {
         HWND hHeader = (HWND)SendMessage(getHandle(), LVM_GETHEADER, 0, 0);

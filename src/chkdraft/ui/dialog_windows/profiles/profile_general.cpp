@@ -226,6 +226,7 @@ void ProfileGeneralWindow::AddOrReplaceDataFilePath(bool isRemastered, const std
         }
         editProfile.classic.dataFiles.push_back(newPath);
     }
+    chkd.editProfilesWindow->customDatFilesWindow.RefreshWindow();
 }
 
 void ProfileGeneralWindow::BrowseScrPath()

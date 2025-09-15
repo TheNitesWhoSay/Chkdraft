@@ -173,6 +173,7 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
 
     if ( profiles().autoLoadOnStart )
     {
+        std::filesystem::current_path(getSystemFileDirectory(profiles().profilePath));
         scData.emplace().load(Sc::DataFile::BrowserPtr(new ChkdDataFileBrowser()), ChkdDataFileBrowser::getDataFileDescriptors(),
             ChkdDataFileBrowser::getExpectedStarCraftDirectory());
     }
@@ -509,6 +510,7 @@ void Chkdraft::ProfilesReload()
         currProfilePath = currProfile->profilePath;
         currProfileName = currProfile->profileName;
     }
+    std::filesystem::current_path(getSystemFileDirectory(currProfilePath));
 
     profiles.loadProfiles();
     bool currentSet = false;
