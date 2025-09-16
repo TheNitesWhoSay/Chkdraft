@@ -18,6 +18,13 @@ const std::string Sc::DataFile::starDatFileName = "StarDat.mpq";
 const std::string Sc::DataFile::brooDatFileName = "BrooDat.mpq";
 const std::string Sc::DataFile::patchRtFileName = "patch_rt.mpq";
 
+std::vector<FilterEntry<u32>> Sc::DataFile::getDatFileFilter()
+{
+    return std::vector<FilterEntry<u32>> {
+        FilterEntry<u32>(0, "*.mpq", "MPQ File"),
+        FilterEntry<u32>(1, buildInfoFileName, "Casc Build Info")
+    };
+}
 std::vector<FilterEntry<u32>> Sc::DataFile::getStarDatFilter()
 {
     return std::vector<FilterEntry<u32>> { FilterEntry<u32>(starDatFileName, starDatFileName + " Archive") };
@@ -33,6 +40,10 @@ std::vector<FilterEntry<u32>> Sc::DataFile::getPatchRtFilter()
 std::vector<FilterEntry<u32>> Sc::DataFile::getStarCraftExeFilter()
 {
     return std::vector<FilterEntry<u32>> { FilterEntry<u32>(starCraftFileName, "StarCraft Executable") };
+}
+std::vector<FilterEntry<u32>> Sc::DataFile::getCascBuildInfoFilter()
+{
+    return std::vector<FilterEntry<u32>> { FilterEntry<u32>(buildInfoFileName, "Casc Build Info") };
 }
 
 Sc::DataFile::Descriptor::Descriptor(Priority priority, bool isCasc, bool isOptionalIfCascFound, const std::string & fileName, const std::string & expectedFilePath, FileBrowserPtr<u32> browser, bool expectedInScDirectory)
@@ -81,14 +92,29 @@ void Sc::DataFile::Descriptor::setExpectedFilePath(const std::string & expectedF
     this->expectedFilePath = expectedFilePath;
 }
 
-std::vector<Sc::DataFile::Descriptor> Sc::DataFile::getDefaultDataFiles()
+std::vector<Sc::DataFile::Descriptor> Sc::DataFile::getDefaultDataFiles(RemasteredDescriptor remasteredDescriptor)
 {
-    return std::vector<Descriptor> {
-        Descriptor(Priority::RemasteredCasc, true, false, "Data", "", nullptr),
-        Descriptor(Priority::PatchRt, false, true, patchRtFileName, "", std::make_shared<FileBrowser<u32>>(getPatchRtFilter(), "")),
-        Descriptor(Priority::BrooDat, false, true, brooDatFileName, "", std::make_shared<FileBrowser<u32>>(getBrooDatFilter(), "")),
-        Descriptor(Priority::StarDat, false, true, starDatFileName, "", std::make_shared<FileBrowser<u32>>(getStarDatFilter(), ""))
-    };
+    switch ( remasteredDescriptor )
+    {
+    case RemasteredDescriptor::No:
+        return std::vector<Descriptor> {
+            Descriptor(Priority::PatchRt, false, true, patchRtFileName, "", std::make_shared<FileBrowser<u32>>(getPatchRtFilter(), "")),
+            Descriptor(Priority::BrooDat, false, true, brooDatFileName, "", std::make_shared<FileBrowser<u32>>(getBrooDatFilter(), "")),
+            Descriptor(Priority::StarDat, false, true, starDatFileName, "", std::make_shared<FileBrowser<u32>>(getStarDatFilter(), ""))
+        };
+    case RemasteredDescriptor::Yes:
+        return std::vector<Descriptor> {
+            Descriptor(Priority::RemasteredCasc, true, false, "Data", "", nullptr)
+        };
+    case RemasteredDescriptor::Either:
+    default:
+        return std::vector<Descriptor> {
+            Descriptor(Priority::RemasteredCasc, true, false, "Data", "", nullptr),
+            Descriptor(Priority::PatchRt, false, true, patchRtFileName, "", std::make_shared<FileBrowser<u32>>(getPatchRtFilter(), "")),
+            Descriptor(Priority::BrooDat, false, true, brooDatFileName, "", std::make_shared<FileBrowser<u32>>(getBrooDatFilter(), "")),
+            Descriptor(Priority::StarDat, false, true, starDatFileName, "", std::make_shared<FileBrowser<u32>>(getStarDatFilter(), ""))
+        };
+    }
 }
 
 ArchiveClusterPtr Sc::DataFile::Browser::openScDataFiles(
@@ -129,6 +155,8 @@ ArchiveClusterPtr Sc::DataFile::Browser::openScDataFiles(
         if ( !expectedFilePath.empty() && findFile(expectedFilePath) )
         {
             dataFile = openDataFile(expectedFilePath, dataFileDescriptor);
+            if ( dataFile && dataFileDescriptor.isCasc() )
+                includesRemastered = true;
         }
         else if ( !skipStarCraftBrowse && expectedInScDirectory &&
             (foundStarCraftDirectory || (foundStarCraftDirectory = findStarCraftDirectory(scDirectory, foundRemastered, declinedScBrowser, expectedStarCraftDirectory, starCraftBrowser)))
@@ -237,6 +265,11 @@ ArchiveFilePtr Sc::DataFile::Browser::openDataFile(const std::string & dataFileP
 FileBrowserPtr<u32> Sc::DataFile::Browser::getDefaultStarCraftBrowser()
 {
     return FileBrowserPtr<u32>(new FileBrowser<u32>(getStarCraftExeFilter(), getDefaultScPath()));
+}
+
+FileBrowserPtr<u32> Sc::DataFile::Browser::getNoPromptNoDefaultStarCraftBrowser()
+{
+    return FileBrowserPtr<u32>(new NoPromptFileBrowser<u32>(getStarCraftExeFilter(), ""));
 }
 
 bool Sc::Unit::load(ArchiveCluster & archiveCluster)

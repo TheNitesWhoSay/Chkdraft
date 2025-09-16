@@ -8,7 +8,7 @@ namespace WinLib {
     {
         public:
             virtual ~ListViewControl();
-            bool CreateThis(HWND hParent, int x, int y, int width, int height, bool editable, bool ownerDrawn, u64 id);
+            bool CreateThis(HWND hParent, int x, int y, int width, int height, bool editable, bool ownerDrawn, u64 id, bool noHeaderSingleSel = false);
             bool AddColumn(int insertAt, const std::string & title, int width, int alignmentFlags);
             bool SetColumnWidth(int column, int width);
             void AddRow(int numColumns, LPARAM lParam);
@@ -22,10 +22,12 @@ namespace WinLib {
             bool DeleteAllItems();
             bool FocusItem(int index);
             bool SelectRow(int index);
+            bool SelectRowByText(const std::string & text);
             void RedrawHeader();
             //bool SortItems(WPARAM value, LPARAM function);
         
             int GetItemRow(int lParam);
+            int GetNumRows();
             int GetNumColumns();
             int GetColumnWidth(int column);
             bool GetItemAt(int xCoord, int yCoord, int & itemRow, int & itemColumn);
@@ -34,6 +36,7 @@ namespace WinLib {
             bool GetItemRect(int x, int y, RECT & rect);
             int GetFocusedItem();
             int GetNextSelection(int currentSelection = -1); // Gets the focused & selected item (if any), else the first selected item
+            std::string GetSelectedItemText(); // Gets the text of the item associated with the result of GetNextSelection()
 
         private:
         

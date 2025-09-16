@@ -1,6 +1,6 @@
 #include "briefing_text_trig.h"
 #include "chkdraft/chkdraft.h"
-#include "mapping/settings.h"
+#include "mapping/chkd_profiles.h"
 #include <string>
 
 BriefingTextTrigWindow::~BriefingTextTrigWindow()
@@ -40,7 +40,7 @@ void BriefingTextTrigWindow::RefreshWindow()
 
 void BriefingTextTrigWindow::updateMenus()
 {
-    if ( Settings::useAddressesForMemory )
+    if ( chkd.profiles().triggers.useAddressesForMemory )
         briefingTextTrigMenu.SetCheck(ID_OPTIONS_USEADDRESSESFORMEMORY, true);
     else
         briefingTextTrigMenu.SetCheck(ID_OPTIONS_USEADDRESSESFORMEMORY, false);
@@ -51,8 +51,8 @@ BOOL BriefingTextTrigWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
     switch ( LOWORD(wParam) )
     {
     case ID_OPTIONS_USEADDRESSESFORMEMORY:
-        Settings::useAddressesForMemory = !Settings::useAddressesForMemory;
-        Settings::updateSettingsFile();
+        chkd.profiles().triggers.useAddressesForMemory = !chkd.profiles().triggers.useAddressesForMemory;
+        chkd.profiles.saveCurrProfile();
         RefreshWindow();
         break;
     case ID_REFRESH_TEXTTRIGS:
@@ -148,7 +148,7 @@ bool BriefingTextTrigWindow::CompileEditText(Scenario & map)
         BriefingTextTrigCompiler compiler {}; // All data for compilation is gathered on-the-fly, no need to check for updates
         auto edit = CM->operator()(ActionDescriptor::CompileBriefingTextTrigs);
         CM->skipEventRendering();
-        if ( compiler.compileBriefingTriggers(*briefingTrigText, (Scenario &)map, chkd.scData, 0, map.numBriefingTriggers()) )
+        if ( compiler.compileBriefingTriggers(*briefingTrigText, (Scenario &)map, *chkd.scData, 0, map.numBriefingTriggers()) )
             return true;
         else
             WinLib::Message("Compilation failed.", "Error!");

@@ -42,11 +42,11 @@ void LeftBar::NotifyTreeItemSelected(LPARAM newValue)
         switch ( itemType )
         {
         case TreeTypeIsom: // itemData == terrainTypeIndex
-            chkd.maps.clipboard.setQuickIsom(itemData);
+            chkd.maps.clipboard->setQuickIsom(itemData);
             break;
 
         case TreeTypeDoodad:
-            chkd.maps.clipboard.setQuickDoodad(u16(itemData));
+            chkd.maps.clipboard->setQuickDoodad(u16(itemData));
             CM->Redraw(false);
             break;
 
@@ -59,7 +59,7 @@ void LeftBar::NotifyTreeItemSelected(LPARAM newValue)
 
             Chk::Unit unit {};
             unit.validStateFlags = Chk::Unit::State::Invincible;
-            const auto & unitDat = chkd.scData.units.getUnit(Sc::Unit::Type(itemData));
+            const auto & unitDat = chkd.scData->units.getUnit(Sc::Unit::Type(itemData));
 
             if ( (unitDat.flags & Sc::Unit::Flags::FlyingBuilding) == Sc::Unit::Flags::FlyingBuilding )
                 unit.validStateFlags |= Chk::Unit::State::InTransit;
@@ -118,7 +118,7 @@ void LeftBar::NotifyTreeItemSelected(LPARAM newValue)
 
             unit.xc = 0;
             unit.yc = 0;
-            chkd.maps.clipboard.addQuickUnit(unit);
+            chkd.maps.clipboard->addQuickUnit(unit);
             chkd.maps.startPaste(true);
             //SetFocus(CM->getHandle());
         }
@@ -128,8 +128,8 @@ void LeftBar::NotifyTreeItemSelected(LPARAM newValue)
             if ( CM->GetSelectedLocation() != u16(itemData) )
             {
                 CM->selections.selectLocation(u16(itemData));
-                if ( chkd.locationWindow.getHandle() != nullptr )
-                    chkd.locationWindow.RefreshLocationInfo();
+                if ( chkd.locationWindow->getHandle() != nullptr )
+                    chkd.locationWindow->RefreshLocationInfo();
                 CM->viewLocation(u16(itemData));
             }
             break;
@@ -144,9 +144,9 @@ void LeftBar::NotifyTreeItemSelected(LPARAM newValue)
                 Chk::Sprite sprite {};
                 sprite.type = (Sc::Sprite::Type)itemData;
                 sprite.owner = CM->getCurrPlayer();
-                sprite.flags = Chk::Sprite::toPureSpriteFlags(chkd.scData.terrain.doodadSpriteFlags[itemData]);
+                sprite.flags = Chk::Sprite::toPureSpriteFlags(chkd.scData->terrain.doodadSpriteFlags[itemData]);
 
-                chkd.maps.clipboard.addQuickSprite(sprite);
+                chkd.maps.clipboard->addQuickSprite(sprite);
                 chkd.maps.startPaste(true);
             }
             break;
@@ -161,9 +161,9 @@ void LeftBar::NotifyTreeItemSelected(LPARAM newValue)
                 Chk::Sprite sprite {};
                 sprite.type = (Sc::Sprite::Type)itemData;
                 sprite.owner = CM->getCurrPlayer();
-                sprite.flags = Chk::Sprite::toSpriteUnitFlags(chkd.scData.terrain.doodadSpriteFlags[itemData]);
+                sprite.flags = Chk::Sprite::toSpriteUnitFlags(chkd.scData->terrain.doodadSpriteFlags[itemData]);
 
-                chkd.maps.clipboard.addQuickSprite(sprite);
+                chkd.maps.clipboard->addQuickSprite(sprite);
                 chkd.maps.startPaste(true);
             }
             break;
@@ -187,15 +187,15 @@ LRESULT LeftBar::Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
             LPARAM itemType = item.lParam&TreeTypePortion;
             if ( itemType == TreeTypeLocation )
             {
-                if ( chkd.locationWindow.getHandle() == NULL )
+                if ( chkd.locationWindow->getHandle() == NULL )
                 {
-                    if ( chkd.locationWindow.CreateThis(chkd.getHandle()) )
-                        ShowWindow(chkd.locationWindow.getHandle(), SW_SHOWNORMAL);
+                    if ( chkd.locationWindow->CreateThis(chkd.getHandle()) )
+                        ShowWindow(chkd.locationWindow->getHandle(), SW_SHOWNORMAL);
                 }
                 else
                 {
-                    chkd.locationWindow.RefreshLocationInfo();
-                    ShowWindow(chkd.locationWindow.getHandle(), SW_SHOW);
+                    chkd.locationWindow->RefreshLocationInfo();
+                    ShowWindow(chkd.locationWindow->getHandle(), SW_SHOW);
                 }
             }
         }
@@ -290,7 +290,7 @@ LRESULT LeftBar::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
             break;
 
         case WM_MOUSEWHEEL:
-            if ( CM != nullptr && chkd.maps.clipboard.isPasting() )
+            if ( CM != nullptr && chkd.maps.clipboard->isPasting() )
                 SendMessage(CM->getHandle(), WM_MOUSEWHEEL, wParam, lParam);
             else
                 return ClassWindow::WndProc(hWnd, msg, wParam, lParam);

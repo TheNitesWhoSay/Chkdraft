@@ -57,7 +57,7 @@ bool WindowsClipboardToString(std::string & str)
 PasteDoodadNode::PasteDoodadNode(u16 startTileGroup, s32 tileX, s32 tileY)
     : tileX(tileX), tileY(tileY)
 {
-    const auto & tileset = chkd.scData.terrain.get(CM->getTileset());
+    const auto & tileset = chkd.scData->terrain.get(CM->getTileset());
     const auto & doodad = (Sc::Terrain::DoodadCv5 &)tileset.tileGroups[startTileGroup];
     this->doodadId = doodad.ddDataIndex;
     this->tileWidth = doodad.tileWidth;
@@ -86,7 +86,7 @@ PasteDoodadNode::PasteDoodadNode(u16 startTileGroup, s32 tileX, s32 tileY)
 
 PasteDoodadNode::PasteDoodadNode(const Chk::Doodad & doodad)
 {
-    const auto & tileset = chkd.scData.terrain.get(CM->getTileset());
+    const auto & tileset = chkd.scData->terrain.get(CM->getTileset());
     if ( auto doodadGroupIndex = tileset.getDoodadGroupIndex(doodad.type) )
     {
         const auto & doodadDat = (Sc::Terrain::DoodadCv5 &)tileset.tileGroups[*doodadGroupIndex];
@@ -355,7 +355,7 @@ void Clipboard::pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap & map, bool allo
             pasteUnit.unit.relationFlags = 0;
             if ( pasteUnit.unit.type < Sc::Unit::TotalTypes )
             {
-                const auto & dat = chkd.scData.units.getUnit(pasteUnit.unit.type);
+                const auto & dat = chkd.scData->units.getUnit(pasteUnit.unit.type);
                 if ( (dat.flags & Sc::Unit::Flags::Addon) == Sc::Unit::Flags::Addon ||
                     pasteUnit.unit.type == Sc::Unit::Type::TerranCommandCenter ||
                     pasteUnit.unit.type == Sc::Unit::Type::TerranScienceFacility ||
@@ -388,8 +388,8 @@ void Clipboard::pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap & map, bool allo
                     lastPasteNydus = std::nullopt;
             }
             map.addUnit(pasteUnit.unit);
-            if ( chkd.unitWindow.getHandle() != nullptr )
-                chkd.unitWindow.AddUnitItem((u16)numUnits, pasteUnit.unit);
+            if ( chkd.unitWindow->getHandle() != nullptr )
+                chkd.unitWindow->AddUnitItem((u16)numUnits, pasteUnit.unit);
         }
     }
     if ( !pastedAddons.empty() )
@@ -404,7 +404,7 @@ void Clipboard::pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap & map, bool allo
                 {
                     if ( map.autoSwappingAddonPlayers() && building.owner != pastedAddon.owner )
                     {
-                        if ( (chkd.scData.units.getUnit(pastedAddon.type).flags & Sc::Unit::Flags::Addon) == Sc::Unit::Flags::Addon )
+                        if ( (chkd.scData->units.getUnit(pastedAddon.type).flags & Sc::Unit::Flags::Addon) == Sc::Unit::Flags::Addon )
                             edit->units[pastedAddonIndex].owner = building.owner;
                         else
                             edit->units[*buildingOpt].owner = pastedAddon.owner;
@@ -442,8 +442,8 @@ void Clipboard::pasteSprites(s32 mapClickX, s32 mapClickY, GuiMap & map, point p
             this->prevPaste.y = pasteSprite.sprite.yc;
             size_t numSprites = map.numSprites();
             map.addSprite(pasteSprite.sprite);
-            if ( chkd.spriteWindow.getHandle() != nullptr )
-                chkd.spriteWindow.AddSpriteItem((u16)numSprites, pasteSprite.sprite);
+            if ( chkd.spriteWindow->getHandle() != nullptr )
+                chkd.spriteWindow->AddSpriteItem((u16)numSprites, pasteSprite.sprite);
         }
     }
 }
@@ -957,8 +957,8 @@ void Clipboard::endPasting(GuiMap* map)
             ClearQuickItems();
             quickPaste = false;
             
-            if ( chkd.terrainPalWindow.getHandle() != nullptr )
-                RedrawWindow(chkd.terrainPalWindow.getHandle(), NULL, NULL, RDW_INVALIDATE);
+            if ( chkd.terrainPalWindow->getHandle() != nullptr )
+                RedrawWindow(chkd.terrainPalWindow->getHandle(), NULL, NULL, RDW_INVALIDATE);
         }
 
         prevPaste.x = -1;

@@ -208,15 +208,15 @@ void SoundEditorWindow::UpdateWindowText()
 
         if ( soundEntry.soundIndex == u16_max )
         {
-            chkd.mapSettingsWindow.SetWinText("Map Settings - [Sound #null, String #" + std::to_string(soundStringId) + soundStatusString + "]");
+            chkd.mapSettingsWindow->SetWinText("Map Settings - [Sound #null, String #" + std::to_string(soundStringId) + soundStatusString + "]");
         }
         else
         {
-            chkd.mapSettingsWindow.SetWinText("Map Settings - [Sound #" + std::to_string(soundEntry.soundIndex) + ", String #" + std::to_string(soundStringId) + soundStatusString + "]");
+            chkd.mapSettingsWindow->SetWinText("Map Settings - [Sound #" + std::to_string(soundEntry.soundIndex) + ", String #" + std::to_string(soundStringId) + soundStatusString + "]");
         }
     }
     else
-        chkd.mapSettingsWindow.SetWinText("Map Settings");
+        chkd.mapSettingsWindow->SetWinText("Map Settings");
 }
 
 void SoundEditorWindow::UpdateCustomStringList()
@@ -349,7 +349,8 @@ void SoundEditorWindow::BrowseButtonPressed()
         std::make_pair<std::string, std::string>("*.wav;*.ogg", "All StarCraft Compatible Sounds"),
         std::make_pair<std::string, std::string>("*.*", "All Files")
     };
-    std::string initPath = makeSystemFilePath(Settings::starCraftPath, "Maps");
+    std::string initPath = makeSystemFilePath(
+        chkd.profiles().useRemastered ? chkd.profiles().remastered.starCraftPath : chkd.profiles().classic.starCraftPath, "Maps");
 
     u32 filterIndex = 2; // All StarCraft Compatible Sounds
     std::string soundFilePath;

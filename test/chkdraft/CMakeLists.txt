@@ -31,6 +31,8 @@ set(Headers
 )
 set(Sources
   chkdraft_test_main.cpp
+  chkd_profiles_test.cpp
+  chkd_skin_test.cpp
   constants_test.cpp
 )
 

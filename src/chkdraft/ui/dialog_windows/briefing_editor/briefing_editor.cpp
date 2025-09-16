@@ -118,7 +118,7 @@ BOOL BriefingTrigEditorWindow::DlgNotify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
     break;
     case TCN_SELCHANGING:
     {
-        chkd.briefingTrigEditorWindow.SetWinText("Briefing Trigger Editor");
+        chkd.briefingTrigEditorWindow->SetWinText("Briefing Trigger Editor");
         Tab selectedTab = (Tab)tabs.GetCurSel();
         switch ( selectedTab )
         {

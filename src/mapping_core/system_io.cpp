@@ -230,6 +230,25 @@ std::string makeExtArchiveFilePath(const std::string & archiveFilePath, const st
         return fixedArchiveFilePath + archiveExtensionSeparator + extension;
 }
 
+bool isSamePath(const std::string & left, const std::string & right)
+{
+    try {
+        return left.compare(right) == 0 ||
+            std::filesystem::path(left) == std::filesystem::path(right);
+    } catch ( ... ) {
+        return false;
+    }
+}
+
+bool isInDirectory(const std::string & path, const std::string & directory)
+{
+    try {
+        return std::filesystem::path(path).parent_path() == std::filesystem::path(directory);
+    } catch ( ... ) {
+        return false;
+    }
+}
+
 bool isDirectory(const std::string & directory)
 {
     return std::filesystem::is_directory(directory);
@@ -358,7 +377,7 @@ bool makeFileCopy(const std::string & inFilePath, const std::string & outFilePat
 bool makeDirectory(const std::string & directory)
 {
     icux::filestring directoryPath = icux::toFilestring(directory);
-    return std::filesystem::exists(directoryPath.c_str()) || std::filesystem::create_directories(directoryPath.c_str());
+    return std::filesystem::create_directories(directoryPath.c_str()) || std::filesystem::exists(directoryPath.c_str());
 }
 
 bool removeFile(const std::string & filePath)

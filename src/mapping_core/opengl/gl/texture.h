@@ -93,9 +93,11 @@ namespace gl
 
         void bind()
         {
+            if ( auto error = glGetError(); error != GL_NO_ERROR )
+                throw std::runtime_error("Error prior to binding texture: " + std::to_string(error));
             glBindTexture(tex->type, tex->id);
-            if ( auto error = glGetError(); error != GL_NO_ERROR ) // GL_INVALID_FRAMEBUFFER_OPERATION = 1286
-                throw std::runtime_error("Error binding texture");
+            if ( auto error = glGetError(); error != GL_NO_ERROR )
+                throw std::runtime_error("Error binding texture: " + std::to_string(error));
         }
 
         void bindToSlot(GLenum textureUnit)

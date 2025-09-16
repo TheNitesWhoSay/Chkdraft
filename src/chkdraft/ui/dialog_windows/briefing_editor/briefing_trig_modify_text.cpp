@@ -1,6 +1,6 @@
 #include "briefing_trig_modify_text.h"
 #include "chkdraft/chkdraft.h"
-#include "mapping/settings.h"
+#include "mapping/chkd_profiles.h"
 
 enum_t(Id, u32, {
     TAB_PLAYERS = 0,
@@ -162,7 +162,7 @@ bool BriefingTrigModifyTextWindow::CompileEditText(std::string & newText)
         if ( briefingTrigIndex < CM->numBriefingTriggers() )
         {
             BriefingTextTrigCompiler compiler {}; // All data for compilation is gathered on-the-fly, no need to check for updates
-            if ( compiler.compileBriefingTrigger(newText, (Scenario &)*CM, chkd.scData, briefingTrigIndex) )
+            if ( compiler.compileBriefingTrigger(newText, (Scenario &)*CM, *chkd.scData, briefingTrigIndex) )
                 return true;
             else
                 WinLib::Message("Compilation failed.", "Error!");

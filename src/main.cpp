@@ -1,14 +1,14 @@
 #include <chkdraft/chkdraft.h>
-#include <chkdraft/mapping/settings.h>
+#include <chkdraft/mapping/chkd_profiles.h>
+
+Chkdraft chkd {}; // The main instance of Chkdraft
 
 #ifdef _DEBUG
 Logger logger(LogLevel::Debug); // The primary logger
 #else
-Logger logger((LogLevel)Settings::getLogLevel()); // The primary logger
+Logger logger((LogLevel)chkd.profiles().logger.defaultLogLevel); // The primary logger
 #endif
 
-
-Chkdraft chkd; // The main instance of Chkdraft
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {

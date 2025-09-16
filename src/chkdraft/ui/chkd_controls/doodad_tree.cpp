@@ -18,7 +18,7 @@ void DoodadTree::UpdateDoodadTree()
     if ( CM != nullptr )
     {
         auto tilesetIndex = CM->getTileset() % Sc::Terrain::NumTilesets;
-        auto tileset = chkd.scData.terrain.get(Sc::Terrain::Tileset(tilesetIndex));
+        auto tileset = chkd.scData->terrain.get(Sc::Terrain::Tileset(tilesetIndex));
         for ( const auto & doodadGroup : tileset.doodadGroups )
         {
             auto groupRoot = InsertTreeItem(hDoodadRoot, doodadGroup.name, TreeTypeCategory | (LPARAM)Layer::Doodads);

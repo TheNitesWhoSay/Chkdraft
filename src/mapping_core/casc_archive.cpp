@@ -24,7 +24,6 @@ inline bool CascArchive::isOpen() const
     return hCasc != NULL;
 }
 
-
 inline bool CascArchive::isOpen(const std::string & filePath) const
 {
     return hCasc != NULL && filePath == this->filePath;

@@ -27,7 +27,7 @@ bool ChangePasswordDialog::CreateThis(HWND hParent)
 
 void ChangePasswordDialog::DestroyThis()
 {
-    Hide();
+    DestroyDialog();
 }
 
 void ChangePasswordDialog::Hide()

@@ -1013,13 +1013,13 @@ void UnitPropertiesWindow::NotifyGraphicsPressed()
     u16 firstUnit = CM->selections.getFirstUnit();
     if ( std::size_t(firstUnit) < CM->numUnits() )
     {
-        if ( chkd.actorWindow.getHandle() == NULL )
-            chkd.actorWindow.CreateThis(chkd.getHandle());
+        if ( chkd.actorWindow->getHandle() == NULL )
+            chkd.actorWindow->CreateThis(chkd.getHandle());
         
         NotifyClosePressed();
-        ::ShowWindow(chkd.actorWindow.getHandle(), SW_SHOW);
-        chkd.actorWindow.FocusAndSelectIndex(CM->view.units.attachedData(firstUnit).drawListIndex);
-        chkd.actorWindow.FocusThis();
+        ::ShowWindow(chkd.actorWindow->getHandle(), SW_SHOW);
+        chkd.actorWindow->FocusAndSelectIndex(CM->view.units.attachedData(firstUnit).drawListIndex);
+        chkd.actorWindow->FocusThis();
     }
 }
 

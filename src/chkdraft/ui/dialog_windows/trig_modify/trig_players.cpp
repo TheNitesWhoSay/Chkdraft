@@ -241,7 +241,7 @@ void TrigPlayersWindow::CheckBoxUpdated(u16 checkId)
         else
             editRawPlayers.DisableThis();
     }
-    chkd.trigEditorWindow.triggersWindow.RefreshGroupList();
+    chkd.trigEditorWindow->triggersWindow.RefreshGroupList();
     RefreshWindow(trigIndex);
 }
 

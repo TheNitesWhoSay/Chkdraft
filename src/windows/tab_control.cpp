@@ -1,8 +1,5 @@
 #include "tab_control.h"
 #include "cross_cut/simple_icu.h"
-#include "cross_cut/logger.h"
-
-extern Logger logger;
 
 namespace WinLib {
 

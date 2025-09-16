@@ -1,7 +1,7 @@
 #include "triggers.h"
 #include "chkdraft/chkdraft.h"
 #include "ui/chkd_controls/move_to.h"
-#include "mapping/settings.h"
+#include "mapping/chkd_profiles.h"
 #include "mapping/sc_gdi_graphics.h"
 #include <string>
 
@@ -34,7 +34,8 @@ enum_t(Id, u32, {
 });
 
 TriggersWindow::TriggersWindow() : currTrigger(NO_TRIGGER), displayAll(true), numVisibleTrigs(0),
-    changeGroupHighlightOnly(false), trigListDc(std::nullopt), drawingAll(false), textTrigGenerator(Settings::useAddressesForMemory, Settings::deathTableStart, true),
+    changeGroupHighlightOnly(false), trigListDc(std::nullopt), drawingAll(false),
+    textTrigGenerator(chkd.profiles().triggers.useAddressesForMemory, chkd.profiles().triggers.deathTableStart, true),
     countTillCachePurge(0)
 {
     for ( u8 i=0; i<Chk::Trigger::MaxOwners; i++ )
@@ -153,7 +154,7 @@ void TriggersWindow::RefreshGroupList()
         changeGroupHighlightOnly = true; // Begin selection
         if ( displayAll )
             listGroups.SelectItem(selectAllIndex);
-        for ( u8 i=0; i<28; i++ )
+        for ( u8 i=0; i<Chk::Trigger::MaxOwners; i++ )
         {
             if ( groupSelected[i] )
                 listGroups.SelectItem(i);
@@ -668,7 +669,7 @@ std::string TriggersWindow::GetActionString(u8 actionNum, const Chk::Trigger & t
         case Chk::Action::Type::RunAiScript: // Number
             {
                 std::string aiName;
-                if ( chkd.scData.ai.getNameById(action.number, aiName) )
+                if ( chkd.scData->ai.getNameById(action.number, aiName) )
                     ssAction << "Execute AI script \'\x08" << aiName << " (" << tt.getTrigScript((Sc::Ai::ScriptId)action.number) << ")\x0C\'.";
                 else
                     ssAction << "Execute AI script \'\x08" << tt.getTrigScript((Sc::Ai::ScriptId)action.number) << "\x0C\'.";
@@ -677,7 +678,7 @@ std::string TriggersWindow::GetActionString(u8 actionNum, const Chk::Trigger & t
         case Chk::Action::Type::RunAiScriptAtLocation: // Number, Location
             {
                 std::string aiName;
-                if ( chkd.scData.ai.getNameById(action.number, aiName) )
+                if ( chkd.scData->ai.getNameById(action.number, aiName) )
                 {
                     ssAction << "Execute AI script \'\x08" << aiName << " (" << tt.getTrigScript((Sc::Ai::ScriptId)action.number) << ")\x0C\' at \'\x08"
                         << tt.getTrigLocation(action.locationId) << "\x0C\'.";
@@ -1107,7 +1108,7 @@ bool TriggersWindow::ShowTrigger(const Chk::Trigger & trigger)
 
 void TriggersWindow::ClearGroups()
 {
-    for ( u8 i=0; i<28; i++ )
+    for ( u8 i=0; i<Chk::Trigger::MaxOwners; i++ )
         groupSelected[i] = false;
 }
 

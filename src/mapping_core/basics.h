@@ -179,14 +179,14 @@ constexpr u64 size_1tb = 0x10000000000;
 #define x32BIT_30 0xBFFFFFFF
 #define x32BIT_31 0x7FFFFFFF
 
-const u8 u8Bits[] = { BIT_0, BIT_1, BIT_2, BIT_3, BIT_4, BIT_5, BIT_6, BIT_7 };
+constexpr u8 u8Bits[] = { BIT_0, BIT_1, BIT_2, BIT_3, BIT_4, BIT_5, BIT_6, BIT_7 };
 
-const u8 xU8Bits[] = { x8BIT_0, x8BIT_1, x8BIT_2, x8BIT_3, x8BIT_4, x8BIT_5, x8BIT_6, x8BIT_7 };
+constexpr u8 xU8Bits[] = { x8BIT_0, x8BIT_1, x8BIT_2, x8BIT_3, x8BIT_4, x8BIT_5, x8BIT_6, x8BIT_7 };
 
-const u16 u16Bits[] = { BIT_0, BIT_1, BIT_2, BIT_3, BIT_4, BIT_5, BIT_6, BIT_7,
+constexpr u16 u16Bits[] = { BIT_0, BIT_1, BIT_2, BIT_3, BIT_4, BIT_5, BIT_6, BIT_7,
 BIT_8, BIT_9, BIT_10, BIT_11, BIT_12, BIT_13, BIT_14, BIT_15 };
 
-const u32 u32Bits[] = { BIT_0, BIT_1, BIT_2, BIT_3, BIT_4, BIT_5, BIT_6, BIT_7,
+constexpr u32 u32Bits[] = { BIT_0, BIT_1, BIT_2, BIT_3, BIT_4, BIT_5, BIT_6, BIT_7,
 BIT_8, BIT_9, BIT_10, BIT_11, BIT_12, BIT_13, BIT_14, BIT_15,
 BIT_16, BIT_17, BIT_18, BIT_19, BIT_20, BIT_21, BIT_22, BIT_23,
 BIT_24, BIT_25, BIT_26, BIT_27, BIT_28, BIT_29, BIT_30, BIT_31 };

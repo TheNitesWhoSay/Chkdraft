@@ -10,9 +10,11 @@ namespace WinLib {
 
     }
 
-    bool ListViewControl::CreateThis(HWND hParent, int x, int y, int width, int height, bool editable, bool ownerDrawn, u64 id)
+    bool ListViewControl::CreateThis(HWND hParent, int x, int y, int width, int height, bool editable, bool ownerDrawn, u64 id, bool noHeaderSingleSel)
     {
         u32 style = WS_CHILD|LVS_REPORT|LVS_SHOWSELALWAYS;
+        if ( noHeaderSingleSel )
+            style |= LVS_NOCOLUMNHEADER|LVS_SINGLESEL;
         if ( editable )
             style |= LVS_EDITLABELS;
         if ( ownerDrawn )
@@ -137,6 +139,33 @@ namespace WinLib {
         return SendMessage(getHandle(), LVM_SETITEMSTATE, index, (LPARAM)&item) == TRUE;
     }
 
+    bool ListViewControl::SelectRowByText(const std::string & text)
+    {
+        icux::uistring uiText = icux::toUistring(text);
+        std::vector<icux::codepoint> textBuffer(std::size_t{2000});
+        LVITEM item {};
+        item.mask = LVIF_TEXT;
+        item.iItem = 0;
+        item.pszText = &textBuffer[0];
+        item.cchTextMax = textBuffer.size();
+        int numRows = GetNumRows();
+        for ( int i=0; i<numRows; ++i )
+        {
+            item.iItem = i;
+            if ( ListView_GetItem(getHandle(), &item) == TRUE )
+            {
+                if ( icux::uistring(&textBuffer[0]) == uiText )
+                {
+                    LVITEM item = { };
+                    item.stateMask = LVIS_SELECTED;
+                    item.state = LVIS_SELECTED;
+                    return SendMessage(getHandle(), LVM_SETITEMSTATE, i, (LPARAM)&item) == TRUE;
+                }
+            }
+        }
+        return false;
+    }
+
     void ListViewControl::RedrawHeader()
     {
         HWND hHeader = (HWND)SendMessage(getHandle(), LVM_GETHEADER, 0, 0);
@@ -160,6 +189,11 @@ namespace WinLib {
     int ListViewControl::GetColumnWidth(int column)
     {
         return (int)SendMessage(getHandle(), LVM_GETCOLUMNWIDTH, column, 0);
+    }
+
+    int ListViewControl::GetNumRows()
+    {
+        return (int)SendMessage(getHandle(), LVM_GETITEMCOUNT, 0, 0);
     }
 
     int ListViewControl::GetNumColumns()
@@ -270,9 +304,32 @@ namespace WinLib {
 
         int result = SendMessage(getHandle(), LVM_GETNEXTITEM, currentSelection, LVNI_SELECTED|LVNI_ABOVE);
         if ( result == -1 )
-            return SendMessage(getHandle(), LVM_GETNEXTITEM, currentSelection, LVNI_SELECTED|LVNI_BELOW);
-        else
-            return result;
+        {
+            result = SendMessage(getHandle(), LVM_GETNEXTITEM, currentSelection, LVNI_SELECTED|LVNI_BELOW);
+            if ( result == -1 )
+                result = SendMessage(getHandle(), LVM_GETNEXTITEM, currentSelection, LVNI_SELECTED);
+        }
+        return result;
+    }
+
+    std::string ListViewControl::GetSelectedItemText()
+    {
+        int focused = GetNextSelection();
+        if ( focused != -1 )
+        {
+            std::vector<wchar_t> textBuffer(std::size_t{2000});
+            LVITEM item {};
+            item.mask = LVIF_TEXT;
+            item.iItem = focused;
+            item.pszText = &textBuffer[0];
+            item.cchTextMax = textBuffer.size();
+            if ( ListView_GetItem(getHandle(), &item) == TRUE )
+            {
+                std::wstring text = &textBuffer[0];
+                return icux::toUtf8(text);
+            }
+        }
+        return "";
     }
 
 }
