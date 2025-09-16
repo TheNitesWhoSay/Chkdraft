@@ -26,51 +26,6 @@ enum_t(Id, u32, {
 
 void Chkdraft::OnLoadTest()
 {
-    /*Profile profile {
-        .profileName = "QuickTest",
-        .additionalProfileDirectories {
-            "C:\\misc", "C:\\Users\\Nites\\Desktop\\Star"
-        },
-        .isDefaultProfile = false,
-        .autoLoadOnStart = false,
-        .useRemastered = true,
-        .remastered {
-            .starCraftPath = "C:\\Program Files (x86)\\StarCraft",
-            .cascPath = "C:\\Program Files (x86)\\StarCraft",
-            .dataFiles {
-                "C:\\Program Files (x86)\\StarCraft",
-            },
-            .defaultSkin = ChkdSkin::CarbotHD2
-        },
-        .classic {
-            .starCraftPath = "C:\\Users\\Nites\\Desktop\\StarCraft 1.16.1",
-            .starDatPath = "C:\\Users\\Nites\\Desktop\\StarCraft 1.16.1\\StarDat.mpq",
-            .brooDatPath = "C:\\Users\\Nites\\Desktop\\StarCraft 1.16.1\\BrooDat.mpq",
-            .patchRtPath = "C:\\Users\\Nites\\Desktop\\StarCraft 1.16.1\\patch_rt.mpq",
-            .dataFiles {
-                "C:\\Users\\Nites\\Desktop\\StarCraft 1.16.1\\patch_rt.mpq",
-                "C:\\Users\\Nites\\Desktop\\StarCraft 1.16.1\\BrooDat.mpq",
-                "C:\\Users\\Nites\\Desktop\\StarCraft 1.16.1\\StarDat.mpq"
-            },
-            .defaultSkin = ChkdSkin::Classic
-        },
-        .history {
-            .maxMemoryUseMb = 500,
-            .maxActions = 500
-        },
-        .triggers {
-            .useAddressesForMemory = true,
-            .deathTableStart = 0x58A364
-        },
-        .logger {
-            .defaultLogLevel = LogLevel::Info
-        }
-    };*/
-    //if ( auto inFile = fileToString("C:\\Users\\Nites\\Desktop\\QuickTest.profile.json") )
-    //{
-    //    auto profile = Json::read<ChkdProfile>(*inFile);
-    //    logger.info() << Json::pretty(profile) << std::endl;
-    //}
     /*auto & map = []() -> GuiMap & {
         auto map = chkd.maps.NewMap(Sc::Terrain::Tileset::Jungle, 96, 96, Sc::Isom::Brush::Jungle::Default);
         //map->addUnit(Chk::Unit {map->getNextClassId(), 192, 64, Sc::Unit::Type::StartLocation, 0, 0, 0, Sc::Player::Id::Player2});
