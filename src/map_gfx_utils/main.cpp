@@ -72,7 +72,7 @@ int main()
     auto startInitialLoad = std::chrono::high_resolution_clock::now();
     GfxUtil gfxUtil {};
     gfxUtil.loadScData(); // Could provide a path string to this method
-    auto renderer = gfxUtil.createRenderer(RenderSkin::ClassicGL);
+    auto renderer = gfxUtil.createRenderer(RenderSkin::Classic);
     auto endInitialLoad = std::chrono::high_resolution_clock::now();
 
     logger.info() << "Initial load completed in " << std::chrono::duration_cast<std::chrono::milliseconds>(endInitialLoad-startInitialLoad).count() << "ms" << std::endl;

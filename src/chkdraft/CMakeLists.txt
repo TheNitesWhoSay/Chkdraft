@@ -24,7 +24,7 @@ include(FetchContent)
 FetchContent_Declare(
   rarecpp
   GIT_REPOSITORY https://github.com/TheNitesWhoSay/RareCpp.git
-  GIT_TAG fb9b90f # release-2.5.0TODO
+  GIT_TAG 1811a75 # release-2.5.0TODO
 )
 FetchContent_MakeAvailable(rarecpp)
 include_directories(${rarecpp_SOURCE_DIR}/include)
@@ -56,18 +56,20 @@ set(Headers
   common_files/version.h
   mapping/clipboard_animations.h
   mapping/chkd_plugins.h
+  mapping/chkd_profiles.h
+  mapping/chkd_skin.h
   mapping/clipboard.h
   mapping/data_file_browsers.h
   mapping/gui_map_gl_graphics.h
   mapping/sc_gdi_graphics.h
   mapping/selections.h
-  mapping/settings.h
   mapping/wgl_render_context.h
   ui/chkd_controls/chkd_string_input.h
   ui/chkd_controls/cnd_act_grid.h
   ui/chkd_controls/cuwp_input.h
   ui/chkd_controls/doodad_tree.h
   ui/chkd_controls/history_tree.h
+  ui/chkd_controls/input_dialog.h
   ui/chkd_controls/isom_tree.h
   ui/chkd_controls/location_tree.h
   ui/chkd_controls/main_tree.h
@@ -109,6 +111,11 @@ set(Headers
   ui/dialog_windows/map_settings/string_editor/string_guide.h
   ui/dialog_windows/map_settings/string_editor/string_preview.h
   ui/dialog_windows/new_map/new_map.h
+  ui/dialog_windows/profiles/custom_dat_files.h
+  ui/dialog_windows/profiles/edit_profiles.h
+  ui/dialog_windows/profiles/profile_editor_settings.h
+  ui/dialog_windows/profiles/profile_general.h
+  ui/dialog_windows/profiles/select_profile.h
   ui/dialog_windows/text_trig/briefing_text_trig.h
   ui/dialog_windows/text_trig/lit.h
   ui/dialog_windows/text_trig/text_trig.h
@@ -158,18 +165,19 @@ set(Sources
   common_files/debug.cpp
   common_files/version.cpp
   mapping/chkd_plugins.cpp
+  mapping/chkd_profiles.cpp
   mapping/clipboard.cpp
   mapping/clipboard_animations.cpp
   mapping/data_file_browsers.cpp
   mapping/gui_map_gl_graphics.cpp
   mapping/sc_gdi_graphics.cpp
   mapping/selections.cpp
-  mapping/settings.cpp
   ui/chkd_controls/chkd_string_input.cpp
   ui/chkd_controls/cnd_act_grid.cpp
   ui/chkd_controls/cuwp_input.cpp
   ui/chkd_controls/doodad_tree.cpp
   ui/chkd_controls/history_tree.cpp
+  ui/chkd_controls/input_dialog.cpp
   ui/chkd_controls/isom_tree.cpp
   ui/chkd_controls/location_tree.cpp
   ui/chkd_controls/main_tree.cpp
@@ -210,6 +218,11 @@ set(Sources
   ui/dialog_windows/map_settings/string_editor/string_guide.cpp
   ui/dialog_windows/map_settings/string_editor/string_preview.cpp
   ui/dialog_windows/new_map/new_map.cpp
+  ui/dialog_windows/profiles/custom_dat_files.cpp
+  ui/dialog_windows/profiles/edit_profiles.cpp
+  ui/dialog_windows/profiles/profile_editor_settings.cpp
+  ui/dialog_windows/profiles/profile_general.cpp
+  ui/dialog_windows/profiles/select_profile.cpp
   ui/dialog_windows/text_trig/briefing_text_trig.cpp
   ui/dialog_windows/text_trig/lit.cpp
   ui/dialog_windows/text_trig/text_trig.cpp

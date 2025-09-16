@@ -2,7 +2,7 @@
 #include "chkdraft/chkdraft.h"
 #include "ui/chkd_controls/chkd_string_input.h"
 #include "ui/chkd_controls/cuwp_input.h"
-#include "mapping/settings.h"
+#include "mapping/chkd_profiles.h"
 #include <CommCtrl.h>
 
 #define TOP_ACTION_PADDING 50
@@ -66,7 +66,7 @@ void TrigActionsWindow::RefreshWindow(u32 trigIndex)
     gridActions.ClearItems();
     this->trigIndex = trigIndex;
     const auto & trig = CM->getTrigger(trigIndex);
-    TextTrigGenerator ttg(Settings::useAddressesForMemory, Settings::deathTableStart, true);
+    TextTrigGenerator ttg(chkd.profiles().triggers.useAddressesForMemory, chkd.profiles().triggers.deathTableStart, true);
     if ( ttg.loadScenario((Scenario &)*CM) )
     {
         for ( u8 y = 0; y<Chk::Trigger::MaxActions; y++ )
@@ -170,7 +170,7 @@ void TrigActionsWindow::CndActEnableToggled(u8 actionNum)
             editAction.toggleDisabled();
 
             RefreshWindow(trigIndex);
-            chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
+            chkd.trigEditorWindow->triggersWindow.RefreshWindow(false);
 
             gridActions.SetEnabledCheck(actionNum, !editAction->isDisabled());
         }
@@ -276,12 +276,12 @@ void TrigActionsWindow::FocusGrid()
 
 void TrigActionsWindow::InitializeScriptTable()
 {
-    size_t numScripts = chkd.scData.ai.numEntries();
+    size_t numScripts = chkd.scData->ai.numEntries();
     for ( size_t i = 0; i < numScripts; i++ )
     {
         std::string scriptName;
-        const Sc::Ai::Entry & entry = chkd.scData.ai.getEntry(i);
-        if ( chkd.scData.ai.getName(i, scriptName) )
+        const Sc::Ai::Entry & entry = chkd.scData->ai.getEntry(i);
+        if ( chkd.scData->ai.getName(i, scriptName) )
         {
             char* scriptStringPtr = (char*)&entry.identifier;
             char scriptIdString[5] = {scriptStringPtr[0], scriptStringPtr[1], scriptStringPtr[2], scriptStringPtr[3], '\0'};
@@ -373,13 +373,13 @@ bool TrigActionsWindow::TransformAction(std::size_t triggerIndex, std::size_t ac
 void TrigActionsWindow::RefreshActionAreas()
 {
     RefreshWindow(trigIndex);
-    chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
+    chkd.trigEditorWindow->triggersWindow.RefreshWindow(false);
 }
 
 void TrigActionsWindow::UpdateActionName(u8 actionNum, const std::string & newText, bool refreshImmediately)
 {
     const auto & trig = CM->getTrigger(trigIndex);
-    TextTrigCompiler ttc(Settings::useAddressesForMemory, Settings::deathTableStart);
+    TextTrigCompiler ttc(chkd.profiles().triggers.useAddressesForMemory, chkd.profiles().triggers.deathTableStart);
     Chk::Action::Type newType = Chk::Action::Type::NoAction;
     SuggestionItem suggestion = suggestions.Take();
     if ( suggestion.data )
@@ -401,7 +401,7 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
 {
     RawString rawUpdateText, rawSuggestText;
     SuggestionItem suggestion = suggestions.Take();
-    TextTrigCompiler ttc(Settings::useAddressesForMemory, Settings::deathTableStart);
+    TextTrigCompiler ttc(chkd.profiles().triggers.useAddressesForMemory, chkd.profiles().triggers.deathTableStart);
     auto & trig = CM->getTrigger(trigIndex);
     const Chk::Action & action = trig.action(actionNum);
     if ( action.actionType < Chk::Action::NumActionTypes )
@@ -516,7 +516,7 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
                     if ( parseChkdStr(chkdNewText, rawUpdateText) )
                     {
                         Chk::Action tempAction {};
-                        if ( auto result = ttc.parseActionArg(rawUpdateText, argument, tempAction, (Scenario &)*CM, chkd.scData, trigIndex, actionNum, !suggestion.str.empty()) )
+                        if ( auto result = ttc.parseActionArg(rawUpdateText, argument, tempAction, (Scenario &)*CM, *chkd.scData, trigIndex, actionNum, !suggestion.str.empty()) )
                         {
                             madeChange = true;
                             copyArg(*result, tempAction);
@@ -525,7 +525,7 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
                     if ( !madeChange && !suggestion.str.empty() && parseChkdStr(suggestion.str, rawSuggestText) )
                     {
                         Chk::Action tempAction {};
-                        if ( auto result = ttc.parseActionArg(rawSuggestText, argument, tempAction, (Scenario &)*CM, chkd.scData, trigIndex, actionNum, false) )
+                        if ( auto result = ttc.parseActionArg(rawSuggestText, argument, tempAction, (Scenario &)*CM, *chkd.scData, trigIndex, actionNum, false) )
                         {
                             madeChange = true;
                             copyArg(*result, tempAction);
@@ -568,7 +568,7 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
                 if ( parseChkdStr(chkdNewText, rawUpdateText) )
                 {
                     Chk::Action tempAction {};
-                    if ( auto result = ttc.parseActionArg(rawUpdateText, argument, tempAction, (Scenario &)*CM, chkd.scData, trigIndex, actionNum, !suggestion.str.empty()) )
+                    if ( auto result = ttc.parseActionArg(rawUpdateText, argument, tempAction, (Scenario &)*CM, *chkd.scData, trigIndex, actionNum, !suggestion.str.empty()) )
                     {
                         madeChange = true;
                         copyArg(*result, tempAction);
@@ -577,7 +577,7 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
                 if ( !madeChange && !suggestion.str.empty() && parseChkdStr(suggestion.str, rawSuggestText) )
                 {
                     Chk::Action tempAction {};
-                    if ( auto result = ttc.parseActionArg(rawSuggestText, argument, tempAction, (Scenario &)*CM, chkd.scData, trigIndex, actionNum, false) )
+                    if ( auto result = ttc.parseActionArg(rawSuggestText, argument, tempAction, (Scenario &)*CM, *chkd.scData, trigIndex, actionNum, false) )
                     {
                         madeChange = true;
                         copyArg(*result, tempAction);
@@ -643,9 +643,9 @@ void TrigActionsWindow::DrawSelectedAction()
         if ( gridActions.GetFocusedItem(focusedX, focusedY) )
         {
             u8 actionNum = (u8)focusedY;
-            TextTrigGenerator ttg(Settings::useAddressesForMemory, Settings::deathTableStart, true);
+            TextTrigGenerator ttg(chkd.profiles().triggers.useAddressesForMemory, chkd.profiles().triggers.deathTableStart, true);
             ttg.loadScenario((Scenario &)*CM);
-            ChkdString str = chkd.trigEditorWindow.triggersWindow.GetActionString(actionNum, trig, ttg);
+            ChkdString str = chkd.trigEditorWindow->triggersWindow.GetActionString(actionNum, trig, ttg);
             ttg.clearScenario();
 
             UINT width = 0, height = 0;
@@ -959,12 +959,12 @@ void TrigActionsWindow::SuggestDuration(u32 currDuration)
 void TrigActionsWindow::SuggestScript(u32 currScript)
 {
     suggestions.AddItem(SuggestionItem{uint32_t(Sc::Ai::ScriptId::NoScript), std::string("No Script")});
-    size_t numScripts = chkd.scData.ai.numEntries();
+    size_t numScripts = chkd.scData->ai.numEntries();
     for ( size_t i = 0; i < numScripts; i++ )
     {
         std::string scriptName;
-        const Sc::Ai::Entry & entry = chkd.scData.ai.getEntry(i);
-        if ( chkd.scData.ai.getName(i, scriptName) )
+        const Sc::Ai::Entry & entry = chkd.scData->ai.getEntry(i);
+        if ( chkd.scData->ai.getName(i, scriptName) )
         {
             char* scriptStringPtr = (char*)&entry.identifier;
             char scriptIdString[5] = {scriptStringPtr[0], scriptStringPtr[1], scriptStringPtr[2], scriptStringPtr[3], '\0'};
@@ -1119,7 +1119,7 @@ void TrigActionsWindow::ButtonEditString()
             }
 
             if ( result > 0 )
-                chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
+                chkd.trigEditorWindow->triggersWindow.RefreshWindow(false);
 
             SetFocus(gridActions.getHandle());
         }
@@ -1169,7 +1169,7 @@ void TrigActionsWindow::ButtonEditSound()
             }
 
             if ( result > 0 )
-                chkd.trigEditorWindow.triggersWindow.RefreshWindow(false);
+                chkd.trigEditorWindow->triggersWindow.RefreshWindow(false);
 
             SetFocus(gridActions.getHandle());
         }
@@ -1347,7 +1347,7 @@ void TrigActionsWindow::NewSelection(u16 gridItemX, u16 gridItemY)
 
     }
     DoSize();
-    chkd.trigEditorWindow.triggersWindow.trigModifyWindow.RedrawThis(); // TODO: This fixes some drawing issues but intensifies flashing & should be replaced
+    chkd.trigEditorWindow->triggersWindow.trigModifyWindow.RedrawThis(); // TODO: This fixes some drawing issues but intensifies flashing & should be replaced
 }
 
 void TrigActionsWindow::NewSuggestion(std::string & str)

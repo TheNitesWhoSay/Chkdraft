@@ -1,6 +1,6 @@
 #include "lit.h"
 #include "chkdraft/chkdraft.h"
-#include "mapping/settings.h"
+#include "mapping/chkd_profiles.h"
 #include <filesystem>
 #include <fstream>
 #include <string>
@@ -152,7 +152,7 @@ bool LitWindow::RunLit(Scenario & map)
                     if ( litTrigs )
                     {
                         TextTrigCompiler compiler(Settings::useAddressesForMemory, Settings::deathTableStart);
-                        if ( compiler.compileTriggers(*litTrigs, map, chkd.scData, 0, map.numTriggers()) )
+                        if ( compiler.compileTriggers(*litTrigs, map, *chkd.scData, 0, map.numTriggers()) )
                         {
                             foundLitText ? WinLib::Message(*litText, "LIT") : WinLib::Message("Success!", "Text Trigger Compiler");
                             return true;

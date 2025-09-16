@@ -45,7 +45,7 @@ void DimensionsWindow::UpdateTerrainList()
     int tilesetIndex = Sc::Terrain::Tileset::Badlands;
     if ( listTileset.GetCurSel(tilesetIndex) )
     {
-        const auto & tileset = chkd.scData.terrain.get(Sc::Terrain::Tileset(tilesetIndex));
+        const auto & tileset = chkd.scData->terrain.get(Sc::Terrain::Tileset(tilesetIndex));
         for ( const auto & brushType : tileset.brushes )
         {
             LRESULT insertionIndex = SendMessage(listTerrain.getHandle(), LB_ADDSTRING, 0, (LPARAM)icux::toUistring(std::string(brushType.name)).c_str());
@@ -62,7 +62,7 @@ void DimensionsWindow::ResizeChangeTileset()
     auto newHeight = editHeight.GetEditNum<u16>();
     int newTilesetIndex = CM->getTileset();
     listTileset.GetCurSel(newTilesetIndex);
-    const auto & tileset = chkd.scData.terrain.get(Sc::Terrain::Tileset(newTilesetIndex));
+    const auto & tileset = chkd.scData->terrain.get(Sc::Terrain::Tileset(newTilesetIndex));
     LPARAM newTerrainTypeIndex = 0;
     listTerrain.GetCurSelItem(newTerrainTypeIndex);
     auto newLeft = editLeft.GetEditNum<int>();

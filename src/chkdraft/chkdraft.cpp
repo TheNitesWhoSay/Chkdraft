@@ -1,6 +1,6 @@
 #include "chkdraft.h"
+#include "mapping/chkd_profiles.h"
 #include "mapping/data_file_browsers.h"
-#include "mapping/settings.h"
 #include "mapping/gui_map_gl_graphics.h"
 #include <shellapi.h>
 #include <fstream>
@@ -9,7 +9,20 @@
 #include <chrono>
 #include <regex>
 #include "ui/chkd_controls/chkd_string_input.h"
+#include "ui/dialog_windows/profiles/select_profile.h"
 #include <CommCtrl.h>
+
+enum_t(Id, u32, {
+    IDR_MAIN_TOOLBAR = ID_FIRST,
+    IDR_MAIN_STATUS,
+    IDR_MAIN_MDI,
+    IDR_MAIN_PLOT,
+    PreDynamicMenus,
+    MenuFirstProfile,
+    PostDynamicMenus = MenuFirstProfile+250,
+    NextToLastId = PostDynamicMenus+500,
+    ID_MDI_FIRSTCHILD = (NextToLastId+500) // Keep this higher than all other main window identifiers
+});
 
 void Chkdraft::OnLoadTest()
 {
@@ -45,7 +58,7 @@ void Chkdraft::OnLoadTest()
         //CM->addSprite(Chk::Sprite {Sc::Sprite::Type(i), u16(x*64+64), u16(y*64+64), Sc::Player::Id::Player1, 0, Chk::Sprite::SpriteFlags::DrawAsSprite});
     }
     //CM->setZoom(4.0);
-    //CM->SetSkin(GuiMap::Skin::ClassicGL);
+    //CM->SetSkin(ChkdSkin::Classic);
     CM->ToggleDisplayFps();*/
     //maps.ChangeLayer(Layer::Units);
     //maps.ChangeLayer(Layer::Sprites);
@@ -67,20 +80,26 @@ void Chkdraft::PreLoadTest()
 
 }
 
-enum_t(Id, u32, {
-    IDR_MAIN_TOOLBAR = ID_FIRST,
-    IDR_MAIN_STATUS,
-    IDR_MAIN_MDI,
-    IDR_MAIN_PLOT,
-    NextToLastId,
-    ID_MDI_FIRSTCHILD = (NextToLastId+500) // Keep this higher than all other main window identifiers
-});
-
 #define ifmapopen(dothis) if ( CM != nullptr ) dothis;
 
-Chkdraft::Chkdraft() : currDialog(NULL), editFocused(false), logFile(nullptr, nullptr, logger.getLogLevel())
+Chkdraft::Chkdraft() : profiles(), currDialog(NULL), editFocused(false), logFile(nullptr, nullptr, logger.getLogLevel())
 {
-    
+    unitWindow.emplace();
+    spriteWindow.emplace();
+    actorWindow.emplace();
+    locationWindow.emplace();
+    terrainPalWindow.emplace();
+    tilePropWindow.emplace();
+    textTrigWindow.emplace();
+    briefingTextTrigWindow.emplace();
+    mapSettingsWindow.emplace();
+    trigEditorWindow.emplace();
+    briefingTrigEditorWindow.emplace();
+    dimensionsWindow.emplace();
+    changePasswordWindow.emplace();
+    enterPasswordWindow.emplace();
+    aboutWindow.emplace();
+    editProfilesWindow.emplace();
 }
 
 Chkdraft::~Chkdraft()
@@ -105,7 +124,22 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
     mainPlot.loggerWindow.Refresh();
     UpdateWindow();
 
-    scData.load(Sc::DataFile::BrowserPtr(new ChkdDataFileBrowser()), ChkdDataFileBrowser::getDataFileDescriptors(), ChkdDataFileBrowser::getExpectedStarCraftDirectory());
+    if ( profiles().autoLoadOnStart )
+    {
+        std::filesystem::current_path(getSystemFileDirectory(profiles().profilePath));
+        if ( !scData.emplace().load(Sc::DataFile::BrowserPtr(new ChkdDataFileBrowser()), ChkdDataFileBrowser::getDataFileDescriptors(),
+            ChkdDataFileBrowser::getExpectedStarCraftDirectory()) )
+        {
+            logger.error("Error loading StarCraft data!");
+            SelectProfile selectProfile {};
+            selectProfile.CreateThis(getHandle());
+        }
+    }
+    else
+    {
+        SelectProfile selectProfile {};
+        selectProfile.CreateThis(getHandle());
+    }
     mainPlot.leftBar.mainTree.unitTree.UpdateUnitTree();
     mainPlot.leftBar.mainTree.spriteTree.UpdateSpriteTree();
     ParseCmdLine(lpCmdLine);
@@ -285,6 +319,41 @@ void Chkdraft::OpenBackupsDirectory()
     }
 }
 
+void Chkdraft::OpenFindProfileDialog()
+{
+    std::string profilePath {};
+    u32 filterIndex = 0;
+    if ( auto settingsPath = GetSettingsPath() )
+    {
+        if ( browseForFile(profilePath, filterIndex, {{"*.profile.json", "Chkd Profile"}}, *settingsPath, "Find Profile", true, false) &&
+            profilePath.ends_with(".profile.json") )
+        {
+            if ( chkd.profiles.loadProfile(profilePath) != nullptr )
+            {
+                for ( auto & profile : chkd.profiles.profiles )
+                {
+                    profile->additionalProfileDirectories.push_back(getSystemFileDirectory(profilePath));
+                    profile->saveProfile();
+                }
+
+                if ( chkd.editProfilesWindow && chkd.editProfilesWindow->getHandle() != NULL )
+                    chkd.editProfilesWindow->RefreshWindow();
+
+                chkd.UpdateProfilesMenu();
+            }
+        }
+    }
+}
+
+void Chkdraft::OpenEditProfilesDialog()
+{
+    if ( editProfilesWindow->getHandle() == NULL )
+        editProfilesWindow->CreateThis(getHandle());
+
+    if ( editProfilesWindow->getHandle() != NULL )
+        ShowWindow(editProfilesWindow->getHandle(), SW_SHOW);
+}
+
 void Chkdraft::UpdateLogLevelCheckmarks(LogLevel logLevel)
 {
     chkd.mainMenu.SetCheck(ID_LOGLEVEL_OFF, false);
@@ -312,9 +381,209 @@ void Chkdraft::UpdateLogLevelCheckmarks(LogLevel logLevel)
 void Chkdraft::SetLogLevel(LogLevel newLogLevel)
 {
     logger.setLogLevel(newLogLevel);
-    Settings::logLevel = newLogLevel;
-    Settings::updateSettingsFile();
+    profiles().logger.defaultLogLevel = newLogLevel;
+    profiles.saveCurrProfile();
     UpdateLogLevelCheckmarks(newLogLevel);
+}
+
+void Chkdraft::OnProfileLoad()
+{
+    logger.info() << "Loading new profile: \"" << profiles().profileName << "\"" << std::endl;
+
+    // Destroy all modeless dialogs
+    unitWindow->DestroyThis();
+    spriteWindow->DestroyThis();
+    actorWindow->DestroyThis();
+    locationWindow->DestroyThis();
+    terrainPalWindow->DestroyThis();
+    tilePropWindow->DestroyThis();
+    textTrigWindow->DestroyThis();
+    briefingTextTrigWindow->DestroyThis();
+    mapSettingsWindow->DestroyThis();
+    trigEditorWindow->DestroyThis();
+    briefingTrigEditorWindow->DestroyThis();
+    dimensionsWindow->DestroyThis();
+    changePasswordWindow->DestroyThis();
+    enterPasswordWindow->DestroyThis();
+    aboutWindow->DestroyThis();
+    editProfilesWindow->DestroyThis();
+
+    // Update the log level
+    SetLogLevel(profiles().logger.defaultLogLevel);
+
+    // Cancel active pastings
+    maps.endPaste();
+
+    // For each map.. clear selections, record the prev sel skin, set the skin to classic GDI (or none, if possible), reset map remastered graphics
+    std::unordered_map<GuiMap*, ChkdSkin> previousSkin {};
+    maps.enumMaps([&](GuiMap & map) {
+        map.selections.clear();
+        previousSkin.insert(std::make_pair(&map, map.GetSkin()));
+        map.SetSkin(ChkdSkin::ClassicGDI, false);
+        map.scrGraphics = std::make_unique<GuiMapGraphics>(*chkd.scData, map);
+    });
+
+    // Set scrGraphicsData to nullptr
+    scrData = nullptr;
+
+    // Perform the actual data reload
+    scData.emplace().load(Sc::DataFile::BrowserPtr(new ChkdDataFileBrowser()), ChkdDataFileBrowser::getDataFileDescriptors(),
+        ChkdDataFileBrowser::getExpectedStarCraftDirectory());
+    
+    // Re-initialize the clipboard & clipboard anims
+    maps.clipboard.emplace(*scData, gameClock);
+
+    // For each map.. refresh the isom cache, refresh the tile occupation cache, re-init GDI graphics, re-init anims, attempt restoring previous skin selection, redraw map & minimap
+    maps.enumMaps([&](GuiMap & map) {
+        map.OnScDataRefresh(); // Refresh isom cache, tile occupation cache, gdi graphics
+        auto found = previousSkin.find(&map);
+        if ( found != previousSkin.end() )
+            map.SetSkin(found->second, false);
+
+        map.Redraw(true);
+    });
+
+    // TODO: when such settings have been added to profiles, set all the map view & editor settings
+    
+    // Rebuild the main tree
+    chkd.mainPlot.leftBar.mainTree.isomTree.UpdateIsomTree();
+    chkd.mainPlot.leftBar.mainTree.doodadTree.UpdateDoodadTree();
+    chkd.mainPlot.leftBar.mainTree.unitTree.UpdateUnitTree();
+    chkd.mainPlot.leftBar.mainTree.spriteTree.UpdateSpriteTree();
+
+    // Re-initialize/re-ctor all the modeless dialogs
+    unitWindow.emplace();
+    spriteWindow.emplace();
+    actorWindow.emplace();
+    locationWindow.emplace();
+    terrainPalWindow.emplace();
+    tilePropWindow.emplace();
+    textTrigWindow.emplace();
+    briefingTextTrigWindow.emplace();
+    mapSettingsWindow.emplace();
+    trigEditorWindow.emplace();
+    briefingTrigEditorWindow.emplace();
+    dimensionsWindow.emplace();
+    changePasswordWindow.emplace();
+    enterPasswordWindow.emplace();
+    aboutWindow.emplace();
+    editProfilesWindow.emplace();
+    logger.info() << "Profile: \"" << profiles().profileName << "\" loaded." << std::endl;
+}
+
+void Chkdraft::ProfilesReload()
+{
+    for ( const auto & profile : profiles.profiles )
+    {
+        auto & menuId = profile->menuId;
+        if ( menuId != 0 )
+        {
+            DeleteMenu(profilesMenu, UINT(menuId), MF_BYCOMMAND);
+            menuId = 0;
+        }
+    }
+
+    std::string currProfilePath {};
+    std::string currProfileName {};
+    if ( auto currProfile = profiles.getCurrProfile() )
+    {
+        currProfilePath = currProfile->profilePath;
+        currProfileName = currProfile->profileName;
+    }
+    std::filesystem::current_path(getSystemFileDirectory(currProfilePath));
+
+    profiles.loadProfiles();
+    bool currentSet = false;
+    if ( auto currProfile = profiles.getCurrProfile() )
+    {
+        if ( currProfile->profilePath.compare(currProfilePath) == 0 )
+            currentSet = true;
+    }
+    if ( !currentSet )
+    {
+        for ( std::size_t i=0; i<profiles.profiles.size(); ++i )
+        {
+            if ( profiles[i].profilePath.compare(currProfilePath) == 0 )
+            {
+                profiles.setCurrProfile(i);
+                currentSet = true;
+                break;
+            }
+        }
+        if ( !currentSet )
+        {
+            for ( std::size_t i=0; i<profiles.profiles.size(); ++i )
+            {
+                if ( profiles[i].profileName.compare(currProfileName) == 0 )
+                {
+                    profiles.setCurrProfile(i);
+                    currentSet = true;
+                    break;
+                }
+            }
+        }
+    }
+
+    if ( profiles.getCurrProfile() != nullptr )
+        OnProfileLoad();
+
+    UpdateProfilesMenu();
+    if ( editProfilesWindow && editProfilesWindow->getHandle() != NULL )
+        editProfilesWindow->RefreshWindow();
+}
+
+void Chkdraft::UpdateProfilesMenu()
+{
+    u32 menuId = Id::MenuFirstProfile;
+    for ( const auto & profile : profiles.profiles )
+    {
+        if ( profile->menuId >= menuId )
+            menuId = profile->menuId+1;
+    }
+
+    auto currProfile = profiles.getCurrProfile();
+    for ( auto & profile : profiles.profiles )
+    {
+        if ( profile->menuId == 0 )
+        {
+            profile->menuId = menuId;
+            UINT flags = MF_STRING | (currProfile != nullptr && profile.get() == currProfile ? MF_CHECKED : MF_UNCHECKED);
+            AppendMenu(profilesMenu, flags, (UINT_PTR)menuId, icux::toUistring(profile->profileName).c_str());
+            ++menuId;
+        }
+        else
+        {
+            MENUITEMINFO menuItemInfo {};
+            menuItemInfo.cbSize = sizeof(MENUITEMINFO);
+            menuItemInfo.fMask = MIIM_STATE;
+            menuItemInfo.fState = (currProfile != nullptr && profile.get() == currProfile ? MFS_CHECKED : MFS_UNCHECKED);
+            SetMenuItemInfo(profilesMenu, profile->menuId, FALSE, &menuItemInfo);
+        }
+    }
+}
+
+void Chkdraft::RemoveProfileFromMenu(ChkdProfile & profile)
+{
+    auto & menuId = profile.menuId;
+    if ( menuId != 0 )
+    {
+        DeleteMenu(profilesMenu, UINT(menuId), MF_BYCOMMAND);
+        menuId = 0;
+    }
+}
+
+void Chkdraft::ProfileNameUpdated(const ChkdProfile & profile)
+{
+    u32 menuId = profile.menuId;
+    if ( menuId != 0 )
+    {
+        icux::uistring uiProfileName = icux::toUistring(profile.profileName);
+        MENUITEMINFO menuItemInfo {};
+        menuItemInfo.cbSize = sizeof(MENUITEMINFO);
+        menuItemInfo.fMask = MIIM_STRING;
+        menuItemInfo.dwTypeData = uiProfileName.data();
+        SetMenuItemInfo(profilesMenu, menuId, FALSE, &menuItemInfo);
+    }
 }
 
 bool Chkdraft::DlgKeyListener(HWND hWnd, UINT & msg, WPARAM wParam, LPARAM lParam)
@@ -326,85 +595,85 @@ bool Chkdraft::DlgKeyListener(HWND hWnd, UINT & msg, WPARAM wParam, LPARAM lPara
                 switch ( wParam )
                 {
                     case VK_TAB:
-                        if ( trigEditorWindow.triggersWindow.trigModifyWindow.conditionsWindow.getHandle() != NULL &&
-                            (GetParent(GetParent(hWnd)) == trigEditorWindow.triggersWindow.trigModifyWindow.conditionsWindow.getHandle() ||
-                             GetParent(hWnd) == trigEditorWindow.triggersWindow.trigModifyWindow.conditionsWindow.getHandle()) )
+                        if ( trigEditorWindow->triggersWindow.trigModifyWindow.conditionsWindow.getHandle() != NULL &&
+                            (GetParent(GetParent(hWnd)) == trigEditorWindow->triggersWindow.trigModifyWindow.conditionsWindow.getHandle() ||
+                             GetParent(hWnd) == trigEditorWindow->triggersWindow.trigModifyWindow.conditionsWindow.getHandle()) )
                         {
                             msg = WM_NULL; // Dirty fix to prevent tabs from being focused
-                            trigEditorWindow.triggersWindow.trigModifyWindow.conditionsWindow.ProcessKeyDown(wParam, lParam);
+                            trigEditorWindow->triggersWindow.trigModifyWindow.conditionsWindow.ProcessKeyDown(wParam, lParam);
                             return true;
                         }
-                        else if ( trigEditorWindow.triggersWindow.trigModifyWindow.actionsWindow.getHandle() != NULL &&
-                            (GetParent(GetParent(hWnd)) == trigEditorWindow.triggersWindow.trigModifyWindow.actionsWindow.getHandle() ||
-                            GetParent(hWnd) == trigEditorWindow.triggersWindow.trigModifyWindow.actionsWindow.getHandle()) )
+                        else if ( trigEditorWindow->triggersWindow.trigModifyWindow.actionsWindow.getHandle() != NULL &&
+                            (GetParent(GetParent(hWnd)) == trigEditorWindow->triggersWindow.trigModifyWindow.actionsWindow.getHandle() ||
+                            GetParent(hWnd) == trigEditorWindow->triggersWindow.trigModifyWindow.actionsWindow.getHandle()) )
                         {
                             msg = WM_NULL; // Dirty fix to prevent tabs from being focused
-                            trigEditorWindow.triggersWindow.trigModifyWindow.actionsWindow.ProcessKeyDown(wParam, lParam);
+                            trigEditorWindow->triggersWindow.trigModifyWindow.actionsWindow.ProcessKeyDown(wParam, lParam);
                             return true;
                         }
-                        else if ( briefingTrigEditorWindow.briefingTriggersWindow.briefingTrigModifyWindow.briefingActionsWindow.getHandle() != NULL &&
-                            (GetParent(GetParent(hWnd)) == briefingTrigEditorWindow.briefingTriggersWindow.briefingTrigModifyWindow.briefingActionsWindow.getHandle() ||
-                            GetParent(hWnd) == briefingTrigEditorWindow.briefingTriggersWindow.briefingTrigModifyWindow.briefingActionsWindow.getHandle()) )
+                        else if ( briefingTrigEditorWindow->briefingTriggersWindow.briefingTrigModifyWindow.briefingActionsWindow.getHandle() != NULL &&
+                            (GetParent(GetParent(hWnd)) == briefingTrigEditorWindow->briefingTriggersWindow.briefingTrigModifyWindow.briefingActionsWindow.getHandle() ||
+                            GetParent(hWnd) == briefingTrigEditorWindow->briefingTriggersWindow.briefingTrigModifyWindow.briefingActionsWindow.getHandle()) )
                         {
                             msg = WM_NULL; // Dirty fix to prevent tabs from being focused
-                            briefingTrigEditorWindow.briefingTriggersWindow.briefingTrigModifyWindow.briefingActionsWindow.ProcessKeyDown(wParam, lParam);
+                            briefingTrigEditorWindow->briefingTriggersWindow.briefingTrigModifyWindow.briefingActionsWindow.ProcessKeyDown(wParam, lParam);
                             return true;
                         }
                         break;
                     case VK_RETURN:
-                        if ( GetParent(GetParent(hWnd)) == trigEditorWindow.triggersWindow.trigModifyWindow.conditionsWindow.getHandle() ||
-                             GetParent(hWnd) == trigEditorWindow.triggersWindow.trigModifyWindow.conditionsWindow.getHandle() )
+                        if ( GetParent(GetParent(hWnd)) == trigEditorWindow->triggersWindow.trigModifyWindow.conditionsWindow.getHandle() ||
+                             GetParent(hWnd) == trigEditorWindow->triggersWindow.trigModifyWindow.conditionsWindow.getHandle() )
                         {
-                            trigEditorWindow.triggersWindow.trigModifyWindow.conditionsWindow.ProcessKeyDown(wParam, lParam);
+                            trigEditorWindow->triggersWindow.trigModifyWindow.conditionsWindow.ProcessKeyDown(wParam, lParam);
                             return true;
                         }
-                        else if ( GetParent(GetParent(hWnd)) == trigEditorWindow.triggersWindow.trigModifyWindow.actionsWindow.getHandle() ||
-                            GetParent(hWnd) == trigEditorWindow.triggersWindow.trigModifyWindow.actionsWindow.getHandle() )
+                        else if ( GetParent(GetParent(hWnd)) == trigEditorWindow->triggersWindow.trigModifyWindow.actionsWindow.getHandle() ||
+                            GetParent(hWnd) == trigEditorWindow->triggersWindow.trigModifyWindow.actionsWindow.getHandle() )
                         {
-                            trigEditorWindow.triggersWindow.trigModifyWindow.actionsWindow.ProcessKeyDown(wParam, lParam);
+                            trigEditorWindow->triggersWindow.trigModifyWindow.actionsWindow.ProcessKeyDown(wParam, lParam);
                             return true;
                         }
-                        else if ( GetParent(GetParent(hWnd)) == briefingTrigEditorWindow.briefingTriggersWindow.briefingTrigModifyWindow.briefingActionsWindow.getHandle() ||
-                            GetParent(hWnd) == briefingTrigEditorWindow.briefingTriggersWindow.briefingTrigModifyWindow.briefingActionsWindow.getHandle() )
+                        else if ( GetParent(GetParent(hWnd)) == briefingTrigEditorWindow->briefingTriggersWindow.briefingTrigModifyWindow.briefingActionsWindow.getHandle() ||
+                            GetParent(hWnd) == briefingTrigEditorWindow->briefingTriggersWindow.briefingTrigModifyWindow.briefingActionsWindow.getHandle() )
                         {
-                            briefingTrigEditorWindow.briefingTriggersWindow.briefingTrigModifyWindow.briefingActionsWindow.ProcessKeyDown(wParam, lParam);
+                            briefingTrigEditorWindow->briefingTriggersWindow.briefingTrigModifyWindow.briefingActionsWindow.ProcessKeyDown(wParam, lParam);
                             return true;
                         }
-                        if ( GetParent(hWnd) == unitWindow.getHandle() )
+                        if ( GetParent(hWnd) == unitWindow->getHandle() )
                         {
-                            unitWindow.DestroyThis();
+                            unitWindow->DestroyThis();
                             return true;
                         }
-                        else if ( GetParent(hWnd) == spriteWindow.getHandle() )
+                        else if ( GetParent(hWnd) == spriteWindow->getHandle() )
                         {
-                            spriteWindow.DestroyThis();
+                            spriteWindow->DestroyThis();
                             return true;
                         }
-                        else if ( GetParent(hWnd) == actorWindow.getHandle() )
+                        else if ( GetParent(hWnd) == actorWindow->getHandle() )
                         {
-                            actorWindow.DestroyThis();
+                            actorWindow->DestroyThis();
                             return true;
                         }
-                        else if ( GetParent(hWnd) == locationWindow.getHandle() )
+                        else if ( GetParent(hWnd) == locationWindow->getHandle() )
                         {
-                            locationWindow.DestroyThis();
+                            locationWindow->DestroyThis();
                             return true;
                         }
-                        else if ( GetParent(hWnd) == enterPasswordWindow.getHandle())
+                        else if ( GetParent(hWnd) == enterPasswordWindow->getHandle())
                         {
-                            enterPasswordWindow.ButtonLogin();
+                            enterPasswordWindow->ButtonLogin();
                             return true;
                         }
                         break;
                     case VK_DELETE:
-                        if ( GetParent(hWnd) == unitWindow.getHandle() )
+                        if ( GetParent(hWnd) == unitWindow->getHandle() )
                         {
-                            SendMessage(unitWindow.getHandle(), WM_COMMAND, MAKEWPARAM(IDC_BUTTON_DELETE, 0), 0);
+                            SendMessage(unitWindow->getHandle(), WM_COMMAND, MAKEWPARAM(IDC_BUTTON_DELETE, 0), 0);
                             return true;
                         }
-                        else if ( GetParent(hWnd) == spriteWindow.getHandle() )
+                        else if ( GetParent(hWnd) == spriteWindow->getHandle() )
                         {
-                            SendMessage(spriteWindow.getHandle(), WM_COMMAND, MAKEWPARAM(IDC_BUTTON_DELETE, 0), 0);
+                            SendMessage(spriteWindow->getHandle(), WM_COMMAND, MAKEWPARAM(IDC_BUTTON_DELETE, 0), 0);
                             return true;
                         }
                         break;
@@ -430,11 +699,11 @@ bool Chkdraft::DlgKeyListener(HWND hWnd, UINT & msg, WPARAM wParam, LPARAM lPara
                         break;
                     case 'X': case 'C': case 'V':
                         if ( GetKeyState(VK_CONTROL) & 0x8000 && (
-                            GetParent(hWnd) == unitWindow.getHandle() ||
-                            GetParent(hWnd) == spriteWindow.getHandle() ||
-                            GetParent(hWnd) == locationWindow.getHandle() ||
-                            GetParent(hWnd) == terrainPalWindow.getHandle() ||
-                            GetParent(hWnd) == tilePropWindow.getHandle() ) )
+                            GetParent(hWnd) == unitWindow->getHandle() ||
+                            GetParent(hWnd) == spriteWindow->getHandle() ||
+                            GetParent(hWnd) == locationWindow->getHandle() ||
+                            GetParent(hWnd) == terrainPalWindow->getHandle() ||
+                            GetParent(hWnd) == tilePropWindow->getHandle() ) )
                         {
                             KeyListener(hWnd, msg, wParam, lParam);
                             return true;
@@ -444,7 +713,7 @@ bool Chkdraft::DlgKeyListener(HWND hWnd, UINT & msg, WPARAM wParam, LPARAM lPara
             }
             break;
         case WM_KEYUP:
-            if ( wParam == VK_SPACE && CM != nullptr && maps.clipboard.isPasting() )
+            if ( wParam == VK_SPACE && CM != nullptr && maps.clipboard->isPasting() )
             {
                 UnlockCursor();
                 return true;
@@ -553,13 +822,13 @@ void Chkdraft::KeyListener(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
             {
                 switch ( wParam )
                 {
-                    case '1': if ( CM != nullptr ) CM->SetSkin(GuiMap::Skin::ClassicGDI); return; break;
-                    case '2': if ( CM != nullptr ) CM->SetSkin(GuiMap::Skin::ClassicGL); return; break;
-                    case '3': if ( CM != nullptr ) CM->SetSkin(GuiMap::Skin::ScrSD); return; break;
-                    case '4': if ( CM != nullptr ) CM->SetSkin(GuiMap::Skin::ScrHD2); return; break;
-                    case '5': if ( CM != nullptr ) CM->SetSkin(GuiMap::Skin::ScrHD); return; break;
-                    case '6': if ( CM != nullptr ) CM->SetSkin(GuiMap::Skin::CarbotHD2); return; break;
-                    case '7': if ( CM != nullptr ) CM->SetSkin(GuiMap::Skin::CarbotHD); return; break;
+                    case '1': if ( CM != nullptr ) CM->SetSkin(ChkdSkin::ClassicGDI); return; break;
+                    case '2': if ( CM != nullptr ) CM->SetSkin(ChkdSkin::Classic); return; break;
+                    case '3': if ( CM != nullptr ) CM->SetSkin(ChkdSkin::RemasteredSD); return; break;
+                    case '4': if ( CM != nullptr ) CM->SetSkin(ChkdSkin::RemasteredHD2); return; break;
+                    case '5': if ( CM != nullptr ) CM->SetSkin(ChkdSkin::RemasteredHD); return; break;
+                    case '6': if ( CM != nullptr ) CM->SetSkin(ChkdSkin::CarbotHD2); return; break;
+                    case '7': if ( CM != nullptr ) CM->SetSkin(ChkdSkin::CarbotHD); return; break;
                     case 'U': if ( CM != nullptr ) maps.SetGrid(8, 8); return; break;
                     case 'F': if ( CM != nullptr ) maps.SetGrid(16, 16); return; break;
                     case 'G': if ( CM != nullptr ) maps.SetGrid(32, 32); return; break;
@@ -574,7 +843,7 @@ void Chkdraft::KeyListener(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 switch ( wParam )
                 {
                     case VK_SPACE:
-                        if ( CM != nullptr && !maps.clipboard.isPasting() )
+                        if ( CM != nullptr && !maps.clipboard->isPasting() )
                             UnlockCursor();
                         return; break;
                 }
@@ -641,6 +910,9 @@ LRESULT Chkdraft::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     case ID_FILE_NEW1: newMap.CreateThis(hWnd); break;
     case ID_FILE_OPEN1: maps.OpenMap(); break;
     case ID_ADVANCED_OPENBACKUPDATABASE: OpenBackupsDirectory(); break;
+    case ID_PROFILES_RELOAD: ProfilesReload(); break;
+    case ID_PROFILES_FINDPROFILE: OpenFindProfileDialog(); break;
+    case ID_PROFILES_EDITPROFILES: OpenEditProfilesDialog(); break;
     case ID_FILE_CLOSE1: maps.CloseActive(); break;
     case ID_FILE_SAVE1: maps.SaveCurr(false); break;
     case ID_FILE_SAVEAS1: maps.SaveCurr(true); break;
@@ -690,13 +962,13 @@ LRESULT Chkdraft::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     case ID_ZOOM_25:  CM->setZoom(defaultZooms[8]); break;
     case ID_ZOOM_10:  CM->setZoom(defaultZooms[9]); break;
         // Skin
-    case ID_SKIN_CLASSICGDI: CM->SetSkin(GuiMap::Skin::ClassicGDI); break;
-    case ID_SKIN_CLASSICOPENGL: CM->SetSkin(GuiMap::Skin::ClassicGL); break;
-    case ID_SKIN_REMASTEREDSD: CM->SetSkin(GuiMap::Skin::ScrSD); break;
-    case ID_SKIN_REMASTEREDHD2: CM->SetSkin(GuiMap::Skin::ScrHD2); break;
-    case ID_SKIN_REMASTEREDHD: CM->SetSkin(GuiMap::Skin::ScrHD); break;
-    case ID_SKIN_CARBOTHD2: CM->SetSkin(GuiMap::Skin::CarbotHD2); break;
-    case ID_SKIN_CARBOTHD: CM->SetSkin(GuiMap::Skin::CarbotHD); break;
+    case ID_SKIN_CLASSICGDI: CM->SetSkin(ChkdSkin::ClassicGDI); break;
+    case ID_SKIN_CLASSICOPENGL: CM->SetSkin(ChkdSkin::Classic); break;
+    case ID_SKIN_REMASTEREDSD: CM->SetSkin(ChkdSkin::RemasteredSD); break;
+    case ID_SKIN_REMASTEREDHD2: CM->SetSkin(ChkdSkin::RemasteredHD2); break;
+    case ID_SKIN_REMASTEREDHD: CM->SetSkin(ChkdSkin::RemasteredHD); break;
+    case ID_SKIN_CARBOTHD2: CM->SetSkin(ChkdSkin::CarbotHD2); break;
+    case ID_SKIN_CARBOTHD: CM->SetSkin(ChkdSkin::CarbotHD); break;
         // Terrain
     case ID_TERRAIN_DISPLAYTILEBUILDABILITY: CM->ToggleDisplayBuildability(); break;
     case ID_TERRAIN_DISPLAYTILEELEVATIONS: CM->ToggleDisplayElevations(); break;
@@ -749,20 +1021,20 @@ LRESULT Chkdraft::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     case ID_CUTCOPYPASTE_SNAPSELECTIONTOGRID: CM->SetCutCopyPasteSnap(GuiMap::Snap::SnapToGrid); break;
     case ID_CUTCOPYPASTE_NOSNAP: CM->SetCutCopyPasteSnap(GuiMap::Snap::NoSnap); break;
     case ID_CUTCOPYPASTE_INCLUDEDOODADTILES: CM->ToggleIncludeDoodadTiles(); break;
-    case ID_CUTCOPYPASTE_FILLSIMILARTILES: maps.clipboard.toggleFillSimilarTiles(); break;
+    case ID_CUTCOPYPASTE_FILLSIMILARTILES: maps.clipboard->toggleFillSimilarTiles(); break;
 
         // Scenario
-    case ID_TRIGGERS_CLASSICMAPTRIGGERS: trigEditorWindow.CreateThis(getHandle()); break;
-    case ID_TRIGGERS_CLASSICMISSIONBRIEFING: briefingTrigEditorWindow.CreateThis(getHandle()); break;
-    case ID_SCENARIO_MAPDIMENSIONS: dimensionsWindow.CreateThis(getHandle()); break;
+    case ID_TRIGGERS_CLASSICMAPTRIGGERS: trigEditorWindow->CreateThis(getHandle()); break;
+    case ID_TRIGGERS_CLASSICMISSIONBRIEFING: briefingTrigEditorWindow->CreateThis(getHandle()); break;
+    case ID_SCENARIO_MAPDIMENSIONS: dimensionsWindow->CreateThis(getHandle()); break;
     case ID_SCENARIO_DESCRIPTION: case ID_SCENARIO_FORCES: case ID_SCENARIO_UNITSETTINGS:
     case ID_SCENARIO_UPGRADESETTINGS: case ID_SCENARIO_TECHSETTINGS: case ID_SCENARIO_STRINGS:
     case ID_SCENARIO_SOUNDEDITOR: OpenMapSettings(LOWORD(wParam)); break;
 
         // Tools
-    case ID_TRIGGERS_TRIGGEREDITOR: textTrigWindow.CreateThis(getHandle()); break;
-    case ID_TRIGGERS_MISSIONBRIEFINGEDITOR: briefingTextTrigWindow.CreateThis(getHandle()); break;
-    case ID_TOOLS_PASSWORD: ifmapopen(changePasswordWindow.CreateThis(getHandle())) break;
+    case ID_TRIGGERS_TRIGGEREDITOR: textTrigWindow->CreateThis(getHandle()); break;
+    case ID_TRIGGERS_MISSIONBRIEFINGEDITOR: briefingTextTrigWindow->CreateThis(getHandle()); break;
+    case ID_TOOLS_PASSWORD: ifmapopen(changePasswordWindow->CreateThis(getHandle())) break;
     case ID_TOOLS_MPQRECOMPILER: runMpqRecompiler(); break;
     case ID_SCRIPTS_REPAIRSOUNDS: repairSounds(); break;
     case ID_SCRIPTS_REPAIRSTRINGS_MIN: repairStrings(false); break;
@@ -775,7 +1047,7 @@ LRESULT Chkdraft::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     case ID_WINDOW_CLOSE: maps.destroyActive(); break;
 
         // Help
-    case ID_HELP_ABOUT: aboutWindow.CreateThis(getHandle()); break;
+    case ID_HELP_ABOUT: aboutWindow->CreateThis(getHandle()); break;
     case ID_HELP_STARCRAFT_WIKI: OpenWebPage("http://www.staredit.net/wiki/index.php?title=Main_Page"); break;
     case ID_HELP_SUPPORT_FORUM: OpenWebPage("http://www.staredit.net/forums/"); break;
     case ID_HELP_CHKDRAFTGITHUB: OpenWebPage("https://github.com/TheNitesWhoSay/Chkdraft/"); break;
@@ -788,7 +1060,22 @@ LRESULT Chkdraft::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
         case CBN_KILLFOCUS: editFocused = false; break;
         case CBN_EDITCHANGE: ComboEditChanged((HWND)lParam, LOWORD(wParam)); SetFocus(getHandle()); break;
         case CBN_SELCHANGE: ComboSelChanged((HWND)lParam, LOWORD(wParam)); SetFocus(getHandle()); break;
-        default: return ClassWindow::Command(hWnd, wParam, lParam); break;
+        default:
+            if ( LOWORD(wParam) >= Id::MenuFirstProfile && LOWORD(wParam) < Id::PostDynamicMenus )
+            {
+                for ( std::size_t i=0; i<profiles.profiles.size(); ++i )
+                {
+                    if ( profiles[i].menuId == LOWORD(wParam) )
+                    {
+                        profiles.setCurrProfile(i);
+                        this->OnProfileLoad();
+                        this->UpdateProfilesMenu();
+                        return 0;
+                    }
+                }
+            }
+            return ClassWindow::Command(hWnd, wParam, lParam);
+            break;
         }
         break;
     }
@@ -887,6 +1174,10 @@ bool Chkdraft::CreateSubWindows()
                 WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_VSCROLL | WS_HSCROLL,
                 0, 0, 0, 0, (HMENU)Id::IDR_MAIN_MDI) )
         {
+            auto fileMenu = GetSubMenu(mainMenu.getHandle(), 0);
+            profilesMenu = GetSubMenu(fileMenu, 4);
+            UpdateProfilesMenu();
+
             mainPlot.leftBar.SetWidth(360);
             return true;
         }
@@ -896,46 +1187,46 @@ bool Chkdraft::CreateSubWindows()
 
 void Chkdraft::MinimizeDialogs()
 {
-    ShowWindow(unitWindow.getHandle(), SW_HIDE);
-    ShowWindow(spriteWindow.getHandle(), SW_HIDE);
-    ShowWindow(actorWindow.getHandle(), SW_HIDE);
-    ShowWindow(locationWindow.getHandle(), SW_HIDE);
-    ShowWindow(terrainPalWindow.getHandle(), SW_HIDE);
-    ShowWindow(mapSettingsWindow.getHandle(), SW_HIDE);
-    ShowWindow(trigEditorWindow.getHandle(), SW_HIDE);
-    ShowWindow(briefingTrigEditorWindow.getHandle(), SW_HIDE);
+    ShowWindow(unitWindow->getHandle(), SW_HIDE);
+    ShowWindow(spriteWindow->getHandle(), SW_HIDE);
+    ShowWindow(actorWindow->getHandle(), SW_HIDE);
+    ShowWindow(locationWindow->getHandle(), SW_HIDE);
+    ShowWindow(terrainPalWindow->getHandle(), SW_HIDE);
+    ShowWindow(mapSettingsWindow->getHandle(), SW_HIDE);
+    ShowWindow(trigEditorWindow->getHandle(), SW_HIDE);
+    ShowWindow(briefingTrigEditorWindow->getHandle(), SW_HIDE);
 }
 
 void Chkdraft::RestoreDialogs()
 {
-    ShowWindow(unitWindow.getHandle(), SW_SHOW);
-    ShowWindow(spriteWindow.getHandle(), SW_SHOW);
-    ShowWindow(actorWindow.getHandle(), SW_SHOW);
-    ShowWindow(locationWindow.getHandle(), SW_SHOW);
-    ShowWindow(terrainPalWindow.getHandle(), SW_SHOW);
-    ShowWindow(mapSettingsWindow.getHandle(), SW_SHOW);
-    ShowWindow(trigEditorWindow.getHandle(), SW_SHOW);
-    ShowWindow(briefingTrigEditorWindow.getHandle(), SW_SHOW);
+    ShowWindow(unitWindow->getHandle(), SW_SHOW);
+    ShowWindow(spriteWindow->getHandle(), SW_SHOW);
+    ShowWindow(actorWindow->getHandle(), SW_SHOW);
+    ShowWindow(locationWindow->getHandle(), SW_SHOW);
+    ShowWindow(terrainPalWindow->getHandle(), SW_SHOW);
+    ShowWindow(mapSettingsWindow->getHandle(), SW_SHOW);
+    ShowWindow(trigEditorWindow->getHandle(), SW_SHOW);
+    ShowWindow(briefingTrigEditorWindow->getHandle(), SW_SHOW);
 }
 
 void Chkdraft::OpenMapSettings(u16 menuId)
 {
-    if ( mapSettingsWindow.getHandle() == NULL )
-        mapSettingsWindow.CreateThis(getHandle());
+    if ( mapSettingsWindow->getHandle() == NULL )
+        mapSettingsWindow->CreateThis(getHandle());
                                     
-    if ( mapSettingsWindow.getHandle() != NULL )
+    if ( mapSettingsWindow->getHandle() != NULL )
     {
         switch ( menuId )
         {
-            case ID_SCENARIO_DESCRIPTION: mapSettingsWindow.ChangeTab(MapSettingsWindow::Tab::MapProperties); break;
-            case ID_SCENARIO_FORCES: mapSettingsWindow.ChangeTab(MapSettingsWindow::Tab::Forces); break;
-            case ID_SCENARIO_UNITSETTINGS: mapSettingsWindow.ChangeTab(MapSettingsWindow::Tab::UnitSettings); break;
-            case ID_SCENARIO_UPGRADESETTINGS: mapSettingsWindow.ChangeTab(MapSettingsWindow::Tab::UpgradeSettings); break;
-            case ID_SCENARIO_TECHSETTINGS: mapSettingsWindow.ChangeTab(MapSettingsWindow::Tab::TechSettings); break;
-            case ID_SCENARIO_STRINGS: mapSettingsWindow.ChangeTab(MapSettingsWindow::Tab::StringEditor); break;
-            case ID_SCENARIO_SOUNDEDITOR: mapSettingsWindow.ChangeTab(MapSettingsWindow::Tab::SoundEditor); break;
+            case ID_SCENARIO_DESCRIPTION: mapSettingsWindow->ChangeTab(MapSettingsWindow::Tab::MapProperties); break;
+            case ID_SCENARIO_FORCES: mapSettingsWindow->ChangeTab(MapSettingsWindow::Tab::Forces); break;
+            case ID_SCENARIO_UNITSETTINGS: mapSettingsWindow->ChangeTab(MapSettingsWindow::Tab::UnitSettings); break;
+            case ID_SCENARIO_UPGRADESETTINGS: mapSettingsWindow->ChangeTab(MapSettingsWindow::Tab::UpgradeSettings); break;
+            case ID_SCENARIO_TECHSETTINGS: mapSettingsWindow->ChangeTab(MapSettingsWindow::Tab::TechSettings); break;
+            case ID_SCENARIO_STRINGS: mapSettingsWindow->ChangeTab(MapSettingsWindow::Tab::StringEditor); break;
+            case ID_SCENARIO_SOUNDEDITOR: mapSettingsWindow->ChangeTab(MapSettingsWindow::Tab::SoundEditor); break;
         }
-        ShowWindow(mapSettingsWindow.getHandle(), SW_SHOW);
+        ShowWindow(mapSettingsWindow->getHandle(), SW_SHOW);
     }
 }
 
@@ -977,15 +1268,15 @@ void Chkdraft::ComboSelChanged(HWND hCombo, u16 comboId)
             maps.ChangeSubLayer(TerrainSubLayer::Rectangular);
         else if ( itemIndex == 3 ) // Tileset indexed
         {
-            terrainPalWindow.CreateThis(getHandle());
-            ShowWindow(terrainPalWindow.getHandle(), SW_SHOW);
+            terrainPalWindow->CreateThis(getHandle());
+            ShowWindow(terrainPalWindow->getHandle(), SW_SHOW);
             maps.ChangeSubLayer(TerrainSubLayer::Rectangular);
         }
         else if ( itemIndex == 4 ) // Cut/Copy/Paste
             maps.ChangeSubLayer(TerrainSubLayer::Rectangular);
     }
     else if ( hCombo == mainToolbar.brushWidth.getHandle() )
-        maps.clipboard.setFogBrushSize(itemIndex+1, mainToolbar.brushHeight.GetSel()+1);
+        maps.clipboard->setFogBrushSize(itemIndex+1, mainToolbar.brushHeight.GetSel()+1);
     else if ( hCombo == mainToolbar.brushHeight.getHandle() )
-        maps.clipboard.setFogBrushSize(mainToolbar.brushWidth.GetSel()+1, itemIndex+1);
+        maps.clipboard->setFogBrushSize(mainToolbar.brushWidth.GetSel()+1, itemIndex+1);
 }

@@ -57,11 +57,11 @@ void TerrainPaletteWindow::SelectTile(std::uint16_t tileValue)
         redraw = true;
     }
 
-    if ( !chkd.maps.clipboard.hasQuickTiles() || !chkd.maps.clipboard.isPasting() || chkd.maps.clipboard.getTiles()[0].value != tileValue )
+    if ( !chkd.maps.clipboard->hasQuickTiles() || !chkd.maps.clipboard->isPasting() || chkd.maps.clipboard->getTiles()[0].value != tileValue )
     {
-        chkd.maps.clipboard.endPasting(CM.get());
+        chkd.maps.clipboard->endPasting(CM.get());
         CM->setSubLayer(TerrainSubLayer::Rectangular);
-        chkd.maps.clipboard.setQuickTile(tileValue, -16, -16);
+        chkd.maps.clipboard->setQuickTile(tileValue, -16, -16);
         chkd.maps.startPaste(true);
         redraw = true;
     }
@@ -92,7 +92,7 @@ void TerrainPaletteWindow::DoPaint()
 {
     if ( CM != nullptr )
     {
-        if ( CM->GetSkin() == GuiMap::Skin::ClassicGDI )
+        if ( CM->GetSkin() == ChkdSkin::ClassicGDI )
         {
             WinLib::DeviceContext dc(WindowsItem::getHandle(), cliWidth(), cliHeight());
             dc.setFont(4, 14, "Microsoft Sans Serif");
@@ -100,13 +100,13 @@ void TerrainPaletteWindow::DoPaint()
             dc.setTextColor(RGB(255, 255, 0));
             BITMAPINFO bmi = GetBMI(32, 32);
 
-            const Sc::Terrain::Tiles & tiles = chkd.scData.terrain.get(CM->getTileset());
+            const Sc::Terrain::Tiles & tiles = chkd.scData->terrain.get(CM->getTileset());
 
             u16 tileValue = u16(tilesetIndexedYC / PIXELS_PER_TILE*TILES_PER_ROW);
             int yOffset = tilesetIndexedYC%PIXELS_PER_TILE;
             int numRows = (WindowsItem::cliHeight()-START_TILES_YC) / PIXELS_PER_TILE + 2;
-            bool tileHighlighted = chkd.maps.clipboard.hasQuickTiles();
-            std::vector<PasteTileNode> & pasteTiles = chkd.maps.clipboard.getTiles();
+            bool tileHighlighted = chkd.maps.clipboard->hasQuickTiles();
+            std::vector<PasteTileNode> & pasteTiles = chkd.maps.clipboard->getTiles();
             u16 numHighlighted = 0;
             if ( pasteTiles.size() > 0 )
                 numHighlighted = pasteTiles[0].value;
@@ -168,8 +168,8 @@ void TerrainPaletteWindow::DoPaint()
             glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            auto selectedTile = chkd.maps.clipboard.hasQuickTiles() ?
-                std::make_optional<u16>(chkd.maps.clipboard.getTiles()[0].value) : std::nullopt;
+            auto selectedTile = chkd.maps.clipboard->hasQuickTiles() ?
+                std::make_optional<u16>(chkd.maps.clipboard->getTiles()[0].value) : std::nullopt;
 
             CM->scrGraphics->drawTilesetIndexed(rcCli.left, rcCli.top, rcCli.right-rcCli.left, rcCli.bottom-rcCli.top, tilesetIndexedYC, selectedTile);
             
@@ -192,9 +192,9 @@ void TerrainPaletteWindow::LButtonDown(WPARAM wParam, int xc, int yc)
             yTileCoord = (yc + tilesetIndexedYC) / PIXELS_PER_TILE,
             tileNum = yTileCoord*TILES_PER_ROW + xTileCoord;
 
-        chkd.maps.clipboard.endPasting(CM.get());
+        chkd.maps.clipboard->endPasting(CM.get());
         CM->setSubLayer(TerrainSubLayer::Rectangular);
-        chkd.maps.clipboard.addQuickTile(tileNum, -16, -16);
+        chkd.maps.clipboard->addQuickTile(tileNum, -16, -16);
         chkd.maps.startPaste(true);
 
         WindowsItem::RedrawThis();

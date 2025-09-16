@@ -1,14 +1,15 @@
 #include "maps.h"
 #include "chkdraft/chkdraft.h"
-#include "chkdraft/mapping/settings.h"
+#include <chkdraft/mapping/chkd_profiles.h>
 #include <memory>
 #include <string>
 #include <utility>
 
-Maps::Maps() : currentlyActiveMap(nullptr), clipboard(chkd.scData, chkd.gameClock), mappingEnabled(false), UntitledNumber(0), lastUsedMapID(0),
+Maps::Maps() : currentlyActiveMap(nullptr), mappingEnabled(false), UntitledNumber(0), lastUsedMapID(0),
     nonStandardCursor(false), currCursor(nullptr), standardCursor(NULL), sizeAllCursor(NULL),
     neswCursor(NULL), nwseCursor(NULL), nsCursor(NULL), weCursor(NULL)
 {
+    clipboard.emplace(*chkd.scData, chkd.gameClock);
     standardCursor = LoadCursor(NULL, IDC_ARROW);
     sizeAllCursor = LoadCursor(NULL, IDC_SIZEALL);
     neswCursor = LoadCursor(NULL, IDC_SIZENESW);
@@ -104,7 +105,7 @@ GuiMapPtr Maps::NewMap(Sc::Terrain::Tileset tileset, u16 width, u16 height, size
     }
 
     auto start = std::chrono::high_resolution_clock::now();
-    GuiMapPtr newMap = GuiMapPtr(new GuiMap(clipboard, tileset, width, height, terrainTypeIndex, defaultTriggers, Settings::isRemastered ? SaveType::RemasteredScx : SaveType::HybridScm));
+    GuiMapPtr newMap = GuiMapPtr(new GuiMap(*clipboard, tileset, width, height, terrainTypeIndex, defaultTriggers, chkd.profiles().useRemastered ? SaveType::RemasteredScx : SaveType::HybridScm));
     if ( newMap != nullptr )
     {
         try {
@@ -120,7 +121,8 @@ GuiMapPtr Maps::NewMap(Sc::Terrain::Tileset tileset, u16 width, u16 height, size
                 EnableMapping();
                 currentlyActiveMap->refreshScenario();
                 currentlyActiveMap->Scroll(true, true, false);
-                currentlyActiveMap->SetSkin(GuiMap::Skin(Settings::defaultSkin));
+                currentlyActiveMap->SetSkin(ChkdSkin(
+                    chkd.profiles().useRemastered ? chkd.profiles().remastered.defaultSkin : chkd.profiles().classic.defaultSkin));
                 currentlyActiveMap->Redraw(true);
             
                 auto finish = std::chrono::high_resolution_clock::now();
@@ -144,7 +146,7 @@ GuiMapPtr Maps::NewMap(Sc::Terrain::Tileset tileset, u16 width, u16 height, size
 
 bool Maps::OpenMap(const std::string & fileName)
 {
-    auto newMap = GuiMapPtr(new GuiMap(clipboard, fileName));
+    auto newMap = GuiMapPtr(new GuiMap(*clipboard, fileName));
     if ( newMap != nullptr && !newMap->empty() )
     {
         try {
@@ -156,13 +158,14 @@ bool Maps::OpenMap(const std::string & fileName)
                 EnableMapping();
 
                 if ( newMap->isProtected() && newMap->hasPassword() )
-                    chkd.enterPasswordWindow.CreateThis(chkd.getHandle());
+                    chkd.enterPasswordWindow->CreateThis(chkd.getHandle());
                 else if ( newMap->isProtected() )
                     mb("Map is protected and will be opened as view only");
 
                 SetFocus(chkd.getHandle());
                 currentlyActiveMap->Scroll(true, true, false);
-                currentlyActiveMap->SetSkin(GuiMap::Skin(Settings::defaultSkin));
+                currentlyActiveMap->SetSkin(ChkdSkin(
+                    chkd.profiles().useRemastered ? chkd.profiles().remastered.defaultSkin : chkd.profiles().classic.defaultSkin));
                 currentlyActiveMap->Redraw(true);
                 currentlyActiveMap->refreshScenario();
                 logger.info() << "Initialized map [ID:" << newMap->getMapId() << "] from " << newMap->getFilePath() << std::endl;
@@ -334,7 +337,7 @@ void Maps::ChangeLayer(Layer newLayer)
 
         currentlyActiveMap->setLayer(newLayer);
 
-        chkd.tilePropWindow.DestroyThis();
+        chkd.tilePropWindow->DestroyThis();
         currentlyActiveMap->Redraw(false);
         std::string layerString;
         if ( chkd.mainToolbar.layerBox.GetItemText((int)newLayer, layerString) )
@@ -394,15 +397,15 @@ void Maps::ChangeZoom(bool increment)
 void Maps::ChangePlayer(u8 newPlayer, bool updateMapPlayers)
 {
     currentlyActiveMap->setCurrPlayer(newPlayer);
-    clipboard.animations.updateClipboardOwners(newPlayer);
+    clipboard->animations.updateClipboardOwners(newPlayer);
 
     if ( updateMapPlayers )
     {
         if ( currentlyActiveMap->getLayer() == Layer::Units )
         {
-            if ( clipboard.isPasting() )
+            if ( clipboard->isPasting() )
             {
-                auto & units = clipboard.getUnits();
+                auto & units = clipboard->getUnits();
                 for ( auto & pasteUnit : units )
                     pasteUnit.unit.owner = newPlayer;
             }
@@ -411,15 +414,15 @@ void Maps::ChangePlayer(u8 newPlayer, bool updateMapPlayers)
         }
         else if ( currentlyActiveMap->getLayer() == Layer::Doodads )
         {
-            if ( clipboard.isPasting() )
+            if ( clipboard->isPasting() )
             {
-                auto & doodads = clipboard.getDoodads();
+                auto & doodads = clipboard->getDoodads();
                 for ( auto & pasteDoodad : doodads )
                     pasteDoodad.owner = newPlayer;
             }
             else if ( currentlyActiveMap->selections.hasDoodads() )
             {
-                const auto & tileset = chkd.scData.terrain.get(currentlyActiveMap->getTileset());
+                const auto & tileset = chkd.scData->terrain.get(currentlyActiveMap->getTileset());
                 for ( auto doodadIndex : currentlyActiveMap->view.doodads.sel() )
                 {
                     const auto & selDoodad = currentlyActiveMap->getDoodad(doodadIndex);
@@ -444,9 +447,9 @@ void Maps::ChangePlayer(u8 newPlayer, bool updateMapPlayers)
             }
             else if ( currentlyActiveMap->selections.hasSprites() )
             {
-                if ( clipboard.isPasting() )
+                if ( clipboard->isPasting() )
                 {
-                    auto & sprites = clipboard.getSprites();
+                    auto & sprites = clipboard->getSprites();
                     for ( auto & pasteSprite : sprites )
                         pasteSprite.sprite.owner = newPlayer;
                 }
@@ -456,9 +459,9 @@ void Maps::ChangePlayer(u8 newPlayer, bool updateMapPlayers)
         }
         else if ( currentlyActiveMap->getLayer() == Layer::Sprites )
         {
-            if ( clipboard.isPasting() )
+            if ( clipboard->isPasting() )
             {
-                auto & sprites = clipboard.getSprites();
+                auto & sprites = clipboard->getSprites();
                 for ( auto & pasteSprite : sprites )
                     pasteSprite.sprite.owner = newPlayer;
             }
@@ -581,9 +584,9 @@ void Maps::cut()
             Error("Cannot copy from protected maps!");
         else
         {
-            clipboard.copy(*currentlyActiveMap, currentlyActiveMap->getLayer());
+            clipboard->copy(*currentlyActiveMap, currentlyActiveMap->getLayer());
             currentlyActiveMap->deleteSelection();
-            if ( clipboard.isPasting() )
+            if ( clipboard->isPasting() )
             {
                 endPaste();
                 RedrawWindow(currentlyActiveMap->getHandle(), NULL, NULL, RDW_INVALIDATE);
@@ -601,8 +604,8 @@ void Maps::copy()
             Error("Cannot copy from protected maps!");
         else
         {
-            clipboard.copy(*currentlyActiveMap, currentlyActiveMap->getLayer());
-            if ( clipboard.isPasting() )
+            clipboard->copy(*currentlyActiveMap, currentlyActiveMap->getLayer());
+            if ( clipboard->isPasting() )
             {
                 endPaste();
                 RedrawWindow(currentlyActiveMap->getHandle(), NULL, NULL, RDW_INVALIDATE);
@@ -625,10 +628,10 @@ void Maps::startPaste(bool isQuickPaste)
         return;
     else if ( currentlyActiveMap->getLayer() == Layer::Terrain )
     {
-        if ( clipboard.hasTiles() || clipboard.hasQuickTiles() )
+        if ( clipboard->hasTiles() || clipboard->hasQuickTiles() )
         {
             currentlyActiveMap->clearSelectedTiles();
-            clipboard.beginPasting(isQuickPaste, *currentlyActiveMap);
+            clipboard->beginPasting(isQuickPaste, *currentlyActiveMap);
 
             RedrawWindow(currentlyActiveMap->getHandle(), NULL, NULL, RDW_INVALIDATE);
 
@@ -642,10 +645,10 @@ void Maps::startPaste(bool isQuickPaste)
     }
     else if ( currentlyActiveMap->getLayer() == Layer::Doodads )
     {
-        if ( clipboard.hasDoodads() )
+        if ( clipboard->hasDoodads() )
         {
             currentlyActiveMap->clearSelectedDoodads();
-            clipboard.beginPasting(isQuickPaste, *currentlyActiveMap);
+            clipboard->beginPasting(isQuickPaste, *currentlyActiveMap);
 
             RedrawWindow(currentlyActiveMap->getHandle(), NULL, NULL, RDW_INVALIDATE);
 
@@ -659,10 +662,10 @@ void Maps::startPaste(bool isQuickPaste)
     }
     else if ( currentlyActiveMap->getLayer() == Layer::Units )
     {
-        if ( clipboard.hasUnits() || clipboard.hasQuickUnits() )
+        if ( clipboard->hasUnits() || clipboard->hasQuickUnits() )
         {
             currentlyActiveMap->clearSelectedUnits();
-            clipboard.beginPasting(isQuickPaste, *currentlyActiveMap);
+            clipboard->beginPasting(isQuickPaste, *currentlyActiveMap);
 
             TRACKMOUSEEVENT tme;
             tme.cbSize = sizeof(TRACKMOUSEEVENT);
@@ -674,10 +677,10 @@ void Maps::startPaste(bool isQuickPaste)
     }
     else if ( currentlyActiveMap->getLayer() == Layer::Sprites )
     {
-        if ( clipboard.hasSprites() || clipboard.hasQuickSprites() )
+        if ( clipboard->hasSprites() || clipboard->hasQuickSprites() )
         {
             currentlyActiveMap->clearSelectedSprites();
-            clipboard.beginPasting(isQuickPaste, *currentlyActiveMap);
+            clipboard->beginPasting(isQuickPaste, *currentlyActiveMap);
 
             TRACKMOUSEEVENT tme;
             tme.cbSize = sizeof(TRACKMOUSEEVENT);
@@ -690,7 +693,7 @@ void Maps::startPaste(bool isQuickPaste)
     else if ( currentlyActiveMap->getLayer() == Layer::CutCopyPaste && !isQuickPaste )
     {
         currentlyActiveMap->clearSelection();
-        clipboard.beginPasting(false, *currentlyActiveMap);
+        clipboard->beginPasting(false, *currentlyActiveMap);
         RedrawWindow(currentlyActiveMap->getHandle(), NULL, NULL, RDW_INVALIDATE);
 
         TRACKMOUSEEVENT tme;
@@ -704,7 +707,7 @@ void Maps::startPaste(bool isQuickPaste)
 
 void Maps::endPaste()
 {
-    clipboard.endPasting(currentlyActiveMap.get());
+    clipboard->endPasting(currentlyActiveMap.get());
     if ( currentlyActiveMap != nullptr )
         currentlyActiveMap->Redraw(false);
 }
@@ -726,11 +729,11 @@ void Maps::properties()
             }
 
             RedrawWindow(currentlyActiveMap->getHandle(), NULL, NULL, RDW_INVALIDATE);
-            if ( chkd.tilePropWindow.getHandle() != NULL )
-                chkd.tilePropWindow.UpdateTile();
+            if ( chkd.tilePropWindow->getHandle() != NULL )
+                chkd.tilePropWindow->UpdateTile();
             else
-                chkd.tilePropWindow.CreateThis(chkd.getHandle());
-            ShowWindow(chkd.tilePropWindow.getHandle(), SW_SHOW);
+                chkd.tilePropWindow->CreateThis(chkd.getHandle());
+            ShowWindow(chkd.tilePropWindow->getHandle(), SW_SHOW);
         }
     }
     else
@@ -903,19 +906,19 @@ void Maps::DisableMapping()
     {
         mappingEnabled = false;
         
-        chkd.unitWindow.DestroyThis();
-        chkd.spriteWindow.DestroyThis();
-        chkd.actorWindow.DestroyThis();
-        chkd.locationWindow.DestroyThis();
-        chkd.terrainPalWindow.DestroyThis();
-        chkd.tilePropWindow.DestroyThis();
-        chkd.textTrigWindow.DestroyThis();
-        chkd.mapSettingsWindow.DestroyThis();
-        chkd.trigEditorWindow.DestroyThis();
-        chkd.briefingTrigEditorWindow.DestroyThis();
-        chkd.changePasswordWindow.DestroyThis();
-        chkd.enterPasswordWindow.DestroyThis();
-        chkd.dimensionsWindow.DestroyThis();
+        chkd.unitWindow->DestroyThis();
+        chkd.spriteWindow->DestroyThis();
+        chkd.actorWindow->DestroyThis();
+        chkd.locationWindow->DestroyThis();
+        chkd.terrainPalWindow->DestroyThis();
+        chkd.tilePropWindow->DestroyThis();
+        chkd.textTrigWindow->DestroyThis();
+        chkd.mapSettingsWindow->DestroyThis();
+        chkd.trigEditorWindow->DestroyThis();
+        chkd.briefingTrigEditorWindow->DestroyThis();
+        chkd.changePasswordWindow->DestroyThis();
+        chkd.enterPasswordWindow->DestroyThis();
+        chkd.dimensionsWindow->DestroyThis();
 
         int toolbarItems[] =
         {
@@ -953,7 +956,7 @@ void Maps::DisableMapping()
         chkd.statusBar.SetText(2, "");
         chkd.statusBar.SetText(3, "");
 
-        chkd.changePasswordWindow.Hide();
+        chkd.changePasswordWindow->Hide();
     }
 }
 

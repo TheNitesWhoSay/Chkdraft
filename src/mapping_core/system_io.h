@@ -36,6 +36,8 @@ std::string getArchiveFileExtension(const std::string & archiveFilePath, bool in
 std::string makeArchiveFilePath(const std::string & archiveDirectory, const std::string & fileName); // Creates a mpq/casc file path ensuring the appropriate separator is used
 std::string makeExtArchiveFilePath(const std::string & archiveFilePath, const std::string & extension); // Creates a mpq/casc file path ensuring the appropriate separator and extension is used
 
+bool isSamePath(const std::string & left, const std::string & right);
+bool isInDirectory(const std::string & path, const std::string & directory);
 bool isDirectory(const std::string & directory);
 bool findFile(const std::string & filePath);
 bool patientFindFile(const std::string & filePath, int numWaitTimes, int* waitTimes);

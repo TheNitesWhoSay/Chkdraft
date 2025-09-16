@@ -1,7 +1,7 @@
 #include "briefing_triggers.h"
 #include "chkdraft/chkdraft.h"
 #include "ui/chkd_controls/move_to.h"
-#include "mapping/settings.h"
+#include "mapping/chkd_profiles.h"
 #include "mapping/sc_gdi_graphics.h"
 #include <string>
 
@@ -483,7 +483,7 @@ void BriefingTriggersWindow::RefreshGroupList()
         changeGroupHighlightOnly = true; // Begin selection
         if ( displayAll )
             listGroups.SelectItem(selectAllIndex);
-        for ( u8 i=0; i<28; i++ )
+        for ( u8 i=0; i<Chk::Trigger::MaxOwners; i++ )
         {
             if ( groupSelected[i] )
                 listGroups.SelectItem(i);
@@ -751,7 +751,7 @@ bool BriefingTriggersWindow::ShowTrigger(const Chk::Trigger & briefingTrigger)
 
 void BriefingTriggersWindow::ClearGroups()
 {
-    for ( u8 i=0; i<28; i++ )
+    for ( u8 i=0; i<Chk::Trigger::MaxOwners; i++ )
         groupSelected[i] = false;
 }
 

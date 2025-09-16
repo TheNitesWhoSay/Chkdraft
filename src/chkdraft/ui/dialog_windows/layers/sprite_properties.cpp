@@ -285,10 +285,10 @@ std::string SpritePropertiesWindow::GetSpriteName(Sc::Sprite::Type type, bool is
 {
     if ( isUnit && size_t(type) < Sc::Unit::TotalTypes )
         return std::string("[") + std::to_string(type) + "] " + *CM->getUnitName<ChkdString>(Sc::Unit::Type(type));
-    else if ( (isUnit && size_t(type) >= Sc::Unit::TotalTypes) || size_t(type) >= chkd.scData.sprites.spriteNames.size() )
+    else if ( (isUnit && size_t(type) >= Sc::Unit::TotalTypes) || size_t(type) >= chkd.scData->sprites.spriteNames.size() )
         return std::string("[") + std::to_string(type) + "]";
     else
-        return std::string("[") + std::to_string(type) + "] " + chkd.scData.sprites.spriteNames[type];
+        return std::string("[") + std::to_string(type) + "] " + chkd.scData->sprites.spriteNames[type];
 }
 
 void SpritePropertiesWindow::EnableSpriteEditing()
@@ -618,13 +618,13 @@ void SpritePropertiesWindow::NotifyGraphicsPressed()
     u16 firstSprite = CM->selections.getFirstSprite();
     if ( std::size_t(firstSprite) < CM->numSprites() )
     {
-        if ( chkd.actorWindow.getHandle() == NULL )
-            chkd.actorWindow.CreateThis(chkd.getHandle());
+        if ( chkd.actorWindow->getHandle() == NULL )
+            chkd.actorWindow->CreateThis(chkd.getHandle());
 
         NotifyClosePressed();
-        ::ShowWindow(chkd.actorWindow.getHandle(), SW_SHOW);
-        chkd.actorWindow.FocusAndSelectIndex(CM->view.sprites.attachedData(firstSprite).drawListIndex);
-        chkd.actorWindow.FocusThis();
+        ::ShowWindow(chkd.actorWindow->getHandle(), SW_SHOW);
+        chkd.actorWindow->FocusAndSelectIndex(CM->view.sprites.attachedData(firstSprite).drawListIndex);
+        chkd.actorWindow->FocusThis();
     }
 }
 

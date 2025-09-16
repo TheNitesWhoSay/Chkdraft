@@ -1,18 +1,20 @@
 #ifndef DATAFILEBROWSERS_H
 #define DATAFILEBROWSERS_H
 #include <mapping_core/mapping_core.h>
-#include "settings.h"
+#include "chkd_profiles.h"
 
 // A Sc::DataFile::Browser customized using Chkdraft's settings/settings file
 class ChkdDataFileBrowser : public Sc::DataFile::Browser
 {
     public:
+        static std::string GetExpectedStarCraftDirectory();
+
         ChkdDataFileBrowser();
 
         virtual ArchiveClusterPtr openScDataFiles(
             bool & includesRemastered,
             const std::vector<Sc::DataFile::Descriptor> & dataFiles = getDataFileDescriptors(),
-            const std::string & expectedStarCraftDirectory = Settings::starCraftPath,
+            const std::string & expectedStarCraftDirectory = GetExpectedStarCraftDirectory(),
             FileBrowserPtr<> starCraftBrowser = Sc::DataFile::Browser::getDefaultStarCraftBrowser()) override;
 
         virtual bool findStarCraftDirectory(std::string & starCraftDirectory, bool & isRemastered, bool & declinedBrowse, const std::string & expectedStarCraftDirectory = "", FileBrowserPtr<> starCraftBrowser = nullptr) override;
@@ -24,7 +26,7 @@ class ChkdDataFileBrowser : public Sc::DataFile::Browser
         static std::string getExpectedStarCraftDirectory();
 
     private:
-        bool updatedPaths;
+        bool profileUpdated;
 };
 
 #endif

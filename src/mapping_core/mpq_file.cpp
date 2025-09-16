@@ -31,7 +31,6 @@ inline bool MpqFile::isOpen() const
     return hMpq != NULL;
 }
 
-
 inline bool MpqFile::isOpen(const std::string & filePath) const
 {
     return hMpq != NULL && filePath == this->filePath;
