@@ -16,6 +16,23 @@ void SelectProfile::CreateThis(HWND hParent)
     ClassDialog::CreateDialogBox(MAKEINTRESOURCE(IDD_DIALOG_SELPROFILE), hParent);
 }
 
+void SelectProfile::RefreshWindow()
+{
+    listBoxProfiles.ClearSel();
+    listBoxProfiles.ClearItems();
+    auto curr = chkd.profiles.getCurrProfile();
+    int selIndex = -1;
+    for ( std::size_t i=0; i<chkd.profiles.profiles.size(); ++i )
+    {
+        if ( curr != nullptr && curr == chkd.profiles.profiles[i].get() )
+            selIndex = int(i);
+
+        listBoxProfiles.AddString(chkd.profiles[i].profileName);
+    }
+    if ( selIndex != -1 )
+        listBoxProfiles.SetCurSel(selIndex);
+}
+
 BOOL SelectProfile::DlgNotify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
 {
     return FALSE;
@@ -37,8 +54,8 @@ BOOL SelectProfile::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
     case LBN_DBLCLK:
         if ( Id::ListProfiles == LOWORD(wParam) )
         {
-            std::string selectedProfile = "";
-            if ( listBoxProfiles.GetCurSelString(selectedProfile) )
+            int selectedProfile = -1;
+            if ( listBoxProfiles.GetCurSel(selectedProfile) )
                 LoadProfile(selectedProfile);
         }
         break;
@@ -50,8 +67,8 @@ BOOL SelectProfile::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 break;
             case IDOK:
                 {
-                    std::string selectedProfile = "";
-                    if ( listBoxProfiles.GetCurSelString(selectedProfile) )
+                    int selectedProfile = -1;
+                    if ( listBoxProfiles.GetCurSel(selectedProfile) )
                         LoadProfile(selectedProfile);
                 }
                 break;
@@ -74,35 +91,55 @@ BOOL SelectProfile::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
         case WM_INITDIALOG:
             {
                 listBoxProfiles.FindThis(hWnd, IDC_LIST_PROFILES);
-                listBoxProfiles.AddStrings(std::vector<std::string>{"Default", "QuickTest",
-                    "Lol a really long text string that probably overflows the width",
-                    "Cosmonarchy", "ScrModMemes", "More", "And More"});
+                RefreshWindow();
             }
             break;
     }
     return FALSE;
 }
 
-void SelectProfile::LoadProfile(const std::string & profileName)
+void SelectProfile::LoadProfile(int profileIndex)
 {
-    // TODO: Figure out what profile is selected, try to load it, if successful close the dialog, else display the error
-    logger.info() << "Loading profile: " << profileName << '\n';
+    chkd.profiles.setCurrProfile(profileIndex);
+    chkd.OnProfileLoad();
+    chkd.UpdateProfilesMenu();
+    EndDialog(getHandle(), IDOK);
 }
 
 void SelectProfile::FindProfile()
 {
-    // TODO: Open a browser for the user to select a profile .json, if successful, make it the currently selected profile
-    logger.info() << "FindProfile...\n";
+    std::string profilePath {};
+    u32 filterIndex = 0;
+    if ( auto settingsPath = GetSettingsPath() )
+    {
+        if ( browseForFile(profilePath, filterIndex, {{"*.profile.json", "Chkd Profile"}}, *settingsPath, "Find Profile", true, false) &&
+            profilePath.ends_with(".profile.json") )
+        {
+            if ( chkd.profiles.loadProfile(profilePath) != nullptr )
+            {
+                for ( auto & profile : chkd.profiles.profiles )
+                {
+                    profile->additionalProfileDirectories.push_back(getSystemFileDirectory(profilePath));
+                    profile->saveProfile();
+                }
+
+                RefreshWindow();
+
+                if ( chkd.editProfilesWindow && chkd.editProfilesWindow->getHandle() != NULL )
+                    chkd.editProfilesWindow->RefreshWindow();
+
+                chkd.UpdateProfilesMenu();
+            }
+        }
+    }
 }
 
 void SelectProfile::EditProfiles()
 {
-    // TODO: Open the edit profiles dialog
-    logger.info() << "EditProfiles...\n";
+    chkd.OpenEditProfilesDialog();
 }
 
 void SelectProfile::ExitPressed()
 {
-    // TODO: Depending on the context, this may mean exit the program not just the dialog
     EndDialog(getHandle(), IDCANCEL);
 }

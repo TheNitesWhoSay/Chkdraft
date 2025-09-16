@@ -9,10 +9,11 @@ class SelectProfile : public WinLib::ClassDialog
         void CreateThis(HWND hParent);
 
     protected:
+        void RefreshWindow();
         BOOL DlgNotify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr) override;
         BOOL DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam) override;
         BOOL DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) override;
-        void LoadProfile(const std::string & profileName);
+        void LoadProfile(int profileIndex);
         void FindProfile();
         void EditProfiles();
         void ExitPressed();

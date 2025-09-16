@@ -19,7 +19,7 @@ enum_t(Id, u32, {
     IDR_MAIN_PLOT,
     PreDynamicMenus,
     MenuFirstProfile,
-    PostDynamicMenus,
+    PostDynamicMenus = MenuFirstProfile+250,
     NextToLastId = PostDynamicMenus+500,
     ID_MDI_FIRSTCHILD = (NextToLastId+500) // Keep this higher than all other main window identifiers
 });
@@ -118,8 +118,6 @@ void Chkdraft::OnLoadTest()
     //CM->addSprite(Chk::Sprite{.type = Sc::Sprite::Type(65), .xc = 250, .yc = 250, .flags = Chk::Sprite::SpriteFlags::DrawAsSprite});
     //CM->clipboard.addQuickSprite(Chk::Sprite{.type = Sc::Sprite::Type(65), .flags = Chk::Sprite::SpriteFlags::DrawAsSprite});
     //CM->clipboard.beginPasting(true, *CM);
-    
-    OpenEditProfilesDialog();
 }
 
 void Chkdraft::PreLoadTest()
@@ -174,8 +172,13 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
     if ( profiles().autoLoadOnStart )
     {
         std::filesystem::current_path(getSystemFileDirectory(profiles().profilePath));
-        scData.emplace().load(Sc::DataFile::BrowserPtr(new ChkdDataFileBrowser()), ChkdDataFileBrowser::getDataFileDescriptors(),
-            ChkdDataFileBrowser::getExpectedStarCraftDirectory());
+        if ( !scData.emplace().load(Sc::DataFile::BrowserPtr(new ChkdDataFileBrowser()), ChkdDataFileBrowser::getDataFileDescriptors(),
+            ChkdDataFileBrowser::getExpectedStarCraftDirectory()) )
+        {
+            logger.error("Error loading StarCraft data!");
+            SelectProfile selectProfile {};
+            selectProfile.CreateThis(getHandle());
+        }
     }
     else
     {
@@ -363,7 +366,28 @@ void Chkdraft::OpenBackupsDirectory()
 
 void Chkdraft::OpenFindProfileDialog()
 {
-    // TODO
+    std::string profilePath {};
+    u32 filterIndex = 0;
+    if ( auto settingsPath = GetSettingsPath() )
+    {
+        if ( browseForFile(profilePath, filterIndex, {{"*.profile.json", "Chkd Profile"}}, *settingsPath, "Find Profile", true, false) &&
+            profilePath.ends_with(".profile.json") )
+        {
+            if ( chkd.profiles.loadProfile(profilePath) != nullptr )
+            {
+                for ( auto & profile : chkd.profiles.profiles )
+                {
+                    profile->additionalProfileDirectories.push_back(getSystemFileDirectory(profilePath));
+                    profile->saveProfile();
+                }
+
+                if ( chkd.editProfilesWindow && chkd.editProfilesWindow->getHandle() != NULL )
+                    chkd.editProfilesWindow->RefreshWindow();
+
+                chkd.UpdateProfilesMenu();
+            }
+        }
+    }
 }
 
 void Chkdraft::OpenEditProfilesDialog()
@@ -489,6 +513,7 @@ void Chkdraft::OnProfileLoad()
     enterPasswordWindow.emplace();
     aboutWindow.emplace();
     editProfilesWindow.emplace();
+    logger.info() << "Profile: \"" << profiles().profileName << "\" loaded." << std::endl;
 }
 
 void Chkdraft::ProfilesReload()
@@ -555,6 +580,12 @@ void Chkdraft::ProfilesReload()
 void Chkdraft::UpdateProfilesMenu()
 {
     u32 menuId = Id::MenuFirstProfile;
+    for ( const auto & profile : profiles.profiles )
+    {
+        if ( profile->menuId >= menuId )
+            menuId = profile->menuId+1;
+    }
+
     auto currProfile = profiles.getCurrProfile();
     for ( auto & profile : profiles.profiles )
     {
