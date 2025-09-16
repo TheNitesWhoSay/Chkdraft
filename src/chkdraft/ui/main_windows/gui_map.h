@@ -37,8 +37,8 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCach
     public:
 /* Public Data  */  Clipboard & clipboard;
                     Selections selections {*this};
-                    std::unique_ptr<GuiMapGraphics> scrGraphics;
                     std::optional<MapAnimations> animations;
+                    std::unique_ptr<GuiMapGraphics> scrGraphics;
 
 /* Constructor  */  GuiMap(Clipboard & clipboard, const std::string & filePath);
                     GuiMap(Clipboard & clipboard, FileBrowserPtr<SaveType> fileBrowser = getDefaultOpenMapBrowser());
