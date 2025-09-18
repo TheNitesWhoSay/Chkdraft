@@ -4477,6 +4477,9 @@ void appendSpriteIndexes(std::set<u16> & indexes, const Sc::Sprite::SpriteGroup 
 
 bool Sc::Data::loadSpriteGroups(Sc::TblFilePtr imagesTbl, Sc::TblFilePtr statTxt)
 {
+    if ( sprites.numSprites() == 0 )
+        return false;
+
     constexpr auto totalSprites = Sc::Sprite::TotalSprites;
 
     sprites.spriteAutoRestart.assign(totalSprites, true);
