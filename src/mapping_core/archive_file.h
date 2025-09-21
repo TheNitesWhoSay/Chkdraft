@@ -89,15 +89,15 @@ public:
 
     // Attempts to get a file from this archive at archivedFilePath and place the data within the fileData buffer
     // Cannot be used unless the archive is already open
-    virtual bool getFile(const std::string & archivedFilePath, ByteBuffer & fileData) const = 0;
+    virtual bool getFile(const std::string & archivedFilePath, ByteBuffer & fileData, bool tryLocales = true) const = 0;
 
     // Attempts to get a file from this archive at archivedFilePath and place the data within the fileData buffer
     // Cannot be used unless the archive is already open
-    virtual std::optional<std::vector<u8>> getFile(const std::string & archivedFilePath) const = 0;
+    virtual std::optional<std::vector<u8>> getFile(const std::string & archivedFilePath, bool tryLocales = true) const = 0;
 
     // Attempts to copy a file from this archive at archivePath to a new file at systemFilePath
     // Cannot be used unless the archive is already open
-    virtual bool extractFile(const std::string & archivedFilePath, const std::string & systemFilePath) const = 0;
+    virtual bool extractFile(const std::string & archivedFilePath, const std::string & systemFilePath, bool tryLocales = true) const = 0;
 
     // Attempts to add a file to this archive at archivedFilePath with the data from the fileData buffer
     // Cannot be used unless the archive is already open

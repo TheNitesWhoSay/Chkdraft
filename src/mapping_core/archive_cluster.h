@@ -34,15 +34,15 @@ public:
 
     // Attempts to get a file from this cluster at filePath and place the data within the fileData buffer
     // Cannot be used unless the cluster is already open
-    virtual bool getFile(const std::string & filePath, ByteBuffer & fileData) const override;
+    virtual bool getFile(const std::string & filePath, ByteBuffer & fileData, bool tryLocales = true) const override;
 
     // Attempts to get a file from this cluster at filePath and place the data within the fileData buffer
     // Cannot be used unless the cluster is already open
-    virtual std::optional<std::vector<u8>> getFile(const std::string & filePath) const override;
+    virtual std::optional<std::vector<u8>> getFile(const std::string & filePath, bool tryLocales = true) const override;
 
     // Attempts to copy a file from this cluster at filePath to a new file at systemFilePath
     // Cannot be used unless the cluster is already open
-    virtual bool extractFile(const std::string & filePath, const std::string & systemFilePath) const override;
+    virtual bool extractFile(const std::string & filePath, const std::string & systemFilePath, bool tryLocales = true) const override;
     
     virtual const std::string & getFilePath() const override { throw std::logic_error("ArchiveClusters have no singular file path"); }
     virtual bool isOpen(const std::string & filePath) const override { return false; }

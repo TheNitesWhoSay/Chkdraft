@@ -90,21 +90,30 @@ public:
     // Cannot be used unless the MPQ is already open
     virtual std::optional<std::vector<std::string>> getListfile() const;
 
+    // Gets all the locales used by the MPQ file
+    virtual std::vector<std::uint32_t> getLocales(const std::string & mpqPath) const;
+
+    // Gets all the current locale used by the MPQ file
+    virtual std::uint32_t getLocale() const;
+
+    // Sets the current locale used by the MPQ file
+    virtual void setLocale(std::uint32_t locale) const;
+
     // Attempts to get the file size from this MPQ at mpqPath
     // Cannot be used unless the MPQ is already open
     virtual size_t getFileSize(const std::string & mpqPath) const override;
 
     // Attempts to get a file from this MPQ at mpqPath and place the data within the fileData buffer
     // Cannot be used unless the MPQ is already open
-    virtual bool getFile(const std::string & mpqPath, ByteBuffer & fileData) const override;
+    virtual bool getFile(const std::string & mpqPath, ByteBuffer & fileData, bool tryLocales = true) const override;
 
     // Attempts to get a file from this MPQ at mpqPath and place the data within the fileData buffer
     // Cannot be used unless the MPQ is already open
-    virtual std::optional<std::vector<u8>> getFile(const std::string & mpqPath) const override;
+    virtual std::optional<std::vector<u8>> getFile(const std::string & mpqPath, bool tryLocales = true) const override;
 
     // Attempts to copy a file from this MPQ at mpqPath to a new file at systemFilePath
     // Cannot be used unless the MPQ is already open
-    virtual bool extractFile(const std::string & mpqPath, const std::string & systemFilePath) const override;
+    virtual bool extractFile(const std::string & mpqPath, const std::string & systemFilePath, bool tryLocales = true) const override;
 
     // Adds an entry to the list file
     // Cannot be used unless the MPQ is already open
