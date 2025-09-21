@@ -122,7 +122,7 @@ size_t CascArchive::getFileSize(const std::string & cascPath) const
     return 0;
 }
 
-bool CascArchive::getFile(const std::string & cascPath, ByteBuffer & fileData) const
+bool CascArchive::getFile(const std::string & cascPath, ByteBuffer & fileData, bool) const
 {
     if ( isOpen() )
     {
@@ -140,7 +140,7 @@ bool CascArchive::getFile(const std::string & cascPath, ByteBuffer & fileData) c
     return false;
 }
 
-std::optional<std::vector<u8>> CascArchive::getFile(const std::string & cascPath) const
+std::optional<std::vector<u8>> CascArchive::getFile(const std::string & cascPath, bool) const
 {
     if ( isOpen() )
     {
@@ -158,7 +158,7 @@ std::optional<std::vector<u8>> CascArchive::getFile(const std::string & cascPath
     return std::nullopt;
 }
 
-bool CascArchive::extractFile(const std::string & cascPath, const std::string & systemFilePath) const
+bool CascArchive::extractFile(const std::string & cascPath, const std::string & systemFilePath, bool) const
 {
     bool success = false;
     if ( auto fileData = getFile(cascPath) )

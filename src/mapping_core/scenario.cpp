@@ -663,6 +663,17 @@ bool Scenario::isProtected() const
     return mapIsProtected;
 }
 
+bool Scenario::setProtected()
+{
+    if ( mapIsProtected )
+        return false;
+    else
+    {
+        mapIsProtected = true;
+        return true;
+    }
+}
+
 bool Scenario::hasPassword() const
 {
     return read.tailLength == 7;
@@ -3123,6 +3134,11 @@ void Scenario::syncBytesToStrings(const std::vector<u8> & stringBytes, std::vect
         auto tailEnd = stringBytes.end();
         strTailData.assign(tailStart, tailEnd);
         logger.info() << "Read " << strTailData.size() << " bytes of tailData after the STR section" << std::endl;
+        if ( strTailData.size() > 8 )
+        {
+            logger.info() << "This is most likely a compiled EUD map, unlike the source map, compiled EUD maps cannot be edited further." << std::endl;
+            logger.info() << "Additionally, everything you see in Chkdraft may be radically different from what you see in StarCraft." << std::endl;
+        }
     }
     else // No tail data exists
         strTailData.clear();
@@ -3165,6 +3181,11 @@ void Scenario::syncRemasteredBytesToStrings(const std::vector<u8> & stringBytes,
         auto tailEnd = stringBytes.end();
         strTailData.assign(tailStart, tailEnd);
         logger.info() << "Read " << strTailData.size() << " bytes of tailData after the STRx section" << std::endl;
+        if ( strTailData.size() > 8 )
+        {
+            logger.info() << "This is most likely a compiled EUD map, unlike the source map, compiled EUD maps cannot be edited further." << std::endl;
+            logger.info() << "Additionally, everything you see in Chkdraft may be radically different from what you see in StarCraft." << std::endl;
+        }
     }
     else // No tail data exists
         strTailData.clear();

@@ -2561,7 +2561,12 @@ void LiteScenario::syncBytesToStrings(const std::vector<u8> & stringBytes)
         auto tailStart = std::next(stringBytes.begin(), regularStrSectionEnd);
         auto tailEnd = stringBytes.end();
         strTailData.assign(tailStart, tailEnd);
-        logger.info() << "Read " << tailData.size() << " bytes of tailData after the STR section" << std::endl;
+        logger.info() << "Read " << strTailData.size() << " bytes of tailData after the STR section" << std::endl;
+        if ( strTailData.size() > 8 )
+        {
+            logger.info() << "This is most likely a compiled EUD map, unlike the source map, compiled EUD maps cannot be edited further." << std::endl;
+            logger.info() << "Additionally, everything you see in Chkdraft may be radically different from what you see in StarCraft." << std::endl;
+        }
     }
     else // No tail data exists
         strTailData.clear();
@@ -2604,6 +2609,11 @@ void LiteScenario::syncRemasteredBytesToStrings(const std::vector<u8> & stringBy
         auto tailEnd = stringBytes.end();
         strTailData.assign(tailStart, tailEnd);
         logger.info() << "Read " << strTailData.size() << " bytes of tailData after the STRx section" << std::endl;
+        if ( strTailData.size() > 8 )
+        {
+            logger.info() << "This is most likely a compiled EUD map, unlike the source map, compiled EUD maps cannot be edited further." << std::endl;
+            logger.info() << "Additionally, everything you see in Chkdraft may be radically different from what you see in StarCraft." << std::endl;
+        }
     }
     else // No tail data exists
         strTailData.clear();
