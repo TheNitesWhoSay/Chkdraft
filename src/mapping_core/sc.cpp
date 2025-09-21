@@ -3,6 +3,7 @@
 #include "cross_cut/logger.h"
 #include "mpq_file.h"
 #include "casc_archive.h"
+#include "folder_archive.h"
 #include <algorithm>
 #include <chrono>
 #include <list>
@@ -46,8 +47,8 @@ std::vector<FilterEntry<u32>> Sc::DataFile::getCascBuildInfoFilter()
     return std::vector<FilterEntry<u32>> { FilterEntry<u32>(buildInfoFileName, "Casc Build Info") };
 }
 
-Sc::DataFile::Descriptor::Descriptor(Priority priority, bool isCasc, bool isOptionalIfCascFound, const std::string & fileName, const std::string & expectedFilePath, FileBrowserPtr<u32> browser, bool expectedInScDirectory)
-    : priority(priority), fileName(fileName), expectedFilePath(expectedFilePath), browser(browser), expectedInScDirectory(expectedInScDirectory), isCascDataFile(isCasc), optionalIfCascFound(isOptionalIfCascFound)
+Sc::DataFile::Descriptor::Descriptor(Priority priority, bool isCasc, bool isPureDirectory, bool isOptionalIfCascFound, const std::string & fileName, const std::string & expectedFilePath, FileBrowserPtr<u32> browser, bool expectedInScDirectory)
+    : priority(priority), fileName(fileName), expectedFilePath(expectedFilePath), browser(browser), expectedInScDirectory(expectedInScDirectory), isCascDataFile(isCasc), isPureDir(isPureDirectory), optionalIfCascFound(isOptionalIfCascFound)
 {
 
 }
@@ -82,6 +83,11 @@ bool Sc::DataFile::Descriptor::isCasc() const
     return isCascDataFile;
 }
 
+bool Sc::DataFile::Descriptor::isPureDirectory() const
+{
+    return isPureDir;
+}
+
 bool Sc::DataFile::Descriptor::isOptionalIfCascFound() const
 {
     return optionalIfCascFound;
@@ -98,9 +104,9 @@ std::vector<Sc::DataFile::Descriptor> Sc::DataFile::getDefaultDataFiles(Remaster
     {
     case RemasteredDescriptor::No:
         return std::vector<Descriptor> {
-            Descriptor(Priority::PatchRt, false, true, patchRtFileName, "", std::make_shared<FileBrowser<u32>>(getPatchRtFilter(), "")),
-            Descriptor(Priority::BrooDat, false, true, brooDatFileName, "", std::make_shared<FileBrowser<u32>>(getBrooDatFilter(), "")),
-            Descriptor(Priority::StarDat, false, true, starDatFileName, "", std::make_shared<FileBrowser<u32>>(getStarDatFilter(), ""))
+            Descriptor(Priority::PatchRt, false, false, true, patchRtFileName, "", std::make_shared<FileBrowser<u32>>(getPatchRtFilter(), "")),
+            Descriptor(Priority::BrooDat, false, false, true, brooDatFileName, "", std::make_shared<FileBrowser<u32>>(getBrooDatFilter(), "")),
+            Descriptor(Priority::StarDat, false, false, true, starDatFileName, "", std::make_shared<FileBrowser<u32>>(getStarDatFilter(), ""))
         };
     case RemasteredDescriptor::Yes:
         return std::vector<Descriptor> {
@@ -109,10 +115,10 @@ std::vector<Sc::DataFile::Descriptor> Sc::DataFile::getDefaultDataFiles(Remaster
     case RemasteredDescriptor::Either:
     default:
         return std::vector<Descriptor> {
-            Descriptor(Priority::RemasteredCasc, true, false, "Data", "", nullptr),
-            Descriptor(Priority::PatchRt, false, true, patchRtFileName, "", std::make_shared<FileBrowser<u32>>(getPatchRtFilter(), "")),
-            Descriptor(Priority::BrooDat, false, true, brooDatFileName, "", std::make_shared<FileBrowser<u32>>(getBrooDatFilter(), "")),
-            Descriptor(Priority::StarDat, false, true, starDatFileName, "", std::make_shared<FileBrowser<u32>>(getStarDatFilter(), ""))
+            Descriptor(Priority::RemasteredCasc, true, false, false, "Data", "", nullptr),
+            Descriptor(Priority::PatchRt, false, false, true, patchRtFileName, "", std::make_shared<FileBrowser<u32>>(getPatchRtFilter(), "")),
+            Descriptor(Priority::BrooDat, false, false, true, brooDatFileName, "", std::make_shared<FileBrowser<u32>>(getBrooDatFilter(), "")),
+            Descriptor(Priority::StarDat, false, false, true, starDatFileName, "", std::make_shared<FileBrowser<u32>>(getStarDatFilter(), ""))
         };
     }
 }
@@ -247,9 +253,13 @@ bool Sc::DataFile::Browser::findStarCraftDirectory(std::string & starCraftDirect
 
 ArchiveFilePtr Sc::DataFile::Browser::openDataFile(const std::string & dataFilePath, const Descriptor & dataFileDescriptor)
 {
-    ArchiveFilePtr archiveFile = dataFileDescriptor.isCasc() ?
-        std::static_pointer_cast<ArchiveFile>(std::make_shared<CascArchive>()) :
-        std::static_pointer_cast<ArchiveFile>(std::make_shared<MpqFile>());
+    ArchiveFilePtr archiveFile = nullptr;
+    if ( dataFileDescriptor.isCasc() )
+        archiveFile = std::static_pointer_cast<ArchiveFile>(std::make_shared<CascArchive>());
+    else if ( dataFileDescriptor.isPureDirectory() )
+        archiveFile = std::static_pointer_cast<ArchiveFile>(std::make_shared<FolderArchive>());
+    else
+        archiveFile = std::static_pointer_cast<ArchiveFile>(std::make_shared<MpqFile>());
 
     do
     {

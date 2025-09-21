@@ -51,8 +51,8 @@ namespace Sc {
         class Descriptor // Describes a data files priority in relation to other data files, the file name and path, whether it's expected in StarCraft's directory, and what file browser to use
         {
         public:
-            Descriptor(Priority priority, bool isCasc, bool isOptionalIfCascFound, const std::string & fileName, const std::string & expectedFilePath = "",
-                FileBrowserPtr<u32> browser = nullptr, bool expectedInScDirectory = true);
+            Descriptor(Priority priority, bool isCasc, bool isPureDirectory, bool isOptionalIfCascFound, const std::string & fileName,
+                const std::string & expectedFilePath = "", FileBrowserPtr<u32> browser = nullptr, bool expectedInScDirectory = true);
 
             Priority getPriority() const;
             const std::string & getFileName() const;
@@ -60,6 +60,7 @@ namespace Sc {
             FileBrowserPtr<u32> getBrowser() const;
             bool isExpectedInScDirectory() const;
             bool isCasc() const;
+            bool isPureDirectory() const;
             bool isOptionalIfCascFound() const;
 
             void setExpectedFilePath(const std::string & expectedFilePath);
@@ -71,6 +72,7 @@ namespace Sc {
             FileBrowserPtr<u32> browser;
             bool expectedInScDirectory;
             bool isCascDataFile;
+            bool isPureDir;
             bool optionalIfCascFound;
         };
         
