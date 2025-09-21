@@ -1,6 +1,8 @@
 #include "renderer.h"
 #include <cross_cut/logger.h>
 
+extern LogLevel GfxUtilInfo;
+
 extern Logger logger;
 
 std::string getDefaultFolder();

@@ -55,8 +55,8 @@ void testRender(GfxUtil & gfxUtil, Renderer & renderer, Sc::Terrain::Tileset til
 
     auto mapStartTime = std::chrono::high_resolution_clock::now();
     //auto map = gfxUtil.loadMap(); // Use a browser
-    auto map = gfxUtil.loadMap("C:/misc/bacfffa368f90a640919badc88155a577dd3c67d2ea4ba1fe65d9e1983edd5fb.scx"); // Use an absolute file path
-    //auto map = exampleLoadFromMemory(gfxUtil, tileset); // Use something you already have in memory
+    //auto map = gfxUtil.loadMap("C:/misc/SimpleLoc.scx"); // Use an absolute file path
+    auto map = exampleLoadFromMemory(gfxUtil, tileset); // Use something you already have in memory
     auto mapLoadTime = std::chrono::high_resolution_clock::now();
 
     auto animTime = map->simulateAnim(52); // Simulate n anim ticks occuring, need at least 52 to extend all the tanks
@@ -79,8 +79,8 @@ int main()
         logger.log(GfxUtilInfo) << "Initial load completed in " << std::chrono::duration_cast<std::chrono::milliseconds>(endInitialLoad-startInitialLoad).count() << "ms" << std::endl;
 
         testRender(gfxUtil, *renderer, Sc::Terrain::Tileset::SpacePlatform, getDefaultFolder() + "space.webp");
-        //testRender(gfxUtil, *renderer, Sc::Terrain::Tileset::Jungle, getDefaultFolder() + "jungle.webp");
-        //testRender(gfxUtil, *renderer, Sc::Terrain::Tileset::SpacePlatform, getDefaultFolder() + "space2.webp");
+        testRender(gfxUtil, *renderer, Sc::Terrain::Tileset::Jungle, getDefaultFolder() + "jungle.webp");
+        testRender(gfxUtil, *renderer, Sc::Terrain::Tileset::SpacePlatform, getDefaultFolder() + "space2.webp");
     } catch ( std::exception & e ) {
         logger.fatal("Unhandled exception: ", e);
         throw;
