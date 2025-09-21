@@ -8,6 +8,8 @@
 #include <mapping_core/render/map_animations.h>
 #include <mapping_core/render/sc_gl_graphics.h>
 
+inline LogLevel GfxUtilInfo = LogLevel::Info+1; // 1 above the regular LogLevel::Info s.t. mapping core info logs don't need to be included
+
 std::string getDefaultFolder();
 
 struct GfxUtil

@@ -55,8 +55,8 @@ void testRender(GfxUtil & gfxUtil, Renderer & renderer, Sc::Terrain::Tileset til
 
     auto mapStartTime = std::chrono::high_resolution_clock::now();
     //auto map = gfxUtil.loadMap(); // Use a browser
-    //auto map = gfxUtil.loadMap("C:/misc/SimpleLoc.scx"); // Use an absolute file path
-    auto map = exampleLoadFromMemory(gfxUtil, tileset); // Use something you already have in memory
+    auto map = gfxUtil.loadMap("C:/misc/bacfffa368f90a640919badc88155a577dd3c67d2ea4ba1fe65d9e1983edd5fb.scx"); // Use an absolute file path
+    //auto map = exampleLoadFromMemory(gfxUtil, tileset); // Use something you already have in memory
     auto mapLoadTime = std::chrono::high_resolution_clock::now();
 
     auto animTime = map->simulateAnim(52); // Simulate n anim ticks occuring, need at least 52 to extend all the tanks
@@ -64,22 +64,29 @@ void testRender(GfxUtil & gfxUtil, Renderer & renderer, Sc::Terrain::Tileset til
     //renderer.displayInGui(*map, options, true);
     auto imageTimes = renderer.saveMapImageAsWebP(*map, options, outFilePath);
     auto mapFinishTime = std::chrono::high_resolution_clock::now();
-    logger << MapTimings(mapStartTime, mapLoadTime, animTime, imageTimes, mapFinishTime) << std::endl;
+    logger.log(GfxUtilInfo) << MapTimings(mapStartTime, mapLoadTime, animTime, imageTimes, mapFinishTime) << std::endl;
 }
 
 int main()
 {
-    auto startInitialLoad = std::chrono::high_resolution_clock::now();
-    GfxUtil gfxUtil {};
-    gfxUtil.loadScData(); // Could provide a path string to this method
-    auto renderer = gfxUtil.createRenderer(RenderSkin::Classic);
-    auto endInitialLoad = std::chrono::high_resolution_clock::now();
+    try {
+        auto startInitialLoad = std::chrono::high_resolution_clock::now();
+        GfxUtil gfxUtil {};
+        gfxUtil.loadScData(); // Could provide a path string to this method
+        auto renderer = gfxUtil.createRenderer(RenderSkin::Classic);
+        auto endInitialLoad = std::chrono::high_resolution_clock::now();
 
-    logger.info() << "Initial load completed in " << std::chrono::duration_cast<std::chrono::milliseconds>(endInitialLoad-startInitialLoad).count() << "ms" << std::endl;
+        logger.log(GfxUtilInfo) << "Initial load completed in " << std::chrono::duration_cast<std::chrono::milliseconds>(endInitialLoad-startInitialLoad).count() << "ms" << std::endl;
 
-    testRender(gfxUtil, *renderer, Sc::Terrain::Tileset::SpacePlatform, getDefaultFolder() + "space.webp");
-    testRender(gfxUtil, *renderer, Sc::Terrain::Tileset::Jungle, getDefaultFolder() + "jungle.webp");
-    testRender(gfxUtil, *renderer, Sc::Terrain::Tileset::SpacePlatform, getDefaultFolder() + "space2.webp");
-
+        testRender(gfxUtil, *renderer, Sc::Terrain::Tileset::SpacePlatform, getDefaultFolder() + "space.webp");
+        //testRender(gfxUtil, *renderer, Sc::Terrain::Tileset::Jungle, getDefaultFolder() + "jungle.webp");
+        //testRender(gfxUtil, *renderer, Sc::Terrain::Tileset::SpacePlatform, getDefaultFolder() + "space2.webp");
+    } catch ( std::exception & e ) {
+        logger.fatal("Unhandled exception: ", e);
+        throw;
+    } catch ( ... ) {
+        logger.fatal("Unknown unhandled exception");
+        throw;
+    }
     return 0;
 }

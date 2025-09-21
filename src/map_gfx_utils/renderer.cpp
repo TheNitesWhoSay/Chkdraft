@@ -154,7 +154,7 @@ std::optional<Renderer::SaveWebpResult> Renderer::saveMapImageAsWebP(ScMap & map
         result.outFileTimeMs = std::chrono::duration_cast<std::chrono::milliseconds>(finishFileIo-startFileIo).count();
 
         if ( success && outputFilePath.empty() ) // Auto-gen'd, so log the filePath
-            logger.info() << "Saved map image to: \"" << result.outputFilePath << "\"\n";
+            logger.log(GfxUtilInfo) << "Saved map image to: \"" << result.outputFilePath << "\"\n";
         else if ( !success )
             logger.error() << "Failed to write map image to file: \"" << result.outputFilePath << "\"\n";
     });

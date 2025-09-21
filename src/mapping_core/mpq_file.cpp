@@ -263,6 +263,9 @@ std::optional<std::vector<u8>> MpqFile::getFile(const std::string & mpqPath) con
         if ( SFileOpenFileEx(hMpq, mpqPath.c_str(), SFILE_OPEN_FROM_MPQ, &openFile) )
         {
             size_t fileSize = (size_t)SFileGetFileSize(openFile, NULL);
+            if ( fileSize == 0 )
+                return std::nullopt;
+
             auto fileData = std::make_optional<std::vector<u8>>(fileSize);
             bool success = SFileReadFile(openFile, (void*)&fileData.value()[0], (DWORD)fileSize, (LPDWORD)(&bytesRead), NULL);
             SFileCloseFile(openFile);

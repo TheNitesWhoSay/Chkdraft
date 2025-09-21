@@ -2399,12 +2399,13 @@ void MapGraphics::drawTerrain()
     {
         for ( s32 x=mapTileBounds.left; x<=mapTileBounds.right; ++x )
         {
-            u16 tileIndex = map->tiles[size_t(y) * size_t(map->dimensions.tileWidth) + size_t(x)];
-            size_t groupIndex = Sc::Terrain::Tiles::getGroupIndex(tileIndex);
+            std::size_t mtxmIndex = size_t(y) * size_t(map->dimensions.tileWidth) + size_t(x);
+            u16 tileValue = mtxmIndex < map->tiles.size() ? map->tiles[mtxmIndex] : 0;
+            size_t groupIndex = Sc::Terrain::Tiles::getGroupIndex(tileValue);
             if ( groupIndex < tiles.tileGroups.size() )
             {
                 const Sc::Terrain::TileGroup & tileGroup = tiles.tileGroups[groupIndex];
-                u32 megaTileIndex = tileGroup.megaTileIndex[tiles.getGroupMemberIndex(tileIndex)];
+                u32 megaTileIndex = tileGroup.megaTileIndex[tiles.getGroupMemberIndex(tileValue)];
                 auto texX = GLfloat(megaTileIndex%128);
                 auto texY = GLfloat(megaTileIndex/128);
                 tileVertices.vertices.insert(tileVertices.vertices.end(), {
