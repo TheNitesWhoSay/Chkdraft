@@ -46,6 +46,7 @@ set(Headers
   chk.h
   escape_strings.h
   file_browser.h
+  folder_archive.h
   map_data.h
   map_file.h
   mapping_core.h
@@ -66,6 +67,7 @@ set(Sources
   chk.cpp
   escape_strings.cpp
   file_browser.cpp
+  folder_archive.cpp
   map_file.cpp
   mpq_asset_manager.cpp
   mpq_file.cpp
