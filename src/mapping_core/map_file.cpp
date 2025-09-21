@@ -264,6 +264,11 @@ std::size_t MapFile::getCurrentActionIndex()
     return Tracked::getPendingActionIndex();
 }
 
+struct MpqAutoClose {
+    MpqFile & mpqFile;
+    ~MpqAutoClose() { mpqFile.close(); }
+};
+
 bool MapFile::openMapFile(const std::string & filePath)
 {
     logger.info() << "Opening map file: " << filePath << std::endl;
@@ -275,24 +280,54 @@ bool MapFile::openMapFile(const std::string & filePath)
         {
             if ( MpqFile::open(filePath, true, false) )
             {
+                MpqAutoClose autoCloseMpq { static_cast<MpqFile &>(*this) }; // Automatically calls MpqFile::close() when this goes out of scope
                 this->mapFilePath = MpqFile::getFilePath();
-                if ( auto chkData = MpqFile::getFile("staredit\\scenario.chk") )
-                {
-                    MpqFile::close();
 
-                    std::stringstream chk(std::ios_base::in|std::ios_base::out|std::ios_base::binary);
-                    std::copy(chkData->begin(), chkData->end(), std::ostream_iterator<u8>(chk));
-                    if ( Scenario::parse(chk, true) )
+                auto tryGetScenario = [&]() -> std::optional<std::string> {
+                    try {
+                    if ( auto chkData = MpqFile::getFile("staredit\\scenario.chk", false) )
                     {
-                        auto finish = std::chrono::high_resolution_clock::now();
-                        logger.info() << "Map " << mapFilePath << " opened in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
-                        return true;
+                        std::stringstream chk(std::ios_base::in|std::ios_base::out|std::ios_base::binary);
+                        std::copy(chkData->begin(), chkData->end(), std::ostream_iterator<u8>(chk));
+                        if ( Scenario::parse(chk, true) )
+                        {
+                            auto finish = std::chrono::high_resolution_clock::now();
+                            logger.info() << "Map " << mapFilePath << " opened in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
+                            return std::nullopt; // No error
+                        }
+                        else
+                            return std::make_optional(std::string("Invalid or missing Scenario file."));
                     }
                     else
-                        CHKD_ERR("Invalid or missing Scenario file.");
-                }
+                        return std::make_optional(std::string("Invalid or missing Scenario file."));
+                    } catch ( std::exception & e ) {
+                        return std::make_optional(std::string("Exception occurred while parsing scenario ") + e.what());
+                    } catch ( ... ) {
+                        return std::make_optional(std::string("Unknown exception occurred while parsing scenario"));
+                    }
+                };
+
+                auto result = tryGetScenario();
+                if ( result == std::nullopt ) // No error to report
+                    return true;
                 else
-                    CHKD_ERR("Failed to get scenario file from MPQ.");
+                {
+                    auto prevLocale = MpqFile::getLocale();
+                    auto locales = MpqFile::getLocales("staredit\\scenario.chk");
+                    for ( auto locale : locales )
+                    {
+                        MpqFile::setLocale(locale);
+                        if ( tryGetScenario() == std::nullopt ) // No error to report
+                        {
+                            MpqFile::setLocale(prevLocale); // Restore original locale
+                            Scenario::setProtected();
+                            return true;
+                        }
+                    }
+                    MpqFile::setLocale(prevLocale); // Restore original locale
+                    CHKD_ERR(*result); // All locales failed, report the original error
+                    return false;
+                }
             }
             else if ( ::lastErrorIndicatedFileNotFound() )
                 CHKD_ERR("File Not Found");

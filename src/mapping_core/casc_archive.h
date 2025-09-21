@@ -59,15 +59,15 @@ public:
 
     // Attempts to get a file from this Casc at cascPath and place the data within the fileData buffer
     // Cannot be used unless the Casc is already open
-    virtual bool getFile(const std::string & cascPath, ByteBuffer & fileData) const override;
+    virtual bool getFile(const std::string & cascPath, ByteBuffer & fileData, bool = false) const override;
 
     // Attempts to get a file from this Casc at cascPath and place the data within the fileData buffer
     // Cannot be used unless the Casc is already open
-    virtual std::optional<std::vector<u8>> getFile(const std::string & cascPath) const override;
+    virtual std::optional<std::vector<u8>> getFile(const std::string & cascPath, bool = false) const override;
 
     // Attempts to copy a file from this Casc at cascPath to a new file at systemFilePath
     // Cannot be used unless the Casc is already open
-    virtual bool extractFile(const std::string & cascPath, const std::string & systemFilePath) const override;
+    virtual bool extractFile(const std::string & cascPath, const std::string & systemFilePath, bool = false) const override;
 
     virtual inline bool create(const std::string & filePath) override { return false; }
     virtual inline bool save() override { return false; }

@@ -43,32 +43,32 @@ size_t ArchiveCluster::getFileSize(const std::string & filePath) const
     return 0;
 }
 
-bool ArchiveCluster::getFile(const std::string & filePath, ByteBuffer & fileData) const
+bool ArchiveCluster::getFile(const std::string & filePath, ByteBuffer & fileData, bool tryLocales) const
 {
     for ( auto & archive : this->orderedSourceFiles )
     {
         if ( archive->findFile(filePath) )
-            return archive->getFile(filePath, fileData);
+            return archive->getFile(filePath, fileData, tryLocales);
     }
     return false;
 }
 
-std::optional<std::vector<u8>> ArchiveCluster::getFile(const std::string & filePath) const
+std::optional<std::vector<u8>> ArchiveCluster::getFile(const std::string & filePath, bool tryLocales) const
 {
     for ( auto & archive : this->orderedSourceFiles )
     {
         if ( archive->findFile(filePath) )
-            return archive->getFile(filePath);
+            return archive->getFile(filePath, tryLocales);
     }
     return std::nullopt;
 }
 
-bool ArchiveCluster::extractFile(const std::string & filePath, const std::string & systemFilePath) const
+bool ArchiveCluster::extractFile(const std::string & filePath, const std::string & systemFilePath, bool tryLocales) const
 {
     for ( auto & archive : this->orderedSourceFiles )
     {
         if ( archive->findFile(filePath) )
-            return archive->extractFile(filePath, systemFilePath);
+            return archive->extractFile(filePath, systemFilePath, tryLocales);
     }
     return false;
 }

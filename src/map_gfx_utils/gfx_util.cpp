@@ -1,7 +1,7 @@
 #include "gfx_util.h"
 #include <cross_cut/logger.h>
 
-Logger logger {};
+Logger logger(GfxUtilInfo); // Can use LogLevel::Warn to remove timings
 
 std::string getDefaultFolder()
 {

@@ -220,6 +220,34 @@ std::optional<std::vector<std::string>> MpqFile::getListfile() const
     return std::nullopt;
 }
 
+std::vector<std::uint32_t> MpqFile::getLocales(const std::string & mpqPath) const
+{
+    static_assert(sizeof(std::uint32_t) == sizeof(LCID));
+    LCID prevLocale = SFileGetLocale();
+    constexpr LCID noLocale = std::numeric_limits<LCID>::max();
+    DWORD maxLocales = 0;
+    SFileEnumLocales(hMpq, mpqPath.c_str(), NULL, &maxLocales, 0);
+    if ( maxLocales > 0 )
+    {
+        std::vector<std::uint32_t> locales(maxLocales, noLocale);
+        SFileEnumLocales(hMpq, mpqPath.c_str(), (LCID*)&locales[0], &maxLocales, 0);
+        return locales;
+    }
+    return std::vector<std::uint32_t> {};
+}
+
+std::uint32_t MpqFile::getLocale() const
+{
+    static_assert(sizeof(std::uint32_t) == sizeof(LCID));
+    return static_cast<std::uint32_t>(SFileGetLocale());
+}
+
+void MpqFile::setLocale(std::uint32_t locale) const
+{
+    static_assert(sizeof(std::uint32_t) == sizeof(LCID));
+    SFileSetLocale(static_cast<LCID>(locale));
+}
+
 size_t MpqFile::getFileSize(const std::string & mpqPath) const
 {
     if ( isOpen() )
@@ -236,46 +264,95 @@ size_t MpqFile::getFileSize(const std::string & mpqPath) const
     return 0;
 }
 
-bool MpqFile::getFile(const std::string & mpqPath, ByteBuffer & fileData) const
+bool MpqFile::getFile(const std::string & mpqPath, ByteBuffer & fileData, bool tryLocales) const
 {
-    if ( isOpen() )
-    {
+    auto getFileImpl = [&](){
         u32 bytesRead = 0;
         HANDLE openFile = NULL;
         if ( SFileOpenFileEx(hMpq, mpqPath.c_str(), SFILE_OPEN_FROM_MPQ, &openFile) )
         {
-            size_t fileSize = (size_t)SFileGetFileSize(openFile, NULL);
-            fileData.expand(fileSize);
-            bool success = SFileReadFile(openFile, (void*)fileData.data(), (DWORD)fileSize, (LPDWORD)(&bytesRead), NULL);
-            SFileCloseFile(openFile);
-            return success;
+            DWORD highSize = 0;
+            DWORD fileSize = SFileGetFileSize(openFile, &highSize);
+            if ( fileSize != SFILE_INVALID_SIZE && highSize == 0 )
+            {
+                fileData.expand(static_cast<std::size_t>(fileSize));
+                bool success = fileSize > 0 ? SFileReadFile(openFile, (void*)fileData.data(), fileSize, (LPDWORD)(&bytesRead), NULL) : true;
+                SFileCloseFile(openFile);
+                return success;
+            }
+        }
+        return false;
+    };
+
+    if ( isOpen() )
+    {
+        if ( getFileImpl() )
+            return true;
+        else if ( tryLocales )
+        {
+            LCID prevLocale = SFileGetLocale();
+            auto locales = getLocales(mpqPath);
+            for ( LCID locale : locales )
+            {
+                SFileSetLocale(locale);
+                if ( getFileImpl() )
+                {
+                    SFileSetLocale(prevLocale);
+                    return true;
+                }
+            }
+            SFileSetLocale(prevLocale);
         }
     }
     return false;
 }
 
-std::optional<std::vector<u8>> MpqFile::getFile(const std::string & mpqPath) const
+std::optional<std::vector<u8>> MpqFile::getFile(const std::string & mpqPath, bool tryLocales) const
 {
-    if ( isOpen() )
-    {
+    auto getFileImpl = [&]() -> std::optional<std::vector<u8>> {
         u32 bytesRead = 0;
         HANDLE openFile = NULL;
         if ( SFileOpenFileEx(hMpq, mpqPath.c_str(), SFILE_OPEN_FROM_MPQ, &openFile) )
         {
-            size_t fileSize = (size_t)SFileGetFileSize(openFile, NULL);
-            auto fileData = std::make_optional<std::vector<u8>>(fileSize);
-            bool success = SFileReadFile(openFile, (void*)&fileData.value()[0], (DWORD)fileSize, (LPDWORD)(&bytesRead), NULL);
-            SFileCloseFile(openFile);
-            return success ? fileData : std::nullopt;
+            DWORD highSize = 0;
+            DWORD fileSize = SFileGetFileSize(openFile, &highSize);
+            if ( fileSize != SFILE_INVALID_SIZE && highSize == 0 )
+            {
+                auto fileData = std::make_optional<std::vector<u8>>(fileSize);
+                bool success = fileSize > 0 ? SFileReadFile(openFile, (void*)&fileData.value()[0], (DWORD)fileSize, (LPDWORD)(&bytesRead), NULL) : true;
+                SFileCloseFile(openFile);
+                return success ? fileData : std::nullopt;
+            }
+        }
+        return std::nullopt;
+    };
+
+    if ( isOpen() )
+    {
+        if ( auto && file = getFileImpl() )
+            return file;
+        else if ( tryLocales )
+        {
+            LCID prevLocale = SFileGetLocale();
+            auto locales = getLocales(mpqPath);
+            for ( LCID locale : locales )
+            {
+                SFileSetLocale(locale);
+                if ( auto && file = getFileImpl() )
+                {
+                    SFileSetLocale(prevLocale);
+                    return file;
+                }
+            }
+            SFileSetLocale(prevLocale);
         }
     }
     return std::nullopt;
 }
 
-bool MpqFile::extractFile(const std::string & mpqPath, const std::string & systemFilePath) const
+bool MpqFile::extractFile(const std::string & mpqPath, const std::string & systemFilePath, bool tryLocales) const
 {
-    if ( isOpen() )
-    {
+    auto extractFileImpl = [&](){
         u32 bytesRead = 0;
         HANDLE openFile = NULL;
         if ( SFileOpenFileEx(hMpq, mpqPath.c_str(), SFILE_OPEN_FROM_MPQ, &openFile) )
@@ -283,6 +360,28 @@ bool MpqFile::extractFile(const std::string & mpqPath, const std::string & syste
             bool success = SFileExtractFile(hMpq, mpqPath.c_str(), icux::toFilestring(systemFilePath).c_str(), 0);
             SFileCloseFile(openFile);
             return success;
+        }
+        return false;
+    };
+
+    if ( isOpen() )
+    {
+        if ( extractFileImpl() )
+            return true;
+        else if ( tryLocales )
+        {
+            LCID prevLocale = SFileGetLocale();
+            auto locales = getLocales(mpqPath);
+            for ( LCID locale : locales )
+            {
+                SFileSetLocale(locale);
+                if ( extractFileImpl() )
+                {
+                    SFileSetLocale(prevLocale);
+                    return true;
+                }
+            }
+            SFileSetLocale(prevLocale);
         }
     }
     return false;
