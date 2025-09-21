@@ -511,6 +511,7 @@ struct Scenario : RareEdit::Tracked<MapData, Scenario, DescriptorIndex>
     bool empty() const;
         
     bool isProtected() const; // Checks if map is protected
+    bool setProtected(); // Sets the map to protected, returns true if the protected status was changed
     bool hasPassword() const; // Checks if the map has a password
     bool isPassword(const std::string & password) const; // Checks if this is the password the map has
     bool setPassword(const std::string & oldPass, const std::string & newPass); // Attempts to password-protect the map
