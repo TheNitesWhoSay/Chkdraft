@@ -1451,7 +1451,7 @@ u32 MapGraphics::getPlayerColor(u8 player, bool hasCrgb)
 size_t MapGraphics::getImageId(Sc::Unit::Type unitType)
 {
     u32 flingyId = u32(scData.units.getUnit(Sc::Unit::Type(unitType >= Sc::Unit::TotalTypes ? 0 : unitType)).graphics);
-    u32 spriteId = u32(scData.units.getFlingy(flingyId >= 209 ? 0 : flingyId).sprite);
+    u32 spriteId = u32(scData.units.getFlingy(flingyId >= Sc::Unit::TotalFlingies ? 0 : flingyId).sprite);
     return scData.sprites.getSprite(spriteId >= 517 ? 0 : spriteId).imageFile;
 }
 
@@ -1482,7 +1482,7 @@ size_t MapGraphics::getImageId(const Chk::Sprite & sprite)
 MapGraphics::SelectInfo MapGraphics::getSelInfo(Sc::Unit::Type unitType)
 {
     u32 flingyId = u32(scData.units.getUnit(Sc::Unit::Type(unitType >= Sc::Unit::TotalTypes ? 0 : unitType)).graphics);
-    u32 spriteId = u32(scData.units.getFlingy(flingyId >= 209 ? 0 : flingyId).sprite);
+    u32 spriteId = u32(scData.units.getFlingy(flingyId >= Sc::Unit::TotalFlingies ? 0 : flingyId).sprite);
     auto & sprite = scData.sprites.getSprite(spriteId >= 517 ? 0 : spriteId);
     u32 selectionImageId = sprite.selectionCircleImage+561;
     return SelectInfo {
