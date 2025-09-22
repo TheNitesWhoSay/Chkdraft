@@ -40,7 +40,7 @@ void Chkdraft::OnLoadTest()
     {
         //if ( i != Sc::Unit::Type::DarkSwarm )
         //    continue;
-        //if ( scData.units.getUnit(Sc::Unit::Type(i)).subunit1 == 228 )
+        //if ( scData->units.getUnit(Sc::Unit::Type(i)).subunit1 == Sc::Unit::Type::NoSubUnit )
         //    continue;
         int x = i%20;
         int y = i/20;
@@ -51,7 +51,7 @@ void Chkdraft::OnLoadTest()
     {
         //if ( i != 321 )
         //    continue;
-        //if ( scData.units.getUnit(Sc::Unit::Type(i)).subunit1 == 228 )
+        //if ( scData->units.getUnit(Sc::Unit::Type(i)).subunit1 == Sc::Unit::Type::NoSubUnit )
         //    continue;
         int x = i%32;
         int y = i/32;

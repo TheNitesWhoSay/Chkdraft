@@ -98,7 +98,7 @@ void UnitSettingsWindow::RefreshWindow()
             airWeapon    = (u32)unitDat.airWeapon;
         Sc::Unit::Type subUnitId = unitDat.subunit1;
         
-        if ( subUnitId != 228 ) // If unit has a subunit
+        if ( subUnitId != Sc::Unit::Type::NoSubUnit ) // If unit has a subunit
         {
             if ( groundWeapon == 130 ) // If unit might have a subunit ground attack
                 groundWeapon = chkd.scData->units.getUnit(subUnitId).groundWeapon;
@@ -443,7 +443,7 @@ void UnitSettingsWindow::SetDefaultUnitProperties()
             airWeapon    = (u32)chkd.scData->units.getUnit(selectedUnitType).airWeapon;
 
         Sc::Unit::Type subUnitId = chkd.scData->units.getUnit(selectedUnitType).subunit1;
-        if ( subUnitId != 228 ) // If unit has a subunit
+        if ( subUnitId != Sc::Unit::Type::NoSubUnit ) // If unit has a subunit
         {
             if ( groundWeapon == 130 ) // If unit might have a subunit ground attack
                 groundWeapon = chkd.scData->units.getUnit(subUnitId).groundWeapon;
@@ -677,7 +677,7 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 u32 groundWeapon = (u32)chkd.scData->units.getUnit(selectedUnitType).groundWeapon;
                 Sc::Unit::Type subUnitId = chkd.scData->units.getUnit(selectedUnitType).subunit1;
 
-                if ( subUnitId != 228 && groundWeapon == 130 ) // If unit has a subunit
+                if ( subUnitId != Sc::Unit::Type::NoSubUnit && groundWeapon == 130 ) // If unit has a subunit
                     groundWeapon = chkd.scData->units.getUnit(subUnitId).groundWeapon; // If unit might have a subunit ground attack
                 if ( groundWeapon < 130 )
                     CM->setWeaponBaseDamage((Sc::Weapon::Type)groundWeapon, newGroundDamage);
@@ -725,7 +725,7 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 u32 airWeapon = (u32)chkd.scData->units.getUnit(selectedUnitType).airWeapon;
                 Sc::Unit::Type subUnitId = chkd.scData->units.getUnit(selectedUnitType).subunit1;
 
-                if ( subUnitId != 228 && airWeapon == 130 ) // If unit has a subunit
+                if ( subUnitId != Sc::Unit::Type::NoSubUnit && airWeapon == 130 ) // If unit has a subunit
                     airWeapon = chkd.scData->units.getUnit(subUnitId).airWeapon; // If unit might have a subunit ground attack
 
                 CM->setWeaponUpgradeDamage((Sc::Weapon::Type)airWeapon, newAirBonus);

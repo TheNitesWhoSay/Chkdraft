@@ -1196,13 +1196,13 @@ void UnitToBits(ChkdBitmap & bitmap, ChkdPalette & palette, u8 color, u16 bitWid
         }
     };
 
-    Sc::Unit::Type drawnUnitId = unitID < 228 ? (Sc::Unit::Type)unitID : Sc::Unit::Type::TerranMarine; // Extended units use ID:0's graphics (for now)
+    Sc::Unit::Type drawnUnitId = unitID < Sc::Unit::TotalTypes ? (Sc::Unit::Type)unitID : Sc::Unit::Type::TerranMarine; // Extended units use ID:0's graphics (for now)
     auto & unitDat = chkd.scData->units.getUnit(Sc::Unit::Type(drawnUnitId));
     u16 imageId = chkd.scData->sprites.getSprite(chkd.scData->units.getFlingy(unitDat.graphics).sprite).imageFile;
     u32 grpId = chkd.scData->sprites.getImage(imageId).grpFile;
-    u16 subUnitImageId = unitDat.subunit1 == 228 ? std::numeric_limits<u16>::max() :
+    u16 subUnitImageId = unitDat.subunit1 == Sc::Unit::Type::NoSubUnit ? std::numeric_limits<u16>::max() :
         chkd.scData->sprites.getSprite(chkd.scData->units.getFlingy(chkd.scData->units.getUnit(unitDat.subunit1).graphics).sprite).imageFile;
-    u32 subUnitGrpId = unitDat.subunit1 == 228 ? std::numeric_limits<u32>::max() : chkd.scData->sprites.getImage(subUnitImageId).grpFile;
+    u32 subUnitGrpId = unitDat.subunit1 == Sc::Unit::Type::NoSubUnit ? std::numeric_limits<u32>::max() : chkd.scData->sprites.getImage(subUnitImageId).grpFile;
 
     if ( (size_t)grpId < chkd.scData->sprites.numGrps() )
     {

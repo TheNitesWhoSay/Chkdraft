@@ -934,7 +934,7 @@ template <class MapType> bool TextTrigGenerator::prepUnitTable(const MapType & m
         std::optional<EscString> unitName {};
         if ( quoteArgs )
         {
-            if ( useCustomNames && unitType < 228 )
+            if ( useCustomNames && unitType < Sc::Unit::TotalTypes )
             {
                 auto unquotedName = map.template getUnitName<EscString>((Sc::Unit::Type)unitType, false);
                 unitName = EscString("\"" + *unquotedName + "\"");
@@ -944,7 +944,7 @@ template <class MapType> bool TextTrigGenerator::prepUnitTable(const MapType & m
         }
         else
         {
-            if ( useCustomNames && unitType < 228 )
+            if ( useCustomNames && unitType < Sc::Unit::TotalTypes )
                 unitName = map.template getUnitName<EscString>((Sc::Unit::Type)unitType, false);
             if ( !unitName )
                 unitName = EscString(Sc::Unit::legacyTextTrigDisplayNames[unitType]);

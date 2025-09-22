@@ -27,7 +27,7 @@ u32 iscriptIdFromSprite(const Sc::Data & scData, Sc::Sprite::Type spriteType)
 
 size_t getImageId(const Sc::Data & scData, Sc::Unit::Type unitType)
 {
-    u32 flingyId = u32(scData.units.getUnit(Sc::Unit::Type(unitType >= 228 ? 0 : unitType)).graphics);
+    u32 flingyId = u32(scData.units.getUnit(Sc::Unit::Type(unitType >= Sc::Unit::TotalTypes ? 0 : unitType)).graphics);
     u32 spriteId = u32(scData.units.getFlingy(flingyId >= 209 ? 0 : flingyId).sprite);
     return scData.sprites.getSprite(spriteId >= 517 ? 0 : spriteId).imageFile;
 }
