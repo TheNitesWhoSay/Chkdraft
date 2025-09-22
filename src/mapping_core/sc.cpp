@@ -110,7 +110,7 @@ std::vector<Sc::DataFile::Descriptor> Sc::DataFile::getDefaultDataFiles(Remaster
         };
     case RemasteredDescriptor::Yes:
         return std::vector<Descriptor> {
-            Descriptor(Priority::RemasteredCasc, true, false, "Data", "", nullptr)
+            Descriptor(Priority::RemasteredCasc, true, false, false, "Data", "", nullptr)
         };
     case RemasteredDescriptor::Either:
     default:
