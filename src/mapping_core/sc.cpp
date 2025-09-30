@@ -1716,7 +1716,7 @@ void Sc::Terrain::Tiles::populateTerrainTypeMap(size_t tilesetIndex)
 
 void Sc::Terrain::Tiles::generateIsomLinks()
 {
-    size_t totalTileGroups = std::min(size_t(1024), tileGroups.size());
+    size_t totalTileGroups = std::min(Sc::Terrain::Cv5Dat::MaxTileGroups, tileGroups.size());
     Span<TileGroup> tilesetCv5s((TileGroup*)&tileGroups[0], totalTileGroups);
 
     std::vector<std::vector<uint16_t>> terrainTypeTileGroups(terrainTypes.size(), std::vector<uint16_t>{});
