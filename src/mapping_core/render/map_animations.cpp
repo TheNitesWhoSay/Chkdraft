@@ -29,12 +29,12 @@ size_t getImageId(const Sc::Data & scData, Sc::Unit::Type unitType)
 {
     u32 flingyId = u32(scData.units.getUnit(Sc::Unit::Type(unitType >= Sc::Unit::TotalTypes ? 0 : unitType)).graphics);
     u32 spriteId = u32(scData.units.getFlingy(flingyId >= Sc::Unit::TotalFlingies ? 0 : flingyId).sprite);
-    return scData.sprites.getSprite(spriteId >= 517 ? 0 : spriteId).imageFile;
+    return scData.sprites.getSprite(spriteId >= Sc::Sprite::TotalSprites ? 0 : spriteId).imageFile;
 }
 
 size_t getImageId(const Sc::Data & scData, Sc::Sprite::Type spriteType)
 {
-    return scData.sprites.getSprite(spriteType >= 517 ? 0 : spriteType).imageFile;
+    return scData.sprites.getSprite(spriteType >= Sc::Sprite::TotalSprites ? 0 : spriteType).imageFile;
 }
 
 size_t getImageId(const Sc::Data & scData, const Chk::Unit & unit)

@@ -1123,10 +1123,10 @@ void GraphicsData::Data::Skin::loadClassicImages(Sc::Data & scData)
     }
 
     classicImages = std::make_shared<std::vector<std::shared_ptr<ClassicGrp>>>();
-    classicImages->assign(999, nullptr);
+    classicImages->assign(Sc::Sprite::TotalImages, nullptr);
     //std::vector<u8> bitmapData(size_t(60480), u8(0));
 
-    for ( size_t i=0; i<999; ++i )
+    for ( size_t i=0; i<Sc::Sprite::TotalImages; ++i )
     {
         auto & imageDat = scData.sprites.getImage(i);
         auto & grp = scData.sprites.getGrp(imageDat.grpFile);
@@ -1152,7 +1152,7 @@ void GraphicsData::Data::Skin::loadImages(Sc::Data & scData, ArchiveCluster & ar
 {
     bool halfAnims = loadSettings.visualQuality.halfAnims;
     if ( this->images == nullptr )
-        this->images = std::make_shared<std::vector<std::shared_ptr<Animation>>>(size_t(999), nullptr);
+        this->images = std::make_shared<std::vector<std::shared_ptr<Animation>>>(size_t(Sc::Sprite::TotalImages), nullptr);
 
     ::Skin skin {};
     skin.skinName = ::Skin::skinNames[size_t(loadSettings.skinId)];
@@ -1452,12 +1452,12 @@ size_t MapGraphics::getImageId(Sc::Unit::Type unitType)
 {
     u32 flingyId = u32(scData.units.getUnit(Sc::Unit::Type(unitType >= Sc::Unit::TotalTypes ? 0 : unitType)).graphics);
     u32 spriteId = u32(scData.units.getFlingy(flingyId >= Sc::Unit::TotalFlingies ? 0 : flingyId).sprite);
-    return scData.sprites.getSprite(spriteId >= 517 ? 0 : spriteId).imageFile;
+    return scData.sprites.getSprite(spriteId >= Sc::Sprite::TotalSprites ? 0 : spriteId).imageFile;
 }
 
 size_t MapGraphics::getImageId(Sc::Sprite::Type spriteType)
 {
-    return scData.sprites.getSprite(spriteType >= 517 ? 0 : spriteType).imageFile;
+    return scData.sprites.getSprite(spriteType >= Sc::Sprite::TotalSprites ? 0 : spriteType).imageFile;
 }
 
 size_t MapGraphics::getImageId(const Chk::Unit & unit)
@@ -1483,20 +1483,20 @@ MapGraphics::SelectInfo MapGraphics::getSelInfo(Sc::Unit::Type unitType)
 {
     u32 flingyId = u32(scData.units.getUnit(Sc::Unit::Type(unitType >= Sc::Unit::TotalTypes ? 0 : unitType)).graphics);
     u32 spriteId = u32(scData.units.getFlingy(flingyId >= Sc::Unit::TotalFlingies ? 0 : flingyId).sprite);
-    auto & sprite = scData.sprites.getSprite(spriteId >= 517 ? 0 : spriteId);
-    u32 selectionImageId = sprite.selectionCircleImage+561;
+    auto & sprite = scData.sprites.getSprite(spriteId >= Sc::Sprite::TotalSprites ? 0 : spriteId);
+    u32 selectionImageId = sprite.selectionCircleImage+Sc::Sprite::FirstSelCircImage;
     return SelectInfo {
-        .imageId = selectionImageId > 999 ? 570 : selectionImageId,
+        .imageId = selectionImageId > Sc::Sprite::TotalImages ? Sc::Sprite::DefaultSelCircImage : selectionImageId,
         .yOffset = sprite.selectionCircleOffset
     };
 }
 
 MapGraphics::SelectInfo MapGraphics::getSelInfo(Sc::Sprite::Type spriteType, bool isDrawnAsSprite)
 {
-    auto & sprite = scData.sprites.getSprite(spriteType >= 517 ? 0 : spriteType);
-    u32 selectionImageId = sprite.selectionCircleImage+561;
+    auto & sprite = scData.sprites.getSprite(spriteType >= Sc::Sprite::TotalSprites ? 0 : spriteType);
+    u32 selectionImageId = sprite.selectionCircleImage+Sc::Sprite::FirstSelCircImage;
     return SelectInfo {
-        .imageId = selectionImageId > 999 ? 570 : selectionImageId,
+        .imageId = selectionImageId > Sc::Sprite::TotalImages ? Sc::Sprite::DefaultSelCircImage : selectionImageId,
         .yOffset = sprite.selectionCircleOffset
     };
 }

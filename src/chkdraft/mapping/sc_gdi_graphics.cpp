@@ -1209,7 +1209,7 @@ void UnitToBits(ChkdBitmap & bitmap, ChkdPalette & palette, u8 color, u16 bitWid
         Sc::SystemColor remapped[8];
         if ( selected )
         {
-            u32 selectionGrpId = chkd.scData->sprites.getImage(chkd.scData->sprites.getSprite(chkd.scData->units.getFlingy(chkd.scData->units.getUnit(drawnUnitId).graphics).sprite).selectionCircleImage+561).grpFile;
+            u32 selectionGrpId = chkd.scData->sprites.getImage(chkd.scData->sprites.getSprite(chkd.scData->units.getFlingy(chkd.scData->units.getUnit(drawnUnitId).graphics).sprite).selectionCircleImage+Sc::Sprite::FirstSelCircImage).grpFile;
             if ( selectionGrpId < chkd.scData->sprites.numGrps() )
             {
                 const Sc::Sprite::GrpFile & selCirc = chkd.scData->sprites.getGrp(selectionGrpId).get();
@@ -1261,9 +1261,9 @@ void SpriteToBits(ChkdBitmap & bitmap, ChkdPalette & palette, u8 color, u16 bitW
     Sc::SystemColor remapped[8];
     if ( selected )
     {
-        u32 selectionGrpId = spriteID >= 130 && spriteID <= 517 ?
-            chkd.scData->sprites.getImage(chkd.scData->sprites.getSprite(spriteID).selectionCircleImage+561).grpFile :
-            chkd.scData->sprites.getImage(chkd.scData->sprites.getSprite(130).selectionCircleImage+561).grpFile;
+        u32 selectionGrpId = spriteID >= Sc::Sprite::DatFile::IdRange::From0To129 && spriteID <= Sc::Sprite::TotalSprites ?
+            chkd.scData->sprites.getImage(chkd.scData->sprites.getSprite(spriteID).selectionCircleImage+Sc::Sprite::FirstSelCircImage).grpFile :
+            chkd.scData->sprites.getImage(chkd.scData->sprites.getSprite(Sc::Sprite::Type::ZergScourge).selectionCircleImage+Sc::Sprite::FirstSelCircImage).grpFile;
 
         if ( selectionGrpId < chkd.scData->sprites.numGrps() )
         {

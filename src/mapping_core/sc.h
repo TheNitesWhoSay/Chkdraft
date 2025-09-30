@@ -1145,6 +1145,8 @@ namespace Sc {
         using Type = Type_::u16_;
         static constexpr size_t TotalSprites = 517;
         static constexpr size_t TotalImages = 999;
+        static constexpr size_t FirstSelCircImage = 561;
+        static constexpr size_t DefaultSelCircImage = 570;
         struct DatEntry
         {
             u16 imageFile;
