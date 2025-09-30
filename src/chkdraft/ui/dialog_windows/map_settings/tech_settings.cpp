@@ -63,7 +63,7 @@ bool TechSettingsWindow::DestroyThis()
 void TechSettingsWindow::RefreshWindow()
 {
     refreshing = true;
-    if ( selectedTech >= 0 && selectedTech < 44 && CM != nullptr )
+    if ( selectedTech >= 0 && selectedTech < Sc::Tech::TotalTypes && CM != nullptr )
     {
         Sc::Tech::Type tech = (Sc::Tech::Type)selectedTech;
         if ( selectedTech != -1 )
@@ -268,7 +268,7 @@ void TechSettingsWindow::EnableTechEditing()
 
 void TechSettingsWindow::SetDefaultTechCosts()
 {
-    if ( selectedTech > 0 && selectedTech < 44 && CM != nullptr )
+    if ( selectedTech > 0 && selectedTech < Sc::Tech::TotalTypes && CM != nullptr )
     {
         Sc::Tech::Type tech = (Sc::Tech::Type)selectedTech;
         const Sc::Tech::DatEntry & techDat = chkd.scData->techs.getTech(tech);
@@ -282,7 +282,7 @@ void TechSettingsWindow::SetDefaultTechCosts()
 
 void TechSettingsWindow::ClearDefaultTechCosts()
 {
-    if ( selectedTech > 0 && selectedTech < 44 && CM != nullptr )
+    if ( selectedTech > 0 && selectedTech < Sc::Tech::TotalTypes && CM != nullptr )
     {
         u8 tech = (u8)selectedTech;
 
@@ -301,7 +301,7 @@ LRESULT TechSettingsWindow::Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
             itemData = (((NMTREEVIEW*)nmhdr)->itemNew.lParam)&TreeDataPortion;
 
         u16 techId = (u16)itemData;
-        if ( itemType == TreeTypeTech && techId < 44 )
+        if ( itemType == TreeTypeTech && techId < Sc::Tech::TotalTypes )
         {
             EnableTechEditing();
             selectedTech = (u32)techId;

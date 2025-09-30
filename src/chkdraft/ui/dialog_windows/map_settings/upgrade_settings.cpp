@@ -79,7 +79,7 @@ bool UpgradeSettingsWindow::DestroyThis()
 void UpgradeSettingsWindow::RefreshWindow()
 {
     refreshing = true;
-    if ( selectedUpgrade >= 0 && selectedUpgrade < 61 && CM != nullptr )
+    if ( selectedUpgrade >= 0 && selectedUpgrade < Sc::Upgrade::TotalTypes && CM != nullptr )
     {
         Sc::Upgrade::Type upgrade = (Sc::Upgrade::Type)selectedUpgrade;
         chkd.mapSettingsWindow->SetWinText("Map Settings - [" + upgradeNames.at(selectedUpgrade) + "]");
@@ -301,7 +301,7 @@ void UpgradeSettingsWindow::EnablePlayerEditing(u8 player)
 
 void UpgradeSettingsWindow::SetDefaultUpgradeCosts()
 {
-    if ( selectedUpgrade > 0 && selectedUpgrade < 61 && CM != nullptr )
+    if ( selectedUpgrade > 0 && selectedUpgrade < Sc::Upgrade::TotalTypes && CM != nullptr )
     {
         Sc::Upgrade::Type upgrade = (Sc::Upgrade::Type)selectedUpgrade;
         const Sc::Upgrade::DatEntry & upgDat = chkd.scData->upgrades.getUpgrade(upgrade);
@@ -317,7 +317,7 @@ void UpgradeSettingsWindow::SetDefaultUpgradeCosts()
 
 void UpgradeSettingsWindow::ClearDefaultUpgradeCosts()
 {
-    if ( selectedUpgrade != -1 && selectedUpgrade < 61 && CM != nullptr )
+    if ( selectedUpgrade != -1 && selectedUpgrade < Sc::Upgrade::TotalTypes && CM != nullptr )
     {
         u8 upgrade = (u8)selectedUpgrade;
 
@@ -341,7 +341,7 @@ LRESULT UpgradeSettingsWindow::Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
             itemData = (((NMTREEVIEW*)nmhdr)->itemNew.lParam)&TreeDataPortion;
 
         u8 upgradeId = (u8)itemData;
-        if ( itemType == TreeTypeUpgrade && upgradeId < 61 )
+        if ( itemType == TreeTypeUpgrade && upgradeId < Sc::Upgrade::TotalTypes )
         {
             selectedUpgrade = upgradeId;
             RefreshWindow();

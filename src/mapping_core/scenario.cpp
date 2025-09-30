@@ -5326,7 +5326,7 @@ void Scenario::setWeaponBaseDamage(Sc::Weapon::Type weaponType, u16 baseDamage, 
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
-            if ( weaponType >= 100 && read.version < Chk::Version::StarCraft_Hybrid )
+            if ( weaponType >= Sc::Weapon::TotalOriginal && read.version < Chk::Version::StarCraft_Hybrid )
                 changeVersionTo(Chk::Version::StarCraft_Hybrid);
             if ( weaponType < Sc::Weapon::TotalOriginal && hasSection(Chk::SectionName::UNIS) )
                 edit->origUnitSettings.baseDamage[weaponType] = baseDamage;
@@ -5371,7 +5371,7 @@ void Scenario::setWeaponUpgradeDamage(Sc::Weapon::Type weaponType, u16 upgradeDa
     switch ( useExp )
     {
         case Chk::UseExpSection::Auto:
-            if ( weaponType >= 100 && read.version < Chk::Version::StarCraft_Hybrid )
+            if ( weaponType >= Sc::Weapon::TotalOriginal && read.version < Chk::Version::StarCraft_Hybrid )
                 changeVersionTo(Chk::Version::StarCraft_Hybrid);
             if ( weaponType < Sc::Weapon::TotalOriginal && hasSection(Chk::SectionName::UNIS) )
                 edit->origUnitSettings.upgradeDamage[weaponType] = upgradeDamage;
