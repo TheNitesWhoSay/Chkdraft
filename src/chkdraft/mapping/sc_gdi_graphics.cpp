@@ -459,7 +459,7 @@ void Graphics::DrawLocations(ChkdBitmap & bitmap, bool showAnywhere)
 void Graphics::DrawFog(ChkdBitmap & bitmap)
 {
     u8 currPlayer = map.getCurrPlayer();
-    if ( currPlayer >= 8 )
+    if ( currPlayer >= Sc::Player::TotalSlots )
         currPlayer = 0;
 
     u8 currPlayerMask = u8Bits[currPlayer];
@@ -2335,7 +2335,7 @@ void DrawMiniMapFog(ChkdBitmap & bitmap, const ChkdPalette & palette, s64 bitWid
                        s64 xOffset, s64 yOffset, float scale, const Sc::Terrain::Tiles & tiles, GuiMap & map)
 {
     u8 currPlayer = map.getCurrPlayer();
-    if ( currPlayer >= 8 )
+    if ( currPlayer >= Sc::Player::TotalSlots )
         currPlayer = 0;
 
     u8 currPlayerMask = u8Bits[currPlayer];

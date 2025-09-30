@@ -188,7 +188,7 @@ void UnitSettingsWindow::RefreshWindow()
 
         checkEnabledByDefault.SetCheck(CM->isUnitDefaultBuildable(selectedUnitType));
 
-        for ( size_t i=0; i<12; i++ )
+        for ( size_t i=0; i<Sc::Player::Total; i++ )
         {
             if ( CM->playerUsesDefaultUnitBuildability(selectedUnitType, i) )
                 dropPlayerAvailability[i].SetSel(0);
@@ -302,7 +302,7 @@ void UnitSettingsWindow::DisableUnitEditing()
     checkEnabledByDefault.DisableThis();
 
     groupUnitAvailability.DisableThis();
-    for ( int i=0; i<12; i++ )
+    for ( int i=0; i<Sc::Player::Total; i++ )
     {
         textPlayerAvailability[i].DisableThis();
         dropPlayerAvailability[i].DisableThis();
@@ -319,7 +319,7 @@ void UnitSettingsWindow::EnableUnitEditing()
     checkEnabledByDefault.EnableThis();
 
     groupUnitAvailability.EnableThis();
-    for ( int i=0; i<12; i++ )
+    for ( int i=0; i<Sc::Player::Total; i++ )
     {
         textPlayerAvailability[i].EnableThis();
         dropPlayerAvailability[i].EnableThis();

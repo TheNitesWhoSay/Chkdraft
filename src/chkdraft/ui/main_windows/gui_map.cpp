@@ -129,7 +129,7 @@ GuiMap::GuiMap(Clipboard & clipboard, Sc::Terrain::Tileset tileset, u16 width, u
     case DefaultTriggers::FivePlayerMeleeWithObs:
     case DefaultTriggers::SixPlayerMeleeWithObs:
     case DefaultTriggers::SevenPlayerMeleeWithObs:
-        for ( size_t slot = size_t(defaultTriggers)-size_t(DefaultTriggers::TwoPlayerMeleeWithObs)+2; slot < 8; ++slot )
+        for ( size_t slot = size_t(defaultTriggers)-size_t(DefaultTriggers::TwoPlayerMeleeWithObs)+2; slot < Sc::Player::TotalSlots; ++slot )
             this->setPlayerForce(slot, Chk::Force::Force2);
             
         addSetRes(Sc::Player::Id::Force1);

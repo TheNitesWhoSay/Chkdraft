@@ -127,7 +127,7 @@ void TriggersWindow::RefreshGroupList()
             }
         }
         int selectAllIndex = -1;
-        for ( u8 i=0; i<12; i++ ) // Players
+        for ( u8 i=0; i<Sc::Player::Total; i++ ) // Players
         {
             if ( addedPlayer[i] )
                 listGroups.AddItem(i);

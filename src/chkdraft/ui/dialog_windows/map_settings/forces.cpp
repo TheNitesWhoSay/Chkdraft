@@ -30,7 +30,7 @@ UINT WM_DRAGNOTIFY(WM_NULL);
 
 ForcesWindow::ForcesWindow() : playerBeingDragged(255)
 {
-    for ( int i=0; i<4; i++ )
+    for ( int i=0; i<Chk::TotalForces; i++ )
         possibleForceNameUpdate[i] = false;
 }
 
@@ -100,7 +100,7 @@ void ForcesWindow::RefreshWindow()
     if ( CM != nullptr )
     {
         initializing = true;
-        for ( int force=0; force<4; force++ )
+        for ( int force=0; force<Chk::TotalForces; force++ )
         {
             u8 forceFlags = CM->getForceFlags((Chk::Force)force);
             bool allied = forceFlags & Chk::ForceFlags::RandomAllies;
@@ -120,14 +120,14 @@ void ForcesWindow::RefreshWindow()
             else          SendMessage(GetDlgItem(hWnd, Id::CHECK_F1AV    +force), BM_SETCHECK, BST_UNCHECKED, 0);
         }
 
-        for ( int i=0; i<4; i++ )
+        for ( int i=0; i<Chk::TotalForces; i++ )
         {
             HWND hListBox = GetDlgItem(hWnd, Id::LB_F1PLAYERS+i);
             if ( hListBox != NULL )
                 while ( SendMessage(hListBox, LB_DELETESTRING, 0, 0) != LB_ERR );
         }
 
-        for ( u8 slot=0; slot<8; slot++ )
+        for ( u8 slot=0; slot<Sc::Player::TotalSlots; slot++ )
         {
             u8 displayOwner(CM->GetPlayerOwnerStringId(slot));
             Chk::Force force = CM->getPlayerForce(slot);
@@ -238,7 +238,7 @@ LRESULT ForcesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
             }
             else
             {
-                for ( size_t i=0; i<4; i++ )
+                for ( size_t i=0; i<Chk::TotalForces; i++ )
                     CheckReplaceForceName((Chk::Force)i);
             }
             break;
@@ -293,7 +293,7 @@ LRESULT ForcesWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                         case DL_DROPPED:
                             {
                                 HWND hUnder = WindowFromPoint(dragInfo->ptCursor);
-                                if ( hUnder != NULL && playerBeingDragged < 8 )
+                                if ( hUnder != NULL && playerBeingDragged < Sc::Player::TotalSlots )
                                 {
                                     LONG windowID = GetWindowLong(hUnder, GWL_ID);
                                     if ( windowID >= Id::LB_F1PLAYERS && windowID <= Id::LB_F4PLAYERS )

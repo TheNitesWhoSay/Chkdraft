@@ -495,7 +495,7 @@ void Clipboard::pasteBrushFog(s32 mapClickX, s32 mapClickY, GuiMap & map, point 
                 else
                 {
                     u8 currPlayer = map.getCurrPlayer();
-                    if ( currPlayer < 8 )
+                    if ( currPlayer < Sc::Player::TotalSlots )
                     {
                         if ( setFog )
                             map.setFogValue(x, y, map.getFog(x, y) | u8Bits[currPlayer]);

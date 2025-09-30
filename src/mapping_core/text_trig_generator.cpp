@@ -1030,7 +1030,7 @@ template <class MapType> bool TextTrigGenerator::prepGroupTable(const MapType & 
         groupTable.push_back( groupName );
     }
 
-    for ( size_t i=0; i<4; i++ )
+    for ( size_t i=0; i<Chk::TotalForces; i++ )
     {
         if ( auto forceName = map.template getForceName<EscString>((Chk::Force)i) )
         {

@@ -76,21 +76,21 @@ void BriefingTrigPlayersWindow::RefreshWindow(u32 briefingTrigIndex)
     u8 exec[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
     if ( trig.owners[Sc::Player::Id::AllPlayers] & Chk::Trigger::Owned::Yes )
     {
-        for ( u8 player=0; player<8; player++ )
+        for ( u8 player=0; player<Sc::Player::TotalSlots; player++ )
             exec[player] ++;
     }
-    for ( u8 force=0; force<4; force++ )
+    for ( u8 force=0; force<Chk::TotalForces; force++ )
     {
         if ( trig.owners[Sc::Player::Id::Force1+force] & Chk::Trigger::Owned::Yes )
         {
-            for ( u8 player=0; player<8; player++ )
+            for ( u8 player=0; player<Sc::Player::TotalSlots; player++ )
             {
                 if ( CM->getPlayerForce(player) == force )
                     exec[player] ++;
             }
         }
     }
-    for ( u8 player=0; player<8; player++ )
+    for ( u8 player=0; player<Sc::Player::TotalSlots; player++ )
     {
         if ( trig.owners[Sc::Player::Id::Player1+player] & Chk::Trigger::Owned::Yes )
             exec[player] ++;
@@ -106,9 +106,9 @@ void BriefingTrigPlayersWindow::RefreshWindow(u32 briefingTrigIndex)
         << "By Player 8: " << strTimesExecuted[exec[7]] << std::endl;
     textPlayerStats.SetText(ssStats.str());
 
-    for ( u8 i=0; i<8; i++ )
+    for ( u8 i=0; i<Sc::Player::TotalSlots; i++ )
         checkMainPlayers[i].SetCheck(trig.owners[i+Sc::Player::Id::Player1] & Chk::Trigger::Owned::Yes);
-    for ( u8 i=0; i<4; i++ )
+    for ( u8 i=0; i<Chk::TotalForces; i++ )
         checkForces[i].SetCheck(trig.owners[i+Sc::Player::Id::Force1] & Chk::Trigger::Owned::Yes);
     checkAllPlayers.SetCheck(trig.owners[Sc::Player::Id::AllPlayers] & Chk::Trigger::Owned::Yes);
     for ( u8 i=Sc::Player::Id::Player9; i<=Sc::Player::Id::NeutralPlayers; i++ )
@@ -140,14 +140,14 @@ void BriefingTrigPlayersWindow::DoSize()
 
 void BriefingTrigPlayersWindow::CreateSubWindows(HWND hWnd)
 {
-    for ( u8 i=0; i<8; i++ )
+    for ( u8 i=0; i<Sc::Player::TotalSlots; i++ )
     {
         std::stringstream ssPlayer;
         ssPlayer << "Player " << (i+1);
         checkMainPlayers[i].CreateThis(hWnd, 12, 24+18*i, 75, 17, false, ssPlayer.str(), Id::CHECK_PLAYER1+i);
     }
     int yPos = 24;
-    for ( u8 i=0; i<4; i++ )
+    for ( u8 i=0; i<Chk::TotalForces; i++ )
     {
         std::stringstream ssPlayer;
         ssPlayer << "Force " << (i+1);

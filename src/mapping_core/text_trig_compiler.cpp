@@ -1270,7 +1270,7 @@ bool TextTrigCompiler::parseExecutingPlayer(std::string & text, std::vector<RawS
         currTrig.owners[group] = (Chk::Trigger::Owned)appendedValue;
         return true;
     }
-    else if ( parsePlayer(text, stringContents, nextString, group, pos, end) && group < 27 )
+    else if ( parsePlayer(text, stringContents, nextString, group, pos, end) && group < Sc::Player::TotalOwners )
     {
         currTrig.owners[group] = Chk::Trigger::Owned::Yes;
         return true;
@@ -2862,7 +2862,7 @@ bool TextTrigCompiler::parsePlayer(std::string & text, std::vector<RawString> & 
                 const char* argPtr = &upperStr.c_str()[6];
                 if ( (number = atoi(argPtr)) ) // Player number
                 {
-                    if ( number < 13 && number > 0 )
+                    if ( number <= Sc::Player::Total && number > 0 )
                     {
                         dest = number - 1;
                         return true;
@@ -2875,7 +2875,7 @@ bool TextTrigCompiler::parsePlayer(std::string & text, std::vector<RawString> & 
             const char* argPtr = &upperStr.c_str()[2];
             if ( (number = atoi(argPtr)) ) // Player number
             {
-                if ( number < 13 && number > 0 )
+                if ( number <= Sc::Player::Total && number > 0 )
                 {
                     dest = number - 1;
                     return true;

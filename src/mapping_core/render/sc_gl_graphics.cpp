@@ -1422,7 +1422,7 @@ std::shared_ptr<GraphicsData::RenderData> GraphicsData::load(Sc::Data & scData, 
 
 u32 MapGraphics::getPlayerColor(u8 player, bool hasCrgb)
 {
-    if ( player >= 8 )
+    if ( player >= Sc::Player::TotalSlots )
         return (u32 &)(scData.tunit.rgbaPalette[8*size_t(player) < scData.tunit.rgbaPalette.size() ? 8*size_t(player) : 8*size_t(player)%scData.tunit.rgbaPalette.size()]);
     else if ( hasCrgb && map->version >= Chk::Version::StarCraft_Remastered )
     {
@@ -2872,7 +2872,7 @@ void MapGraphics::drawActor(const AnimContext & animations, const MapActor & map
                     renderDat->shaders->classicPaletteShader.remapRange.setUVec2(8, 16); // Use player colors
                     renderDat->shaders->classicPaletteShader.remapPal.setSlot(2);
                     drawClassicImage(*renderDat->tiles->tilesetGrp.palette, image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, image->imageId,
-                        Chk::PlayerColor(image->owner < 8 ? map->playerColors[image->owner] : (Chk::PlayerColor)image->owner), image->flipped);
+                        Chk::PlayerColor(image->owner < Sc::Player::TotalSlots ? map->playerColors[image->owner] : (Chk::PlayerColor)image->owner), image->flipped);
                     renderDat->shaders->classicPaletteShader.opacity.setValue(1.0f);
                     break;
                 case MapImage::DrawFunction::Remap:
@@ -2905,7 +2905,7 @@ void MapGraphics::drawActor(const AnimContext & animations, const MapActor & map
                     renderDat->shaders->classicPaletteShader.remapRange.setUVec2(8, 16); // Use player colors
                     renderDat->shaders->classicPaletteShader.remapPal.setSlot(2);
                     drawClassicImage(*renderDat->tiles->tilesetGrp.palette, image->xc+image->xOffset+xOffset, image->yc+image->yOffset+yOffset, image->frame, image->imageId,
-                        Chk::PlayerColor(image->owner < 8 ? map->playerColors[image->owner] : (Chk::PlayerColor)image->owner), image->flipped);
+                        Chk::PlayerColor(image->owner < Sc::Player::TotalSlots ? map->playerColors[image->owner] : (Chk::PlayerColor)image->owner), image->flipped);
                     break;
                 }
             }

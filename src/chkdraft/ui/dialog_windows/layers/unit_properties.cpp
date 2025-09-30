@@ -273,7 +273,7 @@ void UnitPropertiesWindow::ChangeCurrOwner(u8 newOwner)
 void UnitPropertiesWindow::ChangeDropdownPlayer(u8 newPlayer)
 {
     std::string text;
-    if ( newPlayer < 12 )
+    if ( newPlayer < Sc::Player::Total )
         dropPlayer.SetSel(newPlayer);
     else
         dropPlayer.SetEditNum<u8>(newPlayer + 1);
@@ -615,7 +615,7 @@ void UnitPropertiesWindow::SetUnitFieldText(const Chk::Unit & unit)
 {
     initilizing = true;
 
-    if ( unit.owner < 12 )
+    if ( unit.owner < Sc::Player::Total )
         dropPlayer.SetSel(unit.owner);
     else
         dropPlayer.SetWinText(std::to_string(unit.owner + 1));

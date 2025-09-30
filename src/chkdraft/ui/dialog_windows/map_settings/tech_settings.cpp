@@ -115,7 +115,7 @@ void TechSettingsWindow::RefreshWindow()
             radioResearchedByDefault.SetCheck(false);
         }
 
-        for ( u8 player=0; player<12; player++ )
+        for ( u8 player=0; player<Sc::Player::Total; player++ )
         {
             checkUsePlayerDefaults[player].SetCheck(CM->playerUsesDefaultTechSettings((Sc::Tech::Type)tech, player));
             
@@ -182,7 +182,7 @@ void TechSettingsWindow::CreateSubWindows(HWND hWnd)
     groupPlayerSettings.CreateThis(hWnd, 210, 190, 377, 265, "Player Settings", Id::GROUP_TECHPLAYERSETTINGS);
 
     const std::vector<std::string> playerTechSettings = { "Disabled", "Enabled", "Researched" };
-    for ( int player=0; player<12; player++ )
+    for ( int player=0; player<Sc::Player::Total; player++ )
     {
         std::stringstream ssPlayerTech;
         ssPlayerTech << "Use Default for Player ";
@@ -237,7 +237,7 @@ void TechSettingsWindow::DisableTechEditing()
     radioResearchedByDefault.DisableThis();
 
     groupPlayerSettings.DisableThis();
-    for ( int i=0; i<12; i++ )
+    for ( int i=0; i<Sc::Player::Total; i++ )
     {
         checkUsePlayerDefaults[i].DisableThis();
         dropPlayerTechSettings[i].DisableThis();
@@ -257,7 +257,7 @@ void TechSettingsWindow::EnableTechEditing()
     radioResearchedByDefault.EnableThis();
 
     groupPlayerSettings.EnableThis();
-    for ( int i=0; i<12; i++ )
+    for ( int i=0; i<Sc::Player::Total; i++ )
     {
         checkUsePlayerDefaults[i].EnableThis();
         if ( SendMessage(checkUsePlayerDefaults[i].getHandle(), BM_GETCHECK, 0, 0) == BST_UNCHECKED )

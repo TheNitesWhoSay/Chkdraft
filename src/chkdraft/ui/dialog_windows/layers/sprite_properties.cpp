@@ -149,7 +149,7 @@ void SpritePropertiesWindow::ChangeCurrOwner(u8 newOwner)
 void SpritePropertiesWindow::ChangeDropdownPlayer(u8 newPlayer)
 {
     std::string text;
-    if ( newPlayer < 12 )
+    if ( newPlayer < Sc::Player::Total )
         dropPlayer.SetSel(newPlayer);
     else
         dropPlayer.SetEditNum<u8>(newPlayer + 1);
@@ -354,7 +354,7 @@ void SpritePropertiesWindow::SetSpriteFieldText(const Chk::Sprite & sprite)
 {
     initilizing = true;
 
-    if ( sprite.owner < 12 )
+    if ( sprite.owner < Sc::Player::Total )
         dropPlayer.SetSel(sprite.owner);
     else
         dropPlayer.SetWinText(std::to_string(sprite.owner + 1));

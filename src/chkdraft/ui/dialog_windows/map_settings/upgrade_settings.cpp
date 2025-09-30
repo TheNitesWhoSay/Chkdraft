@@ -120,7 +120,7 @@ void UpgradeSettingsWindow::RefreshWindow()
         editDefaultStartLevel.SetEditNum<size_t>(defaultStartLevel);
         editDefaultMaxLevel.SetEditNum<size_t>(defaultMaxLevel);
 
-        for ( int player=0; player<12; player++ )
+        for ( int player=0; player<Sc::Player::Total; player++ )
         {
             bool playerUsesDefault = CM->playerUsesDefaultUpgradeLeveling((Sc::Upgrade::Type)upgrade, player);
             checkPlayerDefault[player].SetCheck(playerUsesDefault);
@@ -171,7 +171,7 @@ void UpgradeSettingsWindow::CreateSubWindows(HWND hWnd)
     textDefaultMaxLevel.CreateThis(hWnd, 407, 225, 75, 20, "Max Level", Id::TEXT_DEFAULTMAXLEVEL);
     editDefaultMaxLevel.CreateThis(hWnd, 493, 225, 81, 20, false, Id::EDIT_DEFAULTMAXLEVEL);
 
-    for ( int player=0; player<12; player++ )
+    for ( int player=0; player<Sc::Player::Total; player++ )
     {
         std::stringstream ssPlayer;
         if ( player < 9 )
@@ -205,7 +205,7 @@ void UpgradeSettingsWindow::DisableUpgradeEditing()
     textDefaultMaxLevel.DisableThis();
     editDefaultMaxLevel.DisableThis();
 
-    for ( int i=0; i<12; i++ )
+    for ( int i=0; i<Sc::Player::Total; i++ )
     {
         textPlayer[i].DisableThis();
         checkPlayerDefault[i].DisableThis();
@@ -230,7 +230,7 @@ void UpgradeSettingsWindow::EnableUpgradeEditing()
     textDefaultMaxLevel.EnableThis();
     editDefaultMaxLevel.EnableThis();
 
-    for ( int i=0; i<12; i++ )
+    for ( int i=0; i<Sc::Player::Total; i++ )
     {
         textPlayer[i].EnableThis();
         checkPlayerDefault[i].EnableThis();
