@@ -204,6 +204,7 @@ void Chkdraft::SetupLogging()
                 delete os;
             }
         }));
+        logFile.setLogLevel(logger.getLogLevel());
         logFile.setAggregator(stdOut);
         logger.setAggregator(logFile); // Forwards all logger messages to the log file, which will then save messages based on their importance
         logger.info() << "Chkdraft version: " << GetFullVersionString() << std::endl;
