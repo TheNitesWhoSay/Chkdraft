@@ -351,6 +351,8 @@ void GuiMapGraphics::drawPastes()
             auto & pasteTiles = guiMap.clipboard.getTiles();
             tileVertices.vertices.clear();
             lineVertices.vertices.clear();
+            auto xTileTexMask = this->renderDat->tiles->xTileTexMask;
+            auto yTileTexShift = this->renderDat->tiles->yTileTexShift;
             for ( auto & tile : pasteTiles )
             {
                 u16 tileIndex = tile.value;
@@ -359,8 +361,8 @@ void GuiMapGraphics::drawPastes()
                 {
                     const Sc::Terrain::TileGroup & tileGroup = tiles.tileGroups[groupIndex];
                     u32 megaTileIndex = tileGroup.megaTileIndex[tiles.getGroupMemberIndex(tileIndex)];
-                    auto texX = GLfloat(megaTileIndex%128);
-                    auto texY = GLfloat(megaTileIndex/128);
+                    auto texX = GLfloat(megaTileIndex & xTileTexMask);
+                    auto texY = GLfloat(megaTileIndex >> yTileTexShift);
                     gl::Rect2D<GLfloat> rect {
                         GLfloat((tile.xc + center.x)/32),
                         GLfloat((tile.yc + center.y)/32),
@@ -522,6 +524,8 @@ void GuiMapGraphics::drawPastes()
                 auto xTileStart = xStart/32;
                 auto yTileStart = yStart/32;
                 const auto & placability = tiles.doodadPlacibility[doodad.doodadId];
+                auto xTileTexMask = this->renderDat->tiles->xTileTexMask;
+                auto yTileTexShift = this->renderDat->tiles->yTileTexShift;
                 for ( u16 y=0; y<tileHeight; ++y )
                 {
                     for ( u16 x=0; x<tileWidth; ++x )
@@ -534,8 +538,8 @@ void GuiMapGraphics::drawPastes()
                             {
                                 const Sc::Terrain::TileGroup & tileGroup = tiles.tileGroups[groupIndex];
                                 u32 megaTileIndex = tileGroup.megaTileIndex[tiles.getGroupMemberIndex(tileIndex)];
-                                auto texX = GLfloat(megaTileIndex%128);
-                                auto texY = GLfloat(megaTileIndex/128);
+                                auto texX = GLfloat(megaTileIndex & xTileTexMask);
+                                auto texY = GLfloat(megaTileIndex >> yTileTexShift);
                                 gl::Rect2D<GLfloat> rect {
                                     GLfloat(xTileStart + x),
                                     GLfloat(yTileStart + y),

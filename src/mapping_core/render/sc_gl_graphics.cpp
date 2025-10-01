@@ -911,9 +911,25 @@ void GraphicsData::Data::Skin::loadClassicTiles(Sc::Data & scData, const LoadSet
     auto & tilesetGraphics = this->tiles[tilesetIndex];
     tilesetGraphics = std::make_shared<GraphicsData::Data::Skin::Tileset>();
     // Populate tileTextureData
-    constexpr size_t width = 32*128;
-    std::vector<u8> tileTextureData(size_t(width*4096), u8(0)); // 4096x4096 palette indexes (128x128 tiles)
     auto tiles = scData.terrain.get(loadSettings.tileset);
+    std::size_t numMegaTiles = tiles.numMegaTiles();
+    if ( numMegaTiles <= 128*128 ) // A smaller tile mega-texture is more portable
+    {
+        tilesetGraphics->texTileWidth = 128;
+        tilesetGraphics->texTileHeight = 128;
+        tilesetGraphics->xTileTexMask = 0x7F;
+        tilesetGraphics->yTileTexShift = 7;
+    }
+    else // A larger mega-texture is required for some mods
+    {
+        tilesetGraphics->texTileWidth = 256;
+        tilesetGraphics->texTileHeight = 256;
+        tilesetGraphics->xTileTexMask = 0xFF;
+        tilesetGraphics->yTileTexShift = 8;
+    }
+
+    size_t width = 32*tilesetGraphics->texTileWidth;
+    std::vector<u8> tileTextureData(size_t(width)*(32*size_t(tilesetGraphics->texTileHeight)), u8(0)); // Usually 4096x4096 palette indexes (128x128 tiles)
     for ( u32 i=0; i<65536; ++i )
     {
         size_t groupIndex = Sc::Terrain::Tiles::getGroupIndex(u16(i));
@@ -921,8 +937,8 @@ void GraphicsData::Data::Skin::loadClassicTiles(Sc::Data & scData, const LoadSet
         {
             const Sc::Terrain::TileGroup & tileGroup = tiles.tileGroups[groupIndex];
             const u16 megaTileIndex = tileGroup.megaTileIndex[tiles.getGroupMemberIndex(u16(i))];
-            u32 left = megaTileIndex%128 * 32;
-            u32 top = megaTileIndex/128 * 32;
+            u32 left = (megaTileIndex & tilesetGraphics->xTileTexMask) * 32;
+            u32 top = (megaTileIndex >> tilesetGraphics->yTileTexShift) * 32;
             const Sc::Terrain::TileGraphicsEx & tileGraphics = tiles.tileGraphics[megaTileIndex];
             for ( size_t yMiniTile = 0; yMiniTile < 4; yMiniTile++ )
             {
@@ -959,8 +975,8 @@ void GraphicsData::Data::Skin::loadClassicTiles(Sc::Data & scData, const LoadSet
     texture.setMinMagFilters(GL_NEAREST);
     texture.loadImage2D(gl::Texture::Image2D {
         .data = &tileTextureData[0],
-        .width = GLsizei(128*tilesetGrp.width),
-        .height = GLsizei(128*tilesetGrp.height),
+        .width = GLsizei(tilesetGraphics->texTileWidth*tilesetGrp.width),
+        .height = GLsizei(tilesetGraphics->texTileHeight*tilesetGrp.height),
         .level = 0,
         .internalformat = GL_R8UI,
         .format = GL_RED_INTEGER,
@@ -1643,8 +1659,11 @@ void MapGraphics::mapViewChanged()
     glyphScaling = glm::mat2x2({2.f/windowDimensions.width, 0.f}, {0.f, (verticallyFlipped ? 2.f : -2.f)/windowDimensions.height});
     unscrolledWindowToNdc = halfFragTranslation * ndcTranslation * windowToNdcScale;
 
-    auto tileTexScale = glm::scale(glm::mat4x4(1.f), {1.f/128.f, 1.f/128.f, 1.f});
-    tileToTex = tileTexScale;
+    if ( this->renderDat && this->renderDat->tiles )
+        tileToTex = glm::scale(glm::mat4x4(1.f), {1.f/float(this->renderDat->tiles->texTileWidth), 1.f/float(this->renderDat->tiles->texTileHeight), 1.f});
+    else
+        tileToTex = glm::scale(glm::mat4x4(1.f), {1.f/128.f, 1.f/128.f, 1.f});
+
     updateGrid();
 }
 
@@ -2390,11 +2409,13 @@ void MapGraphics::drawTileVertices(Grp & tilesetGrp, s32 width, s32 height, cons
 
 void MapGraphics::drawTerrain()
 {
-    auto startOff = .6f/(128*renderDat->tiles->tilesetGrp.width);
-    auto endOff = -.1f/(128*renderDat->tiles->tilesetGrp.width);
+    auto startOff = .6f/(renderDat->tiles->texTileWidth*renderDat->tiles->tilesetGrp.width);
+    auto endOff = -.1f/(renderDat->tiles->texTileWidth*renderDat->tiles->tilesetGrp.width);
 
     tileVertices.clear();
     auto tiles = scData.terrain.get(Sc::Terrain::Tileset(map->tileset));
+    std::uint32_t xTileTexMask = renderDat->tiles->xTileTexMask;
+    std::uint32_t yTileTexShift = renderDat->tiles->yTileTexShift;
     for ( s32 y=mapTileBounds.top; y<=mapTileBounds.bottom; ++y )
     {
         for ( s32 x=mapTileBounds.left; x<=mapTileBounds.right; ++x )
@@ -2405,9 +2426,9 @@ void MapGraphics::drawTerrain()
             if ( groupIndex < tiles.tileGroups.size() )
             {
                 const Sc::Terrain::TileGroup & tileGroup = tiles.tileGroups[groupIndex];
-                u32 megaTileIndex = tileGroup.megaTileIndex[tiles.getGroupMemberIndex(tileValue)];
-                auto texX = GLfloat(megaTileIndex%128);
-                auto texY = GLfloat(megaTileIndex/128);
+                std::uint32_t megaTileIndex = tileGroup.megaTileIndex[tiles.getGroupMemberIndex(tileValue)];
+                auto texX = GLfloat(megaTileIndex & xTileTexMask);
+                auto texY = GLfloat(megaTileIndex >> yTileTexShift);
                 tileVertices.vertices.insert(tileVertices.vertices.end(), {
                     GLfloat(x  ), GLfloat(y  ), texX+startOff  , texY+startOff,
                     GLfloat(x+1), GLfloat(y  ), texX+1.f+endOff, texY+startOff,
@@ -2430,6 +2451,8 @@ void MapGraphics::drawTilesetIndexed(s32 left, s32 top, s32 width, s32 height, s
 
     tileVertices.clear();
     auto & tiles = scData.terrain.get(Sc::Terrain::Tileset(map->tileset));
+    std::uint32_t xTileTexMask = renderDat->tiles->xTileTexMask;
+    std::uint32_t yTileTexShift = renderDat->tiles->yTileTexShift;
 
     s32 topRow = scrollY/33;
     s32 bottomRow = (scrollY + height)/33;
@@ -2441,7 +2464,7 @@ void MapGraphics::drawTilesetIndexed(s32 left, s32 top, s32 width, s32 height, s
         GLfloat tileTop = GLfloat(row*33-scrollY);
         for ( s32 column=0; column<totalColumns; ++column )
         {
-            u32 megaTileIndex = 0;
+            std::uint32_t megaTileIndex = 0;
             u16 tileIndex = u16(16*row+column);
             size_t groupIndex = Sc::Terrain::Tiles::getGroupIndex(tileIndex);
             if ( groupIndex < tiles.tileGroups.size() )
@@ -2454,8 +2477,8 @@ void MapGraphics::drawTilesetIndexed(s32 left, s32 top, s32 width, s32 height, s
                 GLfloat(column*33),
                 tileTop
             };
-            auto left = float(megaTileIndex%128);
-            auto top = float(megaTileIndex/128);
+            auto left = float(megaTileIndex & xTileTexMask);
+            auto top = float(megaTileIndex >> yTileTexShift);
             auto right = left+1.f;
             auto bottom = top+1.f;
             gl::Rect2D<GLfloat> texRect {left, top, right, bottom};

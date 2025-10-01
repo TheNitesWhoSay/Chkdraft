@@ -2156,10 +2156,14 @@ bool Sc::Sprite::Grp::load(ArchiveCluster & archiveCluster, const std::string & 
     if ( grpAsset )
     {
         this->grpData.swap(*grpAsset);
-        return isValid(assetArchivePath);
+        isValid(assetArchivePath);
+        return true;
     }
     else
+    {
         logger.error() << "Failed to load GRP " << assetArchivePath << std::endl;
+        return true;
+    }
 
     return false;
 }
@@ -2212,12 +2216,12 @@ bool Sc::Sprite::Grp::framesAreValid(const std::string & assetArchivePath) const
         GrpFrameHeader & grpFrameHeader = grpFile.frameHeaders[frame];
         if ( grpFrameHeader.frameHeight == 0 )
         {
-            logger.warn() << "GRP file \"" << assetArchivePath << "\", frame " << frame << " has a height of 0 pixels and will be skipped! " << std::endl;
+            logger.trace() << "GRP file \"" << assetArchivePath << "\", frame " << frame << " has a height of 0 pixels and will be skipped! " << std::endl;
             continue;
         }
         else if ( grpFrameHeader.frameWidth == 0 )
         {
-            logger.warn() << "GRP file \"" << assetArchivePath << "\", frame " << frame << " has a width of 0 pixels and will be skipped! " << std::endl;
+            logger.trace() << "GRP file \"" << assetArchivePath << "\", frame " << frame << " has a width of 0 pixels and will be skipped! " << std::endl;
             continue;
         }
         else if ( u16(grpFrameHeader.yOffset) + u16(grpFrameHeader.frameHeight) > grpFile.grpHeight )
@@ -2235,13 +2239,12 @@ bool Sc::Sprite::Grp::framesAreValid(const std::string & assetArchivePath) const
             return false;
         }
 
-        size_t frameMinimumFileSize = grpFrameHeader.frameOffset +
-            sizeof(u16) * size_t(grpFrameHeader.frameHeight) +
-            PixelRow::MinimumSize * size_t(grpFrameHeader.frameHeight);
+        size_t frameMinimumFileSize = size_t(grpFrameHeader.frameOffset) +
+            sizeof(u16) * size_t(grpFrameHeader.frameHeight);
 
         if ( grpData.size() < frameMinimumFileSize )
         {
-            logger.error() << "GRP file \"" << assetArchivePath << "\", frame " << frame << " with frame offset " << grpFrameHeader.frameOffset << " and frame height " << grpFrameHeader.frameHeight
+            logger.error() << "GRP file \"" << assetArchivePath << "\", frame " << frame << " with frame offset " << grpFrameHeader.frameOffset << " and frame height " << int(grpFrameHeader.frameHeight)
                 << " requires a file size of at least " << frameMinimumFileSize << " bytes but the file is only " << grpData.size() << " bytes" << std::endl;
             return false;
         }
@@ -4793,7 +4796,7 @@ bool Sc::Data::loadSpriteGroups(Sc::TblFilePtr imagesTbl, Sc::TblFilePtr statTxt
     for ( std::size_t i=0; i<Sc::Sprite::TotalSprites; ++i )
     {
         if ( !treeSpriteIndexes.contains(u16(i)) )
-            throw std::logic_error("All sprites not included!");
+            logger.debug() << "Sprite [" << i << "] was not included in the sprite tree!" << std::endl;
     }
     #endif
 

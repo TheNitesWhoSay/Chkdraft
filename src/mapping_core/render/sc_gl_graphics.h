@@ -779,6 +779,11 @@ struct GraphicsData
         {
             struct Tileset // Data for a particular tileset, skin, and visual quality
             {
+                std::uint32_t texTileWidth = 128;
+                std::uint32_t texTileHeight = 128;
+                std::uint32_t yTileTexShift = 7; // mega-tile is located at y = (megaTileIndex >> yTileTexShift)
+                std::uint32_t xTileTexMask = 0x7F; // mega-tile is located at x = (megaTileIndex & xTileTexMask)
+
                 Grp tileMask {};
                 Grp tilesetGrp {};
                 std::optional<gl::Palette> halluPalette {};
