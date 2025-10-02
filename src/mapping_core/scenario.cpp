@@ -824,7 +824,13 @@ void Scenario::parse(std::istream & is, ::MapData & mapData, Chk::SectionName se
         case SectionName::MTXM:
         {
             size_t totalTiles = sectionSize/2 + (sectionSize % 2 > 0 ? 1 : 0);
-            mapData.tiles.assign(totalTiles, 0);
+            if ( mapData.tiles.size() == 0 )
+                mapData.tiles.assign(totalTiles, 0);
+            else if ( totalTiles > mapData.tiles.size() )
+            {
+                mapData.tiles.resize(totalTiles, 0);
+                this->mapIsProtected = true;
+            }
             is.read(reinterpret_cast<char*>(&mapData.tiles[0]), sectionSize);
         }
         break;
@@ -862,7 +868,7 @@ void Scenario::parse(std::istream & is, ::MapData & mapData, Chk::SectionName se
             }
             else
             {
-                logger.info() << "Encountered unknown section: " << Chk::getNameString(sectionName) << std::endl;
+                logger.info() << "Encountered unknown section: \"" << Chk::getNameString(sectionName) << "\"" << std::endl;
                 section.sectionData = std::make_optional<std::vector<u8>>(std::size_t(sectionSize));
                 if ( sectionSize > 0 )
                     is.read((char*)&section.sectionData.value()[0], std::streamsize(sectionSize));
@@ -4017,7 +4023,16 @@ template <typename T>
 std::vector<T> resizeAndOffset(const std::vector<T> & tiles, u16 newTileWidth, u16 newTileHeight, u16 oldTileWidth, u16 oldTileHeight, std::ptrdiff_t leftEdge, std::ptrdiff_t topEdge)
 {
     if ( oldTileWidth == newTileWidth && oldTileHeight == newTileHeight )
-        return tiles;
+    {
+        if ( tiles.size() == newTileWidth*newTileHeight )
+            return tiles;
+        else
+        {
+            std::vector<T> newTiles(tiles.begin(), tiles.end());
+            newTiles.resize(newTileWidth*newTileHeight, T{0});
+            return newTiles;
+        }
+    }
 
     std::vector<T> newTiles(std::size_t(newTileWidth)*std::size_t(newTileHeight), 0);
 

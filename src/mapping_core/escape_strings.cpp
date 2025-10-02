@@ -144,7 +144,7 @@ bool SingleLineChkdString::isOneLine() const
     return true;
 }
 
-bool makeEscStr(const std::string & inRawString, size_t inRawStringLength, EscString & outEscString)
+bool makeEscStr(const std::string & inRawString, size_t inRawStringLength, EscString & outEscString, bool forceAscii)
 {
     outEscString.clear();
     try
@@ -162,7 +162,7 @@ bool makeEscStr(const std::string & inRawString, size_t inRawStringLength, EscSt
                 outEscString.append("\\\"");
             else if ( currChar == '\\' )
                 outEscString.append("\\\\");
-            else if ( currChar < 32 || currChar == 127 )
+            else if ( currChar < 32 || currChar == 127 || (currChar > 127 && forceAscii) )
             {
                 outEscString.push_back('\\');
                 outEscString.push_back('x');
