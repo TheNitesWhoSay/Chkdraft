@@ -326,7 +326,7 @@ void LiteScenario::read(std::istream & is, Chk::SectionName sectionName, Chk::Se
             }
             else
             {
-                logger.info() << "Encountered unknown section: " << Chk::getNameString(sectionName) << std::endl;
+                logger.info() << "Encountered unknown section: \"" << Chk::getNameString(sectionName) << "\"" << std::endl;
                 section.sectionData = std::make_optional<std::vector<u8>>(size_t(sectionSize));
                 if ( sectionSize > 0 )
                     is.read((char*)&section.sectionData.value()[0], std::streamsize(sectionSize));

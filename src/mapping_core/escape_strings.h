@@ -72,7 +72,7 @@ class SingleLineChkdString : public ChkdString
     All ASCII Characters < 32 or >= 127 are given a \xhh format,
         where hh is the corresponding hex string.
     Returns true and outEscString on success, false and an empty outEscString on faliure. */
-bool makeEscStr(const std::string & inRawString, size_t inRawStringLength, EscString & outEscString);
+bool makeEscStr(const std::string & inRawString, size_t inRawStringLength, EscString & outEscString, bool forceAscii = false);
 bool makeEscStr(const RawString & inRawString, EscString & outEscString);
 
 bool getSlashEscCodeChar(const std::string & escString, size_t escStringLength, size_t slashPos, char & character, size_t & lastCharPos);

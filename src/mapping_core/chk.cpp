@@ -1784,8 +1784,20 @@ std::string Chk::getNameString(Chk::SectionName sectionName)
     else
     {
         char* data = reinterpret_cast<char*>(&sectionName);
-        char result[5] { data[0], data[1], data[2], data[3], '\0' };
-        return std::string(result);
+        if ( data[0] >= 32 && data[0] < 127 && data[1] >= 32 && data[1] < 127 && data[2] >= 32 && data[2] < 127 && data[3] >= 32 && data[3] < 127 )
+        {
+            char result[5] { data[0], data[1], data[2], data[3], '\0' };
+            return std::string(result);
+        }
+        else
+        {
+            RawString raw(data, 4);
+            EscString esc {};
+            if ( makeEscStr(raw, 4, esc, true) )
+                return esc;
+            else
+                return "ERR!";
+        }
     }
 }
 
