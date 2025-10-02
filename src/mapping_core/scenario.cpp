@@ -824,7 +824,13 @@ void Scenario::parse(std::istream & is, ::MapData & mapData, Chk::SectionName se
         case SectionName::MTXM:
         {
             size_t totalTiles = sectionSize/2 + (sectionSize % 2 > 0 ? 1 : 0);
-            mapData.tiles.assign(totalTiles, 0);
+            if ( mapData.tiles.size() == 0 )
+                mapData.tiles.assign(totalTiles, 0);
+            else if ( totalTiles > mapData.tiles.size() )
+            {
+                mapData.tiles.resize(totalTiles, 0);
+                this->mapIsProtected = true;
+            }
             is.read(reinterpret_cast<char*>(&mapData.tiles[0]), sectionSize);
         }
         break;
