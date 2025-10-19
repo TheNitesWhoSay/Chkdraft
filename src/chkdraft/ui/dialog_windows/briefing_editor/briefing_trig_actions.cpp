@@ -62,7 +62,7 @@ void BriefingTrigActionsWindow::RefreshWindow(u32 briefingTrigIndex)
     this->briefingTrigIndex = briefingTrigIndex;
     const auto & briefingTrig = CM->getBriefingTrigger(briefingTrigIndex);
     BriefingTextTrigGenerator ttg{true};
-    if ( ttg.loadScenario((Scenario &)*CM) )
+    if ( ttg.loadScenario((Scenario &)*CM, chkd.scData.value()) )
     {
         for ( u8 y = 0; y<Chk::Trigger::MaxActions; y++ )
         {
@@ -550,7 +550,7 @@ void BriefingTrigActionsWindow::DrawSelectedAction()
         {
             u8 actionNum = (u8)focusedY;
             BriefingTextTrigGenerator ttg {true};
-            ttg.loadScenario((Scenario &)*CM);
+            ttg.loadScenario((Scenario &)*CM, chkd.scData.value());
             ChkdString str = chkd.briefingTrigEditorWindow->briefingTriggersWindow.GetActionString(actionNum, briefingTrig, ttg);
             ttg.clearScenario();
 
@@ -746,13 +746,14 @@ void BriefingTrigActionsWindow::SuggestUnit(u16 currUnit)
 {
     if ( CM != nullptr )
     {
-        u16 numUnitTypes = (u16)Sc::Unit::defaultDisplayNames.size();
+        const auto & unitDisplayNames = chkd.scData->units.displayNames;
+        u16 numUnitTypes = (u16)unitDisplayNames.size();
         for ( u16 i = 0; i < numUnitTypes; i++ )
         {
-            auto str = CM->getUnitName<SingleLineChkdString>((Sc::Unit::Type)i, true);
+            auto str = CM->getUnitName<SingleLineChkdString>((Sc::Unit::Type)i, &chkd.scData.value(), true);
             suggestions.AddItem(SuggestionItem{uint32_t(i), *str});
-            if ( str->compare(std::string(Sc::Unit::defaultDisplayNames[i])) != 0 )
-                suggestions.AddItem(SuggestionItem{uint32_t(i), std::string(Sc::Unit::defaultDisplayNames[i])});
+            if ( str->compare(std::string(unitDisplayNames[i])) != 0 )
+                suggestions.AddItem(SuggestionItem{uint32_t(i), std::string(unitDisplayNames[i])});
         }
     }
     suggestions.Show();

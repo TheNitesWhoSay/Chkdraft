@@ -405,6 +405,7 @@ namespace Sc {
         });
         static constexpr size_t MaxCuwps = 64;
 
+        std::vector<std::string> displayNames; // Name that should be used in the editor (applies any user overrides & custom name logic)
         static const std::vector<std::string> defaultDisplayNames;
         static const std::vector<std::string> legacyTextTrigDisplayNames;
 
@@ -445,7 +446,7 @@ namespace Sc {
 
         struct DatEntry
         {
-            u8 graphics;
+            u16 graphics;
             Sc::Unit::Type subunit1;
             Sc::Unit::Type subunit2;
             u16 infestation; // Id 106-201 only
@@ -589,6 +590,76 @@ namespace Sc {
             u8 broodWarUnitFlag[TotalTypes];
             u16 starEditAvailabilityFlags[TotalTypes];
         };
+        struct alignas(1) DatExtFile
+        {
+            static constexpr std::size_t TotalUnits = 3000;
+
+            struct alignas(1) Dimensions {
+                u16 width;
+                u16 height;
+            };
+            struct alignas(1) Extent {
+                u16 left;
+                u16 up;
+                u16 right;
+                u16 down;
+            };
+
+            u16 graphics[TotalUnits];
+            Sc::Unit::Type subunit1[TotalUnits];
+            Sc::Unit::Type subunit2[TotalUnits];
+            u16 infestation[TotalUnits]; // Id 106-201 only
+            u32 constructionAnimation[TotalUnits];
+            u8 unitDirection[TotalUnits];
+            u8 shieldEnable[TotalUnits];
+            u16 shieldAmount[TotalUnits];
+            u32 hitPoints[TotalUnits];
+            u8 elevationLevel[TotalUnits];
+            u8 unknown[TotalUnits];
+            u8 sublabel[TotalUnits];
+            u8 compAIIdle[TotalUnits];
+            u8 humanAIIdle[TotalUnits];
+            u8 returntoIdle[TotalUnits];
+            u8 attackUnit[TotalUnits];
+            u8 attackMove[TotalUnits];
+            u8 groundWeapon[TotalUnits];
+            u8 maxGroundHits[TotalUnits];
+            u8 airWeapon[TotalUnits];
+            u8 maxAirHits[TotalUnits];
+            u8 aiInternal[TotalUnits];
+            u32 flags[TotalUnits];
+            u8 targetAcquisitionRange[TotalUnits];
+            u8 sightRange[TotalUnits];
+            u8 armorUpgrade[TotalUnits];
+            u8 unitSize[TotalUnits];
+            u8 armor[TotalUnits];
+            u8 rightClickAction[TotalUnits];
+            u16 readySound[TotalUnits]; // Id 0-105 only
+            u16 whatSoundStart[TotalUnits];
+            u16 whatSoundEnd[TotalUnits];
+            u16 pissSoundStart[TotalUnits]; // Id 0-105 only
+            u16 pissSoundEnd[TotalUnits]; // Id 0-105 only
+            u16 yesSoundStart[TotalUnits]; // Id 0-105 only
+            u16 yesSoundEnd[TotalUnits]; // Id 0-105 only
+            Dimensions starEditPlacementBox[TotalUnits];
+            Dimensions addonOffset[TotalUnits]; // Id 106-201 only
+            Extent unitExtent[TotalUnits];
+            u16 portrait[TotalUnits];
+            u16 mineralCost[TotalUnits];
+            u16 vespeneCost[TotalUnits];
+            u16 buildTime[TotalUnits];
+            u16 unknown1[TotalUnits];
+            u8 starEditGroupFlags[TotalUnits];
+            u8 supplyProvided[TotalUnits];
+            u8 supplyRequired[TotalUnits];
+            u8 spaceRequired[TotalUnits];
+            u8 spaceProvided[TotalUnits];
+            u16 buildScore[TotalUnits];
+            u16 destroyScore[TotalUnits];
+            u16 unitMapString[TotalUnits];
+            u8 broodWarUnitFlag[TotalUnits];
+            u16 starEditAvailabilityFlags[TotalUnits];
+        };
         struct alignas(1) FlingyDatFile
         {
             u16 sprite[TotalFlingies];
@@ -601,6 +672,8 @@ namespace Sc {
         };
 #pragma pack(pop)
 
+        void loadDisplayNames(ArchiveCluster & archiveCluster);
+        bool loadExt(std::vector<u8> extUnitData);
         bool load(ArchiveCluster & archiveCluster);
         const DatEntry & getUnit(Type unitType) const;
         const FlingyDatEntry & getFlingy(size_t flingyIndex) const;
@@ -612,6 +685,8 @@ namespace Sc {
             std::vector<u16> memberUnits;
         };
         std::vector<UnitGroup> unitGroups;
+        std::size_t numUnitTypes() const { return units.size(); }
+        std::size_t numFlingies() const { return flingies.size(); }
 
     private:
         std::vector<DatEntry> units;
@@ -1156,7 +1231,9 @@ namespace Sc {
             u8 selectionCircleImage; // Id 130-517 only
             u8 selectionCircleOffset; // Id 130-517 only
         };
-        struct ImageDatEntry
+
+#pragma pack(push, 1)
+        struct alignas(1) ImageDatEntry
         {
             u32 grpFile;
             u8 graphicTurns;
@@ -1173,8 +1250,6 @@ namespace Sc {
             u32 landingDustOverlay;
             u32 liftOffOverlay;
         };
-        
-#pragma pack(push, 1)
         struct alignas(1) DatFile
         {
             enum_t(IdRange, size_t, {
@@ -1517,9 +1592,15 @@ namespace Sc {
             "27: Enable"
         };
 
+        struct IscriptFile
+        {
+            std::vector<u8> data;
+            std::vector<u16> offsets;
+        };
+
         bool load(ArchiveCluster & archiveCluster, Sc::TblFilePtr imagesTbl);
-        bool loadAnimation(u16 id, IScriptAnimation* animation, size_t currOffset, bool & idIncludesFlip, bool & idIncludesUnflip, std::set<size_t> & visitedOffsets);
-        const IScriptAnimation* getAnimationHeader(size_t iScriptId, AnimHeader animHeader) const;
+        bool loadAnimation(const IscriptFile & iscript, u16 id, IScriptAnimation* animation, size_t currOffset, bool & idIncludesFlip, bool & idIncludesUnflip, std::set<size_t> & visitedOffsets);
+        const IScriptAnimation* getAnimationHeader(u32 iScriptId, AnimHeader animHeader) const;
         const Grp & getGrp(size_t grpIndex);
         const ImageDatEntry & getImage(size_t imageIndex) const;
         const DatEntry & getSprite(size_t spriteIndex) const;
@@ -1527,9 +1608,9 @@ namespace Sc {
         size_t numImages() const;
         size_t numSprites() const;
         bool imageFlipped(u16 imageId) const; // TODO: Temp solution
-        std::vector<u8> iscript;
-        std::vector<u16> iscriptOffsets;
         std::vector<LoFile> loFiles;
+
+        std::vector<IscriptFile> iscriptFiles {}; // If standard, the zeroth (and only) file present is iscript.bin, if modded there may be multiple
 
     private:
         std::vector<Grp> grps;

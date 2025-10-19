@@ -27,7 +27,7 @@ void BriefingTextTrigWindow::RefreshWindow()
     updateMenus();
     std::string briefingTrigString;
     BriefingTextTrigGenerator briefingTextTrigs {};
-    if ( briefingTextTrigs.generateBriefingTextTrigs((Scenario &)*CM, briefingTrigString) )
+    if ( briefingTextTrigs.generateBriefingTextTrigs((Scenario &)*CM, briefingTrigString, chkd.scData.value()) )
     {
         auto start = std::chrono::high_resolution_clock::now();
         SetDialogItemText(IDC_EDIT_TRIGTEXT, briefingTrigString);

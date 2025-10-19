@@ -211,9 +211,9 @@ void UnitSettingsWindow::RefreshWindow()
             checkUseDefaultName.SetCheck(false);
         }
             
-        auto unitName = CM->getUnitName<ChkdString>(selectedUnitType, true);
+        auto unitName = CM->getUnitName<ChkdString>(selectedUnitType, &chkd.scData.value(), true);
         editUnitName.SetText(*unitName);
-        chkd.mapSettingsWindow->SetWinText("Map Settings - [" + Sc::Unit::defaultDisplayNames[(u16)selectedUnitType] + ']');
+        chkd.mapSettingsWindow->SetWinText("Map Settings - [" + chkd.scData->units.displayNames[(u16)selectedUnitType] + ']');
     }
     else
         DisableUnitEditing();
@@ -223,7 +223,7 @@ void UnitSettingsWindow::RefreshWindow()
 
 void UnitSettingsWindow::CreateSubWindows(HWND hParent)
 {
-    unitTree.UpdateUnitNames(Sc::Unit::defaultDisplayNames);
+    unitTree.UpdateUnitNames(chkd.scData->units.displayNames);
     unitTree.CreateThis(hParent, 5, 5, 200, 489, false, Id::TREE_UNITSETTINGS);
     unitTree.UpdateUnitTree();
     buttonResetUnitDefaults.CreateThis(hParent, 5, 494, 200, 25, "Reset All Units To Default", Id::BUTTON_RESETALLUNITDEFAULTS);
@@ -430,7 +430,7 @@ void UnitSettingsWindow::SetDefaultUnitProperties()
         CM->setUnitNameStringId(selectedUnitType, 0, Chk::UseExpSection::Yes);
         CM->deleteUnusedStrings(Chk::Scope::Both);
         
-        auto unitName = CM->getUnitName<ChkdString>(selectedUnitType, true);
+        auto unitName = CM->getUnitName<ChkdString>(selectedUnitType, &chkd.scData.value(), true);
         editUnitName.SetText(*unitName);
         checkUseDefaultName.DisableThis();
         editUnitName.DisableThis();
@@ -582,7 +582,7 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                     auto edit = CM->operator()(ActionDescriptor::UpdateUnitName);
                     CM->setUnitNameStringId(selectedUnitType, 0, Chk::UseExpSection::Both);
                     CM->deleteUnusedStrings(Chk::Scope::Both);
-                    auto unitName = CM->getUnitName<ChkdString>(selectedUnitType, true);
+                    auto unitName = CM->getUnitName<ChkdString>(selectedUnitType, &chkd.scData.value(), true);
                     editUnitName.SetText(*unitName);
                     chkd.unitWindow->RepopulateList();
                     RedrawWindow(chkd.unitWindow->getHandle(), NULL, NULL, RDW_INVALIDATE);
@@ -770,7 +770,7 @@ LRESULT UnitSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
             {
                 RefreshWindow();
                 if ( selectedUnitType != Sc::Unit::Type::NoUnit )
-                    chkd.mapSettingsWindow->SetWinText(std::string("Map Settings - [") + Sc::Unit::defaultDisplayNames[(u16)selectedUnitType] + ']');
+                    chkd.mapSettingsWindow->SetWinText(std::string("Map Settings - [") + chkd.scData->units.displayNames[(std::size_t)selectedUnitType] + ']');
                 else
                     chkd.mapSettingsWindow->SetWinText("Map Settings");
             }

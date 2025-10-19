@@ -284,7 +284,7 @@ void SpritePropertiesWindow::RepopulateList()
 std::string SpritePropertiesWindow::GetSpriteName(Sc::Sprite::Type type, bool isUnit)
 {
     if ( isUnit && size_t(type) < Sc::Unit::TotalTypes )
-        return std::string("[") + std::to_string(type) + "] " + *CM->getUnitName<ChkdString>(Sc::Unit::Type(type));
+        return std::string("[") + std::to_string(type) + "] " + *CM->getUnitName<ChkdString>(Sc::Unit::Type(type), &chkd.scData.value());
     else if ( (isUnit && size_t(type) >= Sc::Unit::TotalTypes) || size_t(type) >= chkd.scData->sprites.spriteNames.size() )
         return std::string("[") + std::to_string(type) + "]";
     else
@@ -499,46 +499,97 @@ void SpritePropertiesWindow::LvItemChanged(NMHDR* nmhdr)
         u16 index = (u16)itemInfo->lParam;
         
         const auto & sel = CM->view.sprites.sel();
-        if ( itemInfo->uNewState & LVIS_SELECTED && initilizing == false ) // Selected
-                                                                           // Add item to selection
+        if ( itemInfo->uNewState & LVIS_SELECTED && initilizing == false ) // Selected, add item to selection
         {
-            bool firstSelected = !selections.hasSprites();
-            if ( std::find(sel.begin(), sel.end(), index) == sel.end() )
-                edit->sprites.select(index);
+            auto prevDesel = std::find(queueDeselection.begin(), queueDeselection.end(), index);
+            if ( prevDesel != queueDeselection.end() )
+                queueDeselection.erase(prevDesel);
 
-            if ( firstSelected )
-                EnableSpriteEditing();
+            bool addingSelection = std::find(sel.begin(), sel.end(), index) == sel.end() &&
+                std::find(queueSelection.begin(), queueSelection.end(), index) == queueSelection.end();
 
-            const Chk::Sprite & sprite = CM->getSprite(index);
+            if ( addingSelection )
+            {
+                if ( this->queueDeselection.empty() && this->queueSelection.empty() )
+                    PostMessage(getHandle(), WinLib::LV::WM_LVPROCESSQUEUE, 0, 0);
+                
+                this->queueSelection.push_back(index);
+            }
+        }
+        else if ( itemInfo->uOldState & LVIS_SELECTED ) // From selected to not selected, remove item from selection
+        {
+            auto prevSel = std::find(queueSelection.begin(), queueSelection.end(), index);
+            if ( prevSel != queueSelection.end() )
+                queueSelection.erase(prevSel);
+
+            bool removingSelection = std::find(sel.begin(), sel.end(), u32(index)) != sel.end() &&
+                std::find(queueDeselection.begin(), queueDeselection.end(), index) == queueDeselection.end();
+
+            if ( removingSelection )
+            {
+                if ( this->queueDeselection.empty() && this->queueSelection.empty() )
+                    PostMessage(getHandle(), WinLib::LV::WM_LVPROCESSQUEUE, 0, 0);
+                
+                this->queueDeselection.push_back(index);
+            }
+        }
+    }
+}
+
+void SpritePropertiesWindow::ProcessSelectionQueues()
+{
+    auto edit = CM->operator()(ActionDescriptor::UpdateSpriteSel);
+    Selections & selections = CM->selections;
+    bool hasDesel = !queueDeselection.empty();
+    bool hasSel = !queueSelection.empty();
+    if ( hasDesel || hasSel )
+    {
+        bool hadSelections = edit->sprites.sel().empty();
+        if ( hasDesel )
+        {
+            std::sort(queueDeselection.begin(), queueDeselection.end());
+            if ( queueDeselection.size() == 1 )
+                edit->sprites.deselect(queueDeselection[0]);
+            else if ( !queueDeselection.empty() )
+                edit->sprites.deselect(queueDeselection);
+        }
+
+        if ( hasSel )
+        {
+            std::sort(queueSelection.begin(), queueSelection.end());
+            if ( queueSelection.size() == 1 )
+                edit->sprites.select(queueSelection[0]);
+            else if ( !queueSelection.empty() )
+                edit->sprites.select(queueSelection);
+        }
+
+        if ( hadSelections && edit->sprites.sel().empty()
+            && !(GetKeyState(VK_DOWN) & 0x8000
+                || GetKeyState(VK_UP) & 0x8000
+                || GetKeyState(VK_LEFT) & 0x8000
+                || GetKeyState(VK_RIGHT) & 0x8000
+                || GetKeyState(VK_LBUTTON) & 0x8000
+                || GetKeyState(VK_RBUTTON) & 0x8000) )
+        {
+            DisableSpriteEditing();
+        }
+        else if ( !hadSelections && !edit->sprites.sel().empty() )
+            EnableSpriteEditing();
+
+        if ( selections.hasSprites() )
+        {
+            const Chk::Sprite & sprite = CM->getSprite(selections.getFirstSprite());
             auto spriteName = GetSpriteName(sprite.type, sprite.isUnit());
             WindowsItem::SetWinText(spriteName);
             SetSpriteFieldText(sprite);
 
-            CM->viewSprite(index);
+            CM->viewSprite(selections.getFirstSprite());
         }
-        else if ( itemInfo->uOldState & LVIS_SELECTED ) // From selected to not selected
-                                                        // Remove item from selection
-        {
-            if ( std::find(sel.begin(), sel.end(), index) != sel.end() )
-                edit->sprites.deselect(index);
-
-            if ( !selections.hasSprites()
-                && !(GetKeyState(VK_DOWN) & 0x8000
-                    || GetKeyState(VK_UP) & 0x8000
-                    || GetKeyState(VK_LEFT) & 0x8000
-                    || GetKeyState(VK_RIGHT) & 0x8000
-                    || GetKeyState(VK_LBUTTON) & 0x8000
-                    || GetKeyState(VK_RBUTTON) & 0x8000) )
-            {
-                DisableSpriteEditing();
-            }
-
-            if ( selections.hasSprites() )
-                CM->viewSprite(selections.getFirstSprite());
-            else
-                CM->Redraw(false);
-        }
+        else
+            CM->Redraw(false);
     }
+    this->queueSelection.clear();
+    this->queueDeselection.clear();
 }
 
 void SpritePropertiesWindow::NotifyClosePressed()
@@ -825,6 +876,7 @@ BOOL SpritePropertiesWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 {
     switch( msg )
     {
+    case WinLib::LV::WM_LVPROCESSQUEUE: ProcessSelectionQueues(); break;
     case WM_ACTIVATE: return Activate(wParam, lParam); break;
     case WM_SHOWWINDOW: return ShowWindow(wParam, lParam); break;
     case WM_CLOSE: DestroyThis(); break;

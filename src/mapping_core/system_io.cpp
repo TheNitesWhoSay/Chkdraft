@@ -343,6 +343,25 @@ bool bufferToFile(const std::string & systemFilePath, const std::vector<u8> & bu
     return success;
 }
 
+std::vector<std::string> collectLineSeparatedStrings(const std::vector<u8> & buffer)
+{
+    std::vector<std::string> result {};
+    std::size_t entryStart = 0;
+    std::size_t size = buffer.size();
+    for ( std::size_t i=0; i<size; ++i )
+    {
+        char c = char(buffer[i]);
+        if ( c == '\r' || c == '\n' )
+        {
+            if ( i > entryStart )
+                result.emplace_back((const char*)&buffer[entryStart], i-entryStart);
+                    
+            entryStart = i+1;
+        }
+    }
+    return result;
+}
+
 bool makeFileCopy(const std::string & inFilePath, const std::string & outFilePath)
 {
     bool success = false;

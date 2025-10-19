@@ -26,7 +26,7 @@ void TextTrigWindow::RefreshWindow()
     updateMenus();
     std::string trigString;
     TextTrigGenerator textTrigs(chkd.profiles().triggers.useAddressesForMemory, chkd.profiles().triggers.deathTableStart);
-    if ( textTrigs.generateTextTrigs((Scenario &)*CM, trigString) )
+    if ( textTrigs.generateTextTrigs((Scenario &)*CM, trigString, chkd.scData.value()) )
     {
         auto start = std::chrono::high_resolution_clock::now();
         SetDialogItemText(IDC_EDIT_TRIGTEXT, trigString);

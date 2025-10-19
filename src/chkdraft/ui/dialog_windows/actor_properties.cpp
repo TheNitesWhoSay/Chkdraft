@@ -170,8 +170,9 @@ void ActorPropertiesWindow::SetListRedraw(bool redraw)
 
 bool ActorPropertiesWindow::AddActor(bool isUnit, bool isSpriteUnit, std::size_t unitOrSpriteType, std::size_t unitOrSpriteIndex, const MapActor & actor)
 {
+    const auto & unitDisplayNames = chkd.scData->units.displayNames;
     std::string actorName = (isUnit || isSpriteUnit) ?
-        Sc::Unit::defaultDisplayNames[unitOrSpriteType < Sc::Unit::defaultDisplayNames.size() ? unitOrSpriteType : 0] :
+        unitDisplayNames[unitOrSpriteType < unitDisplayNames.size() ? unitOrSpriteType : 0] :
         chkd.scData->sprites.spriteNames[unitOrSpriteType < chkd.scData->sprites.spriteNames.size() ? unitOrSpriteType : 0];
 
     listActors.AddRow(4, actor.drawListIndex);

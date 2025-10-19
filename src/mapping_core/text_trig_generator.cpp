@@ -27,11 +27,11 @@ TextTrigGenerator::TextTrigGenerator(bool useAddressesForMemory, u32 deathTableO
 
 }
 
-template <class MapType> bool TextTrigGenerator::generateTextTrigs(const MapType & map, std::string & trigString)
+template <class MapType> bool TextTrigGenerator::generateTextTrigs(const MapType & map, std::string & trigString, const Sc::Data & scData)
 {
     logger.info() << "Starting text trig generation..." << std::endl;
     auto start = std::chrono::high_resolution_clock::now();
-    if ( loadScenario(map, true, false) && buildTextTrigs(map, trigString) )
+    if ( loadScenario(map, true, false, scData) && buildTextTrigs(map, trigString) )
     {
         auto finish = std::chrono::high_resolution_clock::now();
         logger.info() << "Text trig generation completed in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
@@ -39,27 +39,27 @@ template <class MapType> bool TextTrigGenerator::generateTextTrigs(const MapType
     }
     return false;
 }
-template bool TextTrigGenerator::generateTextTrigs<Scenario>(const Scenario & map, std::string & trigString);
+template bool TextTrigGenerator::generateTextTrigs<Scenario>(const Scenario & map, std::string & trigString, const Sc::Data & scData);
 #ifdef INCLUDE_LITE_SCENARIO
-template bool TextTrigGenerator::generateTextTrigs<LiteScenario>(const LiteScenario & map, std::string & trigString);
+template bool TextTrigGenerator::generateTextTrigs<LiteScenario>(const LiteScenario & map, std::string & trigString, const Sc::Data & scData);
 #endif
 
-template <class MapType> bool TextTrigGenerator::generateTextTrigs(const MapType & map, size_t trigIndex, std::string & trigString)
+template <class MapType> bool TextTrigGenerator::generateTextTrigs(const MapType & map, size_t trigIndex, std::string & trigString, const Sc::Data & scData)
 {
-    return trigIndex < map.numTriggers() && loadScenario(map, true, false) && buildTextTrig(map.getTrigger(trigIndex), trigString);
+    return trigIndex < map.numTriggers() && loadScenario(map, true, false, scData) && buildTextTrig(map.getTrigger(trigIndex), trigString);
 }
-template bool TextTrigGenerator::generateTextTrigs<Scenario>(const Scenario & map, size_t trigIndex, std::string & trigString);
+template bool TextTrigGenerator::generateTextTrigs<Scenario>(const Scenario & map, size_t trigIndex, std::string & trigString, const Sc::Data & scData);
 #ifdef INCLUDE_LITE_SCENARIO
-template bool TextTrigGenerator::generateTextTrigs<LiteScenario>(const LiteScenario & map, size_t trigIndex, std::string & trigString);
+template bool TextTrigGenerator::generateTextTrigs<LiteScenario>(const LiteScenario & map, size_t trigIndex, std::string & trigString, const Sc::Data & scData);
 #endif
 
-template <class MapType> bool TextTrigGenerator::loadScenario(const MapType & map)
+template <class MapType> bool TextTrigGenerator::loadScenario(const MapType & map, const Sc::Data & scData)
 {
-    return loadScenario(map, false, true);
+    return loadScenario(map, false, true, scData);
 }
-template bool TextTrigGenerator::loadScenario<Scenario>(const Scenario & map);
+template bool TextTrigGenerator::loadScenario<Scenario>(const Scenario & map, const Sc::Data & scData);
 #ifdef INCLUDE_LITE_SCENARIO
-template bool TextTrigGenerator::loadScenario<LiteScenario>(const LiteScenario & map);
+template bool TextTrigGenerator::loadScenario<LiteScenario>(const LiteScenario & map, const Sc::Data & scData);
 #endif
 
 void TextTrigGenerator::clearScenario()
@@ -292,20 +292,20 @@ std::string TextTrigGenerator::getTrigTextFlags(Chk::Action::Flags textFlags) co
 
 // protected
 
-template <class MapType> bool TextTrigGenerator::loadScenario(const MapType & map, bool quoteArgs, bool useCustomNames)
+template <class MapType> bool TextTrigGenerator::loadScenario(const MapType & map, bool quoteArgs, bool useCustomNames, const Sc::Data & scData)
 {
     return prepConditionTable() &&
            prepActionTable() &&
            prepLocationTable(map, quoteArgs) &&
-           prepUnitTable(map, quoteArgs, useCustomNames) &&
+           prepUnitTable(map, quoteArgs, useCustomNames, scData) &&
            prepSwitchTable(map, quoteArgs) &&
            prepGroupTable(map, quoteArgs) &&
            prepScriptTable(map, quoteArgs) &&
            prepStringTable(map, quoteArgs);
 }
-template bool TextTrigGenerator::loadScenario<Scenario>(const Scenario & map, bool quoteArgs, bool useCustomNames);
+template bool TextTrigGenerator::loadScenario<Scenario>(const Scenario & map, bool quoteArgs, bool useCustomNames, const Sc::Data & scData);
 #ifdef INCLUDE_LITE_SCENARIO
-template bool TextTrigGenerator::loadScenario<LiteScenario>(const LiteScenario & map, bool quoteArgs, bool useCustomNames);
+template bool TextTrigGenerator::loadScenario<LiteScenario>(const LiteScenario & map, bool quoteArgs, bool useCustomNames, const Sc::Data & scData);
 #endif
 
 bool TextTrigGenerator::correctLineEndings(StringBuffer & buf) const
@@ -925,10 +925,11 @@ template bool TextTrigGenerator::prepLocationTable<Scenario>(const Scenario & ma
 template bool TextTrigGenerator::prepLocationTable<LiteScenario>(const LiteScenario & map, bool quoteArgs);
 #endif
 
-template <class MapType> bool TextTrigGenerator::prepUnitTable(const MapType & map, bool quoteArgs, bool useCustomNames)
+template <class MapType> bool TextTrigGenerator::prepUnitTable(const MapType & map, bool quoteArgs, bool useCustomNames, const Sc::Data & scData)
 {
     unitTable.clear();
 
+    auto legacyTextTrigDisplayNamesSize = Sc::Unit::legacyTextTrigDisplayNames.size();
     for ( size_t unitType=0; unitType<Sc::Unit::TotalReferenceTypes; unitType++ )
     {
         std::optional<EscString> unitName {};
@@ -936,27 +937,36 @@ template <class MapType> bool TextTrigGenerator::prepUnitTable(const MapType & m
         {
             if ( useCustomNames && unitType < Sc::Unit::TotalTypes )
             {
-                auto unquotedName = map.template getUnitName<EscString>((Sc::Unit::Type)unitType, false);
+                auto unquotedName = map.template getUnitName<EscString>((Sc::Unit::Type)unitType, &scData, false);
                 unitName = EscString("\"" + *unquotedName + "\"");
             }
             if ( !unitName )
-                unitName = EscString("\"" + std::string(Sc::Unit::legacyTextTrigDisplayNames[unitType]) + "\"");
+            {
+                if ( unitType < legacyTextTrigDisplayNamesSize )
+                    unitName = EscString("\"" + std::string(Sc::Unit::legacyTextTrigDisplayNames[unitType]) + "\"");
+            }
         }
         else
         {
             if ( useCustomNames && unitType < Sc::Unit::TotalTypes )
-                unitName = map.template getUnitName<EscString>((Sc::Unit::Type)unitType, false);
+                unitName = map.template getUnitName<EscString>((Sc::Unit::Type)unitType, &scData, false);
             if ( !unitName )
-                unitName = EscString(Sc::Unit::legacyTextTrigDisplayNames[unitType]);
+            {
+                if ( unitType < legacyTextTrigDisplayNamesSize )
+                    unitName = EscString(Sc::Unit::legacyTextTrigDisplayNames[unitType]);
+            }
         }
 
-        unitTable.push_back(*unitName);
+        if ( unitName )
+            unitTable.push_back(*unitName);
+        else
+            unitTable.push_back(std::to_string(static_cast<std::size_t>(unitType)));
     }
     return true;
 }
-template bool TextTrigGenerator::prepUnitTable<Scenario>(const Scenario & map, bool quoteArgs, bool useCustomNames);
+template bool TextTrigGenerator::prepUnitTable<Scenario>(const Scenario & map, bool quoteArgs, bool useCustomNames, const Sc::Data & scData);
 #ifdef INCLUDE_LITE_SCENARIO
-template bool TextTrigGenerator::prepUnitTable<LiteScenario>(const LiteScenario & map, bool quoteArgs, bool useCustomNames);
+template bool TextTrigGenerator::prepUnitTable<LiteScenario>(const LiteScenario & map, bool quoteArgs, bool useCustomNames, const Sc::Data & scData);
 #endif
 
 template <class MapType> bool TextTrigGenerator::prepSwitchTable(const MapType & map, bool quoteArgs)
@@ -1179,11 +1189,11 @@ BriefingTextTrigGenerator::BriefingTextTrigGenerator(bool useFancyNoStrings)
 
 }
 
-template <class MapType> bool BriefingTextTrigGenerator::generateBriefingTextTrigs(const MapType & map, std::string & briefingTrigString)
+template <class MapType> bool BriefingTextTrigGenerator::generateBriefingTextTrigs(const MapType & map, std::string & briefingTrigString, const Sc::Data & scData)
 {
     logger.info() << "Starting briefing text trig generation..." << std::endl;
     auto start = std::chrono::high_resolution_clock::now();
-    if ( loadScenario(map, true, false) && buildBriefingTextTrigs(map, briefingTrigString) )
+    if ( loadScenario(map, true, false, scData) && buildBriefingTextTrigs(map, briefingTrigString) )
     {
         auto finish = std::chrono::high_resolution_clock::now();
         logger.info() << "Briefing text trig generation completed in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
@@ -1191,27 +1201,27 @@ template <class MapType> bool BriefingTextTrigGenerator::generateBriefingTextTri
     }
     return false;
 }
-template bool BriefingTextTrigGenerator::generateBriefingTextTrigs<Scenario>(const Scenario & map, std::string & briefingTrigString);
+template bool BriefingTextTrigGenerator::generateBriefingTextTrigs<Scenario>(const Scenario & map, std::string & briefingTrigString, const Sc::Data & scData);
 #ifdef INCLUDE_LITE_SCENARIO
-template bool BriefingTextTrigGenerator::generateBriefingTextTrigs<LiteScenario>(const LiteScenario & map, std::string & briefingTrigString);
+template bool BriefingTextTrigGenerator::generateBriefingTextTrigs<LiteScenario>(const LiteScenario & map, std::string & briefingTrigString, const Sc::Data & scData);
 #endif
 
-template <class MapType> bool BriefingTextTrigGenerator::generateBriefingTextTrigs(const MapType & map, size_t briefingTrigIndex, std::string & briefingTrigString)
+template <class MapType> bool BriefingTextTrigGenerator::generateBriefingTextTrigs(const MapType & map, size_t briefingTrigIndex, std::string & briefingTrigString, const Sc::Data & scData)
 {
-    return briefingTrigIndex < map.numBriefingTriggers() && loadScenario(map, true, false) && buildBriefingTextTrig(map.getBriefingTrigger(briefingTrigIndex), briefingTrigString);
+    return briefingTrigIndex < map.numBriefingTriggers() && loadScenario(map, true, false, scData) && buildBriefingTextTrig(map.getBriefingTrigger(briefingTrigIndex), briefingTrigString);
 }
-template bool BriefingTextTrigGenerator::generateBriefingTextTrigs<Scenario>(const Scenario & map, size_t briefingTrigIndex, std::string & briefingTrigString);
+template bool BriefingTextTrigGenerator::generateBriefingTextTrigs<Scenario>(const Scenario & map, size_t briefingTrigIndex, std::string & briefingTrigString, const Sc::Data & scData);
 #ifdef INCLUDE_LITE_SCENARIO
-template bool BriefingTextTrigGenerator::generateBriefingTextTrigs<LiteScenario>(const LiteScenario & map, size_t briefingTrigIndex, std::string & briefingTrigString);
+template bool BriefingTextTrigGenerator::generateBriefingTextTrigs<LiteScenario>(const LiteScenario & map, size_t briefingTrigIndex, std::string & briefingTrigString, const Sc::Data & scData);
 #endif
 
-template <class MapType> bool BriefingTextTrigGenerator::loadScenario(const MapType & map)
+template <class MapType> bool BriefingTextTrigGenerator::loadScenario(const MapType & map, const Sc::Data & scData)
 {
-    return loadScenario(map, false, true);
+    return loadScenario(map, false, true, scData);
 }
-template bool BriefingTextTrigGenerator::loadScenario<Scenario>(const Scenario & map);
+template bool BriefingTextTrigGenerator::loadScenario<Scenario>(const Scenario & map, const Sc::Data & scData);
 #ifdef INCLUDE_LITE_SCENARIO
-template bool BriefingTextTrigGenerator::loadScenario<LiteScenario>(const LiteScenario & map);
+template bool BriefingTextTrigGenerator::loadScenario<LiteScenario>(const LiteScenario & map, const Sc::Data & scData);
 #endif
 
 void BriefingTextTrigGenerator::clearScenario()
@@ -1274,13 +1284,13 @@ std::string BriefingTextTrigGenerator::getBriefingTrigNumber(u32 number) const
     return TextTrigGenerator::getTrigNumber(number);
 }
 
-template <class MapType> bool BriefingTextTrigGenerator::loadScenario(const MapType & map, bool quoteArgs, bool useCustomNames)
+template <class MapType> bool BriefingTextTrigGenerator::loadScenario(const MapType & map, bool quoteArgs, bool useCustomNames, const Sc::Data & scData)
 {
-    return prepSlotTable(quoteArgs) && prepBriefingActionTable() && TextTrigGenerator::loadScenario(map, quoteArgs, useCustomNames);
+    return prepSlotTable(quoteArgs) && prepBriefingActionTable() && TextTrigGenerator::loadScenario(map, quoteArgs, useCustomNames, scData);
 }
-template bool BriefingTextTrigGenerator::loadScenario<Scenario>(const Scenario & map, bool quoteArgs, bool useCustomNames);
+template bool BriefingTextTrigGenerator::loadScenario<Scenario>(const Scenario & map, bool quoteArgs, bool useCustomNames, const Sc::Data & scData);
 #ifdef INCLUDE_LITE_SCENARIO
-template bool BriefingTextTrigGenerator::loadScenario<LiteScenario>(const LiteScenario & map, bool quoteArgs, bool useCustomNames);
+template bool BriefingTextTrigGenerator::loadScenario<LiteScenario>(const LiteScenario & map, bool quoteArgs, bool useCustomNames, const Sc::Data & scData);
 #endif
 
 template <class MapType> bool BriefingTextTrigGenerator::buildBriefingTextTrigs(const MapType & scenario, std::string & briefingTrigString)

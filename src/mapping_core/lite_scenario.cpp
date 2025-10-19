@@ -2124,7 +2124,7 @@ template std::optional<ChkdString> LiteScenario::getForceName<ChkdString>(Chk::F
 template std::optional<SingleLineChkdString> LiteScenario::getForceName<SingleLineChkdString>(Chk::Force force, Chk::Scope storageScope) const;
 
 template <typename StringType>
-std::optional<StringType> LiteScenario::getUnitName(Sc::Unit::Type unitType, bool defaultIfNull, Chk::UseExpSection useExp, Chk::Scope storageScope) const
+std::optional<StringType> LiteScenario::getUnitName(Sc::Unit::Type unitType, const Sc::Data* scData, bool defaultIfNull, Chk::UseExpSection useExp, Chk::Scope storageScope) const
 {
     auto mapUnitName = unitType < Sc::Unit::TotalTypes ? getString<StringType>(
         this->useExpansionUnitSettings(useExp) ? this->unitSettings.nameStringId[unitType] : this->origUnitSettings.nameStringId[unitType],
@@ -2133,15 +2133,17 @@ std::optional<StringType> LiteScenario::getUnitName(Sc::Unit::Type unitType, boo
 
     if ( mapUnitName )
         return mapUnitName;
+    else if ( scData != nullptr && unitType < scData->units.displayNames.size() )
+        return std::optional<StringType>(scData->units.displayNames[unitType])
     else if ( unitType < Sc::Unit::TotalTypes )
         return std::optional<StringType>(Sc::Unit::defaultDisplayNames[unitType]);
     else
         return std::optional<StringType>("ID:" + std::to_string(unitType));
 }
-template std::optional<RawString> LiteScenario::getUnitName<RawString>(Sc::Unit::Type unitType, bool defaultIfNull, Chk::UseExpSection useExp, Chk::Scope storageScope) const;
-template std::optional<EscString> LiteScenario::getUnitName<EscString>(Sc::Unit::Type unitType, bool defaultIfNull, Chk::UseExpSection useExp, Chk::Scope storageScope) const;
-template std::optional<ChkdString> LiteScenario::getUnitName<ChkdString>(Sc::Unit::Type unitType, bool defaultIfNull, Chk::UseExpSection useExp, Chk::Scope storageScope) const;
-template std::optional<SingleLineChkdString> LiteScenario::getUnitName<SingleLineChkdString>(Sc::Unit::Type unitType, bool defaultIfNull, Chk::UseExpSection useExp, Chk::Scope storageScope) const;
+template std::optional<RawString> LiteScenario::getUnitName<RawString>(Sc::Unit::Type unitType, const Sc::Data* scData, bool defaultIfNull, Chk::UseExpSection useExp, Chk::Scope storageScope) const;
+template std::optional<EscString> LiteScenario::getUnitName<EscString>(Sc::Unit::Type unitType, const Sc::Data* scData, bool defaultIfNull, Chk::UseExpSection useExp, Chk::Scope storageScope) const;
+template std::optional<ChkdString> LiteScenario::getUnitName<ChkdString>(Sc::Unit::Type unitType, const Sc::Data* scData, bool defaultIfNull, Chk::UseExpSection useExp, Chk::Scope storageScope) const;
+template std::optional<SingleLineChkdString> LiteScenario::getUnitName<SingleLineChkdString>(Sc::Unit::Type unitType, const Sc::Data* scData, bool defaultIfNull, Chk::UseExpSection useExp, Chk::Scope storageScope) const;
 
 template <typename StringType>
 std::optional<StringType> LiteScenario::getSoundPath(size_t soundIndex, Chk::Scope storageScope) const

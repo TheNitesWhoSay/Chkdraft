@@ -87,7 +87,7 @@ struct Animator
 
     void setActorDirection(u8 direction);
 
-    void initializeImage(size_t iScriptId);
+    void initializeImage(u32 iScriptId);
     void endImage();
 
     void createOverlay(u16 imageId, s8 x, s8 y, bool above);

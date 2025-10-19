@@ -1138,11 +1138,12 @@ void GraphicsData::Data::Skin::loadClassicImages(Sc::Data & scData)
         tselectPalette->update();
     }
 
+    std::size_t numImages = scData.sprites.numImages();
     classicImages = std::make_shared<std::vector<std::shared_ptr<ClassicGrp>>>();
-    classicImages->assign(Sc::Sprite::TotalImages, nullptr);
+    classicImages->assign(numImages, nullptr);
     //std::vector<u8> bitmapData(size_t(60480), u8(0));
 
-    for ( size_t i=0; i<Sc::Sprite::TotalImages; ++i )
+    for ( size_t i=0; i<numImages; ++i )
     {
         auto & imageDat = scData.sprites.getImage(i);
         auto & grp = scData.sprites.getGrp(imageDat.grpFile);

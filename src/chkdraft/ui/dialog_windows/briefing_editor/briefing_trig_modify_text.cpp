@@ -64,7 +64,7 @@ void BriefingTrigModifyTextWindow::RefreshWindow(u32 briefingTrigIndex)
     this->briefingTrigIndex = briefingTrigIndex;
     BriefingTextTrigGenerator briefingTextTrigs {};
     briefingTrigText.clear();
-    if ( briefingTextTrigs.generateBriefingTextTrigs((Scenario &)*CM, briefingTrigIndex, briefingTrigText) )
+    if ( briefingTextTrigs.generateBriefingTextTrigs((Scenario &)*CM, briefingTrigIndex, briefingTrigText, chkd.scData.value()) )
         editText.SetText(briefingTrigText);
     else
         mb(briefingTrigIndex, "Failed to generate briefing text triggers.");

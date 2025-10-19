@@ -36,7 +36,7 @@ void Chkdraft::OnLoadTest()
         _Pragma("warning(suppress: 26716)") return *map;
     }();
     auto edit = CM->operator()();
-    for ( std::size_t i=0; i<Sc::Unit::TotalTypes; ++i )
+    for ( std::size_t i=0; i<scData->units.numUnitTypes(); ++i )
     {
         //if ( i != Sc::Unit::Type::DarkSwarm )
         //    continue;
@@ -47,7 +47,7 @@ void Chkdraft::OnLoadTest()
         //CM->addUnit(Chk::Unit {CM->getNextClassId(), u16(x*64+64), u16(y*64+64), Sc::Unit::Type(i), 0, 0, 0, Sc::Player::Id::Player1});
         //CM->addSprite(Chk::Sprite {Sc::Sprite::Type(i), u16(x*64+64), u16(y*64+64), Sc::Player::Id::Player1, 0, Chk::Sprite::SpriteFlags::IsUnit});
     }
-    for ( std::size_t i=0; i<Sc::Sprite::TotalSprites; ++i )
+    for ( std::size_t i=0; i<scData->sprites.numSprites(); ++i )
     {
         //if ( i != 321 )
         //    continue;
@@ -140,6 +140,7 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
         SelectProfile selectProfile {};
         selectProfile.CreateThis(getHandle());
     }
+    mainPlot.leftBar.mainTree.unitTree.UpdateUnitNames(chkd.scData->units.displayNames);
     mainPlot.leftBar.mainTree.unitTree.UpdateUnitTree();
     mainPlot.leftBar.mainTree.spriteTree.UpdateSpriteTree();
     ParseCmdLine(lpCmdLine);

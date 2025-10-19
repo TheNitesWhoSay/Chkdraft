@@ -61,7 +61,7 @@ void TrigConditionsWindow::RefreshWindow(u32 trigIndex)
     this->trigIndex = trigIndex;
     const Chk::Trigger & trig = CM->getTrigger(trigIndex);
     TextTrigGenerator ttg(chkd.profiles().triggers.useAddressesForMemory, chkd.profiles().triggers.deathTableStart, true);
-    if ( ttg.loadScenario((Scenario &)*CM) )
+    if ( ttg.loadScenario((Scenario &)*CM, chkd.scData.value()) )
     {
         for ( u8 y=0; y<Chk::Trigger::MaxConditions; y++ )
         {
@@ -456,7 +456,7 @@ void TrigConditionsWindow::DrawSelectedCondition()
             u8 conditionNum = (u8)focusedY;
             TextTrigGenerator ttg(chkd.profiles().triggers.useAddressesForMemory, chkd.profiles().triggers.deathTableStart, true);
             std::string str;
-            ttg.loadScenario((Scenario &)*CM);
+            ttg.loadScenario((Scenario &)*CM, chkd.scData.value());
             str = chkd.trigEditorWindow->triggersWindow.GetConditionString(conditionNum, trig, ttg);
             ttg.clearScenario();
 
@@ -601,13 +601,13 @@ void TrigConditionsWindow::SuggestUnit(u16 currUnit)
 {
     if ( CM != nullptr )
     {
-        u16 numUnitStrings = (u16)Sc::Unit::defaultDisplayNames.size();
+        u16 numUnitStrings = (u16)chkd.scData->units.displayNames.size();
         for ( u16 i = 0; i < numUnitStrings; i++ )
         {
-            auto str = CM->getUnitName<SingleLineChkdString>((Sc::Unit::Type)i, true);
+            auto str = CM->getUnitName<SingleLineChkdString>((Sc::Unit::Type)i, &chkd.scData.value(), true);
             suggestions.AddItem(SuggestionItem{i, *str});
-            if ( str->compare(std::string(Sc::Unit::defaultDisplayNames[i])) != 0 )
-                suggestions.AddItem(SuggestionItem{i, std::string(Sc::Unit::defaultDisplayNames[i])});
+            if ( str->compare(std::string(chkd.scData->units.displayNames[i])) != 0 )
+                suggestions.AddItem(SuggestionItem{i, std::string(chkd.scData->units.displayNames[i])});
         }
     }
     suggestions.Show();

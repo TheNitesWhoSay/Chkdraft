@@ -275,7 +275,6 @@ LRESULT LeftBar::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 if ( mainTree.CreateThis(hWnd, -2, 14, 162, 36, true, Id::IDR_MAIN_TREE) )
                 {
                     mainTree.setDefaultFont();
-                    mainTree.unitTree.UpdateUnitNames(Sc::Unit::defaultDisplayNames);
                     this->blockSelections = true;
                     mainTree.BuildMainTree();
                     this->blockSelections = false;

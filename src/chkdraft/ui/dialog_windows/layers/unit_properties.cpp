@@ -320,7 +320,7 @@ bool UnitPropertiesWindow::AddUnitItem(u16 index, const Chk::Unit & unit)
     std::strcpy(yc, std::to_string(unit.yc).c_str());
     std::strcpy(cIndex, std::to_string(index).c_str());
 
-    auto unitName = CM->getUnitName<ChkdString>((Sc::Unit::Type)unitId, true);
+    auto unitName = CM->getUnitName<ChkdString>((Sc::Unit::Type)unitId, &chkd.scData.value(), true);
 
     listUnits.AddRow(4, index);
     listUnits.SetItemText(index, (int)UnitListColumn::Name, *unitName);
@@ -407,7 +407,7 @@ void UnitPropertiesWindow::RepopulateList()
             const Chk::Unit & unit = CM->getUnit(selectedIndex);
             SetUnitFieldText(unit);
 
-            auto unitName = CM->getUnitName<ChkdString>(unit.type, true);
+            auto unitName = CM->getUnitName<ChkdString>(unit.type, &chkd.scData.value(), true);
             WindowsItem::SetWinText(*unitName);
 
             int row = listUnits.GetItemRow(selections.getHighestUnitIndex());
@@ -536,6 +536,7 @@ void UnitPropertiesWindow::UpdateLinkArea(const Chk::Unit & unit)
     {
         bool found = false;
         auto relatedId = unit.relationClassId;
+        const auto & unitDisplayNames = chkd.scData->units.displayNames;
         for ( size_t i=0; i<CM->read.units.size(); ++i )
         {
             auto & otherUnit = CM->read.units[i];
@@ -543,9 +544,9 @@ void UnitPropertiesWindow::UpdateLinkArea(const Chk::Unit & unit)
             {
                 auto linkedUnitType = otherUnit.type;
                 std::string displayText = "Linked ";
-                if ( linkedUnitType < Sc::Unit::TotalTypes )
+                if ( linkedUnitType < unitDisplayNames.size() )
                 {
-                    std::string unitName = Sc::Unit::defaultDisplayNames[linkedUnitType];
+                    std::string unitName = unitDisplayNames[linkedUnitType];
                     constexpr std::string_view terran = "Terran ";
                     constexpr std::string_view zerg = "Zerg ";
                     constexpr std::string_view protoss = "Protoss ";
@@ -786,57 +787,99 @@ void UnitPropertiesWindow::LvItemChanged(NMHDR* nmhdr)
     {
         NMLISTVIEW* itemInfo = (NMLISTVIEW*)nmhdr;
         u16 index = (u16)itemInfo->lParam;
-
-        if ( itemInfo->uNewState & LVIS_SELECTED && initilizing == false ) // Selected
-                                                                           // Add item to selection
+        
+        const auto & sel = CM->view.units.sel();
+        if ( itemInfo->uNewState & LVIS_SELECTED && initilizing == false ) // Selected, add item to selection
         {
-            bool firstSelected = !selections.hasUnits();
-            const auto & sel = CM->view.units.sel();
-            if ( std::find(sel.begin(), sel.end(), index) == sel.end() )
-                edit->units.select(index);
+            auto prevDesel = std::find(queueDeselection.begin(), queueDeselection.end(), index);
+            if ( prevDesel != queueDeselection.end() )
+                queueDeselection.erase(prevDesel);
 
-            if ( firstSelected )
-                EnableUnitEditing();
+            bool addingSelection = std::find(sel.begin(), sel.end(), index) == sel.end() &&
+                std::find(queueSelection.begin(), queueSelection.end(), index) == queueSelection.end();
 
-            const Chk::Unit & unit = CM->getUnit(index);
-            auto unitName = CM->getUnitName<ChkdString>(unit.type, true);
-            WindowsItem::SetWinText(*unitName);
-            SetUnitFieldText(unit);
-
-            CM->viewUnit(index);
-        }
-        else if ( itemInfo->uOldState & LVIS_SELECTED ) // From selected to not selected
-                                                        // Remove item from selection
-        {
-            const auto & sel = CM->view.units.sel();
-            if ( std::find(sel.begin(), sel.end(), u32(index)) != sel.end() )
-                edit->units.deselect(index);
-
-            if ( CM->selections.hasUnits() && CM->selections.getFirstUnit() < CM->numUnits() )
+            if ( addingSelection )
             {
-                initilizing = true;
-                const Chk::Unit & unit = CM->getUnit(CM->selections.getFirstUnit());
-                UpdateLinkArea(unit);
-                initilizing = false;
+                if ( this->queueDeselection.empty() && this->queueSelection.empty() )
+                    PostMessage(getHandle(), WinLib::LV::WM_LVPROCESSQUEUE, 0, 0);
+                
+                this->queueSelection.push_back(index);
             }
+        }
+        else if ( itemInfo->uOldState & LVIS_SELECTED ) // From selected to not selected, remove item from selection
+        {
+            auto prevSel = std::find(queueSelection.begin(), queueSelection.end(), index);
+            if ( prevSel != queueSelection.end() )
+                queueSelection.erase(prevSel);
 
-            if ( !selections.hasUnits()
+            bool removingSelection = std::find(sel.begin(), sel.end(), u32(index)) != sel.end() &&
+                std::find(queueDeselection.begin(), queueDeselection.end(), index) == queueDeselection.end();
+
+            if ( removingSelection )
+            {
+                if ( this->queueDeselection.empty() && this->queueSelection.empty() )
+                    PostMessage(getHandle(), WinLib::LV::WM_LVPROCESSQUEUE, 0, 0);
+                
+                this->queueDeselection.push_back(index);
+            }
+        }
+    }
+}
+
+void UnitPropertiesWindow::ProcessSelectionQueues()
+{
+    auto edit = CM->operator()(ActionDescriptor::UpdateUnitSel);
+    Selections & selections = CM->selections;
+    bool hasDesel = !queueDeselection.empty();
+    bool hasSel = !queueSelection.empty();
+    if ( hasDesel || hasSel )
+    {
+        bool hadSelections = edit->units.sel().empty();
+        if ( hasDesel )
+        {
+            std::sort(queueDeselection.begin(), queueDeselection.end());
+            if ( queueDeselection.size() == 1 )
+                edit->units.deselect(queueDeselection[0]);
+            else if ( !queueDeselection.empty() )
+                edit->units.deselect(queueDeselection);
+        }
+
+        if ( hasSel )
+        {
+            std::sort(queueSelection.begin(), queueSelection.end());
+            if ( queueSelection.size() == 1 )
+                edit->units.select(queueSelection[0]);
+            else if ( !queueSelection.empty() )
+                edit->units.select(queueSelection);
+        }
+
+        if ( hadSelections && edit->units.sel().empty() 
                 && !(GetKeyState(VK_DOWN) & 0x8000
                     || GetKeyState(VK_UP) & 0x8000
                     || GetKeyState(VK_LEFT) & 0x8000
                     || GetKeyState(VK_RIGHT) & 0x8000
                     || GetKeyState(VK_LBUTTON) & 0x8000
                     || GetKeyState(VK_RBUTTON) & 0x8000) )
-            {
-                DisableUnitEditing();
-            }
-
-            if ( selections.hasUnits() )
-                CM->viewUnit(selections.getFirstUnit());
-            else
-                CM->Redraw(false);
+        {
+            DisableUnitEditing();
         }
+        else if ( !hadSelections && !edit->units.sel().empty() )
+            EnableUnitEditing();
+
+        if ( selections.hasUnits() )
+        {
+            const Chk::Unit & unit = CM->getUnit(selections.getFirstUnit());
+            auto unitName = CM->getUnitName<ChkdString>(unit.type, &chkd.scData.value(), true);
+            WindowsItem::SetWinText(*unitName);
+            SetUnitFieldText(unit);
+
+            CM->viewUnit(selections.getFirstUnit());
+        }
+        else
+            CM->Redraw(false);
     }
+    this->queueSelection.clear();
+    this->queueDeselection.clear();
 }
 
 void UnitPropertiesWindow::NotifyAdvancedToggled()
@@ -1212,7 +1255,7 @@ void UnitPropertiesWindow::NotifyIdEditUpdated()
 
             int row = listUnits.GetItemRow(unitIndex);
 
-            auto unitName = CM->getUnitName<ChkdString>((Sc::Unit::Type)unitID, true);
+            auto unitName = CM->getUnitName<ChkdString>((Sc::Unit::Type)unitID, &chkd.scData.value(), true);
             listUnits.SetItemText(row, (int)UnitListColumn::Name, *unitName);
 
             if ( unitIndex == CM->selections.getFirstUnit() )
@@ -1659,6 +1702,7 @@ BOOL UnitPropertiesWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 {
     switch( msg )
     {
+    case WinLib::LV::WM_LVPROCESSQUEUE: ProcessSelectionQueues(); break;
     case WM_ACTIVATE: return Activate(wParam, lParam); break;
     case WM_SHOWWINDOW: return ShowWindow(wParam, lParam); break;
     case WM_CLOSE: DestroyThis(); break;
