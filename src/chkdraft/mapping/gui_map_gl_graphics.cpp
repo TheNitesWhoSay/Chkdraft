@@ -647,7 +647,7 @@ void GuiMapGraphics::drawPastes()
             lineVertices2.vertices.clear();
             for ( auto & pasteUnit : units )
             {
-                if ( pasteUnit.unit.type < Sc::Unit::TotalTypes )
+                if ( pasteUnit.unit.type < scData.units.numUnitTypes() )
                 {
                     const auto & unitDat = scData.units.getUnit(pasteUnit.unit.type);
                     bool isValidPlacement = guiMap.isValidUnitPlacement(pasteUnit.unit.type, paste.x + pasteUnit.xc, paste.y + pasteUnit.yc);

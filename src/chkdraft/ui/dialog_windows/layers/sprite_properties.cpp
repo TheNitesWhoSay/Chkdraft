@@ -283,9 +283,9 @@ void SpritePropertiesWindow::RepopulateList()
 
 std::string SpritePropertiesWindow::GetSpriteName(Sc::Sprite::Type type, bool isUnit)
 {
-    if ( isUnit && size_t(type) < Sc::Unit::TotalTypes )
+    if ( isUnit && size_t(type) < chkd.scData->units.numUnitTypes() )
         return std::string("[") + std::to_string(type) + "] " + *CM->getUnitName<ChkdString>(Sc::Unit::Type(type), &chkd.scData.value());
-    else if ( (isUnit && size_t(type) >= Sc::Unit::TotalTypes) || size_t(type) >= chkd.scData->sprites.spriteNames.size() )
+    else if ( (isUnit && size_t(type) >= chkd.scData->units.numUnitTypes()) || size_t(type) >= chkd.scData->sprites.spriteNames.size() )
         return std::string("[") + std::to_string(type) + "]";
     else
         return std::string("[") + std::to_string(type) + "] " + chkd.scData->sprites.spriteNames[type];

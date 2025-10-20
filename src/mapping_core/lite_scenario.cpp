@@ -4021,7 +4021,7 @@ Chk::TileOccupationCache LiteScenario::getTileOccupationCache(const Sc::Terrain:
     }
     for ( const auto & unit : units )
     {
-        if ( unit.type < Sc::Unit::TotalTypes )
+        if ( unit.type < unitData.numUnitTypes() )
         {
             const auto & unitDat = unitData.getUnit(unit.type);
             s32 xTileMin = (unit.xc - unitDat.unitSizeLeft)/32;

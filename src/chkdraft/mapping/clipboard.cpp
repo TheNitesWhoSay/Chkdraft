@@ -353,7 +353,7 @@ void Clipboard::pasteUnits(s32 mapClickX, s32 mapClickY, GuiMap & map, bool allo
             ++nextClassId;
             pasteUnit.unit.relationClassId = 0;
             pasteUnit.unit.relationFlags = 0;
-            if ( pasteUnit.unit.type < Sc::Unit::TotalTypes )
+            if ( pasteUnit.unit.type < chkd.scData->units.numUnitTypes() )
             {
                 const auto & dat = chkd.scData->units.getUnit(pasteUnit.unit.type);
                 if ( (dat.flags & Sc::Unit::Flags::Addon) == Sc::Unit::Flags::Addon ||

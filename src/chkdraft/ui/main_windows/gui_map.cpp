@@ -302,7 +302,7 @@ void GuiMap::validateTileOccupiers(size_t tileX, size_t tileY, uint16_t tileValu
         for ( int unitIndex=int(read.units.size())-1; unitIndex>=0; --unitIndex )
         {
             const auto & unit = read.units[unitIndex];
-            if ( unit.type < Sc::Unit::TotalTypes )
+            if ( unit.type < chkd.scData->units.numUnitTypes() )
             {
                 const auto & unitDat = chkd.scData->units.getUnit(unit.type);
                 bool isBuilding = (unitDat.flags & Sc::Unit::Flags::Building) == Sc::Unit::Flags::Building;
@@ -1820,7 +1820,7 @@ void GuiMap::SnapSelEndDrag()
             if ( clipboard.hasUnits() || clipboard.hasQuickUnits() )
             {
                 const auto & firstUnit = clipboard.getUnits().begin()->unit;
-                if ( firstUnit.type < Sc::Unit::TotalTypes )
+                if ( firstUnit.type < chkd.scData->units.numUnitTypes() )
                 {
                     const auto & dat = chkd.scData->units.getUnit(firstUnit.type);
                     if ( (dat.flags & Sc::Unit::Flags::Building) == Sc::Unit::Flags::Building && buildingsSnapToTile )
@@ -2154,7 +2154,7 @@ u32 GuiMap::getNextClassId()
 
 bool GuiMap::isValidUnitPlacement(Sc::Unit::Type unitType, s32 x, s32 y)
 {
-    if ( unitType >= Sc::Unit::TotalTypes )
+    if ( unitType >= chkd.scData->units.numUnitTypes() )
         return true; // Extended units placement isn't checked for validity
 
     bool placementIsBuilding = (chkd.scData->units.getUnit(unitType).flags & Sc::Unit::Flags::Building) == Sc::Unit::Flags::Building;
@@ -2233,7 +2233,7 @@ bool GuiMap::isValidUnitPlacement(Sc::Unit::Type unitType, s32 x, s32 y)
         {
             for ( const auto & unit : read.units )
             {
-                if ( unit.type < Sc::Unit::TotalTypes )
+                if ( unit.type < chkd.scData->units.numUnitTypes() )
                 {
                     const auto & unitDat = chkd.scData->units.getUnit(unit.type);
                     auto datFlags = unitDat.flags;
@@ -2267,7 +2267,7 @@ bool GuiMap::isValidUnitPlacement(Sc::Unit::Type unitType, s32 x, s32 y)
 
             for ( const auto & unit : read.units )
             {
-                if ( unit.type < Sc::Unit::TotalTypes )
+                if ( unit.type < chkd.scData->units.numUnitTypes() )
                 {
                     const auto & unitDat = chkd.scData->units.getUnit(unit.type);
                     bool isResource = (unitDat.flags & Sc::Unit::Flags::ResourceContainer) == Sc::Unit::Flags::ResourceContainer;
@@ -3750,7 +3750,7 @@ void GuiMap::FinalizeUnitSelection(HWND hWnd, int mapX, int mapY, WPARAM wParam)
     
         const Chk::Unit & unit = Scenario::getUnit(i);
         
-        if ( (u16)unit.type < (u16)Sc::Unit::TotalTypes )
+        if ( (u16)unit.type < (u16)chkd.scData->units.numUnitTypes() )
         {
             unitLeft = unit.xc - chkd.scData->units.getUnit(unit.type).unitSizeLeft;
             unitRight = unit.xc + chkd.scData->units.getUnit(unit.type).unitSizeRight;

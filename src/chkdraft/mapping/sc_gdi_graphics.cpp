@@ -1196,7 +1196,7 @@ void UnitToBits(ChkdBitmap & bitmap, ChkdPalette & palette, u8 color, u16 bitWid
         }
     };
 
-    Sc::Unit::Type drawnUnitId = unitID < Sc::Unit::TotalTypes ? (Sc::Unit::Type)unitID : Sc::Unit::Type::TerranMarine; // Extended units use ID:0's graphics (for now)
+    Sc::Unit::Type drawnUnitId = unitID < chkd.scData->units.numUnitTypes() ? (Sc::Unit::Type)unitID : Sc::Unit::Type::TerranMarine; // Extended units use ID:0's graphics (for now)
     auto & unitDat = chkd.scData->units.getUnit(Sc::Unit::Type(drawnUnitId));
     u16 imageId = chkd.scData->sprites.getSprite(chkd.scData->units.getFlingy(unitDat.graphics).sprite).imageFile;
     u32 grpId = chkd.scData->sprites.getImage(imageId).grpFile;
@@ -2000,7 +2000,7 @@ void DrawPasteGraphics(const WinLib::DeviceContext & dc, ChkdPalette & palette, 
             std::vector<PasteUnitNode> units = clipboard.getUnits();
             for ( auto & pasteUnit : units )
             {
-                if ( pasteUnit.unit.type < Sc::Unit::TotalTypes )
+                if ( pasteUnit.unit.type < chkd.scData->units.numUnitTypes() )
                 {
                     const auto & unitDat = chkd.scData->units.getUnit(pasteUnit.unit.type);
                     bool isValidPlacement = map.isValidUnitPlacement(pasteUnit.unit.type, paste.x + pasteUnit.xc, paste.y + pasteUnit.yc);

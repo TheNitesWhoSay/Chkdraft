@@ -9,7 +9,7 @@ u32 iscriptIdFromUnit(const Sc::Data & scData, Sc::Unit::Type unitType)
         scData.sprites.getSprite(
             scData.units.getFlingy(
                 scData.units.getUnit(
-                    size_t(unitType) < Sc::Unit::TotalTypes ? unitType : Sc::Unit::Type(0)
+                    size_t(unitType) < scData.units.numUnitTypes() ? unitType : Sc::Unit::Type(0)
                 ).graphics
             ).sprite
         ).imageFile
@@ -246,7 +246,7 @@ void AnimContext::initSpecialCases(MapActor & actor, std::size_t type, bool isUn
 
 void AnimContext::initializeUnitActor(MapActor & actor, bool isClipboard, std::size_t unitIndex, const Chk::Unit & unit, s32 xc, s32 yc)
 {
-    auto unitType = unit.type < Sc::Unit::TotalTypes ? unit.type : Sc::Unit::Type::TerranMarine;
+    auto unitType = unit.type < scData.units.numUnitTypes() ? unit.type : Sc::Unit::Type::TerranMarine;
     const auto & unitDat = scData.units.getUnit(unitType);
     bool isSubUnit = unitDat.flags & Sc::Unit::Flags::Subunit;
     bool isFlyerOrLifted = unitDat.flags & Sc::Unit::Flags::Flyer ||
@@ -288,7 +288,7 @@ void AnimContext::initializeUnitActor(MapActor & actor, bool isClipboard, std::s
 void AnimContext::initializeSpriteActor(MapActor & actor, bool isClipboard, std::size_t spriteIndex, const Chk::Sprite & sprite, s32 xc, s32 yc)
 {
     bool isSpriteUnit = sprite.isUnit();
-    auto spriteType = isSpriteUnit ? (Sc::Unit::Type(sprite.type) < Sc::Unit::TotalTypes ? sprite.type : Sc::Sprite::Type(0)) :
+    auto spriteType = isSpriteUnit ? (Sc::Unit::Type(sprite.type) < scData.units.numUnitTypes() ? sprite.type : Sc::Sprite::Type(0)) :
         (sprite.type < Sc::Sprite::TotalSprites ? sprite.type : Sc::Sprite::Type(0));
     bool isSubUnit = isSpriteUnit && scData.units.getUnit(Sc::Unit::Type(spriteType)).flags & Sc::Unit::Flags::Subunit;
     bool isFlyer = isSpriteUnit && scData.units.getUnit(Sc::Unit::Type(spriteType)).flags & Sc::Unit::Flags::Flyer;

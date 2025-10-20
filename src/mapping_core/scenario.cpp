@@ -4492,7 +4492,7 @@ Chk::TileOccupationCache Scenario::getTileOccupationCache(const Sc::Terrain::Til
     }
     for ( const auto & unit : read.units )
     {
-        if ( unit.type < Sc::Unit::TotalTypes )
+        if ( unit.type < unitData.numUnitTypes() )
         {
             const auto & unitDat = unitData.getUnit(unit.type);
             s32 xTileMin = (unit.xc - unitDat.unitSizeLeft)/32;

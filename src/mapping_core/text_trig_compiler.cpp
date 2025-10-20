@@ -3710,7 +3710,7 @@ template <class MapType> bool TextTrigCompiler::prepUnitTable(const MapType & ma
 {
     UnitTableNode unitNode = {};
     u16 stringId = 0;
-    for ( u16 unitId=0; unitId<Sc::Unit::TotalTypes; unitId++ )
+    for ( u16 unitId=0; unitId<scData.units.numUnitTypes(); unitId++ )
     {
         unitNode.unitType = (Sc::Unit::Type)unitId;
         auto gameString = map.template getUnitName<RawString>((Sc::Unit::Type)unitId, &scData, true, Chk::UseExpSection::Auto, Chk::Scope::Game);
