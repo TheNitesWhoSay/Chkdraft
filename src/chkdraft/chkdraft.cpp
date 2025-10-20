@@ -65,9 +65,9 @@ void Chkdraft::OnLoadTest()
 
     /*for ( std::size_t i=0; i<scData->units.numUnitTypes(); ++i )
         CM->addUnit(Chk::Unit{CM->getNextClassId(), 128, 128, Sc::Unit::Type(i), 0, 0, 0, Sc::Player::Id::Player1});
-    for ( std::size_t i=0; i<Sc::Sprite::TotalSprites; ++i )
+    for ( std::size_t i=0; i<scData->sprites.numSprites(); ++i )
         CM->addSprite(Chk::Sprite{.type = Sc::Sprite::Type(i), .xc=192, .yc=128, .flags = Chk::Sprite::SpriteFlags::DrawAsSprite});
-    for ( std::size_t i=0; i<Sc::Sprite::TotalSprites; ++i )
+    for ( std::size_t i=0; i<scData->sprites.numSprites(); ++i )
         CM->addSprite(Chk::Sprite{.type = Sc::Sprite::Type(i), .xc=256, .yc=128, .flags = 0});*/
     //CM->addSprite(Chk::Sprite{.type = Sc::Sprite::Type(65), .xc = 200, .yc = 200, .flags = Chk::Sprite::SpriteFlags::DrawAsSprite});
     //CM->addSprite(Chk::Sprite{.type = Sc::Sprite::Type(65), .xc = 250, .yc = 250, .flags = Chk::Sprite::SpriteFlags::DrawAsSprite});

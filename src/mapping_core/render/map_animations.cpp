@@ -20,7 +20,7 @@ u32 iscriptIdFromSprite(const Sc::Data & scData, Sc::Sprite::Type spriteType)
 {
     return scData.sprites.getImage(
         scData.sprites.getSprite(
-            size_t(spriteType) < Sc::Sprite::TotalSprites ? spriteType : Sc::Sprite::Type(0)
+            size_t(spriteType) < scData.sprites.numSprites() ? spriteType : Sc::Sprite::Type(0)
         ).imageFile
     ).iScriptId;
 }
@@ -34,7 +34,7 @@ size_t getImageId(const Sc::Data & scData, Sc::Unit::Type unitType)
 
 size_t getImageId(const Sc::Data & scData, Sc::Sprite::Type spriteType)
 {
-    return scData.sprites.getSprite(spriteType >= Sc::Sprite::TotalSprites ? 0 : spriteType).imageFile;
+    return scData.sprites.getSprite(spriteType >= scData.sprites.numSprites() ? 0 : spriteType).imageFile;
 }
 
 size_t getImageId(const Sc::Data & scData, const Chk::Unit & unit)
@@ -289,7 +289,7 @@ void AnimContext::initializeSpriteActor(MapActor & actor, bool isClipboard, std:
 {
     bool isSpriteUnit = sprite.isUnit();
     auto spriteType = isSpriteUnit ? (Sc::Unit::Type(sprite.type) < scData.units.numUnitTypes() ? sprite.type : Sc::Sprite::Type(0)) :
-        (sprite.type < Sc::Sprite::TotalSprites ? sprite.type : Sc::Sprite::Type(0));
+        (sprite.type < scData.sprites.numSprites() ? sprite.type : Sc::Sprite::Type(0));
     bool isSubUnit = isSpriteUnit && scData.units.getUnit(Sc::Unit::Type(spriteType)).flags & Sc::Unit::Flags::Subunit;
     bool isFlyer = isSpriteUnit && scData.units.getUnit(Sc::Unit::Type(spriteType)).flags & Sc::Unit::Flags::Flyer;
 

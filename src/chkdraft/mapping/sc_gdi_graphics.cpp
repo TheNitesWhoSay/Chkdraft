@@ -1261,7 +1261,7 @@ void SpriteToBits(ChkdBitmap & bitmap, ChkdPalette & palette, u8 color, u16 bitW
     Sc::SystemColor remapped[8];
     if ( selected )
     {
-        u32 selectionGrpId = spriteID >= Sc::Sprite::DatFile::IdRange::From0To129 && spriteID <= Sc::Sprite::TotalSprites ?
+        u32 selectionGrpId = spriteID >= Sc::Sprite::DatFile::IdRange::From0To129 && spriteID <= chkd.scData->sprites.numSprites() ?
             chkd.scData->sprites.getImage(chkd.scData->sprites.getSprite(spriteID).selectionCircleImage+Sc::Sprite::FirstSelCircImage).grpFile :
             chkd.scData->sprites.getImage(chkd.scData->sprites.getSprite(Sc::Sprite::Type::ZergScourge).selectionCircleImage+Sc::Sprite::FirstSelCircImage).grpFile;
 
