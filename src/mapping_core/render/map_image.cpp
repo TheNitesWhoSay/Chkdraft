@@ -81,7 +81,10 @@ void Animator::initializeImage(u32 iScriptId)
 
     currImage->rotation = scData.sprites.getImage(currImage->imageId).graphicTurns != 0;
     if ( currImage->animation == nullptr )
+    {
         currImage->end();
+        context.actor.autoRestart = false;
+    }
     else
     {
         currImage->waitUntil = context.currentTick;

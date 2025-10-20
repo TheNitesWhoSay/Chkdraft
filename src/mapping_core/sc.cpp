@@ -2864,7 +2864,7 @@ const Sc::Sprite::IScriptAnimation* Sc::Sprite::getAnimationHeader(u32 iScriptId
     size_t animationsOffset = iScriptId < iscript.offsets.size() ? iscript.offsets[iScriptId] : iscript.data.size();
     if ( animationsOffset >= iscript.data.size() )
     {
-        logger.error() << "Invalid iscript\n";
+        logger.error() << "Invalid iscript " << iScriptId << '\n';
         return nullptr;
     }
     IScriptAnimationHeader* iScriptAnimationHeader = (IScriptAnimationHeader*)&iscript.data[animationsOffset];
@@ -2878,7 +2878,7 @@ const Sc::Sprite::IScriptAnimation* Sc::Sprite::getAnimationHeader(u32 iScriptId
         size_t currOffset = animationOffset;
         if ( currOffset >= iscript.data.size() )
         {
-            logger.error() << "Invalid iscript\n";
+            logger.error() << "Invalid iscript " << iScriptId << '\n';
             return nullptr;
         }
         else
