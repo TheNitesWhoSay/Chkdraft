@@ -70,6 +70,35 @@ struct TriggerSettings
     REFLECT(TriggerSettings, useAddressesForMemory, deathTableStart)
 };
 
+struct TreeGroup
+{
+    std::string label;
+    Json::ObjectArray subGroups;
+    std::vector<std::uint32_t> items;
+
+    // At least for now, subGroups gets parsed into this field to dodge infinite compile-time recursion issues
+    std::vector<TreeGroup> parsedSubGroups;
+
+    void parseSubGroups();
+    void serializeSubGroups();
+
+    REFLECT(TreeGroup, label, subGroups, items)
+};
+
+struct UnitSettings
+{
+    std::vector<TreeGroup> customTree;
+
+    REFLECT(UnitSettings, customTree)
+};
+
+struct SpriteSettings
+{
+    std::vector<TreeGroup> customTree;
+
+    REFLECT(SpriteSettings, customTree)
+};
+
 struct ChkdProfile
 {
     NOTE(profilePath, Json::Ignore)
@@ -88,9 +117,11 @@ struct ChkdProfile
     HistorySettings history {};
     LoggerSettings logger {};
     TriggerSettings triggers {};
+    UnitSettings units {};
+    SpriteSettings sprites {};
 
     REFLECT(ChkdProfile, profileName, additionalProfileDirectories, isDefaultProfile, autoLoadOnStart, useRemastered,
-        remastered, classic, history, logger, triggers)
+        remastered, classic, history, logger, triggers, units, sprites)
 
     void fixPathsToForwardSlash();
     void saveProfile();
