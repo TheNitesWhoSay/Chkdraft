@@ -2789,12 +2789,17 @@ bool Sc::Sprite::load(ArchiveCluster & archiveCluster, Sc::TblFilePtr imagesTbl)
         "scripts\\iscript_askosi.bin"
     };
 
-    if ( !loadIscript(0, "scripts\\iscript.bin", true) && !archiveCluster.findFile(std::string(cosmonarchyScripts[0])) )
+    bool loadedStandardIscript = loadIscript(0, "scripts\\iscript.bin", true);
+    bool foundCosmonarchyScript = archiveCluster.findFile(std::string(cosmonarchyScripts[0]));
+    if ( !loadedStandardIscript && !foundCosmonarchyScript )
         return false;
 
-    std::size_t i = 0; // Note that the zeroth/default iscript.bin is overriden if the cosmonarchy scripts are present
-    while ( i < std::size(cosmonarchyScripts) && loadIscript(i, std::string(cosmonarchyScripts[i]), false) )
-        ++i;
+    if ( foundCosmonarchyScript )
+    {
+        std::size_t i = 0; // Note that the zeroth/default iscript.bin is overriden if the cosmonarchy scripts are present
+        while ( i < std::size(cosmonarchyScripts) && loadIscript(i, std::string(cosmonarchyScripts[i]), false) )
+            ++i;
+    }
 
     auto finish = std::chrono::high_resolution_clock::now();
     logger.debug() << "Sprite loading completed in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
