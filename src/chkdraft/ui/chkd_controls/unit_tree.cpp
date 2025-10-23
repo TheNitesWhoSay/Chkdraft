@@ -27,6 +27,7 @@ bool UnitTree::CreateThis(HWND hParent, int x, int y, int width, int height, boo
 
 void UnitTree::UpdateUnitTree()
 {
+    TreeViewControl::EmptySubTree(hUnitRoot);
     InsertAllUnits(hUnitRoot);
 }
 
