@@ -4,6 +4,8 @@
 #include <common_files/common_files.h>
 #include <mapping_core/mapping_core.h>
 
+struct TreeGroup;
+
 class UnitTree : public WinLib::TreeViewControl
 {
     public:
@@ -18,10 +20,12 @@ class UnitTree : public WinLib::TreeViewControl
     private:
         void InsertAllUnits(HTREEITEM hParent);
         HTREEITEM hUnitRoot = NULL;
-        HTREEITEM UnitItems[Sc::Unit::TotalTypes] {};
+        std::vector<HTREEITEM> unitItems {};
         std::vector<std::string> unitDisplayNames {};
         void insertUnits(const Sc::Unit::UnitGroup & unitGroup, HTREEITEM hParent);
+        void insertUnits(const TreeGroup & unitGroup, HTREEITEM hParent);
         void AddUnitItems(HTREEITEM hParent, const std::vector<u16> & unitIds);
+        void AddUnitItems(HTREEITEM hParent, const std::vector<u32> & unitIds);
 };
 
 #endif
