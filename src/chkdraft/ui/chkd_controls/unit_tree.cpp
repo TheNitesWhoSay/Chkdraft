@@ -62,13 +62,6 @@ void UnitTree::insertUnits(const TreeGroup & unitGroup, HTREEITEM hParent)
 
 void UnitTree::InsertAllUnits(HTREEITEM hParent)
 {
-    std::size_t i=0;
-    for ( auto & name : unitDisplayNames )
-    {
-        logger.info() << "[" << i << "] " << name << std::endl;
-        ++i;
-    }
-
     unitItems.assign(chkd.scData->units.numUnitTypes(), NULL);
     ChkdProfile* currProfile = chkd.profiles.getCurrProfile();
     if ( currProfile != nullptr && !currProfile->units.customTree.empty() )
