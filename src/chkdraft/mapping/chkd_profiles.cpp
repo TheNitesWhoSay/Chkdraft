@@ -79,78 +79,74 @@ std::optional<std::string> GetSettingsPath()
     return std::nullopt;
 }
 
-void parseTreeGroup(std::vector<TreeGroup> & treeGroups, const std::vector<Json::ObjectValue> & rawTreeGroups)
+void parseTreeGroup(std::vector<TreeGroup> & treeGroups, const Json::ObjectValue & rawTreeGroups)
 {
     treeGroups.assign(rawTreeGroups.size(), TreeGroup{});
     std::size_t i = 0;
-    for ( const Json::ObjectValue & rawTreeGroup : rawTreeGroups )
+    for ( const auto & group : rawTreeGroups )
     {
-        auto labelIt = rawTreeGroup.find(RareTs::MemberType<TreeGroup>::label::name);
-        if ( labelIt != rawTreeGroup.end() )
+        const std::string & groupName = group.first;
+        const std::shared_ptr<Json::Value> & groupMembers = group.second;
+        treeGroups[i].label = groupName;
+        if ( groupMembers != nullptr )
         {
-            const std::shared_ptr<Json::Value> & label = labelIt->second;
-            if ( label != nullptr && label->type() == Json::Value::Type::String )
-                treeGroups[i].label = label->string();
-        }
-        auto subGroupsIt = rawTreeGroup.find(RareTs::MemberType<TreeGroup>::subGroups::name);
-        if ( subGroupsIt != rawTreeGroup.end() )
-        {
-            const std::shared_ptr<Json::Value> & subGroups = subGroupsIt->second;
-            if ( subGroups != nullptr && subGroups->type() == Json::Value::Type::ObjectArray )
-                parseTreeGroup(treeGroups[i].parsedSubGroups, subGroups->objectArray());
-        }
-        auto itemsIt = rawTreeGroup.find(RareTs::MemberType<TreeGroup>::items::name);
-        if ( itemsIt != rawTreeGroup.end() )
-        {
-            const std::shared_ptr<Json::Value> & items = itemsIt->second;
-            if ( items != nullptr && items->type() == Json::Value::Type::NumberArray )
+            switch ( groupMembers->type() )
             {
-                const auto & numberArray = items->numberArray();
-                std::size_t count = numberArray.size();
-                for ( const auto & number : numberArray )
-                    treeGroups[i].items.push_back(std::stoi(number));
+                case Json::Value::Type::NumberArray:
+                {
+                    const std::vector<std::string> & numberArray = group.second->numberArray();
+                    for ( const auto & number : numberArray )
+                        treeGroups[i].items.push_back(std::stoi(number));
+                }
+                break;
+                case Json::Value::Type::Object:
+                    parseTreeGroup(treeGroups[i].subGroups, group.second->object());
+                    break;
             }
         }
         ++i;
     }
 }
 
-void TreeGroup::parseSubGroups()
+void TreeGroup::parse(const Json::Object & rawGroup)
 {
-    this->parsedSubGroups.clear();
-    parseTreeGroup(this->parsedSubGroups, this->subGroups.objectArray());
+    this->subGroups.clear();
+    parseTreeGroup(this->subGroups, rawGroup.object());
 }
 
-void serializeSubGroup(std::vector<Json::ObjectValue> & serializedTreeGroups, const std::vector<TreeGroup> & treeGroups)
+void serializeSubGroup(Json::ObjectValue & rawGroup, const std::vector<TreeGroup> & treeGroups)
 {
-    serializedTreeGroups.assign(treeGroups.size(), Json::ObjectValue{});
-    std::size_t i = 0;
     for ( const TreeGroup & treeGroup : treeGroups )
     {
-        std::shared_ptr<Json::String> label = std::make_shared<Json::String>(treeGroup.label);
-        std::shared_ptr<Json::ObjectArray> subGroups = std::make_shared<Json::ObjectArray>();
-        serializeSubGroup(subGroups->objectArray(), treeGroup.parsedSubGroups);
-        std::shared_ptr<Json::NumberArray> items = std::make_shared<Json::NumberArray>();
-        auto & numberArray = items->numberArray();
-        numberArray.reserve(treeGroup.items.size());
-        for ( auto & number : treeGroup.items )
-            numberArray.push_back(std::to_string(number));
+        bool hasSubGroups = !treeGroup.subGroups.empty();
+        bool hasItems = !treeGroup.items.empty();
+        if ( hasSubGroups )
+        {
+            std::shared_ptr<Json::Object> object = std::make_shared<Json::Object>();
+            serializeSubGroup(object->object(), treeGroup.subGroups);
+            rawGroup.insert(std::make_pair(treeGroup.label, std::dynamic_pointer_cast<Json::Value>(object)));
+        }
+        else if ( hasItems )
+        {
+            std::shared_ptr<Json::NumberArray> numberArray = std::make_shared<Json::NumberArray>();
+            for ( const auto item : treeGroup.items )
+                numberArray->numberArray().push_back(std::to_string(item));
 
-        serializedTreeGroups[i].insert(std::make_pair<std::string, std::shared_ptr<Json::Value>>(
-            RareTs::MemberType<TreeGroup>::label::name, std::dynamic_pointer_cast<Json::Value>(label)));
-        serializedTreeGroups[i].insert(std::make_pair<std::string, std::shared_ptr<Json::Value>>(
-            RareTs::MemberType<TreeGroup>::subGroups::name, std::dynamic_pointer_cast<Json::Value>(subGroups)));
-        serializedTreeGroups[i].insert(std::make_pair<std::string, std::shared_ptr<Json::Value>>(
-            RareTs::MemberType<TreeGroup>::items::name, std::dynamic_pointer_cast<Json::Value>(items)));
-
-        ++i;
+            rawGroup.insert(std::make_pair(treeGroup.label, std::dynamic_pointer_cast<Json::Value>(numberArray)));
+        }
+        else // Has neither (make an empty object)
+        {
+            std::shared_ptr<Json::Object> emptyObject = std::make_shared<Json::Object>();
+            rawGroup.insert(std::make_pair(treeGroup.label, std::dynamic_pointer_cast<Json::Value>(emptyObject)));
+        }
     }
 }
 
-void TreeGroup::serializeSubGroups()
+void TreeGroup::serialize(Json::Object & rawGroup)
 {
-    this->subGroups.objectArray().clear();
-    serializeSubGroup(this->subGroups.objectArray(), this->parsedSubGroups);
+    Json::ObjectValue & obj = rawGroup.object();
+    obj.clear();
+    serializeSubGroup(obj, this->subGroups);
 }
 
 void ChkdProfile::fixPathsToForwardSlash()
@@ -181,11 +177,8 @@ void ChkdProfile::fixPathsToForwardSlash()
 
 void ChkdProfile::saveProfile()
 {
-    for ( auto & group : units.customTree )
-        group.serializeSubGroups();
-
-    for ( auto & group : sprites.customTree )
-        group.serializeSubGroups();
+    units.parsedCustomTree.serialize(units.customTree);
+    sprites.parsedCustomTree.serialize(sprites.customTree);
 
     fixPathsToForwardSlash();
     std::ofstream outFile(icux::toFilestring(this->profilePath), std::ios_base::out | std::ios_base::binary);
@@ -226,11 +219,8 @@ ChkdProfile* ChkdProfiles::loadProfile(const std::string & filePath)
         if ( !current && chkdProfile->isDefaultProfile )
             current = chkdProfile.get();
         
-        for ( auto & group : chkdProfile->units.customTree )
-            group.parseSubGroups();
-
-        for ( auto & group : chkdProfile->sprites.customTree )
-            group.parseSubGroups();
+        chkdProfile->units.parsedCustomTree.parse(chkdProfile->units.customTree);
+        chkdProfile->sprites.parsedCustomTree.parse(chkdProfile->sprites.customTree);
 
         return chkdProfile.get();
 

@@ -73,28 +73,27 @@ struct TriggerSettings
 struct TreeGroup
 {
     std::string label;
-    Json::ObjectArray subGroups;
     std::vector<std::uint32_t> items;
+    std::vector<TreeGroup> subGroups;
 
-    // At least for now, subGroups gets parsed into this field to dodge infinite compile-time recursion issues
-    std::vector<TreeGroup> parsedSubGroups;
-
-    void parseSubGroups();
-    void serializeSubGroups();
+    void parse(const Json::Object & rawGroup);
+    void serialize(Json::Object & rawGroup);
 
     REFLECT(TreeGroup, label, subGroups, items)
 };
 
 struct UnitSettings
 {
-    std::vector<TreeGroup> customTree;
+    Json::Object customTree;
+    TreeGroup parsedCustomTree;
 
     REFLECT(UnitSettings, customTree)
 };
 
 struct SpriteSettings
 {
-    std::vector<TreeGroup> customTree;
+    Json::Object customTree;
+    TreeGroup parsedCustomTree;
 
     REFLECT(SpriteSettings, customTree)
 };

@@ -54,7 +54,7 @@ void UnitTree::insertUnits(const Sc::Unit::UnitGroup & unitGroup, HTREEITEM hPar
 void UnitTree::insertUnits(const TreeGroup & unitGroup, HTREEITEM hParent)
 {
     HTREEITEM hGroupItem = InsertTreeItem(hParent, unitGroup.label, TreeTypeCategory | (LPARAM)Layer::Units);
-    for ( auto & subGroup : unitGroup.parsedSubGroups )
+    for ( auto & subGroup : unitGroup.subGroups )
         insertUnits(subGroup, hGroupItem);
 
     AddUnitItems(hGroupItem, unitGroup.items);
@@ -64,10 +64,9 @@ void UnitTree::InsertAllUnits(HTREEITEM hParent)
 {
     unitItems.assign(chkd.scData->units.numUnitTypes(), NULL);
     ChkdProfile* currProfile = chkd.profiles.getCurrProfile();
-    if ( currProfile != nullptr && !currProfile->units.customTree.empty() )
+    if ( currProfile != nullptr && !currProfile->units.parsedCustomTree.subGroups.empty() )
     {
-        auto & customTree = currProfile->units.customTree;
-        for ( const auto & unitGroup : customTree )
+        for ( const auto & unitGroup : currProfile->units.parsedCustomTree.subGroups )
             insertUnits(unitGroup, hParent);
     }
     else
