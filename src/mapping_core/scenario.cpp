@@ -778,7 +778,7 @@ constexpr s32 size(const Value & value)
 }
 
 template <typename T, typename Value>
-void read(std::istream & is, Value & value, std::streamsize sectionSize)
+void read(std::istream & is, Value & value, std::streamsize & sectionSize)
 {
     if constexpr ( RareTs::is_static_array_v<T> )
     {
@@ -790,9 +790,9 @@ void read(std::istream & is, Value & value, std::streamsize sectionSize)
     else if constexpr ( RareTs::is_specialization_v<T, std::vector> )
     {
         using Element = RareTs::element_type_t<T>;
-        size_t wholeElements = size_t(sectionSize)/sizeof(Element) + (size_t(sectionSize)%sizeof(Element) > 0 ? 1 : 0);
-        value = std::vector<Element>(wholeElements);
-        for ( size_t i=0; i<wholeElements; ++i )
+        size_t count = size_t(sectionSize)/sizeof(Element) + (size_t(sectionSize)%sizeof(Element) > 0 ? 1 : 0);
+        value = std::vector<Element>(count);
+        for ( size_t i=0; i<count; ++i )
             ::read<Element>(is, value[i], sectionSize);
         //is.read(reinterpret_cast<char*>(&value[0]), std::streamsize(wholeElements*sizeof(Element))); // Performs better, TODO: static check for safety then use
     }
@@ -803,9 +803,23 @@ void read(std::istream & is, Value & value, std::streamsize sectionSize)
         });
     }
     else if constexpr ( std::is_enum_v<T> )
-        is.read(reinterpret_cast<char*>(&value), sizeof(std::underlying_type_t<T>));
+    {
+        auto bytesRead = std::min(std::streamsize(sizeof(std::underlying_type_t<T>)), sectionSize);
+        if ( bytesRead > 0 )
+        {
+            is.read(reinterpret_cast<char*>(&value), bytesRead);
+            sectionSize -= bytesRead;
+        }
+    }
     else
-        is.read(reinterpret_cast<char*>(&value), sizeof(T));
+    {
+        auto bytesRead = std::min(std::streamsize(sizeof(T)), sectionSize);
+        if ( bytesRead > 0 )
+        {
+            is.read(reinterpret_cast<char*>(&value), std::min(std::streamsize(sizeof(T)), sectionSize));
+            sectionSize -= bytesRead;
+        }
+    }
 }
 
 void Scenario::parse(std::istream & is, ::MapData & mapData, Chk::SectionName sectionName, Chk::SectionSize sectionSize)
@@ -817,8 +831,9 @@ void Scenario::parse(std::istream & is, ::MapData & mapData, Chk::SectionName se
         {
             size_t numLocations = size_t(sectionSize) / ::size<Chk::Location>();
             mapData.locations.assign(numLocations+1, Chk::Location{});
+            std::streamsize bytesRemaining = sectionSize;
             for ( size_t i=1; i<=numLocations; ++i )
-                ::read<Chk::Location>(is, mapData.locations[i], std::streamsize(::size<Chk::Location>()));
+                ::read<Chk::Location>(is, mapData.locations[i], bytesRemaining);
         }
         break;
         case SectionName::MTXM:
@@ -992,7 +1007,7 @@ bool Scenario::parse(std::istream & is, bool fromMpq)
 
         if ( headerBytesRead == sizeof(Chk::SectionHeader) ) // Valid section header
         {
-            if ( sectionHeader.sizeInBytes >= 0 ) // Regular section
+            if ( sectionHeader.sizeInBytes > 0 ) // Regular section
             {
                 auto begin = chk.tellg();
                 parse(chk, mapData, sectionHeader.name, sectionHeader.sizeInBytes);
@@ -1005,6 +1020,8 @@ bool Scenario::parse(std::istream & is, bool fromMpq)
                 else
                     return parsingFailed("Unexpected error reading chk section contents!");
             }
+            else if ( sectionHeader.sizeInBytes == 0 ) // Zero-size section
+                makeProtected = true;
             else // if ( sectionHeader.sizeInBytes < 0 ) // Jump section
             {
                 if ( sectionHeader.sizeInBytes < s32(streamStart)-s32(chk.tellg()) )
