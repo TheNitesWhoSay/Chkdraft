@@ -25,7 +25,7 @@ class UnitTree : public WinLib::TreeViewControl
         void insertUnits(const Sc::Unit::UnitGroup & unitGroup, HTREEITEM hParent);
         void insertUnits(const TreeGroup & unitGroup, HTREEITEM hParent);
         void AddUnitItems(HTREEITEM hParent, const std::vector<u16> & unitIds);
-        void AddUnitItems(HTREEITEM hParent, const std::vector<u32> & unitIds);
+        void AddUnitItems(HTREEITEM hParent, const std::vector<s32> & unitIds);
 };
 
 #endif

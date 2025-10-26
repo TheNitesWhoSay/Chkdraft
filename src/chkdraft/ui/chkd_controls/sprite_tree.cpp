@@ -36,10 +36,34 @@ void SpriteTree::addToTree(HTREEITEM parent, const Sc::Sprite::SpriteGroup & spr
     }
 }
 
+void SpriteTree::addToTree(const TreeGroup & spriteGroup, HTREEITEM hParent)
+{
+    auto groupRoot = InsertTreeItem(hParent, spriteGroup.label, TreeTypeCategory | (LPARAM)Layer::Sprites);
+    for ( const auto & subGroup : spriteGroup.subGroups )
+        addToTree(subGroup, groupRoot);
+
+    for ( const auto & memberSprite : spriteGroup.items )
+    {
+        if ( memberSprite < 0 ) // For negative numbers, unitId = (-1*memberSprite)-1
+            InsertTreeItem(groupRoot, chkd.scData->units.displayNames[-1*memberSprite-1], ((LPARAM)(-1*memberSprite)-1)|TreeTypeSpriteUnit);
+        else
+            InsertTreeItem(groupRoot, chkd.scData->sprites.spriteNames[memberSprite], ((LPARAM)memberSprite)|TreeTypeSprite);
+    }
+}
+
 void SpriteTree::UpdateSpriteTree()
 {
     EmptySubTree(hSpriteRoot);
 
-    for ( auto & spriteGroup : chkd.scData->sprites.spriteGroups )
-        addToTree(hSpriteRoot, spriteGroup);
+    ChkdProfile* currProfile = chkd.profiles.getCurrProfile();
+    if ( currProfile != nullptr && !currProfile->sprites.parsedCustomTree.subGroups.empty() )
+    {
+        for ( const auto & spriteGroup : currProfile->sprites.parsedCustomTree.subGroups )
+            addToTree(spriteGroup, hSpriteRoot);
+    }
+    else
+    {
+        for ( auto & spriteGroup : chkd.scData->sprites.spriteGroups )
+            addToTree(hSpriteRoot, spriteGroup);
+    }
 }

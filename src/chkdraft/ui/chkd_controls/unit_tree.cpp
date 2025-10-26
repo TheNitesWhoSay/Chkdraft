@@ -83,7 +83,7 @@ void UnitTree::AddUnitItems(HTREEITEM hParent, const std::vector<u16> & unitIds)
         unitItems[unitIds[i]] = InsertTreeItem(hParent, unitDisplayNames[unitIds[i]], TreeTypeUnit | (DWORD)unitIds[i]);
 }
 
-void UnitTree::AddUnitItems(HTREEITEM hParent, const std::vector<u32> & unitIds)
+void UnitTree::AddUnitItems(HTREEITEM hParent, const std::vector<s32> & unitIds)
 {
     size_t maxUnits = std::min(unitIds.size(), unitDisplayNames.size());
     for ( size_t i=0; i<maxUnits; i++ )

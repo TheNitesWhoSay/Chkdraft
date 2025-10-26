@@ -73,7 +73,7 @@ struct TriggerSettings
 struct TreeGroup
 {
     std::string label;
-    std::vector<std::uint32_t> items;
+    std::vector<std::int32_t> items;
     std::vector<TreeGroup> subGroups;
 
     void parse(const Json::OrderedObject & rawGroup);
