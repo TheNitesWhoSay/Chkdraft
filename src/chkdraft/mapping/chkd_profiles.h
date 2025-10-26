@@ -76,15 +76,15 @@ struct TreeGroup
     std::vector<std::uint32_t> items;
     std::vector<TreeGroup> subGroups;
 
-    void parse(const Json::Object & rawGroup);
-    void serialize(Json::Object & rawGroup);
+    void parse(const Json::OrderedObject & rawGroup);
+    void serialize(Json::OrderedObject & rawGroup);
 
     REFLECT(TreeGroup, label, subGroups, items)
 };
 
 struct UnitSettings
 {
-    Json::Object customTree;
+    Json::OrderedObject customTree;
     TreeGroup parsedCustomTree;
 
     REFLECT(UnitSettings, customTree)
@@ -92,7 +92,7 @@ struct UnitSettings
 
 struct SpriteSettings
 {
-    Json::Object customTree;
+    Json::OrderedObject customTree;
     TreeGroup parsedCustomTree;
 
     REFLECT(SpriteSettings, customTree)

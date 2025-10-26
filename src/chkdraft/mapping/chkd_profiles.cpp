@@ -79,7 +79,7 @@ std::optional<std::string> GetSettingsPath()
     return std::nullopt;
 }
 
-void parseTreeGroup(std::vector<TreeGroup> & treeGroups, const Json::ObjectValue & rawTreeGroups)
+void parseTreeGroup(std::vector<TreeGroup> & treeGroups, const std::vector<std::pair<std::string, std::shared_ptr<Json::Value>>> & rawTreeGroups)
 {
     treeGroups.assign(rawTreeGroups.size(), TreeGroup{});
     std::size_t i = 0;
@@ -99,8 +99,8 @@ void parseTreeGroup(std::vector<TreeGroup> & treeGroups, const Json::ObjectValue
                         treeGroups[i].items.push_back(std::stoi(number));
                 }
                 break;
-                case Json::Value::Type::Object:
-                    parseTreeGroup(treeGroups[i].subGroups, group.second->object());
+                case Json::Value::Type::OrderedObject:
+                    parseTreeGroup(treeGroups[i].subGroups, group.second->orderedObject());
                     break;
             }
         }
@@ -108,13 +108,13 @@ void parseTreeGroup(std::vector<TreeGroup> & treeGroups, const Json::ObjectValue
     }
 }
 
-void TreeGroup::parse(const Json::Object & rawGroup)
+void TreeGroup::parse(const Json::OrderedObject & rawGroup)
 {
     this->subGroups.clear();
-    parseTreeGroup(this->subGroups, rawGroup.object());
+    parseTreeGroup(this->subGroups, rawGroup.orderedObject());
 }
 
-void serializeSubGroup(Json::ObjectValue & rawGroup, const std::vector<TreeGroup> & treeGroups)
+void serializeSubGroup(std::vector<std::pair<std::string, std::shared_ptr<Json::Value>>> & rawGroup, const std::vector<TreeGroup> & treeGroups)
 {
     for ( const TreeGroup & treeGroup : treeGroups )
     {
@@ -122,9 +122,9 @@ void serializeSubGroup(Json::ObjectValue & rawGroup, const std::vector<TreeGroup
         bool hasItems = !treeGroup.items.empty();
         if ( hasSubGroups )
         {
-            std::shared_ptr<Json::Object> object = std::make_shared<Json::Object>();
-            serializeSubGroup(object->object(), treeGroup.subGroups);
-            rawGroup.insert(std::make_pair(treeGroup.label, std::dynamic_pointer_cast<Json::Value>(object)));
+            std::shared_ptr<Json::OrderedObject> object = std::make_shared<Json::OrderedObject>();
+            serializeSubGroup(object->orderedObject(), treeGroup.subGroups);
+            rawGroup.push_back(std::make_pair(treeGroup.label, std::dynamic_pointer_cast<Json::Value>(object)));
         }
         else if ( hasItems )
         {
@@ -132,19 +132,19 @@ void serializeSubGroup(Json::ObjectValue & rawGroup, const std::vector<TreeGroup
             for ( const auto item : treeGroup.items )
                 numberArray->numberArray().push_back(std::to_string(item));
 
-            rawGroup.insert(std::make_pair(treeGroup.label, std::dynamic_pointer_cast<Json::Value>(numberArray)));
+            rawGroup.push_back(std::make_pair(treeGroup.label, std::dynamic_pointer_cast<Json::Value>(numberArray)));
         }
         else // Has neither (make an empty object)
         {
-            std::shared_ptr<Json::Object> emptyObject = std::make_shared<Json::Object>();
-            rawGroup.insert(std::make_pair(treeGroup.label, std::dynamic_pointer_cast<Json::Value>(emptyObject)));
+            std::shared_ptr<Json::OrderedObject> emptyObject = std::make_shared<Json::OrderedObject>();
+            rawGroup.push_back(std::make_pair(treeGroup.label, std::dynamic_pointer_cast<Json::Value>(emptyObject)));
         }
     }
 }
 
-void TreeGroup::serialize(Json::Object & rawGroup)
+void TreeGroup::serialize(Json::OrderedObject & rawGroup)
 {
-    Json::ObjectValue & obj = rawGroup.object();
+    std::vector<std::pair<std::string, std::shared_ptr<Json::Value>>> & obj = rawGroup.orderedObject();
     obj.clear();
     serializeSubGroup(obj, this->subGroups);
 }
@@ -204,7 +204,7 @@ ChkdProfile* ChkdProfiles::loadProfile(const std::string & filePath)
     chkdProfile->profilePath = filePath;
     try {
 
-        inFile >> Json::in(*chkdProfile);
+        inFile >> Json::in<std::tuple<Json::OrderObjectsType>>(*chkdProfile);
         for ( auto & existingProfile : profiles )
         {
             if ( chkdProfile.get() != existingProfile.get() &&
