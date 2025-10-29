@@ -58,6 +58,7 @@ set(Headers
   system_io.h
   text_trig_compiler.h
   text_trig_generator.h
+  tree_group.h
 )
 set(Sources
   archive_cluster.cpp
@@ -80,6 +81,7 @@ set(Sources
   system_io.cpp
   text_trig_compiler.cpp
   text_trig_generator.cpp
+  tree_group.cpp
 )
 
 add_compile_definitions(_UNICODE UNICODE CASCLIB_UNICODE STORMLIB_NO_AUTO_LINK)

@@ -126,9 +126,10 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
 
     if ( profiles().autoLoadOnStart )
     {
+        const TreeGroup* customUnitTreeGroups = profiles().units.parsedCustomTree.subGroups.empty() ? nullptr : &profiles().units.parsedCustomTree;
         std::filesystem::current_path(getSystemFileDirectory(profiles().profilePath));
         if ( !scData.emplace().load(Sc::DataFile::BrowserPtr(new ChkdDataFileBrowser()), ChkdDataFileBrowser::getDataFileDescriptors(),
-            ChkdDataFileBrowser::getExpectedStarCraftDirectory()) )
+            ChkdDataFileBrowser::getExpectedStarCraftDirectory(), Sc::DataFile::Browser::getDefaultStarCraftBrowser(), customUnitTreeGroups) )
         {
             logger.error("Error loading StarCraft data!");
             SelectProfile selectProfile {};
@@ -429,8 +430,9 @@ void Chkdraft::OnProfileLoad()
     scrData = nullptr;
 
     // Perform the actual data reload
+    const TreeGroup* customUnitTreeGroups = profiles().units.parsedCustomTree.subGroups.empty() ? nullptr : &profiles().units.parsedCustomTree;
     scData.emplace().load(Sc::DataFile::BrowserPtr(new ChkdDataFileBrowser()), ChkdDataFileBrowser::getDataFileDescriptors(),
-        ChkdDataFileBrowser::getExpectedStarCraftDirectory());
+        ChkdDataFileBrowser::getExpectedStarCraftDirectory(), Sc::DataFile::Browser::getDefaultStarCraftBrowser(), customUnitTreeGroups);
     
     // Re-initialize the clipboard & clipboard anims
     maps.clipboard.emplace(*scData, gameClock);
@@ -450,6 +452,7 @@ void Chkdraft::OnProfileLoad()
     // Rebuild the main tree
     chkd.mainPlot.leftBar.mainTree.isomTree.UpdateIsomTree();
     chkd.mainPlot.leftBar.mainTree.doodadTree.UpdateDoodadTree();
+    chkd.mainPlot.leftBar.mainTree.unitTree.UpdateUnitNames(chkd.scData->units.displayNames);
     chkd.mainPlot.leftBar.mainTree.unitTree.UpdateUnitTree();
     chkd.mainPlot.leftBar.mainTree.spriteTree.UpdateSpriteTree();
 

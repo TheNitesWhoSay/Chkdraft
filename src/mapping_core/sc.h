@@ -17,6 +17,8 @@
     This file also provides resources to find the StarCraft directory and load assets from the StarCraft data files
 */
 
+struct TreeGroup;
+
 namespace Sc {
 
     /**
@@ -4123,8 +4125,8 @@ namespace Sc {
     */
     class Data {
         bool loadUnitGroups();
-        bool loadSpriteNames(const Sc::Sprite::SpriteGroup & spriteGroup);
-        bool loadSpriteGroups(Sc::TblFilePtr imagesTbl, Sc::TblFilePtr statTxt);
+        bool loadSpriteNames(std::vector<std::string> customSpriteNames, Sc::Sprite::SpriteGroup & spriteGroup);
+        bool loadSpriteGroups(ArchiveCluster & archiveCluster, Sc::TblFilePtr imagesTbl, Sc::TblFilePtr statTxt, const TreeGroup* unitGroups);
 
     public:
         Terrain terrain;
@@ -4142,7 +4144,8 @@ namespace Sc {
         bool load(Sc::DataFile::BrowserPtr dataFileBrowser = Sc::DataFile::BrowserPtr(new Sc::DataFile::Browser()),
             const std::vector<Sc::DataFile::Descriptor> & dataFiles = Sc::DataFile::getDefaultDataFiles(),
             const std::string & expectedStarCraftDirectory = getDefaultScPath(),
-            FileBrowserPtr<u32> starCraftBrowser = Sc::DataFile::Browser::getDefaultStarCraftBrowser());
+            FileBrowserPtr<u32> starCraftBrowser = Sc::DataFile::Browser::getDefaultStarCraftBrowser(),
+            const TreeGroup* unitGroups = nullptr);
         
         static std::optional<std::vector<u8>> GetAsset(ArchiveCluster & archiveCluster, bool & isFirst,
             const std::string & firstAssetArchivePathOption, const std::string & secondAssetArchivePathOption);

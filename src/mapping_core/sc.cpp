@@ -4,6 +4,7 @@
 #include "mpq_file.h"
 #include "casc_archive.h"
 #include "folder_archive.h"
+#include "tree_group.h"
 #include <algorithm>
 #include <chrono>
 #include <list>
@@ -4641,16 +4642,24 @@ bool Sc::Data::loadUnitGroups()
     return true;
 }
 
-bool Sc::Data::loadSpriteNames(const Sc::Sprite::SpriteGroup & spriteGroup)
+bool Sc::Data::loadSpriteNames(std::vector<std::string> customSpriteNames, Sc::Sprite::SpriteGroup & spriteGroup)
 {
     auto & spriteGroups = sprites.spriteGroups;
-    for ( const auto & subGroup : spriteGroup.subGroups )
-        loadSpriteNames(subGroup);
+    for ( auto & subGroup : spriteGroup.subGroups )
+        loadSpriteNames(customSpriteNames, subGroup);
     
-    for ( const auto & memberSprite : spriteGroup.memberSprites )
+    for ( auto & memberSprite : spriteGroup.memberSprites )
     {
         if ( !memberSprite.isUnit )
-            sprites.spriteNames[memberSprite.spriteIndex] = memberSprite.spriteName;
+        {
+            if ( memberSprite.spriteIndex < customSpriteNames.size() )
+            {
+                memberSprite.spriteName = customSpriteNames[memberSprite.spriteIndex];
+                sprites.spriteNames[memberSprite.spriteIndex] = customSpriteNames[memberSprite.spriteIndex];
+            }
+            else
+                sprites.spriteNames[memberSprite.spriteIndex] = memberSprite.spriteName;
+        }
     }
 
     return true;
@@ -4667,12 +4676,40 @@ void appendSpriteIndexes(std::set<u16> & indexes, const Sc::Sprite::SpriteGroup 
 }
 #endif
 
-bool Sc::Data::loadSpriteGroups(Sc::TblFilePtr imagesTbl, Sc::TblFilePtr statTxt)
+void loadUnitSprites(Sc::Data & scDat, Sc::Sprite::SpriteGroup & pureSprites, Sc::Sprite::SpriteGroup & spriteUnits, const TreeGroup & unitGroup)
+{
+    if ( unitGroup.label.empty() )
+    {
+        for ( auto & subGroup : unitGroup.subGroups )
+            loadUnitSprites(scDat, pureSprites, spriteUnits, subGroup);
+    }
+    else
+    {
+        auto & pureSpriteSubGroup = pureSprites.subGroups.emplace_back(Sc::Sprite::SpriteGroup{std::string(unitGroup.label)});
+        auto & spriteUnitSubGroup = spriteUnits.subGroups.emplace_back(Sc::Sprite::SpriteGroup{std::string(unitGroup.label)});
+
+        for ( auto & subGroup : unitGroup.subGroups )
+            loadUnitSprites(scDat, pureSpriteSubGroup, spriteUnitSubGroup, subGroup);
+
+        for ( auto unitId : unitGroup.items )
+        {
+            const auto & unitDat = scDat.units.getUnit(Sc::Unit::Type(unitId));
+            const auto & flingyDat = scDat.units.getFlingy(unitDat.graphics);
+            pureSpriteSubGroup.memberSprites.push_back(Sc::Sprite::TreeSprite{flingyDat.sprite, scDat.units.displayNames[unitId]});
+            spriteUnitSubGroup.memberSprites.push_back(Sc::Sprite::TreeSprite{size_t(unitId), scDat.units.displayNames[unitId], true});
+            scDat.sprites.spriteAutoRestart[flingyDat.sprite] = false;
+        }
+    }
+}
+
+bool Sc::Data::loadSpriteGroups(ArchiveCluster & archiveCluster, Sc::TblFilePtr imagesTbl, Sc::TblFilePtr statTxt, const TreeGroup* unitGroups)
 {
     if ( sprites.numSprites() == 0 )
         return false;
 
     std::size_t totalSprites = sprites.numSprites() > Sc::Sprite::TotalSprites ? sprites.numSprites() : Sc::Sprite::TotalSprites;
+    auto spriteNameOverridesOpt = Sc::Data::GetAsset(archiveCluster, "arr\\sprites.txt", true);
+    std::vector<std::string> customSpriteNames = spriteNameOverridesOpt ? collectLineSeparatedStrings(*spriteNameOverridesOpt) : std::vector<std::string>{};
 
     sprites.spriteAutoRestart.assign(totalSprites, true);
     auto & doodads = sprites.spriteGroups.emplace_back(Sc::Sprite::SpriteGroup{"Doodads"});
@@ -4769,29 +4806,34 @@ bool Sc::Data::loadSpriteGroups(Sc::TblFilePtr imagesTbl, Sc::TblFilePtr statTxt
     sprites.spriteGroups.emplace_back(Sc::Sprite::SpriteGroup{"Unit Pure Sprites"});
     auto & spriteUnits = sprites.spriteGroups.emplace_back(Sc::Sprite::SpriteGroup{"Sprite Units"});
     auto & unitPureSprites = sprites.spriteGroups[sprites.spriteGroups.size()-2];
-    RareTs::forIndexes<std::tuple_size_v<UnitGroups>>([&](auto i) {
-        constexpr std::size_t I = decltype(i)::value;
-        using UnitGroup = std::tuple_element_t<I, UnitGroups>;
+    if ( unitGroups == nullptr )
+    {
+        RareTs::forIndexes<std::tuple_size_v<UnitGroups>>([&](auto i) {
+            constexpr std::size_t I = decltype(i)::value;
+            using UnitGroup = std::tuple_element_t<I, UnitGroups>;
 
-        auto groupName = RareTs::Notes<UnitGroup>::template getNote<Json::Name>().value;
-        auto & pureSpriteUnitGroup = unitPureSprites.subGroups.emplace_back(Sc::Sprite::SpriteGroup{std::string(groupName)});
-        auto & spriteUnitsUnitGroup = spriteUnits.subGroups.emplace_back(Sc::Sprite::SpriteGroup{std::string(groupName)});
+            auto groupName = RareTs::Notes<UnitGroup>::template getNote<Json::Name>().value;
+            auto & pureSpriteUnitGroup = unitPureSprites.subGroups.emplace_back(Sc::Sprite::SpriteGroup{std::string(groupName)});
+            auto & spriteUnitsUnitGroup = spriteUnits.subGroups.emplace_back(Sc::Sprite::SpriteGroup{std::string(groupName)});
 
-        RareTs::Members<UnitGroup>::forEach([&](auto member) {
-            auto subGroupName = member.template getNote<Json::Name>().value;
-            auto & values = member.value();
-            auto & subPureSpriteUnitGroup = pureSpriteUnitGroup.subGroups.emplace_back(Sc::Sprite::SpriteGroup{std::string(subGroupName)});
-            auto & subSpriteUnitsUnitGroup = spriteUnitsUnitGroup.subGroups.emplace_back(Sc::Sprite::SpriteGroup{std::string(subGroupName)});
-            for ( u16 unitId : values )
-            {
-                const auto & unitDat = units.getUnit(Sc::Unit::Type(unitId));
-                const auto & flingyDat = units.getFlingy(unitDat.graphics);
-                subPureSpriteUnitGroup.memberSprites.push_back(Sc::Sprite::TreeSprite{flingyDat.sprite, units.displayNames[unitId]});
-                subSpriteUnitsUnitGroup.memberSprites.push_back(Sc::Sprite::TreeSprite{unitId, units.displayNames[unitId], true});
-                sprites.spriteAutoRestart[flingyDat.sprite] = false;
-            }
+            RareTs::Members<UnitGroup>::forEach([&](auto member) {
+                auto subGroupName = member.template getNote<Json::Name>().value;
+                auto & values = member.value();
+                auto & subPureSpriteUnitGroup = pureSpriteUnitGroup.subGroups.emplace_back(Sc::Sprite::SpriteGroup{std::string(subGroupName)});
+                auto & subSpriteUnitsUnitGroup = spriteUnitsUnitGroup.subGroups.emplace_back(Sc::Sprite::SpriteGroup{std::string(subGroupName)});
+                for ( u16 unitId : values )
+                {
+                    const auto & unitDat = units.getUnit(Sc::Unit::Type(unitId));
+                    const auto & flingyDat = units.getFlingy(unitDat.graphics);
+                    subPureSpriteUnitGroup.memberSprites.push_back(Sc::Sprite::TreeSprite{flingyDat.sprite, units.displayNames[unitId]});
+                    subSpriteUnitsUnitGroup.memberSprites.push_back(Sc::Sprite::TreeSprite{unitId, units.displayNames[unitId], true});
+                    sprites.spriteAutoRestart[flingyDat.sprite] = false;
+                }
+            });
         });
-    });
+    }
+    else
+        loadUnitSprites(*this, unitPureSprites, spriteUnits, *unitGroups);
     
     auto & remains = sprites.spriteGroups.emplace_back(Sc::Sprite::SpriteGroup{"Remains"});
     remains.memberSprites.push_back(Sc::Sprite::TreeSprite{236, "Marine Remains"});
@@ -4961,29 +5003,42 @@ bool Sc::Data::loadSpriteGroups(Sc::TblFilePtr imagesTbl, Sc::TblFilePtr statTxt
     misc.memberSprites.push_back(Sc::Sprite::TreeSprite{313, "Vespene Puff 3"});
     misc.memberSprites.push_back(Sc::Sprite::TreeSprite{314, "Vespene Puff 4"});
     misc.memberSprites.push_back(Sc::Sprite::TreeSprite{315, "Vespene Puff 5"});
-    
-    sprites.spriteNames.assign(totalSprites, "");
-    for ( auto & spriteGroup : sprites.spriteGroups )
-        loadSpriteNames(spriteGroup);
 
-    #ifdef _DEBUG
     // Validate that every sprite is included
     std::set<u16> treeSpriteIndexes {};
     for ( const auto & spriteGroup : sprites.spriteGroups )
         appendSpriteIndexes(treeSpriteIndexes, spriteGroup);
 
-    for ( std::size_t i=0; i<Sc::Sprite::TotalSprites; ++i )
+    Sc::Sprite::SpriteGroup* unknown = nullptr;
+    for ( std::size_t i=0; i<totalSprites; ++i )
     {
         if ( !treeSpriteIndexes.contains(u16(i)) )
-            logger.debug() << "Sprite [" << i << "] was not included in the sprite tree!" << std::endl;
-    }
+        {
+            if ( i > Sc::Sprite::TotalSprites )
+            {
+                if ( unknown == nullptr )
+                {
+                    auto & unknownGroup = sprites.spriteGroups.emplace_back(Sc::Sprite::SpriteGroup{"Unknown"});
+                    unknown = &unknownGroup;
+                }
+                unknown->memberSprites.push_back(Sc::Sprite::TreeSprite{i, ""});
+            }
+    #ifdef _DEBUG
+            else
+                logger.debug() << "Sprite [" << i << "] was not included in the sprite tree!" << std::endl;
     #endif
+        }
+    }
+    
+    sprites.spriteNames.assign(totalSprites, "");
+    for ( auto & spriteGroup : sprites.spriteGroups )
+        loadSpriteNames(customSpriteNames, spriteGroup);
 
     return true;
 }
 
 bool Sc::Data::load(Sc::DataFile::BrowserPtr dataFileBrowser, const std::vector<Sc::DataFile::Descriptor> & dataFiles,
-    const std::string & expectedStarCraftDirectory, FileBrowserPtr<u32> starCraftBrowser)
+    const std::string & expectedStarCraftDirectory, FileBrowserPtr<u32> starCraftBrowser, const TreeGroup* unitGroups)
 {
     auto start = std::chrono::high_resolution_clock::now();
     logger.debug("Loading StarCraft Data...");
@@ -5047,7 +5102,7 @@ bool Sc::Data::load(Sc::DataFile::BrowserPtr dataFileBrowser, const std::vector<
     if ( !loadUnitGroups() )
         CHKD_ERR("Failed to load unit groups");
 
-    if ( !loadSpriteGroups(imagesTbl, statTxt) )
+    if ( !loadSpriteGroups(*archiveCluster, imagesTbl, statTxt, unitGroups) )
         CHKD_ERR("Failed to load sprite groups");
     
     auto finish = std::chrono::high_resolution_clock::now();

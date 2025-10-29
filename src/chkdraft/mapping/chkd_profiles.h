@@ -4,6 +4,7 @@
 #include <rarecpp/json.h>
 #include <chkdraft/mapping/chkd_skin.h>
 #include <cross_cut/logger.h>
+#include <mapping_core/tree_group.h>
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -68,18 +69,6 @@ struct TriggerSettings
     std::uint64_t deathTableStart = 0x58A364;
 
     REFLECT(TriggerSettings, useAddressesForMemory, deathTableStart)
-};
-
-struct TreeGroup
-{
-    std::string label;
-    std::vector<std::int32_t> items;
-    std::vector<TreeGroup> subGroups;
-
-    void parse(const Json::OrderedObject & rawGroup);
-    void serialize(Json::OrderedObject & rawGroup);
-
-    REFLECT(TreeGroup, label, subGroups, items)
 };
 
 struct UnitSettings

@@ -87,5 +87,5 @@ void UnitTree::AddUnitItems(HTREEITEM hParent, const std::vector<s32> & unitIds)
 {
     size_t maxUnits = std::min(unitIds.size(), unitDisplayNames.size());
     for ( size_t i=0; i<maxUnits; i++ )
-        unitItems[unitIds[i]] = InsertTreeItem(hParent, unitDisplayNames[unitIds[i]], TreeTypeUnit | (DWORD)unitIds[i]);
+        unitItems[unitIds[i]] = InsertTreeItem(hParent, "[" + std::to_string(unitIds[i]) + "] " + unitDisplayNames[unitIds[i]], TreeTypeUnit | (DWORD)unitIds[i]);
 }
