@@ -297,6 +297,7 @@ void ProfileGeneralWindow::BrowseScPath()
 
         if ( classicScPath != editProfile.classic.starCraftPath )
         {
+            std::string previousScPath = editProfile.classic.starCraftPath;
             editProfile.classic.starCraftPath = classicScPath;
             if ( updatePatchRtDat )
             {
@@ -315,6 +316,17 @@ void ProfileGeneralWindow::BrowseScPath()
                 std::string oldPath = editProfile.classic.starDatPath;
                 editProfile.classic.starDatPath = makeSystemFilePath(editProfile.classic.starCraftPath, "StarDat.mpq");
                 AddOrReplaceDataFilePath(false, oldPath, editProfile.classic.starDatPath);
+            }
+
+            for ( auto & dataFile : editProfile.classic.dataFiles )
+            {
+                if ( dataFile.starts_with(previousScPath) )
+                    dataFile.replace(0, previousScPath.size(), editProfile.classic.starCraftPath);
+                else if ( dataFile.ends_with("Cosmonarchy/Release/temp.mpq") || dataFile.ends_with("Cosmonarchy\\Release\\temp.mpq") )
+                {
+                    AddOrReplaceDataFilePath(false, dataFile,
+                        makeSystemFilePath(getSystemFileDirectory(editProfile.classic.starCraftPath), "Release\\temp.mpq"));
+                }
             }
 
             editProfile.saveProfile();

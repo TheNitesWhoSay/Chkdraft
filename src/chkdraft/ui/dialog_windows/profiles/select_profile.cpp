@@ -101,9 +101,11 @@ BOOL SelectProfile::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 void SelectProfile::LoadProfile(int profileIndex)
 {
     chkd.profiles.setCurrProfile(profileIndex);
-    chkd.OnProfileLoad();
-    chkd.UpdateProfilesMenu();
-    EndDialog(getHandle(), IDOK);
+    if ( chkd.OnProfileLoad() )
+    {
+        chkd.UpdateProfilesMenu();
+        EndDialog(getHandle(), IDOK);
+    }
 }
 
 void SelectProfile::FindProfile()

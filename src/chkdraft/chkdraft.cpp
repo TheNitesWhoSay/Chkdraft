@@ -331,18 +331,32 @@ void Chkdraft::OpenFindProfileDialog()
         if ( browseForFile(profilePath, filterIndex, {{"*.profile.json", "Chkd Profile"}}, *settingsPath, "Find Profile", true, false) &&
             profilePath.ends_with(".profile.json") )
         {
-            if ( chkd.profiles.loadProfile(profilePath) != nullptr )
+            auto addedProfile = chkd.profiles.loadProfile(profilePath);
+            if ( addedProfile != nullptr )
             {
+                std::size_t addedProfileIndex = 0;
+                std::size_t i = 0;
                 for ( auto & profile : chkd.profiles.profiles )
                 {
+                    if ( profile.get() == addedProfile )
+                        addedProfileIndex = i;
+
                     profile->additionalProfileDirectories.push_back(getSystemFileDirectory(profilePath));
                     profile->saveProfile();
+                    ++i;
                 }
 
                 if ( chkd.editProfilesWindow && chkd.editProfilesWindow->getHandle() != NULL )
                     chkd.editProfilesWindow->RefreshWindow();
 
                 chkd.UpdateProfilesMenu();
+
+                if ( getYesNo("New profile added! Would you like to load it now?", "Profile Added") == PromptResult::Yes )
+                {
+                    chkd.profiles.setCurrProfile(addedProfileIndex);
+                    if ( !chkd.OnProfileLoad() )
+                        chkd.OpenEditProfilesDialog();
+                }
             }
         }
     }
@@ -389,7 +403,7 @@ void Chkdraft::SetLogLevel(LogLevel newLogLevel)
     UpdateLogLevelCheckmarks(newLogLevel);
 }
 
-void Chkdraft::OnProfileLoad()
+bool Chkdraft::OnProfileLoad()
 {
     logger.info() << "Loading new profile: \"" << profiles().profileName << "\"" << std::endl;
 
@@ -431,8 +445,11 @@ void Chkdraft::OnProfileLoad()
 
     // Perform the actual data reload
     const TreeGroup* customUnitTreeGroups = profiles().units.parsedCustomTree.subGroups.empty() ? nullptr : &profiles().units.parsedCustomTree;
-    scData.emplace().load(Sc::DataFile::BrowserPtr(new ChkdDataFileBrowser()), ChkdDataFileBrowser::getDataFileDescriptors(),
+    bool dataLoaded = scData.emplace().load(Sc::DataFile::BrowserPtr(new ChkdDataFileBrowser()), ChkdDataFileBrowser::getDataFileDescriptors(),
         ChkdDataFileBrowser::getExpectedStarCraftDirectory(), Sc::DataFile::Browser::getDefaultStarCraftBrowser(), customUnitTreeGroups);
+
+    if ( !dataLoaded )
+        return false;
     
     // Re-initialize the clipboard & clipboard anims
     maps.clipboard.emplace(*scData, gameClock);
@@ -474,6 +491,7 @@ void Chkdraft::OnProfileLoad()
     aboutWindow.emplace();
     editProfilesWindow.emplace();
     logger.info() << "Profile: \"" << profiles().profileName << "\" loaded." << std::endl;
+    return true;
 }
 
 void Chkdraft::ProfilesReload()
@@ -1073,7 +1091,9 @@ LRESULT Chkdraft::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                     if ( profiles[i].menuId == LOWORD(wParam) )
                     {
                         profiles.setCurrProfile(i);
-                        this->OnProfileLoad();
+                        if ( !this->OnProfileLoad() )
+                            OpenEditProfilesDialog();
+
                         this->UpdateProfilesMenu();
                         return 0;
                     }
