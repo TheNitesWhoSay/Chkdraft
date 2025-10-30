@@ -2571,7 +2571,7 @@ bool Sc::Sprite::load(ArchiveCluster & archiveCluster, Sc::TblFilePtr imagesTbl)
     
     size_t numStrings = imagesTbl->numStrings();
     this->imagesTbl = imagesTbl;
-    this->loFiles.assign(numStrings, LoFile{});
+    this->loFiles.assign(numStrings+1, LoFile{});
 
     Sc::Sprite::Grp blankGrp;
     blankGrp.makeBlank();
