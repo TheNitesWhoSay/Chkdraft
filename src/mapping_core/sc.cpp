@@ -4665,7 +4665,6 @@ bool Sc::Data::loadSpriteNames(std::vector<std::string> customSpriteNames, Sc::S
     return true;
 }
 
-#ifdef _DEBUG
 void appendSpriteIndexes(std::set<u16> & indexes, const Sc::Sprite::SpriteGroup & spriteGroup)
 {
     for ( const auto & subGroup : spriteGroup.subGroups )
@@ -4674,7 +4673,6 @@ void appendSpriteIndexes(std::set<u16> & indexes, const Sc::Sprite::SpriteGroup 
     for ( const auto & memberSprite : spriteGroup.memberSprites )
         indexes.insert(memberSprite.spriteIndex);
 }
-#endif
 
 void loadUnitSprites(Sc::Data & scDat, Sc::Sprite::SpriteGroup & pureSprites, Sc::Sprite::SpriteGroup & spriteUnits, const TreeGroup & unitGroup)
 {
