@@ -252,7 +252,7 @@ void ProfileGeneralWindow::BrowseScrPath()
         }
 
         editProfile.saveProfile();
-        RefreshWindow();
+        chkd.editProfilesWindow->RefreshWindow();
         logger.debug() << "Updated remastered path to " << editProfile.remastered.starCraftPath << std::endl;
     }
 }
@@ -273,7 +273,7 @@ void ProfileGeneralWindow::BrowseCascPath()
         AddOrReplaceDataFilePath(true, oldPath, editProfile.remastered.cascPath);
 
         editProfile.saveProfile();
-        RefreshWindow();
+        chkd.editProfilesWindow->RefreshWindow();
         logger.debug() << "Updated remastered cascPath to " << editProfile.remastered.cascPath << std::endl;
     }
 }
@@ -330,7 +330,7 @@ void ProfileGeneralWindow::BrowseScPath()
             }
 
             editProfile.saveProfile();
-            RefreshWindow();
+            chkd.editProfilesWindow->RefreshWindow();
             logger.debug() << "Updated classic starCraftPath to " << editProfile.classic.starCraftPath << std::endl;
         }
     }
@@ -348,7 +348,7 @@ void ProfileGeneralWindow::BrowseStarDatPath()
         editProfile.classic.starDatPath = starDatPath;
         AddOrReplaceDataFilePath(false, oldPath, editProfile.classic.starDatPath);
         editProfile.saveProfile();
-        RefreshWindow();
+        chkd.editProfilesWindow->RefreshWindow();
         logger.debug() << "Updated classic starDatPath to " << editProfile.classic.starDatPath << std::endl;
     }
 }
@@ -365,7 +365,7 @@ void ProfileGeneralWindow::BrowseBrooDatPath()
         editProfile.classic.brooDatPath = brooDatPath;
         AddOrReplaceDataFilePath(false, oldPath, editProfile.classic.brooDatPath);
         editProfile.saveProfile();
-        RefreshWindow();
+        chkd.editProfilesWindow->RefreshWindow();
         logger.debug() << "Updated classic brooDatPath to " << editProfile.classic.brooDatPath << std::endl;
     }
 }
@@ -382,7 +382,7 @@ void ProfileGeneralWindow::BrowsePatchRtDatPath()
         editProfile.classic.patchRtPath = patchRtPath;
         AddOrReplaceDataFilePath(false, oldPath, editProfile.classic.patchRtPath);
         editProfile.saveProfile();
-        RefreshWindow();
+        chkd.editProfilesWindow->RefreshWindow();
         logger.debug() << "Updated classic patchRtPath to " << editProfile.classic.patchRtPath << std::endl;
     }
 }

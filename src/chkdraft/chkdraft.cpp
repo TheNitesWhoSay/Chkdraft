@@ -128,13 +128,25 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
     {
         const TreeGroup* customUnitTreeGroups = profiles().units.parsedCustomTree.subGroups.empty() ? nullptr : &profiles().units.parsedCustomTree;
         std::filesystem::current_path(getSystemFileDirectory(profiles().profilePath));
-        if ( !scData.emplace().load(Sc::DataFile::BrowserPtr(new ChkdDataFileBrowser()), ChkdDataFileBrowser::getDataFileDescriptors(),
-            ChkdDataFileBrowser::getExpectedStarCraftDirectory(), Sc::DataFile::Browser::getDefaultStarCraftBrowser(), customUnitTreeGroups) )
-        {
-            logger.error("Error loading StarCraft data!");
-            SelectProfile selectProfile {};
-            selectProfile.CreateThis(getHandle());
+#ifndef _DEBUG
+        try {
+#endif
+            if ( !scData.emplace().load(Sc::DataFile::BrowserPtr(new ChkdDataFileBrowser()), ChkdDataFileBrowser::getDataFileDescriptors(),
+                ChkdDataFileBrowser::getExpectedStarCraftDirectory(), Sc::DataFile::Browser::getDefaultStarCraftBrowser(), customUnitTreeGroups) )
+            {
+                logger.error("Error loading StarCraft data!");
+                SelectProfile selectProfile {};
+                selectProfile.CreateThis(getHandle());
+            }
+#ifndef _DEBUG
+        } catch ( std::exception & e ) { // In release mode, force off the auto-load flag to prevent crash-on-start
+            profiles().autoLoadOnStart = false;
+            profiles().saveProfile();
+            logger.error("Exception loading StarCraft data!", e);
+            Error("Exception loading StarCraft data: " + std::string(e.what()));
+            throw;
         }
+#endif
     }
     else
     {
@@ -405,92 +417,104 @@ void Chkdraft::SetLogLevel(LogLevel newLogLevel)
 
 bool Chkdraft::OnProfileLoad()
 {
-    logger.info() << "Loading new profile: \"" << profiles().profileName << "\"" << std::endl;
+#ifndef _DEBUG
+    try {
+#endif
+        logger.info() << "Loading new profile: \"" << profiles().profileName << "\"" << std::endl;
 
-    // Destroy all modeless dialogs
-    unitWindow->DestroyThis();
-    spriteWindow->DestroyThis();
-    actorWindow->DestroyThis();
-    locationWindow->DestroyThis();
-    terrainPalWindow->DestroyThis();
-    tilePropWindow->DestroyThis();
-    textTrigWindow->DestroyThis();
-    briefingTextTrigWindow->DestroyThis();
-    mapSettingsWindow->DestroyThis();
-    trigEditorWindow->DestroyThis();
-    briefingTrigEditorWindow->DestroyThis();
-    dimensionsWindow->DestroyThis();
-    changePasswordWindow->DestroyThis();
-    enterPasswordWindow->DestroyThis();
-    aboutWindow->DestroyThis();
-    editProfilesWindow->DestroyThis();
+        // Destroy all modeless dialogs
+        unitWindow->DestroyThis();
+        spriteWindow->DestroyThis();
+        actorWindow->DestroyThis();
+        locationWindow->DestroyThis();
+        terrainPalWindow->DestroyThis();
+        tilePropWindow->DestroyThis();
+        textTrigWindow->DestroyThis();
+        briefingTextTrigWindow->DestroyThis();
+        mapSettingsWindow->DestroyThis();
+        trigEditorWindow->DestroyThis();
+        briefingTrigEditorWindow->DestroyThis();
+        dimensionsWindow->DestroyThis();
+        changePasswordWindow->DestroyThis();
+        enterPasswordWindow->DestroyThis();
+        aboutWindow->DestroyThis();
+        editProfilesWindow->DestroyThis();
 
-    // Update the log level
-    SetLogLevel(profiles().logger.defaultLogLevel);
+        // Update the log level
+        SetLogLevel(profiles().logger.defaultLogLevel);
 
-    // Cancel active pastings
-    maps.endPaste();
+        // Cancel active pastings
+        maps.endPaste();
 
-    // For each map.. clear selections, record the prev sel skin, set the skin to classic GDI (or none, if possible), reset map remastered graphics
-    std::unordered_map<GuiMap*, ChkdSkin> previousSkin {};
-    maps.enumMaps([&](GuiMap & map) {
-        map.selections.clear();
-        previousSkin.insert(std::make_pair(&map, map.GetSkin()));
-        map.SetSkin(ChkdSkin::ClassicGDI, false);
-        map.scrGraphics = std::make_unique<GuiMapGraphics>(*chkd.scData, map);
-    });
+        // For each map.. clear selections, record the prev sel skin, set the skin to classic GDI (or none, if possible), reset map remastered graphics
+        std::unordered_map<GuiMap*, ChkdSkin> previousSkin {};
+        maps.enumMaps([&](GuiMap & map) {
+            map.selections.clear();
+            previousSkin.insert(std::make_pair(&map, map.GetSkin()));
+            map.SetSkin(ChkdSkin::ClassicGDI, false);
+            map.scrGraphics = std::make_unique<GuiMapGraphics>(*chkd.scData, map);
+        });
 
-    // Set scrGraphicsData to nullptr
-    scrData = nullptr;
+        // Set scrGraphicsData to nullptr
+        scrData = nullptr;
 
-    // Perform the actual data reload
-    const TreeGroup* customUnitTreeGroups = profiles().units.parsedCustomTree.subGroups.empty() ? nullptr : &profiles().units.parsedCustomTree;
-    bool dataLoaded = scData.emplace().load(Sc::DataFile::BrowserPtr(new ChkdDataFileBrowser()), ChkdDataFileBrowser::getDataFileDescriptors(),
-        ChkdDataFileBrowser::getExpectedStarCraftDirectory(), Sc::DataFile::Browser::getDefaultStarCraftBrowser(), customUnitTreeGroups);
+        // Perform the actual data reload
+        const TreeGroup* customUnitTreeGroups = profiles().units.parsedCustomTree.subGroups.empty() ? nullptr : &profiles().units.parsedCustomTree;
+        bool dataLoaded = scData.emplace().load(Sc::DataFile::BrowserPtr(new ChkdDataFileBrowser()), ChkdDataFileBrowser::getDataFileDescriptors(),
+            ChkdDataFileBrowser::getExpectedStarCraftDirectory(), Sc::DataFile::Browser::getDefaultStarCraftBrowser(), customUnitTreeGroups);
 
-    if ( !dataLoaded )
-        return false;
+        if ( !dataLoaded )
+            return false;
     
-    // Re-initialize the clipboard & clipboard anims
-    maps.clipboard.emplace(*scData, gameClock);
+        // Re-initialize the clipboard & clipboard anims
+        maps.clipboard.emplace(*scData, gameClock);
 
-    // For each map.. refresh the isom cache, refresh the tile occupation cache, re-init GDI graphics, re-init anims, attempt restoring previous skin selection, redraw map & minimap
-    maps.enumMaps([&](GuiMap & map) {
-        map.OnScDataRefresh(); // Refresh isom cache, tile occupation cache, gdi graphics
-        auto found = previousSkin.find(&map);
-        if ( found != previousSkin.end() )
-            map.SetSkin(found->second, false);
+        // For each map.. refresh the isom cache, refresh the tile occupation cache, re-init GDI graphics, re-init anims, attempt restoring previous skin selection, redraw map & minimap
+        maps.enumMaps([&](GuiMap & map) {
+            map.OnScDataRefresh(); // Refresh isom cache, tile occupation cache, gdi graphics
+            auto found = previousSkin.find(&map);
+            if ( found != previousSkin.end() )
+                map.SetSkin(found->second, false);
 
-        map.Redraw(true);
-    });
+            map.Redraw(true);
+        });
 
-    // TODO: when such settings have been added to profiles, set all the map view & editor settings
+        // TODO: when such settings have been added to profiles, set all the map view & editor settings
     
-    // Rebuild the main tree
-    chkd.mainPlot.leftBar.mainTree.isomTree.UpdateIsomTree();
-    chkd.mainPlot.leftBar.mainTree.doodadTree.UpdateDoodadTree();
-    chkd.mainPlot.leftBar.mainTree.unitTree.UpdateUnitNames(chkd.scData->units.displayNames);
-    chkd.mainPlot.leftBar.mainTree.unitTree.UpdateUnitTree();
-    chkd.mainPlot.leftBar.mainTree.spriteTree.UpdateSpriteTree();
+        // Rebuild the main tree
+        chkd.mainPlot.leftBar.mainTree.isomTree.UpdateIsomTree();
+        chkd.mainPlot.leftBar.mainTree.doodadTree.UpdateDoodadTree();
+        chkd.mainPlot.leftBar.mainTree.unitTree.UpdateUnitNames(chkd.scData->units.displayNames);
+        chkd.mainPlot.leftBar.mainTree.unitTree.UpdateUnitTree();
+        chkd.mainPlot.leftBar.mainTree.spriteTree.UpdateSpriteTree();
 
-    // Re-initialize/re-ctor all the modeless dialogs
-    unitWindow.emplace();
-    spriteWindow.emplace();
-    actorWindow.emplace();
-    locationWindow.emplace();
-    terrainPalWindow.emplace();
-    tilePropWindow.emplace();
-    textTrigWindow.emplace();
-    briefingTextTrigWindow.emplace();
-    mapSettingsWindow.emplace();
-    trigEditorWindow.emplace();
-    briefingTrigEditorWindow.emplace();
-    dimensionsWindow.emplace();
-    changePasswordWindow.emplace();
-    enterPasswordWindow.emplace();
-    aboutWindow.emplace();
-    editProfilesWindow.emplace();
-    logger.info() << "Profile: \"" << profiles().profileName << "\" loaded." << std::endl;
+        // Re-initialize/re-ctor all the modeless dialogs
+        unitWindow.emplace();
+        spriteWindow.emplace();
+        actorWindow.emplace();
+        locationWindow.emplace();
+        terrainPalWindow.emplace();
+        tilePropWindow.emplace();
+        textTrigWindow.emplace();
+        briefingTextTrigWindow.emplace();
+        mapSettingsWindow.emplace();
+        trigEditorWindow.emplace();
+        briefingTrigEditorWindow.emplace();
+        dimensionsWindow.emplace();
+        changePasswordWindow.emplace();
+        enterPasswordWindow.emplace();
+        aboutWindow.emplace();
+        editProfilesWindow.emplace();
+        logger.info() << "Profile: \"" << profiles().profileName << "\" loaded." << std::endl;
+#ifndef _DEBUG
+    } catch ( std::exception & e ) { // In release mode, force off the auto-load flag to prevent crash-on-start
+        profiles().autoLoadOnStart = false;
+        profiles().saveProfile();
+        logger.error("Unhandled exception during profile load: ", e);
+        Error("Unhandled exception during profile load: " + std::string(e.what()));
+        throw;
+    }
+#endif
     return true;
 }
 
