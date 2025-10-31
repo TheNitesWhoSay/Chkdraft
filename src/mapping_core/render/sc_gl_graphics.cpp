@@ -948,15 +948,18 @@ void GraphicsData::Data::Skin::loadClassicTiles(Sc::Data & scData, const LoadSet
                     const Sc::Terrain::TileGraphicsEx::MiniTileGraphics & miniTileGraphics = tileGraphics.miniTileGraphics[yMiniTile][xMiniTile];
                     bool flipped = miniTileGraphics.isFlipped();
                     size_t vr4Index = size_t(miniTileGraphics.vr4Index());
-                
-                    s64 xMiniOffset = left + xMiniTile*8;
-                    for ( s64 yMiniPixel = yMiniOffset < 0 ? -yMiniOffset : 0; yMiniPixel < 8; yMiniPixel++ )
+
+                    if ( vr4Index < tiles.miniTilePixels.size() )
                     {
-                        for ( s64 xMiniPixel = xMiniOffset < 0 ? -xMiniOffset : 0; xMiniPixel < 8; xMiniPixel++ )
+                        const Sc::Terrain::MiniTilePixels & miniTilePixels = tiles.miniTilePixels[vr4Index];
+                        s64 xMiniOffset = left + xMiniTile*8;
+                        for ( s64 yMiniPixel = yMiniOffset < 0 ? -yMiniOffset : 0; yMiniPixel < 8; yMiniPixel++ )
                         {
-                            const Sc::Terrain::MiniTilePixels & miniTilePixels = tiles.miniTilePixels[vr4Index];
-                            const u8 & wpeIndex = miniTilePixels.wpeIndex[yMiniPixel][flipped ? 7-xMiniPixel : xMiniPixel];
-                            tileTextureData[size_t((yMiniOffset+yMiniPixel)*width + (xMiniOffset+xMiniPixel))] = wpeIndex;
+                            for ( s64 xMiniPixel = xMiniOffset < 0 ? -xMiniOffset : 0; xMiniPixel < 8; xMiniPixel++ )
+                            {
+                                const u8 & wpeIndex = miniTilePixels.wpeIndex[yMiniPixel][flipped ? 7-xMiniPixel : xMiniPixel];
+                                tileTextureData[size_t((yMiniOffset+yMiniPixel)*width + (xMiniOffset+xMiniPixel))] = wpeIndex;
+                            }
                         }
                     }
                 }
@@ -1146,21 +1149,24 @@ void GraphicsData::Data::Skin::loadClassicImages(Sc::Data & scData)
     for ( size_t i=0; i<numImages; ++i )
     {
         auto & imageDat = scData.sprites.getImage(i);
-        auto & grp = scData.sprites.getGrp(imageDat.grpFile);
-        auto & grpFile = grp.get();
-        size_t numFrames = size_t(grpFile.numFrames);
-        if ( numFrames > 0 )
+        if ( imageDat.grpFile < scData.sprites.numGrps() )
         {
-            auto classicImage = std::make_shared<ClassicGrp>();
-            classicImage->frames.reserve(numFrames);
-            for ( std::size_t frameIndex=0; frameIndex<numFrames; ++frameIndex )
-                classicImage->frames.emplace_back();
+            auto & grp = scData.sprites.getGrp(imageDat.grpFile);
+            auto & grpFile = grp.get();
+            size_t numFrames = size_t(grpFile.numFrames);
+            if ( numFrames > 0 )
+            {
+                auto classicImage = std::make_shared<ClassicGrp>();
+                classicImage->frames.reserve(numFrames);
+                for ( std::size_t frameIndex=0; frameIndex<numFrames; ++frameIndex )
+                    classicImage->frames.emplace_back();
 
-            (*classicImages)[i] = classicImage;
-            classicImage->grpWidth = grpFile.grpWidth;
-            classicImage->grpHeight = grpFile.grpHeight;
-            //for ( size_t frameIndex=0; frameIndex<numFrames; ++frameIndex )
-            //    loadClassicImageFrame(frameIndex, i, scData, bitmapData, false);
+                (*classicImages)[i] = classicImage;
+                classicImage->grpWidth = grpFile.grpWidth;
+                classicImage->grpHeight = grpFile.grpHeight;
+                //for ( size_t frameIndex=0; frameIndex<numFrames; ++frameIndex )
+                //    loadClassicImageFrame(frameIndex, i, scData, bitmapData, false);
+            }
         }
     }
 }
