@@ -1020,9 +1020,7 @@ bool Scenario::parse(std::istream & is, bool fromMpq)
                 else
                     return parsingFailed("Unexpected error reading chk section contents!");
             }
-            else if ( sectionHeader.sizeInBytes == 0 ) // Zero-size section
-                makeProtected = true;
-            else // if ( sectionHeader.sizeInBytes < 0 ) // Jump section
+            else if ( sectionHeader.sizeInBytes < 0 ) // Jump section
             {
                 if ( sectionHeader.sizeInBytes < s32(streamStart)-s32(chk.tellg()) )
                 {
@@ -1035,7 +1033,7 @@ bool Scenario::parse(std::istream & is, bool fromMpq)
                     return parsingFailed("Unexpected error processing chk jump section!");
 
                 mapData.jumpCompress = true;
-            }
+            } // Note: zero-size sections fall through with no effect
         }
         else // if ( bytesRead < sizeof(Chk::SectionHeader) ) // Partial section header
         {
