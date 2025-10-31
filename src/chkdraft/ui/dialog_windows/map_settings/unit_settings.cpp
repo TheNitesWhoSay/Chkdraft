@@ -119,14 +119,20 @@ void UnitSettingsWindow::RefreshWindow()
         }
         else
         {
-            groupGroundWeapon.SetWinText("Ground Weapon [" + weaponNames.at(groundWeapon) + "]");
+            if ( groundWeapon < weaponNames.size() )
+                groupGroundWeapon.SetWinText("Ground Weapon [" + weaponNames.at(groundWeapon) + "]");
+            else
+                groupGroundWeapon.SetWinText("Ground Weapon [" + std::to_string(groundWeapon) + "]");
         }
 
         if ( airWeapon == Sc::Weapon::Total || airWeapon == groundWeapon )
         {
             if ( airWeapon != Sc::Weapon::Total && airWeapon == groundWeapon )
             {
-                groupAirWeapon.SetWinText("Air Weapon [" + weaponNames.at(airWeapon) + "]");
+                if ( airWeapon < weaponNames.size() )
+                    groupAirWeapon.SetWinText("Air Weapon [" + weaponNames.at(airWeapon) + "]");
+                else
+                    groupAirWeapon.SetWinText("Air Weapon [" + std::to_string(airWeapon) + "]");
             }
             else
                 groupAirWeapon.SetWinText("No Air Weapon");
@@ -141,7 +147,10 @@ void UnitSettingsWindow::RefreshWindow()
         }
         else
         {
-            groupAirWeapon.SetWinText("Air Weapon [" + weaponNames.at(airWeapon) + "]");
+            if ( airWeapon < weaponNames.size() )
+                groupAirWeapon.SetWinText("Air Weapon [" + weaponNames.at(airWeapon) + "]");
+            else
+                groupAirWeapon.SetWinText("Air Weapon [" + std::to_string(airWeapon) + "]");
         }
 
         if ( unitUsesDefaultSettings )
@@ -153,12 +162,12 @@ void UnitSettingsWindow::RefreshWindow()
             editBuildTime.SetEditNum<u16>(unitDat.buildTime);
             editMineralCost.SetEditNum<u16>(unitDat.mineralCost);
             editGasCost.SetEditNum<u16>(unitDat.vespeneCost);
-            if ( groundWeapon != Sc::Weapon::Total )
+            if ( groundWeapon < Sc::Weapon::Total )
             {
                 editGroundDamage.SetEditNum<u16>(chkd.scData->weapons.get((Sc::Weapon::Type)groundWeapon).damageAmount);
                 editGroundBonus.SetEditNum<u16>(chkd.scData->weapons.get((Sc::Weapon::Type)groundWeapon).damageBonus);
             }
-            if ( airWeapon != Sc::Weapon::Total && airWeapon != groundWeapon )
+            if ( airWeapon < Sc::Weapon::Total && airWeapon != groundWeapon )
             {
                 editAirDamage.SetEditNum<u16>(chkd.scData->weapons.get((Sc::Weapon::Type)airWeapon).damageAmount);
                 editAirBonus.SetEditNum<u16>(chkd.scData->weapons.get((Sc::Weapon::Type)airWeapon).damageBonus);
@@ -174,12 +183,12 @@ void UnitSettingsWindow::RefreshWindow()
             editBuildTime.SetEditNum<u16>(CM->getUnitBuildTime(selectedUnitType));
             editMineralCost.SetEditNum<u16>(CM->getUnitMineralCost(selectedUnitType));
             editGasCost.SetEditNum<u16>(CM->getUnitGasCost(selectedUnitType));
-            if ( groundWeapon != Sc::Weapon::Total )
+            if ( groundWeapon < Sc::Weapon::Total )
             {
                 editGroundDamage.SetEditNum<u16>(CM->getWeaponBaseDamage((Sc::Weapon::Type)groundWeapon));
                 editGroundBonus.SetEditNum<u16>(CM->getWeaponUpgradeDamage((Sc::Weapon::Type)groundWeapon));
             }
-            if ( airWeapon != Sc::Weapon::Total && airWeapon != groundWeapon )
+            if ( airWeapon < Sc::Weapon::Total && airWeapon != groundWeapon )
             {
                 editAirDamage.SetEditNum<u16>(CM->getWeaponBaseDamage((Sc::Weapon::Type)airWeapon));
                 editAirBonus.SetEditNum<u16>(CM->getWeaponUpgradeDamage((Sc::Weapon::Type)airWeapon));
