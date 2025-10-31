@@ -20,6 +20,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         result = chkd.Run(lpCmdLine, nCmdShow); // Forward the run command line params and the show options
     } catch ( std::exception & e ) {
         logger.fatal() << "Unhandled exception: " << e.what() << std::endl;
+    } catch ( ... ) {
+        logger.fatal() << "Unhandled unknown exception" << std::endl;
     }
     return result;
 #endif

@@ -119,7 +119,11 @@ Logger::Logger(std::shared_ptr<Logger> aggregator, LogLevel logLevel) :
 
 Logger::~Logger()
 {
+    if ( outputStream != nullptr )
+        outputStream->flush();
 
+    if ( aggregator != nullptr )
+        aggregator->flush();
 }
 
 LogLevel Logger::getLogLevel()

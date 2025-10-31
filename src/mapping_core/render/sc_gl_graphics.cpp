@@ -3401,6 +3401,9 @@ void MapGraphics::drawEffectColors() // TODO: This code was used to help debug f
 
 bool MapGraphics::updateGraphics(u64 msSinceLastUpdate)
 {
+    if ( !renderDat )
+        return false;
+
     bool updated = false;
 
     // update classic/SD color cycling
