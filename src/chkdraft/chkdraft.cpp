@@ -18,7 +18,7 @@ enum_t(Id, u32, {
     IDR_MAIN_MDI,
     IDR_MAIN_PLOT,
     PreDynamicMenus,
-    MenuFirstProfile,
+    MenuFirstProfile = PreDynamicMenus+250,
     PostDynamicMenus = MenuFirstProfile+250,
     NextToLastId = PostDynamicMenus+500,
     ID_MDI_FIRSTCHILD = (NextToLastId+500) // Keep this higher than all other main window identifiers
