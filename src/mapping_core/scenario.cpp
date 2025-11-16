@@ -1033,7 +1033,9 @@ bool Scenario::parse(std::istream & is, bool fromMpq)
                     return parsingFailed("Unexpected error processing chk jump section!");
 
                 mapData.jumpCompress = true;
-            } // Note: zero-size sections fall through with no effect
+            }
+            else // Zero-size section
+                mapData.addSaveSection(::MapData::Section{sectionHeader.name});
         }
         else // if ( bytesRead < sizeof(Chk::SectionHeader) ) // Partial section header
         {
