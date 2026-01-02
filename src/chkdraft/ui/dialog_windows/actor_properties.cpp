@@ -229,8 +229,8 @@ void ActorPropertiesWindow::RepopulateList()
         listActors.SetItemText(0, (int)ActorListColumn::UnitSpriteIndex, "");
         listActors.SetItemText(0, (int)ActorListColumn::Priority, "");
         listActors.SetItemText(0, (int)ActorListColumn::Name, "");
-        auto & unitActors = CM->view.units.readAttachedData();
-        auto & spriteActors = CM->view.sprites.readAttachedData();
+        auto & unitActors = CM->view.units.read_attached_data();
+        auto & spriteActors = CM->view.sprites.read_attached_data();
         auto & drawList = CM->animations->drawList;
         for ( std::size_t i=1; i<drawList.size(); ++i )
         {
@@ -1030,9 +1030,9 @@ MapActor* ActorPropertiesWindow::getActiveActor()
     if ( drawEntry != MapAnimations::UnusedDrawEntry )
     {
         if ( drawEntry & MapAnimations::FlagUnitActor )
-            return &(CM->view.units.attachedData(unitOrSpriteIndex));
+            return &(CM->view.units.attached_data(unitOrSpriteIndex));
         else
-            return &(CM->view.sprites.attachedData(unitOrSpriteIndex));
+            return &(CM->view.sprites.attached_data(unitOrSpriteIndex));
     }
     selectedActorIndex = noSelectedActor;
     DisableActorEditing();

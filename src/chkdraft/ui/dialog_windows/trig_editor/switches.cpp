@@ -152,7 +152,7 @@ void SwitchesWindow::ToggleUseDefaultString()
 {
     if ( checkUseDefaultName.isChecked() )
     {
-        auto edit = CM->operator()(ActionDescriptor::SetSwitchName);
+        auto edit = CM->create_action(ActionDescriptor::SetSwitchName);
         size_t switchNameStringId = CM->getSwitchNameStringId(selectedSwitch);
         if ( switchNameStringId != Chk::StringId::NoString )
         {
@@ -178,7 +178,7 @@ void SwitchesWindow::ButtonSwitchNameProperties()
 {
     if ( selectedSwitch >= 0 && selectedSwitch < Chk::TotalSwitches )
     {
-        auto edit = CM->operator()(ActionDescriptor::SetSwitchName);
+        auto edit = CM->create_action(ActionDescriptor::SetSwitchName);
         auto gameString = CM->getSwitchName<ChkdString>(selectedSwitch, Chk::Scope::Game);
         auto editorString = CM->getSwitchName<ChkdString>(selectedSwitch, Chk::Scope::Editor);
         ChkdStringInputDialog::Result result = ChkdStringInputDialog::GetChkdString(getHandle(), gameString, editorString, Chk::StringUserFlag::Switch, selectedSwitch);

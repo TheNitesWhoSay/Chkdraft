@@ -262,41 +262,41 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCach
                     void refreshTileOccupationCache();
                     void windowBoundsChanged();
 
-                    void elementAdded(units_path, std::size_t index) override;
-                    void elementRemoved(units_path, std::size_t index) override;
-                    void elementMoved(units_path, std::size_t oldIndex, std::size_t newIndex) override;
-                    void valueChanged(unit_type_path, Sc::Unit::Type oldType, Sc::Unit::Type newType) override;
-                    void valueChanged(unit_owner_path, u8 oldOwner, u8 newOwner) override;
-                    void valueChanged(unit_xc_path, u16 oldXc, u16 newXc) override;
-                    void valueChanged(unit_yc_path, u16 oldYc, u16 newYc) override;
-                    void valueChanged(unit_resource_path, u32 oldResourceAmount, u32 newResourceAmount) override;
-                    void valueChanged(unit_state_path, u16 oldStateFlags, u16 newStateFlags) override;
-                    void valueChanged(unit_relation_flags_path, u16 oldRelationFlags, u16 newRelationFlags) override;
+                    void element_added(units_path, std::size_t index) override;
+                    void element_removed(units_path, std::size_t index) override;
+                    void element_moved(units_path, std::size_t oldIndex, std::size_t newIndex) override;
+                    void value_changed(unit_type_path, Sc::Unit::Type oldType, Sc::Unit::Type newType) override;
+                    void value_changed(unit_owner_path, u8 oldOwner, u8 newOwner) override;
+                    void value_changed(unit_xc_path, u16 oldXc, u16 newXc) override;
+                    void value_changed(unit_yc_path, u16 oldYc, u16 newYc) override;
+                    void value_changed(unit_resource_path, u32 oldResourceAmount, u32 newResourceAmount) override;
+                    void value_changed(unit_state_path, u16 oldStateFlags, u16 newStateFlags) override;
+                    void value_changed(unit_relation_flags_path, u16 oldRelationFlags, u16 newRelationFlags) override;
 
-                    void elementAdded(sprites_path, std::size_t index) override;
-                    void elementRemoved(sprites_path, std::size_t index) override;
-                    void elementMoved(sprites_path, std::size_t oldIndex, std::size_t newIndex) override;
-                    void valueChanged(sprite_type_path, Sc::Sprite::Type oldType, Sc::Sprite::Type newType) override;
-                    void valueChanged(sprite_owner_path, u8 oldOwner, u8 newOwner) override;
-                    void valueChanged(sprite_flags_path, u16 oldFlags, u16 newFlags) override;
-                    void valueChanged(sprite_xc_path, u16 oldXc, u16 newXc) override;
-                    void valueChanged(sprite_yc_path, u16 oldYc, u16 newYc) override;
+                    void element_added(sprites_path, std::size_t index) override;
+                    void element_removed(sprites_path, std::size_t index) override;
+                    void element_moved(sprites_path, std::size_t oldIndex, std::size_t newIndex) override;
+                    void value_changed(sprite_type_path, Sc::Sprite::Type oldType, Sc::Sprite::Type newType) override;
+                    void value_changed(sprite_owner_path, u8 oldOwner, u8 newOwner) override;
+                    void value_changed(sprite_flags_path, u16 oldFlags, u16 newFlags) override;
+                    void value_changed(sprite_xc_path, u16 oldXc, u16 newXc) override;
+                    void value_changed(sprite_yc_path, u16 oldYc, u16 newYc) override;
 
-                    void valueChanged(tileset_path, Sc::Terrain::Tileset oldTileset, Sc::Terrain::Tileset newTileset) override;
+                    void value_changed(tileset_path, Sc::Terrain::Tileset oldTileset, Sc::Terrain::Tileset newTileset) override;
 
                     void tileSelectionsChanged();
                     void tileFogSelectionsChanged();
                     void checkSelChangeFlags();
 
-                    void afterAction(std::size_t actionIndex) override;
+                    void after_action(std::size_t actionIndex) override;
 
 /* Private Data */  std::optional<Graphics> scGraphics {};
                     ChkdSkin skin = ChkdSkin::ClassicGDI;
                     std::shared_ptr<WinLib::DeviceContext> openGlDc;
                     u64 prevTickCount = GetTickCount64();
-                    std::optional<RareEdit::Editor<Tracked>> brushAction {};
+                    std::optional<nf::editor<tracked>> brushAction {};
                     struct ScopedBrushDestructor { // Destroys the brush when this object goes out of scope
-                        std::optional<RareEdit::Editor<Tracked>> & brushAction;
+                        std::optional<nf::editor<tracked>> & brushAction;
                         ~ScopedBrushDestructor() { brushAction = std::nullopt; }
                     };
 

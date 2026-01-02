@@ -300,7 +300,7 @@ void BriefingTrigActionsWindow::ChangeActionType(std::size_t briefingTriggerInde
         const auto & action = CM->read.briefingTriggers[briefingTriggerIndex].actions[actionIndex];
         if ( action.actionType != newType )
         {
-            CM->operator()(ActionDescriptor::ChangeBriefingActionType)->briefingTriggers[briefingTriggerIndex].actions[actionIndex] = Chk::Action {
+            CM->create_action(ActionDescriptor::ChangeBriefingActionType)->briefingTriggers[briefingTriggerIndex].actions[actionIndex] = Chk::Action {
                 .locationId = 0,
                 .stringId = 0,
                 .soundStringId = 0,
@@ -371,7 +371,7 @@ void BriefingTrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const s
     const Chk::Action & action = CM->getBriefingTrigger(briefingTrigIndex).action(actionNum);
     if ( action.actionType < Chk::Action::NumBriefingActionTypes )
     {
-        auto edit = CM->operator()(ActionDescriptor::UpdateBriefingActionArg);
+        auto edit = CM->create_action(ActionDescriptor::UpdateBriefingActionArg);
         const auto & briefingTrig = CM->getBriefingTrigger(briefingTrigIndex);
         Chk::Action::ArgType argType = Chk::Action::getBriefingClassicArgType(action.actionType, argNum);
         SingleLineChkdString chkdNewText = ChkdString(newText);
@@ -869,7 +869,7 @@ void BriefingTrigActionsWindow::ButtonEditString()
 
             if ( (result & ChkdStringInputDialog::Result::GameStringChanged) == ChkdStringInputDialog::Result::GameStringChanged )
             {
-                auto edit = CM->operator()(ActionDescriptor::ChangeBriefingActionString);
+                auto edit = CM->create_action(ActionDescriptor::ChangeBriefingActionString);
                 if ( gameString )
                 {
                     size_t stringId = CM->addString<ChkdString>(*gameString);
@@ -919,7 +919,7 @@ void BriefingTrigActionsWindow::ButtonEditSound()
 
             if ( (result & ChkdStringInputDialog::Result::GameStringChanged) == ChkdStringInputDialog::Result::GameStringChanged )
             {
-                auto edit = CM->operator()(ActionDescriptor::ChangeBriefingActionSound);
+                auto edit = CM->create_action(ActionDescriptor::ChangeBriefingActionSound);
                 if ( gameString )
                 {
                     size_t stringId = CM->addString<ChkdString>(*gameString);

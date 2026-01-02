@@ -434,7 +434,7 @@ LRESULT TechSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             if ( HIWORD(wParam) == CBN_SELCHANGE && selectedTech != -1 &&
                 LOWORD(wParam) >= Id::DROP_P1TECHSETTINGS && LOWORD(wParam) <= Id::DROP_P12TECHSETTINGS )
             {
-                auto edit = CM->operator()(ActionDescriptor::SetTechResearched);
+                auto edit = CM->create_action(ActionDescriptor::SetTechResearched);
                 u8 player = u8(LOWORD(wParam) - Id::DROP_P1TECHSETTINGS);
                 int selection = dropPlayerTechSettings[player].GetSel();
                 if ( selection == 0 ) // Disabled

@@ -5,10 +5,10 @@ void ScMap::initAnims() // Initializes the animations for all the units and spri
     if ( Scenario::numUnits() > 0 || Scenario::numSprites() > 0 )
     {
         for ( std::size_t i=0; i<Scenario::numUnits(); ++i )
-            animations.addUnit(i, Scenario::view.units.attachedData(i));
+            animations.addUnit(i, Scenario::view.units.attached_data(i));
 
         for ( std::size_t i=0; i<Scenario::numSprites(); ++i )
-            animations.addSprite(i, Scenario::view.sprites.attachedData(i));
+            animations.addSprite(i, Scenario::view.sprites.attached_data(i));
     }
 
     this->graphics.windowBoundsChanged({

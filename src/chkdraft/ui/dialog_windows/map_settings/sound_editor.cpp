@@ -368,8 +368,8 @@ void SoundEditorWindow::BrowseButtonPressed()
 
 void SoundEditorWindow::AddFileButtonPressed()
 {
-    auto edit = CM->operator()(ActionDescriptor::AddSound);
-    std::size_t actionIndex = CM->getPendingActionIndex();
+    auto edit = CM->create_action(ActionDescriptor::AddSound);
+    std::size_t actionIndex = CM->get_pending_action_index();
 
     bool useVirtualFile = checkVirtualFile.isChecked();
     bool useCustomMpqString = checkCustomMpqString.isChecked();
@@ -537,8 +537,8 @@ void SoundEditorWindow::DeleteSoundButtonPressed()
 {
     if ( selectedSoundEntry >= 0 && selectedSoundEntry < soundEntries.size() )
     {
-        auto edit = CM->operator()(ActionDescriptor::RemoveSound);
-        std::size_t actionIndex = CM->getPendingActionIndex();
+        auto edit = CM->create_action(ActionDescriptor::RemoveSound);
+        std::size_t actionIndex = CM->get_pending_action_index();
 
         const auto & soundEntry = soundEntries[selectedSoundEntry];
         std::size_t soundStringId = soundEntry.stringId;

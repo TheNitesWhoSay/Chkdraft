@@ -30,7 +30,7 @@ std::unique_ptr<ScMap> exampleLoadFromMemory(GfxUtil & gfxUtil, Sc::Terrain::Til
     std::vector<u16> mtxmTerrain(std::size_t(64*64), u16(0));
     std::iota(mtxmTerrain.begin(), mtxmTerrain.end(), 0); // Fills with ascending tile ids starting from 0
 
-    scMap->initData(MapData {
+    scMap->init_data(MapData {
         .sprites = std::move(sprites),
         .units = std::move(units),
         .dimensions { .tileWidth = 64, .tileHeight = 64 },

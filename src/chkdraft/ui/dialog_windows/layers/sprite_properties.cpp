@@ -133,7 +133,7 @@ void SpritePropertiesWindow::SetChangeHighlightOnly(bool changeHighlightOnly)
 
 void SpritePropertiesWindow::ChangeCurrOwner(u8 newOwner)
 {
-    auto edit = CM->operator()(ActionDescriptor::UpdateSpriteOwner);
+    auto edit = CM->create_action(ActionDescriptor::UpdateSpriteOwner);
     for ( size_t spriteIndex : CM->view.sprites.sel() )
     {
         const Chk::Sprite & sprite = CM->getSprite(spriteIndex);
@@ -491,7 +491,7 @@ void SpritePropertiesWindow::LvColumnClicked(NMHDR* nmhdr)
 
 void SpritePropertiesWindow::LvItemChanged(NMHDR* nmhdr)
 {
-    auto edit = CM->operator()(ActionDescriptor::UpdateSpriteSel);
+    auto edit = CM->create_action(ActionDescriptor::UpdateSpriteSel);
     Selections & selections = CM->selections;
     if ( !changeHighlightOnly )
     {
@@ -538,7 +538,7 @@ void SpritePropertiesWindow::LvItemChanged(NMHDR* nmhdr)
 
 void SpritePropertiesWindow::ProcessSelectionQueues()
 {
-    auto edit = CM->operator()(ActionDescriptor::UpdateSpriteSel);
+    auto edit = CM->create_action(ActionDescriptor::UpdateSpriteSel);
     Selections & selections = CM->selections;
     bool hasDesel = !queueDeselection.empty();
     bool hasSel = !queueSelection.empty();
@@ -602,7 +602,7 @@ void SpritePropertiesWindow::NotifyMoveTopPressed()
     if ( CM->selections.hasSprites() )
     {
         listSprites.SetRedraw(false);
-        CM->operator()(ActionDescriptor::MoveSprites)->sprites.moveSelectionsTop();
+        CM->create_action(ActionDescriptor::MoveSprites)->sprites.move_selections_top();
         RepopulateList();
         listSprites.SetRedraw(true);
     }
@@ -613,7 +613,7 @@ void SpritePropertiesWindow::NotifyMoveEndPressed()
     if ( CM->selections.hasSprites() )
     {
         listSprites.SetRedraw(false);
-        CM->operator()(ActionDescriptor::MoveSprites)->sprites.moveSelectionsBottom();
+        CM->create_action(ActionDescriptor::MoveSprites)->sprites.move_selections_bottom();
         RepopulateList();
         listSprites.SetRedraw(true);
     }
@@ -624,7 +624,7 @@ void SpritePropertiesWindow::NotifyMoveUpPressed()
     if ( CM->selections.hasSprites() )
     {
         listSprites.SetRedraw(false);
-        CM->operator()(ActionDescriptor::MoveSprites)->sprites.moveSelectionsUp();
+        CM->create_action(ActionDescriptor::MoveSprites)->sprites.move_selections_up();
         RepopulateList();
         listSprites.SetRedraw(true);
     }
@@ -635,7 +635,7 @@ void SpritePropertiesWindow::NotifyMoveDownPressed()
     if ( CM->selections.hasSprites() )
     {
         listSprites.SetRedraw(false);
-        CM->operator()(ActionDescriptor::MoveSprites)->sprites.moveSelectionsDown();
+        CM->create_action(ActionDescriptor::MoveSprites)->sprites.move_selections_down();
         RepopulateList();
         listSprites.SetRedraw(true);
     }
@@ -647,7 +647,7 @@ void SpritePropertiesWindow::NotifyMoveToPressed()
     if ( CM->selections.hasSprites() && MoveToDialog<u32>::GetIndex(spriteMoveTo, getHandle()) && spriteMoveTo < u32(CM->numSprites()) )
     {
         listSprites.SetRedraw(false);
-        CM->operator()(ActionDescriptor::MoveSprites)->sprites.moveSelectionsTo(spriteMoveTo);
+        CM->create_action(ActionDescriptor::MoveSprites)->sprites.move_selections_to(spriteMoveTo);
         RepopulateList();
         listSprites.SetRedraw(true);
     }
@@ -658,7 +658,7 @@ void SpritePropertiesWindow::NotifyDeletePressed()
     if ( CM->selections.hasSprites() )
     {
         listSprites.SetRedraw(false);
-        CM->operator()(ActionDescriptor::DeleteSprites)->sprites.removeSelection();
+        CM->create_action(ActionDescriptor::DeleteSprites)->sprites.remove_selection();
         RepopulateList();
         listSprites.SetRedraw(true);
     }
@@ -674,14 +674,14 @@ void SpritePropertiesWindow::NotifyGraphicsPressed()
 
         NotifyClosePressed();
         ::ShowWindow(chkd.actorWindow->getHandle(), SW_SHOW);
-        chkd.actorWindow->FocusAndSelectIndex(CM->view.sprites.attachedData(firstSprite).drawListIndex);
+        chkd.actorWindow->FocusAndSelectIndex(CM->view.sprites.attached_data(firstSprite).drawListIndex);
         chkd.actorWindow->FocusThis();
     }
 }
 
 void SpritePropertiesWindow::NotifyCheckClicked(u32 idFrom)
 {
-    auto edit = CM->operator()(ActionDescriptor::UpdateSpriteFlags);
+    auto edit = CM->create_action(ActionDescriptor::UpdateSpriteFlags);
     for ( size_t spriteIndex : CM->view.sprites.sel() )
     {
         const Chk::Sprite & sprite = CM->getSprite(spriteIndex);
@@ -717,7 +717,7 @@ void SpritePropertiesWindow::NotifyCheckClicked(u32 idFrom)
 
 void SpritePropertiesWindow::NotifyIdEditUpdated()
 {
-    auto edit = CM->operator()(ActionDescriptor::ChangeSpriteType);
+    auto edit = CM->create_action(ActionDescriptor::ChangeSpriteType);
     u16 spriteID = 0;
     if ( editSpriteId.GetEditNum<u16>(spriteID) )
     {
@@ -739,7 +739,7 @@ void SpritePropertiesWindow::NotifyIdEditUpdated()
 
 void SpritePropertiesWindow::NotifyUnusedEditUpdated()
 {
-    auto edit = CM->operator()(ActionDescriptor::UpdateSpriteUnused);
+    auto edit = CM->create_action(ActionDescriptor::UpdateSpriteUnused);
     u8 unused = 0;
     if ( editUnused.GetEditNum<u8>(unused) )
     {
@@ -752,7 +752,7 @@ void SpritePropertiesWindow::NotifyUnusedEditUpdated()
 
 void SpritePropertiesWindow::NotifyXcEditUpdated()
 {
-    auto edit = CM->operator()(ActionDescriptor::AdjustSpriteXc);
+    auto edit = CM->create_action(ActionDescriptor::AdjustSpriteXc);
     u16 spriteXC = 0;
     if ( editXc.GetEditNum<u16>(spriteXC) )
     {
@@ -769,7 +769,7 @@ void SpritePropertiesWindow::NotifyXcEditUpdated()
 
 void SpritePropertiesWindow::NotifyYcEditUpdated()
 {
-    auto edit = CM->operator()(ActionDescriptor::AdjustSpriteYc);
+    auto edit = CM->create_action(ActionDescriptor::AdjustSpriteYc);
     u16 spriteYC = 0;
     if ( editYc.GetEditNum<u16>(spriteYC) )
     {

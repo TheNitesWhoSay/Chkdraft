@@ -2970,8 +2970,8 @@ void MapGraphics::drawActor(const AnimContext & animations, const MapActor & map
 
 void MapGraphics::drawActors(bool hasCrgb)
 {
-    const auto & unitActors = map.view.units.readAttachedData();
-    const auto & spriteActors = map.view.sprites.readAttachedData();
+    const auto & unitActors = map.view.units.read_attached_data();
+    const auto & spriteActors = map.view.sprites.read_attached_data();
     animations.cleanDrawList();
     std::size_t drawListSize = animations.drawList.size();
     for ( std::size_t i=1; i<drawListSize; ++i )

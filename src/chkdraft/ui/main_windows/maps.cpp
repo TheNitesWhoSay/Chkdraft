@@ -431,14 +431,14 @@ void Maps::ChangePlayer(u8 newPlayer, bool updateMapPlayers)
                         const auto & doodadDat = (Sc::Terrain::DoodadCv5 &)tileset.tileGroups[*doodadGroupIndex];
                         if ( selDoodad.owner != newPlayer )
                         {
-                            currentlyActiveMap->operator()(ActionDescriptor::UpdateDoodadPlayer)->doodads[doodadIndex].owner = newPlayer;
+                            currentlyActiveMap->create_action(ActionDescriptor::UpdateDoodadPlayer)->doodads[doodadIndex].owner = newPlayer;
                             if ( !currentlyActiveMap->read.sprites.empty() )
                             {
                                 for ( int i=int(currentlyActiveMap->read.sprites.size())-1; i>=0; --i )
                                 {
                                     const auto & sprite = currentlyActiveMap->read.sprites[i];
                                     if ( sprite.type == doodadDat.overlayIndex && sprite.xc == selDoodad.xc && sprite.yc == selDoodad.yc )
-                                        currentlyActiveMap->operator()(ActionDescriptor::UpdateSpriteOwner)->sprites[i].owner = newPlayer;
+                                        currentlyActiveMap->create_action(ActionDescriptor::UpdateSpriteOwner)->sprites[i].owner = newPlayer;
                                 }
                             }
                         }
@@ -623,7 +623,7 @@ void Maps::SetGridColor(u8 red, u8 green, u8 blue)
 
 void Maps::startPaste(bool isQuickPaste)
 {
-    auto edit = currentlyActiveMap->operator()(ActionDescriptor::BeginPaste);
+    auto edit = currentlyActiveMap->create_action(ActionDescriptor::BeginPaste);
     if ( currentlyActiveMap == nullptr )
         return;
     else if ( currentlyActiveMap->getLayer() == Layer::Terrain )
@@ -719,7 +719,7 @@ void Maps::properties()
         Selections & selections = currentlyActiveMap->selections;
         if ( selections.hasTiles() )
         {
-            auto edit = currentlyActiveMap->operator()(ActionDescriptor::UpdateTileSel);
+            auto edit = currentlyActiveMap->create_action(ActionDescriptor::UpdateTileSel);
             auto numSelected = currentlyActiveMap->view.tiles.sel().size();
             if ( numSelected > 1 )
             {

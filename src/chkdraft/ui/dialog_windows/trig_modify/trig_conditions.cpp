@@ -271,7 +271,7 @@ void TrigConditionsWindow::ChangeConditionType(std::size_t triggerIndex, std::si
         const auto & condition = CM->read.triggers[triggerIndex].conditions[conditionIndex];
         if ( condition.conditionType != conditionType )
         {
-            CM->operator()(ActionDescriptor::ChangeTriggerConditionType)->triggers[triggerIndex].conditions[conditionIndex] = Chk::Condition {
+            CM->create_action(ActionDescriptor::ChangeTriggerConditionType)->triggers[triggerIndex].conditions[conditionIndex] = Chk::Condition {
                 .locationId = u32((conditionType == Chk::Condition::Type::Command || conditionType ==  Chk::Condition::Type::Bring ||
                     conditionType ==  Chk::Condition::Type::CommandTheMostAt || conditionType ==  Chk::Condition::Type::CommandTheLeastAt)
                     ? 64 : 0),
@@ -333,7 +333,7 @@ void TrigConditionsWindow::UpdateConditionArg(u8 conditionNum, u8 argNum, const 
 {
     if ( trigIndex < CM->numTriggers() && conditionNum < Chk::Trigger::MaxConditions )
     {
-        auto edit = CM->operator()(ActionDescriptor::UpdateTriggerConditionArg);
+        auto edit = CM->create_action(ActionDescriptor::UpdateTriggerConditionArg);
         RawString rawUpdateText, rawSuggestText;
         SuggestionItem suggestion = suggestions.Take();
         TextTrigCompiler ttc(chkd.profiles().triggers.useAddressesForMemory, chkd.profiles().triggers.deathTableStart);

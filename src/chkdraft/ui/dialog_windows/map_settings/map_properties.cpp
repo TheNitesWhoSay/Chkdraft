@@ -424,7 +424,7 @@ void MapPropertiesWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
         size_t playerIndex = size_t(idFrom)-Id::BUTTON_P1COLOR;
         if ( auto playerColor = ColorPropertiesDialog::GetCrgbColor(getHandle(), CM->getPlayerCustomColor(playerIndex)) )
         {
-            auto edit = CM->operator()(ActionDescriptor::SetPlayerColor);
+            auto edit = CM->create_action(ActionDescriptor::SetPlayerColor);
             CM->setPlayerColorSetting(playerIndex, Chk::PlayerColorSetting::Custom);
             CM->setPlayerCustomColor(playerIndex, *playerColor);
             chkd.maps.UpdatePlayerStatus();
@@ -440,7 +440,7 @@ void MapPropertiesWindow::CheckReplaceMapTitle()
     {
         if ( auto newMapTitle = editMapTitle.GetWinText() )
         {
-            auto edit = CM->operator()(ActionDescriptor::SetScenarioName);
+            auto edit = CM->create_action(ActionDescriptor::SetScenarioName);
             CM->setScenarioName<ChkdString>(*newMapTitle);
             CM->deleteUnusedStrings(Chk::Scope::Both);
             possibleTitleUpdate = false;
@@ -454,7 +454,7 @@ void MapPropertiesWindow::CheckReplaceMapDescription()
     {
         if ( auto newMapDescription = editMapDescription.GetWinText() )
         {
-            auto edit = CM->operator()(ActionDescriptor::SetScenarioDescription);
+            auto edit = CM->create_action(ActionDescriptor::SetScenarioDescription);
             CM->setScenarioDescription<ChkdString>(*newMapDescription);
             CM->deleteUnusedStrings(Chk::Scope::Both);
             possibleDescriptionUpdate = false;

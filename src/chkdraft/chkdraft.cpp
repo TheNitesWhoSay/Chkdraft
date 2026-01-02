@@ -35,7 +35,7 @@ void Chkdraft::OnLoadTest()
         map->setSlotType(1, Sc::Player::SlotType::Computer);
         _Pragma("warning(suppress: 26716)") return *map;
     }();
-    auto edit = CM->operator()();
+    auto edit = CM->create_action();
     for ( std::size_t i=0; i<scData->units.numUnitTypes(); ++i )
     {
         //if ( i != Sc::Unit::Type::DarkSwarm )
