@@ -2104,7 +2104,7 @@ bool Sc::Terrain::Tiles::load(size_t tilesetIndex, ArchiveCluster & archiveClust
                     if ( newGroup )
                     {
                         doodadIdToTileGroup.try_emplace(doodad.ddDataIndex, u16(tileGroupIndex));
-                        doodadGroups.push_back({doodad.doodadName, statTxt == nullptr ? "" : statTxt->getString(doodad.doodadName), {u16(tileGroupIndex)}});
+                        doodadGroups.push_back({doodad.doodadName, statTxt == nullptr || doodad.doodadName >= statTxt->numStrings() ? "" : statTxt->getString(doodad.doodadName), {u16(tileGroupIndex)}});
                     }
                 }
             }
