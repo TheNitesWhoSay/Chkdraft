@@ -144,4 +144,5 @@ void SelectProfile::EditProfiles()
 void SelectProfile::ExitPressed()
 {
     EndDialog(getHandle(), IDCANCEL);
+    PostQuitMessage(0);
 }
