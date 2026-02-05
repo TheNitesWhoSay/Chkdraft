@@ -179,7 +179,7 @@ void BriefingTrigPlayersWindow::CreateSubWindows(HWND hWnd)
 
 void BriefingTrigPlayersWindow::CheckBoxUpdated(u16 checkId)
 {
-    auto edit = CM->operator()(ActionDescriptor::ChangeBriefingTrigPlayers);
+    auto edit = CM->create_action(ActionDescriptor::ChangeBriefingTrigPlayers);
     const Chk::Trigger & trig = CM->getBriefingTrigger(briefingTrigIndex);
     if ( checkId >= Id::CHECK_PLAYER1 && checkId <= Id::CHECK_PLAYER8 )
     {
@@ -254,7 +254,7 @@ void BriefingTrigPlayersWindow::ParseRawPlayers()
 
     if ( editRawPlayers.GetHexByteString((u8*)(&owners[0]), Chk::Trigger::MaxOwners) )
     {
-        auto edit = CM->operator()(ActionDescriptor::ChangeBriefingTrigPlayers);
+        auto edit = CM->create_action(ActionDescriptor::ChangeBriefingTrigPlayers);
         for ( std::size_t i=0; i<Chk::Trigger::MaxOwners; ++i )
         {
             if ( owners[i] != CM->read.briefingTriggers[briefingTrigIndex].owners[i] )

@@ -331,7 +331,7 @@ void TrigActionsWindow::ChangeActionType(std::size_t triggerIndex, std::size_t a
         const auto & action = CM->read.triggers[triggerIndex].actions[actionIndex];
         if ( action.actionType != newType )
         {
-            CM->operator()(ActionDescriptor::ChangeTriggerActionType)->triggers[triggerIndex].actions[actionIndex] = Chk::Action {
+            CM->create_action(ActionDescriptor::ChangeTriggerActionType)->triggers[triggerIndex].actions[actionIndex] = Chk::Action {
                 .locationId = 0,
                 .stringId = 0,
                 .soundStringId = 0,
@@ -406,7 +406,7 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
     const Chk::Action & action = trig.action(actionNum);
     if ( action.actionType < Chk::Action::NumActionTypes )
     {
-        auto edit = CM->operator()(ActionDescriptor::UpdateTriggerActionArg);
+        auto edit = CM->create_action(ActionDescriptor::UpdateTriggerActionArg);
         Chk::Action::ArgType argType = Chk::Action::getClassicArgType(action.actionType, argNum);
         SingleLineChkdString chkdNewText = ChkdString(newText);
 
@@ -1103,7 +1103,7 @@ void TrigActionsWindow::ButtonEditString()
 
             if ( (result & ChkdStringInputDialog::Result::GameStringChanged) == ChkdStringInputDialog::Result::GameStringChanged )
             {
-                auto edit = CM->operator()(ActionDescriptor::ChangeTriggerActionString);
+                auto edit = CM->create_action(ActionDescriptor::ChangeTriggerActionString);
                 if ( gameString )
                 {
                     size_t stringId = CM->addString<ChkdString>(*gameString);
@@ -1153,7 +1153,7 @@ void TrigActionsWindow::ButtonEditSound()
 
             if ( (result & ChkdStringInputDialog::Result::GameStringChanged) == ChkdStringInputDialog::Result::GameStringChanged )
             {
-                auto edit = CM->operator()(ActionDescriptor::ChangeTriggerActionSound);
+                auto edit = CM->create_action(ActionDescriptor::ChangeTriggerActionSound);
                 if ( gameString )
                 {
                     size_t stringId = CM->addString<ChkdString>(*gameString);
@@ -1200,7 +1200,7 @@ void TrigActionsWindow::ButtonEditUnitProperties()
         Chk::Cuwp newCuwp = {};
         if ( CuwpInputDialog::GetCuwp(newCuwp, initialCuwp, getHandle()) )
         {
-            auto edit = CM->operator()(ActionDescriptor::SetTriggerActionUnitProperties);
+            auto edit = CM->create_action(ActionDescriptor::SetTriggerActionUnitProperties);
             size_t newCuwpIndex = CM->addCuwp(newCuwp, true, trigIndex, (size_t)focusedY);
             if ( newCuwpIndex < Sc::Unit::MaxCuwps )
             {

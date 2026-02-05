@@ -180,7 +180,7 @@ bool MapFile::save(bool saveAs, bool updateListFile, FileBrowserPtr<SaveType> fi
         CHKD_ERR("Cannot save protected maps!");
     else
     {
-        auto edit = createAction(ActionDescriptor::UpdateSaveSections);
+        auto edit = create_action(ActionDescriptor::UpdateSaveSections);
         // If scenario changed such that save type should have changed, adjust it in advance so filter type is correct
         SaveType newSaveType = read.saveType;
         if ( Scenario::getVersion() >= Chk::Version::StarCraft_Remastered || read.saveType == SaveType::RemasteredScx || read.saveType == SaveType::RemasteredChk )
@@ -261,7 +261,7 @@ std::string MapFile::getTemporaryMpqPath()
 
 std::size_t MapFile::getCurrentActionIndex()
 {
-    return Tracked::getPendingActionIndex();
+    return tracked::get_pending_action_index();
 }
 
 struct MpqAutoClose {
@@ -449,7 +449,7 @@ bool MapFile::addSound(const std::string & srcFilePath, WavQuality wavQuality, b
 
 bool MapFile::addSound(const std::string & srcFilePath, const std::string & destMpqPath, WavQuality wavQuality, bool virtualFile)
 {
-    auto edit = createAction(ActionDescriptor::AddSound);
+    auto edit = create_action(ActionDescriptor::AddSound);
     if ( virtualFile )
     {
         size_t soundStringId = Scenario::addString(RawString(srcFilePath), Chk::Scope::Game);

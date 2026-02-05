@@ -338,7 +338,7 @@ void ForcesWindow::CheckReplaceForceName(Chk::Force force)
         if ( newMapForce && newMapForce->length() > 0 )
         {
             {
-                auto edit = CM->operator()(ActionDescriptor::UpdateForceName);
+                auto edit = CM->create_action(ActionDescriptor::UpdateForceName);
                 CM->setForceName<ChkdString>(force, *newMapForce);
                 CM->deleteUnusedStrings(Chk::Scope::Both);
             }

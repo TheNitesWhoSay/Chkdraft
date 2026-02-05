@@ -199,6 +199,34 @@ void ProfileGeneralWindow::ToggleUseRemastered()
     }
 }
 
+void ProfileGeneralWindow::RemoveDataFilePath(bool isRemastered, const std::string & path)
+{
+    auto & editProfile = getEditProfile();
+    if ( isRemastered )
+    {
+        for ( auto it = editProfile.remastered.dataFiles.begin(); it != editProfile.remastered.dataFiles.end(); ++it )
+        {
+            if ( isSamePath(path, (*it)) )
+            {
+                editProfile.remastered.dataFiles.erase(it);
+                break;
+            }
+        }
+    }
+    else
+    {
+        for ( auto it = editProfile.classic.dataFiles.begin(); it != editProfile.classic.dataFiles.end(); ++it )
+        {
+            if ( isSamePath(path, (*it)) )
+            {
+                editProfile.classic.dataFiles.erase(it);
+                break;
+            }
+        }
+    }
+    chkd.editProfilesWindow->customDatFilesWindow.RefreshWindow();
+}
+
 void ProfileGeneralWindow::AddOrReplaceDataFilePath(bool isRemastered, const std::string & oldPath, const std::string & newPath)
 {
     auto & editProfile = getEditProfile();
@@ -248,7 +276,10 @@ void ProfileGeneralWindow::BrowseScrPath()
         {
             std::string oldPath = editProfile.remastered.cascPath;
             editProfile.remastered.cascPath = makeSystemFilePath(editProfile.remastered.starCraftPath, "Data");
-            AddOrReplaceDataFilePath(true, oldPath, editProfile.remastered.cascPath);
+            if ( editProfile.remastered.cascPath.empty() )
+                RemoveDataFilePath(true, editProfile.remastered.cascPath);
+            else
+                AddOrReplaceDataFilePath(true, oldPath, editProfile.remastered.cascPath);
         }
 
         editProfile.saveProfile();
@@ -299,28 +330,53 @@ void ProfileGeneralWindow::BrowseScPath()
         {
             std::string previousScPath = editProfile.classic.starCraftPath;
             editProfile.classic.starCraftPath = classicScPath;
+            bool newScPathEmpty = editProfile.classic.starCraftPath.empty();
             if ( updatePatchRtDat )
             {
                 std::string oldPath = editProfile.classic.patchRtPath;
-                editProfile.classic.patchRtPath = makeSystemFilePath(editProfile.classic.starCraftPath, "patch_rt.mpq");
-                AddOrReplaceDataFilePath(false, oldPath, editProfile.classic.patchRtPath);
+                if ( newScPathEmpty )
+                {
+                    editProfile.classic.patchRtPath = "";
+                    RemoveDataFilePath(false, oldPath);
+                }
+                else
+                {
+                    editProfile.classic.patchRtPath = makeSystemFilePath(editProfile.classic.starCraftPath, "patch_rt.mpq");
+                    AddOrReplaceDataFilePath(false, oldPath, editProfile.classic.patchRtPath);
+                }
             }
             if ( updateBrooDat )
             {
                 std::string oldPath = editProfile.classic.brooDatPath;
-                editProfile.classic.brooDatPath = makeSystemFilePath(editProfile.classic.starCraftPath, "BrooDat.mpq");
-                AddOrReplaceDataFilePath(false, oldPath, editProfile.classic.brooDatPath);
+                if ( newScPathEmpty )
+                {
+                    editProfile.classic.brooDatPath = "";
+                    RemoveDataFilePath(false, oldPath);
+                }
+                else
+                {
+                    editProfile.classic.brooDatPath = makeSystemFilePath(editProfile.classic.starCraftPath, "BrooDat.mpq");
+                    AddOrReplaceDataFilePath(false, oldPath, editProfile.classic.brooDatPath);
+                }
             }
             if ( updateStarDat )
             {
                 std::string oldPath = editProfile.classic.starDatPath;
-                editProfile.classic.starDatPath = makeSystemFilePath(editProfile.classic.starCraftPath, "StarDat.mpq");
-                AddOrReplaceDataFilePath(false, oldPath, editProfile.classic.starDatPath);
+                if ( newScPathEmpty )
+                {
+                    editProfile.classic.starDatPath = "";
+                    RemoveDataFilePath(false, oldPath);
+                }
+                else
+                {
+                    editProfile.classic.starDatPath = makeSystemFilePath(editProfile.classic.starCraftPath, "StarDat.mpq");
+                    AddOrReplaceDataFilePath(false, oldPath, editProfile.classic.starDatPath);
+                }
             }
 
             for ( auto & dataFile : editProfile.classic.dataFiles )
             {
-                if ( dataFile.starts_with(previousScPath) )
+                if ( !newScPathEmpty && !previousScPath.empty() && dataFile.starts_with(previousScPath) )
                     dataFile.replace(0, previousScPath.size(), editProfile.classic.starCraftPath);
                 else if ( dataFile.ends_with("Cosmonarchy/Release/temp.mpq") || dataFile.ends_with("Cosmonarchy\\Release\\temp.mpq") )
                 {
@@ -711,7 +767,8 @@ void ProfileGeneralWindow::CheckReplaceScrPath()
             auto & editProfile = getEditProfile();
 
             bool updateCascPath = editProfile.remastered.cascPath.empty() ||
-                isSamePath(editProfile.remastered.starCraftPath, editProfile.remastered.cascPath);
+                isSamePath(editProfile.remastered.starCraftPath, editProfile.remastered.cascPath) ||
+                isSamePath(makeSystemFilePath(editProfile.remastered.starCraftPath, "Data"), editProfile.remastered.cascPath);
 
             if ( newScrPath.value() != editProfile.remastered.starCraftPath )
             {
@@ -719,8 +776,16 @@ void ProfileGeneralWindow::CheckReplaceScrPath()
                 if ( updateCascPath )
                 {
                     std::string oldPath = editProfile.remastered.cascPath;
-                    editProfile.remastered.cascPath = editProfile.remastered.starCraftPath;
-                    AddOrReplaceDataFilePath(true, oldPath, editProfile.remastered.cascPath);
+                    if ( newScrPath->empty() )
+                    {
+                        editProfile.remastered.cascPath = "";
+                        RemoveDataFilePath(true, oldPath);
+                    }
+                    else
+                    {
+                        editProfile.remastered.cascPath = editProfile.remastered.starCraftPath;
+                        AddOrReplaceDataFilePath(true, oldPath, editProfile.remastered.cascPath);
+                    }
                 }
 
                 editProfile.saveProfile();
@@ -743,7 +808,11 @@ void ProfileGeneralWindow::CheckReplaceCascPath()
             {
                 std::string oldPath = editProfile.remastered.cascPath;
                 editProfile.remastered.cascPath = *newCascPath;
-                AddOrReplaceDataFilePath(true, oldPath, editProfile.remastered.cascPath);
+                if ( editProfile.remastered.cascPath.empty() )
+                    RemoveDataFilePath(true, oldPath);
+                else
+                    AddOrReplaceDataFilePath(true, oldPath, editProfile.remastered.cascPath);
+
                 editProfile.saveProfile();
                 logger.debug() << "Updated cascPath to " << editProfile.remastered.cascPath << std::endl;
             }
@@ -771,23 +840,48 @@ void ProfileGeneralWindow::CheckReplaceScPath()
             if ( newScPath.value() != editProfile.classic.starCraftPath )
             {
                 editProfile.classic.starCraftPath = *newScPath;
+                bool newScPathEmpty = editProfile.classic.starCraftPath.empty();
                 if ( updatePatchRtDat )
                 {
                     std::string oldPath = editProfile.classic.patchRtPath;
-                    editProfile.classic.patchRtPath = makeSystemFilePath(editProfile.classic.starCraftPath, "patch_rt.mpq");
-                    AddOrReplaceDataFilePath(false, oldPath, editProfile.classic.patchRtPath);
+                    if ( newScPathEmpty )
+                    {
+                        editProfile.classic.patchRtPath = "";
+                        RemoveDataFilePath(false, oldPath);
+                    }
+                    else
+                    {
+                        editProfile.classic.patchRtPath = makeSystemFilePath(editProfile.classic.starCraftPath, "patch_rt.mpq");
+                        AddOrReplaceDataFilePath(false, oldPath, editProfile.classic.patchRtPath);
+                    }
                 }
                 if ( updateBrooDat )
                 {
                     std::string oldPath = editProfile.classic.brooDatPath;
-                    editProfile.classic.brooDatPath = makeSystemFilePath(editProfile.classic.starCraftPath, "BrooDat.mpq");
-                    AddOrReplaceDataFilePath(false, oldPath, editProfile.classic.brooDatPath);
+                    if ( newScPathEmpty )
+                    {
+                        editProfile.classic.brooDatPath = "";
+                        RemoveDataFilePath(false, oldPath);
+                    }
+                    else
+                    {
+                        editProfile.classic.brooDatPath = makeSystemFilePath(editProfile.classic.starCraftPath, "BrooDat.mpq");
+                        AddOrReplaceDataFilePath(false, oldPath, editProfile.classic.brooDatPath);
+                    }
                 }
                 if ( updateStarDat )
                 {
                     std::string oldPath = editProfile.classic.starDatPath;
-                    editProfile.classic.starDatPath = makeSystemFilePath(editProfile.classic.starCraftPath, "StarDat.mpq");
-                    AddOrReplaceDataFilePath(false, oldPath, editProfile.classic.starDatPath);
+                    if ( newScPathEmpty )
+                    {
+                        editProfile.classic.starDatPath = "";
+                        RemoveDataFilePath(false, oldPath);
+                    }
+                    else
+                    {
+                        editProfile.classic.starDatPath = makeSystemFilePath(editProfile.classic.starCraftPath, "StarDat.mpq");
+                        AddOrReplaceDataFilePath(false, oldPath, editProfile.classic.starDatPath);
+                    }
                 }
 
                 editProfile.saveProfile();
@@ -810,7 +904,11 @@ void ProfileGeneralWindow::CheckReplaceStarDatPath()
             {
                 std::string oldPath = editProfile.classic.starDatPath;
                 editProfile.classic.starDatPath = *newStarDatPath;
-                AddOrReplaceDataFilePath(false, oldPath, editProfile.classic.starDatPath);
+                if ( editProfile.classic.starDatPath.empty() )
+                    RemoveDataFilePath(false, oldPath);
+                else
+                    AddOrReplaceDataFilePath(false, oldPath, editProfile.classic.starDatPath);
+
                 editProfile.saveProfile();
                 logger.debug() << "Updated starDatPath to " << editProfile.classic.starDatPath << std::endl;
             }
@@ -830,7 +928,11 @@ void ProfileGeneralWindow::CheckReplaceBrooDatPath()
             {
                 std::string oldPath = editProfile.classic.brooDatPath;
                 editProfile.classic.brooDatPath = *newBrooDatPath;
-                AddOrReplaceDataFilePath(false, oldPath, editProfile.classic.brooDatPath);
+                if ( editProfile.classic.brooDatPath.empty() )
+                    RemoveDataFilePath(false, oldPath);
+                else
+                    AddOrReplaceDataFilePath(false, oldPath, editProfile.classic.brooDatPath);
+
                 editProfile.saveProfile();
                 logger.debug() << "Updated brooDatPath to " << editProfile.classic.brooDatPath << std::endl;
             }
@@ -850,7 +952,11 @@ void ProfileGeneralWindow::CheckReplacePatchRtPath()
             {
                 std::string oldPath = editProfile.classic.patchRtPath;
                 editProfile.classic.patchRtPath = *newPatchRtPath;
-                AddOrReplaceDataFilePath(false, oldPath, editProfile.classic.patchRtPath);
+                if ( editProfile.classic.patchRtPath.empty() )
+                    RemoveDataFilePath(false, oldPath);
+                else
+                    AddOrReplaceDataFilePath(false, oldPath, editProfile.classic.patchRtPath);
+
                 editProfile.saveProfile();
                 logger.debug() << "Updated patchRtPath to " << editProfile.classic.patchRtPath << std::endl;
             }

@@ -255,7 +255,7 @@ void UnitPropertiesWindow::SetChangeHighlightOnly(bool changeHighlightOnly)
 
 void UnitPropertiesWindow::ChangeCurrOwner(u8 newOwner)
 {
-    auto edit = CM->operator()(ActionDescriptor::UpdateUnitOwner);
+    auto edit = CM->create_action(ActionDescriptor::UpdateUnitOwner);
     for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
@@ -781,7 +781,7 @@ void UnitPropertiesWindow::LvColumnClicked(NMHDR* nmhdr)
 
 void UnitPropertiesWindow::LvItemChanged(NMHDR* nmhdr)
 {
-    auto edit = CM->operator()(ActionDescriptor::UpdateUnitSel);
+    auto edit = CM->create_action(ActionDescriptor::UpdateUnitSel);
     Selections & selections = CM->selections;
     if ( !changeHighlightOnly )
     {
@@ -828,7 +828,7 @@ void UnitPropertiesWindow::LvItemChanged(NMHDR* nmhdr)
 
 void UnitPropertiesWindow::ProcessSelectionQueues()
 {
-    auto edit = CM->operator()(ActionDescriptor::UpdateUnitSel);
+    auto edit = CM->create_action(ActionDescriptor::UpdateUnitSel);
     Selections & selections = CM->selections;
     bool hasDesel = !queueDeselection.empty();
     bool hasSel = !queueSelection.empty();
@@ -907,7 +907,7 @@ void UnitPropertiesWindow::NotifyMoveTopPressed()
     if ( CM->selections.hasUnits() )
     {
         listUnits.SetRedraw(false);
-        CM->operator()(ActionDescriptor::MoveUnits)->units.moveSelectionsTop();
+        CM->create_action(ActionDescriptor::MoveUnits)->units.move_selections_top();
         RepopulateList();
         listUnits.SetRedraw(true);
     }
@@ -918,7 +918,7 @@ void UnitPropertiesWindow::NotifyMoveEndPressed()
     if ( CM->selections.hasUnits() )
     {
         listUnits.SetRedraw(false);
-        CM->operator()(ActionDescriptor::MoveUnits)->units.moveSelectionsBottom();
+        CM->create_action(ActionDescriptor::MoveUnits)->units.move_selections_bottom();
         RepopulateList();
         listUnits.SetRedraw(true);
     }
@@ -929,7 +929,7 @@ void UnitPropertiesWindow::NotifyMoveUpPressed()
     if ( CM->selections.hasUnits() )
     {
         listUnits.SetRedraw(false);
-        CM->operator()(ActionDescriptor::MoveUnits)->units.moveSelectionsUp();
+        CM->create_action(ActionDescriptor::MoveUnits)->units.move_selections_up();
         RepopulateList();
         listUnits.SetRedraw(true);
     }
@@ -940,7 +940,7 @@ void UnitPropertiesWindow::NotifyMoveDownPressed()
     if ( CM->selections.hasUnits() )
     {
         listUnits.SetRedraw(false);
-        CM->operator()(ActionDescriptor::MoveUnits)->units.moveSelectionsDown();
+        CM->create_action(ActionDescriptor::MoveUnits)->units.move_selections_down();
         RepopulateList();
         listUnits.SetRedraw(true);
     }
@@ -952,7 +952,7 @@ void UnitPropertiesWindow::NotifyMoveToPressed()
     if ( CM->selections.hasUnits() && MoveToDialog<u32>::GetIndex(unitMoveTo, getHandle()) && unitMoveTo < u32(CM->numUnits()) )
     {
         listUnits.SetRedraw(false);
-        CM->operator()(ActionDescriptor::MoveUnits)->units.moveSelectionsTo(unitMoveTo);
+        CM->create_action(ActionDescriptor::MoveUnits)->units.move_selections_to(unitMoveTo);
         RepopulateList();
         listUnits.SetRedraw(true);
     }
@@ -962,7 +962,7 @@ void UnitPropertiesWindow::NotifyDeletePressed()
 {
     if ( CM->selections.hasUnits() )
     {
-        auto edit = CM->operator()(ActionDescriptor::DeleteUnits);
+        auto edit = CM->create_action(ActionDescriptor::DeleteUnits);
         listUnits.SetRedraw(false);
         CM->unlinkAndDeleteSelectedUnits();
 
@@ -974,7 +974,7 @@ void UnitPropertiesWindow::NotifyDeletePressed()
 
 void UnitPropertiesWindow::NotifyLinkUnlinkPressed()
 {
-    auto edit = CM->operator()(ActionDescriptor::ToggleUnitLinked);
+    auto edit = CM->create_action(ActionDescriptor::ToggleUnitLinked);
     size_t numUnits = CM->numUnits();
     if ( CM == nullptr || !CM->selections.hasUnits() || CM->selections.getFirstUnit() >= numUnits )
         return;
@@ -1024,7 +1024,7 @@ void UnitPropertiesWindow::NotifyLinkUnlinkPressed()
 
 void UnitPropertiesWindow::NotifyJumpToPressed()
 {
-    auto edit = CM->operator()(ActionDescriptor::UpdateUnitSel);
+    auto edit = CM->create_action(ActionDescriptor::UpdateUnitSel);
     size_t numUnits = CM->numUnits();
     if ( CM == nullptr || !CM->selections.hasUnits() || CM->selections.getFirstUnit() >= numUnits )
         return;
@@ -1039,7 +1039,7 @@ void UnitPropertiesWindow::NotifyJumpToPressed()
             auto & otherUnit = CM->getUnit(i);
             if ( unit.relationClassId == otherUnit.classId && i != currUnitIndex )
             {
-                edit->units.clearSelections();
+                edit->units.clear_selections();
                 if ( std::find(sel.begin(), sel.end(), u32(i)) == sel.end() )
                     edit->units.select(i);
 
@@ -1061,14 +1061,14 @@ void UnitPropertiesWindow::NotifyGraphicsPressed()
         
         NotifyClosePressed();
         ::ShowWindow(chkd.actorWindow->getHandle(), SW_SHOW);
-        chkd.actorWindow->FocusAndSelectIndex(CM->view.units.attachedData(firstUnit).drawListIndex);
+        chkd.actorWindow->FocusAndSelectIndex(CM->view.units.attached_data(firstUnit).drawListIndex);
         chkd.actorWindow->FocusThis();
     }
 }
 
 void UnitPropertiesWindow::NotifyInvincibleClicked()
 {
-    auto edit = CM->operator()(ActionDescriptor::ToggleUnitInvincible);
+    auto edit = CM->create_action(ActionDescriptor::ToggleUnitInvincible);
     for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
@@ -1086,7 +1086,7 @@ void UnitPropertiesWindow::NotifyInvincibleClicked()
 
 void UnitPropertiesWindow::NotifyHallucinatedClicked()
 {
-    auto edit = CM->operator()(ActionDescriptor::ToggleUnitHallucinated);
+    auto edit = CM->create_action(ActionDescriptor::ToggleUnitHallucinated);
     for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
@@ -1104,7 +1104,7 @@ void UnitPropertiesWindow::NotifyHallucinatedClicked()
 
 void UnitPropertiesWindow::NotifyBurrowedClicked()
 {
-    auto edit = CM->operator()(ActionDescriptor::ToggleUnitBurrowed);
+    auto edit = CM->create_action(ActionDescriptor::ToggleUnitBurrowed);
     for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
@@ -1122,7 +1122,7 @@ void UnitPropertiesWindow::NotifyBurrowedClicked()
 
 void UnitPropertiesWindow::NotifyCloakedClicked()
 {
-    auto edit = CM->operator()(ActionDescriptor::ToggleUnitCloaked);
+    auto edit = CM->create_action(ActionDescriptor::ToggleUnitCloaked);
     for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
@@ -1140,7 +1140,7 @@ void UnitPropertiesWindow::NotifyCloakedClicked()
 
 void UnitPropertiesWindow::NotifyLiftedClicked()
 {
-    auto edit = CM->operator()(ActionDescriptor::ToggleUnitLifted);
+    auto edit = CM->create_action(ActionDescriptor::ToggleUnitLifted);
     for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
@@ -1158,7 +1158,7 @@ void UnitPropertiesWindow::NotifyLiftedClicked()
 
 void UnitPropertiesWindow::NotifyHpEditUpdated()
 {
-    auto edit = CM->operator()(ActionDescriptor::UpdateUnitHp);
+    auto edit = CM->create_action(ActionDescriptor::UpdateUnitHp);
     u8 hpPercent = 0;
     if ( editLife.GetEditNum<u8>(hpPercent) )
     {
@@ -1175,7 +1175,7 @@ void UnitPropertiesWindow::NotifyHpEditUpdated()
 
 void UnitPropertiesWindow::NotifyMpEditUpdated()
 {
-    auto edit = CM->operator()(ActionDescriptor::UpdateUnitMp);
+    auto edit = CM->create_action(ActionDescriptor::UpdateUnitMp);
     u8 mpPercent = 0;
     if ( editMana.GetEditNum<u8>(mpPercent) )
     {
@@ -1192,7 +1192,7 @@ void UnitPropertiesWindow::NotifyMpEditUpdated()
 
 void UnitPropertiesWindow::NotifyShieldEditUpdated()
 {
-    auto edit = CM->operator()(ActionDescriptor::UpdateUnitShields);
+    auto edit = CM->create_action(ActionDescriptor::UpdateUnitShields);
     u8 shieldPercent = 0;
     if ( editShield.GetEditNum<u8>(shieldPercent) )
     {
@@ -1209,7 +1209,7 @@ void UnitPropertiesWindow::NotifyShieldEditUpdated()
 
 void UnitPropertiesWindow::NotifyResourcesEditUpdated()
 {
-    auto edit = CM->operator()(ActionDescriptor::UpdateUnitResources);
+    auto edit = CM->create_action(ActionDescriptor::UpdateUnitResources);
     u32 resources = 0;
     if ( editResources.GetEditNum<u32>(resources) )
     {
@@ -1227,7 +1227,7 @@ void UnitPropertiesWindow::NotifyResourcesEditUpdated()
 
 void UnitPropertiesWindow::NotifyHangarEditUpdated()
 {
-    auto edit = CM->operator()(ActionDescriptor::UpdateUnitHangar);
+    auto edit = CM->create_action(ActionDescriptor::UpdateUnitHangar);
     u16 hangar = 0;
     if ( editHangar.GetEditNum<u16>(hangar) )
     {
@@ -1244,7 +1244,7 @@ void UnitPropertiesWindow::NotifyHangarEditUpdated()
 
 void UnitPropertiesWindow::NotifyIdEditUpdated()
 {
-    auto edit = CM->operator()(ActionDescriptor::ChangeUnitType);
+    auto edit = CM->create_action(ActionDescriptor::ChangeUnitType);
     u16 unitID = 0;
     if ( editUnitId.GetEditNum<u16>(unitID) )
     {
@@ -1268,7 +1268,7 @@ void UnitPropertiesWindow::NotifyIdEditUpdated()
 
 void UnitPropertiesWindow::NotifyXcEditUpdated()
 {
-    auto edit = CM->operator()(ActionDescriptor::AdjustUnitXc);
+    auto edit = CM->create_action(ActionDescriptor::AdjustUnitXc);
     u16 unitXC = 0;
     if ( editXc.GetEditNum<u16>(unitXC) )
     {
@@ -1285,7 +1285,7 @@ void UnitPropertiesWindow::NotifyXcEditUpdated()
 
 void UnitPropertiesWindow::NotifyYcEditUpdated()
 {
-    auto edit = CM->operator()(ActionDescriptor::AdjustUnitYc);
+    auto edit = CM->create_action(ActionDescriptor::AdjustUnitYc);
     u16 unitYC = 0;
     if ( editYc.GetEditNum<u16>(unitYC) )
     {
@@ -1302,7 +1302,7 @@ void UnitPropertiesWindow::NotifyYcEditUpdated()
 
 void UnitPropertiesWindow::NotifyValidFieldOwnerClicked()
 {
-    auto edit = CM->operator()(ActionDescriptor::ToggleUnitValidFieldOwner);
+    auto edit = CM->create_action(ActionDescriptor::ToggleUnitValidFieldOwner);
     for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
@@ -1317,7 +1317,7 @@ void UnitPropertiesWindow::NotifyValidFieldOwnerClicked()
 
 void UnitPropertiesWindow::NotifyValidFieldLifeClicked()
 {
-    auto edit = CM->operator()(ActionDescriptor::ToggleUnitValidFieldLife);
+    auto edit = CM->create_action(ActionDescriptor::ToggleUnitValidFieldLife);
     for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
@@ -1332,7 +1332,7 @@ void UnitPropertiesWindow::NotifyValidFieldLifeClicked()
 
 void UnitPropertiesWindow::NotifyValidFieldManaClicked()
 {
-    auto edit = CM->operator()(ActionDescriptor::ToggleUnitValidFieldMana);
+    auto edit = CM->create_action(ActionDescriptor::ToggleUnitValidFieldMana);
     for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
@@ -1347,7 +1347,7 @@ void UnitPropertiesWindow::NotifyValidFieldManaClicked()
 
 void UnitPropertiesWindow::NotifyValidFieldShieldClicked()
 {
-    auto edit = CM->operator()(ActionDescriptor::ToggleUnitValidFieldShields);
+    auto edit = CM->create_action(ActionDescriptor::ToggleUnitValidFieldShields);
     for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
@@ -1362,7 +1362,7 @@ void UnitPropertiesWindow::NotifyValidFieldShieldClicked()
 
 void UnitPropertiesWindow::NotifyValidFieldResourcesClicked()
 {
-    auto edit = CM->operator()(ActionDescriptor::ToggleUnitValidFieldResources);
+    auto edit = CM->create_action(ActionDescriptor::ToggleUnitValidFieldResources);
     for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
@@ -1377,7 +1377,7 @@ void UnitPropertiesWindow::NotifyValidFieldResourcesClicked()
 
 void UnitPropertiesWindow::NotifyValidFieldHangarClicked()
 {
-    auto edit = CM->operator()(ActionDescriptor::ToggleUnitValidFieldHangar);
+    auto edit = CM->create_action(ActionDescriptor::ToggleUnitValidFieldHangar);
     for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
@@ -1392,7 +1392,7 @@ void UnitPropertiesWindow::NotifyValidFieldHangarClicked()
 
 void UnitPropertiesWindow::NotifyValidFieldRawFlagsEditUpdated()
 {
-    auto edit = CM->operator()(ActionDescriptor::UpdateUnitValidFieldRawFlags);
+    auto edit = CM->create_action(ActionDescriptor::UpdateUnitValidFieldRawFlags);
     u16 validFields = 0;
     if ( editValidFieldRawFlags.GetEditNum<u16>(validFields) )
     {
@@ -1404,7 +1404,7 @@ void UnitPropertiesWindow::NotifyValidFieldRawFlagsEditUpdated()
 
 void UnitPropertiesWindow::NotifyValidStateInvincibleClicked()
 {
-    auto edit = CM->operator()(ActionDescriptor::ToggleUnitValidStateInvincible);
+    auto edit = CM->create_action(ActionDescriptor::ToggleUnitValidStateInvincible);
     for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
@@ -1419,7 +1419,7 @@ void UnitPropertiesWindow::NotifyValidStateInvincibleClicked()
 
 void UnitPropertiesWindow::NotifyValidStateBurrowedClicked()
 {
-    auto edit = CM->operator()(ActionDescriptor::ToggleUnitValidStateBurrowed);
+    auto edit = CM->create_action(ActionDescriptor::ToggleUnitValidStateBurrowed);
     for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
@@ -1434,7 +1434,7 @@ void UnitPropertiesWindow::NotifyValidStateBurrowedClicked()
 
 void UnitPropertiesWindow::NotifyValidStateHallucinatedClicked()
 {
-    auto edit = CM->operator()(ActionDescriptor::ToggleUnitValidStateHallucinated);
+    auto edit = CM->create_action(ActionDescriptor::ToggleUnitValidStateHallucinated);
     for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
@@ -1449,7 +1449,7 @@ void UnitPropertiesWindow::NotifyValidStateHallucinatedClicked()
 
 void UnitPropertiesWindow::NotifyValidStateCloakedClicked()
 {
-    auto edit = CM->operator()(ActionDescriptor::ToggleUnitValidStateCloaked);
+    auto edit = CM->create_action(ActionDescriptor::ToggleUnitValidStateCloaked);
     for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
@@ -1464,7 +1464,7 @@ void UnitPropertiesWindow::NotifyValidStateCloakedClicked()
 
 void UnitPropertiesWindow::NotifyValidStateLiftedClicked()
 {
-    auto edit = CM->operator()(ActionDescriptor::ToggleUnitValidStateLifted);
+    auto edit = CM->create_action(ActionDescriptor::ToggleUnitValidStateLifted);
     for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
@@ -1479,7 +1479,7 @@ void UnitPropertiesWindow::NotifyValidStateLiftedClicked()
 
 void UnitPropertiesWindow::NotifyValidStateRawFlagsEditUpdated()
 {
-    auto edit = CM->operator()(ActionDescriptor::UpdateUnitValidStateRawFlags);
+    auto edit = CM->create_action(ActionDescriptor::UpdateUnitValidStateRawFlags);
     u16 validState = 0;
     if ( editValidStateRawFlags.GetEditNum<u16>(validState) )
     {
@@ -1491,7 +1491,7 @@ void UnitPropertiesWindow::NotifyValidStateRawFlagsEditUpdated()
 
 void UnitPropertiesWindow::NotifyStateRawFlagsEditUpdated()
 {
-    auto edit = CM->operator()(ActionDescriptor::UpdateUnitStateRawFlags);
+    auto edit = CM->create_action(ActionDescriptor::UpdateUnitStateRawFlags);
     u16 state = 0;
     if ( editRawStateFlags.GetEditNum<u16>(state) )
     {
@@ -1503,7 +1503,7 @@ void UnitPropertiesWindow::NotifyStateRawFlagsEditUpdated()
 
 void UnitPropertiesWindow::NotifyUnusedEditUpdated()
 {
-    auto edit = CM->operator()(ActionDescriptor::UpdateUnitUnused);
+    auto edit = CM->create_action(ActionDescriptor::UpdateUnitUnused);
     u16 unused = 0;
     if ( editUnused.GetEditNum<u16>(unused) )
     {
@@ -1515,7 +1515,7 @@ void UnitPropertiesWindow::NotifyUnusedEditUpdated()
 
 void UnitPropertiesWindow::NotifyUniqueIdEditUpdated()
 {
-    auto edit = CM->operator()(ActionDescriptor::UpdateUnitUniqueId);
+    auto edit = CM->create_action(ActionDescriptor::UpdateUnitUniqueId);
     u16 uniqueId = 0;
     if ( editUniqueId.GetEditNum<u16>(uniqueId) )
     {
@@ -1528,7 +1528,7 @@ void UnitPropertiesWindow::NotifyUniqueIdEditUpdated()
 
 void UnitPropertiesWindow::NotifyLinkedIdEditUpdated()
 {
-    auto edit = CM->operator()(ActionDescriptor::UpdateUnitLinkedId);
+    auto edit = CM->create_action(ActionDescriptor::UpdateUnitLinkedId);
     u16 linkedId = 0;
     if ( editLinkedId.GetEditNum<u16>(linkedId) )
     {
@@ -1541,7 +1541,7 @@ void UnitPropertiesWindow::NotifyLinkedIdEditUpdated()
 
 void UnitPropertiesWindow::NotifyLinkNydusClicked()
 {
-    auto edit = CM->operator()(ActionDescriptor::ToggleUnitNydusLink);
+    auto edit = CM->create_action(ActionDescriptor::ToggleUnitNydusLink);
     for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
@@ -1557,7 +1557,7 @@ void UnitPropertiesWindow::NotifyLinkNydusClicked()
 
 void UnitPropertiesWindow::NotifyLinkAddonClicked()
 {
-    auto edit = CM->operator()(ActionDescriptor::ToggleUnitAddonLink);
+    auto edit = CM->create_action(ActionDescriptor::ToggleUnitAddonLink);
     for ( auto unitIndex : CM->view.units.sel() )
     {
         const Chk::Unit & unit = CM->getUnit(unitIndex);
@@ -1573,7 +1573,7 @@ void UnitPropertiesWindow::NotifyLinkAddonClicked()
 
 void UnitPropertiesWindow::NotifyRelationRawFlagsEditUpdated()
 {
-    auto edit = CM->operator()(ActionDescriptor::UpdateUnitRelationRawFlags);
+    auto edit = CM->create_action(ActionDescriptor::UpdateUnitRelationRawFlags);
     u16 relationFlags = 0;
     if ( editLinkRawFlags.GetEditNum<u16>(relationFlags) )
     {

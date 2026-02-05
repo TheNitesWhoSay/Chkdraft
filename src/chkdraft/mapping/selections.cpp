@@ -55,12 +55,12 @@ void Selections::snapEndDrag(s32 xInterval, s32 yInterval)
 void Selections::clear()
 {
     auto edit = map(ActionDescriptor::ClearSelections);
-    edit->tiles.clearSelections();
-    edit->doodads.clearSelections();
-    edit->sprites.clearSelections();
-    edit->units.clearSelections();
-    edit->tileFog.clearSelections();
-    edit->locations.clearSelections();
+    edit->tiles.clear_selections();
+    edit->doodads.clear_selections();
+    edit->sprites.clear_selections();
+    edit->units.clear_selections();
+    edit->tileFog.clear_selections();
+    edit->locations.clear_selections();
 }
 
 u16 Selections::getSelectedLocation()
@@ -72,7 +72,7 @@ u16 Selections::getSelectedLocation()
 void Selections::selectLocation(u16 index)
 {
     auto edit = map(ActionDescriptor::UpdateLocationSel);
-    edit->locations.clearSelections();
+    edit->locations.clear_selections();
     edit->locations.select(index);
     numRecentLocations = 1;
     recentLocations[0] = u8(index);
@@ -115,7 +115,7 @@ void Selections::selectLocation(s32 clickX, s32 clickY, bool canSelectAnywhere)
                 }
                 else // Location hasn't been recently selected, select it
                 {
-                    edit->locations.clearSelections();
+                    edit->locations.clear_selections();
                     edit->locations.select(i);
                     if ( numRecentLocations < Chk::TotalLocations )
                     {
@@ -139,7 +139,7 @@ void Selections::selectLocation(s32 clickX, s32 clickY, bool canSelectAnywhere)
     {
         if ( firstRecentlySelected != NO_LOCATION )
         {
-            edit->locations.clearSelections();
+            edit->locations.clear_selections();
             edit->locations.select(firstRecentlySelected);
             recentLocations[0] = u8(firstRecentlySelected);
             numRecentLocations = 1;
@@ -147,7 +147,7 @@ void Selections::selectLocation(s32 clickX, s32 clickY, bool canSelectAnywhere)
         else // Reset recent locations
         {
             map.setActionDescription(ActionDescriptor::ClearLocationSel);
-            edit->locations.clearSelections();
+            edit->locations.clear_selections();
             recentLocations[0] = u8(NO_LOCATION);
             numRecentLocations = 1;
         }
@@ -173,7 +173,7 @@ bool Selections::selFlagsIndicateInside() const
 
 void Selections::removeLocations()
 {
-    map()->locations.clearSelections();
+    map()->locations.clear_selections();
 }
 
 bool Selections::unitIsSelected(u16 index)

@@ -94,6 +94,10 @@ BOOL SelectProfile::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 RefreshWindow();
             }
             break;
+        case WM_ACTIVATE:
+            if ( wParam == WA_ACTIVE || wParam == WA_CLICKACTIVE )
+                RefreshWindow();
+            break;
     }
     return FALSE;
 }
@@ -144,4 +148,5 @@ void SelectProfile::EditProfiles()
 void SelectProfile::ExitPressed()
 {
     EndDialog(getHandle(), IDCANCEL);
+    PostQuitMessage(0);
 }

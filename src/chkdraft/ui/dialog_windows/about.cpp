@@ -37,7 +37,7 @@ void AboutWindow::CreateSubWindows(HWND hWnd)
     if ( licenseText.FindThis(hWnd, IDC_STATIC_LICENSE) )
     {
         licenseText.SetText(
-            "Copyright (c) 2015-2025 Justin Forsberg\n"
+            "Copyright (c) 2015-2026 Justin Forsberg\n"
             "\n"
             "Permission is hereby granted, free of charge, to any person obtaining a copy\n"
             "of this software and associated documentation files (the \"Software\"), to deal\n"
@@ -68,6 +68,7 @@ void AboutWindow::CreateSubWindows(HWND hWnd)
             " - SaintOfIdiocy, Adam Heinermann, and Corbo - Direct contributions inside and outside of git, including code, testing, and miscellaneous assistance.\n"
             " - RElesgoe, Zoltan Kovacs, Caden-Fletcher and Milestone - Direct contributions to the project on git.\n"
             " - Sayoka - Created the icon for chkdraft.\n"
+            " - 3crow and zzlk - Financial contributions towards development of modding and graphical features."
             " - Lanthanide, Oh_Man, CecilSunkure, Wormer, Roy, and many other members of the SEN community for ideas, testing, and other forms of support.");
     }
 }
