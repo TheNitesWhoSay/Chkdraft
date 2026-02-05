@@ -68,6 +68,7 @@ void AboutWindow::CreateSubWindows(HWND hWnd)
             " - SaintOfIdiocy, Adam Heinermann, and Corbo - Direct contributions inside and outside of git, including code, testing, and miscellaneous assistance.\n"
             " - RElesgoe, Zoltan Kovacs, Caden-Fletcher and Milestone - Direct contributions to the project on git.\n"
             " - Sayoka - Created the icon for chkdraft.\n"
+            " - 3crow and zzlk - Financial contributions towards development of modding and graphical features."
             " - Lanthanide, Oh_Man, CecilSunkure, Wormer, Roy, and many other members of the SEN community for ideas, testing, and other forms of support.");
     }
 }
