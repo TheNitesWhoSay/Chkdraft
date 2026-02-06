@@ -98,15 +98,15 @@ void UnitSettingsWindow::RefreshWindow()
             airWeapon    = (u32)unitDat.airWeapon;
         Sc::Unit::Type subUnitId = unitDat.subunit1;
         
-        if ( subUnitId != 228 ) // If unit has a subunit
+        if ( subUnitId != Sc::Unit::Type::NoSubUnit ) // If unit has a subunit
         {
-            if ( groundWeapon == 130 ) // If unit might have a subunit ground attack
+            if ( groundWeapon == Sc::Weapon::Total ) // If unit might have a subunit ground attack
                 groundWeapon = chkd.scData->units.getUnit(subUnitId).groundWeapon;
-            if ( airWeapon == 130 ) // If unit might have a subunit air attack
+            if ( airWeapon == Sc::Weapon::Total ) // If unit might have a subunit air attack
                 airWeapon = chkd.scData->units.getUnit(subUnitId).airWeapon;
         }
 
-        if ( groundWeapon == 130 )
+        if ( groundWeapon == Sc::Weapon::Total )
         {
             groupGroundWeapon.SetWinText("No Ground Weapon");
             groupGroundWeapon.DisableThis();
@@ -119,14 +119,20 @@ void UnitSettingsWindow::RefreshWindow()
         }
         else
         {
-            groupGroundWeapon.SetWinText("Ground Weapon [" + weaponNames.at(groundWeapon) + "]");
+            if ( groundWeapon < weaponNames.size() )
+                groupGroundWeapon.SetWinText("Ground Weapon [" + weaponNames.at(groundWeapon) + "]");
+            else
+                groupGroundWeapon.SetWinText("Ground Weapon [" + std::to_string(groundWeapon) + "]");
         }
 
-        if ( airWeapon == 130 || airWeapon == groundWeapon )
+        if ( airWeapon == Sc::Weapon::Total || airWeapon == groundWeapon )
         {
-            if ( airWeapon != 130 && airWeapon == groundWeapon )
+            if ( airWeapon != Sc::Weapon::Total && airWeapon == groundWeapon )
             {
-                groupAirWeapon.SetWinText("Air Weapon [" + weaponNames.at(airWeapon) + "]");
+                if ( airWeapon < weaponNames.size() )
+                    groupAirWeapon.SetWinText("Air Weapon [" + weaponNames.at(airWeapon) + "]");
+                else
+                    groupAirWeapon.SetWinText("Air Weapon [" + std::to_string(airWeapon) + "]");
             }
             else
                 groupAirWeapon.SetWinText("No Air Weapon");
@@ -141,7 +147,10 @@ void UnitSettingsWindow::RefreshWindow()
         }
         else
         {
-            groupAirWeapon.SetWinText("Air Weapon [" + weaponNames.at(airWeapon) + "]");
+            if ( airWeapon < weaponNames.size() )
+                groupAirWeapon.SetWinText("Air Weapon [" + weaponNames.at(airWeapon) + "]");
+            else
+                groupAirWeapon.SetWinText("Air Weapon [" + std::to_string(airWeapon) + "]");
         }
 
         if ( unitUsesDefaultSettings )
@@ -153,12 +162,12 @@ void UnitSettingsWindow::RefreshWindow()
             editBuildTime.SetEditNum<u16>(unitDat.buildTime);
             editMineralCost.SetEditNum<u16>(unitDat.mineralCost);
             editGasCost.SetEditNum<u16>(unitDat.vespeneCost);
-            if ( groundWeapon != 130 )
+            if ( groundWeapon < Sc::Weapon::Total )
             {
                 editGroundDamage.SetEditNum<u16>(chkd.scData->weapons.get((Sc::Weapon::Type)groundWeapon).damageAmount);
                 editGroundBonus.SetEditNum<u16>(chkd.scData->weapons.get((Sc::Weapon::Type)groundWeapon).damageBonus);
             }
-            if ( airWeapon != 130 && airWeapon != groundWeapon )
+            if ( airWeapon < Sc::Weapon::Total && airWeapon != groundWeapon )
             {
                 editAirDamage.SetEditNum<u16>(chkd.scData->weapons.get((Sc::Weapon::Type)airWeapon).damageAmount);
                 editAirBonus.SetEditNum<u16>(chkd.scData->weapons.get((Sc::Weapon::Type)airWeapon).damageBonus);
@@ -174,12 +183,12 @@ void UnitSettingsWindow::RefreshWindow()
             editBuildTime.SetEditNum<u16>(CM->getUnitBuildTime(selectedUnitType));
             editMineralCost.SetEditNum<u16>(CM->getUnitMineralCost(selectedUnitType));
             editGasCost.SetEditNum<u16>(CM->getUnitGasCost(selectedUnitType));
-            if ( groundWeapon != 130 )
+            if ( groundWeapon < Sc::Weapon::Total )
             {
                 editGroundDamage.SetEditNum<u16>(CM->getWeaponBaseDamage((Sc::Weapon::Type)groundWeapon));
                 editGroundBonus.SetEditNum<u16>(CM->getWeaponUpgradeDamage((Sc::Weapon::Type)groundWeapon));
             }
-            if ( airWeapon != 130 && airWeapon != groundWeapon )
+            if ( airWeapon < Sc::Weapon::Total && airWeapon != groundWeapon )
             {
                 editAirDamage.SetEditNum<u16>(CM->getWeaponBaseDamage((Sc::Weapon::Type)airWeapon));
                 editAirBonus.SetEditNum<u16>(CM->getWeaponUpgradeDamage((Sc::Weapon::Type)airWeapon));
@@ -188,7 +197,7 @@ void UnitSettingsWindow::RefreshWindow()
 
         checkEnabledByDefault.SetCheck(CM->isUnitDefaultBuildable(selectedUnitType));
 
-        for ( size_t i=0; i<12; i++ )
+        for ( size_t i=0; i<Sc::Player::Total; i++ )
         {
             if ( CM->playerUsesDefaultUnitBuildability(selectedUnitType, i) )
                 dropPlayerAvailability[i].SetSel(0);
@@ -211,9 +220,9 @@ void UnitSettingsWindow::RefreshWindow()
             checkUseDefaultName.SetCheck(false);
         }
             
-        auto unitName = CM->getUnitName<ChkdString>(selectedUnitType, true);
+        auto unitName = CM->getUnitName<ChkdString>(selectedUnitType, &chkd.scData.value(), true);
         editUnitName.SetText(*unitName);
-        chkd.mapSettingsWindow->SetWinText("Map Settings - [" + Sc::Unit::defaultDisplayNames[(u16)selectedUnitType] + ']');
+        chkd.mapSettingsWindow->SetWinText("Map Settings - [" + chkd.scData->units.displayNames[(u16)selectedUnitType] + ']');
     }
     else
         DisableUnitEditing();
@@ -223,7 +232,7 @@ void UnitSettingsWindow::RefreshWindow()
 
 void UnitSettingsWindow::CreateSubWindows(HWND hParent)
 {
-    unitTree.UpdateUnitNames(Sc::Unit::defaultDisplayNames);
+    unitTree.UpdateUnitNames(chkd.scData->units.displayNames);
     unitTree.CreateThis(hParent, 5, 5, 200, 489, false, Id::TREE_UNITSETTINGS);
     unitTree.UpdateUnitTree();
     buttonResetUnitDefaults.CreateThis(hParent, 5, 494, 200, 25, "Reset All Units To Default", Id::BUTTON_RESETALLUNITDEFAULTS);
@@ -302,7 +311,7 @@ void UnitSettingsWindow::DisableUnitEditing()
     checkEnabledByDefault.DisableThis();
 
     groupUnitAvailability.DisableThis();
-    for ( int i=0; i<12; i++ )
+    for ( int i=0; i<Sc::Player::Total; i++ )
     {
         textPlayerAvailability[i].DisableThis();
         dropPlayerAvailability[i].DisableThis();
@@ -319,7 +328,7 @@ void UnitSettingsWindow::EnableUnitEditing()
     checkEnabledByDefault.EnableThis();
 
     groupUnitAvailability.EnableThis();
-    for ( int i=0; i<12; i++ )
+    for ( int i=0; i<Sc::Player::Total; i++ )
     {
         textPlayerAvailability[i].EnableThis();
         dropPlayerAvailability[i].EnableThis();
@@ -406,7 +415,7 @@ void UnitSettingsWindow::CheckReplaceUnitName()
     {
         if ( auto newUnitName = editUnitName.GetWinText() )
         {
-            auto edit = CM->operator()(ActionDescriptor::UpdateUnitName);
+            auto edit = CM->create_action(ActionDescriptor::UpdateUnitName);
             CM->setUnitName<ChkdString>((Sc::Unit::Type)selectedUnitType, *newUnitName);
             CM->deleteUnusedStrings(Chk::Scope::Both);
             chkd.unitWindow->RepopulateList();
@@ -423,14 +432,14 @@ void UnitSettingsWindow::SetDefaultUnitProperties()
     if ( selectedUnitType != Sc::Unit::Type::NoUnit )
     {
         // Remove Custom Unit Name
-        auto edit = CM->operator()(ActionDescriptor::UpdateUnitName);
+        auto edit = CM->create_action(ActionDescriptor::UpdateUnitName);
         u16 origName = (u16)CM->getUnitNameStringId(selectedUnitType, Chk::UseExpSection::No);
         u16 expName = (u16)CM->getUnitNameStringId(selectedUnitType, Chk::UseExpSection::Yes);
         CM->setUnitNameStringId(selectedUnitType, 0, Chk::UseExpSection::No);
         CM->setUnitNameStringId(selectedUnitType, 0, Chk::UseExpSection::Yes);
         CM->deleteUnusedStrings(Chk::Scope::Both);
         
-        auto unitName = CM->getUnitName<ChkdString>(selectedUnitType, true);
+        auto unitName = CM->getUnitName<ChkdString>(selectedUnitType, &chkd.scData.value(), true);
         editUnitName.SetText(*unitName);
         checkUseDefaultName.DisableThis();
         editUnitName.DisableThis();
@@ -443,11 +452,11 @@ void UnitSettingsWindow::SetDefaultUnitProperties()
             airWeapon    = (u32)chkd.scData->units.getUnit(selectedUnitType).airWeapon;
 
         Sc::Unit::Type subUnitId = chkd.scData->units.getUnit(selectedUnitType).subunit1;
-        if ( subUnitId != 228 ) // If unit has a subunit
+        if ( subUnitId != Sc::Unit::Type::NoSubUnit ) // If unit has a subunit
         {
-            if ( groundWeapon == 130 ) // If unit might have a subunit ground attack
+            if ( groundWeapon == Sc::Weapon::Total ) // If unit might have a subunit ground attack
                 groundWeapon = chkd.scData->units.getUnit(subUnitId).groundWeapon;
-            if ( airWeapon == 130 ) // If unit might have a subunit air attack
+            if ( airWeapon == Sc::Weapon::Total ) // If unit might have a subunit air attack
                 airWeapon = chkd.scData->units.getUnit(subUnitId).airWeapon;
         }
         
@@ -458,7 +467,7 @@ void UnitSettingsWindow::SetDefaultUnitProperties()
         CM->setUnitMineralCost(selectedUnitType, chkd.scData->units.getUnit(selectedUnitType).mineralCost);
         CM->setUnitGasCost(selectedUnitType, chkd.scData->units.getUnit(selectedUnitType).vespeneCost);
 
-        if ( groundWeapon != 130 )
+        if ( groundWeapon != Sc::Weapon::Total )
         {
             u16 defaultBaseDamage = chkd.scData->weapons.get((Sc::Weapon::Type)groundWeapon).damageAmount,
                 defaultBonusDamage = chkd.scData->weapons.get((Sc::Weapon::Type)groundWeapon).damageBonus;
@@ -467,7 +476,7 @@ void UnitSettingsWindow::SetDefaultUnitProperties()
             CM->setWeaponUpgradeDamage((Sc::Weapon::Type)groundWeapon, defaultBonusDamage);
         }
 
-        if ( airWeapon != 130 )
+        if ( airWeapon != Sc::Weapon::Total )
         {
             u16 defaultBaseDamage = chkd.scData->weapons.get((Sc::Weapon::Type)airWeapon).damageAmount,
                 defaultBonusDamage = chkd.scData->weapons.get((Sc::Weapon::Type)airWeapon).damageBonus;
@@ -579,10 +588,10 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 if ( state == BST_CHECKED )
                 {
                     editUnitName.DisableThis();
-                    auto edit = CM->operator()(ActionDescriptor::UpdateUnitName);
+                    auto edit = CM->create_action(ActionDescriptor::UpdateUnitName);
                     CM->setUnitNameStringId(selectedUnitType, 0, Chk::UseExpSection::Both);
                     CM->deleteUnusedStrings(Chk::Scope::Both);
-                    auto unitName = CM->getUnitName<ChkdString>(selectedUnitType, true);
+                    auto unitName = CM->getUnitName<ChkdString>(selectedUnitType, &chkd.scData.value(), true);
                     editUnitName.SetText(*unitName);
                     chkd.unitWindow->RepopulateList();
                     RedrawWindow(chkd.unitWindow->getHandle(), NULL, NULL, RDW_INVALIDATE);
@@ -677,9 +686,9 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 u32 groundWeapon = (u32)chkd.scData->units.getUnit(selectedUnitType).groundWeapon;
                 Sc::Unit::Type subUnitId = chkd.scData->units.getUnit(selectedUnitType).subunit1;
 
-                if ( subUnitId != 228 && groundWeapon == 130 ) // If unit has a subunit
+                if ( subUnitId != Sc::Unit::Type::NoSubUnit && groundWeapon == Sc::Weapon::Total ) // If unit has a subunit
                     groundWeapon = chkd.scData->units.getUnit(subUnitId).groundWeapon; // If unit might have a subunit ground attack
-                if ( groundWeapon < 130 )
+                if ( groundWeapon < Sc::Weapon::Total )
                     CM->setWeaponBaseDamage((Sc::Weapon::Type)groundWeapon, newGroundDamage);
             }
         }
@@ -693,9 +702,9 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 u32 groundWeapon = (u32)chkd.scData->units.getUnit(selectedUnitType).groundWeapon;
                 Sc::Unit::Type subUnitId = chkd.scData->units.getUnit(selectedUnitType).subunit1;
 
-                if ( subUnitId != (u16)Sc::Unit::Type::NoSubUnit && groundWeapon == 130 ) // If unit has a subunit
+                if ( subUnitId != (u16)Sc::Unit::Type::NoSubUnit && groundWeapon == Sc::Weapon::Total ) // If unit has a subunit
                     groundWeapon = chkd.scData->units.getUnit(subUnitId).groundWeapon; // If unit might have a subunit ground attack
-                if ( groundWeapon < 130 )
+                if ( groundWeapon < Sc::Weapon::Total )
                     CM->setWeaponUpgradeDamage((Sc::Weapon::Type)groundWeapon, newGroundBonus);
             }
         }
@@ -709,9 +718,9 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 u32 airWeapon = (u32)chkd.scData->units.getUnit(selectedUnitType).airWeapon;
                 Sc::Unit::Type subUnitId = chkd.scData->units.getUnit(selectedUnitType).subunit1;
 
-                if ( subUnitId != (u16)Sc::Unit::Type::NoSubUnit && airWeapon == 130 ) // If unit has a subunit
+                if ( subUnitId != (u16)Sc::Unit::Type::NoSubUnit && airWeapon == Sc::Weapon::Total ) // If unit has a subunit
                     airWeapon = chkd.scData->units.getUnit(subUnitId).airWeapon; // If unit might have a subunit ground attack
-                if ( airWeapon < 130 )
+                if ( airWeapon < Sc::Weapon::Total )
                     CM->setWeaponBaseDamage((Sc::Weapon::Type)airWeapon, newAirDamage);
             }
         }
@@ -725,7 +734,7 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 u32 airWeapon = (u32)chkd.scData->units.getUnit(selectedUnitType).airWeapon;
                 Sc::Unit::Type subUnitId = chkd.scData->units.getUnit(selectedUnitType).subunit1;
 
-                if ( subUnitId != 228 && airWeapon == 130 ) // If unit has a subunit
+                if ( subUnitId != Sc::Unit::Type::NoSubUnit && airWeapon == Sc::Weapon::Total ) // If unit has a subunit
                     airWeapon = chkd.scData->units.getUnit(subUnitId).airWeapon; // If unit might have a subunit ground attack
 
                 CM->setWeaponUpgradeDamage((Sc::Weapon::Type)airWeapon, newAirBonus);
@@ -743,13 +752,13 @@ LRESULT UnitSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 CM->setPlayerUsesDefaultUnitBuildability(selectedUnitType, player, true);
             else if ( sel == 1 ) // Yes
             {
-                auto action = CM->operator()(ActionDescriptor::SetUnitTypeBuildable);
+                auto action = CM->create_action(ActionDescriptor::SetUnitTypeBuildable);
                 CM->setPlayerUsesDefaultUnitBuildability(selectedUnitType, player, false);
                 CM->setUnitBuildable(selectedUnitType, player, true);
             }
             else if ( sel == 2 ) // No
             {
-                auto action = CM->operator()(ActionDescriptor::SetUnitTypeBuildable);
+                auto action = CM->create_action(ActionDescriptor::SetUnitTypeBuildable);
                 CM->setPlayerUsesDefaultUnitBuildability(selectedUnitType, player, false);
                 CM->setUnitBuildable(selectedUnitType, player, false);
             }
@@ -770,7 +779,7 @@ LRESULT UnitSettingsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
             {
                 RefreshWindow();
                 if ( selectedUnitType != Sc::Unit::Type::NoUnit )
-                    chkd.mapSettingsWindow->SetWinText(std::string("Map Settings - [") + Sc::Unit::defaultDisplayNames[(u16)selectedUnitType] + ']');
+                    chkd.mapSettingsWindow->SetWinText(std::string("Map Settings - [") + chkd.scData->units.displayNames[(std::size_t)selectedUnitType] + ']');
                 else
                     chkd.mapSettingsWindow->SetWinText("Map Settings");
             }

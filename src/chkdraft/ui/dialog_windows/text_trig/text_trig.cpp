@@ -26,7 +26,7 @@ void TextTrigWindow::RefreshWindow()
     updateMenus();
     std::string trigString;
     TextTrigGenerator textTrigs(chkd.profiles().triggers.useAddressesForMemory, chkd.profiles().triggers.deathTableStart);
-    if ( textTrigs.generateTextTrigs((Scenario &)*CM, trigString) )
+    if ( textTrigs.generateTextTrigs((Scenario &)*CM, trigString, chkd.scData.value()) )
     {
         auto start = std::chrono::high_resolution_clock::now();
         SetDialogItemText(IDC_EDIT_TRIGTEXT, trigString);
@@ -146,7 +146,7 @@ bool TextTrigWindow::CompileEditText(Scenario & map)
     {
         // All data for compilation is gathered on-the-fly, no need to check for updates
         TextTrigCompiler compiler(chkd.profiles().triggers.useAddressesForMemory, chkd.profiles().triggers.deathTableStart);
-        auto edit = CM->operator()(ActionDescriptor::CompileTextTrigs);
+        auto edit = CM->create_action(ActionDescriptor::CompileTextTrigs);
         CM->skipEventRendering();
         if ( compiler.compileTriggers(*trigText, map, *chkd.scData, 0, map.numTriggers()) )
             return true;

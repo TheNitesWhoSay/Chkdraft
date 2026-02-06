@@ -1,6 +1,7 @@
 #include "chkd_profiles.h"
 #include "common_files/debug.h"
 #include <cross_cut/simple_icu.h>
+#include <mapping_core/sc.h>
 #include <mapping_core/system_io.h>
 #include <filesystem>
 #include <fstream>
@@ -107,6 +108,9 @@ void ChkdProfile::fixPathsToForwardSlash()
 
 void ChkdProfile::saveProfile()
 {
+    units.parsedCustomTree.serialize(units.customTree);
+    sprites.parsedCustomTree.serialize(sprites.customTree);
+
     fixPathsToForwardSlash();
     std::ofstream outFile(icux::toFilestring(this->profilePath), std::ios_base::out | std::ios_base::binary);
     outFile << Json::pretty(*this);
@@ -131,7 +135,7 @@ ChkdProfile* ChkdProfiles::loadProfile(const std::string & filePath)
     chkdProfile->profilePath = filePath;
     try {
 
-        inFile >> Json::in(*chkdProfile);
+        inFile >> Json::in<std::tuple<Json::OrderObjectsType>>(*chkdProfile);
         for ( auto & existingProfile : profiles )
         {
             if ( chkdProfile.get() != existingProfile.get() &&
@@ -145,6 +149,9 @@ ChkdProfile* ChkdProfiles::loadProfile(const std::string & filePath)
         }
         if ( !current && chkdProfile->isDefaultProfile )
             current = chkdProfile.get();
+        
+        chkdProfile->units.parsedCustomTree.parse(chkdProfile->units.customTree);
+        chkdProfile->sprites.parsedCustomTree.parse(chkdProfile->sprites.customTree);
 
         return chkdProfile.get();
 

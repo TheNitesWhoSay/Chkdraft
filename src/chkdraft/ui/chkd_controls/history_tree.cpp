@@ -41,29 +41,29 @@ std::string getSizeString(std::size_t size)
         return std::to_string(size) + " bytes";
 }
 
-std::string getActionText(std::size_t actionIndex, const RareEdit::RenderAction<DescriptorIndex> & action)
+std::string getActionText(std::size_t actionIndex, const nf::rendered_action<DescriptorIndex> & action)
 {
-    if ( action.isElisionMarker() )
-        return "[" + std::to_string((int)actionIndex-(int)action.elisionCount) + "-" + std::to_string(actionIndex) + "] Elided";
+    if ( action.is_elision_marker() )
+        return "[" + std::to_string((int)actionIndex-(int)action.elision_count) + "-" + std::to_string(actionIndex) + "] Elided";
     else
     {
         std::string actionText = "[" + std::to_string(actionIndex) + "] ";
-        switch ( action.actionStatus )
+        switch ( action.status )
         {
-            case RareEdit::ActionStatus::Undoable:
+            case nf::action_status::undoable:
                 actionText += "Undoable";
                 break;
-            case RareEdit::ActionStatus::ElidedRedo:
+            case nf::action_status::elided_redo:
                 actionText += "Elided";
                 break;
-            case RareEdit::ActionStatus::Redoable:
+            case nf::action_status::redoable:
                 actionText += "Redoable";
                 break;
         }
-        if ( action.userData.descriptorIndex != ActionDescriptor::None )
+        if ( action.user_data.descriptorIndex != ActionDescriptor::None )
         {
             actionText += " - ";
-            switch ( action.userData.descriptorIndex )
+            switch ( action.user_data.descriptorIndex )
             {
                 // Misc
                 case ActionDescriptor::BeginPaste: actionText += "Begin Paste"; break;
@@ -302,29 +302,29 @@ std::string getActionText(std::size_t actionIndex, const RareEdit::RenderAction<
                 case ActionDescriptor::RepairSounds: actionText += "Repair Sounds"; break;
                 case ActionDescriptor::RepairStrings: actionText += "Repair Strings"; break;
                 // Default
-                default: actionText += "TODO: " + std::to_string(std::underlying_type_t<ActionDescriptor>(action.userData.descriptorIndex)); break;
+                default: actionText += "TODO: " + std::to_string(std::underlying_type_t<ActionDescriptor>(action.user_data.descriptorIndex)); break;
             }
         }
-        actionText += " (" + getSizeString(action.byteCount) + ")";
+        actionText += " (" + getSizeString(action.byte_count) + ")";
         return actionText;
     }
 }
 
-HistAction* HistoryTree::InsertAction(std::size_t actionIndex, const RareEdit::RenderAction<DescriptorIndex> & action, HTREEITEM parent)
+HistAction* HistoryTree::InsertAction(std::size_t actionIndex, const nf::rendered_action<DescriptorIndex> & action, HTREEITEM parent)
 {
     if ( (u32)actionIndex <= TreeDataPortion )
     {
         std::string text = getActionText(actionIndex, action);
-        HTREEITEM hActionRoot = InsertTreeItem(parent, text, actionIndex|TreeTypeAction, !action.isElisionMarker());
+        HTREEITEM hActionRoot = InsertTreeItem(parent, text, actionIndex|TreeTypeAction, !action.is_elision_marker());
         HistAction histAction {
             .lParam = LPARAM(actionIndex)|TreeTypeAction,
             .hItem = hActionRoot,
-            .actionStatus = action.actionStatus,
-            .elisionCount = action.elisionCount,
+            .actionStatus = action.status,
+            .elisionCount = action.elision_count,
             .text = text
         };
 
-        const auto & changeEvents = action.changeEvents;
+        const auto & changeEvents = action.change_events;
         for ( std::size_t i=0; i<changeEvents.size(); ++i )
         {
             LPARAM lParam = LPARAM(i)|TreeTypeEvent;
@@ -343,8 +343,8 @@ HistAction* HistoryTree::InsertAction(std::size_t actionIndex, const RareEdit::R
                 histAction.subEvents.push_back(HistEvent{.lParam = lParam, .text = changeEvent.summary});
             }
         }
-        if ( action.userData.descriptorIndex == ActionDescriptor::CompileTextTrigs ||
-            action.userData.descriptorIndex == ActionDescriptor::CompileBriefingTextTrigs )
+        if ( action.user_data.descriptorIndex == ActionDescriptor::CompileTextTrigs ||
+            action.user_data.descriptorIndex == ActionDescriptor::CompileBriefingTextTrigs )
         {
             std::string text = "  (Event rendering skipped)\n";
             InsertTreeItem(hActionRoot, text, TreeTypeEvent);
@@ -360,7 +360,7 @@ HistAction* HistoryTree::InsertAction(std::size_t actionIndex, const RareEdit::R
         return nullptr;
 }
 
-void HistoryTree::InsertAction(std::size_t actionIndex, const RareEdit::RenderAction<DescriptorIndex> & action)
+void HistoryTree::InsertAction(std::size_t actionIndex, const nf::rendered_action<DescriptorIndex> & action)
 {
     SetRedraw(false);
     auto* insertedAction = InsertAction(actionIndex, action, hHistoryRoot);
@@ -374,12 +374,12 @@ std::size_t HistoryTree::RebuildHistoryTree()
     EmptySubTree(hHistoryRoot);
     
     this->actionTree.clear();
-    auto changeHistory = CM->renderChangeHistory(true);
+    auto changeHistory = CM->render_change_history(true);
     u64 totalByteCount = 0;
     for ( std::size_t i=0; i<changeHistory.size(); ++i )
     {
         InsertAction(i, changeHistory[i]);
-        totalByteCount += static_cast<u64>(changeHistory[i].byteCount);
+        totalByteCount += static_cast<u64>(changeHistory[i].byte_count);
     }
     
     this->SetItemText(hHistoryRoot, "History (" + getSizeString(totalByteCount) + ")");
@@ -392,13 +392,13 @@ void HistoryTree::RefreshActionHeaders(std::optional<std::size_t> excludeIndex)
 {
     SetRedraw(false);
     std::size_t excludedIndex = excludeIndex ? *excludeIndex : std::numeric_limits<std::size_t>::max();
-    auto changeHistory = CM->renderChangeHistory(false);
-    auto cursorIndex = CM->getCursorIndex();
+    auto changeHistory = CM->render_change_history(false);
+    auto cursorIndex = CM->get_cursor_index();
     std::size_t totalByteCount = 0;
     for ( std::size_t actionIndex=0; actionIndex < changeHistory.size(); ++actionIndex )
     {
         const auto & action = changeHistory[actionIndex];
-        totalByteCount += action.byteCount;
+        totalByteCount += action.byte_count;
         if ( actionIndex == excludedIndex )
             continue;
 
@@ -410,25 +410,25 @@ void HistoryTree::RefreshActionHeaders(std::optional<std::size_t> excludeIndex)
             histAction = &found->second;
         else
         {
-            if ( action.isElided() )
+            if ( action.is_elided() )
                 histAction = InsertAction(actionIndex, action, hHistoryRoot);
-            else if ( action.isElisionMarker() )
+            else if ( action.is_elision_marker() )
             { // Insert elision marker and elided redo children
                 histAction = InsertAction(actionIndex, action, hHistoryRoot);
-                std::size_t first = static_cast<std::size_t>(static_cast<std::ptrdiff_t>(actionIndex)-static_cast<std::ptrdiff_t>(action.elisionCount));
+                std::size_t first = static_cast<std::size_t>(static_cast<std::ptrdiff_t>(actionIndex)-static_cast<std::ptrdiff_t>(action.elision_count));
                 for ( std::size_t i=first; i<actionIndex; ++i )
                 {
                     auto & subAction = actionTree[i]; // Should always exist
                     subAction.moveUnder(*this, *histAction);
                 }
-                auto elisionMarkerText = action.elisionCount == 1 ? "[" + std::to_string(actionIndex) + "] Elides previous action" :
-                    "[" + std::to_string(actionIndex) + "] Elides previous " + std::to_string(action.elisionCount) + " actions";
+                auto elisionMarkerText = action.elision_count == 1 ? "[" + std::to_string(actionIndex) + "] Elides previous action" :
+                    "[" + std::to_string(actionIndex) + "] Elides previous " + std::to_string(action.elision_count) + " actions";
                 InsertTreeItem(histAction->hItem, elisionMarkerText, actionIndex|TreeTypeAction);
                 histAction->subEvents.push_back(HistEvent{.lParam = (LPARAM)actionIndex|TreeTypeAction, .text=elisionMarkerText});
             }
         }
 
-        if ( histAction != nullptr && histAction->hItem != NULL && !action.isElisionMarker() )
+        if ( histAction != nullptr && histAction->hItem != NULL && !action.is_elision_marker() )
         {
             icux::uistring sysNewText = icux::toUistring(getActionText(actionIndex, action));
 
@@ -437,9 +437,9 @@ void HistoryTree::RefreshActionHeaders(std::optional<std::size_t> excludeIndex)
             item.stateMask |= TVIS_BOLD;
             item.hItem = histAction->hItem;
             item.pszText = (LPTSTR)sysNewText.c_str();
-            if ( action.isRedoable() )
+            if ( action.is_redoable() )
                 item.state = TVIS_BOLD;
-            else if ( action.isElided() || distance > 3 )
+            else if ( action.is_elided() || distance > 3 )
                 item.stateMask |= TVIS_EXPANDED;
             else
                 item.state = 0;

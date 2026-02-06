@@ -64,7 +64,7 @@ void Animator::setActorDirection(u8 direction)
     }
 }
 
-void Animator::initializeImage(std::size_t iScriptId)
+void Animator::initializeImage(u32 iScriptId)
 {
     const auto & scData = context.animations.scData;
     auto & imageDat = scData.sprites.getImage(currImage->imageId);
@@ -81,7 +81,10 @@ void Animator::initializeImage(std::size_t iScriptId)
 
     currImage->rotation = scData.sprites.getImage(currImage->imageId).graphicTurns != 0;
     if ( currImage->animation == nullptr )
+    {
         currImage->end();
+        context.actor.autoRestart = false;
+    }
     else
     {
         currImage->waitUntil = context.currentTick;
@@ -157,17 +160,19 @@ void Animator::animate()
 {
     const auto & scData = context.animations.scData;
     auto & images = context.animations.images;
-    auto & iscript = scData.sprites.iscript;
-    size_t currOffset = std::distance((const u8*)&iscript[0], (const u8*)currImage->animation);
+    u32 currIscriptImage = this->currImage == nullptr ? 0 : ((this->currImage->iScriptId & 0xFFFF0000) >> 16);
+    auto & iscript = scData.sprites.iscriptFiles[currIscriptImage];
+    size_t currOffset = std::distance((const u8*)&iscript.data[0], (const u8*)currImage->animation);
     if ( context.currentTick >= currImage->waitUntil )
     {
         // Step into the next or couple next iscript ops
         for ( ; ; )
         {
-            if ( currOffset >= iscript.size() )
+            if ( currOffset >= iscript.data.size() )
             {
-                logger.info() << "  " << currImage << '\n';
-                return currImage->error("Unknown IScript Overflow");
+                context.actor.autoRestart = false;
+                currImage->end();
+                return currImage->error("Unknown IScript overflow for script " + std::to_string(this->currImage->iScriptId));
             }
 
             Sc::Sprite::Op code = Sc::Sprite::Op(currImage->animation->code);
@@ -186,28 +191,28 @@ void Animator::animate()
                     {
                         auto currParam = opCodeParams[param];
                         auto paramSize = Sc::Sprite::ParamSize[size_t(currParam)];
-                        u16 paramValue = paramSize == 1 ? iscript[currOffset] : (u16 &)iscript[currOffset];
+                        u16 paramValue = paramSize == 1 ? iscript.data[currOffset] : (u16 &)iscript.data[currOffset];
                         currOffset += paramSize;
                     }
-                    if ( currOffset < iscript.size() )
-                        currImage->animation = (Sc::Sprite::IScriptAnimation*)&iscript[currOffset];
+                    if ( currOffset < iscript.data.size() )
+                        currImage->animation = (Sc::Sprite::IScriptAnimation*)&iscript.data[currOffset];
                 };
                 switch ( code )
                 {
                     case Sc::Sprite::Op::playfram:
-                        currImage->playFrame((u16 &)iscript[currOffset]);
+                        currImage->playFrame((u16 &)iscript.data[currOffset]);
                         break;
                     case Sc::Sprite::Op::playframtile: // TODO
                         break;
                     case Sc::Sprite::Op::sethorpos:
-                        currImage->xOffset = s8(iscript[currOffset]);
+                        currImage->xOffset = s8(iscript.data[currOffset]);
                         break;
                     case Sc::Sprite::Op::setvertpos:
-                        currImage->yOffset = s8(iscript[currOffset]);
+                        currImage->yOffset = s8(iscript.data[currOffset]);
                         break;
                     case Sc::Sprite::Op::setpos:
-                        currImage->xOffset = s8(iscript[currOffset]);
-                        currImage->yOffset = s8(iscript[currOffset+1]);
+                        currImage->xOffset = s8(iscript.data[currOffset]);
+                        currImage->yOffset = s8(iscript.data[currOffset+1]);
                         break;
                     case Sc::Sprite::Op::wait:
                         if ( unbreak )
@@ -215,8 +220,8 @@ void Animator::animate()
                             advancePastParams();
                             return;
                         }
-                        currImage->waitUntil = context.currentTick + std::uint64_t(iscript[currOffset]);
-                        if ( Sc::Sprite::Op(iscript[currOffset+1]) == Sc::Sprite::Op::goto_ && (u16 &)iscript[currOffset+2] == currOffset-1 ) // Wait-looped
+                        currImage->waitUntil = context.currentTick + std::uint64_t(iscript.data[currOffset]);
+                        if ( Sc::Sprite::Op(iscript.data[currOffset+1]) == Sc::Sprite::Op::goto_ && (u16 &)iscript.data[currOffset+2] == currOffset-1 ) // Wait-looped
                         {
                             if ( !context.isUnit )
                                 currImage->end(); // "End" the image allowing sprites to auto-restart
@@ -230,8 +235,8 @@ void Animator::animate()
                                 advancePastParams();
                                 return;
                             }
-                            auto first = iscript[currOffset+1];
-                            auto second = iscript[currOffset+2];
+                            auto first = iscript.data[currOffset+1];
+                            auto second = iscript.data[currOffset+2];
                             auto min = std::min(first, second);
                             auto max = std::max(first, second);
                             currImage->waitUntil = context.currentTick + std::uint64_t(min + (std::rand() % (max-min)));
@@ -241,26 +246,26 @@ void Animator::animate()
                         }
                     case Sc::Sprite::Op::goto_: // TODO: There are more such jump codes
                         {
-                            u16 dest = (u16 &)iscript[currOffset];
-                            if ( dest > iscript.size() )
+                            u16 dest = (u16 &)iscript.data[currOffset];
+                            if ( dest > iscript.data.size() )
                             {
-                                //logger.error() << dest << iscript.size() << '\n';
+                                //logger.error() << dest << iscript->data.size() << '\n';
                                 return currImage->error("goto IScript Overflow");
                             }
                             else
                             {
                                 currOffset = dest;
                                 //logger.info() << "Goto " << currOffset << '\n';
-                                currImage->animation = (Sc::Sprite::IScriptAnimation*)&iscript[dest];
+                                currImage->animation = (Sc::Sprite::IScriptAnimation*)&iscript.data[dest];
                                 continue;
                             }
                         }
                         break;
                     case Sc::Sprite::Op::imgol:
-                        createOverlay((u16 &)iscript[currOffset], s8(iscript[currOffset+2])+currImage->xOffset, s8(iscript[currOffset+3])+currImage->yOffset, true);
+                        createOverlay((u16 &)iscript.data[currOffset], s8(iscript.data[currOffset+2])+currImage->xOffset, s8(iscript.data[currOffset+3])+currImage->yOffset, true);
                         break;
                     case Sc::Sprite::Op::imgul:
-                        createOverlay((u16 &)iscript[currOffset], s8(iscript[currOffset+2])+currImage->xOffset, s8(iscript[currOffset+3])+currImage->yOffset, false);
+                        createOverlay((u16 &)iscript.data[currOffset], s8(iscript.data[currOffset+2])+currImage->xOffset, s8(iscript.data[currOffset+3])+currImage->yOffset, false);
                         break;
                     case Sc::Sprite::Op::imgolorig: // TODO
                         break;
@@ -270,9 +275,9 @@ void Animator::animate()
                         break;
                     case Sc::Sprite::Op::imgoluselo: // TODO
                         {
-                            u16 newImage = (u16 &)iscript[currOffset];
-                            u8 overlayType = iscript[currOffset+2];
-                            u8 direction = iscript[currOffset+3];
+                            u16 newImage = (u16 &)iscript.data[currOffset];
+                            u8 overlayType = iscript.data[currOffset+2];
+                            u8 direction = iscript.data[currOffset+3];
                             Sc::Sprite::LoOffset offset {};
                             const auto & loFiles = scData.sprites.loFiles;
                             const auto & imageDat = scData.sprites.getImage(currImage->imageId);
@@ -289,7 +294,7 @@ void Animator::animate()
                     case Sc::Sprite::Op::imguluselo: // TODO
                         break;
                     case Sc::Sprite::Op::sprol:
-                        createSpriteOverlay((u16 &)iscript[currOffset], iscript[currOffset+2], iscript[currOffset+3], true);
+                        createSpriteOverlay((u16 &)iscript.data[currOffset], iscript.data[currOffset+2], iscript.data[currOffset+3], true);
                         break;
                     case Sc::Sprite::Op::highsprol: // TODO
                         break;
@@ -307,7 +312,7 @@ void Animator::animate()
                         endImage();
                         return;
                     case Sc::Sprite::Op::setflipstate:
-                        currImage->flipped = (iscript[currOffset] != 0);
+                        currImage->flipped = (iscript.data[currOffset] != 0);
                         break;
                     case Sc::Sprite::Op::playsnd: // TODO
                         break;
@@ -333,25 +338,25 @@ void Animator::animate()
                         break;
                     case Sc::Sprite::Op::randcondjmp: // TODO
                         {
-                            auto chance = iscript[currOffset];
-                            //logger.info() << "Randcondjmp " << (u16 &)iscript[currOffset+1];
+                            auto chance = iscript.data[currOffset];
+                            //logger.info() << "Randcondjmp " << (u16 &)iscript->data[currOffset+1];
                             if ( std::rand() % 255 <= chance )
                             {
-                                auto label = (u16 &)iscript[currOffset+1];
+                                auto label = (u16 &)iscript.data[currOffset+1];
                                 currOffset = label;
                                 //logger << " taken\n";
-                                currImage->animation = (Sc::Sprite::IScriptAnimation*)&iscript[label];
+                                currImage->animation = (Sc::Sprite::IScriptAnimation*)&iscript.data[label];
                                 continue;
                             }
                         }
                         break;
                     case Sc::Sprite::Op::turnccwise:
                         if ( context.isUnit )
-                            setActorDirection(context.actor.direction-8*iscript[currOffset]);
+                            setActorDirection(context.actor.direction-8*iscript.data[currOffset]);
                         break;
                     case Sc::Sprite::Op::turncwise:
                         if ( context.isUnit )
-                            setActorDirection(context.actor.direction+8*iscript[currOffset]);
+                            setActorDirection(context.actor.direction+8*iscript.data[currOffset]);
                         break;
                     case Sc::Sprite::Op::turn1cwise:
                         if ( context.isUnit )
@@ -398,21 +403,21 @@ void Animator::animate()
                         break;
                     case Sc::Sprite::Op::setfldirect:
                         if ( context.isUnit )
-                            setActorDirection(iscript[currOffset]*8);
+                            setActorDirection(iscript.data[currOffset]*8);
                         break;
                     case Sc::Sprite::Op::call:
                         {
-                            auto label = (u16 &)iscript[currOffset];
+                            auto label = (u16 &)iscript.data[currOffset];
                             advancePastParams();
                             currImage->returnOffset = currOffset;
                             currOffset = label;
                             //logger.info() << "Call " << currOffset << '\n';
-                            currImage->animation = (Sc::Sprite::IScriptAnimation*)&iscript[label];
+                            currImage->animation = (Sc::Sprite::IScriptAnimation*)&iscript.data[label];
                         }
                         break;
                     case Sc::Sprite::Op::return_:
                         currOffset = currImage->returnOffset;
-                        currImage->animation = (Sc::Sprite::IScriptAnimation*)&iscript[currOffset];
+                        currImage->animation = (Sc::Sprite::IScriptAnimation*)&iscript.data[currOffset];
                         break;
                     case Sc::Sprite::Op::setflspeed: // TODO
                         break;

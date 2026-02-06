@@ -144,7 +144,10 @@ void LeftBar::NotifyTreeItemSelected(LPARAM newValue)
                 Chk::Sprite sprite {};
                 sprite.type = (Sc::Sprite::Type)itemData;
                 sprite.owner = CM->getCurrPlayer();
-                sprite.flags = Chk::Sprite::toPureSpriteFlags(chkd.scData->terrain.doodadSpriteFlags[itemData]);
+                if ( itemData < chkd.scData->terrain.doodadSpriteFlags.size() )
+                    sprite.flags = Chk::Sprite::toPureSpriteFlags(chkd.scData->terrain.doodadSpriteFlags[itemData]);
+                else
+                    sprite.flags = Chk::Sprite::SpriteFlags::DrawAsSprite;
 
                 chkd.maps.clipboard->addQuickSprite(sprite);
                 chkd.maps.startPaste(true);
@@ -161,7 +164,10 @@ void LeftBar::NotifyTreeItemSelected(LPARAM newValue)
                 Chk::Sprite sprite {};
                 sprite.type = (Sc::Sprite::Type)itemData;
                 sprite.owner = CM->getCurrPlayer();
-                sprite.flags = Chk::Sprite::toSpriteUnitFlags(chkd.scData->terrain.doodadSpriteFlags[itemData]);
+                if ( itemData < chkd.scData->terrain.doodadSpriteFlags.size() )
+                    sprite.flags = Chk::Sprite::toSpriteUnitFlags(chkd.scData->terrain.doodadSpriteFlags[itemData]);
+                else
+                    sprite.flags = Chk::Sprite::SpriteFlags::IsUnit;
 
                 chkd.maps.clipboard->addQuickSprite(sprite);
                 chkd.maps.startPaste(true);
@@ -275,7 +281,6 @@ LRESULT LeftBar::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 if ( mainTree.CreateThis(hWnd, -2, 14, 162, 36, true, Id::IDR_MAIN_TREE) )
                 {
                     mainTree.setDefaultFont();
-                    mainTree.unitTree.UpdateUnitNames(Sc::Unit::defaultDisplayNames);
                     this->blockSelections = true;
                     mainTree.BuildMainTree();
                     this->blockSelections = false;

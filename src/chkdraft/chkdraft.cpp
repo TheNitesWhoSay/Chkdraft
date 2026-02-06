@@ -18,7 +18,7 @@ enum_t(Id, u32, {
     IDR_MAIN_MDI,
     IDR_MAIN_PLOT,
     PreDynamicMenus,
-    MenuFirstProfile,
+    MenuFirstProfile = PreDynamicMenus+250,
     PostDynamicMenus = MenuFirstProfile+250,
     NextToLastId = PostDynamicMenus+500,
     ID_MDI_FIRSTCHILD = (NextToLastId+500) // Keep this higher than all other main window identifiers
@@ -35,23 +35,23 @@ void Chkdraft::OnLoadTest()
         map->setSlotType(1, Sc::Player::SlotType::Computer);
         _Pragma("warning(suppress: 26716)") return *map;
     }();
-    auto edit = CM->operator()();
-    for ( std::size_t i=0; i<Sc::Unit::TotalTypes; ++i )
+    auto edit = CM->create_action();
+    for ( std::size_t i=0; i<scData->units.numUnitTypes(); ++i )
     {
         //if ( i != Sc::Unit::Type::DarkSwarm )
         //    continue;
-        //if ( scData.units.getUnit(Sc::Unit::Type(i)).subunit1 == 228 )
+        //if ( scData->units.getUnit(Sc::Unit::Type(i)).subunit1 == Sc::Unit::Type::NoSubUnit )
         //    continue;
         int x = i%20;
         int y = i/20;
         //CM->addUnit(Chk::Unit {CM->getNextClassId(), u16(x*64+64), u16(y*64+64), Sc::Unit::Type(i), 0, 0, 0, Sc::Player::Id::Player1});
         //CM->addSprite(Chk::Sprite {Sc::Sprite::Type(i), u16(x*64+64), u16(y*64+64), Sc::Player::Id::Player1, 0, Chk::Sprite::SpriteFlags::IsUnit});
     }
-    for ( std::size_t i=0; i<Sc::Sprite::TotalSprites; ++i )
+    for ( std::size_t i=0; i<scData->sprites.numSprites(); ++i )
     {
         //if ( i != 321 )
         //    continue;
-        //if ( scData.units.getUnit(Sc::Unit::Type(i)).subunit1 == 228 )
+        //if ( scData->units.getUnit(Sc::Unit::Type(i)).subunit1 == Sc::Unit::Type::NoSubUnit )
         //    continue;
         int x = i%32;
         int y = i/32;
@@ -63,11 +63,11 @@ void Chkdraft::OnLoadTest()
     //maps.ChangeLayer(Layer::Units);
     //maps.ChangeLayer(Layer::Sprites);
 
-    /*for ( std::size_t i=0; i<Sc::Unit::TotalTypes; ++i )
+    /*for ( std::size_t i=0; i<scData->units.numUnitTypes(); ++i )
         CM->addUnit(Chk::Unit{CM->getNextClassId(), 128, 128, Sc::Unit::Type(i), 0, 0, 0, Sc::Player::Id::Player1});
-    for ( std::size_t i=0; i<Sc::Sprite::TotalSprites; ++i )
+    for ( std::size_t i=0; i<scData->sprites.numSprites(); ++i )
         CM->addSprite(Chk::Sprite{.type = Sc::Sprite::Type(i), .xc=192, .yc=128, .flags = Chk::Sprite::SpriteFlags::DrawAsSprite});
-    for ( std::size_t i=0; i<Sc::Sprite::TotalSprites; ++i )
+    for ( std::size_t i=0; i<scData->sprites.numSprites(); ++i )
         CM->addSprite(Chk::Sprite{.type = Sc::Sprite::Type(i), .xc=256, .yc=128, .flags = 0});*/
     //CM->addSprite(Chk::Sprite{.type = Sc::Sprite::Type(65), .xc = 200, .yc = 200, .flags = Chk::Sprite::SpriteFlags::DrawAsSprite});
     //CM->addSprite(Chk::Sprite{.type = Sc::Sprite::Type(65), .xc = 250, .yc = 250, .flags = Chk::Sprite::SpriteFlags::DrawAsSprite});
@@ -126,20 +126,34 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
 
     if ( profiles().autoLoadOnStart )
     {
+        const TreeGroup* customUnitTreeGroups = profiles().units.parsedCustomTree.subGroups.empty() ? nullptr : &profiles().units.parsedCustomTree;
         std::filesystem::current_path(getSystemFileDirectory(profiles().profilePath));
-        if ( !scData.emplace().load(Sc::DataFile::BrowserPtr(new ChkdDataFileBrowser()), ChkdDataFileBrowser::getDataFileDescriptors(),
-            ChkdDataFileBrowser::getExpectedStarCraftDirectory()) )
-        {
-            logger.error("Error loading StarCraft data!");
-            SelectProfile selectProfile {};
-            selectProfile.CreateThis(getHandle());
+#ifndef _DEBUG
+        try {
+#endif
+            if ( !scData.emplace().load(Sc::DataFile::BrowserPtr(new ChkdDataFileBrowser()), ChkdDataFileBrowser::getDataFileDescriptors(),
+                ChkdDataFileBrowser::getExpectedStarCraftDirectory(), Sc::DataFile::Browser::getDefaultStarCraftBrowser(), customUnitTreeGroups) )
+            {
+                logger.error("Error loading StarCraft data!");
+                SelectProfile selectProfile {};
+                selectProfile.CreateThis(getHandle());
+            }
+#ifndef _DEBUG
+        } catch ( std::exception & e ) { // In release mode, force off the auto-load flag to prevent crash-on-start
+            profiles().autoLoadOnStart = false;
+            profiles().saveProfile();
+            logger.error("Exception loading StarCraft data!", e);
+            Error("Exception loading StarCraft data: " + std::string(e.what()));
+            throw;
         }
+#endif
     }
     else
     {
         SelectProfile selectProfile {};
         selectProfile.CreateThis(getHandle());
     }
+    mainPlot.leftBar.mainTree.unitTree.UpdateUnitNames(chkd.scData->units.displayNames);
     mainPlot.leftBar.mainTree.unitTree.UpdateUnitTree();
     mainPlot.leftBar.mainTree.spriteTree.UpdateSpriteTree();
     ParseCmdLine(lpCmdLine);
@@ -204,6 +218,7 @@ void Chkdraft::SetupLogging()
                 delete os;
             }
         }));
+        logFile.setLogLevel(logger.getLogLevel());
         logFile.setAggregator(stdOut);
         logger.setAggregator(logFile); // Forwards all logger messages to the log file, which will then save messages based on their importance
         logger.info() << "Chkdraft version: " << GetFullVersionString() << std::endl;
@@ -328,18 +343,32 @@ void Chkdraft::OpenFindProfileDialog()
         if ( browseForFile(profilePath, filterIndex, {{"*.profile.json", "Chkd Profile"}}, *settingsPath, "Find Profile", true, false) &&
             profilePath.ends_with(".profile.json") )
         {
-            if ( chkd.profiles.loadProfile(profilePath) != nullptr )
+            auto addedProfile = chkd.profiles.loadProfile(profilePath);
+            if ( addedProfile != nullptr )
             {
+                std::size_t addedProfileIndex = 0;
+                std::size_t i = 0;
                 for ( auto & profile : chkd.profiles.profiles )
                 {
+                    if ( profile.get() == addedProfile )
+                        addedProfileIndex = i;
+
                     profile->additionalProfileDirectories.push_back(getSystemFileDirectory(profilePath));
                     profile->saveProfile();
+                    ++i;
                 }
 
                 if ( chkd.editProfilesWindow && chkd.editProfilesWindow->getHandle() != NULL )
                     chkd.editProfilesWindow->RefreshWindow();
 
                 chkd.UpdateProfilesMenu();
+
+                if ( getYesNo("New profile added! Would you like to load it now?", "Profile Added") == PromptResult::Yes )
+                {
+                    chkd.profiles.setCurrProfile(addedProfileIndex);
+                    if ( !chkd.OnProfileLoad() )
+                        chkd.OpenEditProfilesDialog();
+                }
             }
         }
     }
@@ -386,89 +415,107 @@ void Chkdraft::SetLogLevel(LogLevel newLogLevel)
     UpdateLogLevelCheckmarks(newLogLevel);
 }
 
-void Chkdraft::OnProfileLoad()
+bool Chkdraft::OnProfileLoad()
 {
-    logger.info() << "Loading new profile: \"" << profiles().profileName << "\"" << std::endl;
+#ifndef _DEBUG
+    try {
+#endif
+        logger.info() << "Loading new profile: \"" << profiles().profileName << "\"" << std::endl;
 
-    // Destroy all modeless dialogs
-    unitWindow->DestroyThis();
-    spriteWindow->DestroyThis();
-    actorWindow->DestroyThis();
-    locationWindow->DestroyThis();
-    terrainPalWindow->DestroyThis();
-    tilePropWindow->DestroyThis();
-    textTrigWindow->DestroyThis();
-    briefingTextTrigWindow->DestroyThis();
-    mapSettingsWindow->DestroyThis();
-    trigEditorWindow->DestroyThis();
-    briefingTrigEditorWindow->DestroyThis();
-    dimensionsWindow->DestroyThis();
-    changePasswordWindow->DestroyThis();
-    enterPasswordWindow->DestroyThis();
-    aboutWindow->DestroyThis();
-    editProfilesWindow->DestroyThis();
+        // Destroy all modeless dialogs
+        unitWindow->DestroyThis();
+        spriteWindow->DestroyThis();
+        actorWindow->DestroyThis();
+        locationWindow->DestroyThis();
+        terrainPalWindow->DestroyThis();
+        tilePropWindow->DestroyThis();
+        textTrigWindow->DestroyThis();
+        briefingTextTrigWindow->DestroyThis();
+        mapSettingsWindow->DestroyThis();
+        trigEditorWindow->DestroyThis();
+        briefingTrigEditorWindow->DestroyThis();
+        dimensionsWindow->DestroyThis();
+        changePasswordWindow->DestroyThis();
+        enterPasswordWindow->DestroyThis();
+        aboutWindow->DestroyThis();
+        editProfilesWindow->DestroyThis();
 
-    // Update the log level
-    SetLogLevel(profiles().logger.defaultLogLevel);
+        // Update the log level
+        SetLogLevel(profiles().logger.defaultLogLevel);
 
-    // Cancel active pastings
-    maps.endPaste();
+        // Cancel active pastings
+        maps.endPaste();
 
-    // For each map.. clear selections, record the prev sel skin, set the skin to classic GDI (or none, if possible), reset map remastered graphics
-    std::unordered_map<GuiMap*, ChkdSkin> previousSkin {};
-    maps.enumMaps([&](GuiMap & map) {
-        map.selections.clear();
-        previousSkin.insert(std::make_pair(&map, map.GetSkin()));
-        map.SetSkin(ChkdSkin::ClassicGDI, false);
-        map.scrGraphics = std::make_unique<GuiMapGraphics>(*chkd.scData, map);
-    });
+        // For each map.. clear selections, record the prev sel skin, set the skin to classic GDI (or none, if possible), reset map remastered graphics
+        std::unordered_map<GuiMap*, ChkdSkin> previousSkin {};
+        maps.enumMaps([&](GuiMap & map) {
+            map.selections.clear();
+            previousSkin.insert(std::make_pair(&map, map.GetSkin()));
+            map.SetSkin(ChkdSkin::ClassicGDI, false);
+            map.scrGraphics = std::make_unique<GuiMapGraphics>(*chkd.scData, map);
+        });
 
-    // Set scrGraphicsData to nullptr
-    scrData = nullptr;
+        // Set scrGraphicsData to nullptr
+        scrData = nullptr;
 
-    // Perform the actual data reload
-    scData.emplace().load(Sc::DataFile::BrowserPtr(new ChkdDataFileBrowser()), ChkdDataFileBrowser::getDataFileDescriptors(),
-        ChkdDataFileBrowser::getExpectedStarCraftDirectory());
+        // Perform the actual data reload
+        const TreeGroup* customUnitTreeGroups = profiles().units.parsedCustomTree.subGroups.empty() ? nullptr : &profiles().units.parsedCustomTree;
+        bool dataLoaded = scData.emplace().load(Sc::DataFile::BrowserPtr(new ChkdDataFileBrowser()), ChkdDataFileBrowser::getDataFileDescriptors(),
+            ChkdDataFileBrowser::getExpectedStarCraftDirectory(), Sc::DataFile::Browser::getDefaultStarCraftBrowser(), customUnitTreeGroups);
+
+        if ( !dataLoaded )
+            return false;
     
-    // Re-initialize the clipboard & clipboard anims
-    maps.clipboard.emplace(*scData, gameClock);
+        // Re-initialize the clipboard & clipboard anims
+        maps.clipboard.emplace(*scData, gameClock);
 
-    // For each map.. refresh the isom cache, refresh the tile occupation cache, re-init GDI graphics, re-init anims, attempt restoring previous skin selection, redraw map & minimap
-    maps.enumMaps([&](GuiMap & map) {
-        map.OnScDataRefresh(); // Refresh isom cache, tile occupation cache, gdi graphics
-        auto found = previousSkin.find(&map);
-        if ( found != previousSkin.end() )
-            map.SetSkin(found->second, false);
+        // For each map.. refresh the isom cache, refresh the tile occupation cache, re-init GDI graphics, re-init anims, attempt restoring previous skin selection, redraw map & minimap
+        maps.enumMaps([&](GuiMap & map) {
+            map.OnScDataRefresh(); // Refresh isom cache, tile occupation cache, gdi graphics
+            auto found = previousSkin.find(&map);
+            if ( found != previousSkin.end() )
+                map.SetSkin(found->second, false);
 
-        map.Redraw(true);
-    });
+            map.Redraw(true);
+        });
 
-    // TODO: when such settings have been added to profiles, set all the map view & editor settings
+        // TODO: when such settings have been added to profiles, set all the map view & editor settings
     
-    // Rebuild the main tree
-    chkd.mainPlot.leftBar.mainTree.isomTree.UpdateIsomTree();
-    chkd.mainPlot.leftBar.mainTree.doodadTree.UpdateDoodadTree();
-    chkd.mainPlot.leftBar.mainTree.unitTree.UpdateUnitTree();
-    chkd.mainPlot.leftBar.mainTree.spriteTree.UpdateSpriteTree();
+        // Rebuild the main tree
+        chkd.mainPlot.leftBar.mainTree.isomTree.UpdateIsomTree();
+        chkd.mainPlot.leftBar.mainTree.doodadTree.UpdateDoodadTree();
+        chkd.mainPlot.leftBar.mainTree.unitTree.UpdateUnitNames(chkd.scData->units.displayNames);
+        chkd.mainPlot.leftBar.mainTree.unitTree.UpdateUnitTree();
+        chkd.mainPlot.leftBar.mainTree.spriteTree.UpdateSpriteTree();
 
-    // Re-initialize/re-ctor all the modeless dialogs
-    unitWindow.emplace();
-    spriteWindow.emplace();
-    actorWindow.emplace();
-    locationWindow.emplace();
-    terrainPalWindow.emplace();
-    tilePropWindow.emplace();
-    textTrigWindow.emplace();
-    briefingTextTrigWindow.emplace();
-    mapSettingsWindow.emplace();
-    trigEditorWindow.emplace();
-    briefingTrigEditorWindow.emplace();
-    dimensionsWindow.emplace();
-    changePasswordWindow.emplace();
-    enterPasswordWindow.emplace();
-    aboutWindow.emplace();
-    editProfilesWindow.emplace();
-    logger.info() << "Profile: \"" << profiles().profileName << "\" loaded." << std::endl;
+        // Re-initialize/re-ctor all the modeless dialogs
+        unitWindow.emplace();
+        spriteWindow.emplace();
+        actorWindow.emplace();
+        locationWindow.emplace();
+        terrainPalWindow.emplace();
+        tilePropWindow.emplace();
+        textTrigWindow.emplace();
+        briefingTextTrigWindow.emplace();
+        mapSettingsWindow.emplace();
+        trigEditorWindow.emplace();
+        briefingTrigEditorWindow.emplace();
+        dimensionsWindow.emplace();
+        changePasswordWindow.emplace();
+        enterPasswordWindow.emplace();
+        aboutWindow.emplace();
+        editProfilesWindow.emplace();
+        logger.info() << "Profile: \"" << profiles().profileName << "\" loaded." << std::endl;
+#ifndef _DEBUG
+    } catch ( std::exception & e ) { // In release mode, force off the auto-load flag to prevent crash-on-start
+        profiles().autoLoadOnStart = false;
+        profiles().saveProfile();
+        logger.error("Unhandled exception during profile load: ", e);
+        Error("Unhandled exception during profile load: " + std::string(e.what()));
+        throw;
+    }
+#endif
+    return true;
 }
 
 void Chkdraft::ProfilesReload()
@@ -1068,7 +1115,9 @@ LRESULT Chkdraft::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                     if ( profiles[i].menuId == LOWORD(wParam) )
                     {
                         profiles.setCurrProfile(i);
-                        this->OnProfileLoad();
+                        if ( !this->OnProfileLoad() )
+                            OpenEditProfilesDialog();
+
                         this->UpdateProfilesMenu();
                         return 0;
                     }

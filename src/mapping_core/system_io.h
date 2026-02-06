@@ -46,6 +46,8 @@ std::optional<std::string> fileToString(const std::string & fileName);
 std::optional<std::vector<u8>> fileToBuffer(const std::string & systemFilePath);
 bool bufferToFile(const std::string & systemFilePath, const std::vector<u8> & buffer);
 
+std::vector<std::string> collectLineSeparatedStrings(const std::vector<u8> & buffer);
+
 bool makeFileCopy(const std::string & inFilePath, const std::string & outFilePath);
 bool makeDirectory(const std::string & directory);
 

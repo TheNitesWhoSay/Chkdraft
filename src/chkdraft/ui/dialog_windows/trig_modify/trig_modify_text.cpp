@@ -66,7 +66,7 @@ void TrigModifyTextWindow::RefreshWindow(u32 trigIndex)
     this->trigIndex = trigIndex;
     TextTrigGenerator textTrigs(chkd.profiles().triggers.useAddressesForMemory, chkd.profiles().triggers.deathTableStart);
     trigText.clear();
-    if ( textTrigs.generateTextTrigs((Scenario &)*CM, trigIndex, trigText) )
+    if ( textTrigs.generateTextTrigs((Scenario &)*CM, trigIndex, trigText, chkd.scData.value()) )
         editText.SetText(trigText);
     else
         mb(trigIndex, "Failed to generate text triggers.");

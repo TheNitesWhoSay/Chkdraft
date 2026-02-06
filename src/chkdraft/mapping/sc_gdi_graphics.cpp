@@ -459,7 +459,7 @@ void Graphics::DrawLocations(ChkdBitmap & bitmap, bool showAnywhere)
 void Graphics::DrawFog(ChkdBitmap & bitmap)
 {
     u8 currPlayer = map.getCurrPlayer();
-    if ( currPlayer >= 8 )
+    if ( currPlayer >= Sc::Player::TotalSlots )
         currPlayer = 0;
 
     u8 currPlayerMask = u8Bits[currPlayer];
@@ -1196,20 +1196,20 @@ void UnitToBits(ChkdBitmap & bitmap, ChkdPalette & palette, u8 color, u16 bitWid
         }
     };
 
-    Sc::Unit::Type drawnUnitId = unitID < 228 ? (Sc::Unit::Type)unitID : Sc::Unit::Type::TerranMarine; // Extended units use ID:0's graphics (for now)
+    Sc::Unit::Type drawnUnitId = unitID < chkd.scData->units.numUnitTypes() ? (Sc::Unit::Type)unitID : Sc::Unit::Type::TerranMarine; // Extended units use ID:0's graphics (for now)
     auto & unitDat = chkd.scData->units.getUnit(Sc::Unit::Type(drawnUnitId));
     u16 imageId = chkd.scData->sprites.getSprite(chkd.scData->units.getFlingy(unitDat.graphics).sprite).imageFile;
     u32 grpId = chkd.scData->sprites.getImage(imageId).grpFile;
-    u16 subUnitImageId = unitDat.subunit1 == 228 ? std::numeric_limits<u16>::max() :
+    u16 subUnitImageId = unitDat.subunit1 == Sc::Unit::Type::NoSubUnit ? std::numeric_limits<u16>::max() :
         chkd.scData->sprites.getSprite(chkd.scData->units.getFlingy(chkd.scData->units.getUnit(unitDat.subunit1).graphics).sprite).imageFile;
-    u32 subUnitGrpId = unitDat.subunit1 == 228 ? std::numeric_limits<u32>::max() : chkd.scData->sprites.getImage(subUnitImageId).grpFile;
+    u32 subUnitGrpId = unitDat.subunit1 == Sc::Unit::Type::NoSubUnit ? std::numeric_limits<u32>::max() : chkd.scData->sprites.getImage(subUnitImageId).grpFile;
 
     if ( (size_t)grpId < chkd.scData->sprites.numGrps() )
     {
         Sc::SystemColor remapped[8];
         if ( selected )
         {
-            u32 selectionGrpId = chkd.scData->sprites.getImage(chkd.scData->sprites.getSprite(chkd.scData->units.getFlingy(chkd.scData->units.getUnit(drawnUnitId).graphics).sprite).selectionCircleImage+561).grpFile;
+            u32 selectionGrpId = chkd.scData->sprites.getImage(chkd.scData->sprites.getSprite(chkd.scData->units.getFlingy(chkd.scData->units.getUnit(drawnUnitId).graphics).sprite).selectionCircleImage+Sc::Sprite::FirstSelCircImage).grpFile;
             if ( selectionGrpId < chkd.scData->sprites.numGrps() )
             {
                 const Sc::Sprite::GrpFile & selCirc = chkd.scData->sprites.getGrp(selectionGrpId).get();
@@ -1261,9 +1261,9 @@ void SpriteToBits(ChkdBitmap & bitmap, ChkdPalette & palette, u8 color, u16 bitW
     Sc::SystemColor remapped[8];
     if ( selected )
     {
-        u32 selectionGrpId = spriteID >= 130 && spriteID <= 517 ?
-            chkd.scData->sprites.getImage(chkd.scData->sprites.getSprite(spriteID).selectionCircleImage+561).grpFile :
-            chkd.scData->sprites.getImage(chkd.scData->sprites.getSprite(130).selectionCircleImage+561).grpFile;
+        u32 selectionGrpId = spriteID >= Sc::Sprite::DatFile::IdRange::From0To129 && spriteID <= chkd.scData->sprites.numSprites() ?
+            chkd.scData->sprites.getImage(chkd.scData->sprites.getSprite(spriteID).selectionCircleImage+Sc::Sprite::FirstSelCircImage).grpFile :
+            chkd.scData->sprites.getImage(chkd.scData->sprites.getSprite(Sc::Sprite::Type::ZergScourge).selectionCircleImage+Sc::Sprite::FirstSelCircImage).grpFile;
 
         if ( selectionGrpId < chkd.scData->sprites.numGrps() )
         {
@@ -2000,7 +2000,7 @@ void DrawPasteGraphics(const WinLib::DeviceContext & dc, ChkdPalette & palette, 
             std::vector<PasteUnitNode> units = clipboard.getUnits();
             for ( auto & pasteUnit : units )
             {
-                if ( pasteUnit.unit.type < Sc::Unit::TotalTypes )
+                if ( pasteUnit.unit.type < chkd.scData->units.numUnitTypes() )
                 {
                     const auto & unitDat = chkd.scData->units.getUnit(pasteUnit.unit.type);
                     bool isValidPlacement = map.isValidUnitPlacement(pasteUnit.unit.type, paste.x + pasteUnit.xc, paste.y + pasteUnit.yc);
@@ -2335,7 +2335,7 @@ void DrawMiniMapFog(ChkdBitmap & bitmap, const ChkdPalette & palette, s64 bitWid
                        s64 xOffset, s64 yOffset, float scale, const Sc::Terrain::Tiles & tiles, GuiMap & map)
 {
     u8 currPlayer = map.getCurrPlayer();
-    if ( currPlayer >= 8 )
+    if ( currPlayer >= Sc::Player::TotalSlots )
         currPlayer = 0;
 
     u8 currPlayerMask = u8Bits[currPlayer];

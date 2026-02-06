@@ -63,7 +63,7 @@ bool TechSettingsWindow::DestroyThis()
 void TechSettingsWindow::RefreshWindow()
 {
     refreshing = true;
-    if ( selectedTech >= 0 && selectedTech < 44 && CM != nullptr )
+    if ( selectedTech >= 0 && selectedTech < Sc::Tech::TotalTypes && CM != nullptr )
     {
         Sc::Tech::Type tech = (Sc::Tech::Type)selectedTech;
         if ( selectedTech != -1 )
@@ -115,7 +115,7 @@ void TechSettingsWindow::RefreshWindow()
             radioResearchedByDefault.SetCheck(false);
         }
 
-        for ( u8 player=0; player<12; player++ )
+        for ( u8 player=0; player<Sc::Player::Total; player++ )
         {
             checkUsePlayerDefaults[player].SetCheck(CM->playerUsesDefaultTechSettings((Sc::Tech::Type)tech, player));
             
@@ -182,7 +182,7 @@ void TechSettingsWindow::CreateSubWindows(HWND hWnd)
     groupPlayerSettings.CreateThis(hWnd, 210, 190, 377, 265, "Player Settings", Id::GROUP_TECHPLAYERSETTINGS);
 
     const std::vector<std::string> playerTechSettings = { "Disabled", "Enabled", "Researched" };
-    for ( int player=0; player<12; player++ )
+    for ( int player=0; player<Sc::Player::Total; player++ )
     {
         std::stringstream ssPlayerTech;
         ssPlayerTech << "Use Default for Player ";
@@ -237,7 +237,7 @@ void TechSettingsWindow::DisableTechEditing()
     radioResearchedByDefault.DisableThis();
 
     groupPlayerSettings.DisableThis();
-    for ( int i=0; i<12; i++ )
+    for ( int i=0; i<Sc::Player::Total; i++ )
     {
         checkUsePlayerDefaults[i].DisableThis();
         dropPlayerTechSettings[i].DisableThis();
@@ -257,7 +257,7 @@ void TechSettingsWindow::EnableTechEditing()
     radioResearchedByDefault.EnableThis();
 
     groupPlayerSettings.EnableThis();
-    for ( int i=0; i<12; i++ )
+    for ( int i=0; i<Sc::Player::Total; i++ )
     {
         checkUsePlayerDefaults[i].EnableThis();
         if ( SendMessage(checkUsePlayerDefaults[i].getHandle(), BM_GETCHECK, 0, 0) == BST_UNCHECKED )
@@ -268,7 +268,7 @@ void TechSettingsWindow::EnableTechEditing()
 
 void TechSettingsWindow::SetDefaultTechCosts()
 {
-    if ( selectedTech > 0 && selectedTech < 44 && CM != nullptr )
+    if ( selectedTech > 0 && selectedTech < Sc::Tech::TotalTypes && CM != nullptr )
     {
         Sc::Tech::Type tech = (Sc::Tech::Type)selectedTech;
         const Sc::Tech::DatEntry & techDat = chkd.scData->techs.getTech(tech);
@@ -282,7 +282,7 @@ void TechSettingsWindow::SetDefaultTechCosts()
 
 void TechSettingsWindow::ClearDefaultTechCosts()
 {
-    if ( selectedTech > 0 && selectedTech < 44 && CM != nullptr )
+    if ( selectedTech > 0 && selectedTech < Sc::Tech::TotalTypes && CM != nullptr )
     {
         u8 tech = (u8)selectedTech;
 
@@ -301,7 +301,7 @@ LRESULT TechSettingsWindow::Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
             itemData = (((NMTREEVIEW*)nmhdr)->itemNew.lParam)&TreeDataPortion;
 
         u16 techId = (u16)itemData;
-        if ( itemType == TreeTypeTech && techId < 44 )
+        if ( itemType == TreeTypeTech && techId < Sc::Tech::TotalTypes )
         {
             EnableTechEditing();
             selectedTech = (u32)techId;
@@ -434,7 +434,7 @@ LRESULT TechSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             if ( HIWORD(wParam) == CBN_SELCHANGE && selectedTech != -1 &&
                 LOWORD(wParam) >= Id::DROP_P1TECHSETTINGS && LOWORD(wParam) <= Id::DROP_P12TECHSETTINGS )
             {
-                auto edit = CM->operator()(ActionDescriptor::SetTechResearched);
+                auto edit = CM->create_action(ActionDescriptor::SetTechResearched);
                 u8 player = u8(LOWORD(wParam) - Id::DROP_P1TECHSETTINGS);
                 int selection = dropPlayerTechSettings[player].GetSel();
                 if ( selection == 0 ) // Disabled

@@ -124,7 +124,8 @@ std::vector<Sc::DataFile::Descriptor> ChkdDataFileBrowser::getDataFileDescriptor
     for ( auto & dataFilePath : dataFilePaths )
     {
         bool isDirectory = std::filesystem::is_directory(dataFilePath);
-        bool isCasc = isDirectory;
+        bool isCasc = isDirectory && CascArchive{}.isValid(dataFilePath);
+        bool isPureDirectory = isDirectory && !isCasc;
         bool isOptionalIfCascFound = false;
         std::string fileName = isCasc ? std::string("Data") : getSystemFileName(dataFilePath);
         std::shared_ptr<FileBrowser<u32>> fileBrowser = nullptr;
@@ -136,7 +137,7 @@ std::vector<Sc::DataFile::Descriptor> ChkdDataFileBrowser::getDataFileDescriptor
                 std::filesystem::path(starCraftPath));
         } catch ( ... ) {}
 
-        dataFiles.emplace_back(priority, isCasc, isOptionalIfCascFound, fileName, dataFilePath, fileBrowser, isExpectedInScDirectory);
+        dataFiles.emplace_back(priority, isCasc, isPureDirectory, isOptionalIfCascFound, fileName, dataFilePath, fileBrowser, isExpectedInScDirectory);
         priority = Sc::DataFile::Priority((u32 &)priority + 1);
     }
 

@@ -147,14 +147,25 @@ namespace WinLib {
         TV_LAST
     });
 
+    enum_t(LV, u32, {
+        /** May be posted to the window after an item change is queue'd, and the queue may be processed when this message is recieved.
+            Posting this message should be skipped if the queue had items before queueing the current item
+            WPARAM: Unused
+            LPARAM: Unused
+            Return: Unused */
+        WM_LVPROCESSQUEUE = TV::TV_LAST,
+
+        LV_LAST
+    });
+
     enum_t(MISC, u32, {
-        WM_ISEDIT = TV::TV_LAST,
+        WM_ISEDIT = LV::LV_LAST,
 
         MISC_LAST
     });
 
     // First user-message used by a given set of sub-windows
-    #define MSG_FIRST (WinLib::TV::TV_LAST+1)
+    #define MSG_FIRST (WinLib::TV::MISC_LAST+1)
 
     // First identifier used by a given set of sub-windows
     #define ID_FIRST 41001

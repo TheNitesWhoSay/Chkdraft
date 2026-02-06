@@ -281,9 +281,13 @@ namespace WinLib {
             case WM_DROPFILES:
             {
                 icux::codepoint dropFilePath[MAX_PATH];
-                DragQueryFile((HDROP)wParam, 0, dropFilePath, MAX_PATH);
+                UINT fileCount = DragQueryFile((HDROP)wParam, 0xFFFFFFFF, NULL, 0);
+                for ( UINT i=0; i<fileCount; ++i )
+                {
+                    DragQueryFile((HDROP)wParam, WPARAM(i), dropFilePath, MAX_PATH);
+                    classWindow->HandleDroppedFile(icux::toUtf8(dropFilePath));
+                }
                 DragFinish((HDROP)wParam);
-                classWindow->HandleDroppedFile(icux::toUtf8(dropFilePath));
             }
             break;
 

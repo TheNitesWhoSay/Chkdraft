@@ -4,6 +4,7 @@
 #include <rarecpp/json.h>
 #include <chkdraft/mapping/chkd_skin.h>
 #include <cross_cut/logger.h>
+#include <mapping_core/tree_group.h>
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -70,6 +71,22 @@ struct TriggerSettings
     REFLECT(TriggerSettings, useAddressesForMemory, deathTableStart)
 };
 
+struct UnitSettings
+{
+    Json::OrderedObject customTree;
+    TreeGroup parsedCustomTree;
+
+    REFLECT(UnitSettings, customTree)
+};
+
+struct SpriteSettings
+{
+    Json::OrderedObject customTree;
+    TreeGroup parsedCustomTree;
+
+    REFLECT(SpriteSettings, customTree)
+};
+
 struct ChkdProfile
 {
     NOTE(profilePath, Json::Ignore)
@@ -88,9 +105,11 @@ struct ChkdProfile
     HistorySettings history {};
     LoggerSettings logger {};
     TriggerSettings triggers {};
+    UnitSettings units {};
+    SpriteSettings sprites {};
 
     REFLECT(ChkdProfile, profileName, additionalProfileDirectories, isDefaultProfile, autoLoadOnStart, useRemastered,
-        remastered, classic, history, logger, triggers)
+        remastered, classic, history, logger, triggers, units, sprites)
 
     void fixPathsToForwardSlash();
     void saveProfile();

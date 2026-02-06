@@ -208,7 +208,7 @@ void MapPropertiesWindow::RefreshWindow()
         editMapWidth.SetText(sCurrWidth);
         editMapHeight.SetText(sCurrHeight);
                     
-        for ( int player=0; player<12; player++ )
+        for ( int player=0; player<Sc::Player::Total; player++ )
         {
             u8 displayOwner(CM->GetPlayerOwnerStringId(player));
             Chk::Race race = CM->getPlayerRace(player);
@@ -217,7 +217,7 @@ void MapPropertiesWindow::RefreshWindow()
             dropPlayerRaces[player].SetSel(race);
             dropPlayerRaces[player].ClearEditSel();
 
-            if ( player < 8 )
+            if ( player < Sc::Player::TotalSlots )
             {
                 if ( CM->isUsingRemasteredColors() )
                 {
@@ -320,7 +320,7 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             u32 player = LOWORD(wParam) - Id::CB_P1OWNER; // 0 based player
             Sc::Player::SlotType newType = Sc::Player::SlotType::Inactive;
             LRESULT sel = SendMessage((HWND)lParam, CB_GETCURSEL, 0, 0);
-            if ( player >= 0 && player < 12 && sel != CB_ERR )
+            if ( player >= 0 && player < Sc::Player::Total && sel != CB_ERR )
             {
                 switch ( sel )
                 {
@@ -343,7 +343,7 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
         {
             u32 player = LOWORD(wParam) - Id::CB_P1RACE; // 0 based player
             LRESULT newRace = SendMessage((HWND)lParam, CB_GETCURSEL, 0, 0);
-            if ( player >= 0 && player < 12 && newRace != CB_ERR && newRace >= 0 && newRace < 8 )
+            if ( player >= 0 && player < Sc::Player::Total && newRace != CB_ERR && newRace >= 0 && newRace < Sc::Player::TotalSlots )
             {
                 CM->setPlayerRace(player, (Chk::Race)newRace);
                 chkd.maps.UpdatePlayerStatus();
@@ -361,7 +361,7 @@ LRESULT MapPropertiesWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             u32 player = LOWORD(wParam) - Id::CB_P1COLOR; // 0 based player
             LRESULT newColor = SendMessage((HWND)lParam, CB_GETCURSEL, 0, 0);
             LRESULT maxColorIndex = ::specialColors.size() + ::playerColors.size();
-            if ( player >= 0 && player < 12 && newColor != CB_ERR && newColor >= 0 && newColor < maxColorIndex )
+            if ( player >= 0 && player < Sc::Player::Total && newColor != CB_ERR && newColor >= 0 && newColor < maxColorIndex )
             {
                 switch ( newColor )
                 {
@@ -424,7 +424,7 @@ void MapPropertiesWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
         size_t playerIndex = size_t(idFrom)-Id::BUTTON_P1COLOR;
         if ( auto playerColor = ColorPropertiesDialog::GetCrgbColor(getHandle(), CM->getPlayerCustomColor(playerIndex)) )
         {
-            auto edit = CM->operator()(ActionDescriptor::SetPlayerColor);
+            auto edit = CM->create_action(ActionDescriptor::SetPlayerColor);
             CM->setPlayerColorSetting(playerIndex, Chk::PlayerColorSetting::Custom);
             CM->setPlayerCustomColor(playerIndex, *playerColor);
             chkd.maps.UpdatePlayerStatus();
@@ -440,7 +440,7 @@ void MapPropertiesWindow::CheckReplaceMapTitle()
     {
         if ( auto newMapTitle = editMapTitle.GetWinText() )
         {
-            auto edit = CM->operator()(ActionDescriptor::SetScenarioName);
+            auto edit = CM->create_action(ActionDescriptor::SetScenarioName);
             CM->setScenarioName<ChkdString>(*newMapTitle);
             CM->deleteUnusedStrings(Chk::Scope::Both);
             possibleTitleUpdate = false;
@@ -454,7 +454,7 @@ void MapPropertiesWindow::CheckReplaceMapDescription()
     {
         if ( auto newMapDescription = editMapDescription.GetWinText() )
         {
-            auto edit = CM->operator()(ActionDescriptor::SetScenarioDescription);
+            auto edit = CM->create_action(ActionDescriptor::SetScenarioDescription);
             CM->setScenarioDescription<ChkdString>(*newMapDescription);
             CM->deleteUnusedStrings(Chk::Scope::Both);
             possibleDescriptionUpdate = false;

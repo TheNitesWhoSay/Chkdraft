@@ -185,7 +185,7 @@ class TextTrigCompiler
         std::vector<StringTableNode*> unassignedExtendedStrings; // Extended strings in extendedStringTable that have yet to be assigned stringIds
 
         template <class MapType> bool prepLocationTable(const MapType & map); // Fills locationTable
-        template <class MapType> bool prepUnitTable(const MapType & map); // Fills unitTable
+        template <class MapType> bool prepUnitTable(const MapType & map, const Sc::Data & scData); // Fills unitTable
         template <class MapType> bool prepSwitchTable(const MapType & map); // Fills switchTable
         template <class MapType> bool prepGroupTable(const MapType & map); // Fills groupTable
         bool prepScriptTable(Sc::Data & scData); // Fills scriptTable

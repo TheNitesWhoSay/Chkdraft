@@ -42,7 +42,7 @@ void CustomDatFilesWindow::RefreshWindow()
 {
     auto & editProfile = getEditProfile();
 
-    std::vector<std::string> availableDataFiles {};
+    std::set<std::string> availableDataFiles {};
     std::set<std::string> usedDataFiles {};
     listUsedDataFiles.DeleteAllItems();
     if ( editProfile.useRemastered )
@@ -75,13 +75,13 @@ void CustomDatFilesWindow::RefreshWindow()
     for ( const auto & profile : chkd.profiles.profiles )
     {
         if ( !profile->remastered.cascPath.empty() && !usedDataFiles.contains(fixSystemPathSeparators(profile->remastered.cascPath)) )
-            availableDataFiles.push_back(profile->remastered.cascPath);
+            availableDataFiles.insert(profile->remastered.cascPath);
         if ( !profile->classic.starDatPath.empty() && !usedDataFiles.contains(fixSystemPathSeparators(profile->classic.starDatPath)) )
-            availableDataFiles.push_back(profile->classic.starDatPath);
+            availableDataFiles.insert(profile->classic.starDatPath);
         if ( !profile->classic.brooDatPath.empty() && !usedDataFiles.contains(fixSystemPathSeparators(profile->classic.brooDatPath)) )
-            availableDataFiles.push_back(profile->classic.brooDatPath);
+            availableDataFiles.insert(profile->classic.brooDatPath);
         if ( !profile->classic.patchRtPath.empty() && !usedDataFiles.contains(fixSystemPathSeparators(profile->classic.patchRtPath)) )
-            availableDataFiles.push_back(profile->classic.patchRtPath);
+            availableDataFiles.insert(profile->classic.patchRtPath);
     }
 
     listAvailableDataFiles.DeleteAllItems();

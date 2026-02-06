@@ -170,8 +170,9 @@ void ActorPropertiesWindow::SetListRedraw(bool redraw)
 
 bool ActorPropertiesWindow::AddActor(bool isUnit, bool isSpriteUnit, std::size_t unitOrSpriteType, std::size_t unitOrSpriteIndex, const MapActor & actor)
 {
+    const auto & unitDisplayNames = chkd.scData->units.displayNames;
     std::string actorName = (isUnit || isSpriteUnit) ?
-        Sc::Unit::defaultDisplayNames[unitOrSpriteType < Sc::Unit::defaultDisplayNames.size() ? unitOrSpriteType : 0] :
+        unitDisplayNames[unitOrSpriteType < unitDisplayNames.size() ? unitOrSpriteType : 0] :
         chkd.scData->sprites.spriteNames[unitOrSpriteType < chkd.scData->sprites.spriteNames.size() ? unitOrSpriteType : 0];
 
     listActors.AddRow(4, actor.drawListIndex);
@@ -228,8 +229,8 @@ void ActorPropertiesWindow::RepopulateList()
         listActors.SetItemText(0, (int)ActorListColumn::UnitSpriteIndex, "");
         listActors.SetItemText(0, (int)ActorListColumn::Priority, "");
         listActors.SetItemText(0, (int)ActorListColumn::Name, "");
-        auto & unitActors = CM->view.units.readAttachedData();
-        auto & spriteActors = CM->view.sprites.readAttachedData();
+        auto & unitActors = CM->view.units.read_attached_data();
+        auto & spriteActors = CM->view.sprites.read_attached_data();
         auto & drawList = CM->animations->drawList;
         for ( std::size_t i=1; i<drawList.size(); ++i )
         {
@@ -546,7 +547,7 @@ void ActorPropertiesWindow::ImageIdUpdated()
 {
     if ( auto newImageId = editImageId.GetEditNum<u16>() )
     {
-        if ( newImageId >= Sc::Sprite::TotalImages )
+        if ( newImageId >= chkd.scData->sprites.numImages() )
             newImageId = 0;
 
         MapActor* actor = getActiveActor();
@@ -1029,9 +1030,9 @@ MapActor* ActorPropertiesWindow::getActiveActor()
     if ( drawEntry != MapAnimations::UnusedDrawEntry )
     {
         if ( drawEntry & MapAnimations::FlagUnitActor )
-            return &(CM->view.units.attachedData(unitOrSpriteIndex));
+            return &(CM->view.units.attached_data(unitOrSpriteIndex));
         else
-            return &(CM->view.sprites.attachedData(unitOrSpriteIndex));
+            return &(CM->view.sprites.attached_data(unitOrSpriteIndex));
     }
     selectedActorIndex = noSelectedActor;
     DisableActorEditing();

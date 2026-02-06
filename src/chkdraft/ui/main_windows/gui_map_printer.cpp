@@ -2,25 +2,25 @@
 #include <chkdraft.h>
 #include <chkdraft/mapping/chkd_profiles.h>
 
-void GuiMap::afterAction(std::size_t actionIndex)
+void GuiMap::after_action(std::size_t actionIndex)
 {
     checkSelChangeFlags();
-    RareEdit::RenderAction<DescriptorIndex> action {};
+    nf::rendered_action<DescriptorIndex> action {};
     if ( skipEventRender )
     {
-        Tracked::renderAction(actionIndex, action, false);
+        render_action(actionIndex, action, false);
         skipEventRender = false;
     }
     else
-        Tracked::renderAction(actionIndex, action, true);
+        render_action(actionIndex, action, true);
 
-    totalHistSizeInBytes += action.byteCount;
+    totalHistSizeInBytes += action.byte_count;
     chkd.mainPlot.leftBar.historyTree.RefreshActionHeaders(std::make_optional(actionIndex));
     chkd.mainPlot.leftBar.historyTree.InsertAction(actionIndex, action);
-    if ( nonSelChangeCursor > Tracked::previousCursorIndex() )
+    if ( nonSelChangeCursor > tracked::previous_cursor_index() )
         nonSelChangeCursor = std::numeric_limits<std::size_t>::max(); // Previous nonSelChangeCursor was elided, reset indicating no change
     
-    if ( !action.isSelChangeAction() && (actionIndex > nonSelChangeCursor || nonSelChangeCursor == std::numeric_limits<std::size_t>::max()) )
+    if ( !action.is_sel_change_action() && (actionIndex > nonSelChangeCursor || nonSelChangeCursor == std::numeric_limits<std::size_t>::max()) )
         nonSelChangeCursor = actionIndex+1; // Mark first non-selection change
 
     this->checkUnsavedChanges();
@@ -30,7 +30,7 @@ void GuiMap::afterAction(std::size_t actionIndex)
         std::stringstream ss {};
         ss << "New Action[" << actionIndex << "]\n";
 
-        auto & changeEvents = action.changeEvents;
+        auto & changeEvents = action.change_events;
         for ( std::size_t i=0; i<changeEvents.size(); ++i )
         {
             if ( i > 99 )
@@ -54,9 +54,9 @@ void GuiMap::afterAction(std::size_t actionIndex)
         // If reached maxHistActions, trim first 20% of actions, e.g. max actions 500 = 100 trimmed
         // If reached maxHistMemoryUsageMb, find the actionIndex for which trimming the actions prior would bring memory use to 80% of maxHistMemoryUsageMb
         if ( trimActionCountLimit )
-            Tracked::trimHistory(maxHistActions/5);
+            tracked::trim_history(maxHistActions/5);
         else
-            Tracked::trimHistoryToSize(maxHistMemoryUseMb*1048576*4/5);
+            tracked::trim_history_to_size(maxHistMemoryUseMb*1048576*4/5);
 
         totalHistSizeInBytes = chkd.mainPlot.leftBar.historyTree.RebuildHistoryTree();
     }

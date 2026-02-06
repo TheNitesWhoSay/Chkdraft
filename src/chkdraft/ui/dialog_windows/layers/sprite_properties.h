@@ -36,6 +36,7 @@ class SpritePropertiesWindow : public WinLib::ClassDialog
         int CompareLvItems(LPARAM index1, LPARAM index2);
         void LvColumnClicked(NMHDR* nmhdr);
         void LvItemChanged(NMHDR* nmhdr);
+        void ProcessSelectionQueues();
 
         void NotifyClosePressed();
         void NotifyMoveTopPressed();
@@ -71,6 +72,8 @@ class SpritePropertiesWindow : public WinLib::ClassDialog
         bool flipSort;
         bool initilizing;
         bool changeHighlightOnly;
+        std::vector<u32> queueDeselection {};
+        std::vector<u32> queueSelection {};
 
         WinLib::ListViewControl listSprites;
         PlayerDropdown dropPlayer;

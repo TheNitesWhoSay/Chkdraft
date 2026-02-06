@@ -3,7 +3,7 @@
 #include <windows/windows_ui.h>
 #include <common_files/common_files.h>
 #include <mapping_core/scenario.h>
-#include <rarecpp/editor.h>
+#include <nf/hist.h>
 
 struct HistEvent
 {
@@ -15,7 +15,7 @@ struct HistAction
 {
     LPARAM lParam = 0;
     HTREEITEM hItem = NULL;
-    RareEdit::ActionStatus actionStatus {};
+    nf::action_status actionStatus {};
     std::size_t elisionCount = 0;
     std::string text {};
     std::vector<HistAction*> subActions {};
@@ -29,8 +29,8 @@ class HistoryTree : public WinLib::TreeViewControl
     public:
         virtual ~HistoryTree();
         void createRoot();
-        HistAction* InsertAction(std::size_t actionIndex, const RareEdit::RenderAction<DescriptorIndex> & action, HTREEITEM parent);
-        void InsertAction(std::size_t actionIndex, const RareEdit::RenderAction<DescriptorIndex> & action);
+        HistAction* InsertAction(std::size_t actionIndex, const nf::rendered_action<DescriptorIndex> & action, HTREEITEM parent);
+        void InsertAction(std::size_t actionIndex, const nf::rendered_action<DescriptorIndex> & action);
         std::size_t RebuildHistoryTree(); // Returns total byte count
         void RefreshActionHeaders(std::optional<std::size_t> excludeIndex = std::nullopt);
         

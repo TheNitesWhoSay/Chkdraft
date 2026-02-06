@@ -27,7 +27,7 @@ void BriefingTextTrigWindow::RefreshWindow()
     updateMenus();
     std::string briefingTrigString;
     BriefingTextTrigGenerator briefingTextTrigs {};
-    if ( briefingTextTrigs.generateBriefingTextTrigs((Scenario &)*CM, briefingTrigString) )
+    if ( briefingTextTrigs.generateBriefingTextTrigs((Scenario &)*CM, briefingTrigString, chkd.scData.value()) )
     {
         auto start = std::chrono::high_resolution_clock::now();
         SetDialogItemText(IDC_EDIT_TRIGTEXT, briefingTrigString);
@@ -146,7 +146,7 @@ bool BriefingTextTrigWindow::CompileEditText(Scenario & map)
     if ( auto briefingTrigText = editControl.GetWinText() )
     {
         BriefingTextTrigCompiler compiler {}; // All data for compilation is gathered on-the-fly, no need to check for updates
-        auto edit = CM->operator()(ActionDescriptor::CompileBriefingTextTrigs);
+        auto edit = CM->create_action(ActionDescriptor::CompileBriefingTextTrigs);
         CM->skipEventRendering();
         if ( compiler.compileBriefingTriggers(*briefingTrigText, (Scenario &)map, *chkd.scData, 0, map.numBriefingTriggers()) )
             return true;

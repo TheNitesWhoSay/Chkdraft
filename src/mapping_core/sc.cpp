@@ -3,6 +3,8 @@
 #include "cross_cut/logger.h"
 #include "mpq_file.h"
 #include "casc_archive.h"
+#include "folder_archive.h"
+#include "tree_group.h"
 #include <algorithm>
 #include <chrono>
 #include <list>
@@ -46,8 +48,8 @@ std::vector<FilterEntry<u32>> Sc::DataFile::getCascBuildInfoFilter()
     return std::vector<FilterEntry<u32>> { FilterEntry<u32>(buildInfoFileName, "Casc Build Info") };
 }
 
-Sc::DataFile::Descriptor::Descriptor(Priority priority, bool isCasc, bool isOptionalIfCascFound, const std::string & fileName, const std::string & expectedFilePath, FileBrowserPtr<u32> browser, bool expectedInScDirectory)
-    : priority(priority), fileName(fileName), expectedFilePath(expectedFilePath), browser(browser), expectedInScDirectory(expectedInScDirectory), isCascDataFile(isCasc), optionalIfCascFound(isOptionalIfCascFound)
+Sc::DataFile::Descriptor::Descriptor(Priority priority, bool isCasc, bool isPureDirectory, bool isOptionalIfCascFound, const std::string & fileName, const std::string & expectedFilePath, FileBrowserPtr<u32> browser, bool expectedInScDirectory)
+    : priority(priority), fileName(fileName), expectedFilePath(expectedFilePath), browser(browser), expectedInScDirectory(expectedInScDirectory), isCascDataFile(isCasc), isPureDir(isPureDirectory), optionalIfCascFound(isOptionalIfCascFound)
 {
 
 }
@@ -82,6 +84,11 @@ bool Sc::DataFile::Descriptor::isCasc() const
     return isCascDataFile;
 }
 
+bool Sc::DataFile::Descriptor::isPureDirectory() const
+{
+    return isPureDir;
+}
+
 bool Sc::DataFile::Descriptor::isOptionalIfCascFound() const
 {
     return optionalIfCascFound;
@@ -98,21 +105,21 @@ std::vector<Sc::DataFile::Descriptor> Sc::DataFile::getDefaultDataFiles(Remaster
     {
     case RemasteredDescriptor::No:
         return std::vector<Descriptor> {
-            Descriptor(Priority::PatchRt, false, true, patchRtFileName, "", std::make_shared<FileBrowser<u32>>(getPatchRtFilter(), "")),
-            Descriptor(Priority::BrooDat, false, true, brooDatFileName, "", std::make_shared<FileBrowser<u32>>(getBrooDatFilter(), "")),
-            Descriptor(Priority::StarDat, false, true, starDatFileName, "", std::make_shared<FileBrowser<u32>>(getStarDatFilter(), ""))
+            Descriptor(Priority::PatchRt, false, false, true, patchRtFileName, "", std::make_shared<FileBrowser<u32>>(getPatchRtFilter(), "")),
+            Descriptor(Priority::BrooDat, false, false, true, brooDatFileName, "", std::make_shared<FileBrowser<u32>>(getBrooDatFilter(), "")),
+            Descriptor(Priority::StarDat, false, false, true, starDatFileName, "", std::make_shared<FileBrowser<u32>>(getStarDatFilter(), ""))
         };
     case RemasteredDescriptor::Yes:
         return std::vector<Descriptor> {
-            Descriptor(Priority::RemasteredCasc, true, false, "Data", "", nullptr)
+            Descriptor(Priority::RemasteredCasc, true, false, false, "Data", "", nullptr)
         };
     case RemasteredDescriptor::Either:
     default:
         return std::vector<Descriptor> {
-            Descriptor(Priority::RemasteredCasc, true, false, "Data", "", nullptr),
-            Descriptor(Priority::PatchRt, false, true, patchRtFileName, "", std::make_shared<FileBrowser<u32>>(getPatchRtFilter(), "")),
-            Descriptor(Priority::BrooDat, false, true, brooDatFileName, "", std::make_shared<FileBrowser<u32>>(getBrooDatFilter(), "")),
-            Descriptor(Priority::StarDat, false, true, starDatFileName, "", std::make_shared<FileBrowser<u32>>(getStarDatFilter(), ""))
+            Descriptor(Priority::RemasteredCasc, true, false, false, "Data", "", nullptr),
+            Descriptor(Priority::PatchRt, false, false, true, patchRtFileName, "", std::make_shared<FileBrowser<u32>>(getPatchRtFilter(), "")),
+            Descriptor(Priority::BrooDat, false, false, true, brooDatFileName, "", std::make_shared<FileBrowser<u32>>(getBrooDatFilter(), "")),
+            Descriptor(Priority::StarDat, false, false, true, starDatFileName, "", std::make_shared<FileBrowser<u32>>(getStarDatFilter(), ""))
         };
     }
 }
@@ -247,9 +254,13 @@ bool Sc::DataFile::Browser::findStarCraftDirectory(std::string & starCraftDirect
 
 ArchiveFilePtr Sc::DataFile::Browser::openDataFile(const std::string & dataFilePath, const Descriptor & dataFileDescriptor)
 {
-    ArchiveFilePtr archiveFile = dataFileDescriptor.isCasc() ?
-        std::static_pointer_cast<ArchiveFile>(std::make_shared<CascArchive>()) :
-        std::static_pointer_cast<ArchiveFile>(std::make_shared<MpqFile>());
+    ArchiveFilePtr archiveFile = nullptr;
+    if ( dataFileDescriptor.isCasc() )
+        archiveFile = std::static_pointer_cast<ArchiveFile>(std::make_shared<CascArchive>());
+    else if ( dataFileDescriptor.isPureDirectory() )
+        archiveFile = std::static_pointer_cast<ArchiveFile>(std::make_shared<FolderArchive>());
+    else
+        archiveFile = std::static_pointer_cast<ArchiveFile>(std::make_shared<MpqFile>());
 
     do
     {
@@ -272,93 +283,174 @@ FileBrowserPtr<u32> Sc::DataFile::Browser::getNoPromptNoDefaultStarCraftBrowser(
     return FileBrowserPtr<u32>(new NoPromptFileBrowser<u32>(getStarCraftExeFilter(), ""));
 }
 
+void Sc::Unit::loadDisplayNames(ArchiveCluster & archiveCluster)
+{
+    this->displayNames = this->defaultDisplayNames;
+    if ( auto unitNameOverridesOpt = Sc::Data::GetAsset(archiveCluster, "arr\\units.txt", true) )
+    {
+        auto unitNameOverrides = collectLineSeparatedStrings(*unitNameOverridesOpt);
+        auto numOverrides = unitNameOverrides.size();
+        if ( this->displayNames.size() < numOverrides )
+            this->displayNames.resize(numOverrides);
+
+        for ( std::size_t i=0; i<numOverrides; ++i )
+        {
+            const auto & unitNameOverride = unitNameOverrides[i];
+            if ( !unitNameOverride.empty() )
+                this->displayNames[i] = unitNameOverride;
+        }
+    }
+}
+
 bool Sc::Unit::load(ArchiveCluster & archiveCluster)
 {
     auto start = std::chrono::high_resolution_clock::now();
-    auto unitData = Sc::Data::GetAsset(archiveCluster, "arr\\units.dat");
-    if ( !unitData )
+    auto extUnitData = Sc::Data::GetAsset(archiveCluster, "arr\\units.datex", true);
+    if ( extUnitData )
     {
-        logger.error() << "Failed to load arr\\units.dat" << std::endl;
-        return false;
+        if ( extUnitData->size() != sizeof(Sc::Unit::DatExtFile) )
+        {
+            logger.error() << "Unrecognized UnitDatExt format!" << std::endl;
+            return false;
+        }
+        
+        DatExtFile & dat = (DatExtFile &)extUnitData.value()[0];
+        for ( std::size_t i=0; i<DatExtFile::TotalUnits; i++ )
+        {
+            units.push_back(Sc::Unit::DatEntry {
+                dat.graphics[i], dat.subunit1[i], dat.subunit2[i], u16(0), dat.constructionAnimation[i],
+                dat.unitDirection[i], dat.shieldEnable[i], dat.shieldAmount[i], dat.hitPoints[i], dat.elevationLevel[i],
+                dat.unknown[i], dat.sublabel[i], dat.compAIIdle[i], dat.humanAIIdle[i], dat.returntoIdle[i], dat.attackUnit[i],
+                dat.attackMove[i], dat.groundWeapon[i], dat.maxGroundHits[i], dat.airWeapon[i], dat.maxAirHits[i], dat.aiInternal[i],
+                dat.flags[i], dat.targetAcquisitionRange[i], dat.sightRange[i], dat.armorUpgrade[i], dat.unitSize[i],
+                dat.armor[i], dat.rightClickAction[i], u16(0), dat.whatSoundStart[i], dat.whatSoundEnd[i],
+                u16(0), u16(0), u16(0), u16(0),
+                dat.starEditPlacementBox[i].width, dat.starEditPlacementBox[i].height, u16(0), u16(0),
+                dat.unitExtent[i].left, dat.unitExtent[i].up, dat.unitExtent[i].right, dat.unitExtent[i].down, dat.portrait[i], dat.mineralCost[i],
+                dat.vespeneCost[i], dat.buildTime[i], dat.unknown1[i], dat.starEditGroupFlags[i], dat.supplyProvided[i], dat.supplyRequired[i],
+                dat.spaceRequired[i], dat.spaceProvided[i], dat.buildScore[i], dat.destroyScore[i], dat.unitMapString[i], dat.broodWarUnitFlag[i],
+                dat.starEditAvailabilityFlags[i]
+            });
+        }
     }
-    else if ( unitData->size() != sizeof(Sc::Unit::DatFile) )
+    else
     {
-        logger.error() << "Unrecognized UnitDat format!" << std::endl;
-        return false;
+        auto unitData = Sc::Data::GetAsset(archiveCluster, "arr\\units.dat");
+        if ( !unitData )
+        {
+            logger.error() << "Failed to load arr\\units.dat" << std::endl;
+            return false;
+        }
+        else if ( unitData->size() != sizeof(Sc::Unit::DatFile) )
+        {
+            logger.error() << "Unrecognized UnitDat format!" << std::endl;
+            return false;
+        }
+        
+        DatFile & dat = (DatFile &)unitData.value()[0];
+        size_t i=0;
+        for ( ; i<DatFile::IdRange::From0To105; i++ )
+        {
+            units.push_back(Sc::Unit::DatEntry {
+                dat.graphics[i], dat.subunit1[i], dat.subunit2[i], u16(0), dat.constructionAnimation[i],
+                dat.unitDirection[i], dat.shieldEnable[i], dat.shieldAmount[i], dat.hitPoints[i], dat.elevationLevel[i],
+                dat.unknown[i], dat.sublabel[i], dat.compAIIdle[i], dat.humanAIIdle[i], dat.returntoIdle[i], dat.attackUnit[i],
+                dat.attackMove[i], dat.groundWeapon[i], dat.maxGroundHits[i], dat.airWeapon[i], dat.maxAirHits[i], dat.aiInternal[i],
+                dat.flags[i], dat.targetAcquisitionRange[i], dat.sightRange[i], dat.armorUpgrade[i], dat.unitSize[i],
+                dat.armor[i], dat.rightClickAction[i], dat.readySound[i], dat.whatSoundStart[i], dat.whatSoundEnd[i],
+                dat.pissSoundStart[i], dat.pissSoundEnd[i], dat.yesSoundStart[i], dat.yesSoundEnd[i],
+                dat.starEditPlacementBox[i].width, dat.starEditPlacementBox[i].height, u16(0), u16(0),
+                dat.unitExtent[i].left, dat.unitExtent[i].up, dat.unitExtent[i].right, dat.unitExtent[i].down, dat.portrait[i], dat.mineralCost[i],
+                dat.vespeneCost[i], dat.buildTime[i], dat.unknown1[i], dat.starEditGroupFlags[i], dat.supplyProvided[i], dat.supplyRequired[i],
+                dat.spaceRequired[i], dat.spaceProvided[i], dat.buildScore[i], dat.destroyScore[i], dat.unitMapString[i], dat.broodWarUnitFlag[i],
+                dat.starEditAvailabilityFlags[i]
+            });
+        }
+        for ( ; i<DatFile::IdRange::From0To105+DatFile::IdRange::From106To201; i++ )
+        {
+            units.push_back(Sc::Unit::DatEntry {
+                dat.graphics[i], dat.subunit1[i], dat.subunit2[i], dat.infestation[i-DatFile::IdRange::From0To105], dat.constructionAnimation[i],
+                dat.unitDirection[i], dat.shieldEnable[i], dat.shieldAmount[i], dat.hitPoints[i], dat.elevationLevel[i],
+                dat.unknown[i], dat.sublabel[i], dat.compAIIdle[i], dat.humanAIIdle[i], dat.returntoIdle[i], dat.attackUnit[i],
+                dat.attackMove[i], dat.groundWeapon[i], dat.maxGroundHits[i], dat.airWeapon[i], dat.maxAirHits[i], dat.aiInternal[i],
+                dat.flags[i], dat.targetAcquisitionRange[i], dat.sightRange[i], dat.armorUpgrade[i], dat.unitSize[i],
+                dat.armor[i], dat.rightClickAction[i], u16(0), dat.whatSoundStart[i], dat.whatSoundEnd[i],
+                u16(0), u16(0), u16(0), u16(0),
+                dat.starEditPlacementBox[i].width, dat.starEditPlacementBox[i].height, dat.addonOffset[i-DatFile::IdRange::From0To105].width, dat.addonOffset[i-DatFile::IdRange::From0To105].height,
+                dat.unitExtent[i].left, dat.unitExtent[i].up, dat.unitExtent[i].right, dat.unitExtent[i].down, dat.portrait[i], dat.mineralCost[i],
+                dat.vespeneCost[i], dat.buildTime[i], dat.unknown1[i], dat.starEditGroupFlags[i], dat.supplyProvided[i], dat.supplyRequired[i],
+                dat.spaceRequired[i], dat.spaceProvided[i], dat.buildScore[i], dat.destroyScore[i], dat.unitMapString[i], dat.broodWarUnitFlag[i],
+                dat.starEditAvailabilityFlags[i]
+            });
+        }
+        for ( ; i<TotalTypes; i++ )
+        {
+            units.push_back(Sc::Unit::DatEntry {
+                dat.graphics[i], dat.subunit1[i], dat.subunit2[i], u16(0), dat.constructionAnimation[i],
+                dat.unitDirection[i], dat.shieldEnable[i], dat.shieldAmount[i], dat.hitPoints[i], dat.elevationLevel[i],
+                dat.unknown[i], dat.sublabel[i], dat.compAIIdle[i], dat.humanAIIdle[i], dat.returntoIdle[i], dat.attackUnit[i],
+                dat.attackMove[i], dat.groundWeapon[i], dat.maxGroundHits[i], dat.airWeapon[i], dat.maxAirHits[i], dat.aiInternal[i],
+                dat.flags[i], dat.targetAcquisitionRange[i], dat.sightRange[i], dat.armorUpgrade[i], dat.unitSize[i],
+                dat.armor[i], dat.rightClickAction[i], u16(0), dat.whatSoundStart[i], dat.whatSoundEnd[i],
+                u16(0), u16(0), u16(0), u16(0),
+                dat.starEditPlacementBox[i].width, dat.starEditPlacementBox[i].height, u16(0), u16(0),
+                dat.unitExtent[i].left, dat.unitExtent[i].up, dat.unitExtent[i].right, dat.unitExtent[i].down, dat.portrait[i], dat.mineralCost[i],
+                dat.vespeneCost[i], dat.buildTime[i], dat.unknown1[i], dat.starEditGroupFlags[i], dat.supplyProvided[i], dat.supplyRequired[i],
+                dat.spaceRequired[i], dat.spaceProvided[i], dat.buildScore[i], dat.destroyScore[i], dat.unitMapString[i], dat.broodWarUnitFlag[i],
+                dat.starEditAvailabilityFlags[i]
+            });
+        }
     }
 
-    DatFile & dat = (DatFile &)unitData.value()[0];
-    size_t i=0;
-    for ( ; i<DatFile::IdRange::From0To105; i++ )
+    auto extFlingyData = Sc::Data::GetAsset(archiveCluster, "arr\\flingy.datex", true);
+    if ( extFlingyData )
     {
-        units.push_back(Sc::Unit::DatEntry {
-            dat.graphics[i], dat.subunit1[i], dat.subunit2[i], u16(0), dat.constructionAnimation[i],
-            dat.unitDirection[i], dat.shieldEnable[i], dat.shieldAmount[i], dat.hitPoints[i], dat.elevationLevel[i],
-            dat.unknown[i], dat.sublabel[i], dat.compAIIdle[i], dat.humanAIIdle[i], dat.returntoIdle[i], dat.attackUnit[i],
-            dat.attackMove[i], dat.groundWeapon[i], dat.maxGroundHits[i], dat.airWeapon[i], dat.maxAirHits[i], dat.aiInternal[i],
-            dat.flags[i], dat.targetAcquisitionRange[i], dat.sightRange[i], dat.armorUpgrade[i], dat.unitSize[i],
-            dat.armor[i], dat.rightClickAction[i], dat.readySound[i], dat.whatSoundStart[i], dat.whatSoundEnd[i],
-            dat.pissSoundStart[i], dat.pissSoundEnd[i], dat.yesSoundStart[i], dat.yesSoundEnd[i],
-            dat.starEditPlacementBox[i].width, dat.starEditPlacementBox[i].height, u16(0), u16(0),
-            dat.unitExtent[i].left, dat.unitExtent[i].up, dat.unitExtent[i].right, dat.unitExtent[i].down, dat.portrait[i], dat.mineralCost[i],
-            dat.vespeneCost[i], dat.buildTime[i], dat.unknown1[i], dat.starEditGroupFlags[i], dat.supplyProvided[i], dat.supplyRequired[i],
-            dat.spaceRequired[i], dat.spaceProvided[i], dat.buildScore[i], dat.destroyScore[i], dat.unitMapString[i], dat.broodWarUnitFlag[i],
-            dat.starEditAvailabilityFlags[i]
-        });
+        std::size_t flingyCount = extFlingyData->size()/sizeof(Sc::Unit::FlingyDatEntry);
+        if ( flingyCount == 0 || extFlingyData->size()%sizeof(Sc::Unit::FlingyDatEntry) != 0 )
+        {
+            logger.error() << "Unrecognized FlingyDatExt format!" << std::endl;
+            return false;
+        }
+
+        u16* spriteArray = (u16*)(&(*extFlingyData)[offsetof(Sc::Unit::FlingyDatEntry, sprite) * flingyCount]);
+        u32* topSpeedArray = (u32*)(&(*extFlingyData)[offsetof(Sc::Unit::FlingyDatEntry, topSpeed) * flingyCount]);
+        u16* accelerationArray = (u16*)(&(*extFlingyData)[offsetof(Sc::Unit::FlingyDatEntry, acceleration) * flingyCount]);
+        u32* haltDistanceArray = (u32*)(&(*extFlingyData)[offsetof(Sc::Unit::FlingyDatEntry, haltDistance) * flingyCount]);
+        u8* turnRadiusArray = (u8*)(&(*extFlingyData)[offsetof(Sc::Unit::FlingyDatEntry, turnRadius) * flingyCount]);
+        u8* unusedArray = (u8*)(&(*extFlingyData)[offsetof(Sc::Unit::FlingyDatEntry, unused) * flingyCount]);
+        u8* moveControlArray = (u8*)(&(*extFlingyData)[offsetof(Sc::Unit::FlingyDatEntry, moveControl) * flingyCount]);
+
+        for ( std::size_t i=0; i<flingyCount; ++i )
+        {
+            flingies.push_back(Sc::Unit::FlingyDatEntry {
+                spriteArray[i], topSpeedArray[i], accelerationArray[i], haltDistanceArray[i],
+                turnRadiusArray[i], unusedArray[i], moveControlArray[i]
+            });
+        }
     }
-    for ( ; i<DatFile::IdRange::From0To105+DatFile::IdRange::From106To201; i++ )
+    else
     {
-        units.push_back(Sc::Unit::DatEntry {
-            dat.graphics[i], dat.subunit1[i], dat.subunit2[i], dat.infestation[i-106], dat.constructionAnimation[i],
-            dat.unitDirection[i], dat.shieldEnable[i], dat.shieldAmount[i], dat.hitPoints[i], dat.elevationLevel[i],
-            dat.unknown[i], dat.sublabel[i], dat.compAIIdle[i], dat.humanAIIdle[i], dat.returntoIdle[i], dat.attackUnit[i],
-            dat.attackMove[i], dat.groundWeapon[i], dat.maxGroundHits[i], dat.airWeapon[i], dat.maxAirHits[i], dat.aiInternal[i],
-            dat.flags[i], dat.targetAcquisitionRange[i], dat.sightRange[i], dat.armorUpgrade[i], dat.unitSize[i],
-            dat.armor[i], dat.rightClickAction[i], u16(0), dat.whatSoundStart[i], dat.whatSoundEnd[i],
-            u16(0), u16(0), u16(0), u16(0),
-            dat.starEditPlacementBox[i].width, dat.starEditPlacementBox[i].height, dat.addonOffset[i-106].width, dat.addonOffset[i-106].height,
-            dat.unitExtent[i].left, dat.unitExtent[i].up, dat.unitExtent[i].right, dat.unitExtent[i].down, dat.portrait[i], dat.mineralCost[i],
-            dat.vespeneCost[i], dat.buildTime[i], dat.unknown1[i], dat.starEditGroupFlags[i], dat.supplyProvided[i], dat.supplyRequired[i],
-            dat.spaceRequired[i], dat.spaceProvided[i], dat.buildScore[i], dat.destroyScore[i], dat.unitMapString[i], dat.broodWarUnitFlag[i],
-            dat.starEditAvailabilityFlags[i]
-        });
-    }
-    for ( ; i<TotalTypes; i++ )
-    {
-        units.push_back(Sc::Unit::DatEntry {
-            dat.graphics[i], dat.subunit1[i], dat.subunit2[i], u16(0), dat.constructionAnimation[i],
-            dat.unitDirection[i], dat.shieldEnable[i], dat.shieldAmount[i], dat.hitPoints[i], dat.elevationLevel[i],
-            dat.unknown[i], dat.sublabel[i], dat.compAIIdle[i], dat.humanAIIdle[i], dat.returntoIdle[i], dat.attackUnit[i],
-            dat.attackMove[i], dat.groundWeapon[i], dat.maxGroundHits[i], dat.airWeapon[i], dat.maxAirHits[i], dat.aiInternal[i],
-            dat.flags[i], dat.targetAcquisitionRange[i], dat.sightRange[i], dat.armorUpgrade[i], dat.unitSize[i],
-            dat.armor[i], dat.rightClickAction[i], u16(0), dat.whatSoundStart[i], dat.whatSoundEnd[i],
-            u16(0), u16(0), u16(0), u16(0),
-            dat.starEditPlacementBox[i].width, dat.starEditPlacementBox[i].height, u16(0), u16(0),
-            dat.unitExtent[i].left, dat.unitExtent[i].up, dat.unitExtent[i].right, dat.unitExtent[i].down, dat.portrait[i], dat.mineralCost[i],
-            dat.vespeneCost[i], dat.buildTime[i], dat.unknown1[i], dat.starEditGroupFlags[i], dat.supplyProvided[i], dat.supplyRequired[i],
-            dat.spaceRequired[i], dat.spaceProvided[i], dat.buildScore[i], dat.destroyScore[i], dat.unitMapString[i], dat.broodWarUnitFlag[i],
-            dat.starEditAvailabilityFlags[i]
-        });
+        auto flingyData = Sc::Data::GetAsset(archiveCluster, "arr\\flingy.dat");
+        if ( !flingyData )
+        {
+            logger.error() << "Failed to load arr\\flingy.dat" << std::endl;
+            return false;
+        }
+        else if ( flingyData->size() != sizeof(Sc::Unit::FlingyDatFile) )
+        {
+            logger.error() << "Unrecognized UnitDat format!" << std::endl;
+            return false;
+        }
+
+        FlingyDatFile & flingyDat = (FlingyDatFile &)flingyData.value()[0];
+        for ( std::size_t i=0; i<TotalFlingies; i++ )
+        {
+            flingies.push_back(Sc::Unit::FlingyDatEntry { flingyDat.sprite[i], flingyDat.topSpeed[i], flingyDat.acceleration[i],
+                flingyDat.haltDistance[i], flingyDat.turnRadius[i], flingyDat.unused[i], flingyDat.moveControl[i] });
+        }
     }
 
-    auto flingyData = Sc::Data::GetAsset(archiveCluster, "arr\\flingy.dat");
-    if ( !flingyData )
-    {
-        logger.error() << "Failed to load arr\\flingy.dat" << std::endl;
-        return false;
-    }
-    else if ( flingyData->size() != sizeof(Sc::Unit::FlingyDatFile) )
-    {
-        logger.error() << "Unrecognized UnitDat format!" << std::endl;
-        return false;
-    }
-
-    FlingyDatFile & flingyDat = (FlingyDatFile &)flingyData.value()[0];
-    for ( i=0; i<TotalFlingies; i++ )
-    {
-        flingies.push_back(Sc::Unit::FlingyDatEntry { flingyDat.sprite[i], flingyDat.topSpeed[i], flingyDat.acceleration[i],
-            flingyDat.haltDistance[i], flingyDat.turnRadius[i], flingyDat.unused[i], flingyDat.moveControl[i] });
-    }
+    loadDisplayNames(archiveCluster);
     
     auto finish = std::chrono::high_resolution_clock::now();
     logger.debug() << "Unit loading completed in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
@@ -1706,7 +1798,7 @@ void Sc::Terrain::Tiles::populateTerrainTypeMap(size_t tilesetIndex)
 
 void Sc::Terrain::Tiles::generateIsomLinks()
 {
-    size_t totalTileGroups = std::min(size_t(1024), tileGroups.size());
+    size_t totalTileGroups = std::min(Sc::Terrain::Cv5Dat::MaxTileGroups, tileGroups.size());
     Span<TileGroup> tilesetCv5s((TileGroup*)&tileGroups[0], totalTileGroups);
 
     std::vector<std::vector<uint16_t>> terrainTypeTileGroups(terrainTypes.size(), std::vector<uint16_t>{});
@@ -2012,7 +2104,7 @@ bool Sc::Terrain::Tiles::load(size_t tilesetIndex, ArchiveCluster & archiveClust
                     if ( newGroup )
                     {
                         doodadIdToTileGroup.try_emplace(doodad.ddDataIndex, u16(tileGroupIndex));
-                        doodadGroups.push_back({doodad.doodadName, statTxt == nullptr ? "" : statTxt->getString(doodad.doodadName), {u16(tileGroupIndex)}});
+                        doodadGroups.push_back({doodad.doodadName, statTxt == nullptr || doodad.doodadName >= statTxt->numStrings() ? "" : statTxt->getString(doodad.doodadName), {u16(tileGroupIndex)}});
                     }
                 }
             }
@@ -2083,7 +2175,12 @@ const std::array<Sc::SystemColor, Sc::NumColors> & Sc::Terrain::getStaticColorPa
 void Sc::Terrain::mergeSpriteFlags(const Sc::Unit & unitData)
 {
     for ( size_t i=0; i<Sc::Unit::TotalTypes; ++i )
-        doodadSpriteFlags[unitData.getFlingy(unitData.getUnit(Sc::Unit::Type(i)).graphics).sprite] = doodadUnitFlags[i];
+    {
+        const auto & unitDat = unitData.getUnit(Sc::Unit::Type(i));
+        const auto & flingyDat = unitData.getFlingy(unitDat.graphics);
+        if ( flingyDat.sprite < doodadSpriteFlags.size() )
+            doodadSpriteFlags[flingyDat.sprite] = doodadUnitFlags[i];
+    }
 }
 
 bool Sc::Weapon::load(ArchiveCluster & archiveCluster)
@@ -2146,10 +2243,14 @@ bool Sc::Sprite::Grp::load(ArchiveCluster & archiveCluster, const std::string & 
     if ( grpAsset )
     {
         this->grpData.swap(*grpAsset);
-        return isValid(assetArchivePath);
+        isValid(assetArchivePath);
+        return true;
     }
     else
+    {
         logger.error() << "Failed to load GRP " << assetArchivePath << std::endl;
+        return true;
+    }
 
     return false;
 }
@@ -2202,12 +2303,12 @@ bool Sc::Sprite::Grp::framesAreValid(const std::string & assetArchivePath) const
         GrpFrameHeader & grpFrameHeader = grpFile.frameHeaders[frame];
         if ( grpFrameHeader.frameHeight == 0 )
         {
-            logger.warn() << "GRP file \"" << assetArchivePath << "\", frame " << frame << " has a height of 0 pixels and will be skipped! " << std::endl;
+            logger.trace() << "GRP file \"" << assetArchivePath << "\", frame " << frame << " has a height of 0 pixels and will be skipped! " << std::endl;
             continue;
         }
         else if ( grpFrameHeader.frameWidth == 0 )
         {
-            logger.warn() << "GRP file \"" << assetArchivePath << "\", frame " << frame << " has a width of 0 pixels and will be skipped! " << std::endl;
+            logger.trace() << "GRP file \"" << assetArchivePath << "\", frame " << frame << " has a width of 0 pixels and will be skipped! " << std::endl;
             continue;
         }
         else if ( u16(grpFrameHeader.yOffset) + u16(grpFrameHeader.frameHeight) > grpFile.grpHeight )
@@ -2225,13 +2326,12 @@ bool Sc::Sprite::Grp::framesAreValid(const std::string & assetArchivePath) const
             return false;
         }
 
-        size_t frameMinimumFileSize = grpFrameHeader.frameOffset +
-            sizeof(u16) * size_t(grpFrameHeader.frameHeight) +
-            PixelRow::MinimumSize * size_t(grpFrameHeader.frameHeight);
+        size_t frameMinimumFileSize = size_t(grpFrameHeader.frameOffset) +
+            sizeof(u16) * size_t(grpFrameHeader.frameHeight);
 
         if ( grpData.size() < frameMinimumFileSize )
         {
-            logger.error() << "GRP file \"" << assetArchivePath << "\", frame " << frame << " with frame offset " << grpFrameHeader.frameOffset << " and frame height " << grpFrameHeader.frameHeight
+            logger.error() << "GRP file \"" << assetArchivePath << "\", frame " << frame << " with frame offset " << grpFrameHeader.frameOffset << " and frame height " << int(grpFrameHeader.frameHeight)
                 << " requires a file size of at least " << frameMinimumFileSize << " bytes but the file is only " << grpData.size() << " bytes" << std::endl;
             return false;
         }
@@ -2471,7 +2571,7 @@ bool Sc::Sprite::load(ArchiveCluster & archiveCluster, Sc::TblFilePtr imagesTbl)
     
     size_t numStrings = imagesTbl->numStrings();
     this->imagesTbl = imagesTbl;
-    this->loFiles.assign(numStrings, LoFile{});
+    this->loFiles.assign(numStrings+1, LoFile{});
 
     Sc::Sprite::Grp blankGrp;
     blankGrp.makeBlank();
@@ -2505,126 +2605,216 @@ bool Sc::Sprite::load(ArchiveCluster & archiveCluster, Sc::TblFilePtr imagesTbl)
     if ( numStrings == 0 )
         logger.warn() << "images.tbl was empty, no grps were loaded!" << std::endl;
 
-    auto imageData = Sc::Data::GetAsset(archiveCluster, "arr\\images.dat");
-    if ( !imageData )
+    auto extImageData = Sc::Data::GetAsset(archiveCluster, "arr\\images.datex", true);
+    if ( extImageData )
     {
-        logger.error() << "Failed to load arr\\images.dat" << std::endl;
-        return false;
-    }
-    else if ( imageData->size() != sizeof(Sc::Sprite::ImageDatFile) )
-    {
-        logger.error() << "Unrecognized ImageDat format!" << std::endl;
-        return false;
-    }
-
-    ImageDatFile & datFile = (ImageDatFile &)imageData.value()[0];
-    for ( size_t i=0; i<TotalImages; i++ )
-    {
-        images.push_back(ImageDatEntry { datFile.grpFile[i], datFile.graphicTurns[i], datFile.clickable[i], datFile.useFullIscript[i], datFile.drawIfCloaked[i],
-            datFile.drawFunction[i], datFile.remapping[i], datFile.iScriptId[i], datFile.shieldOverlay[i], datFile.attackOverlay[i], datFile.damageOverlay[i],
-            datFile.specialOverlay[i], datFile.landingDustOverlay[i], datFile.liftOffOverlay[i] });
-    }
-
-    auto spriteData = Sc::Data::GetAsset(archiveCluster, "arr\\sprites.dat");
-    if ( !spriteData )
-    {
-        logger.error() << "Failed to load arr\\sprites.dat" << std::endl;
-        return false;
-    }
-    else if ( spriteData->size() != sizeof(Sc::Sprite::DatFile) )
-    {
-        logger.error() << "Unrecognized SpriteDat format!" << std::endl;
-        return false;
-    }
-
-    DatFile & spriteDatFile = (DatFile &)spriteData.value()[0];
-    size_t i=0;
-    for ( ; i<DatFile::IdRange::From0To129; i++ )
-        sprites.push_back(DatEntry { spriteDatFile.imageFile[i], u8(0), spriteDatFile.unknown[i], spriteDatFile.isVisible[i], u8(0), u8(0) });
-
-    for ( ; i<TotalSprites; i++ )
-    {
-        sprites.push_back(DatEntry { spriteDatFile.imageFile[i], spriteDatFile.healthBar[i-DatFile::IdRange::From0To129],
-            spriteDatFile.unknown[i], spriteDatFile.isVisible[i], spriteDatFile.selectionCircleImage[i-DatFile::IdRange::From0To129],
-            spriteDatFile.selectionCircleOffset[i-DatFile::IdRange::From0To129] });
-    }
-    
-    auto finish = std::chrono::high_resolution_clock::now();
-
-    auto iscriptFile = Sc::Data::GetAsset(archiveCluster, "scripts\\ISCRIPT.BIN");
-    if ( !iscriptFile )
-    {
-        logger.error() << "Failed to load scripts\\ISCRIPT.BIN" << std::endl;
-        return false;
-    }
-    this->iscript.swap(*iscriptFile);
-
-    IScriptDatFileHeader* scriptHeader = (IScriptDatFileHeader*)&iscript[0];
-    size_t isIdTableOffset = size_t(scriptHeader->isIdTableOffset);
-    IScriptIdTableEntry* iScriptIdTable = (IScriptIdTableEntry*)&iscript[isIdTableOffset];
-    for ( ; iScriptIdTable->id != 0xFFFF; ++iScriptIdTable )
-    {
-        if ( iScriptIdTable->id >= iscriptOffsets.size() )
-            iscriptOffsets.resize(iScriptIdTable->id+1, 0);
-        
-        iscriptOffsets[iScriptIdTable->id] = iScriptIdTable->offset;
-
-        // TODO: Long-term it's likely that only the iscriptOffsets code above is needed and the below code and the loadAnimation method can be removed
-        u16 id = iScriptIdTable->id;
-        bool idIncludesFlip = false;
-        bool idIncludesUnflip = false;
-        size_t animationsOffset = size_t(iScriptIdTable->offset);
-        if ( animationsOffset >= iscript.size() )
+        std::size_t imageCount = imageCount = extImageData->size()/sizeof(ImageDatEntry);
+        if ( imageCount == 0 || extImageData->size()%sizeof(ImageDatEntry) != 0 )
         {
-            logger.error() << "Failed to parse scripts\\ISCRIPT.BIN" << std::endl;
+            logger.error() << "Unrecognized ImageDatExt format!" << std::endl;
             return false;
         }
-        IScriptAnimationHeader* iScriptAnimationHeader = (IScriptAnimationHeader*)&iscript[animationsOffset];
-        size_t totalAnimations = size_t(iScriptAnimationHeader->animationCount & 0xFFFE) + 2;
+        
+        u32* grpFileArray = (u32*)(&(*extImageData)[offsetof(ImageDatEntry, grpFile) * imageCount]);
+        u8* graphicTurnsArray = (u8*)(&(*extImageData)[offsetof(ImageDatEntry, graphicTurns) * imageCount]);
+        u8* clickableArray = (u8*)(&(*extImageData)[offsetof(ImageDatEntry, clickable) * imageCount]);
+        u8* useFullIScriptArray = (u8*)(&(*extImageData)[offsetof(ImageDatEntry, useFullIScript) * imageCount]);
+        u8* drawIfCloakedArray = (u8*)(&(*extImageData)[offsetof(ImageDatEntry, drawIfCloaked) * imageCount]);
+        u8* drawFunctionArray = (u8*)(&(*extImageData)[offsetof(ImageDatEntry, drawFunction) * imageCount]);
+        u8* remappingArray = (u8*)(&(*extImageData)[offsetof(ImageDatEntry, remapping) * imageCount]);
+        u32* iScriptIdArray = (u32*)(&(*extImageData)[offsetof(ImageDatEntry, iScriptId) * imageCount]);
+        u32* shieldOverlayArray = (u32*)(&(*extImageData)[offsetof(ImageDatEntry, shieldOverlay) * imageCount]);
+        u32* attackOverlayArray = (u32*)(&(*extImageData)[offsetof(ImageDatEntry, attackOverlay) * imageCount]);
+        u32* damageOverlayArray = (u32*)(&(*extImageData)[offsetof(ImageDatEntry, damageOverlay) * imageCount]);
+        u32* specialOverlayArray = (u32*)(&(*extImageData)[offsetof(ImageDatEntry, specialOverlay) * imageCount]);
+        u32* landingDustOverlayArray = (u32*)(&(*extImageData)[offsetof(ImageDatEntry, landingDustOverlay) * imageCount]);
+        u32* liftOffOverlayArray = (u32*)(&(*extImageData)[offsetof(ImageDatEntry, liftOffOverlay) * imageCount]);
 
-        for ( size_t animationIndex=0; animationIndex < totalAnimations; ++animationIndex )
+        for ( std::size_t i=0; i<imageCount; ++i )
         {
-            size_t animationOffset = iScriptAnimationHeader->animationsOffset[animationIndex];
-            if ( animationOffset > 0 )
-            {
-                size_t currOffset = animationOffset;
-                if ( currOffset >= iscript.size() )
-                {
-                    logger.error() << "Failed to parse scripts\\ISCRIPT.BIN" << std::endl;
-                    return false;
-                }
-
-                if ( currOffset < iscript.size() )
-                {
-                    IScriptAnimation* animation = (IScriptAnimation*)&iscript[currOffset];
-                    std::set<size_t> visitedOffsets {};
-                    visitedOffsets.insert(currOffset);
-                    if ( !loadAnimation(id, animation, currOffset, idIncludesFlip, idIncludesUnflip, visitedOffsets) )
-                        return false;
-                }
-                else
-                {
-                    logger.error() << "Failed to parse scripts\\ISCRIPT.BIN" << std::endl;
-                    return false;
-                }
-            }
+            images.push_back(ImageDatEntry {
+                grpFileArray[i], graphicTurnsArray[i], clickableArray[i], useFullIScriptArray[i], drawIfCloakedArray[i], drawFunctionArray[i],
+                remappingArray[i], iScriptIdArray[i], shieldOverlayArray[i], attackOverlayArray[i], damageOverlayArray[i], specialOverlayArray[i],
+                landingDustOverlayArray[i], liftOffOverlayArray[i] });
         }
-        if ( idIncludesFlip && !idIncludesUnflip )
-            iscriptIdFlipsGrp.insert(id);
+    }
+    else
+    {
+        auto imageData = Sc::Data::GetAsset(archiveCluster, "arr\\images.dat");
+        if ( !imageData )
+        {
+            logger.error() << "Failed to load arr\\images.dat" << std::endl;
+            return false;
+        }
+        else if ( imageData->size() != sizeof(Sc::Sprite::ImageDatFile) )
+        {
+            logger.error() << "Unrecognized ImageDat format!" << std::endl;
+            return false;
+        }
+
+        ImageDatFile & datFile = (ImageDatFile &)imageData.value()[0];
+        for ( size_t i=0; i<TotalImages; i++ )
+        {
+            images.push_back(ImageDatEntry { datFile.grpFile[i], datFile.graphicTurns[i], datFile.clickable[i], datFile.useFullIscript[i], datFile.drawIfCloaked[i],
+                datFile.drawFunction[i], datFile.remapping[i], datFile.iScriptId[i], datFile.shieldOverlay[i], datFile.attackOverlay[i], datFile.damageOverlay[i],
+                datFile.specialOverlay[i], datFile.landingDustOverlay[i], datFile.liftOffOverlay[i] });
+        }
     }
 
+    auto extSpriteData = Sc::Data::GetAsset(archiveCluster, "arr\\sprites.datex", true);
+    if ( extSpriteData )
+    {
+        std::size_t spriteCount = extSpriteData->size()/sizeof(DatEntry);
+        if ( spriteCount == 0 || extSpriteData->size()%sizeof(DatEntry) != 0 )
+        {
+            logger.error() << "Unrecognized SpriteDatExt format!" << std::endl;
+            return false;
+        }
+
+        u16* imageFileArray = (u16*)(&(*extSpriteData)[offsetof(DatEntry, imageFile) * spriteCount]);
+        u8* healthBarArray = (u8*)(&(*extSpriteData)[offsetof(DatEntry, healthBar) * spriteCount]);
+        u8* unknownArray = (u8*)(&(*extSpriteData)[offsetof(DatEntry, unknown) * spriteCount]);
+        u8* isVisibleArray = (u8*)(&(*extSpriteData)[offsetof(DatEntry, isVisible) * spriteCount]);
+        u8* selectionCircleImageArray = (u8*)(&(*extSpriteData)[offsetof(DatEntry, selectionCircleImage) * spriteCount]);
+        u8* selectionCircleOffsetArray = (u8*)(&(*extSpriteData)[offsetof(DatEntry, selectionCircleOffset) * spriteCount]);
+
+        for ( std::size_t i=0; i<spriteCount; ++i )
+        {
+            sprites.push_back(DatEntry { imageFileArray[i], healthBarArray[i], unknownArray[i], isVisibleArray[i],
+                selectionCircleImageArray[i], selectionCircleOffsetArray[i] });
+        }
+    }
+    else
+    {
+        auto spriteData = Sc::Data::GetAsset(archiveCluster, "arr\\sprites.dat");
+        if ( !spriteData )
+        {
+            logger.error() << "Failed to load arr\\sprites.dat" << std::endl;
+            return false;
+        }
+        else if ( spriteData->size() != sizeof(Sc::Sprite::DatFile) )
+        {
+            logger.error() << "Unrecognized SpriteDat format!" << std::endl;
+            return false;
+        }
+
+        DatFile & spriteDatFile = (DatFile &)spriteData.value()[0];
+        size_t i=0;
+        for ( ; i<DatFile::IdRange::From0To129; i++ )
+            sprites.push_back(DatEntry { spriteDatFile.imageFile[i], u8(0), spriteDatFile.unknown[i], spriteDatFile.isVisible[i], u8(0), u8(0) });
+
+        for ( ; i<TotalSprites; i++ )
+        {
+            sprites.push_back(DatEntry { spriteDatFile.imageFile[i], spriteDatFile.healthBar[i-DatFile::IdRange::From0To129],
+                spriteDatFile.unknown[i], spriteDatFile.isVisible[i], spriteDatFile.selectionCircleImage[i-DatFile::IdRange::From0To129],
+                spriteDatFile.selectionCircleOffset[i-DatFile::IdRange::From0To129] });
+        }
+    }
+
+    auto loadIscript = [&](std::size_t index, std::string_view assetFilePath, bool standard) -> bool {
+        auto iscriptFile = Sc::Data::GetAsset(archiveCluster, std::string(assetFilePath));
+        if ( !iscriptFile )
+        {
+            logger.error() << "Failed to load \"" << assetFilePath << "\"" << std::endl;
+            return false;
+        }
+        if ( index >= iscriptFiles.size() )
+            iscriptFiles.resize(index+1);
+
+        auto & iscript = iscriptFiles[index];
+        iscript.offsets.clear();
+
+        iscript.data.swap(*iscriptFile);
+        
+        IScriptDatFileHeader* scriptHeader = (IScriptDatFileHeader*)&iscript.data[0];
+        size_t isIdTableOffset = size_t(scriptHeader->isIdTableOffset);
+        IScriptIdTableEntry* iScriptIdTable = (IScriptIdTableEntry*)&iscript.data[isIdTableOffset];
+        for ( ; iScriptIdTable->id != 0xFFFF; ++iScriptIdTable )
+        {
+            if ( iScriptIdTable->id >= iscript.offsets.size() )
+                iscript.offsets.resize(iScriptIdTable->id+1, 0);
+        
+            iscript.offsets[iScriptIdTable->id] = iScriptIdTable->offset;
+
+            // TODO: Long-term it's likely that only the iscriptOffsets code above is needed and the below code and the loadAnimation method can be removed
+            u16 id = iScriptIdTable->id;
+            bool idIncludesFlip = false;
+            bool idIncludesUnflip = false;
+            size_t animationsOffset = size_t(iScriptIdTable->offset);
+            if ( animationsOffset >= iscript.data.size() )
+            {
+                logger.error() << "Failed to parse \"" << assetFilePath << "\"" << std::endl;
+                return false;
+            }
+            IScriptAnimationHeader* iScriptAnimationHeader = (IScriptAnimationHeader*)&iscript.data[animationsOffset];
+            size_t totalAnimations = standard ? size_t(iScriptAnimationHeader->animationCount & 0xFFFE) + 2 : iScriptAnimationHeader->animationCount;
+
+            for ( size_t animationIndex=0; animationIndex < totalAnimations; ++animationIndex )
+            {
+                size_t animationOffset = iScriptAnimationHeader->animationsOffset[animationIndex];
+                if ( animationOffset > 0 )
+                {
+                    size_t currOffset = animationOffset;
+                    if ( currOffset >= iscript.data.size() )
+                    {
+                        logger.error() << "Failed to parse \"" << assetFilePath << "\"" << std::endl;
+                        return false;
+                    }
+
+                    if ( currOffset < iscript.data.size() )
+                    {
+                        IScriptAnimation* animation = (IScriptAnimation*)&iscript.data[currOffset];
+                        std::set<size_t> visitedOffsets {};
+                        visitedOffsets.insert(currOffset);
+                        if ( !loadAnimation(iscript, id, animation, currOffset, idIncludesFlip, idIncludesUnflip, visitedOffsets) )
+                            return false;
+                    }
+                    else
+                    {
+                        logger.error() << "Failed to parse \"" << assetFilePath << "\"" << std::endl;
+                        return false;
+                    }
+                }
+            }
+            if ( idIncludesFlip && !idIncludesUnflip )
+                iscriptIdFlipsGrp.insert(id);
+        }
+        return true;
+    };
+
+    constexpr std::string_view cosmonarchyScripts[] {
+        "scripts\\iscript_general.bin",
+        "scripts\\iscript_terran.bin",
+        "scripts\\iscript_protoss.bin",
+        "scripts\\iscript_zerg.bin",
+        "scripts\\iscript_askosi.bin"
+    };
+
+    bool loadedStandardIscript = loadIscript(0, "scripts\\iscript.bin", true);
+    bool foundCosmonarchyScript = archiveCluster.findFile(std::string(cosmonarchyScripts[0]));
+    if ( !loadedStandardIscript && !foundCosmonarchyScript )
+        return false;
+
+    if ( foundCosmonarchyScript )
+    {
+        std::size_t i = 0; // Note that the zeroth/default iscript.bin is overriden if the cosmonarchy scripts are present
+        while ( i < std::size(cosmonarchyScripts) && loadIscript(i, std::string(cosmonarchyScripts[i]), false) )
+            ++i;
+    }
+
+    auto finish = std::chrono::high_resolution_clock::now();
     logger.debug() << "Sprite loading completed in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
     return true;
 }
 
-bool Sc::Sprite::loadAnimation(u16 id, IScriptAnimation* animation, size_t currOffset, bool & idIncludesFlip, bool & idIncludesUnflip, std::set<size_t> & visitedOffsets)
+bool Sc::Sprite::loadAnimation(const IscriptFile & iscript, u16 id, IScriptAnimation* animation, size_t currOffset, bool & idIncludesFlip, bool & idIncludesUnflip, std::set<size_t> & visitedOffsets)
 {
     // id here is just a temporary stopgap so I can examine one script, flip and unflip temporary loaders
     // visitedOffset is an immediate-cache preventing infinite loops during initial load... during actual animation though you want the infinite loop behavior
     // iScript being just a byte vector..., currOffset an index into it, animation a pointer into it at currOffset
     for ( ; ; )
     {
-        if ( currOffset >= iscript.size() )
+        if ( currOffset >= iscript.data.size() )
             return true;
 
         Op code = Op(animation->code);
@@ -2632,16 +2822,16 @@ bool Sc::Sprite::loadAnimation(u16 id, IScriptAnimation* animation, size_t currO
         if ( code < OpParams.size() )
         {
             auto & opCodeParams = OpParams[code];
-            if ( code == Op::setflipstate && iscript[currOffset] == 1 ) 
+            if ( code == Op::setflipstate && iscript.data[currOffset] == 1 ) 
                 idIncludesFlip = true;
-            else if ( code == Op::setflipstate && iscript[currOffset] == 0 )
+            else if ( code == Op::setflipstate && iscript.data[currOffset] == 0 )
                 idIncludesUnflip = true;
             else if ( code == Op::end || code == Op::return_ )
                 return true;
             else if ( code == Op::goto_ ) // TODO: There are more such jump codes
             {
-                u16 dest = (u16 &)iscript[currOffset];
-                if ( dest > iscript.size() )
+                u16 dest = (u16 &)iscript.data[currOffset];
+                if ( dest > iscript.data.size() )
                 {
                     logger.error() << "Failed to parse scripts\\ISCRIPT.BIN" << std::endl;
                     return true;
@@ -2649,8 +2839,8 @@ bool Sc::Sprite::loadAnimation(u16 id, IScriptAnimation* animation, size_t currO
                 else if ( visitedOffsets.find(dest) == visitedOffsets.end() )
                 {
                     visitedOffsets.insert(dest);
-                    IScriptAnimation* subAnimation = (IScriptAnimation*)&iscript[dest];
-                    return loadAnimation(id, subAnimation, dest, idIncludesFlip, idIncludesUnflip, visitedOffsets);
+                    IScriptAnimation* subAnimation = (IScriptAnimation*)&iscript.data[dest];
+                    return loadAnimation(iscript, id, subAnimation, dest, idIncludesFlip, idIncludesUnflip, visitedOffsets);
                 }
                 else
                     return true;
@@ -2661,26 +2851,29 @@ bool Sc::Sprite::loadAnimation(u16 id, IScriptAnimation* animation, size_t currO
             {
                 auto currParam = opCodeParams[param];
                 auto paramSize = ParamSize[size_t(currParam)];
-                u16 paramValue = paramSize == 1 ? iscript[currOffset] : (u16 &)iscript[currOffset];
+                u16 paramValue = paramSize == 1 ? iscript.data[currOffset] : (u16 &)iscript.data[currOffset];
                 currOffset += paramSize;
             }
-            if ( currOffset < iscript.size() )
-                animation = (IScriptAnimation*)&iscript[currOffset];
+            if ( currOffset < iscript.data.size() )
+                animation = (IScriptAnimation*)&iscript.data[currOffset];
         }
     }
     return true;
 }
 
-const Sc::Sprite::IScriptAnimation* Sc::Sprite::getAnimationHeader(size_t iScriptId, AnimHeader animHeader) const
+const Sc::Sprite::IScriptAnimation* Sc::Sprite::getAnimationHeader(u32 iScriptId, AnimHeader animHeader) const
 {
-    IScriptDatFileHeader* scriptHeader = (IScriptDatFileHeader*)&iscript[0];
-    size_t animationsOffset = iscriptOffsets[iScriptId];
-    if ( animationsOffset >= iscript.size() )
+    u32 iscriptFileIndex = (iScriptId & 0xFFFF0000) >> 16;
+    iScriptId &= 0x0000FFFF;
+    const auto & iscript = this->iscriptFiles[iscriptFileIndex];
+    IScriptDatFileHeader* scriptHeader = (IScriptDatFileHeader*)&iscript.data[0];
+    size_t animationsOffset = iScriptId < iscript.offsets.size() ? iscript.offsets[iScriptId] : iscript.data.size();
+    if ( animationsOffset >= iscript.data.size() )
     {
-        logger.error() << "Invalid iscript\n";
+        logger.error() << "Invalid iscript " << iScriptId << '\n';
         return nullptr;
     }
-    IScriptAnimationHeader* iScriptAnimationHeader = (IScriptAnimationHeader*)&iscript[animationsOffset];
+    IScriptAnimationHeader* iScriptAnimationHeader = (IScriptAnimationHeader*)&iscript.data[animationsOffset];
     size_t totalAnimations = size_t(iScriptAnimationHeader->animationCount & 0xFFFE) + 2;
     if ( std::size_t(animHeader) >= totalAnimations )
         return nullptr;
@@ -2689,14 +2882,14 @@ const Sc::Sprite::IScriptAnimation* Sc::Sprite::getAnimationHeader(size_t iScrip
     if ( animationOffset > 0 )
     {
         size_t currOffset = animationOffset;
-        if ( currOffset >= iscript.size() )
+        if ( currOffset >= iscript.data.size() )
         {
-            logger.error() << "Invalid iscript\n";
+            logger.error() << "Invalid iscript " << iScriptId << '\n';
             return nullptr;
         }
         else
         {
-            IScriptAnimation* animation = (IScriptAnimation*)&iscript[currOffset];
+            IScriptAnimation* animation = (IScriptAnimation*)&iscript.data[currOffset];
             return animation;
         }
     }
@@ -4449,22 +4642,29 @@ bool Sc::Data::loadUnitGroups()
     return true;
 }
 
-bool Sc::Data::loadSpriteNames(const Sc::Sprite::SpriteGroup & spriteGroup)
+bool Sc::Data::loadSpriteNames(std::vector<std::string> customSpriteNames, Sc::Sprite::SpriteGroup & spriteGroup)
 {
     auto & spriteGroups = sprites.spriteGroups;
-    for ( const auto & subGroup : spriteGroup.subGroups )
-        loadSpriteNames(subGroup);
+    for ( auto & subGroup : spriteGroup.subGroups )
+        loadSpriteNames(customSpriteNames, subGroup);
     
-    for ( const auto & memberSprite : spriteGroup.memberSprites )
+    for ( auto & memberSprite : spriteGroup.memberSprites )
     {
         if ( !memberSprite.isUnit )
-            sprites.spriteNames[memberSprite.spriteIndex] = memberSprite.spriteName;
+        {
+            if ( memberSprite.spriteIndex < customSpriteNames.size() )
+            {
+                memberSprite.spriteName = customSpriteNames[memberSprite.spriteIndex];
+                sprites.spriteNames[memberSprite.spriteIndex] = customSpriteNames[memberSprite.spriteIndex];
+            }
+            else
+                sprites.spriteNames[memberSprite.spriteIndex] = memberSprite.spriteName;
+        }
     }
 
     return true;
 }
 
-#ifdef _DEBUG
 void appendSpriteIndexes(std::set<u16> & indexes, const Sc::Sprite::SpriteGroup & spriteGroup)
 {
     for ( const auto & subGroup : spriteGroup.subGroups )
@@ -4473,11 +4673,41 @@ void appendSpriteIndexes(std::set<u16> & indexes, const Sc::Sprite::SpriteGroup 
     for ( const auto & memberSprite : spriteGroup.memberSprites )
         indexes.insert(memberSprite.spriteIndex);
 }
-#endif
 
-bool Sc::Data::loadSpriteGroups(Sc::TblFilePtr imagesTbl, Sc::TblFilePtr statTxt)
+void loadUnitSprites(Sc::Data & scDat, Sc::Sprite::SpriteGroup & pureSprites, Sc::Sprite::SpriteGroup & spriteUnits, const TreeGroup & unitGroup)
 {
-    constexpr auto totalSprites = Sc::Sprite::TotalSprites;
+    if ( unitGroup.label.empty() )
+    {
+        for ( auto & subGroup : unitGroup.subGroups )
+            loadUnitSprites(scDat, pureSprites, spriteUnits, subGroup);
+    }
+    else
+    {
+        auto & pureSpriteSubGroup = pureSprites.subGroups.emplace_back(Sc::Sprite::SpriteGroup{std::string(unitGroup.label)});
+        auto & spriteUnitSubGroup = spriteUnits.subGroups.emplace_back(Sc::Sprite::SpriteGroup{std::string(unitGroup.label)});
+
+        for ( auto & subGroup : unitGroup.subGroups )
+            loadUnitSprites(scDat, pureSpriteSubGroup, spriteUnitSubGroup, subGroup);
+
+        for ( auto unitId : unitGroup.items )
+        {
+            const auto & unitDat = scDat.units.getUnit(Sc::Unit::Type(unitId));
+            const auto & flingyDat = scDat.units.getFlingy(unitDat.graphics);
+            pureSpriteSubGroup.memberSprites.push_back(Sc::Sprite::TreeSprite{flingyDat.sprite, scDat.units.displayNames[unitId]});
+            spriteUnitSubGroup.memberSprites.push_back(Sc::Sprite::TreeSprite{size_t(unitId), scDat.units.displayNames[unitId], true});
+            scDat.sprites.spriteAutoRestart[flingyDat.sprite] = false;
+        }
+    }
+}
+
+bool Sc::Data::loadSpriteGroups(ArchiveCluster & archiveCluster, Sc::TblFilePtr imagesTbl, Sc::TblFilePtr statTxt, const TreeGroup* unitGroups)
+{
+    if ( sprites.numSprites() == 0 )
+        return false;
+
+    std::size_t totalSprites = sprites.numSprites() > Sc::Sprite::TotalSprites ? sprites.numSprites() : Sc::Sprite::TotalSprites;
+    auto spriteNameOverridesOpt = Sc::Data::GetAsset(archiveCluster, "arr\\sprites.txt", true);
+    std::vector<std::string> customSpriteNames = spriteNameOverridesOpt ? collectLineSeparatedStrings(*spriteNameOverridesOpt) : std::vector<std::string>{};
 
     sprites.spriteAutoRestart.assign(totalSprites, true);
     auto & doodads = sprites.spriteGroups.emplace_back(Sc::Sprite::SpriteGroup{"Doodads"});
@@ -4574,29 +4804,34 @@ bool Sc::Data::loadSpriteGroups(Sc::TblFilePtr imagesTbl, Sc::TblFilePtr statTxt
     sprites.spriteGroups.emplace_back(Sc::Sprite::SpriteGroup{"Unit Pure Sprites"});
     auto & spriteUnits = sprites.spriteGroups.emplace_back(Sc::Sprite::SpriteGroup{"Sprite Units"});
     auto & unitPureSprites = sprites.spriteGroups[sprites.spriteGroups.size()-2];
-    RareTs::forIndexes<std::tuple_size_v<UnitGroups>>([&](auto i) {
-        constexpr std::size_t I = decltype(i)::value;
-        using UnitGroup = std::tuple_element_t<I, UnitGroups>;
+    if ( unitGroups == nullptr )
+    {
+        RareTs::forIndexes<std::tuple_size_v<UnitGroups>>([&](auto i) {
+            constexpr std::size_t I = decltype(i)::value;
+            using UnitGroup = std::tuple_element_t<I, UnitGroups>;
 
-        auto groupName = RareTs::Notes<UnitGroup>::template getNote<Json::Name>().value;
-        auto & pureSpriteUnitGroup = unitPureSprites.subGroups.emplace_back(Sc::Sprite::SpriteGroup{std::string(groupName)});
-        auto & spriteUnitsUnitGroup = spriteUnits.subGroups.emplace_back(Sc::Sprite::SpriteGroup{std::string(groupName)});
+            auto groupName = RareTs::Notes<UnitGroup>::template getNote<Json::Name>().value;
+            auto & pureSpriteUnitGroup = unitPureSprites.subGroups.emplace_back(Sc::Sprite::SpriteGroup{std::string(groupName)});
+            auto & spriteUnitsUnitGroup = spriteUnits.subGroups.emplace_back(Sc::Sprite::SpriteGroup{std::string(groupName)});
 
-        RareTs::Members<UnitGroup>::forEach([&](auto member) {
-            auto subGroupName = member.template getNote<Json::Name>().value;
-            auto & values = member.value();
-            auto & subPureSpriteUnitGroup = pureSpriteUnitGroup.subGroups.emplace_back(Sc::Sprite::SpriteGroup{std::string(subGroupName)});
-            auto & subSpriteUnitsUnitGroup = spriteUnitsUnitGroup.subGroups.emplace_back(Sc::Sprite::SpriteGroup{std::string(subGroupName)});
-            for ( u16 unitId : values )
-            {
-                const auto & unitDat = units.getUnit(Sc::Unit::Type(unitId));
-                const auto & flingyDat = units.getFlingy(unitDat.graphics);
-                subPureSpriteUnitGroup.memberSprites.push_back(Sc::Sprite::TreeSprite{flingyDat.sprite, units.defaultDisplayNames[unitId]});
-                subSpriteUnitsUnitGroup.memberSprites.push_back(Sc::Sprite::TreeSprite{unitId, units.defaultDisplayNames[unitId], true});
-                sprites.spriteAutoRestart[flingyDat.sprite] = false;
-            }
+            RareTs::Members<UnitGroup>::forEach([&](auto member) {
+                auto subGroupName = member.template getNote<Json::Name>().value;
+                auto & values = member.value();
+                auto & subPureSpriteUnitGroup = pureSpriteUnitGroup.subGroups.emplace_back(Sc::Sprite::SpriteGroup{std::string(subGroupName)});
+                auto & subSpriteUnitsUnitGroup = spriteUnitsUnitGroup.subGroups.emplace_back(Sc::Sprite::SpriteGroup{std::string(subGroupName)});
+                for ( u16 unitId : values )
+                {
+                    const auto & unitDat = units.getUnit(Sc::Unit::Type(unitId));
+                    const auto & flingyDat = units.getFlingy(unitDat.graphics);
+                    subPureSpriteUnitGroup.memberSprites.push_back(Sc::Sprite::TreeSprite{flingyDat.sprite, units.displayNames[unitId]});
+                    subSpriteUnitsUnitGroup.memberSprites.push_back(Sc::Sprite::TreeSprite{unitId, units.displayNames[unitId], true});
+                    sprites.spriteAutoRestart[flingyDat.sprite] = false;
+                }
+            });
         });
-    });
+    }
+    else
+        loadUnitSprites(*this, unitPureSprites, spriteUnits, *unitGroups);
     
     auto & remains = sprites.spriteGroups.emplace_back(Sc::Sprite::SpriteGroup{"Remains"});
     remains.memberSprites.push_back(Sc::Sprite::TreeSprite{236, "Marine Remains"});
@@ -4766,29 +5001,42 @@ bool Sc::Data::loadSpriteGroups(Sc::TblFilePtr imagesTbl, Sc::TblFilePtr statTxt
     misc.memberSprites.push_back(Sc::Sprite::TreeSprite{313, "Vespene Puff 3"});
     misc.memberSprites.push_back(Sc::Sprite::TreeSprite{314, "Vespene Puff 4"});
     misc.memberSprites.push_back(Sc::Sprite::TreeSprite{315, "Vespene Puff 5"});
-    
-    sprites.spriteNames.assign(Sc::Sprite::TotalSprites, "");
-    for ( auto & spriteGroup : sprites.spriteGroups )
-        loadSpriteNames(spriteGroup);
 
-    #ifdef _DEBUG
     // Validate that every sprite is included
     std::set<u16> treeSpriteIndexes {};
     for ( const auto & spriteGroup : sprites.spriteGroups )
         appendSpriteIndexes(treeSpriteIndexes, spriteGroup);
 
-    for ( std::size_t i=0; i<Sc::Sprite::TotalSprites; ++i )
+    Sc::Sprite::SpriteGroup* unknown = nullptr;
+    for ( std::size_t i=0; i<totalSprites; ++i )
     {
         if ( !treeSpriteIndexes.contains(u16(i)) )
-            throw std::logic_error("All sprites not included!");
-    }
+        {
+            if ( i > Sc::Sprite::TotalSprites )
+            {
+                if ( unknown == nullptr )
+                {
+                    auto & unknownGroup = sprites.spriteGroups.emplace_back(Sc::Sprite::SpriteGroup{"Unknown"});
+                    unknown = &unknownGroup;
+                }
+                unknown->memberSprites.push_back(Sc::Sprite::TreeSprite{i, ""});
+            }
+    #ifdef _DEBUG
+            else
+                logger.debug() << "Sprite [" << i << "] was not included in the sprite tree!" << std::endl;
     #endif
+        }
+    }
+    
+    sprites.spriteNames.assign(totalSprites, "");
+    for ( auto & spriteGroup : sprites.spriteGroups )
+        loadSpriteNames(customSpriteNames, spriteGroup);
 
     return true;
 }
 
 bool Sc::Data::load(Sc::DataFile::BrowserPtr dataFileBrowser, const std::vector<Sc::DataFile::Descriptor> & dataFiles,
-    const std::string & expectedStarCraftDirectory, FileBrowserPtr<u32> starCraftBrowser)
+    const std::string & expectedStarCraftDirectory, FileBrowserPtr<u32> starCraftBrowser, const TreeGroup* unitGroups)
 {
     auto start = std::chrono::high_resolution_clock::now();
     logger.debug("Loading StarCraft Data...");
@@ -4852,7 +5100,7 @@ bool Sc::Data::load(Sc::DataFile::BrowserPtr dataFileBrowser, const std::vector<
     if ( !loadUnitGroups() )
         CHKD_ERR("Failed to load unit groups");
 
-    if ( !loadSpriteGroups(imagesTbl, statTxt) )
+    if ( !loadSpriteGroups(*archiveCluster, imagesTbl, statTxt, unitGroups) )
         CHKD_ERR("Failed to load sprite groups");
     
     auto finish = std::chrono::high_resolution_clock::now();
