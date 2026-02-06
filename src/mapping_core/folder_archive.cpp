@@ -1,6 +1,7 @@
 #include "folder_archive.h"
 #include <filesystem>
 #include <fstream>
+#include <iterator>
 
 FolderArchive::FolderArchive(bool deleteOnClose) : ArchiveFile(deleteOnClose)
 {

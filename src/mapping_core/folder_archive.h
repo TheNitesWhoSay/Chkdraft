@@ -36,7 +36,7 @@ public:
     virtual bool isValid(const std::string & filePath) const override;
 
     // Creates a folder at the given filePath and makes it the folder to which this FolderArchive refers
-    virtual bool create(const std::string & filePath);
+    virtual bool create(const std::string & filePath) override;
 
     // Checks whether a folder exists at the given path, and makes it the folder path for this FolderArchive if so
     // If the given folder path is the folder to which this FolderArchive already refers, no operation occurs and the method returns true
