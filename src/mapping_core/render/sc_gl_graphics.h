@@ -840,6 +840,35 @@ struct GraphicsData
     std::shared_ptr<GraphicsData::RenderData> load(Sc::Data & scData, ArchiveCluster & archiveCluster, const LoadSettings & loadSettings, ByteBuffer & fileData);
 };
 
+struct ClassicMiniMap
+{
+    Sc::Data & scData;
+    Scenario & map; // Reference to the map this instance of graphics renders
+
+    struct Options
+    {
+        bool scrPreview = false; // Terrain and no units except for start locations, other unit rendering settings are ignored if set
+        bool drawStartLocations = true;
+        bool drawMapRevealers = true;
+        bool drawSpriteUnits = true; // Overrides the setting for draw doodad sprite units
+        bool drawDoodadSpriteUnits = true; // Draws doodad-specific sprite units
+    };
+    Options opts {};
+    std::size_t width = 128;
+    std::size_t height = 128;
+    std::vector<std::uint32_t> pixels;
+
+    ClassicMiniMap(Sc::Data & scData, Scenario & map);
+
+    void render();
+    void renderTerrain();
+    void renderUnits();
+    void renderFog();
+
+private:
+    float miniMapScale();
+};
+
 class MapGraphics
 {
 protected:
@@ -976,6 +1005,8 @@ public:
     void drawEffectColors();
 
     bool updateGraphics(u64 msSinceLastUpdate);
+    
+    ClassicMiniMap getMiniMapRenderer();
 };
 
 #endif
