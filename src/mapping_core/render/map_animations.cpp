@@ -9,7 +9,7 @@ u32 iscriptIdFromUnit(const Sc::Data & scData, Sc::Unit::Type unitType)
         scData.sprites.getSprite(
             scData.units.getFlingy(
                 scData.units.getUnit(
-                    size_t(unitType) < Sc::Unit::TotalTypes ? unitType : Sc::Unit::Type(0)
+                    size_t(unitType) < scData.units.numUnitTypes() ? unitType : Sc::Unit::Type(0)
                 ).graphics
             ).sprite
         ).imageFile
@@ -20,21 +20,21 @@ u32 iscriptIdFromSprite(const Sc::Data & scData, Sc::Sprite::Type spriteType)
 {
     return scData.sprites.getImage(
         scData.sprites.getSprite(
-            size_t(spriteType) < Sc::Sprite::TotalSprites ? spriteType : Sc::Sprite::Type(0)
+            size_t(spriteType) < scData.sprites.numSprites() ? spriteType : Sc::Sprite::Type(0)
         ).imageFile
     ).iScriptId;
 }
 
 size_t getImageId(const Sc::Data & scData, Sc::Unit::Type unitType)
 {
-    u32 flingyId = u32(scData.units.getUnit(Sc::Unit::Type(unitType >= 228 ? 0 : unitType)).graphics);
-    u32 spriteId = u32(scData.units.getFlingy(flingyId >= 209 ? 0 : flingyId).sprite);
-    return scData.sprites.getSprite(spriteId >= 517 ? 0 : spriteId).imageFile;
+    u32 flingyId = u32(scData.units.getUnit(Sc::Unit::Type(unitType >= scData.units.numUnitTypes() ? 0 : unitType)).graphics);
+    u32 spriteId = u32(scData.units.getFlingy(flingyId >= scData.units.numFlingies() ? 0 : flingyId).sprite);
+    return scData.sprites.getSprite(spriteId >= scData.sprites.numSprites() ? 0 : spriteId).imageFile;
 }
 
 size_t getImageId(const Sc::Data & scData, Sc::Sprite::Type spriteType)
 {
-    return scData.sprites.getSprite(spriteType >= 517 ? 0 : spriteType).imageFile;
+    return scData.sprites.getSprite(spriteType >= scData.sprites.numSprites() ? 0 : spriteType).imageFile;
 }
 
 size_t getImageId(const Sc::Data & scData, const Chk::Unit & unit)
@@ -246,7 +246,7 @@ void AnimContext::initSpecialCases(MapActor & actor, std::size_t type, bool isUn
 
 void AnimContext::initializeUnitActor(MapActor & actor, bool isClipboard, std::size_t unitIndex, const Chk::Unit & unit, s32 xc, s32 yc)
 {
-    auto unitType = unit.type < Sc::Unit::TotalTypes ? unit.type : Sc::Unit::Type::TerranMarine;
+    auto unitType = unit.type < scData.units.numUnitTypes() ? unit.type : Sc::Unit::Type::TerranMarine;
     const auto & unitDat = scData.units.getUnit(unitType);
     bool isSubUnit = unitDat.flags & Sc::Unit::Flags::Subunit;
     bool isFlyerOrLifted = unitDat.flags & Sc::Unit::Flags::Flyer ||
@@ -288,8 +288,8 @@ void AnimContext::initializeUnitActor(MapActor & actor, bool isClipboard, std::s
 void AnimContext::initializeSpriteActor(MapActor & actor, bool isClipboard, std::size_t spriteIndex, const Chk::Sprite & sprite, s32 xc, s32 yc)
 {
     bool isSpriteUnit = sprite.isUnit();
-    auto spriteType = isSpriteUnit ? (Sc::Unit::Type(sprite.type) < Sc::Unit::TotalTypes ? sprite.type : Sc::Sprite::Type(0)) :
-        (sprite.type < Sc::Sprite::TotalSprites ? sprite.type : Sc::Sprite::Type(0));
+    auto spriteType = isSpriteUnit ? (Sc::Unit::Type(sprite.type) < scData.units.numUnitTypes() ? sprite.type : Sc::Sprite::Type(0)) :
+        (sprite.type < scData.sprites.numSprites() ? sprite.type : Sc::Sprite::Type(0));
     bool isSubUnit = isSpriteUnit && scData.units.getUnit(Sc::Unit::Type(spriteType)).flags & Sc::Unit::Flags::Subunit;
     bool isFlyer = isSpriteUnit && scData.units.getUnit(Sc::Unit::Type(spriteType)).flags & Sc::Unit::Flags::Flyer;
 
@@ -332,7 +332,7 @@ MapAnimations::MapAnimations(const Sc::Data & scData, const GameClock & gameCloc
 void MapAnimations::addUnit(std::size_t unitIndex, MapActor & actor)
 {
     drawListDirty = true;
-    const auto & unitActors = scenario.view.units.readAttachedData();
+    const auto & unitActors = scenario.view.units.read_attached_data();
     for ( std::size_t i=unitIndex; i<unitActors.size(); ++i )
         ++drawList[unitActors[i].drawListIndex]; // Increment affected unit indexes in draw list
 
@@ -343,7 +343,7 @@ void MapAnimations::addUnit(std::size_t unitIndex, MapActor & actor)
 void MapAnimations::addSprite(std::size_t spriteIndex, MapActor & actor)
 {
     drawListDirty = true;
-    const auto & spriteActors = scenario.view.sprites.readAttachedData();
+    const auto & spriteActors = scenario.view.sprites.read_attached_data();
     for ( std::size_t i=spriteIndex; i<spriteActors.size(); ++i )
         ++drawList[spriteActors[i].drawListIndex]; // Increment affected sprite indexes in draw list
 
@@ -354,7 +354,7 @@ void MapAnimations::addSprite(std::size_t spriteIndex, MapActor & actor)
 void MapAnimations::removeUnit(std::size_t unitIndex, MapActor & actor)
 {
     drawListDirty = true;
-    const auto & unitActors = scenario.view.units.readAttachedData();
+    const auto & unitActors = scenario.view.units.read_attached_data();
     for ( std::size_t i=unitIndex+1; i<unitActors.size(); ++i )
     {
         if ( drawList[unitActors[i].drawListIndex] != UnusedDrawEntry )
@@ -370,7 +370,7 @@ void MapAnimations::removeUnit(std::size_t unitIndex, MapActor & actor)
 void MapAnimations::removeSprite(std::size_t spriteIndex, MapActor & actor)
 {
     drawListDirty = true;
-    const auto & spriteActors = scenario.view.sprites.readAttachedData();
+    const auto & spriteActors = scenario.view.sprites.read_attached_data();
     for ( std::size_t i=spriteIndex+1; i<spriteActors.size(); ++i )
     {
         if ( drawList[spriteActors[i].drawListIndex] != UnusedDrawEntry )
@@ -387,7 +387,7 @@ void MapAnimations::updateUnitType(std::size_t unitIndex, Sc::Unit::Type newUnit
 {
     drawListDirty = true;
     const auto & unit = scenario.read.units[unitIndex];
-    auto & unitActor = scenario.view.units.attachedData(unitIndex);
+    auto & unitActor = scenario.view.units.attached_data(unitIndex);
     clearActor(unitActor);
     initializeUnitActor(unitActor, false, unitIndex, unit, unit.xc, unit.yc);
 }
@@ -396,14 +396,14 @@ void MapAnimations::updateSpriteType(std::size_t spriteIndex, Sc::Sprite::Type n
 {
     drawListDirty = true;
     const auto & sprite = scenario.read.sprites[spriteIndex];
-    auto & spriteActor = scenario.view.sprites.attachedData(spriteIndex);
+    auto & spriteActor = scenario.view.sprites.attached_data(spriteIndex);
     clearActor(spriteActor);
     initializeSpriteActor(spriteActor, false, spriteIndex, sprite, sprite.xc, sprite.yc);
 }
 
 void MapAnimations::updateUnitOwner(std::size_t unitIndex, u8 newUnitOwner)
 {
-    auto & unitActor = scenario.view.units.attachedData(unitIndex);
+    auto & unitActor = scenario.view.units.attached_data(unitIndex);
     for ( auto usedImageIndex : unitActor.usedImages )
     {
         if ( usedImageIndex != 0 )
@@ -413,7 +413,7 @@ void MapAnimations::updateUnitOwner(std::size_t unitIndex, u8 newUnitOwner)
 
 void MapAnimations::updateSpriteOwner(std::size_t spriteIndex, u8 newSpriteOwner)
 {
-    auto & spriteActor = scenario.view.sprites.attachedData(spriteIndex);
+    auto & spriteActor = scenario.view.sprites.attached_data(spriteIndex);
     for ( auto usedImageIndex : spriteActor.usedImages )
     {
         if ( usedImageIndex != 0 )
@@ -423,21 +423,21 @@ void MapAnimations::updateSpriteOwner(std::size_t spriteIndex, u8 newSpriteOwner
 
 void MapAnimations::updateUnitIndex(std::size_t unitIndexFrom, std::size_t unitIndexTo)
 {
-    auto & unitActor = scenario.view.units.attachedData(unitIndexTo);
+    auto & unitActor = scenario.view.units.attached_data(unitIndexTo);
     std::uint64_t & drawListEntry = drawList[unitActor.drawListIndex];
     drawListEntry = unitIndexTo | (drawListEntry & MaskNonIndexDrawList);
 }
 
 void MapAnimations::updateSpriteIndex(std::size_t spriteIndexFrom, std::size_t spriteIndexTo)
 {
-    auto & spriteActor = scenario.view.sprites.attachedData(spriteIndexTo);
+    auto & spriteActor = scenario.view.sprites.attached_data(spriteIndexTo);
     std::uint64_t & drawListEntry = drawList[spriteActor.drawListIndex];
     drawListEntry = spriteIndexTo | (drawListEntry & MaskNonIndexDrawList);
 }
 
 void MapAnimations::updateUnitXc(std::size_t unitIndex, u16 oldXc, u16 newXc)
 {
-    auto & actor = scenario.view.units.attachedData(unitIndex);
+    auto & actor = scenario.view.units.attached_data(unitIndex);
     s32 difference = s32(newXc) - s32(oldXc);
     for ( auto usedImageIndex : actor.usedImages )
     {
@@ -448,7 +448,7 @@ void MapAnimations::updateUnitXc(std::size_t unitIndex, u16 oldXc, u16 newXc)
 
 void MapAnimations::updateUnitYc(std::size_t unitIndex, u16 oldYc, u16 newYc)
 {
-    auto & actor = scenario.view.units.attachedData(unitIndex);
+    auto & actor = scenario.view.units.attached_data(unitIndex);
     s32 difference = s32(newYc) - s32(oldYc);
     for ( auto usedImageIndex : actor.usedImages )
     {
@@ -459,7 +459,7 @@ void MapAnimations::updateUnitYc(std::size_t unitIndex, u16 oldYc, u16 newYc)
 
 void MapAnimations::updateSpriteXc(std::size_t spriteIndex, u16 oldXc, u16 newXc)
 {
-    auto & actor = scenario.view.sprites.attachedData(spriteIndex);
+    auto & actor = scenario.view.sprites.attached_data(spriteIndex);
     s32 difference = s32(newXc) - s32(oldXc);
     for ( auto usedImageIndex : actor.usedImages )
     {
@@ -470,7 +470,7 @@ void MapAnimations::updateSpriteXc(std::size_t spriteIndex, u16 oldXc, u16 newXc
 
 void MapAnimations::updateSpriteYc(std::size_t spriteIndex, u16 oldYc, u16 newYc)
 {
-    auto & actor = scenario.view.sprites.attachedData(spriteIndex);
+    auto & actor = scenario.view.sprites.attached_data(spriteIndex);
     s32 difference = s32(newYc) - s32(oldYc);
     for ( auto usedImageIndex : actor.usedImages )
     {
@@ -483,7 +483,7 @@ void MapAnimations::updateUnitResourceAmount(std::size_t unitIndex, u32 oldResou
 {
     const auto & unit = scenario.read.units[unitIndex];
     const auto & unitDat = scData.units.getUnit(unit.type);
-    auto & actor = scenario.view.units.attachedData(unitIndex);
+    auto & actor = scenario.view.units.attached_data(unitIndex);
     
     if ( unitDat.flags & Sc::Unit::Flags::ResourceContainer )
     {
@@ -497,7 +497,7 @@ void MapAnimations::updateUnitStateFlags(std::size_t unitIndex, u16 oldStateFlag
 {
     const auto & unit = scenario.read.units[unitIndex];
     const auto & unitDat = scData.units.getUnit(unit.type);
-    auto & actor = scenario.view.units.attachedData(unitIndex);
+    auto & actor = scenario.view.units.attached_data(unitIndex);
 
     bool wasLifted = oldStateFlags & Chk::Unit::State::InTransit;
     bool isLifted = newStateFlags & Chk::Unit::State::InTransit;
@@ -544,7 +544,7 @@ void MapAnimations::updateUnitRelationFlags(std::size_t unitIndex, u16 oldRelati
 {
     const auto & unit = scenario.read.units[unitIndex];
     const auto & unitDat = scData.units.getUnit(unit.type);
-    auto & actor = scenario.view.units.attachedData(unitIndex);
+    auto & actor = scenario.view.units.attached_data(unitIndex);
 
     bool wasAttached = oldRelationFlags & Chk::Unit::RelationFlag::AddonLink;
     bool isAttached = newRelationFlags & Chk::Unit::RelationFlag::AddonLink;
@@ -560,7 +560,7 @@ void MapAnimations::updateUnitRelationFlags(std::size_t unitIndex, u16 oldRelati
 void MapAnimations::updateSpriteFlags(std::size_t spriteIndex, u16 oldSpriteFlags, u16 newSpriteFlags)
 {
     const auto & sprite = scenario.read.sprites[spriteIndex];
-    auto & actor = scenario.view.sprites.attachedData(spriteIndex);
+    auto & actor = scenario.view.sprites.attached_data(spriteIndex);
     if ( (oldSpriteFlags & Chk::Sprite::SpriteFlags::DrawAsSprite) != (newSpriteFlags & Chk::Sprite::SpriteFlags::DrawAsSprite) )
     {
         drawListDirty = true;
@@ -604,9 +604,9 @@ void MapAnimations::cleanDrawList()
                 std::uint64_t drawItem = drawList[i];
                 std::uint32_t index = std::uint32_t(drawItem & MaskIndex);
                 if ( drawItem & FlagUnitActor )
-                    scenario.view.units.attachedData(index).drawListIndex = i;
+                    scenario.view.units.attached_data(index).drawListIndex = i;
                 else
-                    scenario.view.sprites.attachedData(index).drawListIndex = i;
+                    scenario.view.sprites.attached_data(index).drawListIndex = i;
             }
         }
         drawListDirty = false;
@@ -615,13 +615,13 @@ void MapAnimations::cleanDrawList()
 
 void MapAnimations::animate(uint64_t currentTick)
 {
-    std::size_t unitSize = scenario.view.units.readAttachedData().size();
-    std::size_t spriteSize = scenario.view.sprites.readAttachedData().size();
+    std::size_t unitSize = scenario.view.units.read_attached_data().size();
+    std::size_t spriteSize = scenario.view.sprites.read_attached_data().size();
     for ( std::size_t i=0; i<unitSize; ++i )
-        scenario.view.units.attachedData(i).animate(currentTick, true, *this);
+        scenario.view.units.attached_data(i).animate(currentTick, true, *this);
     
     for ( std::size_t i=0; i<spriteSize; ++i )
-        scenario.view.sprites.attachedData(i).animate(currentTick, false, *this);
+        scenario.view.sprites.attached_data(i).animate(currentTick, false, *this);
 
     cleanDrawList();
 }

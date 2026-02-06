@@ -180,49 +180,49 @@ void TrigGeneralWindow::OnLeave()
 
 void TrigGeneralWindow::SetPreserveTrigger(bool preserve)
 {
-    auto edit = CM->operator()(ActionDescriptor::TogglePreserveTriggerFlag);
+    auto edit = CM->create_action(ActionDescriptor::TogglePreserveTriggerFlag);
     CM->editTrigger(trigIndex).setPreserveTriggerFlagged(preserve);
     RefreshWindow(trigIndex);
 }
 
 void TrigGeneralWindow::SetDisabledTrigger(bool disabled)
 {
-    auto edit = CM->operator()(ActionDescriptor::ToggleDisabledFlag);
+    auto edit = CM->create_action(ActionDescriptor::ToggleDisabledFlag);
     CM->editTrigger(trigIndex).setDisabled(disabled);
     RefreshWindow(trigIndex);
 }
 
 void TrigGeneralWindow::SetIgnoreConditionsOnce(bool ignoreConditionsOnce)
 {
-    auto edit = CM->operator()(ActionDescriptor::ToggleIgnoreConditionsOnceFlag);
+    auto edit = CM->create_action(ActionDescriptor::ToggleIgnoreConditionsOnceFlag);
     CM->editTrigger(trigIndex).setIgnoreConditionsOnce(ignoreConditionsOnce);
     RefreshWindow(trigIndex);
 }
 
 void TrigGeneralWindow::SetIgnoreWaitSkipOnce(bool ignoreWaitSkipOnce)
 {
-    auto edit = CM->operator()(ActionDescriptor::ToggleIgnoreWaitSkipOnceFlag);
+    auto edit = CM->create_action(ActionDescriptor::ToggleIgnoreWaitSkipOnceFlag);
     CM->editTrigger(trigIndex).setIgnoreWaitSkipOnce(ignoreWaitSkipOnce);
     RefreshWindow(trigIndex);
 }
 
 void TrigGeneralWindow::SetIgnoreMiscActionsOnce(bool ignoreMiscActionsOnce)
 {
-    auto edit = CM->operator()(ActionDescriptor::ToggleIgnoreMiscActionsOnceFlag);
+    auto edit = CM->create_action(ActionDescriptor::ToggleIgnoreMiscActionsOnceFlag);
     CM->editTrigger(trigIndex).setIgnoreMiscActionsOnce(ignoreMiscActionsOnce);
     RefreshWindow(trigIndex);
 }
 
 void TrigGeneralWindow::SetIgnoreDefeatDraw(bool ignoreDefeatDraw)
 {
-    auto edit = CM->operator()(ActionDescriptor::ToggleIgnoreDefeatDrawFlag);
+    auto edit = CM->create_action(ActionDescriptor::ToggleIgnoreDefeatDrawFlag);
     CM->editTrigger(trigIndex).setIgnoreDefeatDraw(ignoreDefeatDraw);
     RefreshWindow(trigIndex);
 }
 
 void TrigGeneralWindow::SetPausedTrigger(bool paused)
 {
-    auto edit = CM->operator()(ActionDescriptor::TogglePausedFlag);
+    auto edit = CM->create_action(ActionDescriptor::TogglePausedFlag);
     CM->editTrigger(trigIndex).setPauseFlagged(paused);
     RefreshWindow(trigIndex);
 }
@@ -233,7 +233,7 @@ void TrigGeneralWindow::ParseRawFlagsText()
     {
         u32 triggerFlags = CM->getTrigger(trigIndex).flags;
         if ( editRawFlags.GetEditBinaryNum(triggerFlags) && CM->read.triggers[trigIndex].flags != triggerFlags )
-            CM->operator()(ActionDescriptor::UpdateTriggerRawFlags)->triggers[trigIndex].flags = triggerFlags;
+            CM->create_action(ActionDescriptor::UpdateTriggerRawFlags)->triggers[trigIndex].flags = triggerFlags;
         
         RefreshWindow(trigIndex);
     }
@@ -272,7 +272,7 @@ void TrigGeneralWindow::EditCommentFocusLost()
     bool addIfNotFound = newCommentText && !newCommentText->empty();
     if ( addIfNotFound || CM->hasTriggerExtension(trigIndex) )
     {
-        auto edit = CM->operator()(ActionDescriptor::UpdateTriggerComment);
+        auto edit = CM->create_action(ActionDescriptor::UpdateTriggerComment);
         auto extensionIndex = CM->getTriggerExtension(trigIndex, addIfNotFound);
         size_t newCommentStringId = CM->addString<ChkdString>(ChkdString(*newCommentText), Chk::Scope::Editor);
         if ( newCommentStringId != Chk::StringId::NoString )
@@ -290,7 +290,7 @@ void TrigGeneralWindow::EditNotesFocusLost()
     bool addIfNotFound = newNotesText && !newNotesText->empty();
     if ( addIfNotFound ||  CM->hasTriggerExtension(trigIndex) )
     {
-        auto edit = CM->operator()(ActionDescriptor::UpdateTriggerNotes);
+        auto edit = CM->create_action(ActionDescriptor::UpdateTriggerNotes);
         auto extensionIndex = CM->getTriggerExtension(trigIndex, addIfNotFound);
         size_t newNotesStringId = CM->addString<ChkdString>(ChkdString(*newNotesText), Chk::Scope::Editor);
         if ( newNotesStringId != Chk::StringId::NoString )
@@ -310,7 +310,7 @@ void TrigGeneralWindow::ButtonCommentProperties()
 
     if ( (result & ChkdStringInputDialog::Result::EditorStringChanged) == ChkdStringInputDialog::Result::EditorStringChanged )
     {
-        auto edit = CM->operator()(ActionDescriptor::UpdateTriggerComment);
+        auto edit = CM->create_action(ActionDescriptor::UpdateTriggerComment);
         if ( extendedComment )
             CM->setExtendedComment<ChkdString>(this->trigIndex, *extendedComment);
         else
@@ -331,7 +331,7 @@ void TrigGeneralWindow::ButtonNotesProperties()
 
     if ( (result & ChkdStringInputDialog::Result::EditorStringChanged) == ChkdStringInputDialog::Result::EditorStringChanged )
     {
-        auto edit = CM->operator()(ActionDescriptor::UpdateTriggerNotes);
+        auto edit = CM->create_action(ActionDescriptor::UpdateTriggerNotes);
         if ( extendedNotes )
             CM->setExtendedNotes<ChkdString>(this->trigIndex, *extendedNotes);
         else

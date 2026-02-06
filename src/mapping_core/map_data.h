@@ -4,7 +4,7 @@
 #include "chk.h"
 #include "escape_strings.h"
 #include "render/map_actor.h"
-#include <rarecpp/editor.h>
+#include <nf/hist.h>
 #include <array>
 #include <optional>
 #include <vector>
@@ -74,9 +74,9 @@ struct MapData
         Sc::Player::SlotType::Inactive, Sc::Player::SlotType::Inactive, Sc::Player::SlotType::Inactive, Sc::Player::SlotType::Inactive
     };
 
-    std::vector<Chk::Sprite> sprites {}; NOTE(sprites, RareEdit::AttachData<MapActor>, RareEdit::IndexSize<u32>) // Auto-maintains parallel-array of MapActors
+    std::vector<Chk::Sprite> sprites {}; NOTE(sprites, nf::attach_data<MapActor>, nf::index_size<u32>) // Auto-maintains parallel-array of MapActors
     std::vector<Chk::Doodad> doodads {};
-    std::vector<Chk::Unit> units {}; NOTE(units, RareEdit::AttachData<MapActor>, RareEdit::IndexSize<u32>) // Auto-maintains parallel-array of MapActors
+    std::vector<Chk::Unit> units {}; NOTE(units, nf::attach_data<MapActor>, nf::index_size<u32>) // Auto-maintains parallel-array of MapActors
     std::vector<Chk::Location> locations {};
 
     Chk::DIM dimensions {};

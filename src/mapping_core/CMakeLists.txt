@@ -32,7 +32,7 @@ include(FetchContent)
 FetchContent_Declare(
   rarecpp
   GIT_REPOSITORY https://github.com/TheNitesWhoSay/RareCpp.git
-  GIT_TAG 0994c8a # release-2.5.0TODO
+  GIT_TAG d5b58a6 # release-2.6.0
 )
 FetchContent_MakeAvailable(rarecpp)
 include_directories(${rarecpp_SOURCE_DIR}/include)
@@ -46,6 +46,7 @@ set(Headers
   chk.h
   escape_strings.h
   file_browser.h
+  folder_archive.h
   map_data.h
   map_file.h
   mapping_core.h
@@ -57,6 +58,7 @@ set(Headers
   system_io.h
   text_trig_compiler.h
   text_trig_generator.h
+  tree_group.h
 )
 set(Sources
   archive_cluster.cpp
@@ -66,6 +68,7 @@ set(Sources
   chk.cpp
   escape_strings.cpp
   file_browser.cpp
+  folder_archive.cpp
   map_file.cpp
   mpq_asset_manager.cpp
   mpq_file.cpp
@@ -78,6 +81,7 @@ set(Sources
   system_io.cpp
   text_trig_compiler.cpp
   text_trig_generator.cpp
+  tree_group.cpp
 )
 
 add_compile_definitions(_UNICODE UNICODE CASCLIB_UNICODE STORMLIB_NO_AUTO_LINK)

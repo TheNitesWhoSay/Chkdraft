@@ -79,7 +79,7 @@ bool UpgradeSettingsWindow::DestroyThis()
 void UpgradeSettingsWindow::RefreshWindow()
 {
     refreshing = true;
-    if ( selectedUpgrade >= 0 && selectedUpgrade < 61 && CM != nullptr )
+    if ( selectedUpgrade >= 0 && selectedUpgrade < Sc::Upgrade::TotalTypes && CM != nullptr )
     {
         Sc::Upgrade::Type upgrade = (Sc::Upgrade::Type)selectedUpgrade;
         chkd.mapSettingsWindow->SetWinText("Map Settings - [" + upgradeNames.at(selectedUpgrade) + "]");
@@ -120,7 +120,7 @@ void UpgradeSettingsWindow::RefreshWindow()
         editDefaultStartLevel.SetEditNum<size_t>(defaultStartLevel);
         editDefaultMaxLevel.SetEditNum<size_t>(defaultMaxLevel);
 
-        for ( int player=0; player<12; player++ )
+        for ( int player=0; player<Sc::Player::Total; player++ )
         {
             bool playerUsesDefault = CM->playerUsesDefaultUpgradeLeveling((Sc::Upgrade::Type)upgrade, player);
             checkPlayerDefault[player].SetCheck(playerUsesDefault);
@@ -171,7 +171,7 @@ void UpgradeSettingsWindow::CreateSubWindows(HWND hWnd)
     textDefaultMaxLevel.CreateThis(hWnd, 407, 225, 75, 20, "Max Level", Id::TEXT_DEFAULTMAXLEVEL);
     editDefaultMaxLevel.CreateThis(hWnd, 493, 225, 81, 20, false, Id::EDIT_DEFAULTMAXLEVEL);
 
-    for ( int player=0; player<12; player++ )
+    for ( int player=0; player<Sc::Player::Total; player++ )
     {
         std::stringstream ssPlayer;
         if ( player < 9 )
@@ -205,7 +205,7 @@ void UpgradeSettingsWindow::DisableUpgradeEditing()
     textDefaultMaxLevel.DisableThis();
     editDefaultMaxLevel.DisableThis();
 
-    for ( int i=0; i<12; i++ )
+    for ( int i=0; i<Sc::Player::Total; i++ )
     {
         textPlayer[i].DisableThis();
         checkPlayerDefault[i].DisableThis();
@@ -230,7 +230,7 @@ void UpgradeSettingsWindow::EnableUpgradeEditing()
     textDefaultMaxLevel.EnableThis();
     editDefaultMaxLevel.EnableThis();
 
-    for ( int i=0; i<12; i++ )
+    for ( int i=0; i<Sc::Player::Total; i++ )
     {
         textPlayer[i].EnableThis();
         checkPlayerDefault[i].EnableThis();
@@ -301,7 +301,7 @@ void UpgradeSettingsWindow::EnablePlayerEditing(u8 player)
 
 void UpgradeSettingsWindow::SetDefaultUpgradeCosts()
 {
-    if ( selectedUpgrade > 0 && selectedUpgrade < 61 && CM != nullptr )
+    if ( selectedUpgrade > 0 && selectedUpgrade < Sc::Upgrade::TotalTypes && CM != nullptr )
     {
         Sc::Upgrade::Type upgrade = (Sc::Upgrade::Type)selectedUpgrade;
         const Sc::Upgrade::DatEntry & upgDat = chkd.scData->upgrades.getUpgrade(upgrade);
@@ -317,7 +317,7 @@ void UpgradeSettingsWindow::SetDefaultUpgradeCosts()
 
 void UpgradeSettingsWindow::ClearDefaultUpgradeCosts()
 {
-    if ( selectedUpgrade != -1 && selectedUpgrade < 61 && CM != nullptr )
+    if ( selectedUpgrade != -1 && selectedUpgrade < Sc::Upgrade::TotalTypes && CM != nullptr )
     {
         u8 upgrade = (u8)selectedUpgrade;
 
@@ -341,7 +341,7 @@ LRESULT UpgradeSettingsWindow::Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr)
             itemData = (((NMTREEVIEW*)nmhdr)->itemNew.lParam)&TreeDataPortion;
 
         u8 upgradeId = (u8)itemData;
-        if ( itemType == TreeTypeUpgrade && upgradeId < 61 )
+        if ( itemType == TreeTypeUpgrade && upgradeId < Sc::Upgrade::TotalTypes )
         {
             selectedUpgrade = upgradeId;
             RefreshWindow();
@@ -484,7 +484,7 @@ LRESULT UpgradeSettingsWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 LRESULT state = SendMessage((HWND)lParam, BM_GETCHECK, 0, 0);
                 int player = LOWORD(wParam) - Id::ID_CHECK_DEFAULTUPGRADEP1;
                 bool useDefault = (state == BST_CHECKED);
-                auto edit = CM->operator()(ActionDescriptor::SetPlayerUsesDefaultUpgradeLeveling);
+                auto edit = CM->create_action(ActionDescriptor::SetPlayerUsesDefaultUpgradeLeveling);
                 CM->setPlayerUsesDefaultUpgradeLeveling((Sc::Upgrade::Type)selectedUpgrade, player, useDefault);
                 if ( state != BST_CHECKED )
                 {

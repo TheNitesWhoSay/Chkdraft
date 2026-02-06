@@ -26,11 +26,11 @@ bool TestAssets::LoadScData(Sc::Data & data)
         Sc::DataFile::BrowserPtr dataFileBrowser(new Sc::DataFile::Browser());
     
         std::vector<Sc::DataFile::Descriptor> dataFiles {
-            Sc::DataFile::Descriptor(Sc::DataFile::Priority::StarDat, false, true,
+            Sc::DataFile::Descriptor(Sc::DataFile::Priority::StarDat, false, false, true,
                 Sc::DataFile::starDatFileName, makeSystemFilePath(scAssetPath, Sc::DataFile::starDatFileName), nullptr, false),
-            Sc::DataFile::Descriptor(Sc::DataFile::Priority::BrooDat, false, true,
+            Sc::DataFile::Descriptor(Sc::DataFile::Priority::BrooDat, false, false, true,
                 Sc::DataFile::brooDatFileName, makeSystemFilePath(scAssetPath, Sc::DataFile::brooDatFileName), nullptr, false),
-            Sc::DataFile::Descriptor(Sc::DataFile::Priority::PatchRt, false, true,
+            Sc::DataFile::Descriptor(Sc::DataFile::Priority::PatchRt, false, false, true,
                 Sc::DataFile::patchRtFileName, makeSystemFilePath(scAssetPath, Sc::DataFile::patchRtFileName), nullptr, false),
         };
 

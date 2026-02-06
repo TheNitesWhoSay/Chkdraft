@@ -268,7 +268,7 @@ inline namespace DataStructs
         static constexpr std::string_view skinNames[] { "", "", "carbot" };
 
         std::string skinName {};
-        u8 imageUsesSkinTexture[999] {}; // 0 = use default, 1 = use skin
+        u8 imageUsesSkinTexture[Sc::Sprite::TotalImages] {}; // 0 = use default, 1 = use skin
             
         friend auto operator/(const Skin & skin, const std::filesystem::path & path) { return skin.skinName.empty() ? path : skin.skinName / path; }
         friend auto operator/(const std::filesystem::path & path, const Skin & skin) { return skin.skinName.empty() ? path : path / skin.skinName; }
@@ -779,6 +779,11 @@ struct GraphicsData
         {
             struct Tileset // Data for a particular tileset, skin, and visual quality
             {
+                std::uint32_t texTileWidth = 128;
+                std::uint32_t texTileHeight = 128;
+                std::uint32_t yTileTexShift = 7; // mega-tile is located at y = (megaTileIndex >> yTileTexShift)
+                std::uint32_t xTileTexMask = 0x7F; // mega-tile is located at x = (megaTileIndex & xTileTexMask)
+
                 Grp tileMask {};
                 Grp tilesetGrp {};
                 std::optional<gl::Palette> halluPalette {};

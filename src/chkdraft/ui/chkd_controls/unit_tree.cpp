@@ -27,6 +27,7 @@ bool UnitTree::CreateThis(HWND hParent, int x, int y, int width, int height, boo
 
 void UnitTree::UpdateUnitTree()
 {
+    TreeViewControl::EmptySubTree(hUnitRoot);
     InsertAllUnits(hUnitRoot);
 }
 
@@ -38,7 +39,7 @@ void UnitTree::UpdateUnitNames(const std::vector<std::string> & displayNames)
 void UnitTree::UpdateUnitName(int unitId)
 {
     if ( (size_t)unitId < unitDisplayNames.size() )
-        TreeViewControl::SetItemText(UnitItems[unitId], unitDisplayNames.at(unitId));
+        TreeViewControl::SetItemText(unitItems[unitId], unitDisplayNames.at(unitId));
 }
 
 void UnitTree::insertUnits(const Sc::Unit::UnitGroup & unitGroup, HTREEITEM hParent)
@@ -50,15 +51,41 @@ void UnitTree::insertUnits(const Sc::Unit::UnitGroup & unitGroup, HTREEITEM hPar
     AddUnitItems(hGroupItem, unitGroup.memberUnits);
 }
 
+void UnitTree::insertUnits(const TreeGroup & unitGroup, HTREEITEM hParent)
+{
+    HTREEITEM hGroupItem = InsertTreeItem(hParent, unitGroup.label, TreeTypeCategory | (LPARAM)Layer::Units);
+    for ( auto & subGroup : unitGroup.subGroups )
+        insertUnits(subGroup, hGroupItem);
+
+    AddUnitItems(hGroupItem, unitGroup.items);
+}
+
 void UnitTree::InsertAllUnits(HTREEITEM hParent)
 {
-    for ( const auto & unitGroup : chkd.scData->units.unitGroups )
-        insertUnits(unitGroup, hParent);
+    unitItems.assign(chkd.scData->units.numUnitTypes(), NULL);
+    ChkdProfile* currProfile = chkd.profiles.getCurrProfile();
+    if ( currProfile != nullptr && !currProfile->units.parsedCustomTree.subGroups.empty() )
+    {
+        for ( const auto & unitGroup : currProfile->units.parsedCustomTree.subGroups )
+            insertUnits(unitGroup, hParent);
+    }
+    else
+    {
+        for ( const auto & unitGroup : chkd.scData->units.unitGroups )
+            insertUnits(unitGroup, hParent);
+    }
 }
 
 void UnitTree::AddUnitItems(HTREEITEM hParent, const std::vector<u16> & unitIds)
 {
     size_t maxUnits = std::min(unitIds.size(), unitDisplayNames.size());
     for ( size_t i=0; i<maxUnits; i++ )
-        UnitItems[unitIds[i]] = InsertTreeItem(hParent, unitDisplayNames[unitIds[i]], TreeTypeUnit | (DWORD)unitIds[i]);
+        unitItems[unitIds[i]] = InsertTreeItem(hParent, unitDisplayNames[unitIds[i]], TreeTypeUnit | (DWORD)unitIds[i]);
+}
+
+void UnitTree::AddUnitItems(HTREEITEM hParent, const std::vector<s32> & unitIds)
+{
+    size_t maxUnits = std::min(unitIds.size(), unitDisplayNames.size());
+    for ( size_t i=0; i<maxUnits; i++ )
+        unitItems[unitIds[i]] = InsertTreeItem(hParent, "[" + std::to_string(unitIds[i]) + "] " + unitDisplayNames[unitIds[i]], TreeTypeUnit | (DWORD)unitIds[i]);
 }

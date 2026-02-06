@@ -62,7 +62,7 @@ void BriefingTrigActionsWindow::RefreshWindow(u32 briefingTrigIndex)
     this->briefingTrigIndex = briefingTrigIndex;
     const auto & briefingTrig = CM->getBriefingTrigger(briefingTrigIndex);
     BriefingTextTrigGenerator ttg{true};
-    if ( ttg.loadScenario((Scenario &)*CM) )
+    if ( ttg.loadScenario((Scenario &)*CM, chkd.scData.value()) )
     {
         for ( u8 y = 0; y<Chk::Trigger::MaxActions; y++ )
         {
@@ -300,7 +300,7 @@ void BriefingTrigActionsWindow::ChangeActionType(std::size_t briefingTriggerInde
         const auto & action = CM->read.briefingTriggers[briefingTriggerIndex].actions[actionIndex];
         if ( action.actionType != newType )
         {
-            CM->operator()(ActionDescriptor::ChangeBriefingActionType)->briefingTriggers[briefingTriggerIndex].actions[actionIndex] = Chk::Action {
+            CM->create_action(ActionDescriptor::ChangeBriefingActionType)->briefingTriggers[briefingTriggerIndex].actions[actionIndex] = Chk::Action {
                 .locationId = 0,
                 .stringId = 0,
                 .soundStringId = 0,
@@ -371,7 +371,7 @@ void BriefingTrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const s
     const Chk::Action & action = CM->getBriefingTrigger(briefingTrigIndex).action(actionNum);
     if ( action.actionType < Chk::Action::NumBriefingActionTypes )
     {
-        auto edit = CM->operator()(ActionDescriptor::UpdateBriefingActionArg);
+        auto edit = CM->create_action(ActionDescriptor::UpdateBriefingActionArg);
         const auto & briefingTrig = CM->getBriefingTrigger(briefingTrigIndex);
         Chk::Action::ArgType argType = Chk::Action::getBriefingClassicArgType(action.actionType, argNum);
         SingleLineChkdString chkdNewText = ChkdString(newText);
@@ -550,7 +550,7 @@ void BriefingTrigActionsWindow::DrawSelectedAction()
         {
             u8 actionNum = (u8)focusedY;
             BriefingTextTrigGenerator ttg {true};
-            ttg.loadScenario((Scenario &)*CM);
+            ttg.loadScenario((Scenario &)*CM, chkd.scData.value());
             ChkdString str = chkd.briefingTrigEditorWindow->briefingTriggersWindow.GetActionString(actionNum, briefingTrig, ttg);
             ttg.clearScenario();
 
@@ -746,13 +746,14 @@ void BriefingTrigActionsWindow::SuggestUnit(u16 currUnit)
 {
     if ( CM != nullptr )
     {
-        u16 numUnitTypes = (u16)Sc::Unit::defaultDisplayNames.size();
+        const auto & unitDisplayNames = chkd.scData->units.displayNames;
+        u16 numUnitTypes = (u16)unitDisplayNames.size();
         for ( u16 i = 0; i < numUnitTypes; i++ )
         {
-            auto str = CM->getUnitName<SingleLineChkdString>((Sc::Unit::Type)i, true);
+            auto str = CM->getUnitName<SingleLineChkdString>((Sc::Unit::Type)i, &chkd.scData.value(), true);
             suggestions.AddItem(SuggestionItem{uint32_t(i), *str});
-            if ( str->compare(std::string(Sc::Unit::defaultDisplayNames[i])) != 0 )
-                suggestions.AddItem(SuggestionItem{uint32_t(i), std::string(Sc::Unit::defaultDisplayNames[i])});
+            if ( str->compare(std::string(unitDisplayNames[i])) != 0 )
+                suggestions.AddItem(SuggestionItem{uint32_t(i), std::string(unitDisplayNames[i])});
         }
     }
     suggestions.Show();
@@ -868,7 +869,7 @@ void BriefingTrigActionsWindow::ButtonEditString()
 
             if ( (result & ChkdStringInputDialog::Result::GameStringChanged) == ChkdStringInputDialog::Result::GameStringChanged )
             {
-                auto edit = CM->operator()(ActionDescriptor::ChangeBriefingActionString);
+                auto edit = CM->create_action(ActionDescriptor::ChangeBriefingActionString);
                 if ( gameString )
                 {
                     size_t stringId = CM->addString<ChkdString>(*gameString);
@@ -918,7 +919,7 @@ void BriefingTrigActionsWindow::ButtonEditSound()
 
             if ( (result & ChkdStringInputDialog::Result::GameStringChanged) == ChkdStringInputDialog::Result::GameStringChanged )
             {
-                auto edit = CM->operator()(ActionDescriptor::ChangeBriefingActionSound);
+                auto edit = CM->create_action(ActionDescriptor::ChangeBriefingActionSound);
                 if ( gameString )
                 {
                     size_t stringId = CM->addString<ChkdString>(*gameString);

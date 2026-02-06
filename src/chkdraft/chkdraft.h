@@ -74,7 +74,7 @@ class Chkdraft : public WinLib::ClassWindow
                     void OpenEditProfilesDialog();
                     void UpdateLogLevelCheckmarks(LogLevel logLevel);
                     void SetLogLevel(LogLevel newLogLevel);
-                    void OnProfileLoad();
+                    bool OnProfileLoad();
                     void ProfilesReload(); // Reloads profile settings from disk & reloads the currently selected profile
                     void UpdateProfilesMenu(); // Doesn't remove existing menu items but adds new profiles and updates existing
                     void RemoveProfileFromMenu(ChkdProfile & profile);

@@ -4,7 +4,7 @@
 #include <WindowsX.h>
 
 #define START_TILES_YC 0
-#define NUM_TILES 32752
+#define NUM_TILES 65536
 #define TILES_PER_ROW 16
 #define PIXELS_PER_TILE 33
 #define PIXELS_PER_WHEEL 32
@@ -168,7 +168,7 @@ void TerrainPaletteWindow::DoPaint()
             glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            auto selectedTile = chkd.maps.clipboard->hasQuickTiles() ?
+            auto selectedTile = chkd.maps.clipboard->hasQuickTiles() && chkd.maps.clipboard->isQuickPasting() ?
                 std::make_optional<u16>(chkd.maps.clipboard->getTiles()[0].value) : std::nullopt;
 
             CM->scrGraphics->drawTilesetIndexed(rcCli.left, rcCli.top, rcCli.right-rcCli.left, rcCli.bottom-rcCli.top, tilesetIndexedYC, selectedTile);

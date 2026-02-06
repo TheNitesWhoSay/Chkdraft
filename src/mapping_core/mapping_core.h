@@ -17,6 +17,7 @@
 #include "casc_archive.h" // A CASC file is an archive format (like .zip) specialized for StarCraft Remastered
 #include "chk.h" // Defines all static structures, constants, and enumerations specific to scenario files (.chk)
 #include "escape_strings.h" // Defines several string types that extend basic strings in ways useful for mapping purposes
+#include "folder_archive.h" // A folder archive is a folder being used as though it were a dat-file archive
 #include "map_file.h" // A map file is a Scenario wrapped inside of an MpqFile (or rarely a standalone Scenario)
 #include "mpq_file.h" // An MPQ file is an archive format (like .zip) specialized for StarCraft
 #include "sc.h" // Contains resources to load assets from StarCraft and defines static structures, constants, and enumerations general to StarCraft

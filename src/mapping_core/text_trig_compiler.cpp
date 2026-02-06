@@ -257,7 +257,7 @@ template <class MapType> bool TextTrigCompiler::loadCompiler(const MapType & chk
 
     return
         (!prepLocations || prepLocationTable(chk)) &&
-        (!prepUnits || prepUnitTable(chk)) &&
+        (!prepUnits || prepUnitTable(chk, scData)) &&
         (!prepSwitches || prepSwitchTable(chk)) &&
         (!prepGroups || prepGroupTable(chk)) &&
         (!prepScripts || prepScriptTable(scData)) &&
@@ -1270,7 +1270,7 @@ bool TextTrigCompiler::parseExecutingPlayer(std::string & text, std::vector<RawS
         currTrig.owners[group] = (Chk::Trigger::Owned)appendedValue;
         return true;
     }
-    else if ( parsePlayer(text, stringContents, nextString, group, pos, end) && group < 27 )
+    else if ( parsePlayer(text, stringContents, nextString, group, pos, end) && group < Sc::Player::TotalOwners )
     {
         currTrig.owners[group] = Chk::Trigger::Owned::Yes;
         return true;
@@ -2862,7 +2862,7 @@ bool TextTrigCompiler::parsePlayer(std::string & text, std::vector<RawString> & 
                 const char* argPtr = &upperStr.c_str()[6];
                 if ( (number = atoi(argPtr)) ) // Player number
                 {
-                    if ( number < 13 && number > 0 )
+                    if ( number <= Sc::Player::Total && number > 0 )
                     {
                         dest = number - 1;
                         return true;
@@ -2875,7 +2875,7 @@ bool TextTrigCompiler::parsePlayer(std::string & text, std::vector<RawString> & 
             const char* argPtr = &upperStr.c_str()[2];
             if ( (number = atoi(argPtr)) ) // Player number
             {
-                if ( number < 13 && number > 0 )
+                if ( number <= Sc::Player::Total && number > 0 )
                 {
                     dest = number - 1;
                     return true;
@@ -3706,37 +3706,37 @@ template bool TextTrigCompiler::prepLocationTable<Scenario>(const Scenario & map
 template bool TextTrigCompiler::prepLocationTable<LiteScenario>(const LiteScenario & map);
 #endif
 
-template <class MapType> bool TextTrigCompiler::prepUnitTable(const MapType & map)
+template <class MapType> bool TextTrigCompiler::prepUnitTable(const MapType & map, const Sc::Data & scData)
 {
     UnitTableNode unitNode = {};
     u16 stringId = 0;
-    for ( u16 unitId=0; unitId<Sc::Unit::TotalTypes; unitId++ )
+    for ( u16 unitId=0; unitId<scData.units.numUnitTypes(); unitId++ )
     {
         unitNode.unitType = (Sc::Unit::Type)unitId;
-        auto gameString = map.template getUnitName<RawString>((Sc::Unit::Type)unitId, true, Chk::UseExpSection::Auto, Chk::Scope::Game);
-        auto editorString = map.template getUnitName<RawString>((Sc::Unit::Type)unitId, true, Chk::UseExpSection::Auto, Chk::Scope::Editor);
+        auto gameString = map.template getUnitName<RawString>((Sc::Unit::Type)unitId, &scData, true, Chk::UseExpSection::Auto, Chk::Scope::Game);
+        auto editorString = map.template getUnitName<RawString>((Sc::Unit::Type)unitId, &scData, true, Chk::UseExpSection::Auto, Chk::Scope::Editor);
         
-        if ( auto gameString = map.template getUnitName<RawString>((Sc::Unit::Type)unitId, true, Chk::UseExpSection::Auto, Chk::Scope::Game) )
+        if ( auto gameString = map.template getUnitName<RawString>((Sc::Unit::Type)unitId, &scData, true, Chk::UseExpSection::Auto, Chk::Scope::Game) )
         {
             unitNode.unitName = *gameString;
             unitTable.insert( std::pair<size_t, UnitTableNode>(strHash(unitNode.unitName), unitNode) );
         }
-        else if ( auto editorString = map.template getUnitName<RawString>((Sc::Unit::Type)unitId, true, Chk::UseExpSection::Auto, Chk::Scope::Editor) )
+        else if ( auto editorString = map.template getUnitName<RawString>((Sc::Unit::Type)unitId, &scData, true, Chk::UseExpSection::Auto, Chk::Scope::Editor) )
         {
             unitNode.unitName = *editorString;
             unitTable.insert( std::pair<size_t, UnitTableNode>(strHash(unitNode.unitName), unitNode) );
         }
         else
         {
-            unitNode.unitName = Sc::Unit::defaultDisplayNames[unitId];
+            unitNode.unitName = scData.units.displayNames[unitId];
             unitTable.insert( std::pair<size_t, UnitTableNode>(strHash(unitNode.unitName), unitNode) );
         }
     }
     return true;
 }
-template bool TextTrigCompiler::prepUnitTable<Scenario>(const Scenario & map);
+template bool TextTrigCompiler::prepUnitTable<Scenario>(const Scenario & map, const Sc::Data & scData);
 #ifdef INCLUDE_LITE_SCENARIO
-template bool TextTrigCompiler::prepUnitTable<LiteScenario>(const LiteScenario & map);
+template bool TextTrigCompiler::prepUnitTable<LiteScenario>(const LiteScenario & map, const Sc::Data & scData);
 #endif
 
 template <class MapType> bool TextTrigCompiler::prepSwitchTable(const MapType & map)

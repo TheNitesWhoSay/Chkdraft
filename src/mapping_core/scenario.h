@@ -5,26 +5,26 @@
 #include "escape_strings.h"
 #include "chk.h"
 #include "map_data.h"
-#include <rarecpp/editor.h>
+#include <nf/hist.h>
 #include <optional>
 #include <string>
 #include <map>
 #include <vector>
 
-struct Scenario : RareEdit::Tracked<MapData, Scenario, DescriptorIndex>
+struct Scenario : nf::tracked<MapData, Scenario, DescriptorIndex>
 {
-    struct EditCondition : RareEdit::TrackedElement<Chk::Condition, PATH(root->triggers[0].conditions[0])>
+    struct EditCondition : nf::tracked_element<Chk::Condition, NF_PATH(root->triggers[0].conditions[0])>
     {
-        using TrackedElement::TrackedElement;
+        using tracked_element::tracked_element;
 
         void toggleDisabled();
         void remapLocationIds(const std::map<u32, u32> & locationIdRemappings);
         void deleteLocation(size_t locationId);
     };
 
-    struct EditAction : RareEdit::TrackedElement<Chk::Action, PATH(root->triggers[0].actions[0])>
+    struct EditAction : nf::tracked_element<Chk::Action, NF_PATH(root->triggers[0].actions[0])>
     {
-        using TrackedElement::TrackedElement;
+        using tracked_element::tracked_element;
 
         void toggleDisabled();
         void remapLocationIds(const std::map<u32, u32> & locationIdRemappings);
@@ -34,9 +34,9 @@ struct Scenario : RareEdit::Tracked<MapData, Scenario, DescriptorIndex>
         void deleteSoundReferences(size_t stringId);
     };
 
-    struct EditTrigger : RareEdit::TrackedElement<Chk::Trigger, PATH(root->triggers[0])>
+    struct EditTrigger : nf::tracked_element<Chk::Trigger, NF_PATH(root->triggers[0])>
     {
-        using TrackedElement::TrackedElement;
+        using tracked_element::tracked_element;
 
         EditCondition editCondition(std::size_t conditionIndex);
         EditAction editAction(std::size_t actionIndex);
@@ -65,9 +65,9 @@ struct Scenario : RareEdit::Tracked<MapData, Scenario, DescriptorIndex>
         void alignActionsTop();
     };
 
-    struct EditBriefingAction : RareEdit::TrackedElement<Chk::Action, PATH(root->briefingTriggers[0].actions[0])>
+    struct EditBriefingAction : nf::tracked_element<Chk::Action, NF_PATH(root->briefingTriggers[0].actions[0])>
     {
-        using TrackedElement::TrackedElement;
+        using tracked_element::tracked_element;
         
         void toggleDisabled();
         void remapBriefingStringIds(const std::map<u32, u32> & stringIdRemappings);
@@ -75,9 +75,9 @@ struct Scenario : RareEdit::Tracked<MapData, Scenario, DescriptorIndex>
         void deleteBriefingSoundReferences(size_t stringId);
     };
 
-    struct EditBriefingTrigger : RareEdit::TrackedElement<Chk::Trigger, PATH(root->briefingTriggers[0])>
+    struct EditBriefingTrigger : nf::tracked_element<Chk::Trigger, NF_PATH(root->briefingTriggers[0])>
     {
-        using TrackedElement::TrackedElement;
+        using tracked_element::tracked_element;
 
         EditBriefingAction editBriefingAction(std::size_t actionIndex);
         
@@ -173,7 +173,7 @@ struct Scenario : RareEdit::Tracked<MapData, Scenario, DescriptorIndex>
     template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
     std::optional<StringType> getForceName(Chk::Force force, Chk::Scope storageScope = Chk::Scope::EditorOverGame) const;
     template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
-    std::optional<StringType> getUnitName(Sc::Unit::Type unitType, bool defaultIfNull = false, Chk::UseExpSection useExp = Chk::UseExpSection::Auto, Chk::Scope storageScope = Chk::Scope::EditorOverGame) const;
+    std::optional<StringType> getUnitName(Sc::Unit::Type unitType, const Sc::Data* scData = nullptr, bool defaultIfNull = false, Chk::UseExpSection useExp = Chk::UseExpSection::Auto, Chk::Scope storageScope = Chk::Scope::EditorOverGame) const;
     template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
     std::optional<StringType> getSoundPath(size_t soundIndex, Chk::Scope storageScope = Chk::Scope::EditorOverGame) const;
     template <typename StringType> // Strings may be RawString (no escaping), EscString (C++ style \r\r escape characters) or ChkString (Editor <01>Style)
@@ -538,52 +538,52 @@ struct Scenario : RareEdit::Tracked<MapData, Scenario, DescriptorIndex>
     
     void setActionDescription(ActionDescriptor actionDescriptor);
     
-    using units_path = PATH(root->units);
-    using unit_type_path = PATH(root->units[0].type);
-    using unit_owner_path = PATH(root->units[0].owner);
-    using unit_xc_path = PATH(root->units[0].xc);
-    using unit_yc_path = PATH(root->units[0].yc);
-    using unit_resource_path = PATH(root->units[0].resourceAmount);
-    using unit_state_path = PATH(root->units[0].stateFlags);
-    using unit_relation_flags_path = PATH(root->units[0].relationFlags);
-    virtual void elementAdded(units_path, std::size_t index) {}
-    virtual void elementRemoved(units_path, std::size_t index) {}
-    virtual void elementMoved(units_path, std::size_t oldIndex, std::size_t newIndex) {}
-    virtual void valueChanged(unit_type_path, Sc::Unit::Type oldType, Sc::Unit::Type newType) {}
-    virtual void valueChanged(unit_owner_path, u8 oldOwner, u8 newOwner) {}
-    virtual void valueChanged(unit_xc_path, u16 oldXc, u16 newXc) {}
-    virtual void valueChanged(unit_yc_path, u16 oldYc, u16 newYc) {}
-    virtual void valueChanged(unit_resource_path, u32 oldResourceAmount, u32 newResourceAmount) {}
-    virtual void valueChanged(unit_state_path, u16 oldStateFlags, u16 newStateFlags) {}
-    virtual void valueChanged(unit_relation_flags_path, u16 oldRelationFlags, u16 newRelationFlags) {}
+    using units_path = NF_PATH(root->units);
+    using unit_type_path = NF_PATH(root->units[0].type);
+    using unit_owner_path = NF_PATH(root->units[0].owner);
+    using unit_xc_path = NF_PATH(root->units[0].xc);
+    using unit_yc_path = NF_PATH(root->units[0].yc);
+    using unit_resource_path = NF_PATH(root->units[0].resourceAmount);
+    using unit_state_path = NF_PATH(root->units[0].stateFlags);
+    using unit_relation_flags_path = NF_PATH(root->units[0].relationFlags);
+    virtual void element_added(units_path, std::size_t index) {}
+    virtual void element_removed(units_path, std::size_t index) {}
+    virtual void element_moved(units_path, std::size_t oldIndex, std::size_t newIndex) {}
+    virtual void value_changed(unit_type_path, Sc::Unit::Type oldType, Sc::Unit::Type newType) {}
+    virtual void value_changed(unit_owner_path, u8 oldOwner, u8 newOwner) {}
+    virtual void value_changed(unit_xc_path, u16 oldXc, u16 newXc) {}
+    virtual void value_changed(unit_yc_path, u16 oldYc, u16 newYc) {}
+    virtual void value_changed(unit_resource_path, u32 oldResourceAmount, u32 newResourceAmount) {}
+    virtual void value_changed(unit_state_path, u16 oldStateFlags, u16 newStateFlags) {}
+    virtual void value_changed(unit_relation_flags_path, u16 oldRelationFlags, u16 newRelationFlags) {}
 
-    using sprites_path = PATH(root->sprites);
-    using sprite_type_path = PATH(root->sprites[0].type);
-    using sprite_owner_path = PATH(root->sprites[0].owner);
-    using sprite_flags_path = PATH(root->sprites[0].flags);
-    using sprite_xc_path = PATH(root->sprites[0].xc);
-    using sprite_yc_path = PATH(root->sprites[0].yc);
-    virtual void elementAdded(sprites_path, std::size_t index) {}
-    virtual void elementRemoved(sprites_path, std::size_t index) {}
-    virtual void elementMoved(sprites_path, std::size_t oldIndex, std::size_t newIndex) {}
-    virtual void valueChanged(sprite_type_path, Sc::Sprite::Type oldType, Sc::Sprite::Type newType) {}
-    virtual void valueChanged(sprite_owner_path, u8 oldOwner, u8 newOwner) {}
-    virtual void valueChanged(sprite_flags_path, u16 oldFlags, u16 newFlags) {}
-    virtual void valueChanged(sprite_xc_path, u16 oldXc, u16 newXc) {}
-    virtual void valueChanged(sprite_yc_path, u16 oldYc, u16 newYc) {}
+    using sprites_path = NF_PATH(root->sprites);
+    using sprite_type_path = NF_PATH(root->sprites[0].type);
+    using sprite_owner_path = NF_PATH(root->sprites[0].owner);
+    using sprite_flags_path = NF_PATH(root->sprites[0].flags);
+    using sprite_xc_path = NF_PATH(root->sprites[0].xc);
+    using sprite_yc_path = NF_PATH(root->sprites[0].yc);
+    virtual void element_added(sprites_path, std::size_t index) {}
+    virtual void element_removed(sprites_path, std::size_t index) {}
+    virtual void element_moved(sprites_path, std::size_t oldIndex, std::size_t newIndex) {}
+    virtual void value_changed(sprite_type_path, Sc::Sprite::Type oldType, Sc::Sprite::Type newType) {}
+    virtual void value_changed(sprite_owner_path, u8 oldOwner, u8 newOwner) {}
+    virtual void value_changed(sprite_flags_path, u16 oldFlags, u16 newFlags) {}
+    virtual void value_changed(sprite_xc_path, u16 oldXc, u16 newXc) {}
+    virtual void value_changed(sprite_yc_path, u16 oldYc, u16 newYc) {}
     
-    using tileset_path = PATH(root->tileset);
-    virtual void valueChanged(tileset_path, Sc::Terrain::Tileset oldTileset, Sc::Terrain::Tileset newTileset) {}
+    using tileset_path = NF_PATH(root->tileset);
+    virtual void value_changed(tileset_path, Sc::Terrain::Tileset oldTileset, Sc::Terrain::Tileset newTileset) {}
 
     bool clearTileSelChanged();
     bool clearFogSelChanged();
-    using tiles_path = PATH(root->tiles);
-    using editor_tiles_path = PATH(root->editorTiles);
-    using tiles_fog_path = PATH(root->tileFog);
-    void selectionsChanged(tiles_path);
-    void selectionsChanged(editor_tiles_path);
-    void selectionsChanged(tiles_fog_path);
-    virtual void afterAction(std::size_t actionIndex) {} // Does nothing unless overridden
+    using tiles_path = NF_PATH(root->tiles);
+    using editor_tiles_path = NF_PATH(root->editorTiles);
+    using tiles_fog_path = NF_PATH(root->tileFog);
+    void selections_changed(tiles_path);
+    void selections_changed(editor_tiles_path);
+    void selections_changed(tiles_fog_path);
+    virtual void after_action(std::size_t actionIndex) {} // Does nothing unless overridden
 
 
 private:

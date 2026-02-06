@@ -107,7 +107,7 @@ public:
     // Cannot be used unless the MPQ is already open
     virtual bool getFile(const std::string & mpqPath, ByteBuffer & fileData, bool tryLocales = true) const override;
 
-    // Attempts to get a file from this MPQ at mpqPath and place the data within the fileData buffer
+    // Attempts to get a file from this MPQ at mpqPath and return the file data
     // Cannot be used unless the MPQ is already open
     virtual std::optional<std::vector<u8>> getFile(const std::string & mpqPath, bool tryLocales = true) const override;
 

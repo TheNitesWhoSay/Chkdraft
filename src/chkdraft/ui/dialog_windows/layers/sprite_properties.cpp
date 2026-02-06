@@ -133,7 +133,7 @@ void SpritePropertiesWindow::SetChangeHighlightOnly(bool changeHighlightOnly)
 
 void SpritePropertiesWindow::ChangeCurrOwner(u8 newOwner)
 {
-    auto edit = CM->operator()(ActionDescriptor::UpdateSpriteOwner);
+    auto edit = CM->create_action(ActionDescriptor::UpdateSpriteOwner);
     for ( size_t spriteIndex : CM->view.sprites.sel() )
     {
         const Chk::Sprite & sprite = CM->getSprite(spriteIndex);
@@ -149,7 +149,7 @@ void SpritePropertiesWindow::ChangeCurrOwner(u8 newOwner)
 void SpritePropertiesWindow::ChangeDropdownPlayer(u8 newPlayer)
 {
     std::string text;
-    if ( newPlayer < 12 )
+    if ( newPlayer < Sc::Player::Total )
         dropPlayer.SetSel(newPlayer);
     else
         dropPlayer.SetEditNum<u8>(newPlayer + 1);
@@ -283,9 +283,9 @@ void SpritePropertiesWindow::RepopulateList()
 
 std::string SpritePropertiesWindow::GetSpriteName(Sc::Sprite::Type type, bool isUnit)
 {
-    if ( isUnit && size_t(type) < Sc::Unit::TotalTypes )
-        return std::string("[") + std::to_string(type) + "] " + *CM->getUnitName<ChkdString>(Sc::Unit::Type(type));
-    else if ( (isUnit && size_t(type) >= Sc::Unit::TotalTypes) || size_t(type) >= chkd.scData->sprites.spriteNames.size() )
+    if ( isUnit && size_t(type) < chkd.scData->units.numUnitTypes() )
+        return std::string("[") + std::to_string(type) + "] " + *CM->getUnitName<ChkdString>(Sc::Unit::Type(type), &chkd.scData.value());
+    else if ( (isUnit && size_t(type) >= chkd.scData->units.numUnitTypes()) || size_t(type) >= chkd.scData->sprites.spriteNames.size() )
         return std::string("[") + std::to_string(type) + "]";
     else
         return std::string("[") + std::to_string(type) + "] " + chkd.scData->sprites.spriteNames[type];
@@ -354,7 +354,7 @@ void SpritePropertiesWindow::SetSpriteFieldText(const Chk::Sprite & sprite)
 {
     initilizing = true;
 
-    if ( sprite.owner < 12 )
+    if ( sprite.owner < Sc::Player::Total )
         dropPlayer.SetSel(sprite.owner);
     else
         dropPlayer.SetWinText(std::to_string(sprite.owner + 1));
@@ -491,7 +491,7 @@ void SpritePropertiesWindow::LvColumnClicked(NMHDR* nmhdr)
 
 void SpritePropertiesWindow::LvItemChanged(NMHDR* nmhdr)
 {
-    auto edit = CM->operator()(ActionDescriptor::UpdateSpriteSel);
+    auto edit = CM->create_action(ActionDescriptor::UpdateSpriteSel);
     Selections & selections = CM->selections;
     if ( !changeHighlightOnly )
     {
@@ -499,46 +499,97 @@ void SpritePropertiesWindow::LvItemChanged(NMHDR* nmhdr)
         u16 index = (u16)itemInfo->lParam;
         
         const auto & sel = CM->view.sprites.sel();
-        if ( itemInfo->uNewState & LVIS_SELECTED && initilizing == false ) // Selected
-                                                                           // Add item to selection
+        if ( itemInfo->uNewState & LVIS_SELECTED && initilizing == false ) // Selected, add item to selection
         {
-            bool firstSelected = !selections.hasSprites();
-            if ( std::find(sel.begin(), sel.end(), index) == sel.end() )
-                edit->sprites.select(index);
+            auto prevDesel = std::find(queueDeselection.begin(), queueDeselection.end(), index);
+            if ( prevDesel != queueDeselection.end() )
+                queueDeselection.erase(prevDesel);
 
-            if ( firstSelected )
-                EnableSpriteEditing();
+            bool addingSelection = std::find(sel.begin(), sel.end(), index) == sel.end() &&
+                std::find(queueSelection.begin(), queueSelection.end(), index) == queueSelection.end();
 
-            const Chk::Sprite & sprite = CM->getSprite(index);
+            if ( addingSelection )
+            {
+                if ( this->queueDeselection.empty() && this->queueSelection.empty() )
+                    PostMessage(getHandle(), WinLib::LV::WM_LVPROCESSQUEUE, 0, 0);
+                
+                this->queueSelection.push_back(index);
+            }
+        }
+        else if ( itemInfo->uOldState & LVIS_SELECTED ) // From selected to not selected, remove item from selection
+        {
+            auto prevSel = std::find(queueSelection.begin(), queueSelection.end(), index);
+            if ( prevSel != queueSelection.end() )
+                queueSelection.erase(prevSel);
+
+            bool removingSelection = std::find(sel.begin(), sel.end(), u32(index)) != sel.end() &&
+                std::find(queueDeselection.begin(), queueDeselection.end(), index) == queueDeselection.end();
+
+            if ( removingSelection )
+            {
+                if ( this->queueDeselection.empty() && this->queueSelection.empty() )
+                    PostMessage(getHandle(), WinLib::LV::WM_LVPROCESSQUEUE, 0, 0);
+                
+                this->queueDeselection.push_back(index);
+            }
+        }
+    }
+}
+
+void SpritePropertiesWindow::ProcessSelectionQueues()
+{
+    auto edit = CM->create_action(ActionDescriptor::UpdateSpriteSel);
+    Selections & selections = CM->selections;
+    bool hasDesel = !queueDeselection.empty();
+    bool hasSel = !queueSelection.empty();
+    if ( hasDesel || hasSel )
+    {
+        bool hadSelections = edit->sprites.sel().empty();
+        if ( hasDesel )
+        {
+            std::sort(queueDeselection.begin(), queueDeselection.end());
+            if ( queueDeselection.size() == 1 )
+                edit->sprites.deselect(queueDeselection[0]);
+            else if ( !queueDeselection.empty() )
+                edit->sprites.deselect(queueDeselection);
+        }
+
+        if ( hasSel )
+        {
+            std::sort(queueSelection.begin(), queueSelection.end());
+            if ( queueSelection.size() == 1 )
+                edit->sprites.select(queueSelection[0]);
+            else if ( !queueSelection.empty() )
+                edit->sprites.select(queueSelection);
+        }
+
+        if ( hadSelections && edit->sprites.sel().empty()
+            && !(GetKeyState(VK_DOWN) & 0x8000
+                || GetKeyState(VK_UP) & 0x8000
+                || GetKeyState(VK_LEFT) & 0x8000
+                || GetKeyState(VK_RIGHT) & 0x8000
+                || GetKeyState(VK_LBUTTON) & 0x8000
+                || GetKeyState(VK_RBUTTON) & 0x8000) )
+        {
+            DisableSpriteEditing();
+        }
+        else if ( !hadSelections && !edit->sprites.sel().empty() )
+            EnableSpriteEditing();
+
+        if ( selections.hasSprites() )
+        {
+            const Chk::Sprite & sprite = CM->getSprite(selections.getFirstSprite());
             auto spriteName = GetSpriteName(sprite.type, sprite.isUnit());
             WindowsItem::SetWinText(spriteName);
             SetSpriteFieldText(sprite);
 
-            CM->viewSprite(index);
+            CM->viewSprite(selections.getFirstSprite());
         }
-        else if ( itemInfo->uOldState & LVIS_SELECTED ) // From selected to not selected
-                                                        // Remove item from selection
-        {
-            if ( std::find(sel.begin(), sel.end(), index) != sel.end() )
-                edit->sprites.deselect(index);
-
-            if ( !selections.hasSprites()
-                && !(GetKeyState(VK_DOWN) & 0x8000
-                    || GetKeyState(VK_UP) & 0x8000
-                    || GetKeyState(VK_LEFT) & 0x8000
-                    || GetKeyState(VK_RIGHT) & 0x8000
-                    || GetKeyState(VK_LBUTTON) & 0x8000
-                    || GetKeyState(VK_RBUTTON) & 0x8000) )
-            {
-                DisableSpriteEditing();
-            }
-
-            if ( selections.hasSprites() )
-                CM->viewSprite(selections.getFirstSprite());
-            else
-                CM->Redraw(false);
-        }
+        else
+            CM->Redraw(false);
     }
+    this->queueSelection.clear();
+    this->queueDeselection.clear();
 }
 
 void SpritePropertiesWindow::NotifyClosePressed()
@@ -551,7 +602,7 @@ void SpritePropertiesWindow::NotifyMoveTopPressed()
     if ( CM->selections.hasSprites() )
     {
         listSprites.SetRedraw(false);
-        CM->operator()(ActionDescriptor::MoveSprites)->sprites.moveSelectionsTop();
+        CM->create_action(ActionDescriptor::MoveSprites)->sprites.move_selections_top();
         RepopulateList();
         listSprites.SetRedraw(true);
     }
@@ -562,7 +613,7 @@ void SpritePropertiesWindow::NotifyMoveEndPressed()
     if ( CM->selections.hasSprites() )
     {
         listSprites.SetRedraw(false);
-        CM->operator()(ActionDescriptor::MoveSprites)->sprites.moveSelectionsBottom();
+        CM->create_action(ActionDescriptor::MoveSprites)->sprites.move_selections_bottom();
         RepopulateList();
         listSprites.SetRedraw(true);
     }
@@ -573,7 +624,7 @@ void SpritePropertiesWindow::NotifyMoveUpPressed()
     if ( CM->selections.hasSprites() )
     {
         listSprites.SetRedraw(false);
-        CM->operator()(ActionDescriptor::MoveSprites)->sprites.moveSelectionsUp();
+        CM->create_action(ActionDescriptor::MoveSprites)->sprites.move_selections_up();
         RepopulateList();
         listSprites.SetRedraw(true);
     }
@@ -584,7 +635,7 @@ void SpritePropertiesWindow::NotifyMoveDownPressed()
     if ( CM->selections.hasSprites() )
     {
         listSprites.SetRedraw(false);
-        CM->operator()(ActionDescriptor::MoveSprites)->sprites.moveSelectionsDown();
+        CM->create_action(ActionDescriptor::MoveSprites)->sprites.move_selections_down();
         RepopulateList();
         listSprites.SetRedraw(true);
     }
@@ -596,7 +647,7 @@ void SpritePropertiesWindow::NotifyMoveToPressed()
     if ( CM->selections.hasSprites() && MoveToDialog<u32>::GetIndex(spriteMoveTo, getHandle()) && spriteMoveTo < u32(CM->numSprites()) )
     {
         listSprites.SetRedraw(false);
-        CM->operator()(ActionDescriptor::MoveSprites)->sprites.moveSelectionsTo(spriteMoveTo);
+        CM->create_action(ActionDescriptor::MoveSprites)->sprites.move_selections_to(spriteMoveTo);
         RepopulateList();
         listSprites.SetRedraw(true);
     }
@@ -607,7 +658,7 @@ void SpritePropertiesWindow::NotifyDeletePressed()
     if ( CM->selections.hasSprites() )
     {
         listSprites.SetRedraw(false);
-        CM->operator()(ActionDescriptor::DeleteSprites)->sprites.removeSelection();
+        CM->create_action(ActionDescriptor::DeleteSprites)->sprites.remove_selection();
         RepopulateList();
         listSprites.SetRedraw(true);
     }
@@ -623,14 +674,14 @@ void SpritePropertiesWindow::NotifyGraphicsPressed()
 
         NotifyClosePressed();
         ::ShowWindow(chkd.actorWindow->getHandle(), SW_SHOW);
-        chkd.actorWindow->FocusAndSelectIndex(CM->view.sprites.attachedData(firstSprite).drawListIndex);
+        chkd.actorWindow->FocusAndSelectIndex(CM->view.sprites.attached_data(firstSprite).drawListIndex);
         chkd.actorWindow->FocusThis();
     }
 }
 
 void SpritePropertiesWindow::NotifyCheckClicked(u32 idFrom)
 {
-    auto edit = CM->operator()(ActionDescriptor::UpdateSpriteFlags);
+    auto edit = CM->create_action(ActionDescriptor::UpdateSpriteFlags);
     for ( size_t spriteIndex : CM->view.sprites.sel() )
     {
         const Chk::Sprite & sprite = CM->getSprite(spriteIndex);
@@ -666,7 +717,7 @@ void SpritePropertiesWindow::NotifyCheckClicked(u32 idFrom)
 
 void SpritePropertiesWindow::NotifyIdEditUpdated()
 {
-    auto edit = CM->operator()(ActionDescriptor::ChangeSpriteType);
+    auto edit = CM->create_action(ActionDescriptor::ChangeSpriteType);
     u16 spriteID = 0;
     if ( editSpriteId.GetEditNum<u16>(spriteID) )
     {
@@ -688,7 +739,7 @@ void SpritePropertiesWindow::NotifyIdEditUpdated()
 
 void SpritePropertiesWindow::NotifyUnusedEditUpdated()
 {
-    auto edit = CM->operator()(ActionDescriptor::UpdateSpriteUnused);
+    auto edit = CM->create_action(ActionDescriptor::UpdateSpriteUnused);
     u8 unused = 0;
     if ( editUnused.GetEditNum<u8>(unused) )
     {
@@ -701,7 +752,7 @@ void SpritePropertiesWindow::NotifyUnusedEditUpdated()
 
 void SpritePropertiesWindow::NotifyXcEditUpdated()
 {
-    auto edit = CM->operator()(ActionDescriptor::AdjustSpriteXc);
+    auto edit = CM->create_action(ActionDescriptor::AdjustSpriteXc);
     u16 spriteXC = 0;
     if ( editXc.GetEditNum<u16>(spriteXC) )
     {
@@ -718,7 +769,7 @@ void SpritePropertiesWindow::NotifyXcEditUpdated()
 
 void SpritePropertiesWindow::NotifyYcEditUpdated()
 {
-    auto edit = CM->operator()(ActionDescriptor::AdjustSpriteYc);
+    auto edit = CM->create_action(ActionDescriptor::AdjustSpriteYc);
     u16 spriteYC = 0;
     if ( editYc.GetEditNum<u16>(spriteYC) )
     {
@@ -825,6 +876,7 @@ BOOL SpritePropertiesWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 {
     switch( msg )
     {
+    case WinLib::LV::WM_LVPROCESSQUEUE: ProcessSelectionQueues(); break;
     case WM_ACTIVATE: return Activate(wParam, lParam); break;
     case WM_SHOWWINDOW: return ShowWindow(wParam, lParam); break;
     case WM_CLOSE: DestroyThis(); break;
