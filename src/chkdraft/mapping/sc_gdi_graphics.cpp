@@ -2295,38 +2295,104 @@ void DrawMiniMapTiles(ChkdBitmap & bitmap, const ChkdPalette & palette, s64 bitW
 void DrawMiniMapUnits(ChkdBitmap & bitmap, u16 bitWidth, u16 bitHeight, u16 xSize, u16 ySize,
                        u16 xOffset, u16 yOffset, float scale, const Sc::Terrain::Tiles & tiles, GuiMap & map )
 {
+    auto tileWidth = map.getTileWidth();
+    auto tileHeight = map.getTileHeight();
+    int mapSize = tileWidth <= tileHeight ? tileHeight : tileWidth;
+    int boxZoom = mapSize >= 192 ? 2 : 1;
+    int tilePxSize = mapSize <= 64 ? 2 : 1;
+
+    auto drawUnit = [&](Chk::PlayerColor color, Sc::Unit::Type unitType, u16 unitXc, u16 unitYc)
+    {
+        if ( color >= Chk::TotalColors )
+            color = Chk::PlayerColor(color % Chk::TotalColors);
+        
+        if ( unitType < chkd.scData->units.numUnitTypes() )
+        {
+            const Sc::Unit::DatEntry & dat = chkd.scData->units.getUnit(unitType);
+            u16 placementWidth = dat.starEditPlacementBoxWidth;
+            u16 placementHeight = dat.starEditPlacementBoxHeight;
+            bool isBuilding = ((dat.flags & Sc::Unit::Flags::Building) == Sc::Unit::Flags::Building);
+            int left = (unitXc - placementWidth/2) / 32;
+            int top = (unitYc - placementHeight/2) / 32;
+            int width = placementWidth / 32;
+            int height = placementHeight / 32;
+
+            if ( width < 2 )
+                width = 2;
+            else if ( isBuilding ) 
+            {
+                if ( width > 4 )
+                    width = 4;
+            }
+            else if ( width > 2 )
+                width = 2;
+
+            if ( height < 2 )
+                height = 2;
+            else if ( isBuilding )
+            {
+                if ( height > 4 )
+                    height = 4;
+            }
+            else if ( height > 2 )
+                height = 2;
+
+            if ( left < 0 )
+                left = 0;
+            else if ( left + width - 1 >= tileWidth )
+                width = tileWidth - left;
+
+            if ( top < 0 )
+                top = 0;
+            else if ( top + height - 1 >= tileHeight )
+                height = tileHeight - top;
+
+            left = left * tilePxSize / boxZoom;
+            top = top * tilePxSize / boxZoom;
+            width = width * tilePxSize / boxZoom;
+            height = height * tilePxSize / boxZoom;
+
+            for ( int y=top; y<top+height; ++y )
+            {
+                for ( int x=left; x<left+width; ++x )
+                {
+                    u32 bitIndex = //scale != 1.f ? (
+                        //((u32)((y)*scale) + yOffset) * 128 + (u32)((x)*scale) + xOffset) :
+                        ((u32(y)+u32(yOffset))*128 + u32(x)+u32(xOffset));
+
+                    if ( bitIndex < MINI_MAP_MAXBIT )
+                        bitmap[bitIndex] = chkd.scData->tminimap.bgraPalette[color];
+                }
+            }
+        }
+        else
+        {
+            u32 bitIndex = (
+                ((u32)((unitYc / 32)*scale) + yOffset) * 128
+                + (u32)((unitXc / 32)*scale) + xOffset
+                );
+
+            if ( bitIndex < MINI_MAP_MAXBIT )
+                bitmap[bitIndex] = chkd.scData->tminimap.bgraPalette[color];
+        }
+    };
+
     for ( const auto & unit : map->units )
     {
         Chk::PlayerColor color = (unit.owner < Sc::Player::TotalSlots ?
             map.getPlayerColor(unit.owner) : (Chk::PlayerColor)unit.owner);
 
-        if ( color > Chk::TotalColors )
-            color = Chk::PlayerColor(color % Chk::TotalColors);
-
-        u32 bitIndex = (
-            ((u32)((unit.yc / 32)*scale) + yOffset) * 128
-            + (u32)((unit.xc / 32)*scale) + xOffset
-            );
-
-        if ( bitIndex < MINI_MAP_MAXBIT )
-            bitmap[bitIndex] = chkd.scData->tminimap.bgraPalette[color];
+        drawUnit(color, unit.type, unit.xc, unit.yc);
     }
     
     for ( const auto & sprite : map->sprites )
     {
-        if ( sprite.isDrawnAsSprite() )
+        if ( sprite.isUnit() )
         {
             Chk::PlayerColor color = (sprite.owner < Sc::Player::TotalSlots ?
-                map.getPlayerColor(sprite.owner) : Chk::PlayerColor(sprite.owner%16));
+                map.getPlayerColor(sprite.owner) : Chk::PlayerColor(sprite.owner));
 
-            if ( color >= 16 )
-                color = Chk::PlayerColor(color % 16);
-
-            u32 bitIndex = (((u32)((sprite.yc / 32)*scale) + yOffset) * 128
-                + (u32)((sprite.xc / 32)*scale) + xOffset);
-
-            if ( bitIndex < MINI_MAP_MAXBIT )
-                bitmap[bitIndex] = chkd.scData->tminimap.bgraPalette[color];
+            drawUnit(color, static_cast<Sc::Unit::Type>(sprite.type), sprite.xc, sprite.yc);
         }
     }
 }
