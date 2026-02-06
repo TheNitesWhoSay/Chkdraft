@@ -23,6 +23,8 @@ void parseTreeGroup(std::vector<TreeGroup> & treeGroups, const std::vector<std::
                 case Json::Value::Type::OrderedObject:
                     parseTreeGroup(treeGroups[i].subGroups, group.second->orderedObject());
                     break;
+                default:
+                    break;
             }
         }
         ++i;
