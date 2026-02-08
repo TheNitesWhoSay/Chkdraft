@@ -32,3 +32,23 @@ bool encodeOpenGlViewportImage(int x, int y, int width, int height, EncodedWebP 
 
     return true;
 }
+
+bool encodePixelDataImage(int width, int height, const std::uint32_t* pixels, EncodedWebP & encodedWebP)
+{
+    if ( encodedWebP.data != nullptr || encodedWebP.size != 0 )
+        throw std::logic_error("Expected a blank encodedWebP as input!");
+    else if ( width <= 0 || height <= 0 || pixels == nullptr )
+        throw std::logic_error("Expected some pixel data!");
+    
+    auto clipWidth = width == 16384 ? 16383 : width; // 1-off from maximum, clip the last pixel-column
+    auto clipHeight = height == 16384 ? 16383 : height; // 1-off from maximum, clip the last pixel-row
+    auto start = std::chrono::high_resolution_clock::now();
+    encodedWebP.size = WebPEncodeLosslessRGBA((const std::uint8_t*)pixels, clipWidth, clipHeight, 4*width, &encodedWebP.data);
+    auto end = std::chrono::high_resolution_clock::now();
+    if ( encodedWebP.size == 0 )
+        return false;
+    else
+        encodedWebP.encodeTimeMs = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
+
+    return true;
+}

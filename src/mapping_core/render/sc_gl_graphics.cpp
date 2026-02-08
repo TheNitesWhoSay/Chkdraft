@@ -1443,6 +1443,222 @@ std::shared_ptr<GraphicsData::RenderData> GraphicsData::load(Sc::Data & scData, 
     return renderData;
 }
 
+ClassicMiniMap::ClassicMiniMap(const Sc::Data & scData, const Scenario & map) : scData(scData), map(map), pixels(width*height)
+{
+    
+}
+
+void ClassicMiniMap::render()
+{
+    renderTerrain();
+    renderUnits();
+}
+
+void ClassicMiniMap::renderTerrain()
+{
+    Sc::Terrain::Tileset tilesetIndex = map.getTileset();
+    const Sc::Terrain::Tiles & tileset = scData.terrain.get(tilesetIndex);
+
+    const auto & tiles = map->tiles;
+    std::size_t tileWidth = map->dimensions.tileWidth;
+    std::size_t tileHeight = map->dimensions.tileHeight;
+    float scale = miniMapScale();
+
+    u16 xOffset = (u16)((128-tileWidth*scale)/2),
+        yOffset = (u16)((128-tileHeight*scale)/2);
+    
+    const auto & palette = scData.terrain.getStaticColorPalette(tilesetIndex);
+
+    for ( s64 yc=0; yc<128-2*yOffset; yc++ ) // Cycle through all minimap pixel rows
+    {
+        s64 yMiniTile = 0;
+        s64 yTile = (s64)(yc/scale); // Get the yc of tile used for the pixel
+        if ( scale > 1 )
+        {
+            yMiniTile = yc%(int)scale; // Get the y-minitile used for the pixel
+            if ( yMiniTile > 3 )
+                yMiniTile %= 4; // Correct for invalid y-minitiles
+        }
+
+        for ( s64 xc=0; xc<128-2*xOffset; xc++ ) // Cycle through all minimap pixel columns
+        {
+            s64 xMiniTile = 0;
+            s64 xTile = (s64)(xc/scale); // Get the xc of the tile used for the pixel
+            if ( scale > 1 )
+            {
+                xMiniTile = xc%(int)scale; // Get the x-minitile used for the pixel
+                if ( xMiniTile > 3 )
+                    xMiniTile %= 4; // Correct for invalid x-minitiles
+            }
+
+            if ( size_t(xTile) < map.getTileWidth() && size_t(yTile) < map.getTileHeight() )
+            {
+                u16 tileIndex = map.getTile(size_t(xTile), size_t(yTile));
+                size_t groupIndex = Sc::Terrain::Tiles::getGroupIndex(tileIndex);
+                if ( groupIndex < tileset.tileGroups.size() )
+                {
+                    const Sc::Terrain::TileGroup & tileGroup = tileset.tileGroups[groupIndex];
+                    const u16 & megaTileIndex = tileGroup.megaTileIndex[tileset.getGroupMemberIndex(tileIndex)];
+                    const Sc::Terrain::TileGraphicsEx & tileGraphics = tileset.tileGraphics[megaTileIndex];
+
+                    const size_t vr4Index = size_t(tileGraphics.miniTileGraphics[yMiniTile][xMiniTile].vr4Index());
+                    const Sc::Terrain::MiniTilePixels & miniTilePixels = tileset.miniTilePixels[vr4Index];
+                    const u8 & wpeIndex = miniTilePixels.wpeIndex[6][7];
+
+                    pixels[size_t((yc + yOffset) * 128 + xc + xOffset)] = (std::uint32_t &)(palette[wpeIndex]);
+                }
+            }
+        }
+    }
+}
+
+void ClassicMiniMap::renderUnits()
+{
+    const auto & units = map->units;
+    const auto & sprites = map->sprites;
+
+    auto tileWidth = map.getTileWidth();
+    auto tileHeight = map.getTileHeight();
+    int mapSize = tileWidth <= tileHeight ? tileHeight : tileWidth;
+    int boxZoom = mapSize >= 192 ? 2 : 1;
+    int tilePxSize = mapSize <= 64 ? 2 : 1;
+    const auto numUnitTypes = scData.units.numUnitTypes();
+    const auto pixelLimit = pixels.size();
+    auto scaledTileWidth = tileWidth * tilePxSize / boxZoom;
+    auto scaledTileHeight = tileHeight * tilePxSize / boxZoom;
+    float scale = miniMapScale();
+
+    u16 xOffset = (u16)((128-tileWidth*scale)/2),
+        yOffset = (u16)((128-tileHeight*scale)/2);
+
+    auto drawUnit = [&](Chk::PlayerColor color, Sc::Unit::Type unitType, u16 unitXc, u16 unitYc)
+    {
+        if ( color >= Chk::TotalColors )
+            color = Chk::PlayerColor(color % Chk::TotalColors);
+
+        if ( unitType < numUnitTypes )
+        {
+            const Sc::Unit::DatEntry & dat = scData.units.getUnit(unitType);
+            u16 placementWidth = dat.starEditPlacementBoxWidth;
+            u16 placementHeight = dat.starEditPlacementBoxHeight;
+            bool isBuilding = ((dat.flags & Sc::Unit::Flags::Building) == Sc::Unit::Flags::Building);
+            int left = (unitXc - placementWidth/2) * tilePxSize / boxZoom / 32;
+            int top = (unitYc - placementHeight/2) * tilePxSize / boxZoom / 32;
+            int width = placementWidth * tilePxSize / boxZoom / 32;
+            int height = placementHeight * tilePxSize / boxZoom / 32;
+
+            if ( width < 2 )
+                width = 2;
+            else if ( isBuilding ) 
+            {
+                if ( width > 4 )
+                    width = 4;
+            }
+            else if ( width > 2 )
+                width = 2;
+
+            if ( height < 2 )
+                height = 2;
+            else if ( isBuilding )
+            {
+                if ( height > 4 )
+                    height = 4;
+            }
+            else if ( height > 2 )
+                height = 2;
+
+            if ( left < 0 )
+                left = 0;
+            else if ( left + width - 1 >= scaledTileWidth )
+                width = scaledTileWidth - left;
+
+            if ( top < 0 )
+                top = 0;
+            else if ( top + height - 1 >= scaledTileHeight )
+                height = scaledTileHeight - top;
+
+            float nonStandardScale = scale / float(tilePxSize) * float(boxZoom);
+            switch ( tileWidth ) {
+                case 64: case 96: case 128: case 192: case 256: break;
+                default: { // Non-standard width
+                    left = std::round(left * nonStandardScale);
+                    width = std::round(width * nonStandardScale);
+                } break;
+            }
+            switch ( tileHeight ) {
+                case 64: case 96: case 128: case 192: case 256: break;
+                default: { // Non-standard height
+                    top = std::round(top * nonStandardScale);
+                    height = std::round(height * nonStandardScale);
+                } break;
+            }
+
+            for ( int y=top; y<top+height; ++y )
+            {
+                for ( int x=left; x<left+width; ++x )
+                {
+                    u32 bitIndex = (u32(y)+u32(yOffset))*128 + u32(x)+u32(xOffset);
+
+                    if ( bitIndex < pixelLimit )
+                        pixels[bitIndex] = (std::uint32_t &)scData.tminimap.bgraPalette[color];
+                }
+            }
+        }
+        else // Place a single-pixel dot for the unknown unit type
+        {
+            u32 bitIndex =
+                ((u32)((unitYc / 32)*scale) + yOffset) * 128
+                + (u32)((unitXc / 32)*scale) + xOffset;
+
+            if ( bitIndex < pixelLimit )
+                pixels[bitIndex] = (std::uint32_t &)scData.tminimap.bgraPalette[color];
+        }
+    };
+
+    for ( const auto & unit : map->units )
+    {
+        Chk::PlayerColor color = (unit.owner < Sc::Player::TotalSlots ?
+            map.getPlayerColor(unit.owner) : (Chk::PlayerColor)unit.owner);
+
+        drawUnit(color, unit.type, unit.xc, unit.yc);
+    }
+
+    for ( const auto & sprite : map->sprites )
+    {
+        if ( sprite.isUnit() )
+        {
+            Chk::PlayerColor color = (sprite.owner < Sc::Player::TotalSlots ?
+                map.getPlayerColor(sprite.owner) : Chk::PlayerColor(sprite.owner));
+
+            drawUnit(color, static_cast<Sc::Unit::Type>(sprite.type), sprite.xc, sprite.yc);
+        }
+    }
+}
+
+void ClassicMiniMap::renderFog()
+{
+    const auto & fog = map->tileFog;
+}
+
+float ClassicMiniMap::miniMapScale()
+{
+    if ( map.read.dimensions.tileWidth >= map.read.dimensions.tileHeight && map.read.dimensions.tileWidth > 0 )
+    {
+        if ( 128.0/map.read.dimensions.tileWidth > 1 )
+            return (float)(128/map.read.dimensions.tileWidth);
+        else
+            return (float)(128.0/map.read.dimensions.tileWidth);
+    }
+    else
+    {
+        if ( 128.0/map.read.dimensions.tileHeight > 1 && map.read.dimensions.tileHeight > 0 )
+            return (float)(128/map.read.dimensions.tileHeight);
+        else
+            return (float)(128.0/map.read.dimensions.tileHeight);
+    }
+    return 1;
+}
+
 u32 MapGraphics::getPlayerColor(u8 player, bool hasCrgb)
 {
     if ( player >= Sc::Player::TotalSlots )
@@ -3443,4 +3659,9 @@ bool MapGraphics::updateGraphics(u64 msSinceLastUpdate)
             loadSettings.tileset == Sc::Terrain::Tileset::Arctic || loadSettings.tileset == Sc::Terrain::Tileset::Twilight);
 
     return updated || drawHdWater;
+}
+
+ClassicMiniMap MapGraphics::getMiniMapRenderer()
+{
+    return ClassicMiniMap(this->scData, this->map);
 }

@@ -99,7 +99,70 @@ bool Renderer::loadSkinAndTileSet(RenderSkin skin, ScMap & map)
     return true;
 }
 
-std::optional<Renderer::SaveWebpResult> Renderer::saveMapImageAsWebP(ScMap & map, const Options & options, const std::string & outputFilePath)
+std::optional<Renderer::SaveWebpResult> Renderer::saveMiniMapImageAsWebP(ScMap & map, const std::string & outputFilePath, bool dataLoaded)
+{
+    SaveWebpResult result {};
+    auto preResourceLoading = std::chrono::high_resolution_clock::now();
+    if ( dataLoaded || loadSkinAndTileSet(RenderSkin::Classic /* this->renderSkin when supported*/, map) )
+    {
+        auto postResourceLoading = std::chrono::high_resolution_clock::now();
+        result.loadSkinAndTilesetTimeMs = std::chrono::duration_cast<std::chrono::milliseconds>(postResourceLoading-preResourceLoading).count();
+    }
+    
+    if ( outputFilePath.empty() )
+    {
+        std::string genFilePath = getDefaultFolder();
+        switch ( renderSkin )
+        {
+        case RenderSkin::Classic: genFilePath += "Classic"; break;
+        case RenderSkin::RemasteredSD: genFilePath += "SD"; break;
+        case RenderSkin::RemasteredHD2: genFilePath += "HD2"; break;
+        case RenderSkin::RemasteredHD: genFilePath += "HD"; break;
+        case RenderSkin::CarbotHD2: genFilePath += "CarbotHD2"; break;
+        case RenderSkin::CarbotHD: genFilePath += "CarbotHD"; break;
+        case RenderSkin::Unknown: case RenderSkin::Total:
+            throw std::logic_error("saveMiniMapImageAsWebP called without properly initializing the renderer skin!");
+        }
+
+        auto mapFileName = map.getFileName();
+        if ( !mapFileName.empty() )
+        {
+            genFilePath += " - ";
+            if ( genFilePath.size() + mapFileName.size() > 260 )
+                genFilePath += mapFileName.substr(0, 260-mapFileName.size()-5);
+            else
+                genFilePath += mapFileName;
+        }
+        genFilePath += ".mini.webp";
+        std::swap(result.outputFilePath, genFilePath);
+    }
+    else
+        result.outputFilePath = outputFilePath;
+
+    bool success = false;
+    result.renderTimeMs = encodeMiniMapImageAsWebP(map, [&](EncodedWebP & encodedWebP) {
+        result.encodeTimeMs = encodedWebP.encodeTimeMs;
+
+        auto startFileIo = std::chrono::high_resolution_clock::now();
+        auto outputPath = std::filesystem::path(result.outputFilePath);
+        std::ofstream outFile(outputPath, std::ios_base::binary|std::ios_base::out);
+        outFile.write(reinterpret_cast<const char*>(&encodedWebP.data[0]), std::streamsize(encodedWebP.size));
+        encodedWebP = {};
+        success = outFile.good();
+        outFile.close();
+        auto finishFileIo = std::chrono::high_resolution_clock::now();
+
+        result.outFileTimeMs = std::chrono::duration_cast<std::chrono::milliseconds>(finishFileIo-startFileIo).count();
+
+        if ( success && outputFilePath.empty() ) // Auto-gen'd, so log the filePath
+            logger.log(GfxUtilInfo) << "Saved mini map image to: \"" << result.outputFilePath << "\"\n";
+        else if ( !success )
+            logger.error() << "Failed to write mini map image to file: \"" << result.outputFilePath << "\"\n";
+    });
+    return success ? std::optional<SaveWebpResult>(std::move(result)) : std::nullopt;
+}
+
+std::optional<Renderer::SaveWebpResult> Renderer::saveMapImageAsWebP(ScMap & map, const Options & options, const std::string & outputFilePath, const std::string & miniMapOutputFilePath)
 {
     SaveWebpResult result {};
     auto preResourceLoading = std::chrono::high_resolution_clock::now();
@@ -160,6 +223,14 @@ std::optional<Renderer::SaveWebpResult> Renderer::saveMapImageAsWebP(ScMap & map
         else if ( !success )
             logger.error() << "Failed to write map image to file: \"" << result.outputFilePath << "\"\n";
     });
+    if ( options.drawMiniMap )
+    {
+        auto miniMapResult = saveMiniMapImageAsWebP(map, miniMapOutputFilePath, true);
+        result.renderTimeMs += miniMapResult->renderTimeMs;
+        result.encodeTimeMs += miniMapResult->encodeTimeMs;
+        result.outFileTimeMs += miniMapResult->outFileTimeMs;
+        result.miniMapOutputFilePath += miniMapResult->outputFilePath;
+    }
     return success ? std::optional<SaveWebpResult>(std::move(result)) : std::nullopt;
 }
 

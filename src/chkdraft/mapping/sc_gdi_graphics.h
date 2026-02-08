@@ -153,6 +153,8 @@ void DrawSelectingFrame(const WinLib::DeviceContext & dc, Selections & selection
 
 void DrawLocationFrame(const WinLib::DeviceContext & dc, s32 left, s32 top, s32 right, s32 bottom);
 
+void DrawMiniMapBorders(const WinLib::DeviceContext & dc, u16 xOffset, u16 yOffset);
+
 void DrawMiniMap(const WinLib::DeviceContext & dc, const ChkdPalette & palette, u16 xSize, u16 ySize, float scale, GuiMap & map);
 
 void DrawMiniMapBox(const WinLib::DeviceContext & dc, u32 screenLeft, u32 screenTop, u16 screenWidth, u16 screenHeight, u16 xSize, u16 ySize, float scale);
