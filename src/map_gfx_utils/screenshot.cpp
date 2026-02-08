@@ -43,7 +43,7 @@ bool encodePixelDataImage(int width, int height, const std::uint32_t* pixels, En
     auto clipWidth = width == 16384 ? 16383 : width; // 1-off from maximum, clip the last pixel-column
     auto clipHeight = height == 16384 ? 16383 : height; // 1-off from maximum, clip the last pixel-row
     auto start = std::chrono::high_resolution_clock::now();
-    encodedWebP.size = WebPEncodeLosslessBGRA((const std::uint8_t*)pixels, clipWidth, clipHeight, 4*width, &encodedWebP.data);
+    encodedWebP.size = WebPEncodeLosslessRGBA((const std::uint8_t*)pixels, clipWidth, clipHeight, 4*width, &encodedWebP.data);
     auto end = std::chrono::high_resolution_clock::now();
     if ( encodedWebP.size == 0 )
         return false;

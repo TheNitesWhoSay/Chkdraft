@@ -147,8 +147,17 @@ struct Renderer
         auto start = std::chrono::high_resolution_clock::now();
         ClassicMiniMap classicMiniMap(this->scData, map);
         classicMiniMap.render();
+        
+        if ( offsetof(Sc::Terrain::WpeColor, red) == offsetof(Sc::SystemColor, blue) &&
+            offsetof(Sc::Terrain::WpeColor, green) == offsetof(Sc::SystemColor, green) &&
+            offsetof(Sc::Terrain::WpeColor, blue) == offsetof(Sc::SystemColor, red) )
+        {
+            for ( std::uint32_t & pixel : classicMiniMap.pixels )
+                std::swap(((std::uint8_t*)&pixel)[0], ((std::uint8_t*)&pixel)[2]); // red-blue swap
+        }
         for ( std::uint32_t & pixel : classicMiniMap.pixels )
-            ((std::uint8_t*)&pixel)[3] = 255; // Perhaps not ideal, but is fine given the tiny size of minimaps
+            ((std::uint8_t*)&pixel)[3] = 255; // opacity
+
         auto end = std::chrono::high_resolution_clock::now();
 
         EncodedWebP encodedMiniMapImage {};
