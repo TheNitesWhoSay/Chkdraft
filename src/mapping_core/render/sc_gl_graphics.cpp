@@ -1542,8 +1542,8 @@ void ClassicMiniMap::renderUnits()
             u16 placementWidth = dat.starEditPlacementBoxWidth;
             u16 placementHeight = dat.starEditPlacementBoxHeight;
             bool isBuilding = ((dat.flags & Sc::Unit::Flags::Building) == Sc::Unit::Flags::Building);
-            int left = (unitXc - placementWidth/2) / 32;
-            int top = (unitYc - placementHeight/2) / 32;
+            int left = (unitXc - placementWidth/2) * tilePxSize / boxZoom / 32;
+            int top = (unitYc - placementHeight/2) * tilePxSize / boxZoom / 32;
             int width = placementWidth * tilePxSize / boxZoom / 32;
             int height = placementHeight * tilePxSize / boxZoom / 32;
 
@@ -1577,8 +1577,21 @@ void ClassicMiniMap::renderUnits()
             else if ( top + height - 1 >= scaledTileHeight )
                 height = scaledTileHeight - top;
 
-            left = left * tilePxSize / boxZoom;
-            top = top * tilePxSize / boxZoom;
+            float nonStandardScale = scale / float(tilePxSize) * float(boxZoom);
+            switch ( tileWidth ) {
+                case 64: case 96: case 128: case 192: case 256: break;
+                default: { // Non-standard width
+                    left = std::round(left * nonStandardScale);
+                    width = std::round(width * nonStandardScale);
+                } break;
+            }
+            switch ( tileHeight ) {
+                case 64: case 96: case 128: case 192: case 256: break;
+                default: { // Non-standard height
+                    top = std::round(top * nonStandardScale);
+                    height = std::round(height * nonStandardScale);
+                } break;
+            }
 
             for ( int y=top; y<top+height; ++y )
             {
