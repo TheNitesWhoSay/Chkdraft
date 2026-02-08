@@ -42,7 +42,8 @@ std::unique_ptr<ScMap> exampleLoadFromMemory(GfxUtil & gfxUtil, Sc::Terrain::Til
     return scMap;
 }
 
-void testRender(GfxUtil & gfxUtil, Renderer & renderer, Sc::Terrain::Tileset tileset, const std::string & outFilePath)
+void testRender(GfxUtil & gfxUtil, Renderer & renderer, Sc::Terrain::Tileset tileset, const std::string & outFileDirectory,
+    const std::string & mapImageName, const std::string & miniMapImageName)
 {
     Renderer::Options options {
         .drawStars = true,
@@ -50,7 +51,8 @@ void testRender(GfxUtil & gfxUtil, Renderer & renderer, Sc::Terrain::Tileset til
         .drawActors = true,
         .drawFogPlayer = std::nullopt,
         .drawLocations = false,
-        .displayFps = false
+        .displayFps = false,
+        .drawMiniMap = true
     };
 
     auto mapStartTime = std::chrono::high_resolution_clock::now();
@@ -62,7 +64,7 @@ void testRender(GfxUtil & gfxUtil, Renderer & renderer, Sc::Terrain::Tileset til
     auto animTime = map->simulateAnim(52); // Simulate n anim ticks occuring, need at least 52 to extend all the tanks
 
     //renderer.displayInGui(*map, options, true);
-    auto imageTimes = renderer.saveMapImageAsWebP(*map, options, outFilePath);
+    auto imageTimes = renderer.saveMapImageAsWebP(*map, options, outFileDirectory + mapImageName, outFileDirectory + miniMapImageName);
     auto mapFinishTime = std::chrono::high_resolution_clock::now();
     logger.log(GfxUtilInfo) << MapTimings(mapStartTime, mapLoadTime, animTime, imageTimes, mapFinishTime) << std::endl;
 }
@@ -78,9 +80,9 @@ int main()
 
         logger.log(GfxUtilInfo) << "Initial load completed in " << std::chrono::duration_cast<std::chrono::milliseconds>(endInitialLoad-startInitialLoad).count() << "ms" << std::endl;
 
-        testRender(gfxUtil, *renderer, Sc::Terrain::Tileset::SpacePlatform, getDefaultFolder() + "space.webp");
-        testRender(gfxUtil, *renderer, Sc::Terrain::Tileset::Jungle, getDefaultFolder() + "jungle.webp");
-        testRender(gfxUtil, *renderer, Sc::Terrain::Tileset::SpacePlatform, getDefaultFolder() + "space2.webp");
+        testRender(gfxUtil, *renderer, Sc::Terrain::Tileset::SpacePlatform, getDefaultFolder(), "space.webp", "space.mini.webp");
+        testRender(gfxUtil, *renderer, Sc::Terrain::Tileset::Jungle, getDefaultFolder(), "jungle.webp", "jungle.mini.webp");
+        testRender(gfxUtil, *renderer, Sc::Terrain::Tileset::SpacePlatform, getDefaultFolder(), "space2.webp", "space2.mini.webp");
     } catch ( std::exception & e ) {
         logger.fatal("Unhandled exception: ", e);
         throw;

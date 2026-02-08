@@ -1443,7 +1443,7 @@ std::shared_ptr<GraphicsData::RenderData> GraphicsData::load(Sc::Data & scData, 
     return renderData;
 }
 
-ClassicMiniMap::ClassicMiniMap(Sc::Data & scData, Scenario & map) : scData(scData), map(map), pixels(width*height)
+ClassicMiniMap::ClassicMiniMap(const Sc::Data & scData, const Scenario & map) : scData(scData), map(map), pixels(width*height)
 {
     
 }

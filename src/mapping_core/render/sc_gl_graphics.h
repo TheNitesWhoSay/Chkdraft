@@ -842,8 +842,8 @@ struct GraphicsData
 
 struct ClassicMiniMap
 {
-    Sc::Data & scData;
-    Scenario & map; // Reference to the map this instance of graphics renders
+    const Sc::Data & scData;
+    const Scenario & map; // Reference to the map this instance of graphics renders
 
     struct Options
     {
@@ -858,7 +858,7 @@ struct ClassicMiniMap
     std::size_t height = 128;
     std::vector<std::uint32_t> pixels;
 
-    ClassicMiniMap(Sc::Data & scData, Scenario & map);
+    ClassicMiniMap(const Sc::Data & scData, const Scenario & map);
 
     void render();
     void renderTerrain();
