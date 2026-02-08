@@ -19,5 +19,6 @@ struct EncodedWebP {
 };
 
 bool encodeOpenGlViewportImage(int x, int y, int width, int height, EncodedWebP & encodedWebP);
+bool encodePixelDataImage(int width, int height, const std::uint32_t* pixels, EncodedWebP & encodedWebP);
 
 #endif

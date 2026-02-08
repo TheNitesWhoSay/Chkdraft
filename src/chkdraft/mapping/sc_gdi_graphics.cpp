@@ -2353,6 +2353,16 @@ void DrawMiniMapFog(ChkdBitmap & bitmap, const ChkdPalette & palette, s64 bitWid
     }
 }
 
+void DrawMiniMapBorders(const WinLib::DeviceContext & dc, u16 xOffset, u16 yOffset)
+{
+    dc.setPen(PS_SOLID, 0, RGB(255, 255, 255));
+    dc.moveTo(xOffset-1, yOffset-1);
+    dc.lineTo(128-xOffset, yOffset-1);
+    dc.lineTo(128-xOffset, 128-yOffset);
+    dc.lineTo(xOffset-1, 128-yOffset);
+    dc.lineTo(xOffset-1, yOffset-1);
+}
+
 void DrawMiniMap(const WinLib::DeviceContext & dc, const ChkdPalette & palette, u16 xSize, u16 ySize, float scale, GuiMap & map)
 {
     ChkdBitmap graphicBits;
@@ -2371,13 +2381,7 @@ void DrawMiniMap(const WinLib::DeviceContext & dc, const ChkdPalette & palette, 
         DrawMiniMapFog(graphicBits, palette, 128, 128, xSize, ySize, xOffset, yOffset, scale, tiles, map);
     dc.setBitsToDevice(xOffset, yOffset, 128-2*xOffset, 128-2*yOffset, xOffset, yOffset, 0, 128, &graphicBits[0], &bmi);
 
-    // Draw Map Borders
-    dc.setPen(PS_SOLID, 0, RGB(255, 255, 255));
-    dc.moveTo(xOffset-1, yOffset-1);
-    dc.lineTo(128-xOffset, yOffset-1);
-    dc.lineTo(128-xOffset, 128-yOffset);
-    dc.lineTo(xOffset-1, 128-yOffset);
-    dc.lineTo(xOffset-1, yOffset-1);
+    DrawMiniMapBorders(dc, xOffset, yOffset);
 }
 
 void DrawMiniMapBox(const WinLib::DeviceContext & dc, u32 screenLeft, u32 screenTop, u16 screenWidth, u16 screenHeight, u16 xSize, u16 ySize, float scale)

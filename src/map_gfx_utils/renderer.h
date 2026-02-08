@@ -55,6 +55,7 @@ struct Renderer
         std::optional<u8> drawFogPlayer = std::nullopt; // Zero-based
         bool drawLocations = false;
         bool displayFps = false;
+        bool drawMiniMap = false;
     };
 
     Renderer(const Sc::Data & scData);
@@ -141,6 +142,31 @@ struct Renderer
         return std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
     }
 
+    int encodeMiniMapImageAsWebP(ScMap & map, auto use) // Returns the time spent specifically rendering the minimap in ms
+    {
+        auto start = std::chrono::high_resolution_clock::now();
+        ClassicMiniMap classicMiniMap(this->scData, map);
+        classicMiniMap.render();
+        
+        if ( offsetof(Sc::Terrain::WpeColor, red) == offsetof(Sc::SystemColor, blue) &&
+            offsetof(Sc::Terrain::WpeColor, green) == offsetof(Sc::SystemColor, green) &&
+            offsetof(Sc::Terrain::WpeColor, blue) == offsetof(Sc::SystemColor, red) )
+        {
+            for ( std::uint32_t & pixel : classicMiniMap.pixels )
+                std::swap(((std::uint8_t*)&pixel)[0], ((std::uint8_t*)&pixel)[2]); // red-blue swap
+        }
+        for ( std::uint32_t & pixel : classicMiniMap.pixels )
+            ((std::uint8_t*)&pixel)[3] = 255; // opacity
+
+        auto end = std::chrono::high_resolution_clock::now();
+
+        EncodedWebP encodedMiniMapImage {};
+        if ( encodePixelDataImage(classicMiniMap.width, classicMiniMap.height, &classicMiniMap.pixels[0], encodedMiniMapImage) )
+            use(encodedMiniMapImage);
+
+        return std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
+    }
+
     struct SaveWebpResult
     {
         int loadSkinAndTilesetTimeMs = 0;
@@ -148,9 +174,12 @@ struct Renderer
         int encodeTimeMs = 0; // Time for WebPEncodeLosslessRGB https://developers.google.com/speed/webp/docs/api , usually dwarves other times
         int outFileTimeMs = 0; // Time to output to disk
         std::string outputFilePath;
+        std::string miniMapOutputFilePath;
     };
 
-    std::optional<SaveWebpResult> saveMapImageAsWebP(ScMap & map, const Options & options, const std::string & outputFilePath);
+    std::optional<SaveWebpResult> saveMiniMapImageAsWebP(ScMap & map, const std::string & outputFilePath, bool dataLoaded = false);
+
+    std::optional<SaveWebpResult> saveMapImageAsWebP(ScMap & map, const Options & options, const std::string & outputFilePath, const std::string & miniMapOutputFilePath = "");
 
     int getMapImageAsWebP(ScMap & map, const Options & options, EncodedWebP & encodedWebP); // Returns time spend in renderMap(..) in ms
 

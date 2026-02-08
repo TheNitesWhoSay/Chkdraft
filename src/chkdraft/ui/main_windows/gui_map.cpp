@@ -1976,8 +1976,26 @@ void GuiMap::PaintMiniMap(const WinLib::DeviceContext & dc)
         if ( RedrawMiniMap && miniMapBuffer.setBuffer(dc.getWidth(), dc.getHeight(), dc.getDcHandle()) )
         {
             RedrawMiniMap = false;
-            DrawMiniMap(miniMapBuffer, getStaticPalette(), (u16)Scenario::getTileWidth(), (u16)Scenario::getTileHeight(),
-                MiniMapScale((u16)Scenario::getTileWidth(), (u16)Scenario::getTileHeight()), *this);
+
+            if ( this->scrGraphics )
+            {
+                auto miniMapRenderer = this->scrGraphics->getMiniMapRenderer();
+                miniMapRenderer.render();
+
+                float scale = MiniMapScale(read.dimensions.tileWidth, read.dimensions.tileHeight);
+                u16 xOffset = (u16)((128-read.dimensions.tileWidth*scale)/2),
+                    yOffset = (u16)((128-read.dimensions.tileHeight*scale)/2);
+
+                BITMAPINFO bmi = GetBMI(128, 128);
+                miniMapBuffer.setBitsToDevice(xOffset, yOffset, 128-2*xOffset, 128-2*yOffset,
+                    xOffset, yOffset, 0, 128, &miniMapRenderer.pixels[0], &bmi);
+                DrawMiniMapBorders(miniMapBuffer, xOffset, yOffset);
+            }
+            else
+            {
+                DrawMiniMap(miniMapBuffer, getStaticPalette(), (u16)Scenario::getTileWidth(), (u16)Scenario::getTileHeight(),
+                    MiniMapScale((u16)Scenario::getTileWidth(), (u16)Scenario::getTileHeight()), *this);
+            }
         }
 
         if ( miniMapBuffer )
