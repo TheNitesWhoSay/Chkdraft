@@ -3198,7 +3198,7 @@ void Scenario::syncRemasteredBytesToStrings(const std::vector<u8> & stringBytes,
             rawNumStrings = 1024;
         else
         {
-            for ( ; stringId <= size_t(rawNumStrings) && stringId < 1024; ++stringId ) // Any remaining strings are fully out of bounds
+            for ( ; stringId <= size_t(rawNumStrings); ++stringId ) // Any remaining strings are fully out of bounds
                 strings.push_back(std::nullopt);
         }
     }
