@@ -2175,9 +2175,11 @@ bool GuiMap::isValidUnitPlacement(Sc::Unit::Type unitType, s32 x, s32 y)
     if ( unitType >= chkd.scData->units.numUnitTypes() )
         return true; // Extended units placement isn't checked for validity
 
-    bool placementIsBuilding = (chkd.scData->units.getUnit(unitType).flags & Sc::Unit::Flags::Building) == Sc::Unit::Flags::Building;
-    bool placementIsFlyer = (chkd.scData->units.getUnit(unitType).flags & Sc::Unit::Flags::Flyer) == Sc::Unit::Flags::Flyer;
-    bool placementIsResourceDepot = (chkd.scData->units.getUnit(unitType).flags & Sc::Unit::Flags::ResourceDepot) == Sc::Unit::Flags::ResourceDepot;
+    const auto & unitDat = chkd.scData->units.getUnit(unitType);
+    bool placementIsBuilding = (unitDat.flags & Sc::Unit::Flags::Building) == Sc::Unit::Flags::Building;
+    bool placementIsFlyer = (unitDat.flags & Sc::Unit::Flags::Flyer) == Sc::Unit::Flags::Flyer;
+    bool placementIsResourceDepot = (unitDat.flags & Sc::Unit::Flags::ResourceDepot) == Sc::Unit::Flags::ResourceDepot;
+    bool placementIsResource = (unitDat.flags & Sc::Unit::Flags::ResourceContainer) == Sc::Unit::Flags::ResourceContainer;
 
     bool validateOnWalkableTerrain = !placementIsFlyer && !placementIsBuilding && !placeUnitsAnywhere;
     bool validateOnBuildableTerrain = placementIsBuilding && !placeBuildingsAnywhere;
@@ -2185,8 +2187,9 @@ bool GuiMap::isValidUnitPlacement(Sc::Unit::Type unitType, s32 x, s32 y)
     bool validateNotGroundStacked = !placementIsFlyer && !stackUnits;
     bool validateNotAirStacked = placementIsFlyer && !stackAirUnits;
     bool validateNotStacked = validateNotGroundStacked || validateNotAirStacked;
-    bool validateMineralDistance = requireMineralDistance && placementIsResourceDepot;
-    bool performValidation = validatePlacableOnTerrain || validateNotStacked || validateMineralDistance;
+    bool validateDepotMineralDistance = requireMineralDistance && placementIsResourceDepot;
+    bool validateMineralDepotDistance = requireMineralDistance && placementIsResource;
+    bool performValidation = validatePlacableOnTerrain || validateNotStacked || validateDepotMineralDistance || validateMineralDepotDistance;
 
     if ( performValidation )
     {
@@ -2275,7 +2278,7 @@ bool GuiMap::isValidUnitPlacement(Sc::Unit::Type unitType, s32 x, s32 y)
                 }
             }
         }
-        if ( validateMineralDistance )
+        if ( validateDepotMineralDistance )
         {
             const auto & placementDat = chkd.scData->units.getUnit(unitType);
             s32 xPlacementTileMin = std::max(0, (x - s32(placementDat.unitSizeLeft))/32),
@@ -2289,6 +2292,34 @@ bool GuiMap::isValidUnitPlacement(Sc::Unit::Type unitType, s32 x, s32 y)
                 {
                     const auto & unitDat = chkd.scData->units.getUnit(unit.type);
                     bool isResource = (unitDat.flags & Sc::Unit::Flags::ResourceContainer) == Sc::Unit::Flags::ResourceContainer;
+
+                    if ( isResource )
+                    {
+                        s32 xTileMin = std::max(0, (s32(unit.xc) - s32(unitDat.unitSizeLeft))/32-3);
+                        s32 xTileMax = std::min(s32(read.dimensions.tileWidth-1), (s32(unit.xc) + s32(unitDat.unitSizeRight))/32+3);
+                        s32 yTileMin = std::max(0, (s32(unit.yc) - s32(unitDat.unitSizeUp))/32-3);
+                        s32 yTileMax = std::min(s32(read.dimensions.tileHeight-1), (s32(unit.yc) + s32(unitDat.unitSizeDown))/32+3);
+
+                        if ( xPlacementTileMax >= xTileMin && xPlacementTileMin <= xTileMax && yPlacementTileMax >= yTileMin && yPlacementTileMin <= yTileMax )
+                            return false; // Placement violates mineral distance
+                    }
+                }
+            }
+        }
+        else if ( validateMineralDepotDistance )
+        {
+            const auto & placementDat = chkd.scData->units.getUnit(unitType);
+            s32 xPlacementTileMin = std::max(0, (x - s32(placementDat.unitSizeLeft))/32),
+                xPlacementTileMax = std::min(s32(read.dimensions.tileWidth-1), (x + s32(placementDat.unitSizeRight))/32),
+                yPlacementTileMin = std::max(0, (y - s32(placementDat.unitSizeUp))/32),
+                yPlacementTileMax = std::min(s32(read.dimensions.tileHeight-1), (y + s32(placementDat.unitSizeDown))/32);
+
+            for ( const auto & unit : read.units )
+            {
+                if ( unit.type < chkd.scData->units.numUnitTypes() )
+                {
+                    const auto & unitDat = chkd.scData->units.getUnit(unit.type);
+                    bool isResource = (unitDat.flags & Sc::Unit::Flags::ResourceDepot) == Sc::Unit::Flags::ResourceDepot;
 
                     if ( isResource )
                     {
