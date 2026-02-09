@@ -1188,6 +1188,7 @@ namespace Chk {
         PaleYellow = 9,
         Tan = 10,
         Azure_NeutralColor = 11,
+        ResourceColor = 15,
         None = std::numeric_limits<u8>::max()
     });
 

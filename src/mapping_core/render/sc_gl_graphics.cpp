@@ -1534,11 +1534,17 @@ void ClassicMiniMap::renderUnits()
     auto drawUnit = [&](Chk::PlayerColor color, Sc::Unit::Type unitType, u16 unitXc, u16 unitYc)
     {
         if ( color >= Chk::TotalColors )
-            color = Chk::PlayerColor(color % Chk::TotalColors);
+            color = Chk::PlayerColor(color % 16);
 
         if ( unitType < numUnitTypes )
         {
             const Sc::Unit::DatEntry & dat = scData.units.getUnit(unitType);
+            if ( (dat.flags & Sc::Unit::Flags::ResourceContainer) && !(dat.starEditGroupFlags & BIT_4) &&
+                 color == Chk::PlayerColor::Azure_NeutralColor )
+            {
+                color = Chk::PlayerColor::ResourceColor;
+            }
+
             u16 placementWidth = dat.starEditPlacementBoxWidth;
             u16 placementHeight = dat.starEditPlacementBoxHeight;
             bool isBuilding = ((dat.flags & Sc::Unit::Flags::Building) == Sc::Unit::Flags::Building);
