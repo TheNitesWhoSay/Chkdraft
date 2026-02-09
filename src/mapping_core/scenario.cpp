@@ -3194,7 +3194,7 @@ void Scenario::syncRemasteredBytesToStrings(const std::vector<u8> & stringBytes,
             size_t stringOffset = size_t((u32)stringBytes[numBytes-1]);
             loadString(stringBytes, stringOffset, numBytes, strings);
         }
-        for ( ; stringId <= size_t(rawNumStrings); ++stringId ) // Any remaining strings are fully out of bounds
+        for ( ; stringId <= size_t(rawNumStrings) && stringId < 1000000; ++stringId ) // Any remaining strings are fully out of bounds
             strings.push_back(std::nullopt);
     }
     size_t offsetsEnd = sizeof(u32) + sizeof(u32)*rawNumStrings;
