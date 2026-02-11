@@ -970,6 +970,27 @@ void fixTriggerExtensions(::MapData & mapData)
     }
 }
 
+void removeUnusedBlankStrings(::MapData & mapData)
+{
+    std::bitset<Chk::MaxStrings> stringIdUsed {};
+    mapData.markUsedStrings(stringIdUsed, Chk::Scope::Both, Chk::Scope::Game);
+    for ( std::size_t i=0; i<mapData.strings.size(); ++i )
+    {
+        auto & string = mapData.strings[i];
+        if ( string && string->empty() && !stringIdUsed[i] )
+            string = std::nullopt;
+    }
+
+    stringIdUsed.reset();
+    mapData.markUsedStrings(stringIdUsed, Chk::Scope::Both, Chk::Scope::Editor);
+    for ( std::size_t i=0; i<mapData.editorStrings.size(); ++i )
+    {
+        auto & editorString = mapData.editorStrings[i];
+        if ( editorString && editorString->empty() && !stringIdUsed[i] )
+            editorString = std::nullopt;
+    }
+}
+
 bool Scenario::parse(std::istream & is, bool fromMpq)
 {
     auto parsingFailed = [&](const std::string & error)
@@ -1072,6 +1093,7 @@ bool Scenario::parse(std::istream & is, bool fromMpq)
 
     ::fixTerrainToDimensions(mapData);
     ::fixTriggerExtensions(mapData);
+    ::removeUnusedBlankStrings(mapData);
     init_data<false>(mapData);
     if ( this->upgradeKstrToCurrent() ) // Ideally not tracked in the first place but for the excessive amounts of code duplication required
         tracked::clear_history(); // Clear the KSTR upgrade out of hist in the rare case a KSTR upgrade occurs
@@ -1679,98 +1701,7 @@ bool Scenario::stringUsed(size_t stringId, Chk::Scope usageScope, Chk::Scope sto
 
 void Scenario::markUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope usageScope, Chk::Scope storageScope, u32 userMask) const
 {
-    if ( storageScope == Chk::Scope::Game )
-    {
-        bool markGameStrings = (usageScope & Chk::Scope::Game) == Chk::Scope::Game;
-        bool markEditorStrings = (usageScope & Chk::Scope::Editor) == Chk::Scope::Editor;
-
-        if ( markGameStrings )
-        {
-            // {SPRP, Game, u16}: Scenario Name and Scenario Description
-            if ( (userMask & Chk::StringUserFlag::ScenarioName) == Chk::StringUserFlag::ScenarioName && read.scenarioProperties.scenarioNameStringId > 0 )
-                stringIdUsed[read.scenarioProperties.scenarioNameStringId] = true;
-
-            if ( (userMask & Chk::StringUserFlag::ScenarioDescription) == Chk::StringUserFlag::ScenarioDescription && read.scenarioProperties.scenarioDescriptionStringId > 0 )
-                stringIdUsed[read.scenarioProperties.scenarioDescriptionStringId] = true;
-
-            markUsedForceStrings(stringIdUsed, userMask); // {FORC, Game, u16}: Force Names
-            markUsedUnitStrings(stringIdUsed, userMask); // {UNIS, Game, u16}: Unit Names (original); {UNIx, Game, u16}: Unit names (expansion)
-            if ( markEditorStrings ) // {WAV, Editor, u32}: Sound Names; {SWNM, Editor, u32}: Switch Names; {TRIG, Game&Editor, u32}: text message, mission objectives, leaderboard text, ...
-                markUsedTriggerStrings(stringIdUsed, storageScope, userMask); // ... transmission text, next scenario, sound path, comment; {MBRF, Game, u32}: mission objectives, sound, text message
-            else
-                markUsedTriggerGameStrings(stringIdUsed, userMask); // {TRIG, Game&Editor, u32}: text message, mission objectives, leaderboard text, transmission text, next scenario, sound path
-        }
-
-        if ( markEditorStrings )
-        {
-            markUsedLocationStrings(stringIdUsed, userMask); // {MRGN, Editor, u16}: location name
-            if ( !markGameStrings )
-                markUsedTriggerEditorStrings(stringIdUsed, storageScope, userMask); // {WAV, Editor, u32}: Sound Names; {SWNM, Editor, u32}: Switch Names; {TRIG, Game&Editor, u32}: comment
-        }
-    }
-    else if ( storageScope == Chk::Scope::Editor )
-    {
-        if ( (userMask & Chk::StringUserFlag::ScenarioName) == Chk::StringUserFlag::ScenarioName && read.editorStringOverrides.scenarioName != 0 )
-            stringIdUsed[read.editorStringOverrides.scenarioName] = true;
-
-        if ( (userMask & Chk::StringUserFlag::ScenarioDescription) == Chk::StringUserFlag::ScenarioDescription && read.editorStringOverrides.scenarioDescription != 0 )
-            stringIdUsed[read.editorStringOverrides.scenarioDescription] = true;
-
-        if ( (userMask & Chk::StringUserFlag::Force) == Chk::StringUserFlag::Force )
-        {
-            for ( size_t i=0; i<Chk::TotalForces; i++ )
-            {
-                if ( read.editorStringOverrides.forceName[i] != 0 )
-                    stringIdUsed[read.editorStringOverrides.forceName[i]] = true;
-            }
-        }
-
-        if ( (userMask & Chk::StringUserFlag::OriginalUnitSettings) == Chk::StringUserFlag::OriginalUnitSettings )
-        {
-            for ( size_t i=0; i<Sc::Unit::TotalTypes; i++ )
-            {
-                if ( read.editorStringOverrides.unitName[i] != 0 )
-                    stringIdUsed[read.editorStringOverrides.unitName[i]] = true;
-            }
-        }
-
-        if ( (userMask & Chk::StringUserFlag::ExpansionUnitSettings) == Chk::StringUserFlag::ExpansionUnitSettings )
-        {
-            for ( size_t i=0; i<Sc::Unit::TotalTypes; i++ )
-            {
-                if ( read.editorStringOverrides.expUnitName[i] != 0 )
-                    stringIdUsed[read.editorStringOverrides.expUnitName[i]] = true;
-            }
-        }
-
-        if ( (userMask & Chk::StringUserFlag::Sound) == Chk::StringUserFlag::Sound )
-        {
-            for ( size_t i=0; i<Chk::TotalSounds; i++ )
-            {
-                if ( read.editorStringOverrides.soundPath[i] != 0 )
-                    stringIdUsed[read.editorStringOverrides.soundPath[i]] = true;
-            }
-        }
-
-        if ( (userMask & Chk::StringUserFlag::Switch) == Chk::StringUserFlag::Switch )
-        {
-            for ( size_t i=0; i<Chk::TotalSwitches; i++ )
-            {
-                if ( read.editorStringOverrides.switchName[i] != 0 )
-                    stringIdUsed[read.editorStringOverrides.switchName[i]] = true;
-            }
-        }
-
-        if ( (userMask & Chk::StringUserFlag::Location) == Chk::StringUserFlag::Location )
-        {
-            for ( size_t i=0; i<Chk::TotalLocations; i++ )
-            {
-                if ( read.editorStringOverrides.locationName[i] != 0 )
-                    stringIdUsed[read.editorStringOverrides.locationName[i]] = true;
-            }
-        }
-        markUsedTriggerStrings(stringIdUsed, storageScope, userMask);
-    }
+    return read.markUsedStrings(stringIdUsed, usageScope, storageScope, userMask);
 }
 
 void Scenario::markValidUsedStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope usageScope, Chk::Scope storageScope, u32 userMask) const
@@ -3897,14 +3828,7 @@ bool Scenario::forceStringUsed(size_t stringId, u32 userMask) const
 
 void Scenario::markUsedForceStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask) const
 {
-    if ( (userMask & Chk::StringUserFlag::Force) == Chk::StringUserFlag::Force )
-    {
-        for ( size_t i=0; i<Chk::TotalForces; i++ )
-        {
-            if ( read.forces.forceString[i] != Chk::StringId::NoString )
-                stringIdUsed[read.forces.forceString[i]] = true;
-        }
-    }
+    return read.markUsedForceStrings(stringIdUsed, userMask);
 }
 
 void Scenario::remapForceStringIds(const std::map<u32, u32> & stringIdRemappings)
@@ -5016,14 +4940,7 @@ bool Scenario::locationStringUsed(size_t stringId, Chk::Scope storageScope, u32 
 
 void Scenario::markUsedLocationStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask) const
 {
-    if ( (userMask & Chk::StringUserFlag::Location) == Chk::StringUserFlag::Location )
-    {
-        for ( const auto & location : read.locations )
-        {
-            if ( location.stringId > 0 )
-                stringIdUsed[location.stringId] = true;
-        }
-    }
+    return read.markUsedLocationStrings(stringIdUsed, userMask);
 }
 
 void Scenario::remapLocationStringIds(const std::map<u32, u32> & stringIdRemappings)
@@ -6916,22 +6833,7 @@ bool Scenario::unitStringUsed(size_t stringId, u32 userMask) const
 
 void Scenario::markUsedUnitStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask) const
 {
-    if ( (userMask & Chk::StringUserFlag::OriginalUnitSettings) == Chk::StringUserFlag::OriginalUnitSettings )
-    {
-        for ( size_t i=0; i<Sc::Unit::TotalTypes; i++ )
-        {
-            if ( read.origUnitSettings.nameStringId[i] > 0 )
-                stringIdUsed[read.origUnitSettings.nameStringId[i]] = true;
-        }
-    }
-    if ( (userMask & Chk::StringUserFlag::ExpansionUnitSettings) == Chk::StringUserFlag::ExpansionUnitSettings )
-    {
-        for ( size_t i=0; i<Sc::Unit::TotalTypes; i++ )
-        {
-            if ( read.unitSettings.nameStringId[i] > 0 )
-                stringIdUsed[read.unitSettings.nameStringId[i]] = true;
-        }
-    }
+    return read.markUsedUnitStrings(stringIdUsed, userMask);
 }
 
 void Scenario::remapUnitStringIds(const std::map<u32, u32> & stringIdRemappings)
@@ -7655,104 +7557,17 @@ void Scenario::markUsedTriggerLocations(std::bitset<Chk::TotalLocations+1> & loc
 
 void Scenario::markUsedTriggerStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope storageScope, u32 userMask) const
 {
-    if ( storageScope == Chk::Scope::Game )
-    {
-        if ( (userMask & Chk::StringUserFlag::Sound) == Chk::StringUserFlag::Sound )
-        {
-            for ( size_t i=0; i<Chk::TotalSounds; i++ )
-            {
-                if ( read.soundPaths[i] != Chk::StringId::UnusedSound && read.soundPaths[i] < Chk::MaxStrings )
-                    stringIdUsed[read.soundPaths[i]] = true;
-            }
-        }
-
-        if ( (userMask & Chk::StringUserFlag::Switch) == Chk::StringUserFlag::Switch )
-        {
-            for ( size_t i=0; i<Chk::TotalSwitches; i++ )
-            {
-                if ( read.switchNames[i] > 0 && read.switchNames[i] < Chk::MaxStrings )
-                    stringIdUsed[read.switchNames[i]] = true;
-            }
-        }
-
-        if ( (userMask & Chk::StringUserFlag::AnyTrigger) > 0 )
-        {
-            for ( const auto & trigger : read.triggers )
-                trigger.markUsedStrings(stringIdUsed, userMask);
-        }
-
-        if ( (userMask & Chk::StringUserFlag::AnyBriefingTrigger) > 0 )
-        {            
-            for ( const auto & briefingTrigger : read.briefingTriggers )
-                briefingTrigger.markUsedBriefingStrings(stringIdUsed, userMask);
-        }
-    }
-    else if ( storageScope == Chk::Scope::Editor && (userMask & Chk::StringUserFlag::AnyTriggerExtension) > 0 )
-    {        
-        for ( const auto & extendedTrig : read.triggerExtensions )
-        {
-            if ( (userMask & Chk::StringUserFlag::ExtendedTriggerComment) == Chk::StringUserFlag::ExtendedTriggerComment && extendedTrig.commentStringId != Chk::StringId::NoString )
-                stringIdUsed[extendedTrig.commentStringId] = true;
-
-            if ( (userMask & Chk::StringUserFlag::ExtendedTriggerNotes) == Chk::StringUserFlag::ExtendedTriggerNotes && extendedTrig.notesStringId != Chk::StringId::NoString )
-                stringIdUsed[extendedTrig.notesStringId] = true;
-        }
-    }
+    return read.markUsedTriggerStrings(stringIdUsed, storageScope, userMask);
 }
 
 void Scenario::markUsedTriggerGameStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, u32 userMask) const
 {
-    if ( (userMask & Chk::StringUserFlag::AnyTrigger) > 0 )
-    {
-        for ( const auto & trigger : read.triggers )
-            trigger.markUsedGameStrings(stringIdUsed, userMask);
-    }
-    if ( (userMask & Chk::StringUserFlag::AnyBriefingTrigger) > 0 )
-    {
-        for ( const auto & briefingTrigger : read.briefingTriggers )
-            briefingTrigger.markUsedBriefingStrings(stringIdUsed, userMask);
-    }
+    return read.markUsedTriggerGameStrings(stringIdUsed, userMask);
 }
 
 void Scenario::markUsedTriggerEditorStrings(std::bitset<Chk::MaxStrings> & stringIdUsed, Chk::Scope storageScope, u32 userMask) const
 {
-    if ( storageScope == Chk::Scope::Game )
-    {
-        if ( (userMask & Chk::StringUserFlag::Sound) == Chk::StringUserFlag::Sound )
-        {
-            for ( size_t i=0; i<Chk::TotalSounds; i++ )
-            {
-                if ( read.soundPaths[i] != Chk::StringId::UnusedSound && read.soundPaths[i] < Chk::MaxStrings )
-                    stringIdUsed[read.soundPaths[i]] = true;
-            }
-        }
-
-        if ( (userMask & Chk::StringUserFlag::Switch) == Chk::StringUserFlag::Switch )
-        {
-            for ( size_t i=0; i<Chk::TotalSwitches; i++ )
-            {
-                if ( read.switchNames[i] > 0 && read.switchNames[i] < Chk::MaxStrings )
-                    stringIdUsed[read.switchNames[i]] = true;
-            }
-        }
-
-        if ( (userMask & Chk::StringUserFlag::TriggerAction) == Chk::StringUserFlag::TriggerAction )
-        {
-            for ( const auto & trigger : read.triggers )
-                trigger.markUsedCommentStrings(stringIdUsed);
-        }
-    }
-    else if ( storageScope == Chk::Scope::Editor && (userMask & Chk::StringUserFlag::AnyTriggerExtension) > 0 )
-    {
-        for ( const auto & extendedTrig : read.triggerExtensions )
-        {
-            if ( (userMask & Chk::StringUserFlag::ExtendedTriggerComment) == Chk::StringUserFlag::ExtendedTriggerComment && extendedTrig.commentStringId != Chk::StringId::NoString )
-                stringIdUsed[extendedTrig.commentStringId] = true;
-
-            if ( (userMask & Chk::StringUserFlag::ExtendedTriggerNotes) == Chk::StringUserFlag::ExtendedTriggerNotes && extendedTrig.notesStringId != Chk::StringId::NoString )
-                stringIdUsed[extendedTrig.notesStringId] = true;
-        }
-    }
+    return read.markUsedTriggerEditorStrings(stringIdUsed, storageScope, userMask);
 }
 
 void Scenario::remapTriggerLocationIds(const std::map<u32, u32> & locationIdRemappings)
