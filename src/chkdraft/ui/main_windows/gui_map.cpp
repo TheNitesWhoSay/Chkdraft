@@ -832,24 +832,54 @@ void GuiMap::stackSelected()
 
 void GuiMap::createLocation()
 {
-    if ( selections.hasUnits() )
+    bool createForUnit = currLayer == Layer::Units && selections.hasUnits();
+    bool createForSprite = currLayer == Layer::Sprites && selections.hasSprites();
+    if ( createForUnit || createForSprite )
     {
-        auto edit = create_action(ActionDescriptor::CreateLocationForUnit);
-        u16 firstUnitId = selections.getFirstUnit();
-        const Chk::Unit & unit = Scenario::getUnit(firstUnitId);
-        const auto & unitDat = chkd.scData->units.getUnit(unit.type);
+        const auto & unitsDat = chkd.scData->units;
+        const auto & spritesDat = chkd.scData->sprites;
+        auto edit = create_action(createForUnit ? ActionDescriptor::CreateLocationForUnit : ActionDescriptor::CreateLocationForSprite);
+        u16 firstUnitId = createForUnit ? selections.getFirstUnit() : 0;
+        u16 firstSpriteId = createForSprite ? selections.getFirstSprite() : 0;
+        if ( (createForUnit && firstUnitId >= Scenario::numUnits()) || (createForSprite && firstSpriteId >= Scenario::numSprites()) )
+            return;
+
+        const Chk::Unit* unit = createForUnit ? &Scenario::getUnit(firstUnitId) : nullptr;
+        const Chk::Sprite* sprite = createForSprite ? &Scenario::getSprite(firstSpriteId) : nullptr;
+        const Sc::Unit::DatEntry* unitDat = nullptr;
+
+        if ( createForUnit )
+        {
+            if ( unit->type < unitsDat.numUnitTypes() )
+                unitDat = &unitsDat.getUnit(unit->type);
+            else
+                unitDat = &unitsDat.getUnit(Sc::Unit::Type(0));
+        }
+        else if ( createForSprite )
+        {
+            if ( sprite->isUnit() )
+            {
+                if ( sprite->type < unitsDat.numUnitTypes() )
+                    unitDat = &unitsDat.getUnit(Sc::Unit::Type(sprite->type));
+                else
+                    unitDat = &unitsDat.getUnit(Sc::Unit::Type(0));
+            }
+            else // Pure sprite, pure sprites do not have fixed bounding boxes
+                return;
+        }
+        
         Chk::Location newLocation {};
-        newLocation.left = unit.xc - unitDat.unitSizeLeft;
-        newLocation.top = unit.yc - unitDat.unitSizeUp;
-        newLocation.right = unit.xc + unitDat.unitSizeRight;
-        newLocation.bottom = unit.yc + unitDat.unitSizeDown;
+        newLocation.left = (createForUnit ? unit->xc : sprite->xc) - unitDat->unitSizeLeft;
+        newLocation.top = (createForUnit ? unit->yc : sprite->yc) - unitDat->unitSizeUp;
+        newLocation.right = (createForUnit ? unit->xc : sprite->xc) + unitDat->unitSizeRight;
+        newLocation.bottom = (createForUnit ? unit->yc : sprite->yc) + unitDat->unitSizeDown;
         newLocation.elevationFlags = 0;
         selections.setDrags(-1, -1);
 
         size_t newLocationId = Scenario::addLocation(newLocation);
         if ( newLocationId != Chk::LocationId::NoLocation )
         {
-            CM->setLayer(Layer::Locations);
+            chkd.maps.ChangeLayer(Layer::Locations);
             Scenario::setLocationName<RawString>(newLocationId, "Location " + std::to_string(newLocationId), Chk::Scope::Game);
             Scenario::deleteUnusedStrings(Chk::Scope::Both);
             selections.selectLocation(u16(newLocationId));
@@ -865,24 +895,54 @@ void GuiMap::createLocation()
 
 void GuiMap::createInvertedLocation()
 {
-    if ( selections.hasUnits() )
+    bool createForUnit = currLayer == Layer::Units && selections.hasUnits();
+    bool createForSprite = currLayer == Layer::Sprites && selections.hasSprites();
+    if ( createForUnit || createForSprite )
     {
-        auto edit = create_action(ActionDescriptor::CreateInvertedLocationForUnit);
-        u16 firstUnitId = selections.getFirstUnit();
-        const Chk::Unit & unit = Scenario::getUnit(firstUnitId);
-        const auto & unitDat = chkd.scData->units.getUnit(unit.type);
+        const auto & unitsDat = chkd.scData->units;
+        const auto & spritesDat = chkd.scData->sprites;
+        auto edit = create_action(createForUnit ? ActionDescriptor::CreateInvertedLocationForUnit : ActionDescriptor::CreateInvertedLocationForSprite);
+        u16 firstUnitId = createForUnit ? selections.getFirstUnit() : 0;
+        u16 firstSpriteId = createForSprite ? selections.getFirstSprite() : 0;
+        if ( (createForUnit && firstUnitId >= Scenario::numUnits()) || (createForSprite && firstSpriteId >= Scenario::numSprites()) )
+            return;
+
+        const Chk::Unit* unit = createForUnit ? &Scenario::getUnit(firstUnitId) : nullptr;
+        const Chk::Sprite* sprite = createForSprite ? &Scenario::getSprite(firstSpriteId) : nullptr;
+        const Sc::Unit::DatEntry* unitDat = nullptr;
+
+        if ( createForUnit )
+        {
+            if ( unit->type < unitsDat.numUnitTypes() )
+                unitDat = &unitsDat.getUnit(unit->type);
+            else
+                unitDat = &unitsDat.getUnit(Sc::Unit::Type(0));
+        }
+        else if ( createForSprite )
+        {
+            if ( sprite->isUnit() )
+            {
+                if ( sprite->type < unitsDat.numUnitTypes() )
+                    unitDat = &unitsDat.getUnit(Sc::Unit::Type(sprite->type));
+                else
+                    unitDat = &unitsDat.getUnit(Sc::Unit::Type(0));
+            }
+            else // Pure sprite, pure sprites do not have fixed bounding boxes
+                return;
+        }
+
         Chk::Location newLocation {};
-        newLocation.left = unit.xc + unitDat.unitSizeRight;
-        newLocation.top = unit.yc + unitDat.unitSizeDown;
-        newLocation.right = unit.xc - unitDat.unitSizeLeft;
-        newLocation.bottom = unit.yc - unitDat.unitSizeUp;
+        newLocation.left = (createForUnit ? unit->xc : sprite->xc) + unitDat->unitSizeRight;
+        newLocation.top = (createForUnit ? unit->yc : sprite->yc) + unitDat->unitSizeDown;
+        newLocation.right = (createForUnit ? unit->xc : sprite->xc) - unitDat->unitSizeLeft;
+        newLocation.bottom = (createForUnit ? unit->yc : sprite->yc) - unitDat->unitSizeUp;
         newLocation.elevationFlags = 0;
         selections.setDrags(-1, -1);
 
         size_t newLocationId = Scenario::addLocation(newLocation);
         if ( newLocationId != Chk::LocationId::NoLocation )
         {
-            CM->setLayer(Layer::Locations);
+            chkd.maps.ChangeLayer(Layer::Locations);
             Scenario::setLocationName<RawString>(newLocationId, "Location " + std::to_string(newLocationId), Chk::Scope::Game);
             Scenario::deleteUnusedStrings(Chk::Scope::Both);
             selections.selectLocation(u16(newLocationId));
@@ -898,19 +958,51 @@ void GuiMap::createInvertedLocation()
 
 void GuiMap::createMobileInvertedLocation()
 {
-    if ( selections.hasUnits() )
+    bool createForUnit = currLayer == Layer::Units && selections.hasUnits();
+    bool createForSprite = currLayer == Layer::Sprites && selections.hasSprites();
+    if ( createForUnit || createForSprite )
     {
-        auto edit = create_action(ActionDescriptor::CreateMobileInvertedLocationForUnit);
-        u16 firstUnitId = selections.getFirstUnit();
-        const Chk::Unit & unit = Scenario::getUnit(firstUnitId);
-        const auto & unitDat = chkd.scData->units.getUnit(unit.type);
+        const auto & unitsDat = chkd.scData->units;
+        const auto & spritesDat = chkd.scData->sprites;
+        auto edit = create_action(createForUnit ? ActionDescriptor::CreateMobileInvertedLocationForUnit :
+            ActionDescriptor::CreateMobileInvertedLocationForSprite);
+        u16 firstUnitId = createForUnit ? selections.getFirstUnit() : 0;
+        u16 firstSpriteId = createForSprite ? selections.getFirstSprite() : 0;
+        if ( (createForUnit && firstUnitId >= Scenario::numUnits()) || (createForSprite && firstSpriteId >= Scenario::numSprites()) )
+            return;
 
-        s32 width = (unitDat.unitSizeRight > unitDat.unitSizeLeft ? -1 : 0) - 2*std::min(unitDat.unitSizeLeft, unitDat.unitSizeRight);
-        s32 height = (unitDat.unitSizeDown > unitDat.unitSizeUp ? -1 : 0) - 2*std::min(unitDat.unitSizeUp, unitDat.unitSizeDown);
+        const Chk::Unit* unit = createForUnit ? &Scenario::getUnit(firstUnitId) : nullptr;
+        const Chk::Sprite* sprite = createForSprite ? &Scenario::getSprite(firstSpriteId) : nullptr;
+        const Sc::Unit::DatEntry* unitDat = nullptr;
+
+        if ( createForUnit )
+        {
+            if ( unit->type < unitsDat.numUnitTypes() )
+                unitDat = &unitsDat.getUnit(unit->type);
+            else
+                unitDat = &unitsDat.getUnit(Sc::Unit::Type(0));
+        }
+        else if ( createForSprite )
+        {
+            if ( sprite->isUnit() )
+            {
+                if ( sprite->type < unitsDat.numUnitTypes() )
+                    unitDat = &unitsDat.getUnit(Sc::Unit::Type(sprite->type));
+                else
+                    unitDat = &unitsDat.getUnit(Sc::Unit::Type(0));
+            }
+            else // Pure sprite, pure sprites do not have fixed bounding boxes
+                return;
+        }
+
+        s32 width = (unitDat->unitSizeRight > unitDat->unitSizeLeft ? -1 : 0) -
+            2*std::min(unitDat->unitSizeLeft, unitDat->unitSizeRight);
+        s32 height = (unitDat->unitSizeDown > unitDat->unitSizeUp ? -1 : 0) -
+            2*std::min(unitDat->unitSizeUp, unitDat->unitSizeDown);
 
         Chk::Location newLocation {};
-        newLocation.right = u16(s32(unit.xc) + width/2);
-        newLocation.bottom = u16(s32(unit.yc) + height/2);
+        newLocation.right = u16(s32(createForUnit ? unit->xc : sprite->xc) + width/2);
+        newLocation.bottom = u16(s32(createForUnit ? unit->yc : sprite->yc) + height/2);
         newLocation.left = newLocation.right - width;
         newLocation.top = newLocation.bottom - height;
         newLocation.elevationFlags = 0;
@@ -919,7 +1011,7 @@ void GuiMap::createMobileInvertedLocation()
         size_t newLocationId = Scenario::addLocation(newLocation);
         if ( newLocationId != Chk::LocationId::NoLocation )
         {
-            CM->setLayer(Layer::Locations);
+            chkd.maps.ChangeLayer(Layer::Locations);
             Scenario::setLocationName<RawString>(newLocationId, "Location " + std::to_string(newLocationId), Chk::Scope::Game);
             Scenario::deleteUnusedStrings(Chk::Scope::Both);
             selections.selectLocation(u16(newLocationId));
