@@ -990,8 +990,8 @@ namespace Chk {
         };
 
         u32 locationId = 0; // 1 based, is also the bitmask for deaths
-        u32 stringId;
-        u32 soundStringId;
+        u32 stringId = 0;
+        u32 soundStringId = 0;
         u32 time = 0;
         u32 group = 0; // Group/ZeroBasedBriefingSlot
         u32 number = 0; // Amount/Group2/LocDest/UnitPropNum/ScriptNum/SwitchIndex
