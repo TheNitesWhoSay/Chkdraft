@@ -417,18 +417,18 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
         auto copyArg = [&](Chk::Action::ArgField argField, const Chk::Action & srcAction) {
             switch ( argField )
             {
-                case Chk::Action::ArgField::LocationId: editAction.locationId = srcAction.locationId; break;
-                case Chk::Action::ArgField::StringId: editAction.stringId = srcAction.stringId; break;
-                case Chk::Action::ArgField::SoundStringId: editAction.soundStringId = srcAction.soundStringId; break;
-                case Chk::Action::ArgField::Time: editAction.time = srcAction.time; break;
-                case Chk::Action::ArgField::Group: editAction.group = srcAction.group; break;
-                case Chk::Action::ArgField::Number: editAction.number = srcAction.number; break;
-                case Chk::Action::ArgField::Type: editAction.type = srcAction.type; break;
-                case Chk::Action::ArgField::ActionType: editAction.actionType = srcAction.actionType; break;
-                case Chk::Action::ArgField::Type2: editAction.type2 = srcAction.type2; break;
-                case Chk::Action::ArgField::Flags: editAction.flags = srcAction.flags; break;
-                case Chk::Action::ArgField::Padding: editAction.padding = srcAction.padding; break;
-                case Chk::Action::ArgField::MaskFlag: editAction.maskFlag = srcAction.maskFlag; break;
+                case Chk::Action::ArgField::LocationId: if ( action.locationId != srcAction.locationId) editAction.locationId = srcAction.locationId; break;
+                case Chk::Action::ArgField::StringId: if ( action.stringId != srcAction.stringId) editAction.stringId = srcAction.stringId; break;
+                case Chk::Action::ArgField::SoundStringId: if ( action.soundStringId != srcAction.soundStringId) editAction.soundStringId = srcAction.soundStringId; break;
+                case Chk::Action::ArgField::Time: if ( action.time != srcAction.time) editAction.time = srcAction.time; break;
+                case Chk::Action::ArgField::Group: if ( action.group != srcAction.group) editAction.group = srcAction.group; break;
+                case Chk::Action::ArgField::Number: if ( action.number != srcAction.number) editAction.number = srcAction.number; break;
+                case Chk::Action::ArgField::Type: if ( action.type != srcAction.type) editAction.type = srcAction.type; break;
+                case Chk::Action::ArgField::ActionType: if ( action.actionType != srcAction.actionType) editAction.actionType = srcAction.actionType; break;
+                case Chk::Action::ArgField::Type2: if ( action.type2 != srcAction.type2) editAction.type2 = srcAction.type2; break;
+                case Chk::Action::ArgField::Flags: if ( action.flags != srcAction.flags) editAction.flags = srcAction.flags; break;
+                case Chk::Action::ArgField::Padding: if ( action.padding != srcAction.padding) editAction.padding = srcAction.padding; break;
+                case Chk::Action::ArgField::MaskFlag: if ( action.maskFlag != srcAction.maskFlag) editAction.maskFlag = srcAction.maskFlag; break;
             }
         };
 
@@ -444,24 +444,34 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
 
                     if ( newStringId != Chk::StringId::NoString )
                     {
-                        if ( argType == Chk::Action::ArgType::String )
+                        if ( argType == Chk::Action::ArgType::String && action.stringId != (u32)newStringId )
+                        {
                             editAction.stringId = (u32)newStringId;
-                        else if ( argType == Chk::Action::ArgType::Sound )
+                            CM->deleteUnusedStrings(Chk::Scope::Both);
+                            madeChange = true;
+                        }
+                        else if ( argType == Chk::Action::ArgType::Sound && action.soundStringId != (u32)newStringId )
+                        {
                             editAction.soundStringId = (u32)newStringId;
-                
-                        CM->deleteUnusedStrings(Chk::Scope::Both);
-                        madeChange = true;
+                            CM->deleteUnusedStrings(Chk::Scope::Both);
+                            madeChange = true;
+                        }
                     }
                 }
                 else
                 {
-                    if ( argType == Chk::Action::ArgType::String )
+                    if ( argType == Chk::Action::ArgType::String && action.stringId != (u32)suggestion.data.value() )
+                    {
                         editAction.stringId = (u32)suggestion.data.value();
-                    else if ( argType == Chk::Action::ArgType::Sound )
+                        CM->deleteUnusedStrings(Chk::Scope::Both);
+                        madeChange = true;
+                    }
+                    else if ( argType == Chk::Action::ArgType::Sound && action.soundStringId != (u32)suggestion.data.value() )
+                    {
                         editAction.soundStringId = (u32)suggestion.data.value();
-                
-                    CM->deleteUnusedStrings(Chk::Scope::Both);
-                    madeChange = true;
+                        CM->deleteUnusedStrings(Chk::Scope::Both);
+                        madeChange = true;
+                    }
                 }
             }
             else
@@ -472,13 +482,18 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
 
                 if ( newStringId != Chk::StringId::NoString )
                 {
-                    if ( argType == Chk::Action::ArgType::String )
+                    if ( argType == Chk::Action::ArgType::String && action.stringId != (u32)newStringId )
+                    {
                         editAction.stringId = (u32)newStringId;
-                    else if ( argType == Chk::Action::ArgType::Sound )
+                        CM->deleteUnusedStrings(Chk::Scope::Both);
+                        madeChange = true;
+                    }
+                    else if ( argType == Chk::Action::ArgType::Sound && action.soundStringId != (u32)newStringId )
+                    {
                         editAction.soundStringId = (u32)newStringId;
-                    
-                    CM->deleteUnusedStrings(Chk::Scope::Both);
-                    madeChange = true;
+                        CM->deleteUnusedStrings(Chk::Scope::Both);
+                        madeChange = true;
+                    }
                 }
             }
         }
@@ -534,7 +549,7 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
                 }
             }
 
-            if ( newScriptNum != 0 )
+            if ( newScriptNum != 0 && action.number != newScriptNum )
             {
                 editAction.number = newScriptNum;
                 madeChange = true;
@@ -548,18 +563,18 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
                 madeChange = true;
                 switch ( argument.field )
                 {
-                    case Chk::Action::ArgField::LocationId: editAction.locationId = suggestion.data.value(); break;
-                    case Chk::Action::ArgField::StringId: editAction.stringId = suggestion.data.value(); break;
-                    case Chk::Action::ArgField::SoundStringId: editAction.soundStringId = suggestion.data.value(); break;
-                    case Chk::Action::ArgField::Time: editAction.time = suggestion.data.value(); break;
-                    case Chk::Action::ArgField::Group: editAction.group = suggestion.data.value(); break;
-                    case Chk::Action::ArgField::Number: editAction.number = suggestion.data.value(); break;
-                    case Chk::Action::ArgField::Type: editAction.type = u16(suggestion.data.value()); break;
-                    case Chk::Action::ArgField::ActionType: editAction.actionType = Chk::Action::Type(suggestion.data.value()); break;
-                    case Chk::Action::ArgField::Type2: editAction.type2 = u8(suggestion.data.value()); break;
-                    case Chk::Action::ArgField::Flags: editAction.flags = u8(suggestion.data.value()); break;
-                    case Chk::Action::ArgField::Padding: editAction.padding = u8(suggestion.data.value()); break;
-                    case Chk::Action::ArgField::MaskFlag: editAction.maskFlag = Chk::Action::MaskFlag(suggestion.data.value()); break;
+                    case Chk::Action::ArgField::LocationId: if ( action.locationId != suggestion.data.value() ) editAction.locationId = suggestion.data.value(); break;
+                    case Chk::Action::ArgField::StringId: if ( action.stringId != suggestion.data.value() ) editAction.stringId = suggestion.data.value(); break;
+                    case Chk::Action::ArgField::SoundStringId: if ( action.soundStringId != suggestion.data.value() ) editAction.soundStringId = suggestion.data.value(); break;
+                    case Chk::Action::ArgField::Time: if ( action.time != suggestion.data.value() ) editAction.time = suggestion.data.value(); break;
+                    case Chk::Action::ArgField::Group: if ( action.group != suggestion.data.value() ) editAction.group = suggestion.data.value(); break;
+                    case Chk::Action::ArgField::Number: if ( action.number != suggestion.data.value() ) editAction.number = suggestion.data.value(); break;
+                    case Chk::Action::ArgField::Type: if ( action.type != suggestion.data.value() ) editAction.type = u16(suggestion.data.value()); break;
+                    case Chk::Action::ArgField::ActionType: if ( action.actionType != suggestion.data.value() ) editAction.actionType = Chk::Action::Type(suggestion.data.value()); break;
+                    case Chk::Action::ArgField::Type2: if ( action.type2 != suggestion.data.value() ) editAction.type2 = u8(suggestion.data.value()); break;
+                    case Chk::Action::ArgField::Flags: if ( action.flags != suggestion.data.value() ) editAction.flags = u8(suggestion.data.value()); break;
+                    case Chk::Action::ArgField::Padding: if ( action.padding != suggestion.data.value() ) editAction.padding = u8(suggestion.data.value()); break;
+                    case Chk::Action::ArgField::MaskFlag: if ( action.maskFlag != suggestion.data.value() ) editAction.maskFlag = Chk::Action::MaskFlag(suggestion.data.value()); break;
                     default: madeChange = false; logger.error() << "Unknown action arg field encountered" << std::endl; break;
                 }
             }

@@ -342,21 +342,22 @@ void TrigConditionsWindow::UpdateConditionArg(u8 conditionNum, u8 argNum, const 
         Chk::Condition::Argument argument = Chk::Condition::getClassicArg(trig.condition(conditionNum).conditionType, argNum);
 
         auto editedCondition = CM->editTrigger(trigIndex).editCondition(conditionNum);
+        const auto & condition = editedCondition.read;
         auto editCondition = editedCondition.edit;
 
         if ( suggestion.data )
         {
             switch ( argument.field )
             {
-                case Chk::Condition::ArgField::LocationId: editCondition.locationId = suggestion.data.value(); break;
-                case Chk::Condition::ArgField::Player: editCondition.player = suggestion.data.value(); break;
-                case Chk::Condition::ArgField::Amount: editCondition.amount = suggestion.data.value(); break;
-                case Chk::Condition::ArgField::UnitType: editCondition.unitType = Sc::Unit::Type(suggestion.data.value()); break;
-                case Chk::Condition::ArgField::Comparison: editCondition.comparison = Chk::Condition::Comparison(suggestion.data.value()); break;
-                case Chk::Condition::ArgField::ConditionType: editCondition.conditionType = Chk::Condition::Type(suggestion.data.value()); break;
-                case Chk::Condition::ArgField::TypeIndex: editCondition.typeIndex = u8(suggestion.data.value()); break;
-                case Chk::Condition::ArgField::Flags: editCondition.flags = u8(suggestion.data.value()); break;
-                case Chk::Condition::ArgField::MaskFlag: editCondition.maskFlag = Chk::Condition::MaskFlag(suggestion.data.value()); break;
+                case Chk::Condition::ArgField::LocationId: if ( condition.locationId != suggestion.data.value() ) editCondition.locationId = suggestion.data.value(); break;
+                case Chk::Condition::ArgField::Player: if ( condition.player != suggestion.data.value() ) editCondition.player = suggestion.data.value(); break;
+                case Chk::Condition::ArgField::Amount: if ( condition.amount != suggestion.data.value() ) editCondition.amount = suggestion.data.value(); break;
+                case Chk::Condition::ArgField::UnitType: if ( condition.unitType != suggestion.data.value() ) editCondition.unitType = Sc::Unit::Type(suggestion.data.value()); break;
+                case Chk::Condition::ArgField::Comparison: if ( condition.comparison != suggestion.data.value() ) editCondition.comparison = Chk::Condition::Comparison(suggestion.data.value()); break;
+                case Chk::Condition::ArgField::ConditionType: if ( condition.conditionType != suggestion.data.value() ) editCondition.conditionType = Chk::Condition::Type(suggestion.data.value()); break;
+                case Chk::Condition::ArgField::TypeIndex: if ( condition.typeIndex != suggestion.data.value() ) editCondition.typeIndex = u8(suggestion.data.value()); break;
+                case Chk::Condition::ArgField::Flags: if ( condition.flags != suggestion.data.value() ) editCondition.flags = u8(suggestion.data.value()); break;
+                case Chk::Condition::ArgField::MaskFlag: if ( condition.maskFlag != suggestion.data.value() ) editCondition.maskFlag = Chk::Condition::MaskFlag(suggestion.data.value()); break;
                 default: logger.error() << "Unknown condition arg field encountered" << std::endl; break;
             }
 
@@ -368,15 +369,15 @@ void TrigConditionsWindow::UpdateConditionArg(u8 conditionNum, u8 argNum, const 
             auto copyArg = [&](Chk::Condition::ArgField argField, const Chk::Condition & srcCondition) {
                 switch ( argField )
                 {
-                    case Chk::Condition::ArgField::LocationId: editCondition.locationId = srcCondition.locationId; break;
-                    case Chk::Condition::ArgField::Player: editCondition.player = srcCondition.player; break;
-                    case Chk::Condition::ArgField::Amount: editCondition.amount = srcCondition.amount; break;
-                    case Chk::Condition::ArgField::UnitType: editCondition.unitType = srcCondition.unitType; break;
-                    case Chk::Condition::ArgField::Comparison: editCondition.comparison = srcCondition.comparison; break;
-                    case Chk::Condition::ArgField::ConditionType: editCondition.conditionType = srcCondition.conditionType; break;
-                    case Chk::Condition::ArgField::TypeIndex: editCondition.typeIndex = srcCondition.typeIndex; break;
-                    case Chk::Condition::ArgField::Flags: editCondition.flags = srcCondition.flags; break;
-                    case Chk::Condition::ArgField::MaskFlag: editCondition.maskFlag = srcCondition.maskFlag; break;
+                    case Chk::Condition::ArgField::LocationId: if ( condition.locationId != srcCondition.locationId ) editCondition.locationId = srcCondition.locationId; break;
+                    case Chk::Condition::ArgField::Player: if ( condition.player != srcCondition.player ) editCondition.player = srcCondition.player; break;
+                    case Chk::Condition::ArgField::Amount: if ( condition.amount != srcCondition.amount ) editCondition.amount = srcCondition.amount; break;
+                    case Chk::Condition::ArgField::UnitType: if ( condition.unitType != srcCondition.unitType ) editCondition.unitType = srcCondition.unitType; break;
+                    case Chk::Condition::ArgField::Comparison: if ( condition.comparison != srcCondition.comparison ) editCondition.comparison = srcCondition.comparison; break;
+                    case Chk::Condition::ArgField::ConditionType: if ( condition.conditionType != srcCondition.conditionType ) editCondition.conditionType = srcCondition.conditionType; break;
+                    case Chk::Condition::ArgField::TypeIndex: if ( condition.typeIndex != srcCondition.typeIndex ) editCondition.typeIndex = srcCondition.typeIndex; break;
+                    case Chk::Condition::ArgField::Flags: if ( condition.flags != srcCondition.flags ) editCondition.flags = srcCondition.flags; break;
+                    case Chk::Condition::ArgField::MaskFlag: if ( condition.maskFlag != srcCondition.maskFlag ) editCondition.maskFlag = srcCondition.maskFlag; break;
                 }
             };
 
