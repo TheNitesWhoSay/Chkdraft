@@ -1423,7 +1423,9 @@ bool Scenario::changeVersionTo(Chk::Version version, bool lockAnywhere, bool aut
         addSaveSection(::MapData::Section{SectionName::UPGx});
         addSaveSection(::MapData::Section{SectionName::TECx});
 
-        if ( !hasSection(SectionName::COLR) )
+        if ( version >= Chk::Version::StarCraft_Remastered )
+            upgradeToRemasteredColors();
+        else if ( !hasSection(SectionName::COLR) )
         {
             addSaveSection(::MapData::Section{SectionName::COLR});
             for ( size_t i=size_t(Chk::PlayerColor::Red); i<=Chk::PlayerColor::Yellow; ++i )
@@ -3746,14 +3748,17 @@ void Scenario::setPlayerColor(size_t slotIndex, Chk::PlayerColor color)
     auto edit = create_action(ActionDescriptor::SetPlayerColor);
     if ( slotIndex < Sc::Player::TotalSlots )
     {
+        edit->playerColors[slotIndex] = color;
+        if ( color > Chk::PlayerColor::Azure_NeutralColor && this->isRemastered() )
+            upgradeToRemasteredColors();
+
         if ( isUsingRemasteredColors() )
         {
             edit->customColors.playerSetting[slotIndex] = Chk::PlayerColorSetting::UseId;
             edit->customColors.playerColor[slotIndex][0] = u8(0); // R
             edit->customColors.playerColor[slotIndex][1] = u8(0); // G
-            edit->customColors.playerColor[slotIndex][2] = read.playerColors[slotIndex]; // B (or color index)
+            edit->customColors.playerColor[slotIndex][2] = color; // B (or color index)
         }
-        edit->playerColors[slotIndex] = color;
     }
     else
         throw std::out_of_range(std::string("SlotIndex: ") + std::to_string((u32)slotIndex) + " is out of range for the COLR section!");
