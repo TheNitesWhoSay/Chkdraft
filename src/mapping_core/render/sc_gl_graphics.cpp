@@ -1129,8 +1129,43 @@ void GraphicsData::Data::Skin::loadClassicImages(Sc::Data & scData)
 {
     if ( !tunitPalette )
     {
-        tunitPalette.emplace();
-        std::memcpy(&(tunitPalette.value())[0], &scData.tunit.rgbaPalette[0], 4*128);
+        tunitPalette.emplace(); // tunit.pcx holds 16 colors, but starcraft only uses the first 12 for unit colors
+        std::memcpy(&(tunitPalette.value())[0], &scData.tunit.rgbaPalette[0], 4*8*12); // 4 bytes-per-color, 8 color-gradients-per-player, 12 players
+
+        std::array<u32, 10> remasteredBaseColors {
+            // AABBGGRR
+            0x0074A47C, // 12
+            0x007290B8, // 13
+            0x0000E4FC, // 14
+            0x00FFC4E4, // 15
+            0x00808000, // 16
+            0x00D2F53C, // 17
+            0x00000080, // 18
+            0x00F032E6, // 19
+            0x00808080, // 20
+            0x003C3C3C  // 21
+        };
+        constexpr std::size_t gradientsPerColor = 8;
+        std::array<u8, gradientsPerColor> gradients {255, 222, 189, 156, 124, 91, 58, 25};
+        std::array<u32, remasteredBaseColors.size()*gradientsPerColor> remasteredGradientColors {};
+        for ( std::size_t baseColorIndex=0; baseColorIndex<remasteredBaseColors.size(); ++baseColorIndex )
+        {
+            u32 remasteredBaseColor = remasteredBaseColors[baseColorIndex];
+            const u8* baseColorPtr = reinterpret_cast<u8*>(&remasteredBaseColor);
+            for ( std::size_t gradientIndex = 0; gradientIndex < gradientsPerColor; ++gradientIndex )
+            {
+                u32 gradientColor = 0;
+                u8* gradientColorPtr = reinterpret_cast<u8*>(&gradientColor);
+                u8 gradient = gradients[gradientIndex];
+                for ( std::size_t i=0; i<4; ++i )
+                    gradientColorPtr[i] = baseColorPtr[i]*gradient/255;
+
+                std::swap(gradientColorPtr[0], gradientColorPtr[2]);
+                remasteredGradientColors[baseColorIndex*gradientsPerColor+gradientIndex] = gradientColor;
+            }
+        }
+        std::memcpy(&(tunitPalette.value())[96], &remasteredGradientColors[0], 4*8*remasteredBaseColors.size());
+
         tunitPalette->update();
     }
 
@@ -1667,6 +1702,19 @@ float ClassicMiniMap::miniMapScale()
 
 u32 MapGraphics::getPlayerColor(u8 player, bool hasCrgb)
 {
+    constexpr std::array<u32, 10> remasteredColors { // 0xAABBGGRR
+        0xFF7CA474, // 12
+        0xFFB89072, // 13
+        0xFFFCE400, // 14
+        0xFFE4C4FF, // 15
+        0xFF008080, // 16
+        0xFF3CF5D2, // 17
+        0xFF800000, // 18
+        0xFFE632F0, // 19
+        0xFF808080, // 20
+        0xFF3C3C3C, // 21
+    };
+
     if ( player >= Sc::Player::TotalSlots )
         return (u32 &)(scData.tunit.rgbaPalette[8*size_t(player) < scData.tunit.rgbaPalette.size() ? 8*size_t(player) : 8*size_t(player)%scData.tunit.rgbaPalette.size()]);
     else if ( hasCrgb && map->version >= Chk::Version::StarCraft_Remastered )
@@ -1679,7 +1727,13 @@ u32 MapGraphics::getPlayerColor(u8 player, bool hasCrgb)
                 return u32(0xFF000000) | (u32(customColor[2]) << 16) | (u32(customColor[1]) << 8) | u32(customColor[0]);
             }
             case 3: // Blue color
-                return (u32 &)(scData.tunit.rgbaPalette[8*std::size_t(map->customColors.playerColor[player][2])]);
+            {
+                std::size_t color = map->customColors.playerColor[player][2];
+                if ( color <= Chk::PlayerColor::Azure_NeutralColor || color > 21 )
+                    return (u32 &)(scData.tunit.rgbaPalette[8*(color%12)]);
+                else
+                    return remasteredColors[color-12];
+            }
             case 0: // Random
             case 1: // Player choice
             default:
@@ -1689,7 +1743,10 @@ u32 MapGraphics::getPlayerColor(u8 player, bool hasCrgb)
     else
     {
         std::size_t color = static_cast<std::size_t>(map->playerColors[player]);
-        return (u32 &)(scData.tunit.rgbaPalette[8*color]);
+        if ( color <= Chk::PlayerColor::Azure_NeutralColor || color > 21 )
+            return (u32 &)(scData.tunit.rgbaPalette[8*(color%12)]);
+        else
+            return remasteredColors[color-12];
     }
 }
 
@@ -3020,7 +3077,7 @@ void MapGraphics::drawSelectionImage(Animation & animation, s32 x, s32 y, u32 fr
 void MapGraphics::drawClassicImage(gl::Palette & palette, s32 x, s32 y, u32 frameIndex, u32 imageId, std::optional<Chk::PlayerColor> color, bool flipped)
 {
     if ( color )
-        this->renderDat->shaders->classicPaletteShader.remapOffset.setValue(8*(color.value()%16));
+        this->renderDat->shaders->classicPaletteShader.remapOffset.setValue(8*(color.value()%22));
 
     auto & imageInfo = (*renderDat->classicImages)[imageId];
     auto & frameInfo = imageInfo->frames[frameIndex >= imageInfo->frames.size() ? 0 : frameIndex];
