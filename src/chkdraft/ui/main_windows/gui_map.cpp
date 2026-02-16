@@ -45,8 +45,8 @@ GuiMap::GuiMap(Clipboard & clipboard, FileBrowserPtr<SaveType> fileBrowser) : Ma
         this->element_added(Scenario::units_path{}, i);
 }
 
-GuiMap::GuiMap(Clipboard & clipboard, Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex, DefaultTriggers defaultTriggers, SaveType saveType)
-    : MapFile(tileset, width, height, terrainTypeIndex, saveType, &chkd.scData->terrain.get(tileset)),
+GuiMap::GuiMap(Clipboard & clipboard, Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex, Chk::DefaultTriggers defaultTriggers, SaveType saveType)
+    : MapFile(tileset, width, height, terrainTypeIndex, defaultTriggers, saveType, &chkd.scData->terrain.get(tileset)),
     Chk::IsomCache(read.tileset, read.dimensions.tileWidth, read.dimensions.tileHeight, chkd.scData->terrain.get(read.tileset)),
     clipboard(clipboard), animations(MapAnimations(*chkd.scData, chkd.gameClock, (const Scenario &)*this)),
     scrGraphics{std::make_unique<GuiMapGraphics>(*chkd.scData, *this)}
@@ -58,86 +58,6 @@ GuiMap::GuiMap(Clipboard & clipboard, Sc::Terrain::Tileset tileset, u16 width, u
     int layerSel = chkd.mainToolbar.layerBox.GetSel();
     if ( layerSel != CB_ERR )
         currLayer = (Layer)layerSel;
-    
-    auto addSetRes = [&](Sc::Player::Id player) {
-        Chk::Trigger setRes {};
-        setRes.owners[player] = Chk::Trigger::Owned::Yes;
-        setRes.conditions[0].conditionType = Chk::Condition::Type::Always;
-        setRes.actions[0].actionType = Chk::Action::Type::SetResources;
-        setRes.actions[0].group = Sc::Player::Id::CurrentPlayer;
-        setRes.actions[0].type2 = Chk::Trigger::ValueModifier::SetTo;
-        setRes.actions[0].number = 50;
-        setRes.actions[0].type = Chk::Trigger::ResourceType::Ore;
-        this->addTrigger(setRes);
-    };
-    auto addDefeat = [&](Sc::Player::Id player) {
-        Chk::Trigger defeat {};
-        defeat.owners[player] = Chk::Trigger::Owned::Yes;
-        defeat.conditions[0].conditionType = Chk::Condition::Type::Command;
-        defeat.conditions[0].player = Sc::Player::Id::CurrentPlayer;
-        defeat.conditions[0].comparison = Chk::Condition::Comparison::AtMost;
-        defeat.conditions[0].amount = 0;
-        defeat.conditions[0].unitType = Sc::Unit::Type::Buildings;
-        defeat.actions[0].actionType = Chk::Action::Type::Defeat;
-        this->addTrigger(defeat);
-    };
-    auto addVictory = [&](Sc::Player::Id player) {
-        Chk::Trigger victory {};
-        victory.owners[player] = Chk::Trigger::Owned::Yes;
-        victory.conditions[0].conditionType = Chk::Condition::Type::Command;
-        victory.conditions[0].player = Sc::Player::Id::NonAlliedVictoryPlayers;
-        victory.conditions[0].comparison = Chk::Condition::Comparison::AtMost;
-        victory.conditions[0].amount = 0;
-        victory.conditions[0].unitType = Sc::Unit::Type::Buildings;
-        victory.actions[0].actionType = Chk::Action::Type::Victory;
-        this->addTrigger(victory);
-    };
-    auto addSharedVision = [&](Sc::Player::Id player) {
-        Chk::Trigger addSharedVision {};
-        addSharedVision.owners[player] = Chk::Trigger::Owned::Yes;
-        addSharedVision.conditions[0].conditionType = Chk::Condition::Type::Always;
-        addSharedVision.actions[0].actionType = Chk::Action::Type::RunAiScript;
-        addSharedVision.actions[1].actionType = Chk::Action::Type::RunAiScript;
-        addSharedVision.actions[2].actionType = Chk::Action::Type::RunAiScript;
-        addSharedVision.actions[3].actionType = Chk::Action::Type::RunAiScript;
-        addSharedVision.actions[4].actionType = Chk::Action::Type::RunAiScript;
-        addSharedVision.actions[5].actionType = Chk::Action::Type::RunAiScript;
-        addSharedVision.actions[6].actionType = Chk::Action::Type::RunAiScript;
-        addSharedVision.actions[7].actionType = Chk::Action::Type::RunAiScript;
-        addSharedVision.actions[0].number = u32(Sc::Ai::Script::TurnONSharedVisionforPlayer1);
-        addSharedVision.actions[1].number = u32(Sc::Ai::Script::TurnONSharedVisionforPlayer2);
-        addSharedVision.actions[2].number = u32(Sc::Ai::Script::TurnONSharedVisionforPlayer3);
-        addSharedVision.actions[3].number = u32(Sc::Ai::Script::TurnONSharedVisionforPlayer4);
-        addSharedVision.actions[4].number = u32(Sc::Ai::Script::TurnONSharedVisionforPlayer5);
-        addSharedVision.actions[5].number = u32(Sc::Ai::Script::TurnONSharedVisionforPlayer6);
-        addSharedVision.actions[6].number = u32(Sc::Ai::Script::TurnONSharedVisionforPlayer7);
-        addSharedVision.actions[7].number = u32(Sc::Ai::Script::TurnONSharedVisionforPlayer8);
-        this->addTrigger(addSharedVision);
-    };
-
-    switch ( defaultTriggers )
-    {
-    case DefaultTriggers::NoTriggers: break;
-    case DefaultTriggers::DefaultMelee:
-        addSetRes(Sc::Player::Id::AllPlayers);
-        addDefeat(Sc::Player::Id::AllPlayers);
-        addVictory(Sc::Player::Id::AllPlayers);
-        break;
-    case DefaultTriggers::TwoPlayerMeleeWithObs:
-    case DefaultTriggers::ThreePlayerMeleeWithObs:
-    case DefaultTriggers::FourPlayerMeleeWithObs:
-    case DefaultTriggers::FivePlayerMeleeWithObs:
-    case DefaultTriggers::SixPlayerMeleeWithObs:
-    case DefaultTriggers::SevenPlayerMeleeWithObs:
-        for ( size_t slot = size_t(defaultTriggers)-size_t(DefaultTriggers::TwoPlayerMeleeWithObs)+2; slot < Sc::Player::TotalSlots; ++slot )
-            this->setPlayerForce(slot, Chk::Force::Force2);
-            
-        addSetRes(Sc::Player::Id::Force1);
-        addDefeat(Sc::Player::Id::Force1);
-        addVictory(Sc::Player::Id::Force1);
-        addSharedVision(Sc::Player::Id::Force2);
-        break;
-    }
 }
 
 GuiMap::~GuiMap()
@@ -832,24 +752,54 @@ void GuiMap::stackSelected()
 
 void GuiMap::createLocation()
 {
-    if ( selections.hasUnits() )
+    bool createForUnit = currLayer == Layer::Units && selections.hasUnits();
+    bool createForSprite = currLayer == Layer::Sprites && selections.hasSprites();
+    if ( createForUnit || createForSprite )
     {
-        auto edit = create_action(ActionDescriptor::CreateLocationForUnit);
-        u16 firstUnitId = selections.getFirstUnit();
-        const Chk::Unit & unit = Scenario::getUnit(firstUnitId);
-        const auto & unitDat = chkd.scData->units.getUnit(unit.type);
+        const auto & unitsDat = chkd.scData->units;
+        const auto & spritesDat = chkd.scData->sprites;
+        auto edit = create_action(createForUnit ? ActionDescriptor::CreateLocationForUnit : ActionDescriptor::CreateLocationForSprite);
+        u16 firstUnitId = createForUnit ? selections.getFirstUnit() : 0;
+        u16 firstSpriteId = createForSprite ? selections.getFirstSprite() : 0;
+        if ( (createForUnit && firstUnitId >= Scenario::numUnits()) || (createForSprite && firstSpriteId >= Scenario::numSprites()) )
+            return;
+
+        const Chk::Unit* unit = createForUnit ? &Scenario::getUnit(firstUnitId) : nullptr;
+        const Chk::Sprite* sprite = createForSprite ? &Scenario::getSprite(firstSpriteId) : nullptr;
+        const Sc::Unit::DatEntry* unitDat = nullptr;
+
+        if ( createForUnit )
+        {
+            if ( unit->type < unitsDat.numUnitTypes() )
+                unitDat = &unitsDat.getUnit(unit->type);
+            else
+                unitDat = &unitsDat.getUnit(Sc::Unit::Type(0));
+        }
+        else if ( createForSprite )
+        {
+            if ( sprite->isUnit() )
+            {
+                if ( sprite->type < unitsDat.numUnitTypes() )
+                    unitDat = &unitsDat.getUnit(Sc::Unit::Type(sprite->type));
+                else
+                    unitDat = &unitsDat.getUnit(Sc::Unit::Type(0));
+            }
+            else // Pure sprite, pure sprites do not have fixed bounding boxes
+                return;
+        }
+        
         Chk::Location newLocation {};
-        newLocation.left = unit.xc - unitDat.unitSizeLeft;
-        newLocation.top = unit.yc - unitDat.unitSizeUp;
-        newLocation.right = unit.xc + unitDat.unitSizeRight;
-        newLocation.bottom = unit.yc + unitDat.unitSizeDown;
+        newLocation.left = (createForUnit ? unit->xc : sprite->xc) - unitDat->unitSizeLeft;
+        newLocation.top = (createForUnit ? unit->yc : sprite->yc) - unitDat->unitSizeUp;
+        newLocation.right = (createForUnit ? unit->xc : sprite->xc) + unitDat->unitSizeRight;
+        newLocation.bottom = (createForUnit ? unit->yc : sprite->yc) + unitDat->unitSizeDown;
         newLocation.elevationFlags = 0;
         selections.setDrags(-1, -1);
 
         size_t newLocationId = Scenario::addLocation(newLocation);
         if ( newLocationId != Chk::LocationId::NoLocation )
         {
-            CM->setLayer(Layer::Locations);
+            chkd.maps.ChangeLayer(Layer::Locations);
             Scenario::setLocationName<RawString>(newLocationId, "Location " + std::to_string(newLocationId), Chk::Scope::Game);
             Scenario::deleteUnusedStrings(Chk::Scope::Both);
             selections.selectLocation(u16(newLocationId));
@@ -865,24 +815,54 @@ void GuiMap::createLocation()
 
 void GuiMap::createInvertedLocation()
 {
-    if ( selections.hasUnits() )
+    bool createForUnit = currLayer == Layer::Units && selections.hasUnits();
+    bool createForSprite = currLayer == Layer::Sprites && selections.hasSprites();
+    if ( createForUnit || createForSprite )
     {
-        auto edit = create_action(ActionDescriptor::CreateInvertedLocationForUnit);
-        u16 firstUnitId = selections.getFirstUnit();
-        const Chk::Unit & unit = Scenario::getUnit(firstUnitId);
-        const auto & unitDat = chkd.scData->units.getUnit(unit.type);
+        const auto & unitsDat = chkd.scData->units;
+        const auto & spritesDat = chkd.scData->sprites;
+        auto edit = create_action(createForUnit ? ActionDescriptor::CreateInvertedLocationForUnit : ActionDescriptor::CreateInvertedLocationForSprite);
+        u16 firstUnitId = createForUnit ? selections.getFirstUnit() : 0;
+        u16 firstSpriteId = createForSprite ? selections.getFirstSprite() : 0;
+        if ( (createForUnit && firstUnitId >= Scenario::numUnits()) || (createForSprite && firstSpriteId >= Scenario::numSprites()) )
+            return;
+
+        const Chk::Unit* unit = createForUnit ? &Scenario::getUnit(firstUnitId) : nullptr;
+        const Chk::Sprite* sprite = createForSprite ? &Scenario::getSprite(firstSpriteId) : nullptr;
+        const Sc::Unit::DatEntry* unitDat = nullptr;
+
+        if ( createForUnit )
+        {
+            if ( unit->type < unitsDat.numUnitTypes() )
+                unitDat = &unitsDat.getUnit(unit->type);
+            else
+                unitDat = &unitsDat.getUnit(Sc::Unit::Type(0));
+        }
+        else if ( createForSprite )
+        {
+            if ( sprite->isUnit() )
+            {
+                if ( sprite->type < unitsDat.numUnitTypes() )
+                    unitDat = &unitsDat.getUnit(Sc::Unit::Type(sprite->type));
+                else
+                    unitDat = &unitsDat.getUnit(Sc::Unit::Type(0));
+            }
+            else // Pure sprite, pure sprites do not have fixed bounding boxes
+                return;
+        }
+
         Chk::Location newLocation {};
-        newLocation.left = unit.xc + unitDat.unitSizeRight;
-        newLocation.top = unit.yc + unitDat.unitSizeDown;
-        newLocation.right = unit.xc - unitDat.unitSizeLeft;
-        newLocation.bottom = unit.yc - unitDat.unitSizeUp;
+        newLocation.left = (createForUnit ? unit->xc : sprite->xc) + unitDat->unitSizeRight;
+        newLocation.top = (createForUnit ? unit->yc : sprite->yc) + unitDat->unitSizeDown;
+        newLocation.right = (createForUnit ? unit->xc : sprite->xc) - unitDat->unitSizeLeft;
+        newLocation.bottom = (createForUnit ? unit->yc : sprite->yc) - unitDat->unitSizeUp;
         newLocation.elevationFlags = 0;
         selections.setDrags(-1, -1);
 
         size_t newLocationId = Scenario::addLocation(newLocation);
         if ( newLocationId != Chk::LocationId::NoLocation )
         {
-            CM->setLayer(Layer::Locations);
+            chkd.maps.ChangeLayer(Layer::Locations);
             Scenario::setLocationName<RawString>(newLocationId, "Location " + std::to_string(newLocationId), Chk::Scope::Game);
             Scenario::deleteUnusedStrings(Chk::Scope::Both);
             selections.selectLocation(u16(newLocationId));
@@ -898,19 +878,51 @@ void GuiMap::createInvertedLocation()
 
 void GuiMap::createMobileInvertedLocation()
 {
-    if ( selections.hasUnits() )
+    bool createForUnit = currLayer == Layer::Units && selections.hasUnits();
+    bool createForSprite = currLayer == Layer::Sprites && selections.hasSprites();
+    if ( createForUnit || createForSprite )
     {
-        auto edit = create_action(ActionDescriptor::CreateMobileInvertedLocationForUnit);
-        u16 firstUnitId = selections.getFirstUnit();
-        const Chk::Unit & unit = Scenario::getUnit(firstUnitId);
-        const auto & unitDat = chkd.scData->units.getUnit(unit.type);
+        const auto & unitsDat = chkd.scData->units;
+        const auto & spritesDat = chkd.scData->sprites;
+        auto edit = create_action(createForUnit ? ActionDescriptor::CreateMobileInvertedLocationForUnit :
+            ActionDescriptor::CreateMobileInvertedLocationForSprite);
+        u16 firstUnitId = createForUnit ? selections.getFirstUnit() : 0;
+        u16 firstSpriteId = createForSprite ? selections.getFirstSprite() : 0;
+        if ( (createForUnit && firstUnitId >= Scenario::numUnits()) || (createForSprite && firstSpriteId >= Scenario::numSprites()) )
+            return;
 
-        s32 width = (unitDat.unitSizeRight > unitDat.unitSizeLeft ? -1 : 0) - 2*std::min(unitDat.unitSizeLeft, unitDat.unitSizeRight);
-        s32 height = (unitDat.unitSizeDown > unitDat.unitSizeUp ? -1 : 0) - 2*std::min(unitDat.unitSizeUp, unitDat.unitSizeDown);
+        const Chk::Unit* unit = createForUnit ? &Scenario::getUnit(firstUnitId) : nullptr;
+        const Chk::Sprite* sprite = createForSprite ? &Scenario::getSprite(firstSpriteId) : nullptr;
+        const Sc::Unit::DatEntry* unitDat = nullptr;
+
+        if ( createForUnit )
+        {
+            if ( unit->type < unitsDat.numUnitTypes() )
+                unitDat = &unitsDat.getUnit(unit->type);
+            else
+                unitDat = &unitsDat.getUnit(Sc::Unit::Type(0));
+        }
+        else if ( createForSprite )
+        {
+            if ( sprite->isUnit() )
+            {
+                if ( sprite->type < unitsDat.numUnitTypes() )
+                    unitDat = &unitsDat.getUnit(Sc::Unit::Type(sprite->type));
+                else
+                    unitDat = &unitsDat.getUnit(Sc::Unit::Type(0));
+            }
+            else // Pure sprite, pure sprites do not have fixed bounding boxes
+                return;
+        }
+
+        s32 width = (unitDat->unitSizeRight > unitDat->unitSizeLeft ? -1 : 0) -
+            2*std::min(unitDat->unitSizeLeft, unitDat->unitSizeRight);
+        s32 height = (unitDat->unitSizeDown > unitDat->unitSizeUp ? -1 : 0) -
+            2*std::min(unitDat->unitSizeUp, unitDat->unitSizeDown);
 
         Chk::Location newLocation {};
-        newLocation.right = u16(s32(unit.xc) + width/2);
-        newLocation.bottom = u16(s32(unit.yc) + height/2);
+        newLocation.right = u16(s32(createForUnit ? unit->xc : sprite->xc) + width/2);
+        newLocation.bottom = u16(s32(createForUnit ? unit->yc : sprite->yc) + height/2);
         newLocation.left = newLocation.right - width;
         newLocation.top = newLocation.bottom - height;
         newLocation.elevationFlags = 0;
@@ -919,7 +931,7 @@ void GuiMap::createMobileInvertedLocation()
         size_t newLocationId = Scenario::addLocation(newLocation);
         if ( newLocationId != Chk::LocationId::NoLocation )
         {
-            CM->setLayer(Layer::Locations);
+            chkd.maps.ChangeLayer(Layer::Locations);
             Scenario::setLocationName<RawString>(newLocationId, "Location " + std::to_string(newLocationId), Chk::Scope::Game);
             Scenario::deleteUnusedStrings(Chk::Scope::Both);
             selections.selectLocation(u16(newLocationId));
@@ -2175,9 +2187,11 @@ bool GuiMap::isValidUnitPlacement(Sc::Unit::Type unitType, s32 x, s32 y)
     if ( unitType >= chkd.scData->units.numUnitTypes() )
         return true; // Extended units placement isn't checked for validity
 
-    bool placementIsBuilding = (chkd.scData->units.getUnit(unitType).flags & Sc::Unit::Flags::Building) == Sc::Unit::Flags::Building;
-    bool placementIsFlyer = (chkd.scData->units.getUnit(unitType).flags & Sc::Unit::Flags::Flyer) == Sc::Unit::Flags::Flyer;
-    bool placementIsResourceDepot = (chkd.scData->units.getUnit(unitType).flags & Sc::Unit::Flags::ResourceDepot) == Sc::Unit::Flags::ResourceDepot;
+    const auto & unitDat = chkd.scData->units.getUnit(unitType);
+    bool placementIsBuilding = (unitDat.flags & Sc::Unit::Flags::Building) == Sc::Unit::Flags::Building;
+    bool placementIsFlyer = (unitDat.flags & Sc::Unit::Flags::Flyer) == Sc::Unit::Flags::Flyer;
+    bool placementIsResourceDepot = (unitDat.flags & Sc::Unit::Flags::ResourceDepot) == Sc::Unit::Flags::ResourceDepot;
+    bool placementIsResource = (unitDat.flags & Sc::Unit::Flags::ResourceContainer) == Sc::Unit::Flags::ResourceContainer;
 
     bool validateOnWalkableTerrain = !placementIsFlyer && !placementIsBuilding && !placeUnitsAnywhere;
     bool validateOnBuildableTerrain = placementIsBuilding && !placeBuildingsAnywhere;
@@ -2185,8 +2199,9 @@ bool GuiMap::isValidUnitPlacement(Sc::Unit::Type unitType, s32 x, s32 y)
     bool validateNotGroundStacked = !placementIsFlyer && !stackUnits;
     bool validateNotAirStacked = placementIsFlyer && !stackAirUnits;
     bool validateNotStacked = validateNotGroundStacked || validateNotAirStacked;
-    bool validateMineralDistance = requireMineralDistance && placementIsResourceDepot;
-    bool performValidation = validatePlacableOnTerrain || validateNotStacked || validateMineralDistance;
+    bool validateDepotMineralDistance = requireMineralDistance && placementIsResourceDepot;
+    bool validateMineralDepotDistance = requireMineralDistance && placementIsResource;
+    bool performValidation = validatePlacableOnTerrain || validateNotStacked || validateDepotMineralDistance || validateMineralDepotDistance;
 
     if ( performValidation )
     {
@@ -2275,7 +2290,7 @@ bool GuiMap::isValidUnitPlacement(Sc::Unit::Type unitType, s32 x, s32 y)
                 }
             }
         }
-        if ( validateMineralDistance )
+        if ( validateDepotMineralDistance )
         {
             const auto & placementDat = chkd.scData->units.getUnit(unitType);
             s32 xPlacementTileMin = std::max(0, (x - s32(placementDat.unitSizeLeft))/32),
@@ -2289,6 +2304,34 @@ bool GuiMap::isValidUnitPlacement(Sc::Unit::Type unitType, s32 x, s32 y)
                 {
                     const auto & unitDat = chkd.scData->units.getUnit(unit.type);
                     bool isResource = (unitDat.flags & Sc::Unit::Flags::ResourceContainer) == Sc::Unit::Flags::ResourceContainer;
+
+                    if ( isResource )
+                    {
+                        s32 xTileMin = std::max(0, (s32(unit.xc) - s32(unitDat.unitSizeLeft))/32-3);
+                        s32 xTileMax = std::min(s32(read.dimensions.tileWidth-1), (s32(unit.xc) + s32(unitDat.unitSizeRight))/32+3);
+                        s32 yTileMin = std::max(0, (s32(unit.yc) - s32(unitDat.unitSizeUp))/32-3);
+                        s32 yTileMax = std::min(s32(read.dimensions.tileHeight-1), (s32(unit.yc) + s32(unitDat.unitSizeDown))/32+3);
+
+                        if ( xPlacementTileMax >= xTileMin && xPlacementTileMin <= xTileMax && yPlacementTileMax >= yTileMin && yPlacementTileMin <= yTileMax )
+                            return false; // Placement violates mineral distance
+                    }
+                }
+            }
+        }
+        else if ( validateMineralDepotDistance )
+        {
+            const auto & placementDat = chkd.scData->units.getUnit(unitType);
+            s32 xPlacementTileMin = std::max(0, (x - s32(placementDat.unitSizeLeft))/32),
+                xPlacementTileMax = std::min(s32(read.dimensions.tileWidth-1), (x + s32(placementDat.unitSizeRight))/32),
+                yPlacementTileMin = std::max(0, (y - s32(placementDat.unitSizeUp))/32),
+                yPlacementTileMax = std::min(s32(read.dimensions.tileHeight-1), (y + s32(placementDat.unitSizeDown))/32);
+
+            for ( const auto & unit : read.units )
+            {
+                if ( unit.type < chkd.scData->units.numUnitTypes() )
+                {
+                    const auto & unitDat = chkd.scData->units.getUnit(unit.type);
+                    bool isResource = (unitDat.flags & Sc::Unit::Flags::ResourceDepot) == Sc::Unit::Flags::ResourceDepot;
 
                     if ( isResource )
                     {

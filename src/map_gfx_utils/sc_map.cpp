@@ -31,7 +31,7 @@ ScMap::ScMap(Sc::Data & scData, FileBrowserPtr<SaveType> fileBrowser) :
 // Create a new map
 ScMap::ScMap(Sc::Data & scData, Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex,
     SaveType saveType, const Sc::Terrain::Tiles* tilesetData) :
-    MapFile(tileset, width, height, terrainTypeIndex, saveType, tilesetData),
+    MapFile(tileset, width, height, terrainTypeIndex, Chk::DefaultTriggers::NoTriggers, saveType, tilesetData),
     animations(scData, gameClock, static_cast<const Scenario &>(*this)),
     graphics(scData, static_cast<Scenario &>(*this), animations) { initAnims(); }
 

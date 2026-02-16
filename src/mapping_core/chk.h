@@ -990,8 +990,8 @@ namespace Chk {
         };
 
         u32 locationId = 0; // 1 based, is also the bitmask for deaths
-        u32 stringId;
-        u32 soundStringId;
+        u32 stringId = 0;
+        u32 soundStringId = 0;
         u32 time = 0;
         u32 group = 0; // Group/ZeroBasedBriefingSlot
         u32 number = 0; // Amount/Group2/LocDest/UnitPropNum/ScriptNum/SwitchIndex
@@ -2042,6 +2042,18 @@ namespace Chk {
         inline friend auto & operator<<(std::ostream & os, const ScStr & s) { os << s.str; return os; }
 
         REFLECT(ScStr, str, properties)
+    };
+
+    enum class DefaultTriggers
+    {
+        NoTriggers = 0,
+        DefaultMelee = 1,
+        TwoPlayerMeleeWithObs = 2,
+        ThreePlayerMeleeWithObs = 3,
+        FourPlayerMeleeWithObs = 4,
+        FivePlayerMeleeWithObs = 5,
+        SixPlayerMeleeWithObs = 6,
+        SevenPlayerMeleeWithObs = 7
     };
 
     // IsomCache holds all the data required to edit isometric terrain which is not a part of scenario; as well as methods that operate on said data exclusively

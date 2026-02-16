@@ -27,7 +27,7 @@ class Maps : public WinLib::MdiClient
                          u16 width = 64,
                          u16 height = 64,
                          size_t terrainTypeIndex = Sc::Isom::defaultBrushIndex[Sc::Terrain::Tileset::Badlands],
-                         DefaultTriggers defaultTriggers = DefaultTriggers::NoTriggers);
+                         Chk::DefaultTriggers defaultTriggers = Chk::DefaultTriggers::NoTriggers);
         bool OpenMap(const std::string & fileName);
         bool OpenMap(FileBrowserPtr<SaveType> fileBrowser = MapFile::getDefaultOpenMapBrowser());
         bool SaveCurr(bool saveAs);
