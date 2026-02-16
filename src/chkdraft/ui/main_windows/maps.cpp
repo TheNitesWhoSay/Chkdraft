@@ -96,7 +96,7 @@ u16 Maps::GetMapID(std::shared_ptr<GuiMap> guiMap)
         return 0;
 }
 
-GuiMapPtr Maps::NewMap(Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex, DefaultTriggers defaultTriggers)
+GuiMapPtr Maps::NewMap(Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex, Chk::DefaultTriggers defaultTriggers)
 {
     if ( width == 0 || height == 0 )
     {

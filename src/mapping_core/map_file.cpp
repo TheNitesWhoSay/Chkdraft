@@ -40,8 +40,9 @@ MapFile::MapFile(FileBrowserPtr<SaveType> fileBrowser) : MpqAssetManager()
     load(fileBrowser);
 }
 
-MapFile::MapFile(Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex, SaveType saveType, const Sc::Terrain::Tiles* tilesetData)
-    : Scenario(tileset, width, height, terrainTypeIndex, saveType, tilesetData), MpqAssetManager()
+MapFile::MapFile(Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex, Chk::DefaultTriggers defaultTriggers, SaveType saveType,
+    const Sc::Terrain::Tiles* tilesetData)
+    : Scenario(tileset, width, height, terrainTypeIndex, defaultTriggers, saveType, tilesetData), MpqAssetManager()
 {
     initializeVirtualSoundTable();
 }

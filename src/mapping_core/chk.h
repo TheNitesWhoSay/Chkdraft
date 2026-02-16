@@ -2044,6 +2044,18 @@ namespace Chk {
         REFLECT(ScStr, str, properties)
     };
 
+    enum class DefaultTriggers
+    {
+        NoTriggers = 0,
+        DefaultMelee = 1,
+        TwoPlayerMeleeWithObs = 2,
+        ThreePlayerMeleeWithObs = 3,
+        FourPlayerMeleeWithObs = 4,
+        FivePlayerMeleeWithObs = 5,
+        SixPlayerMeleeWithObs = 6,
+        SevenPlayerMeleeWithObs = 7
+    };
+
     // IsomCache holds all the data required to edit isometric terrain which is not a part of scenario; as well as methods that operate on said data exclusively
     // IsomCache is invalidated & must be re-created whenever tileset, map width, or map height changes
     struct IsomCache

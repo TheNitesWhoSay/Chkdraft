@@ -576,7 +576,8 @@ struct IsomInitializerCache : Chk::IsomCache
 
 Scenario::Scenario() : tracked{this} {}
 
-Scenario::Scenario(Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex, SaveType saveType, const Sc::Terrain::Tiles* tilesetData) : tracked{this}
+Scenario::Scenario(Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t terrainTypeIndex, Chk::DefaultTriggers defaultTriggers, SaveType saveType,
+    const Sc::Terrain::Tiles* tilesetData) : tracked{this}
 {
     auto mapData = std::make_unique<::MapData>();
     mapData->saveType = saveType;
@@ -649,6 +650,86 @@ Scenario::Scenario(Sc::Terrain::Tileset tileset, u16 width, u16 height, size_t t
         {Chk::SectionName::TECS}, {Chk::SectionName::SWNM}, {Chk::SectionName::COLR}, {Chk::SectionName::PUPx},
         {Chk::SectionName::PTEx}, {Chk::SectionName::UNIx}, {Chk::SectionName::UPGx}, {Chk::SectionName::TECx}
     });
+
+    auto addSetRes = [&](Sc::Player::Id player) {
+        Chk::Trigger setRes {};
+        setRes.owners[player] = Chk::Trigger::Owned::Yes;
+        setRes.conditions[0].conditionType = Chk::Condition::Type::Always;
+        setRes.actions[0].actionType = Chk::Action::Type::SetResources;
+        setRes.actions[0].group = Sc::Player::Id::CurrentPlayer;
+        setRes.actions[0].type2 = Chk::Trigger::ValueModifier::SetTo;
+        setRes.actions[0].number = 50;
+        setRes.actions[0].type = Chk::Trigger::ResourceType::Ore;
+        mapData->triggers.push_back(setRes);
+    };
+    auto addDefeat = [&](Sc::Player::Id player) {
+        Chk::Trigger defeat {};
+        defeat.owners[player] = Chk::Trigger::Owned::Yes;
+        defeat.conditions[0].conditionType = Chk::Condition::Type::Command;
+        defeat.conditions[0].player = Sc::Player::Id::CurrentPlayer;
+        defeat.conditions[0].comparison = Chk::Condition::Comparison::AtMost;
+        defeat.conditions[0].amount = 0;
+        defeat.conditions[0].unitType = Sc::Unit::Type::Buildings;
+        defeat.actions[0].actionType = Chk::Action::Type::Defeat;
+        mapData->triggers.push_back(defeat);
+    };
+    auto addVictory = [&](Sc::Player::Id player) {
+        Chk::Trigger victory {};
+        victory.owners[player] = Chk::Trigger::Owned::Yes;
+        victory.conditions[0].conditionType = Chk::Condition::Type::Command;
+        victory.conditions[0].player = Sc::Player::Id::NonAlliedVictoryPlayers;
+        victory.conditions[0].comparison = Chk::Condition::Comparison::AtMost;
+        victory.conditions[0].amount = 0;
+        victory.conditions[0].unitType = Sc::Unit::Type::Buildings;
+        victory.actions[0].actionType = Chk::Action::Type::Victory;
+        mapData->triggers.push_back(victory);
+    };
+    auto addSharedVision = [&](Sc::Player::Id player) {
+        Chk::Trigger addSharedVision {};
+        addSharedVision.owners[player] = Chk::Trigger::Owned::Yes;
+        addSharedVision.conditions[0].conditionType = Chk::Condition::Type::Always;
+        addSharedVision.actions[0].actionType = Chk::Action::Type::RunAiScript;
+        addSharedVision.actions[1].actionType = Chk::Action::Type::RunAiScript;
+        addSharedVision.actions[2].actionType = Chk::Action::Type::RunAiScript;
+        addSharedVision.actions[3].actionType = Chk::Action::Type::RunAiScript;
+        addSharedVision.actions[4].actionType = Chk::Action::Type::RunAiScript;
+        addSharedVision.actions[5].actionType = Chk::Action::Type::RunAiScript;
+        addSharedVision.actions[6].actionType = Chk::Action::Type::RunAiScript;
+        addSharedVision.actions[7].actionType = Chk::Action::Type::RunAiScript;
+        addSharedVision.actions[0].number = u32(Sc::Ai::Script::TurnONSharedVisionforPlayer1);
+        addSharedVision.actions[1].number = u32(Sc::Ai::Script::TurnONSharedVisionforPlayer2);
+        addSharedVision.actions[2].number = u32(Sc::Ai::Script::TurnONSharedVisionforPlayer3);
+        addSharedVision.actions[3].number = u32(Sc::Ai::Script::TurnONSharedVisionforPlayer4);
+        addSharedVision.actions[4].number = u32(Sc::Ai::Script::TurnONSharedVisionforPlayer5);
+        addSharedVision.actions[5].number = u32(Sc::Ai::Script::TurnONSharedVisionforPlayer6);
+        addSharedVision.actions[6].number = u32(Sc::Ai::Script::TurnONSharedVisionforPlayer7);
+        addSharedVision.actions[7].number = u32(Sc::Ai::Script::TurnONSharedVisionforPlayer8);
+        mapData->triggers.push_back(addSharedVision);
+    };
+
+    switch ( defaultTriggers )
+    {
+    case Chk::DefaultTriggers::NoTriggers: break;
+    case Chk::DefaultTriggers::DefaultMelee:
+        addSetRes(Sc::Player::Id::AllPlayers);
+        addDefeat(Sc::Player::Id::AllPlayers);
+        addVictory(Sc::Player::Id::AllPlayers);
+        break;
+    case Chk::DefaultTriggers::TwoPlayerMeleeWithObs:
+    case Chk::DefaultTriggers::ThreePlayerMeleeWithObs:
+    case Chk::DefaultTriggers::FourPlayerMeleeWithObs:
+    case Chk::DefaultTriggers::FivePlayerMeleeWithObs:
+    case Chk::DefaultTriggers::SixPlayerMeleeWithObs:
+    case Chk::DefaultTriggers::SevenPlayerMeleeWithObs:
+        for ( size_t slot = size_t(defaultTriggers)-size_t(Chk::DefaultTriggers::TwoPlayerMeleeWithObs)+2; slot < Sc::Player::TotalSlots; ++slot )
+            mapData->forces.playerForce[slot] = Chk::Force::Force2;
+            
+        addSetRes(Sc::Player::Id::Force1);
+        addDefeat(Sc::Player::Id::Force1);
+        addVictory(Sc::Player::Id::Force1);
+        addSharedVision(Sc::Player::Id::Force2);
+        break;
+    }
 
     init_data(*mapData);
 }
