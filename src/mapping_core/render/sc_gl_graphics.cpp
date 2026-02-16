@@ -1549,6 +1549,19 @@ void ClassicMiniMap::renderTerrain()
 
 void ClassicMiniMap::renderUnits()
 {
+    constexpr std::array<u32, 10> remasteredColors { // 0xAABBGGRR
+        0x0074A47C, // 12
+        0x007290B8, // 13
+        0x0000E4FC, // 14
+        0x00FFC4E4, // 15
+        0x00808000, // 16
+        0x00D2F53C, // 17
+        0x00000080, // 18
+        0x00F032E6, // 19
+        0x00808080, // 20
+        0x003C3C3C, // 21
+    };
+    const bool useCrgb = map->hasSection(Chk::SectionName::CRGB) && map->version >= Chk::Version::StarCraft_Remastered;
     const auto & units = map->units;
     const auto & sprites = map->sprites;
 
@@ -1566,19 +1579,58 @@ void ClassicMiniMap::renderUnits()
     u16 xOffset = (u16)((128-tileWidth*scale)/2),
         yOffset = (u16)((128-tileHeight*scale)/2);
 
-    auto drawUnit = [&](Chk::PlayerColor color, Sc::Unit::Type unitType, u16 unitXc, u16 unitYc)
+    auto getPixelColor = [&](u8 owner, bool isResourceColor) -> std::uint32_t
     {
-        if ( color >= Chk::TotalColors )
-            color = Chk::PlayerColor(color % 16);
+        if ( isResourceColor )
+            return (std::uint32_t &)scData.tminimap.bgraPalette[Chk::PlayerColor::ResourceColor];
+        else if ( owner >= Sc::Player::TotalSlots )
+        {
+            owner %= 22;
+            if ( owner < 12 )
+                return (std::uint32_t &)scData.tminimap.bgraPalette[owner];
+            else
+                return remasteredColors[owner-12];
+        }
+        else if ( useCrgb && map->version >= Chk::Version::StarCraft_Remastered )
+        {
+            switch ( map->customColors.playerSetting[owner] )
+            {
+                case 2: // Custom RGB
+                {
+                    auto & customColor = map->customColors.playerColor[owner]; // RGB -> 0xAABBGGRR
+                    return u32(0xFF000000) | (u32(customColor[2]) << 16) | (u32(customColor[1]) << 8) | u32(customColor[0]);
+                }
+                case 3: // Blue color
+                {
+                    std::size_t color = map->customColors.playerColor[owner][2];
+                    if ( color <= Chk::PlayerColor::Azure_NeutralColor || color > 21 )
+                        return (u32 &)scData.tminimap.bgraPalette[color % 16];
+                    else
+                        return remasteredColors[color-12];
+                }
+                case 0: // Random
+                case 1: // Player choice
+                default:
+                    return (u32 &)(scData.tminimap.bgraPalette[size_t(owner) < scData.tminimap.bgraPalette.size() ? size_t(owner) : size_t(owner)%scData.tminimap.bgraPalette.size()]);
+            }
+        }
+        else
+        {
+            std::size_t color = static_cast<std::size_t>(map->playerColors[owner]);
+            if ( color <= Chk::PlayerColor::Azure_NeutralColor || color > 21 )
+                return (u32 &)(scData.tminimap.bgraPalette[color%16]);
+            else
+                return remasteredColors[color-12];
+        }
+    };
 
+    auto drawUnit = [&](u8 owner, Sc::Unit::Type unitType, u16 unitXc, u16 unitYc)
+    {
         if ( unitType < numUnitTypes )
         {
             const Sc::Unit::DatEntry & dat = scData.units.getUnit(unitType);
-            if ( (dat.flags & Sc::Unit::Flags::ResourceContainer) && !(dat.starEditGroupFlags & BIT_4) &&
-                 color == Chk::PlayerColor::Azure_NeutralColor )
-            {
-                color = Chk::PlayerColor::ResourceColor;
-            }
+            bool isResourceColor = (dat.flags & Sc::Unit::Flags::ResourceContainer) && !(dat.starEditGroupFlags & BIT_4) &&
+                owner == Sc::Player::Id::Player12_Neutral;
 
             u16 placementWidth = dat.starEditPlacementBoxWidth;
             u16 placementHeight = dat.starEditPlacementBoxHeight;
@@ -1634,6 +1686,7 @@ void ClassicMiniMap::renderUnits()
                 } break;
             }
 
+            u32 pixelColor = getPixelColor(owner, isResourceColor);
             for ( int y=top; y<top+height; ++y )
             {
                 for ( int x=left; x<left+width; ++x )
@@ -1641,7 +1694,7 @@ void ClassicMiniMap::renderUnits()
                     u32 bitIndex = (u32(y)+u32(yOffset))*128 + u32(x)+u32(xOffset);
 
                     if ( bitIndex < pixelLimit )
-                        pixels[bitIndex] = (std::uint32_t &)scData.tminimap.bgraPalette[color];
+                        pixels[bitIndex] = pixelColor;
                 }
             }
         }
@@ -1650,29 +1703,19 @@ void ClassicMiniMap::renderUnits()
             u32 bitIndex =
                 ((u32)((unitYc / 32)*scale) + yOffset) * 128
                 + (u32)((unitXc / 32)*scale) + xOffset;
-
+            
             if ( bitIndex < pixelLimit )
-                pixels[bitIndex] = (std::uint32_t &)scData.tminimap.bgraPalette[color];
+                pixels[bitIndex] = getPixelColor(owner, false);
         }
     };
 
     for ( const auto & unit : map->units )
-    {
-        Chk::PlayerColor color = (unit.owner < Sc::Player::TotalSlots ?
-            map.getPlayerColor(unit.owner) : (Chk::PlayerColor)unit.owner);
-
-        drawUnit(color, unit.type, unit.xc, unit.yc);
-    }
+        drawUnit(unit.owner, unit.type, unit.xc, unit.yc);
 
     for ( const auto & sprite : map->sprites )
     {
         if ( sprite.isUnit() )
-        {
-            Chk::PlayerColor color = (sprite.owner < Sc::Player::TotalSlots ?
-                map.getPlayerColor(sprite.owner) : Chk::PlayerColor(sprite.owner));
-
-            drawUnit(color, static_cast<Sc::Unit::Type>(sprite.type), sprite.xc, sprite.yc);
-        }
+            drawUnit(sprite.owner, static_cast<Sc::Unit::Type>(sprite.type), sprite.xc, sprite.yc);
     }
 }
 
@@ -1716,7 +1759,13 @@ u32 MapGraphics::getPlayerColor(u8 player, bool hasCrgb)
     };
 
     if ( player >= Sc::Player::TotalSlots )
-        return (u32 &)(scData.tunit.rgbaPalette[8*size_t(player) < scData.tunit.rgbaPalette.size() ? 8*size_t(player) : 8*size_t(player)%scData.tunit.rgbaPalette.size()]);
+    {
+        player %= 22;
+        if ( player < 12 )
+            return (u32 &)(scData.tunit.rgbaPalette[8*size_t(player)]);
+        else
+            return remasteredColors[player-12];
+    }
     else if ( hasCrgb && map->version >= Chk::Version::StarCraft_Remastered )
     {
         switch ( map->customColors.playerSetting[player] )
@@ -1730,7 +1779,7 @@ u32 MapGraphics::getPlayerColor(u8 player, bool hasCrgb)
             {
                 std::size_t color = map->customColors.playerColor[player][2];
                 if ( color <= Chk::PlayerColor::Azure_NeutralColor || color > 21 )
-                    return (u32 &)(scData.tunit.rgbaPalette[8*(color%12)]);
+                    return (u32 &)(scData.tunit.rgbaPalette[8*(color%16)]);
                 else
                     return remasteredColors[color-12];
             }
@@ -1742,9 +1791,9 @@ u32 MapGraphics::getPlayerColor(u8 player, bool hasCrgb)
     }
     else
     {
-        std::size_t color = static_cast<std::size_t>(map->playerColors[player]);
-        if ( color <= Chk::PlayerColor::Azure_NeutralColor || color > 21 )
-            return (u32 &)(scData.tunit.rgbaPalette[8*(color%12)]);
+        std::size_t color = static_cast<std::size_t>(map->playerColors[player]) % 22;
+        if ( color <= Chk::PlayerColor::Azure_NeutralColor )
+            return (u32 &)(scData.tunit.rgbaPalette[8*color]);
         else
             return remasteredColors[color-12];
     }
