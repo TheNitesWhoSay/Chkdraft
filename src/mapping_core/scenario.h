@@ -583,6 +583,18 @@ struct Scenario : nf::tracked<MapData, Scenario, DescriptorIndex>
     void selections_changed(tiles_path);
     void selections_changed(editor_tiles_path);
     void selections_changed(tiles_fog_path);
+
+    using strings_path = NF_PATH(root->strings);
+    using string_elem_path = NF_PATH(root->strings[0]);
+    using editor_strings_path = NF_PATH(root->editorStrings);
+    using editor_string_elem_path = NF_PATH(root->editorStrings[0]);
+    virtual void element_added(strings_path, std::size_t index) {}
+    virtual void element_removed(strings_path, std::size_t index) {}
+    virtual void value_changed(string_elem_path, const std::optional<ScStr> & oldString, const std::optional<ScStr> & newString) {}
+    virtual void element_added(editor_strings_path, std::size_t index) {}
+    virtual void element_removed(editor_strings_path, std::size_t index) {}
+    virtual void value_changed(editor_string_elem_path, const std::optional<ScStr> & oldString, const std::optional<ScStr> & newString) {}
+
     virtual void after_action(std::size_t actionIndex) {} // Does nothing unless overridden
 
 
