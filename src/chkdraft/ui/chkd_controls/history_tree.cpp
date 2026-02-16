@@ -138,6 +138,9 @@ std::string getActionText(std::size_t actionIndex, const nf::rendered_action<Des
                 case ActionDescriptor::CreateLocationForUnit: actionText += "Create Location For Unit"; break;
                 case ActionDescriptor::CreateInvertedLocationForUnit: actionText += "Create Inverted Location For Unit"; break;
                 case ActionDescriptor::CreateMobileInvertedLocationForUnit: actionText += "Create Mobile Inverted Location For Unit"; break;
+                case ActionDescriptor::CreateLocationForSprite: actionText += "Create Location For Sprite"; break;
+                case ActionDescriptor::CreateInvertedLocationForSprite: actionText += "Create Inverted Location For Sprite"; break;
+                case ActionDescriptor::CreateMobileInvertedLocationForSprite: actionText += "Create Mobile Inverted Location For Sprite"; break;
                 case ActionDescriptor::UpdateUnitOwner: actionText += "Update Unit Owner"; break;
                 case ActionDescriptor::MoveUnits: actionText += "Move Units"; break;
                 case ActionDescriptor::ToggleUnitLinked: actionText += "Toggle Unit Linked"; break;

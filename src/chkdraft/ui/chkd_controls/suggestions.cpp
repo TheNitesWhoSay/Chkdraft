@@ -97,11 +97,27 @@ void Suggestions::SetItems()
 
     items.sort(alphabetize);
 
+    int newSel = -1;
+    bool searchForSel = this->suggestCurrentTextFirst;
     currentTextItemIndex = -1;
     for ( auto & item : items )
-        listSuggestions.AddItem((LPARAM)&item);
+    {
+        if ( searchForSel )
+        {
+            int index = listSuggestions.AddItem((LPARAM)&item);
+            if ( item.str == this->currTextItem.str )
+            {
+                newSel = index;
+                searchForSel = false;
+            }
+        }
+        else
+            listSuggestions.AddItem((LPARAM)&item);
+    }
 
     listSuggestions.SetRedraw(true);
+    if ( newSel != -1 )
+        listSuggestions.SetCurSel(newSel);
 }
 
 void Suggestions::SetItems(const std::vector<SuggestionItem> & items)

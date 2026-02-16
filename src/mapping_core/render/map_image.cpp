@@ -431,7 +431,8 @@ void Animator::animate()
                         break;
                     case Sc::Sprite::Op::curdirectcondjmp: // TODO
                         break;
-                    case Sc::Sprite::Op::imgulnextid: // TODO
+                    case Sc::Sprite::Op::imgulnextid:
+                        createOverlay((u16 &)currImage->imageId+1, s8(iscript.data[currOffset])+currImage->xOffset, s8(iscript.data[currOffset+1])+currImage->yOffset, false);
                         break;
                     case Sc::Sprite::Op::unknown_3e: // TODO
                         break;
