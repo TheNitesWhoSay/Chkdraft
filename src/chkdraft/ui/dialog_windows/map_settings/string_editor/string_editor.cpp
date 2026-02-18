@@ -226,9 +226,9 @@ LRESULT StringEditorWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     case BN_CLICKED:
         if ( LOWORD(wParam) == Id::DELETE_STRING &&
             WinLib::GetYesNo("Forcefully deleting a string could cause problems, continue?", "Warning") == WinLib::PromptResult::Yes &&
-            CM != nullptr && currSelString != 0 && CM->stringStored(currSelString) )
+            CM != nullptr && currSelString != 0 && CM->stringStored(currSelString, (extended ? Chk::Scope::Editor : Chk::Scope::Game)) )
         {
-            CM->deleteString(currSelString, Chk::Scope::Both, false);
+            CM->deleteString(currSelString, (extended ? Chk::Scope::Editor : Chk::Scope::Game), false);
             CM->refreshScenario();
         }
         else if ( LOWORD(wParam) == Id::SAVE_TO && CM != nullptr )
@@ -362,13 +362,13 @@ void StringEditorWindow::addUseItem(std::string str, size_t amount)
 
 bool StringEditorWindow::updateString(u32 stringNum)
 {
-    auto existingStr = CM->getString<ChkdString>((size_t)stringNum);
+    auto existingStr = CM->getString<ChkdString>((size_t)stringNum, (extended ? Chk::Scope::Editor : Chk::Scope::Game));
     auto editStr = editString.GetWinText();
     if ( CM != nullptr && editStr && existingStr && existingStr->compare(*editStr) != 0 )
     {
         if ( auto editStr = editString.GetWinText() )
         {
-            CM->replaceString<ChkdString>((size_t)stringNum, *editStr);
+            CM->replaceString<ChkdString>((size_t)stringNum, *editStr, (this->extended ? Chk::Scope::Editor : Chk::Scope::Game));
             if ( CM->locationStringUsed(currSelString, Chk::Scope::EditorOverGame) )
                 chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
 

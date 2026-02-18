@@ -41,6 +41,7 @@ namespace WinLib {
             bool GetSelItem(int n, LPARAM & itemData); // Attempts to get the nth selected item's data (in a multi-selection list box)
             bool GetItemData(int index, LPARAM & data);
             int GetTopIndex();
+            int FindItem(LPARAM itemData);
 
         protected:
             virtual LRESULT ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);

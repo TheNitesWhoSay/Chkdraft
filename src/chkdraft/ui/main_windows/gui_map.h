@@ -277,6 +277,13 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCach
                     void tileFogSelectionsChanged();
                     void checkSelChangeFlags();
 
+                    void element_added(strings_path, std::size_t index) override;
+                    void element_removed(strings_path, std::size_t index) override;
+                    void value_changed(string_elem_path, const std::optional<ScStr> & oldString, const std::optional<ScStr> & newString) override;
+                    void element_added(editor_strings_path, std::size_t index) override;
+                    void element_removed(editor_strings_path, std::size_t index) override;
+                    void value_changed(editor_string_elem_path, const std::optional<ScStr> & oldString, const std::optional<ScStr> & newString) override;
+
                     void after_action(std::size_t actionIndex) override;
 
 /* Private Data */  std::optional<Graphics> scGraphics {};

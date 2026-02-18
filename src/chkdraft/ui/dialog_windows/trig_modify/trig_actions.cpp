@@ -373,7 +373,7 @@ bool TrigActionsWindow::TransformAction(std::size_t triggerIndex, std::size_t ac
 void TrigActionsWindow::RefreshActionAreas()
 {
     RefreshWindow(trigIndex);
-    chkd.trigEditorWindow->triggersWindow.RefreshWindow(false);
+    chkd.trigEditorWindow->triggersWindow.RefreshTrigger(trigIndex);
 }
 
 void TrigActionsWindow::UpdateActionName(u8 actionNum, const std::string & newText, bool refreshImmediately)
@@ -1134,7 +1134,7 @@ void TrigActionsWindow::ButtonEditString()
             }
 
             if ( result > 0 )
-                chkd.trigEditorWindow->triggersWindow.RefreshWindow(false);
+                chkd.trigEditorWindow->triggersWindow.RefreshTrigger(trigIndex);
 
             SetFocus(gridActions.getHandle());
         }
@@ -1184,7 +1184,7 @@ void TrigActionsWindow::ButtonEditSound()
             }
 
             if ( result > 0 )
-                chkd.trigEditorWindow->triggersWindow.RefreshWindow(false);
+                chkd.trigEditorWindow->triggersWindow.RefreshTrigger(trigIndex);
 
             SetFocus(gridActions.getHandle());
         }

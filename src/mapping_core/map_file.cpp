@@ -289,7 +289,7 @@ bool MapFile::openMapFile(const std::string & filePath)
                     if ( auto chkData = MpqFile::getFile("staredit\\scenario.chk", false) )
                     {
                         std::stringstream chk(std::ios_base::in|std::ios_base::out|std::ios_base::binary);
-                        std::copy(chkData->begin(), chkData->end(), std::ostream_iterator<u8>(chk));
+                        chk.write((const char*)&chkData.value()[0], chkData->size());
                         if ( Scenario::parse(chk, true) )
                         {
                             auto finish = std::chrono::high_resolution_clock::now();
