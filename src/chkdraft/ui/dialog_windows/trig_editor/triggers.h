@@ -19,6 +19,7 @@ class TriggersWindow : public WinLib::ClassWindow
         bool DestroyThis();
         void RefreshWindow(bool focus);
         void RefreshGroupList();
+        void RefreshTrigger(std::size_t trigIndex);
         void DoSize();
 
         void DeleteSelection();

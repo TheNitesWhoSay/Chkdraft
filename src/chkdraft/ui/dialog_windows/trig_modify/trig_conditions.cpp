@@ -305,7 +305,7 @@ bool TrigConditionsWindow::TransformCondition(std::size_t triggerIndex, std::siz
 void TrigConditionsWindow::RefreshConditionAreas()
 {
     RefreshWindow(trigIndex);
-    chkd.trigEditorWindow->triggersWindow.RefreshWindow(false);
+    chkd.trigEditorWindow->triggersWindow.RefreshTrigger(trigIndex);
 }
 
 void TrigConditionsWindow::UpdateConditionName(u8 conditionNum, const std::string & newText, bool refreshImmediately)

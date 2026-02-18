@@ -293,6 +293,12 @@ namespace WinLib {
     {
         return (int)SendMessage(getHandle(), LB_GETTOPINDEX, 0, 0);
     }
+    
+    int ListBoxControl::FindItem(LPARAM itemData)
+    {
+        DWORD result = SendMessage(getHandle(), LB_FINDSTRING, -1, itemData);
+        return result == LB_ERR ? -1 : static_cast<int>(result);
+    }
 
     LRESULT ListBoxControl::ControlProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     {
