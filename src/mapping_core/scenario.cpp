@@ -7099,18 +7099,22 @@ std::vector<Chk::Trigger> Scenario::replaceTriggerRange(size_t beginIndex, size_
     }
     else if ( beginIndex < endIndex && endIndex <= read.triggers.size() )
     {
-        auto begin = read.triggers.begin()+beginIndex;
-        auto end = read.triggers.begin()+endIndex;
         std::vector<Chk::Trigger> replacedTriggers(read.triggers.begin()+beginIndex, read.triggers.begin()+endIndex);
-        std::vector<std::size_t> replacedIndexes(endIndex-beginIndex, 0);
-        std::iota(replacedIndexes.begin(), replacedIndexes.end(), beginIndex);
-        edit->triggers.set(replacedIndexes, triggers);
+        for ( std::size_t i=beginIndex; i<endIndex; ++i )
+            edit->triggers[i] = triggers[i-beginIndex];
+
+        if ( triggers.size() > endIndex-beginIndex ) // New triggers are inserted at the end of the range
+        {
+            std::vector<Chk::Trigger> expansion(triggers.begin()+(endIndex-beginIndex), triggers.end());
+            edit->triggers.insert(endIndex, expansion);
+        }
+
         fixTriggerExtensions();
         return replacedTriggers;
     }
     else
         throw std::out_of_range(std::string("Range [") + std::to_string(beginIndex) + ", " + std::to_string(endIndex) +
-            ") is invalid for trigger list of size: " + std::to_string(triggers.size()));
+            ") is invalid for trigger list of size: " + std::to_string(read.triggers.size()));
 }
 
 bool Scenario::hasTriggerExtension(size_t triggerIndex) const
@@ -7343,22 +7347,30 @@ void Scenario::moveBriefingTrigger(size_t briefingTriggerIndexFrom, size_t brief
 
 std::vector<Chk::Trigger> Scenario::replaceBriefingTriggerRange(size_t beginIndex, size_t endIndex, std::vector<Chk::Trigger> & briefingTriggers)
 {
+    auto edit = create_action(ActionDescriptor::ReplaceBriefingTriggerRange);
     if ( beginIndex == 0 && endIndex == read.briefingTriggers.size() )
     {
         auto replacedBriefingTriggers = read.briefingTriggers;
-        create_action(ActionDescriptor::ReplaceBriefingTriggerRange)->briefingTriggers = briefingTriggers;
+        edit->briefingTriggers = briefingTriggers;
         return replacedBriefingTriggers;
     }
     else if ( beginIndex < endIndex && endIndex <= read.briefingTriggers.size() )
     {
         std::vector<Chk::Trigger> replacedBriefingTriggers(read.briefingTriggers.begin()+beginIndex, read.briefingTriggers.begin()+endIndex);
-        std::vector<std::size_t> replacedIndexes(endIndex-beginIndex);
-        std::iota(replacedIndexes.begin(), replacedIndexes.end(), beginIndex);
+        for ( std::size_t i=beginIndex; i<endIndex; ++i )
+            edit->briefingTriggers[i] = briefingTriggers[i-beginIndex];
+
+        if ( briefingTriggers.size() > endIndex-beginIndex ) // New briefing triggers are inserted at the end of the range
+        {
+            std::vector<Chk::Trigger> expansion(briefingTriggers.begin()+(endIndex-beginIndex), briefingTriggers.end());
+            edit->briefingTriggers.insert(endIndex, expansion);
+        }
+
         return replacedBriefingTriggers;
     }
     else
         throw std::out_of_range(std::string("Range [") + std::to_string(beginIndex) + ", " + std::to_string(endIndex) +
-            ") is invalid for briefing trigger list of size: " + std::to_string(briefingTriggers.size()));
+            ") is invalid for briefing trigger list of size: " + std::to_string(read.briefingTriggers.size()));
 }
 
 size_t Scenario::addSound(size_t stringId)
