@@ -1083,8 +1083,11 @@ bool Scenario::parse(std::istream & is, bool fromMpq)
     bool hasLegacyKstr = false;
 
     // First read contents of "is" to "chk", this will allow jumping backwards when reading chks with jump sections
-    std::stringstream chk(std::ios_base::binary|std::ios_base::in|std::ios_base::out);
-    chk << is.rdbuf();
+    std::stringstream chkCopy(std::ios_base::binary|std::ios_base::in|std::ios_base::out);
+    if ( !fromMpq ) // Input not from MPQ may be a filestream requiring a copy first, if it was from mpq it's already an appropriate sstream
+        chkCopy << is.rdbuf();
+
+    std::istream & chk = fromMpq ? is : chkCopy;
     if ( !is.good() && !is.eof() )
     {
         logger.error("Unexpected failure reading scenario contents!");
