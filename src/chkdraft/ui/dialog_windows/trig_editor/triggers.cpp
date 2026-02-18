@@ -165,6 +165,46 @@ void TriggersWindow::RefreshGroupList()
     listGroups.SetRedraw(true);
 }
 
+void TriggersWindow::RefreshTrigger(std::size_t trigIndex)
+{
+    int updatedListIndex = -1;
+    int selIndex = -1;
+    LPARAM itemTrigIndex = 0;
+    if ( listTriggers.GetCurSel(selIndex) && selIndex != -1 &&
+         listTriggers.GetItemData(selIndex, itemTrigIndex) && static_cast<std::size_t>(itemTrigIndex) == trigIndex )
+    {
+        updatedListIndex = selIndex;
+    }
+    else
+    {
+        int found = listTriggers.FindItem(trigIndex);
+        if ( found != -1 )
+            updatedListIndex = found;
+    }
+
+    if ( updatedListIndex != -1 )
+    {
+        this->SetRedraw(false);
+        UINT width = 0;
+        UINT height = 0;
+        if ( this->trigListDc )
+            GetTriggerDrawSize(this->trigListDc.value(), width, height, *CM, trigIndex, CM->getTrigger(trigIndex));
+        else
+        {
+            trigListDc.emplace(listTriggers.getHandle());
+            trigListDc->setDefaultFont();
+            GetTriggerDrawSize(this->trigListDc.value(), width, height, *CM, trigIndex, CM->getTrigger(trigIndex));
+            trigListDc = std::nullopt;
+        }
+        listTriggers.SetItemHeight(updatedListIndex, height);
+        listTriggers.SetTopIndex(updatedListIndex);
+        this->SetRedraw(true);
+        this->RedrawThis();
+    }
+    else
+        RefreshTrigList();
+}
+
 void TriggersWindow::DoSize()
 {
     RECT rcCli;

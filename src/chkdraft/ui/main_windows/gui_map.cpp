@@ -4489,3 +4489,41 @@ void GuiMap::checkSelChangeFlags()
     if ( clearFogSelChanged() )
         this->tileFogSelectionsChanged();
 }
+
+void GuiMap::element_added(strings_path, std::size_t index)
+{
+    if ( read.strings[index].has_value() )
+        ;//logger.info() << "String added: " << index << " : " << read.strings[index].value() << std::endl;
+}
+
+void GuiMap::element_removed(strings_path, std::size_t index)
+{
+    if ( read.strings[index].has_value() )
+        ;//logger.info() << "String removed: " << index << " : " << read.strings[index].value() << std::endl;
+}
+
+void GuiMap::value_changed(string_elem_path route, const std::optional<ScStr> & oldString, const std::optional<ScStr> & newString)
+{
+    const std::size_t index = route.index<0>();
+    //logger.info() << "String[" << index << "] updated from \""
+    //    << (oldString ? (*oldString) : "") << "\" to \"" << (newString ? (*newString) : "") << "\"\n";
+}
+
+void GuiMap::element_added(editor_strings_path, std::size_t index)
+{
+    if ( read.strings[index].has_value() )
+        ;//logger.info() << "Editor string added: " << index << " : " << read.strings[index].value() << std::endl;
+}
+
+void GuiMap::element_removed(editor_strings_path, std::size_t index)
+{
+    if ( read.strings[index].has_value() )
+        ;//logger.info() << "Editor string removed: " << index << " : " << read.strings[index].value() << std::endl;
+}
+
+void GuiMap::value_changed(editor_string_elem_path route, const std::optional<ScStr> & oldString, const std::optional<ScStr> & newString)
+{
+    const std::size_t index = route.index<0>();
+    //logger.info() << "Editor string[" << index << "] updated from \""
+    //    << (oldString ? (*oldString) : "") << "\" to \"" << (newString ? (*newString) : "") << "\"\n";
+}
