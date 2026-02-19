@@ -105,7 +105,10 @@ void TrigActionsWindow::RefreshWindow(u32 trigIndex)
             }
         }
 
+        measureDc.emplace(getHandle());
+        measureDc->setDefaultFont();
         gridActions.AutoSizeColumns(DEFAULT_COLUMN_WIDTH, DEFAULT_COLUMN_WIDTH * 4);
+        measureDc = std::nullopt;
     }
     gridActions.RedrawHeader();
 }
@@ -679,17 +682,11 @@ void TrigActionsWindow::DrawSelectedAction()
 
 int TrigActionsWindow::GetGridItemWidth(int gridItemX, int gridItemY)
 {
-    std::string text;
-    if ( gridActions.item(gridItemX, gridItemY).getText(text) )
-    {
-        if ( auto dc = this->getDeviceContext() )
-        {
-            dc.setDefaultFont();
-            UINT width = 0, height = 0;
-            if ( GetStringDrawSize(dc, width, height, text) )
-                return width + 4;
-        }
-    }
+    UINT width = 0, height = 0;
+    const std::string & text = gridActions.item(gridItemX, gridItemY).getText();
+    if ( GetStringDrawSize(*measureDc, width, height, text) )
+        return width + 4;
+
     return 0;
 }
 
@@ -739,10 +736,9 @@ void TrigActionsWindow::DrawGridViewItem(const WinLib::DeviceContext & dc, int g
     int width = ListView_GetColumnWidth(gridActions.getHandle(), gridItemX);
     DrawItemBackground(dc, gridItemX, gridItemY, rcItem, width, xStart);
 
-    std::string text;
     RECT rcClip{xStart, rcItem.top, xStart+width-2, rcItem.bottom};
-    if ( gridActions.item(gridItemX, gridItemY).getText(text) )
-        dc.drawText(text, xStart + 1, rcItem.top, rcClip, true, false);
+    const std::string & text = gridActions.item(gridItemX, gridItemY).getText();
+    dc.drawText(text, xStart + 1, rcItem.top, rcClip, true, false);
 
     if ( !gridActions.item(gridItemX, gridItemY).isDisabled() )
         DrawItemFrame(dc, rcItem, width, xStart);

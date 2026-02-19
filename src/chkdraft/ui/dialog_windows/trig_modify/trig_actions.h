@@ -45,6 +45,8 @@ class TrigActionsWindow : public WinLib::ClassWindow, public ICndActGridUser
         bool unitPropertiesEditEnabled;
         bool isPasting;
 
+        std::optional<WinLib::DeviceContext> measureDc; // HDC for speeding up column measurement
+
         std::hash<std::string> strHash; // A hasher to help generate tables
         std::unordered_multimap<size_t/*stringHash*/, std::pair<u32, std::string/*scriptId*/>> scriptTable; // Scripts in format: description (id)
 

@@ -42,6 +42,8 @@ class BriefingTrigActionsWindow : public WinLib::ClassWindow, public ICndActGrid
         bool soundEditEnabled;
         bool isPasting;
 
+        std::optional<WinLib::DeviceContext> measureDc; // HDC for speeding up column measurement
+
         std::hash<std::string> strHash; // A hasher to help generate tables
 
         Suggestions & suggestions;

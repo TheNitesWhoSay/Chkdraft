@@ -46,10 +46,9 @@ namespace WinLib {
         text = "";
     }
 
-    bool GridControlItem::getText(std::string & text)
+    const std::string & GridControlItem::getText()
     {
-        try { text = this->text; return true; }
-        catch ( ... ) { return false; }
+        return this->text;
     }
 
     size_t GridControlItem::getTextLength()

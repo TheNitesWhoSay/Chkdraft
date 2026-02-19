@@ -164,7 +164,6 @@ bool CndActGrid::BuildSelectionString(std::string & str)
         for ( int x = 0; x < numColumns; x++ )
         {
             auto currItem = GridViewControl::item(x, y);
-            RawString currItemText;
             if ( GridViewControl::isFocused(x, y) || currItem.isSelected() )
             {
                 if ( hasPreviousThisRow )
@@ -172,8 +171,9 @@ bool CndActGrid::BuildSelectionString(std::string & str)
                 else
                     hasPreviousThisRow = true;
 
-                if ( currItem.getTextLength() > 0 && currItem.getText(currItemText) )
+                if ( currItem.getTextLength() > 0 )
                 {
+                    RawString currItemText = currItem.getText();
                     SingleLineChkdString chkdString;
                     if ( makeChkdStr(currItemText, chkdString) )
                         ssSelection << currItemText;

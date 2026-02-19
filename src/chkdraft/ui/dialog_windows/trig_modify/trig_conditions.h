@@ -36,6 +36,8 @@ class TrigConditionsWindow : public WinLib::ClassWindow, public ICndActGridUser
         u32 trigIndex;
         bool isPasting;
 
+        std::optional<WinLib::DeviceContext> measureDc; // HDC for speeding up column measurement
+
         Suggestions & suggestions;
 
         LRESULT MeasureItem(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);

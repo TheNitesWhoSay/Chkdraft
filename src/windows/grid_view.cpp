@@ -507,9 +507,7 @@ namespace WinLib {
         for ( int y=0; y<numRows; y++ )
         {
             RECT rect;
-            std::string str;
-            if ( item(x, y).getText(str) &&
-                 ListViewControl::GetItemRect(focusedX, focusedY, rect) )
+            if ( ListViewControl::GetItemRect(focusedX, focusedY, rect) )
             {
                 int itemWidth = (int)SendMessage(GetParent(getHandle()), GV::WM_GETGRIDITEMWIDTH, MAKEWPARAM(x, y), 0);
                 if ( itemWidth > newWidth )
@@ -637,10 +635,8 @@ namespace WinLib {
             int y = -1;
             if ( initChar.empty() && GetItemAt(xClick, yClick, y, x) )
             {
-                std::string str;
-                if ( item(x, y).getText(str) )
-                    editBox.SetText(str);
-            
+                editBox.SetText(item(x, y).getText());
+
                 if ( xClick >= 0 && yClick >= 0 )
                     UpdateCaretPos(xClick, yClick);
             }

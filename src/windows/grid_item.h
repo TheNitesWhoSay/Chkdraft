@@ -17,7 +17,7 @@ namespace WinLib {
             void SetDisabled(bool disabled);
             void Clear();
 
-            bool getText(std::string & text);
+            const std::string & getText();
             size_t getTextLength();
             int getTextNum();
             u32 getData();
