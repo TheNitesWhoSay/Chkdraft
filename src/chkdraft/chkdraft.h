@@ -83,7 +83,7 @@ class Chkdraft : public WinLib::ClassWindow
     protected:
 
 /*    Setup     */  bool CreateThis();
-                    void ParseCmdLine(LPSTR lpCmdLine);
+                    void ParseCmdLine(std::string lpCmdLine);
                     void toggleLogger();
 
 /*  Preprocess  */  bool DlgKeyListener(HWND hWnd, UINT & msg, WPARAM wParam, LPARAM lParam);

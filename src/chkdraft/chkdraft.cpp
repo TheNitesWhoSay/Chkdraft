@@ -927,18 +927,63 @@ void Chkdraft::KeyListener(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     }
 }
 
-void Chkdraft::ParseCmdLine(LPSTR lpCmdLine)
+class WinCmdLineArgs
 {
-    size_t length = std::strlen(lpCmdLine);
-    if ( length > 1 ) // Minimum length 2
+    std::size_t argc = 0;
+    LPWSTR* argv = NULL;
+
+public:
+    WinCmdLineArgs()
     {
-        if ( lpCmdLine[0] == '\"' )
+        LPWSTR commandLine = GetCommandLineW();
+        if ( commandLine != NULL )
         {
-            lpCmdLine[length-1] = '\0';
-            maps.OpenMap(&lpCmdLine[1]);
+            int numArgs = 0;
+            argv = CommandLineToArgvW(commandLine, &numArgs);
+            if ( argv != NULL )
+                argc = numArgs < 0 ? 0 : numArgs;
         }
+    }
+
+    ~WinCmdLineArgs()
+    {
+        if ( argv != NULL )
+            LocalFree(argv);
+    }
+
+    std::size_t size()
+    {
+        return argc;
+    }
+
+    std::string operator[](std::size_t i)
+    {
+        if ( i < argc )
+            return icux::toUtf8(std::wstring(argv[i]));
         else
-            maps.OpenMap(&lpCmdLine[0]);
+            throw std::out_of_range("Tried to access argument [" + std::to_string(i) + "] out of " + std::to_string(argc));
+    }
+};
+
+void Chkdraft::ParseCmdLine(std::string)
+{
+    WinCmdLineArgs winCmdLine {};
+    std::size_t numArgs = winCmdLine.size();
+    for ( std::size_t i=0; i<numArgs; ++i )
+    {
+        std::string arg = winCmdLine[i];
+        if ( arg.size() >= 2 && arg.starts_with('\"') && arg.ends_with('\"') )
+        {
+            arg.erase(0, 1);
+            arg.pop_back();
+        }
+        
+        if ( ::findFile(arg) ) 
+        {
+            std::string extension = ::getSystemFileExtension(arg, false);
+            if ( extension == "scm" || extension == "scx" || extension == "chk" )
+                maps.OpenMap(arg);
+        }
     }
 }
 
