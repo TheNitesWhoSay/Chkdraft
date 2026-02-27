@@ -4217,6 +4217,22 @@ void GuiMap::OnScDataRefresh()
     scGraphics.emplace(*this, selections);
 }
 
+const StrCache & GuiMap::getStrCache()
+{
+    if ( !strCache.initialized() )
+        strCache.init(read.strings);
+
+    return strCache;
+}
+
+const StrCache & GuiMap::getEditorStrCache()
+{
+    if ( !editorStrCache.initialized() )
+        editorStrCache.init(read.editorStrings);
+
+    return editorStrCache;
+}
+
 void GuiMap::destroyBrush()
 {
     if ( brushAction )
@@ -4492,38 +4508,36 @@ void GuiMap::checkSelChangeFlags()
 
 void GuiMap::element_added(strings_path, std::size_t index)
 {
-    if ( read.strings[index].has_value() )
-        logger.info() << "String added: " << index << " : " << read.strings[index].value() << std::endl;
+    if ( strCache.initialized() )
+        strCache.stringAdded(index, read.strings[index]);
 }
 
 void GuiMap::element_removed(strings_path, std::size_t index)
 {
-    if ( read.strings[index].has_value() )
-        logger.info() << "String removed: " << index << " : " << read.strings[index].value() << std::endl;
+    if ( strCache.initialized() )
+        strCache.stringRemoved(index, read.strings[index]);
 }
 
 void GuiMap::value_changed(string_elem_path route, const std::optional<ScStr> & oldString, const std::optional<ScStr> & newString)
 {
-    const std::size_t index = route.index<0>();
-    logger.info() << "String[" << index << "] updated from \""
-        << (oldString ? (*oldString) : "") << "\" to \"" << (newString ? (*newString) : "") << "\"\n";
+    if ( strCache.initialized() )
+        strCache.stringModified(route.index<0>(), oldString, newString);
 }
 
 void GuiMap::element_added(editor_strings_path, std::size_t index)
 {
-    if ( read.strings[index].has_value() )
-        logger.info() << "Editor string added: " << index << " : " << read.strings[index].value() << std::endl;
+    if ( editorStrCache.initialized() )
+        editorStrCache.stringAdded(index, read.editorStrings[index]);
 }
 
 void GuiMap::element_removed(editor_strings_path, std::size_t index)
 {
-    if ( read.strings[index].has_value() )
-        logger.info() << "Editor string removed: " << index << " : " << read.strings[index].value() << std::endl;
+    if ( editorStrCache.initialized() )
+        editorStrCache.stringRemoved(index, read.editorStrings[index]);
 }
 
 void GuiMap::value_changed(editor_string_elem_path route, const std::optional<ScStr> & oldString, const std::optional<ScStr> & newString)
 {
-    const std::size_t index = route.index<0>();
-    logger.info() << "Editor string[" << index << "] updated from \""
-        << (oldString ? (*oldString) : "") << "\" to \"" << (newString ? (*newString) : "") << "\"\n";
+    if ( editorStrCache.initialized() )
+        editorStrCache.stringModified(route.index<0>(), oldString, newString);
 }

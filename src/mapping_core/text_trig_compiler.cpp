@@ -24,11 +24,11 @@ TextTrigCompiler::TextTrigCompiler(bool useAddressesForMemory, u32 deathTableOff
 
 }
 
-template <class MapType> bool TextTrigCompiler::compileTriggers(std::string & text, MapType & chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd)
+template <class MapType> bool TextTrigCompiler::compileTriggers(std::string & text, MapType & chk, const StrCache & strCache, const StrCache & editorStrCache, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd)
 {
     logger.info() << "Starting trigger compilation to replace range [" << trigIndexBegin << ", " << trigIndexEnd << ")..." << std::endl;
     auto start = std::chrono::high_resolution_clock::now();
-    if ( !loadCompiler(chk, scData, trigIndexBegin, trigIndexEnd) )
+    if ( !loadCompiler(chk, strCache, editorStrCache, scData, trigIndexBegin, trigIndexEnd) )
         return false;
 
     try
@@ -58,14 +58,14 @@ template <class MapType> bool TextTrigCompiler::compileTriggers(std::string & te
     catch ( std::bad_alloc ) { CHKD_ERR("Compilation aborted due to low memory."); }
     return false;
 }
-template bool TextTrigCompiler::compileTriggers<Scenario>(std::string & text, Scenario & chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd);
+template bool TextTrigCompiler::compileTriggers<Scenario>(std::string & text, Scenario & chk, const StrCache & strCache, const StrCache & editorStrCache, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd);
 #ifdef INCLUDE_LITE_SCENARIO
-template bool TextTrigCompiler::compileTriggers<LiteScenario>(std::string & text, LiteScenario & chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd);
+template bool TextTrigCompiler::compileTriggers<LiteScenario>(std::string & text, LiteScenario & chk, const StrCache & strCache, const StrCache & editorStrCache, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd);
 #endif
 
-template <class MapType> bool TextTrigCompiler::compileTrigger(std::string & text, MapType & chk, Sc::Data & scData, size_t trigIndex)
+template <class MapType> bool TextTrigCompiler::compileTrigger(std::string & text, MapType & chk, const StrCache & strCache, const StrCache & editorStrCache, Sc::Data & scData, size_t trigIndex)
 {
-    if ( !loadCompiler(chk, scData, trigIndex, trigIndex+1) )
+    if ( !loadCompiler(chk, strCache, editorStrCache, scData, trigIndex, trigIndex+1) )
         return false;
 
     try
@@ -96,9 +96,9 @@ template <class MapType> bool TextTrigCompiler::compileTrigger(std::string & tex
     catch ( std::bad_alloc ) { CHKD_ERR("Compilation aborted due to low memory."); }
     return false;
 }
-template bool TextTrigCompiler::compileTrigger<Scenario>(std::string & text, Scenario & chk, Sc::Data & scData, size_t trigIndex);
+template bool TextTrigCompiler::compileTrigger<Scenario>(std::string & text, Scenario & chk, const StrCache & strCache, const StrCache & editorStrCache, Sc::Data & scData, size_t trigIndex);
 #ifdef INCLUDE_LITE_SCENARIO
-template bool TextTrigCompiler::compileTrigger<LiteScenario>(std::string & text, LiteScenario & chk, Sc::Data & scData, size_t trigIndex);
+template bool TextTrigCompiler::compileTrigger<LiteScenario>(std::string & text, LiteScenario & chk, const StrCache & strCache, const StrCache & editorStrCache, Sc::Data & scData, size_t trigIndex);
 #endif
 
 bool TextTrigCompiler::parseConditionName(std::string text, Chk::Condition::Type & conditionType) const
@@ -135,7 +135,7 @@ bool TextTrigCompiler::parseConditionName(std::string text, Chk::Condition::Type
     return false;
 }
 
-template <class MapType> std::optional<Chk::Condition::ArgField> TextTrigCompiler::parseConditionArg(std::string conditionArgText, Chk::Condition::Argument argument, Chk::Condition & condition, const MapType & chk, Sc::Data & scData, size_t trigIndex, bool silent)
+template <class MapType> std::optional<Chk::Condition::ArgField> TextTrigCompiler::parseConditionArg(std::string conditionArgText, Chk::Condition::Argument argument, Chk::Condition & condition, const MapType & chk, const StrCache & strCache, const StrCache & editorStrCache, Sc::Data & scData, size_t trigIndex, bool silent)
 {
     u32 dataTypesToLoad = 0;
     switch ( argument.type )
@@ -148,7 +148,7 @@ template <class MapType> std::optional<Chk::Condition::ArgField> TextTrigCompile
         default: break;
     }
 
-    if ( !loadCompiler(chk, scData, trigIndex, trigIndex+1, (ScenarioDataFlag)dataTypesToLoad) )
+    if ( !loadCompiler(chk, strCache, editorStrCache, scData, trigIndex, trigIndex+1, (ScenarioDataFlag)dataTypesToLoad) )
         return std::nullopt;
 
     std::string txcd = conditionArgText;
@@ -165,9 +165,9 @@ template <class MapType> std::optional<Chk::Condition::ArgField> TextTrigCompile
     }
     return result;
 }
-template std::optional<Chk::Condition::ArgField> TextTrigCompiler::parseConditionArg<Scenario>(std::string conditionArgText, Chk::Condition::Argument argument, Chk::Condition & condition, const Scenario & chk, Sc::Data & scData, size_t trigIndex, bool silent);
+template std::optional<Chk::Condition::ArgField> TextTrigCompiler::parseConditionArg<Scenario>(std::string conditionArgText, Chk::Condition::Argument argument, Chk::Condition & condition, const Scenario & chk, const StrCache & strCache, const StrCache & editorStrCache, Sc::Data & scData, size_t trigIndex, bool silent);
 #ifdef INCLUDE_LITE_SCENARIO
-template std::optional<Chk::Condition::ArgField> TextTrigCompiler::parseConditionArg<LiteScenario>(std::string conditionArgText, Chk::Condition::Argument argument, Chk::Condition & condition, const LiteScenario & chk, Sc::Data & scData, size_t trigIndex, bool silent);
+template std::optional<Chk::Condition::ArgField> TextTrigCompiler::parseConditionArg<LiteScenario>(std::string conditionArgText, Chk::Condition::Argument argument, Chk::Condition & condition, const LiteScenario & chk, const StrCache & strCache, const StrCache & editorStrCache, Sc::Data & scData, size_t trigIndex, bool silent);
 #endif
 
 bool TextTrigCompiler::parseActionName(std::string text, Chk::Action::Type & actionType) const
@@ -203,7 +203,7 @@ bool TextTrigCompiler::parseActionName(std::string text, Chk::Action::Type & act
     return false;
 }
 
-template <class MapType> std::optional<Chk::Action::ArgField> TextTrigCompiler::parseActionArg(std::string actionArgText, Chk::Action::Argument argument, Chk::Action & action, const MapType & chk, Sc::Data & scData, size_t trigIndex, size_t actionIndex, bool silent)
+template <class MapType> std::optional<Chk::Action::ArgField> TextTrigCompiler::parseActionArg(std::string actionArgText, Chk::Action::Argument argument, Chk::Action & action, const MapType & chk, const StrCache & strCache, const StrCache & editorStrCache, Sc::Data & scData, size_t trigIndex, size_t actionIndex, bool silent)
 {
     u32 dataTypesToLoad = 0;
     switch ( argument.type )
@@ -219,7 +219,7 @@ template <class MapType> std::optional<Chk::Action::ArgField> TextTrigCompiler::
         default: break;
     }
 
-    if ( !loadCompiler(chk, scData, trigIndex, trigIndex+1, (ScenarioDataFlag)dataTypesToLoad) )
+    if ( !loadCompiler(chk, strCache, editorStrCache, scData, trigIndex, trigIndex+1, (ScenarioDataFlag)dataTypesToLoad) )
         return std::nullopt;
     
     std::string txac = actionArgText;
@@ -236,14 +236,14 @@ template <class MapType> std::optional<Chk::Action::ArgField> TextTrigCompiler::
     }
     return result;
 }
-template std::optional<Chk::Action::ArgField> TextTrigCompiler::parseActionArg<Scenario>(std::string actionArgText, Chk::Action::Argument argument, Chk::Action & action, const Scenario & chk, Sc::Data & scData, size_t trigIndex, size_t actionIndex, bool silent);
+template std::optional<Chk::Action::ArgField> TextTrigCompiler::parseActionArg<Scenario>(std::string actionArgText, Chk::Action::Argument argument, Chk::Action & action, const Scenario & chk, const StrCache & strCache, const StrCache & editorStrCache, Sc::Data & scData, size_t trigIndex, size_t actionIndex, bool silent);
 #ifdef INCLUDE_LITE_SCENARIO
-template std::optional<Chk::Action::ArgField> TextTrigCompiler::parseActionArg<LiteScenario>(std::string actionArgText, Chk::Action::Argument argument, Chk::Action & action, const LiteScenario & chk, Sc::Data & scData, size_t trigIndex, size_t actionIndex, bool silent);
+template std::optional<Chk::Action::ArgField> TextTrigCompiler::parseActionArg<LiteScenario>(std::string actionArgText, Chk::Action::Argument argument, Chk::Action & action, const LiteScenario & chk, const StrCache & strCache, const StrCache & editorStrCache, Sc::Data & scData, size_t trigIndex, size_t actionIndex, bool silent);
 #endif
 
 // protected
 
-template <class MapType> bool TextTrigCompiler::loadCompiler(const MapType & chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd, ScenarioDataFlag dataTypes)
+template <class MapType> bool TextTrigCompiler::loadCompiler(const MapType & chk, const StrCache & strCache, const StrCache & editorStrCache, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd, ScenarioDataFlag dataTypes)
 {
     clearCompiler();
     
@@ -261,12 +261,12 @@ template <class MapType> bool TextTrigCompiler::loadCompiler(const MapType & chk
         (!prepSwitches || prepSwitchTable(chk)) &&
         (!prepGroups || prepGroupTable(chk)) &&
         (!prepScripts || prepScriptTable(scData)) &&
-        (!prepRegularStrings || prepStringTable(chk, newStringTable, trigIndexBegin, trigIndexEnd, Chk::Scope::Game)) &&
-        (!prepExtendedStrings || prepStringTable(chk, newExtendedStringTable, trigIndexBegin, trigIndexEnd, Chk::Scope::Editor));
+        (!prepRegularStrings || prepStringTable(chk, strCache, newStringTable, trigIndexBegin, trigIndexEnd, Chk::Scope::Game)) &&
+        (!prepExtendedStrings || prepStringTable(chk, editorStrCache, newExtendedStringTable, trigIndexBegin, trigIndexEnd, Chk::Scope::Editor));
 }
-template bool TextTrigCompiler::loadCompiler<Scenario>(const Scenario & chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd, ScenarioDataFlag dataTypes);
+template bool TextTrigCompiler::loadCompiler<Scenario>(const Scenario & chk, const StrCache & strCache, const StrCache & editorStrCache, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd, ScenarioDataFlag dataTypes);
 #ifdef INCLUDE_LITE_SCENARIO
-template bool TextTrigCompiler::loadCompiler<LiteScenario>(const LiteScenario & chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd, ScenarioDataFlag dataTypes);
+template bool TextTrigCompiler::loadCompiler<LiteScenario>(const LiteScenario & chk, const StrCache & strCache, const StrCache & editorStrCache, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd, ScenarioDataFlag dataTypes);
 #endif
 
 void TextTrigCompiler::clearCompiler()
@@ -2150,9 +2150,6 @@ bool TextTrigCompiler::parseString(std::string & text, std::vector<RawString> & 
                 auto & node = *it->second;
                 if ( node.scStr.compare<RawString>(str) == 0 )
                 {
-                    if ( node.unused )
-                        node.unused = false;
-
                     if ( node.stringId == Chk::StringId::NoString )
                         node.assignees.push_back(StringAssignee {trigIndex, actionIndex, isSound});
                     else
@@ -2165,7 +2162,6 @@ bool TextTrigCompiler::parseString(std::string & text, std::vector<RawString> & 
 
         // No matches
         auto node = std::make_unique<StringTableNode>();
-        node->unused = false;
         node->scStr = ScStr(str);
         node->stringId = 0;
         node->assignees.push_back(StringAssignee {trigIndex, actionIndex, isSound});
@@ -3790,92 +3786,25 @@ template bool TextTrigCompiler::prepGroupTable<Scenario>(const Scenario & map);
 template bool TextTrigCompiler::prepGroupTable<LiteScenario>(const LiteScenario & map);
 #endif
 
-template <class MapType> bool TextTrigCompiler::prepStringTable(const MapType & map, std::unordered_multimap<size_t, std::unique_ptr<StringTableNode>> & stringHashTable, size_t trigIndexBegin, size_t trigIndexEnd, const Chk::Scope & scope)
+template <class MapType> bool TextTrigCompiler::prepStringTable(const MapType & map, const StrCache & strCache, std::unordered_multimap<size_t, std::unique_ptr<StringTableNode>> & stringHashTable, size_t trigIndexBegin, size_t trigIndexEnd, const Chk::Scope & scope)
 {
-    std::bitset<Chk::MaxStrings> stringUsed; // Table of strings currently used in the map
-    u32 userMask = scope == Chk::Scope::Game ? Chk::StringUserFlag::xTrigger : Chk::StringUserFlag::All;
-    map.markValidUsedStrings(stringUsed, Chk::Scope::Either, scope, userMask);
-    size_t stringCapacity = map.getCapacity(scope);
-    for ( size_t stringId=1; stringId<=stringCapacity; stringId++ )
+    this->strHash = strCache.hash;
+    for ( const auto & entry : strCache.hashToStrIndexes )
     {
-        if ( stringUsed[stringId] )
+        if ( auto rawString = map.template getString<RawString>(entry.second, scope) )
         {
-            if ( auto rawString = map.template getString<RawString>(stringId, scope) )
-            {
-                auto node = std::make_unique<StringTableNode>();
-                node->unused = false;
-                node->scStr = ScStr(*rawString);
-                node->stringId = (u32)stringId;
-                stringHashTable.insert(std::pair<size_t, std::unique_ptr<StringTableNode>>(strHash(*rawString), std::move(node)));
-            }
-        }
-    }
-
-    if ( scope == Chk::Scope::Game )
-    {
-        size_t numTriggers = map.numTriggers();
-        for ( size_t trigIndex = 0; trigIndex < numTriggers; trigIndex++ )
-        {
-            bool inReplacedRange = trigIndex >= trigIndexBegin && trigIndex < trigIndexEnd;
-            const Chk::Trigger & trigger = map.getTrigger(trigIndex);
-            for ( size_t actionIndex = 0; actionIndex < Chk::Trigger::MaxActions; actionIndex++ )
-            {
-                const Chk::Action & action = trigger.actions[actionIndex];
-                const Chk::Action::Type & actionType = action.actionType;
-                if ( actionType < Chk::Action::NumActionTypes )
-                {
-                    if ( Chk::Action::actionUsesStringArg[actionType] && action.stringId > 0 )
-                        prepTriggerString(map, stringHashTable, action.stringId, inReplacedRange, Chk::Scope::Game);
-
-                    if ( Chk::Action::actionUsesSoundArg[actionType] && action.soundStringId > 0 )
-                        prepTriggerString(map, stringHashTable, action.soundStringId, inReplacedRange, Chk::Scope::Game);
-                }
-            }
+            auto node = std::make_unique<StringTableNode>();
+            node->scStr = ScStr(*rawString);
+            node->stringId = (u32)entry.second;
+            stringHashTable.insert(std::pair<size_t, std::unique_ptr<StringTableNode>>(entry.first, std::move(node)));
         }
     }
 
     return true;
 }
-template bool TextTrigCompiler::prepStringTable<Scenario>(const Scenario & map, std::unordered_multimap<size_t, std::unique_ptr<StringTableNode>> & stringHashTable, size_t trigIndexBegin, size_t trigIndexEnd, const Chk::Scope & scope);
+template bool TextTrigCompiler::prepStringTable<Scenario>(const Scenario & map, const StrCache & strCache, std::unordered_multimap<size_t, std::unique_ptr<StringTableNode>> & stringHashTable, size_t trigIndexBegin, size_t trigIndexEnd, const Chk::Scope & scope);
 #ifdef INCLUDE_LITE_SCENARIO
-template bool TextTrigCompiler::prepStringTable<LiteScenario>(const LiteScenario & map, std::unordered_multimap<size_t, std::unique_ptr<StringTableNode>> & stringHashTable, size_t trigIndexBegin, size_t trigIndexEnd, const Chk::Scope & scope);
-#endif
-
-template <class MapType> void TextTrigCompiler::prepTriggerString(const MapType & scenario, std::unordered_multimap<size_t, std::unique_ptr<StringTableNode>> & stringHashTable, const u32 & stringId, const bool & inReplacedRange, const Chk::Scope & scope)
-{
-    if ( auto rawString = scenario.template getString<RawString>(stringId, scope) )
-    {
-        size_t hash = strHash(*rawString);
-        bool exists = false;
-        auto matches = stringHashTable.equal_range(hash);
-        if ( matches.first != stringHashTable.end() && matches.first->first == hash )
-        {
-            for ( auto it = matches.first; it != matches.second; ++it )
-            {
-                if ( it->second->stringId == stringId && it->second->scStr.compare(*rawString) == 0 )
-                {
-                    exists = true;
-                    if ( it->second->unused && !inReplacedRange )
-                        it->second->unused = false;
-
-                    break;
-                }
-            }
-        }
-
-        if ( !exists )
-        {
-            auto node = std::make_unique<StringTableNode>();
-            node->unused = inReplacedRange;
-            node->scStr = ScStr(*rawString);
-            node->stringId = stringId;
-            stringHashTable.insert(std::pair<size_t, std::unique_ptr<StringTableNode>>(strHash(*rawString), std::move(node)));
-        }
-    }
-}
-template void TextTrigCompiler::prepTriggerString<Scenario>(const Scenario & scenario, std::unordered_multimap<size_t, std::unique_ptr<StringTableNode>> & stringHashTable, const u32 & stringId, const bool & inReplacedRange, const Chk::Scope & scope);
-#ifdef INCLUDE_LITE_SCENARIO
-template void TextTrigCompiler::prepTriggerString<LiteScenario>(const LiteScenario & scenario, std::unordered_multimap<size_t, std::unique_ptr<StringTableNode>> & stringHashTable, const u32 & stringId, const bool & inReplacedRange, const Chk::Scope & scope);
+template bool TextTrigCompiler::prepStringTable<LiteScenario>(const LiteScenario & map, const StrCache & strCache, std::unordered_multimap<size_t, std::unique_ptr<StringTableNode>> & stringHashTable, size_t trigIndexBegin, size_t trigIndexEnd, const Chk::Scope & scope);
 #endif
 
 bool TextTrigCompiler::prepScriptTable(Sc::Data & scData)
@@ -3943,11 +3872,11 @@ BriefingTextTrigCompiler::BriefingTextTrigCompiler()
 
 }
 
-template <class MapType> bool BriefingTextTrigCompiler::compileBriefingTriggers(std::string & text, MapType & chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd)
+template <class MapType> bool BriefingTextTrigCompiler::compileBriefingTriggers(std::string & text, MapType & chk, const StrCache & strCache, const StrCache & editorStrCache, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd)
 {
     logger.info() << "Starting briefing trigger compilation to replace range [" << trigIndexBegin << ", " << trigIndexEnd << ")..." << std::endl;
     auto start = std::chrono::high_resolution_clock::now();
-    if ( !TextTrigCompiler::loadCompiler(chk, scData, trigIndexBegin, trigIndexEnd) )
+    if ( !TextTrigCompiler::loadCompiler(chk, strCache, editorStrCache, scData, trigIndexBegin, trigIndexEnd) )
         return false;
     
     try
@@ -3976,14 +3905,14 @@ template <class MapType> bool BriefingTextTrigCompiler::compileBriefingTriggers(
     catch ( std::bad_alloc ) { CHKD_ERR("Compilation aborted due to low memory."); }
     return false;
 }
-template bool BriefingTextTrigCompiler::compileBriefingTriggers<Scenario>(std::string & text, Scenario & chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd);
+template bool BriefingTextTrigCompiler::compileBriefingTriggers<Scenario>(std::string & text, Scenario & chk, const StrCache & strCache, const StrCache & editorStrCache, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd);
 #ifdef INCLUDE_LITE_SCENARIO
-template bool BriefingTextTrigCompiler::compileBriefingTriggers<LiteScenario>(std::string & text, LiteScenario & chk, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd);
+template bool BriefingTextTrigCompiler::compileBriefingTriggers<LiteScenario>(std::string & text, LiteScenario & chk, const StrCache & strCache, const StrCache & editorStrCache, Sc::Data & scData, size_t trigIndexBegin, size_t trigIndexEnd);
 #endif
 
-template <class MapType> bool BriefingTextTrigCompiler::compileBriefingTrigger(std::string & trigText, MapType & chk, Sc::Data & scData, size_t trigIndex)
+template <class MapType> bool BriefingTextTrigCompiler::compileBriefingTrigger(std::string & trigText, MapType & chk, const StrCache & strCache, const StrCache & editorStrCache, Sc::Data & scData, size_t trigIndex)
 {
-    if ( !TextTrigCompiler::loadCompiler(chk, scData, trigIndex, trigIndex+1) )
+    if ( !TextTrigCompiler::loadCompiler(chk, strCache, editorStrCache, scData, trigIndex, trigIndex+1) )
         return false;
 
     try
@@ -4014,9 +3943,9 @@ template <class MapType> bool BriefingTextTrigCompiler::compileBriefingTrigger(s
     catch ( std::bad_alloc ) { CHKD_ERR("Compilation aborted due to low memory."); }
     return false;
 }
-template bool BriefingTextTrigCompiler::compileBriefingTrigger<Scenario>(std::string & trigText, Scenario & chk, Sc::Data & scData, size_t trigIndex);
+template bool BriefingTextTrigCompiler::compileBriefingTrigger<Scenario>(std::string & trigText, Scenario & chk, const StrCache & strCache, const StrCache & editorStrCache, Sc::Data & scData, size_t trigIndex);
 #ifdef INCLUDE_LITE_SCENARIO
-template bool BriefingTextTrigCompiler::compileBriefingTrigger<LiteScenario>(std::string & trigText, LiteScenario & chk, Sc::Data & scData, size_t trigIndex);
+template bool BriefingTextTrigCompiler::compileBriefingTrigger<LiteScenario>(std::string & trigText, LiteScenario & chk, const StrCache & strCache, const StrCache & editorStrCache, Sc::Data & scData, size_t trigIndex);
 #endif
 
 bool BriefingTextTrigCompiler::parseBriefingActionName(std::string text, Chk::Action::Type & actionType) const
@@ -4052,7 +3981,7 @@ bool BriefingTextTrigCompiler::parseBriefingActionName(std::string text, Chk::Ac
     return false;
 }
 
-template <class MapType> std::optional<Chk::Action::ArgField> BriefingTextTrigCompiler::parseBriefingActionArg(std::string actionArgText, Chk::Action::Argument argument, Chk::Action & action, const MapType & chk, Sc::Data & scData, size_t trigIndex, size_t actionIndex, bool silent)
+template <class MapType> std::optional<Chk::Action::ArgField> BriefingTextTrigCompiler::parseBriefingActionArg(std::string actionArgText, Chk::Action::Argument argument, Chk::Action & action, const MapType & chk, const StrCache & strCache, const StrCache & editorStrCache, Sc::Data & scData, size_t trigIndex, size_t actionIndex, bool silent)
 {
     u32 dataTypesToLoad = 0;
     switch ( argument.type )
@@ -4068,7 +3997,7 @@ template <class MapType> std::optional<Chk::Action::ArgField> BriefingTextTrigCo
         default: break;
     }
 
-    if ( !loadCompiler(chk, scData, trigIndex, trigIndex+1, (ScenarioDataFlag)dataTypesToLoad) )
+    if ( !loadCompiler(chk, strCache, editorStrCache, scData, trigIndex, trigIndex+1, (ScenarioDataFlag)dataTypesToLoad) )
         return std::nullopt;
     
     std::string txac = actionArgText;
@@ -4085,9 +4014,9 @@ template <class MapType> std::optional<Chk::Action::ArgField> BriefingTextTrigCo
     }
     return result;
 }
-template std::optional<Chk::Action::ArgField> BriefingTextTrigCompiler::parseBriefingActionArg<Scenario>(std::string actionArgText, Chk::Action::Argument argument, Chk::Action & action, const Scenario & chk, Sc::Data & scData, size_t trigIndex, size_t actionIndex, bool silent);
+template std::optional<Chk::Action::ArgField> BriefingTextTrigCompiler::parseBriefingActionArg<Scenario>(std::string actionArgText, Chk::Action::Argument argument, Chk::Action & action, const Scenario & chk, const StrCache & strCache, const StrCache & editorStrCache, Sc::Data & scData, size_t trigIndex, size_t actionIndex, bool silent);
 #ifdef INCLUDE_LITE_SCENARIO
-template std::optional<Chk::Action::ArgField> BriefingTextTrigCompiler::parseBriefingActionArg<LiteScenario>(std::string actionArgText, Chk::Action::Argument argument, Chk::Action & action, const LiteScenario & chk, Sc::Data & scData, size_t trigIndex, size_t actionIndex, bool silent);
+template std::optional<Chk::Action::ArgField> BriefingTextTrigCompiler::parseBriefingActionArg<LiteScenario>(std::string actionArgText, Chk::Action::Argument argument, Chk::Action & action, const LiteScenario & chk, const StrCache & strCache, const StrCache & editorStrCache, Sc::Data & scData, size_t trigIndex, size_t actionIndex, bool silent);
 #endif
 
 bool BriefingTextTrigCompiler::parseBriefingTriggers(std::string & text, std::vector<RawString> & stringContents, std::vector<Chk::Trigger> & output, std::stringstream & error)

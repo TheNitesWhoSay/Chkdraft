@@ -9,6 +9,7 @@
 #include <optional>
 #include <string>
 #include <map>
+#include <unordered_map>
 #include <vector>
 
 struct Scenario : nf::tracked<MapData, Scenario, DescriptorIndex>
@@ -723,6 +724,22 @@ private:
     bool mapIsProtected = false; // Flagged if map is protected (not included in tracked data)
     bool tileSelChanged = false; // Flagged when tile sel changes
     bool fogSelChanged = false; // Flagged when fog sel changes
+};
+
+
+struct StrCache
+{
+    std::hash<std::string> hash {};
+    std::unordered_multimap<size_t, size_t> hashToStrIndexes {};
+
+    bool initialized() const;
+    void init(const std::vector<std::optional<ScStr>> & strings);
+    void stringAdded(std::size_t index, const std::optional<ScStr> & str);
+    void stringRemoved(std::size_t index, const std::optional<ScStr> & str);
+    void stringModified(std::size_t index, const std::optional<ScStr> & oldStr, const std::optional<ScStr> & newStr);
+
+    // Returns index of str if located in hash-map as well as in strings, size_t max otherwise
+    std::size_t findStringIndex(const std::string & str, const std::vector<std::optional<ScStr>> & strings) const;
 };
 
 #endif

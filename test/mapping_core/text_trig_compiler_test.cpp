@@ -10,16 +10,21 @@ TEST(TextTrigCompilerTest, Basic)
 
 void TestCircularity(Sc::Data & scData, MapFile mapFile)
 {
+    StrCache strCache {};
+    strCache.init(mapFile->strings);
+    StrCache editorStrCache {};
+    editorStrCache.init(mapFile->editorStrings);
+
     TextTrigGenerator ttg(true, 0x0058A364);
     std::string textTrigs;
-    EXPECT_TRUE(ttg.generateTextTrigs((Scenario &)mapFile, textTrigs, scData));
+    EXPECT_TRUE(ttg.generateTextTrigs((Scenario &)mapFile, strCache, editorStrCache, textTrigs, scData));
 
     std::string preCompileTextTrigs = textTrigs;
 
     TextTrigCompiler ttc(true, 0x0058A364);
-    ttc.compileTriggers(textTrigs, (Scenario &)mapFile, scData, 0, mapFile.numTriggers());
+    ttc.compileTriggers(textTrigs, (Scenario &)mapFile, strCache, editorStrCache, scData, 0, mapFile.numTriggers());
 
-    EXPECT_TRUE(ttg.generateTextTrigs((Scenario &)mapFile, textTrigs, scData));
+    EXPECT_TRUE(ttg.generateTextTrigs((Scenario &)mapFile, strCache, editorStrCache, textTrigs, scData));
     EXPECT_EQ(0, preCompileTextTrigs.compare(textTrigs));
 }
 

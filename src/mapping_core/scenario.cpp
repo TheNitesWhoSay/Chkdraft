@@ -7985,3 +7985,75 @@ void Scenario::radiallyUpdateTerrain(std::deque<Chk::IsomDiamond> & diamondsToUp
         }
     }
 }
+
+bool StrCache::initialized() const
+{
+    return !hashToStrIndexes.empty();
+}
+
+void StrCache::init(const std::vector<std::optional<ScStr>> & strings)
+{
+    this->hashToStrIndexes.emplace(this->hash(""), 0);
+    std::size_t i = 0;
+    for ( const std::optional<ScStr> & string : strings )
+    {
+        if ( string.has_value() && !string->str.empty() )
+            this->hashToStrIndexes.emplace(this->hash(string->str), i);
+
+        ++i;
+    }
+}
+
+void StrCache::stringAdded(std::size_t index, const std::optional<ScStr> & str)
+{
+    if ( str.has_value() && !str->str.empty() )
+        this->hashToStrIndexes.emplace(this->hash(str->str), index);
+}
+
+void StrCache::stringRemoved(std::size_t index, const std::optional<ScStr> & str)
+{
+    if ( str.has_value() && !str->str.empty() )
+    {
+        auto hash = this->hash(str->str);
+        auto found = this->hashToStrIndexes.equal_range(hash);
+        for ( auto it = found.first; it != found.second; ++it )
+        {
+            if ( it->second == index )
+            {
+                this->hashToStrIndexes.erase(it);
+                break;
+            }
+        }
+    }
+}
+
+void StrCache::stringModified(std::size_t index, const std::optional<ScStr> & oldStr, const std::optional<ScStr> & newStr)
+{
+    bool hasOldStr = oldStr.has_value() && !oldStr->str.empty();
+    bool hasNewStr = newStr.has_value() && !newStr->str.empty();
+    if ( !hasOldStr && hasNewStr )
+        stringAdded(index, newStr);
+    else if ( hasOldStr && !hasNewStr )
+        stringRemoved(index, oldStr);
+    else if ( hasOldStr && hasNewStr && oldStr->str != newStr->str )
+    {
+        stringRemoved(index, oldStr);
+        stringAdded(index, newStr);
+    }
+}
+
+std::size_t StrCache::findStringIndex(const std::string & str, const std::vector<std::optional<ScStr>> & strings) const
+{
+    if ( str.empty() )
+        return 0;
+
+    auto hash = this->hash(str);
+    auto found = this->hashToStrIndexes.equal_range(hash);
+    for ( auto it = found.first; it != found.second; ++it )
+    {
+        auto index = it->second;
+        if ( index < strings.size() && strings[index].has_value() && strings[index]->str == str )
+            return index;
+    }
+    return std::numeric_limits<std::size_t>::max();
+}

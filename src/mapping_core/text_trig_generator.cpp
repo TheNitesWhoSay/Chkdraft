@@ -27,11 +27,11 @@ TextTrigGenerator::TextTrigGenerator(bool useAddressesForMemory, u32 deathTableO
 
 }
 
-template <class MapType> bool TextTrigGenerator::generateTextTrigs(const MapType & map, std::string & trigString, const Sc::Data & scData)
+template <class MapType> bool TextTrigGenerator::generateTextTrigs(const MapType & map, const StrCache & strCache, const StrCache & editorStrCache, std::string & trigString, const Sc::Data & scData)
 {
     logger.info() << "Starting text trig generation..." << std::endl;
     auto start = std::chrono::high_resolution_clock::now();
-    if ( loadScenario(map, true, false, scData) && buildTextTrigs(map, trigString) )
+    if ( loadScenario(map, strCache, editorStrCache, true, false, scData) && buildTextTrigs(map, trigString) )
     {
         auto finish = std::chrono::high_resolution_clock::now();
         logger.info() << "Text trig generation completed in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
@@ -39,27 +39,27 @@ template <class MapType> bool TextTrigGenerator::generateTextTrigs(const MapType
     }
     return false;
 }
-template bool TextTrigGenerator::generateTextTrigs<Scenario>(const Scenario & map, std::string & trigString, const Sc::Data & scData);
+template bool TextTrigGenerator::generateTextTrigs<Scenario>(const Scenario & map, const StrCache & strCache, const StrCache & editorStrCache, std::string & trigString, const Sc::Data & scData);
 #ifdef INCLUDE_LITE_SCENARIO
-template bool TextTrigGenerator::generateTextTrigs<LiteScenario>(const LiteScenario & map, std::string & trigString, const Sc::Data & scData);
+template bool TextTrigGenerator::generateTextTrigs<LiteScenario>(const LiteScenario & map, const StrCache & strCache, const StrCache & editorStrCache, std::string & trigString, const Sc::Data & scData);
 #endif
 
-template <class MapType> bool TextTrigGenerator::generateTextTrigs(const MapType & map, size_t trigIndex, std::string & trigString, const Sc::Data & scData)
+template <class MapType> bool TextTrigGenerator::generateTextTrigs(const MapType & map, const StrCache & strCache, const StrCache & editorStrCache, size_t trigIndex, std::string & trigString, const Sc::Data & scData)
 {
-    return trigIndex < map.numTriggers() && loadScenario(map, true, false, scData) && buildTextTrig(map.getTrigger(trigIndex), trigString);
+    return trigIndex < map.numTriggers() && loadScenario(map, strCache, editorStrCache, true, false, scData) && buildTextTrig(map.getTrigger(trigIndex), trigString);
 }
-template bool TextTrigGenerator::generateTextTrigs<Scenario>(const Scenario & map, size_t trigIndex, std::string & trigString, const Sc::Data & scData);
+template bool TextTrigGenerator::generateTextTrigs<Scenario>(const Scenario & map, const StrCache & strCache, const StrCache & editorStrCache, size_t trigIndex, std::string & trigString, const Sc::Data & scData);
 #ifdef INCLUDE_LITE_SCENARIO
-template bool TextTrigGenerator::generateTextTrigs<LiteScenario>(const LiteScenario & map, size_t trigIndex, std::string & trigString, const Sc::Data & scData);
+template bool TextTrigGenerator::generateTextTrigs<LiteScenario>(const LiteScenario & map, const StrCache & strCache, const StrCache & editorStrCache, size_t trigIndex, std::string & trigString, const Sc::Data & scData);
 #endif
 
-template <class MapType> bool TextTrigGenerator::loadScenario(const MapType & map, const Sc::Data & scData)
+template <class MapType> bool TextTrigGenerator::loadScenario(const MapType & map, const StrCache & strCache, const StrCache & editorStrCache, const Sc::Data & scData)
 {
-    return loadScenario(map, false, true, scData);
+    return loadScenario(map, strCache, editorStrCache, false, true, scData);
 }
-template bool TextTrigGenerator::loadScenario<Scenario>(const Scenario & map, const Sc::Data & scData);
+template bool TextTrigGenerator::loadScenario<Scenario>(const Scenario & map, const StrCache & strCache, const StrCache & editorStrCache, const Sc::Data & scData);
 #ifdef INCLUDE_LITE_SCENARIO
-template bool TextTrigGenerator::loadScenario<LiteScenario>(const LiteScenario & map, const Sc::Data & scData);
+template bool TextTrigGenerator::loadScenario<LiteScenario>(const LiteScenario & map, const StrCache & strCache, const StrCache & editorStrCache, const Sc::Data & scData);
 #endif
 
 void TextTrigGenerator::clearScenario()
@@ -292,7 +292,7 @@ std::string TextTrigGenerator::getTrigTextFlags(Chk::Action::Flags textFlags) co
 
 // protected
 
-template <class MapType> bool TextTrigGenerator::loadScenario(const MapType & map, bool quoteArgs, bool useCustomNames, const Sc::Data & scData)
+template <class MapType> bool TextTrigGenerator::loadScenario(const MapType & map, const StrCache & strCache, const StrCache & editorStrCache, bool quoteArgs, bool useCustomNames, const Sc::Data & scData)
 {
     return prepConditionTable() &&
            prepActionTable() &&
@@ -300,12 +300,12 @@ template <class MapType> bool TextTrigGenerator::loadScenario(const MapType & ma
            prepUnitTable(map, quoteArgs, useCustomNames, scData) &&
            prepSwitchTable(map, quoteArgs) &&
            prepGroupTable(map, quoteArgs) &&
-           prepScriptTable(map, quoteArgs) &&
-           prepStringTable(map, quoteArgs);
+           prepScriptTable(map, quoteArgs, scData) &&
+           prepStringTable(map, strCache, editorStrCache, quoteArgs);
 }
-template bool TextTrigGenerator::loadScenario<Scenario>(const Scenario & map, bool quoteArgs, bool useCustomNames, const Sc::Data & scData);
+template bool TextTrigGenerator::loadScenario<Scenario>(const Scenario & map, const StrCache & strCache, const StrCache & editorStrCache, bool quoteArgs, bool useCustomNames, const Sc::Data & scData);
 #ifdef INCLUDE_LITE_SCENARIO
-template bool TextTrigGenerator::loadScenario<LiteScenario>(const LiteScenario & map, bool quoteArgs, bool useCustomNames, const Sc::Data & scData);
+template bool TextTrigGenerator::loadScenario<LiteScenario>(const LiteScenario & map, const StrCache & strCache, const StrCache & editorStrCache, bool quoteArgs, bool useCustomNames, const Sc::Data & scData);
 #endif
 
 bool TextTrigGenerator::correctLineEndings(StringBuffer & buf) const
@@ -1073,114 +1073,88 @@ template bool TextTrigGenerator::prepGroupTable<Scenario>(const Scenario & map, 
 template bool TextTrigGenerator::prepGroupTable<LiteScenario>(const LiteScenario & map, bool quoteArgs);
 #endif
 
-template <class MapType> bool TextTrigGenerator::prepScriptTable(const MapType & map, bool quoteArgs)
+template <class MapType> bool TextTrigGenerator::prepScriptTable(const MapType & map, bool quoteArgs, const Sc::Data & scData)
 {
     scriptTable.clear();
 
     scriptTable.insert(std::pair<Sc::Ai::ScriptId, std::string>(Sc::Ai::ScriptId::NoScript, "No Script"));
-
-    for ( const auto & trigger : map->triggers )
+    
+    char quotedScript[8] { '\"', ' ', ' ', ' ', ' ', '\"', '\0', '\0' };
+    char unquotedScript[8] { ' ', ' ', ' ', ' ', '\0', '\0', '\0', '\0' };
+    char* quotedScriptText = &quotedScript[1];
+    size_t numScripts = scData.ai.numEntries();
+    for ( size_t i = 0; i < numScripts; i++ )
     {
-        for ( size_t actionNum = 0; actionNum < Chk::Trigger::MaxActions; actionNum++ )
+        const auto & entry = scData.ai.getEntry(i);
+        u32 id = entry.identifier;
+        if ( id != u32(Sc::Ai::ScriptId::NoScript) )
         {
-            const Chk::Action & action = trigger.action(actionNum);
-            Chk::Action::Type actionId = action.actionType;
-            bool isScriptAction = (actionId == Chk::Action::Type::RunAiScript || actionId == Chk::Action::Type::RunAiScriptAtLocation);
-            if ( isScriptAction && action.number != 0 )
+            if ( quoteArgs )
             {
-                char numberString[5] = {};
-                (u32 &)numberString = action.number;
-                for ( size_t i = 0; i < 4; i++ )
+                for ( std::size_t i=0; i<4; ++i )
                 {
-                    if ( numberString[i] == '\0' )
-                        numberString[i] = ' ';
+                    char c = reinterpret_cast<char*>(&id)[i];
+                    quotedScriptText[i] = (c == '\0' ? ' ' : c);
                 }
-
-                if ( quoteArgs )
+                scriptTable.insert(std::pair<Sc::Ai::ScriptId, std::string>(Sc::Ai::ScriptId(id), std::string(quotedScript, 6)));
+            }
+            else
+            {
+                for ( std::size_t i=0; i<4; ++i )
                 {
-                    scriptTable.insert(std::pair<Sc::Ai::ScriptId, std::string>((Sc::Ai::ScriptId)action.number,
-                        std::string("\"" + std::string(numberString) + "\"")));
+                    char c = reinterpret_cast<char*>(&id)[i];
+                    unquotedScript[i] = (c == '\0' ? ' ' : c);
                 }
-                else
-                    scriptTable.insert(std::pair<Sc::Ai::ScriptId, std::string>((Sc::Ai::ScriptId)action.number, std::string(numberString)));
+                scriptTable.insert(std::pair<Sc::Ai::ScriptId, std::string>(Sc::Ai::ScriptId(id), std::string(unquotedScript, 4)));
             }
         }
     }
+
     return true;
 }
-template bool TextTrigGenerator::prepScriptTable<Scenario>(const Scenario & map, bool quoteArgs);
+template bool TextTrigGenerator::prepScriptTable<Scenario>(const Scenario & map, bool quoteArgs, const Sc::Data & scData);
 #ifdef INCLUDE_LITE_SCENARIO
-template bool TextTrigGenerator::prepScriptTable<LiteScenario>(const LiteScenario & map, bool quoteArgs);
+template bool TextTrigGenerator::prepScriptTable<LiteScenario>(const LiteScenario & map, bool quoteArgs, const Sc::Data & scData);
 #endif
 
-template <class MapType> bool TextTrigGenerator::prepStringTable(const MapType & map, bool quoteArgs)
+template <class MapType> bool TextTrigGenerator::prepStringTable(const MapType & map, const StrCache & strCache, const StrCache & editorStrCache, bool quoteArgs)
 {
     stringTable.clear();
     extendedStringTable.clear();
 
-    std::bitset<Chk::MaxStrings> stringUsed, extendedStringUsed;
-    map.markValidUsedStrings(stringUsed, Chk::Scope::Either, Chk::Scope::Game);
-    map.markValidUsedStrings(extendedStringUsed, Chk::Scope::Either, Chk::Scope::Editor);
-
-    size_t numStrings = map.getCapacity(Chk::Scope::Game);
-    for ( size_t i=0; i<numStrings; i++ )
+    stringTable.assign(map.getCapacity(Chk::Scope::Game), "");
+    extendedStringTable.assign(map.getCapacity(Chk::Scope::Editor), "");
+    if ( quoteArgs )
     {
-        if ( stringUsed[i] )
+        for ( const auto & entry : strCache.hashToStrIndexes )
         {
-            if ( auto str = map.template getString<EscString>(i, Chk::Scope::Game) )
-            {
-                EscString newString;
-                for ( auto & character : *str )
-                    newString.push_back(character);
-
-                if ( quoteArgs )
-                    stringTable.push_back( "\"" + newString + "\"" );
-                else
-                    stringTable.push_back(newString);
-            }
-            else
-                stringTable.push_back("");
+            if ( auto str = map.template getString<EscString>(entry.second, Chk::Scope::Game) )
+                stringTable[entry.second] = '\"' + (*str) + '\"';
         }
-        else
-            stringTable.push_back("");
+        for ( const auto & entry : editorStrCache.hashToStrIndexes )
+        {
+            if ( auto str = map.template getString<EscString>(entry.second, Chk::Scope::Editor) )
+                extendedStringTable[entry.second] = '\"' + (*str) + '\"';
+        }
     }
-
-    numStrings = map.getCapacity(Chk::Scope::Editor);
-    for ( size_t i=0; i<numStrings; i++ )
+    else // No quotes
     {
-        if ( extendedStringUsed[i] )
+        for ( const auto & entry : strCache.hashToStrIndexes )
         {
-            if ( auto str = map.template getString<EscString>(i, Chk::Scope::Editor) )
-            {
-                EscString newString;
-                for ( auto & character : *str )
-                {
-                    if ( character == '\"' )
-                    {
-                        newString.push_back('\\');
-                        newString.push_back('\"');
-                    }
-                    else
-                        newString.push_back(character);
-                }
-
-                if ( quoteArgs )
-                    extendedStringTable.push_back( "\"" + newString + "\"" );
-                else
-                    extendedStringTable.push_back(newString);
-            }
-            else
-                stringTable.push_back("");
+            if ( auto str = map.template getString<EscString>(entry.second, Chk::Scope::Game) )
+                stringTable[entry.second] = (*str);
         }
-        else
-            stringTable.push_back("");
+        for ( const auto & entry : editorStrCache.hashToStrIndexes )
+        {
+            if ( auto str = map.template getString<EscString>(entry.second, Chk::Scope::Editor) )
+                extendedStringTable[entry.second] = (*str);
+        }
     }
-
     return true;
 }
-template bool TextTrigGenerator::prepStringTable<Scenario>(const Scenario & map, bool quoteArgs);
+template bool TextTrigGenerator::prepStringTable<Scenario>(const Scenario & map, const StrCache & strCache, const StrCache & editorStrCache, bool quoteArgs);
 #ifdef INCLUDE_LITE_SCENARIO
-template bool TextTrigGenerator::prepStringTable<LiteScenario>(const LiteScenario & map, bool quoteArgs);
+template bool TextTrigGenerator::prepStringTable<LiteScenario>(const LiteScenario & map, const StrCache & strCache, const StrCache & editorStrCache, bool quoteArgs);
 #endif
 
 BriefingTextTrigGenerator::BriefingTextTrigGenerator(bool useFancyNoStrings)
@@ -1190,11 +1164,11 @@ BriefingTextTrigGenerator::BriefingTextTrigGenerator(bool useFancyNoStrings)
 
 }
 
-template <class MapType> bool BriefingTextTrigGenerator::generateBriefingTextTrigs(const MapType & map, std::string & briefingTrigString, const Sc::Data & scData)
+template <class MapType> bool BriefingTextTrigGenerator::generateBriefingTextTrigs(const MapType & map, const StrCache & strCache, const StrCache & editorStrCache, std::string & briefingTrigString, const Sc::Data & scData)
 {
     logger.info() << "Starting briefing text trig generation..." << std::endl;
     auto start = std::chrono::high_resolution_clock::now();
-    if ( loadScenario(map, true, false, scData) && buildBriefingTextTrigs(map, briefingTrigString) )
+    if ( loadScenario(map, strCache, editorStrCache, true, false, scData) && buildBriefingTextTrigs(map, briefingTrigString) )
     {
         auto finish = std::chrono::high_resolution_clock::now();
         logger.info() << "Briefing text trig generation completed in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
@@ -1202,27 +1176,27 @@ template <class MapType> bool BriefingTextTrigGenerator::generateBriefingTextTri
     }
     return false;
 }
-template bool BriefingTextTrigGenerator::generateBriefingTextTrigs<Scenario>(const Scenario & map, std::string & briefingTrigString, const Sc::Data & scData);
+template bool BriefingTextTrigGenerator::generateBriefingTextTrigs<Scenario>(const Scenario & map, const StrCache & strCache, const StrCache & editorStrCache, std::string & briefingTrigString, const Sc::Data & scData);
 #ifdef INCLUDE_LITE_SCENARIO
-template bool BriefingTextTrigGenerator::generateBriefingTextTrigs<LiteScenario>(const LiteScenario & map, std::string & briefingTrigString, const Sc::Data & scData);
+template bool BriefingTextTrigGenerator::generateBriefingTextTrigs<LiteScenario>(const LiteScenario & map, const StrCache & strCache, const StrCache & editorStrCache, std::string & briefingTrigString, const Sc::Data & scData);
 #endif
 
-template <class MapType> bool BriefingTextTrigGenerator::generateBriefingTextTrigs(const MapType & map, size_t briefingTrigIndex, std::string & briefingTrigString, const Sc::Data & scData)
+template <class MapType> bool BriefingTextTrigGenerator::generateBriefingTextTrigs(const MapType & map, const StrCache & strCache, const StrCache & editorStrCache, size_t briefingTrigIndex, std::string & briefingTrigString, const Sc::Data & scData)
 {
-    return briefingTrigIndex < map.numBriefingTriggers() && loadScenario(map, true, false, scData) && buildBriefingTextTrig(map.getBriefingTrigger(briefingTrigIndex), briefingTrigString);
+    return briefingTrigIndex < map.numBriefingTriggers() && loadScenario(map, strCache, editorStrCache, true, false, scData) && buildBriefingTextTrig(map.getBriefingTrigger(briefingTrigIndex), briefingTrigString);
 }
-template bool BriefingTextTrigGenerator::generateBriefingTextTrigs<Scenario>(const Scenario & map, size_t briefingTrigIndex, std::string & briefingTrigString, const Sc::Data & scData);
+template bool BriefingTextTrigGenerator::generateBriefingTextTrigs<Scenario>(const Scenario & map, const StrCache & strCache, const StrCache & editorStrCache, size_t briefingTrigIndex, std::string & briefingTrigString, const Sc::Data & scData);
 #ifdef INCLUDE_LITE_SCENARIO
-template bool BriefingTextTrigGenerator::generateBriefingTextTrigs<LiteScenario>(const LiteScenario & map, size_t briefingTrigIndex, std::string & briefingTrigString, const Sc::Data & scData);
+template bool BriefingTextTrigGenerator::generateBriefingTextTrigs<LiteScenario>(const LiteScenario & map, const StrCache & strCache, const StrCache & editorStrCache, size_t briefingTrigIndex, std::string & briefingTrigString, const Sc::Data & scData);
 #endif
 
-template <class MapType> bool BriefingTextTrigGenerator::loadScenario(const MapType & map, const Sc::Data & scData)
+template <class MapType> bool BriefingTextTrigGenerator::loadScenario(const MapType & map, const StrCache & strCache, const StrCache & editorStrCache, const Sc::Data & scData)
 {
-    return loadScenario(map, false, true, scData);
+    return loadScenario(map, strCache, editorStrCache, false, true, scData);
 }
-template bool BriefingTextTrigGenerator::loadScenario<Scenario>(const Scenario & map, const Sc::Data & scData);
+template bool BriefingTextTrigGenerator::loadScenario<Scenario>(const Scenario & map, const StrCache & strCache, const StrCache & editorStrCache, const Sc::Data & scData);
 #ifdef INCLUDE_LITE_SCENARIO
-template bool BriefingTextTrigGenerator::loadScenario<LiteScenario>(const LiteScenario & map, const Sc::Data & scData);
+template bool BriefingTextTrigGenerator::loadScenario<LiteScenario>(const LiteScenario & map, const StrCache & strCache, const StrCache & editorStrCache, const Sc::Data & scData);
 #endif
 
 void BriefingTextTrigGenerator::clearScenario()
@@ -1285,13 +1259,13 @@ std::string BriefingTextTrigGenerator::getBriefingTrigNumber(u32 number) const
     return TextTrigGenerator::getTrigNumber(number);
 }
 
-template <class MapType> bool BriefingTextTrigGenerator::loadScenario(const MapType & map, bool quoteArgs, bool useCustomNames, const Sc::Data & scData)
+template <class MapType> bool BriefingTextTrigGenerator::loadScenario(const MapType & map, const StrCache & strCache, const StrCache & editorStrCache, bool quoteArgs, bool useCustomNames, const Sc::Data & scData)
 {
-    return prepSlotTable(quoteArgs) && prepBriefingActionTable() && TextTrigGenerator::loadScenario(map, quoteArgs, useCustomNames, scData);
+    return prepSlotTable(quoteArgs) && prepBriefingActionTable() && TextTrigGenerator::loadScenario(map, strCache, editorStrCache, quoteArgs, useCustomNames, scData);
 }
-template bool BriefingTextTrigGenerator::loadScenario<Scenario>(const Scenario & map, bool quoteArgs, bool useCustomNames, const Sc::Data & scData);
+template bool BriefingTextTrigGenerator::loadScenario<Scenario>(const Scenario & map, const StrCache & strCache, const StrCache & editorStrCache, bool quoteArgs, bool useCustomNames, const Sc::Data & scData);
 #ifdef INCLUDE_LITE_SCENARIO
-template bool BriefingTextTrigGenerator::loadScenario<LiteScenario>(const LiteScenario & map, bool quoteArgs, bool useCustomNames, const Sc::Data & scData);
+template bool BriefingTextTrigGenerator::loadScenario<LiteScenario>(const LiteScenario & map, const StrCache & strCache, const StrCache & editorStrCache, bool quoteArgs, bool useCustomNames, const Sc::Data & scData);
 #endif
 
 template <class MapType> bool BriefingTextTrigGenerator::buildBriefingTextTrigs(const MapType & scenario, std::string & briefingTrigString)

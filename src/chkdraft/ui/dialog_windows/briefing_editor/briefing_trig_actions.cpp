@@ -62,7 +62,7 @@ void BriefingTrigActionsWindow::RefreshWindow(u32 briefingTrigIndex)
     this->briefingTrigIndex = briefingTrigIndex;
     const auto & briefingTrig = CM->getBriefingTrigger(briefingTrigIndex);
     BriefingTextTrigGenerator ttg{true};
-    if ( ttg.loadScenario((Scenario &)*CM, chkd.scData.value()) )
+    if ( ttg.loadScenario((Scenario &)*CM, CM->getStrCache(), CM->getEditorStrCache(), chkd.scData.value()) )
     {
         for ( u8 y = 0; y<Chk::Trigger::MaxActions; y++ )
         {
@@ -492,7 +492,7 @@ void BriefingTrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const s
                 if ( parseChkdStr(chkdNewText, rawUpdateText) )
                 {
                     Chk::Action tempAction {};
-                    if ( auto result = ttc.parseBriefingActionArg(rawUpdateText, argument, tempAction, (Scenario &)*CM, *chkd.scData, briefingTrigIndex, actionNum, !suggestion.str.empty()) )
+                    if ( auto result = ttc.parseBriefingActionArg(rawUpdateText, argument, tempAction, (Scenario &)*CM, CM->getStrCache(), CM->getEditorStrCache(), *chkd.scData, briefingTrigIndex, actionNum, !suggestion.str.empty()) )
                     {
                         madeChange = true;
                         copyArg(*result, tempAction);
@@ -501,7 +501,7 @@ void BriefingTrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const s
                 if ( !madeChange && !suggestion.str.empty() && parseChkdStr(suggestion.str, rawSuggestText) )
                 {
                     Chk::Action tempAction {};
-                    if ( auto result = ttc.parseBriefingActionArg(rawSuggestText, argument, tempAction, (Scenario &)*CM, *chkd.scData, briefingTrigIndex, actionNum, false) )
+                    if ( auto result = ttc.parseBriefingActionArg(rawSuggestText, argument, tempAction, (Scenario &)*CM, CM->getStrCache(), CM->getEditorStrCache(), *chkd.scData, briefingTrigIndex, actionNum, false) )
                     {
                         madeChange = true;
                         copyArg(*result, tempAction);
@@ -568,7 +568,7 @@ void BriefingTrigActionsWindow::DrawSelectedAction()
         {
             u8 actionNum = (u8)focusedY;
             BriefingTextTrigGenerator ttg {true};
-            ttg.loadScenario((Scenario &)*CM, chkd.scData.value());
+            ttg.loadScenario((Scenario &)*CM, CM->getStrCache(), CM->getEditorStrCache(), chkd.scData.value());
             ChkdString str = chkd.briefingTrigEditorWindow->briefingTriggersWindow.GetActionString(actionNum, briefingTrig, ttg);
             ttg.clearScenario();
 

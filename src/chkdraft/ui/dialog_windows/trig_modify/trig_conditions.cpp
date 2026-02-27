@@ -61,7 +61,7 @@ void TrigConditionsWindow::RefreshWindow(u32 trigIndex)
     this->trigIndex = trigIndex;
     const Chk::Trigger & trig = CM->getTrigger(trigIndex);
     TextTrigGenerator ttg(chkd.profiles().triggers.useAddressesForMemory, chkd.profiles().triggers.deathTableStart, true);
-    if ( ttg.loadScenario((Scenario &)*CM, chkd.scData.value()) )
+    if ( ttg.loadScenario((Scenario &)*CM, CM->getStrCache(), CM->getEditorStrCache(), chkd.scData.value()) )
     {
         for ( u8 y=0; y<Chk::Trigger::MaxConditions; y++ )
         {
@@ -388,7 +388,7 @@ void TrigConditionsWindow::UpdateConditionArg(u8 conditionNum, u8 argNum, const 
             if ( parseChkdStr(ChkdString(newText), rawUpdateText) )
             {
                 Chk::Condition tempCondition {};
-                if ( auto result = ttc.parseConditionArg(rawUpdateText, argument, tempCondition, (Scenario &)*CM, *chkd.scData, trigIndex, !suggestion.str.empty()) )
+                if ( auto result = ttc.parseConditionArg(rawUpdateText, argument, tempCondition, (Scenario &)*CM, CM->getStrCache(), CM->getEditorStrCache(), *chkd.scData, trigIndex, !suggestion.str.empty()) )
                 {
                     madeChanges = true;
                     copyArg(*result, tempCondition);
@@ -397,7 +397,7 @@ void TrigConditionsWindow::UpdateConditionArg(u8 conditionNum, u8 argNum, const 
             if ( !madeChanges && !suggestion.str.empty() && parseChkdStr(ChkdString(suggestion.str), rawSuggestText) )
             {
                 Chk::Condition tempCondition {};
-                if ( auto result = ttc.parseConditionArg(rawSuggestText, argument, tempCondition, (Scenario &)*CM, *chkd.scData, trigIndex, false) )
+                if ( auto result = ttc.parseConditionArg(rawSuggestText, argument, tempCondition, (Scenario &)*CM, CM->getStrCache(), CM->getEditorStrCache(), *chkd.scData, trigIndex, false) )
                 {
                     madeChanges = true;
                     copyArg(*result, tempCondition);
@@ -460,7 +460,7 @@ void TrigConditionsWindow::DrawSelectedCondition()
             u8 conditionNum = (u8)focusedY;
             TextTrigGenerator ttg(chkd.profiles().triggers.useAddressesForMemory, chkd.profiles().triggers.deathTableStart, true);
             std::string str;
-            ttg.loadScenario((Scenario &)*CM, chkd.scData.value());
+            ttg.loadScenario((Scenario &)*CM, CM->getStrCache(), CM->getEditorStrCache(), chkd.scData.value());
             str = chkd.trigEditorWindow->triggersWindow.GetConditionString(conditionNum, trig, ttg);
             ttg.clearScenario();
 
