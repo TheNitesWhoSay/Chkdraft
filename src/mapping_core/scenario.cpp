@@ -7193,19 +7193,7 @@ void Scenario::removeTriggersExtension(size_t triggerIndex)
 void Scenario::deleteTriggerExtension(size_t triggerExtensionIndex)
 {
     if ( triggerExtensionIndex < read.triggerExtensions.size() && triggerExtensionIndex != Chk::ExtendedTrigDataIndex::None )
-    {
-        size_t i = read.triggerExtensions.size();
-        for ( ; i > 0 && (((i-1) & Chk::UnusedExtendedTrigDataIndexCheck) == 0 || i-1 >= read.triggerExtensions.size()); i-- );
-
-        if ( i == 0 )
-            create_action(ActionDescriptor::DeleteExtendedTriggerData)->triggerExtensions.reset();
-        else if ( i < read.triggerExtensions.size() )
-        {
-            std::vector<std::size_t> indexesErased(read.triggerExtensions.size()-i);
-            std::iota(indexesErased.begin(), indexesErased.end(), i);
-            create_action(ActionDescriptor::DeleteExtendedTriggerData)->triggerExtensions.remove(indexesErased);
-        }
-    }
+        create_action(ActionDescriptor::DeleteExtendedTriggerData)->triggerExtensions[triggerExtensionIndex] = Chk::ExtendedTrigData{};
 }
 
 void Scenario::fixTriggerExtensions()
