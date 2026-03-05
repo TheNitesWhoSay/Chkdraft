@@ -2,11 +2,6 @@
 cmake_minimum_required (VERSION 3.20)
 
 cmake_policy(SET CMP0091 NEW)
-set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-if (WIN32)
-  set(VCPKG_TARGET_TRIPLET x64-windows-static)
-endif ()
-set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
 
 set(This MappingCoreTest)
 
@@ -22,9 +17,9 @@ if ( PROJECT_IS_TOP_LEVEL )
   set(CMAKE_C_STANDARD 99)
   set(CMAKE_CXX_STANDARD 20)
   if ( "${CMAKE_CXX_COMPILER_ID}" MATCHES "MSVC" )
-    add_compile_options(/permissive-)
+    add_compile_options(/permissive- ${ASAN})
   endif ()
-  add_compile_definitions(_UNICODE UNICODE NOMINMAX _CRT_SECURE_NO_WARNINGS STORMLIB_NO_AUTO_LINK DU_STATIC_IMPLEMENTATION)
+  add_compile_definitions(_UNICODE UNICODE NOMINMAX _CRT_SECURE_NO_WARNINGS __STORMLIB_NO_STATIC_LINK__ DU_STATIC_IMPLEMENTATION)
   add_subdirectory(${ChkdraftRootPath}/src/cross_cut ${CMAKE_CURRENT_BINARY_DIR}/cross_cut_lib)
   add_subdirectory(${ChkdraftRootPath}/src/mapping_core ${CMAKE_CURRENT_BINARY_DIR}/mapping_core_lib)
 endif()
@@ -61,8 +56,14 @@ find_package(StormLib CONFIG REQUIRED)
 include(GoogleTest)
 
 if (WIN32)
-target_link_libraries(${This} PRIVATE GTest::gtest GTest::gtest_main GTest::gmock GTest::gmock_main CrossCut MappingCore BZip2::BZip2 CascLib::casc_static StormLib::storm winmm.lib comctl32.lib Kernel32.lib)
+target_link_libraries(${This} PRIVATE GTest::gtest GTest::gtest_main GTest::gmock GTest::gmock_main CrossCut MappingCore BZip2::BZip2 CascLib::casc${STATIC_SUFFIX} StormLib::storm winmm.lib comctl32.lib Kernel32.lib)
 else ()
-target_link_libraries(${This} PRIVATE GTest::gtest GTest::gtest_main GTest::gmock GTest::gmock_main CrossCut MappingCore BZip2::BZip2 CascLib::casc_static StormLib::storm)
+target_link_libraries(${This} PRIVATE GTest::gtest GTest::gtest_main GTest::gmock GTest::gmock_main CrossCut MappingCore BZip2::BZip2 CascLib::casc${STATIC_SUFFIX} StormLib::storm)
 endif ()
+
+if ( WIN64_DEBUG_ASAN ) # The asan dll must be made available for gtest_discover_tests to use the test exe
+    configure_file("$ENV{VCToolsInstallDir}/bin/Hostx64/x64/clang_rt.asan_dynamic-x86_64.dll"
+        "${CMAKE_CURRENT_BINARY_DIR}/clang_rt.asan_dynamic-x86_64.dll" COPYONLY)
+endif ()
+
 gtest_discover_tests(${This} DISCOVERY_MODE PRE_TEST)
