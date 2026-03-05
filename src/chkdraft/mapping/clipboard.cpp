@@ -20,9 +20,11 @@ void StringToWindowsClipboard(const std::string & str)
                 {
                     memcpy(lockedData, sysText.c_str(), sysText.size()*sizeof(icux::codepoint) + sizeof(icux::codepoint));
                     GlobalUnlock(lockedData);
-                    SetClipboardData(CF_UNICODETEXT, globalData);
+                    if ( SetClipboardData(CF_UNICODETEXT, globalData) == NULL ) // If SetClipboardData succeeds, it owns globalData
+                        GlobalFree(globalData); // Else, globalData must be free'd
                 }
-                GlobalFree(globalData);
+                else
+                    GlobalFree(globalData); // Lock failed, so globalData must be free'd
             }
         }
         CloseClipboard();
