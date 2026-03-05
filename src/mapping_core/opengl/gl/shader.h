@@ -79,12 +79,7 @@ namespace gl
         std::ifstream shaderFile {};
         shaderFile.open(filePath);
         if ( !shaderFile )
-        {
-            shaderFile.clear();
-            shaderFile.open("../" + filePath); // Try one directory up
-            if ( !shaderFile )
-                throw std::runtime_error("File not found!");
-        }
+            throw std::runtime_error("File not found!");
 
         std::vector<char> buffer{std::istreambuf_iterator<char>(shaderFile), std::istreambuf_iterator<char>()};
         if ( !shaderFile )
