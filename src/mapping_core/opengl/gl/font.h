@@ -571,10 +571,7 @@ namespace gl
 
             FT_Face ftFontFace = nullptr;
             if ( FT_New_Face(ftLibrary.library, fontFilePath.c_str(), 0, &ftFontFace) )
-            {
-                if ( FT_New_Face(ftLibrary.library, ("../" + fontFilePath).c_str(), 0, &ftFontFace) ) // Try one directory up
-                    throw std::runtime_error("Failed to load font face from font file " + fontFilePath);
-            }
+                throw std::runtime_error("Failed to load font face from font file " + fontFilePath);
 
             if ( FT_Set_Char_Size(ftFontFace, width, height, hozResolution, vertResolution) )
                 throw std::runtime_error("Failed to set font dimensions");

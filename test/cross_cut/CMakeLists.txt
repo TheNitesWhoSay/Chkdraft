@@ -2,9 +2,6 @@
 cmake_minimum_required (VERSION 3.20)
 
 cmake_policy(SET CMP0091 NEW)
-set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-set(VCPKG_TARGET_TRIPLET x64-windows-static)
-set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
 
 set(This CrossCutTest)
 
@@ -34,5 +31,10 @@ enable_testing()
 find_package(GTest CONFIG REQUIRED)
 include(GoogleTest)
 target_link_libraries(${This} PRIVATE GTest::gtest GTest::gtest_main GTest::gmock GTest::gmock_main CrossCut)
+
+if ( WIN64_DEBUG_ASAN ) # The asan dll must be made available for gtest_discover_tests to use the test exe
+    configure_file("$ENV{VCToolsInstallDir}/bin/Hostx64/x64/clang_rt.asan_dynamic-x86_64.dll"
+        "${CMAKE_CURRENT_BINARY_DIR}/clang_rt.asan_dynamic-x86_64.dll" COPYONLY)
+endif ()
 
 gtest_discover_tests(${This} DISCOVERY_MODE PRE_TEST)
