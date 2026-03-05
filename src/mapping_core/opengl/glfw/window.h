@@ -36,6 +36,11 @@ namespace glfw
             glfwSetInputMode(window, mode, value);
         }
 
+        void setCursorEnabledInputMode()
+        {
+            setInputMode(GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        }
+
         void setCursorDisabledInputMode()
         {
             setInputMode(GLFW_CURSOR, GLFW_CURSOR_DISABLED);
