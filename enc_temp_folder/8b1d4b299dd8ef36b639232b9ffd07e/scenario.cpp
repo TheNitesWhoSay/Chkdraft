@@ -8007,7 +8007,10 @@ void StrCache::init(const std::vector<std::optional<ScStr>> & strings)
 void StrCache::stringAdded(std::size_t index, const std::optional<ScStr> & str)
 {
     if ( str.has_value() && !str->str.empty() )
+    {
+        logger.info() << "Cache add " << index << ": " << str->str << '\n';
         this->hashToStrIndexes.emplace(this->hash(str->str), index);
+    }
 }
 
 void StrCache::stringRemoved(std::size_t index, const std::optional<ScStr> & str)
@@ -8020,6 +8023,7 @@ void StrCache::stringRemoved(std::size_t index, const std::optional<ScStr> & str
         {
             if ( it->second == index )
             {
+                logger.info() << "Cache remove " << index << ": " << str->str << '\n';
                 this->hashToStrIndexes.erase(it);
                 break;
             }

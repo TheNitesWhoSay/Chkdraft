@@ -1255,6 +1255,7 @@ namespace Chk {
         REFLECT(ExtendedTrigData, commentStringId, notesStringId, groupId, trigNum, maskId)
 
         ExtendedTrigData();
+        ExtendedTrigData(u32 trigNum);
         bool isBlank() const;
     };
 
