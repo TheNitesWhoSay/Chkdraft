@@ -1009,11 +1009,11 @@ template <class MapType> bool TextTrigGenerator::prepGroupTable(const MapType & 
 
     if ( quoteArgs )
     {
-        const char* legacyLowerGroups[] = { "\"Player 1\"", "\"Player 2\"", "\"Player 3\"", "\"Player 4\"", "\"Player 5\"", "\"Player 6\"",
+        static const char* legacyLowerGroups[] = { "\"Player 1\"", "\"Player 2\"", "\"Player 3\"", "\"Player 4\"", "\"Player 5\"", "\"Player 6\"",
                                             "\"Player 7\"", "\"Player 8\"", "\"Player 9\"", "\"Player 10\"", "\"Player 11\"", "\"Player 12\"",
                                             "\"unknown/unused\"", "\"Current Player\"", "\"Foes\"", "\"Allies\"", "\"Neutral Players\"",
                                             "\"All players\"" };
-        const char* legacyUpperGroups[] = { "\"22\"", "\"23\"", "\"24\"", "\"25\"",
+        static const char* legacyUpperGroups[] = { "\"22\"", "\"23\"", "\"24\"", "\"25\"",
                                             "\"Non Allied Victory Players\"", "\"unknown/unused\"" };
 
         legacyLowerGroupNames = legacyLowerGroups;
@@ -1021,11 +1021,11 @@ template <class MapType> bool TextTrigGenerator::prepGroupTable(const MapType & 
     }
     else
     {
-        const char* legacyLowerGroups[] = { "Player 1", "Player 2", "Player 3", "Player 4", "Player 5", "Player 6",
+        static const char* legacyLowerGroups[] = { "Player 1", "Player 2", "Player 3", "Player 4", "Player 5", "Player 6",
                                             "Player 7", "Player 8", "Player 9", "Player 10", "Player 11", "Player 12",
                                             "unknown/unused", "Current Player", "Foes", "Allies", "Neutral Players",
                                             "All players" };
-        const char* legacyUpperGroups[] = { "22", "23", "24", "25",
+        static const char* legacyUpperGroups[] = { "22", "23", "24", "25",
                                             "Non Allied Victory Players", "unknown/unused" };
 
         legacyLowerGroupNames = legacyLowerGroups;
