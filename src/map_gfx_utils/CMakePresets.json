@@ -105,24 +105,27 @@
       }
     },
     {
-      "name": "toolchain",
+      "name": "common",
       "hidden": true,
-      "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+      "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+      "cacheVariables": {
+        "USES_CMAKE_PRESETS": true
+      }
     },
     {
       "name": "x64-debug",
       "displayName": "x64 Debug",
-      "inherits": [ "toolchain", "x64", "Debug", "static", "windows-static-debug" ]
+      "inherits": [ "common", "x64", "Debug", "static", "windows-static-debug" ]
     },
     {
       "name": "x64-release",
       "displayName": "x64 Release",
-      "inherits": [ "toolchain", "x64", "Release", "static", "windows-static-release" ]
+      "inherits": [ "common", "x64", "Release", "static", "windows-static-release" ]
     },
     {
       "name": "x64-debug-asan",
       "displayName": "x64 Debug ASAN",
-      "inherits": [ "toolchain", "x64", "Debug", "non-static", "windows-dynamic-debug" ],
+      "inherits": [ "common", "x64", "Debug", "non-static", "windows-dynamic-debug" ],
       "cacheVariables": {
         "WIN64_DEBUG_ASAN": true,
         "ASAN": "/fsanitize=address"
@@ -132,13 +135,13 @@
       "name": "x86-debug",
       "hidden": true,
       "displayName": "x86 Debug",
-      "inherits": [ "toolchain", "x86", "Debug", "static", "windows-static-debug" ]
+      "inherits": [ "common", "x86", "Debug", "static", "windows-static-debug" ]
     },
     {
       "name": "x86-release",
       "hidden": true,
       "displayName": "x86 Release",
-      "inherits": [ "toolchain", "x86", "Release", "static", "windows-static-release" ]
+      "inherits": [ "common", "x86", "Release", "static", "windows-static-release" ]
     }
   ]
 }

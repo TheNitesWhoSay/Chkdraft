@@ -2,7 +2,10 @@
 cmake_minimum_required (VERSION 3.20)
 
 cmake_policy(SET CMP0091 NEW)
-set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
+if ( NOT DEFINED USES_CMAKE_PRESETS )
+    set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
+    set(STATIC_SUFFIX _static)
+endif ()
 
 set(This MapGfxUtils)
 
