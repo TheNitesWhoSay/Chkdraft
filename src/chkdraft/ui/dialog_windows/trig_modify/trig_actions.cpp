@@ -1130,7 +1130,7 @@ void TrigActionsWindow::ButtonEditString()
             }
 
             if ( result > 0 )
-                chkd.trigEditorWindow->triggersWindow.RefreshTrigger(trigIndex);
+                RefreshActionAreas();
 
             SetFocus(gridActions.getHandle());
         }
@@ -1180,7 +1180,7 @@ void TrigActionsWindow::ButtonEditSound()
             }
 
             if ( result > 0 )
-                chkd.trigEditorWindow->triggersWindow.RefreshTrigger(trigIndex);
+                RefreshActionAreas();
 
             SetFocus(gridActions.getHandle());
         }

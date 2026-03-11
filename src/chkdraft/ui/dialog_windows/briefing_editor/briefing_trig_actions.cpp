@@ -896,7 +896,7 @@ void BriefingTrigActionsWindow::ButtonEditString()
             }
 
             if ( result > 0 )
-                chkd.briefingTrigEditorWindow->briefingTriggersWindow.RefreshWindow(false);
+                RefreshActionAreas();
 
             SetFocus(gridActions.getHandle());
         }
@@ -946,7 +946,7 @@ void BriefingTrigActionsWindow::ButtonEditSound()
             }
 
             if ( result > 0 )
-                chkd.briefingTrigEditorWindow->briefingTriggersWindow.RefreshWindow(false);
+                RefreshActionAreas();
 
             SetFocus(gridActions.getHandle());
         }
