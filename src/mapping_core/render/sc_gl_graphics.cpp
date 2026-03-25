@@ -1728,14 +1728,18 @@ float ClassicMiniMap::miniMapScale()
 {
     if ( map.read.dimensions.tileWidth >= map.read.dimensions.tileHeight && map.read.dimensions.tileWidth > 0 )
     {
-        if ( 128.0/map.read.dimensions.tileWidth > 1 )
+        if ( map.read.dimensions.tileWidth == 192 || map.read.dimensions.tileWidth == 256 )
+            return 0.5f;
+        else if ( 128.0/map.read.dimensions.tileWidth > 1 )
             return (float)(128/map.read.dimensions.tileWidth);
         else
             return (float)(128.0/map.read.dimensions.tileWidth);
     }
     else
     {
-        if ( 128.0/map.read.dimensions.tileHeight > 1 && map.read.dimensions.tileHeight > 0 )
+        if ( map.read.dimensions.tileHeight == 192 || map.read.dimensions.tileHeight == 256 )
+            return 0.5f;
+        else if ( 128.0/map.read.dimensions.tileHeight > 1 && map.read.dimensions.tileHeight > 0 )
             return (float)(128/map.read.dimensions.tileHeight);
         else
             return (float)(128.0/map.read.dimensions.tileHeight);
