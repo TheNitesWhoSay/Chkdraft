@@ -1856,34 +1856,34 @@ MapGraphics::SelectInfo MapGraphics::getSelInfo(Sc::Sprite::Type spriteType, boo
     };
 }
 
-Animation & MapGraphics::getImage(size_t imageId)
+Animation* MapGraphics::getImage(size_t imageId)
 {
-    return *((*renderDat->images)[imageId]);
+    return imageId >= renderDat->images->size() ? nullptr : (*renderDat->images)[imageId].get();
 }
 
-Animation & MapGraphics::getImage(Sc::Unit::Type unitType)
+Animation* MapGraphics::getImage(Sc::Unit::Type unitType)
 {
     return getImage(getImageId(unitType));
 }
 
-Animation & MapGraphics::getImage(Sc::Sprite::Type spriteType)
+Animation* MapGraphics::getImage(Sc::Sprite::Type spriteType)
 {
     return getImage(getImageId(spriteType));
 }
 
-Animation & MapGraphics::getImage(Sc::Sprite::Type spriteType, bool isDrawnAsSprite)
+Animation* MapGraphics::getImage(Sc::Sprite::Type spriteType, bool isDrawnAsSprite)
 {
     return isDrawnAsSprite ?
         getImage(spriteType) :
         getImage(Sc::Unit::Type(spriteType));
 }
 
-Animation & MapGraphics::getImage(const Chk::Unit & unit)
+Animation* MapGraphics::getImage(const Chk::Unit & unit)
 {
     return getImage(getImageId(unit));
 }
 
-Animation & MapGraphics::getImage(const Chk::Sprite & sprite)
+Animation* MapGraphics::getImage(const Chk::Sprite & sprite)
 {
     return getImage(getImageId(sprite));
 }
@@ -3070,9 +3070,12 @@ void MapGraphics::prepareImageRendering(bool isSelections)
     }
 }
 
-void MapGraphics::drawImage(Animation & animation, s32 x, s32 y, u32 frameIndex, u32 multiplyColor, u32 playerColor, bool hallucinate, bool flipped)
+void MapGraphics::drawImage(Animation* animation, s32 x, s32 y, u32 frameIndex, u32 multiplyColor, u32 playerColor, bool hallucinate, bool flipped)
 {
-    auto & frame = animation.frames[frameIndex >= animation.totalFrames ? 0 : frameIndex];
+    if ( animation == nullptr )
+        return;
+
+    auto & frame = animation->frames[frameIndex >= animation->totalFrames ? 0 : frameIndex];
     
     // To use StarCraft's sprite shader means binding a particular texture per sprite then performing a draw, capping optimization potential
     // Below is passing data related to the image frame in one uniform and performing ~all math on the GPU
@@ -3080,8 +3083,8 @@ void MapGraphics::drawImage(Animation & animation, s32 x, s32 y, u32 frameIndex,
 
     renderDat->shaders->spriteShader.image.setVec2Array({
         { GLfloat(x)                   , GLfloat(y)                }, // centerPos
-        { GLfloat(animation.width)     , GLfloat(animation.height) }, // animSize
-        { GLfloat(animation.xScale)    , GLfloat(animation.yScale) }, // animTexScale
+        { GLfloat(animation->width)    , GLfloat(animation->height) }, // animSize
+        { GLfloat(animation->xScale)   , GLfloat(animation->yScale) }, // animTexScale
         { GLfloat(frame.width)         , GLfloat(frame.height) }, // frameSize
         { GLfloat(frame.xOffset)       , GLfloat(frame.yOffset) }, // framePosOffset
         { GLfloat(frame.xTextureOffset), GLfloat(frame.yTextureOffset) }, // frameTexOffset
@@ -3092,20 +3095,23 @@ void MapGraphics::drawImage(Animation & animation, s32 x, s32 y, u32 frameIndex,
     renderDat->shaders->spriteShader.teamColor.setColor(playerColor);
     renderDat->shaders->spriteShader.hallucinate.setValue(GLfloat(hallucinate));
 
-    animation.diffuse.bindToSlot(GL_TEXTURE0);
-    animation.teamColor.bindToSlot(GL_TEXTURE1);
+    animation->diffuse.bindToSlot(GL_TEXTURE0);
+    animation->teamColor.bindToSlot(GL_TEXTURE1);
 
     animVertices.drawTriangles();
 }
 
-void MapGraphics::drawSelectionImage(Animation & animation, s32 x, s32 y, u32 frameIndex, u32 colorSet, u32 multiplyColor, bool flipped)
+void MapGraphics::drawSelectionImage(Animation* animation, s32 x, s32 y, u32 frameIndex, u32 colorSet, u32 multiplyColor, bool flipped)
 {
-    auto & frame = animation.frames[frameIndex >= animation.totalFrames ? 0 : frameIndex];
+    if ( animation == nullptr )
+        return;
+
+    auto & frame = animation->frames[frameIndex >= animation->totalFrames ? 0 : frameIndex];
     
     renderDat->shaders->selectionShader.image.setVec2Array({
         { GLfloat(x)                   , GLfloat(y)                }, // centerPos
-        { GLfloat(animation.width)     , GLfloat(animation.height) }, // animSize
-        { GLfloat(animation.xScale)    , GLfloat(animation.yScale) }, // animTexScale
+        { GLfloat(animation->width)    , GLfloat(animation->height) }, // animSize
+        { GLfloat(animation->xScale)   , GLfloat(animation->yScale) }, // animTexScale
         { GLfloat(frame.width)         , GLfloat(frame.height) }, // frameSize
         { GLfloat(frame.xOffset)       , GLfloat(frame.yOffset) }, // framePosOffset
         { GLfloat(frame.xTextureOffset), GLfloat(frame.yTextureOffset) }, // frameTexOffset
@@ -3122,7 +3128,7 @@ void MapGraphics::drawSelectionImage(Animation & animation, s32 x, s32 y, u32 fr
         default: renderDat->shaders->selectionShader.solidColor.setColor(0xFF249824); break; // 0xAABBGGRR - tselect[3]
     }
 
-    animation.diffuse.bindToSlot(GL_TEXTURE0);
+    animation->diffuse.bindToSlot(GL_TEXTURE0);
 
     animVertices.drawTriangles();
 }

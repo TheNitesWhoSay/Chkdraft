@@ -934,12 +934,12 @@ protected:
     };
     SelectInfo getSelInfo(Sc::Unit::Type unitType);
     SelectInfo getSelInfo(Sc::Sprite::Type spriteType, bool isDrawnAsSprite);
-    Animation & getImage(size_t imageId);
-    Animation & getImage(Sc::Unit::Type unitType);
-    Animation & getImage(Sc::Sprite::Type spriteType);
-    Animation & getImage(Sc::Sprite::Type spriteType, bool isDrawnAsSprite);
-    Animation & getImage(const Chk::Unit & unit);
-    Animation & getImage(const Chk::Sprite & sprite);
+    Animation* getImage(size_t imageId);
+    Animation* getImage(Sc::Unit::Type unitType);
+    Animation* getImage(Sc::Sprite::Type spriteType);
+    Animation* getImage(Sc::Sprite::Type spriteType, bool isDrawnAsSprite);
+    Animation* getImage(const Chk::Unit & unit);
+    Animation* getImage(const Chk::Sprite & sprite);
 
 public:
 
@@ -989,8 +989,8 @@ public:
     void drawTerrain();
     void drawTilesetIndexed(s32 left, s32 top, s32 width, s32 height, s32 scrollY, std::optional<u16> selectedTile);
     void prepareImageRendering(bool isSelections = false);
-    void drawImage(Animation & animation, s32 x, s32 y, u32 frame, u32 multiplyColor, u32 playerColor, bool hallucinate, bool flipped = false);
-    void drawSelectionImage(Animation & animation, s32 x, s32 y, u32 frame, u32 colorSet, u32 multiplyColor, bool flipped = false);
+    void drawImage(Animation* animation, s32 x, s32 y, u32 frame, u32 multiplyColor, u32 playerColor, bool hallucinate, bool flipped = false);
+    void drawSelectionImage(Animation* animation, s32 x, s32 y, u32 frame, u32 colorSet, u32 multiplyColor, bool flipped = false);
     void drawClassicImage(gl::Palette & palette, s32 x, s32 y, u32 frame, u32 imageId, std::optional<Chk::PlayerColor> color, bool flipped = false);
     void drawUnitSelection(Sc::Unit::Type unitType, s32 x, s32 y);
     void drawSpriteSelection(Sc::Sprite::Type spriteType, s32 x, s32 y, bool isDrawnAsSprite);
