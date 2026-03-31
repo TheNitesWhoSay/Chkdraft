@@ -54,6 +54,7 @@ set(Headers
   text_trig_compiler.h
   text_trig_generator.h
   tree_group.h
+  render/sc_mini_map.h
 )
 set(Sources
   archive_cluster.cpp
@@ -77,6 +78,7 @@ set(Sources
   text_trig_compiler.cpp
   text_trig_generator.cpp
   tree_group.cpp
+  render/sc_mini_map.cpp
 )
 
 add_compile_definitions(_UNICODE UNICODE CASCLIB_UNICODE __STORMLIB_NO_STATIC_LINK__)
