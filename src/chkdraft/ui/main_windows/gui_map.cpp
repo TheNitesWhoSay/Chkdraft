@@ -1783,14 +1783,18 @@ float GuiMap::MiniMapScale(u16 xSize, u16 ySize)
 {
     if ( xSize >= ySize && xSize > 0 )
     {
-        if ( 128.0/xSize > 1 )
+        if ( xSize == 192 || xSize == 256 )
+            return 0.5f;
+        else if ( 128.0/xSize > 1 )
             return (float)(128/xSize);
         else
             return (float)(128.0/xSize);
     }
     else
     {
-        if ( 128.0/ySize > 1 && ySize > 0 )
+        if ( ySize == 192 || ySize == 256 )
+            return 0.5f;
+        else if ( 128.0/ySize > 1 && ySize > 0 )
             return (float)(128/ySize);
         else
             return (float)(128.0/ySize);

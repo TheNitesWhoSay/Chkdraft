@@ -34,11 +34,13 @@ FetchContent_MakeAvailable(rarecpp)
 include_directories(${rarecpp_SOURCE_DIR}/include)
 
 set(Headers
+  mini_map_test_data.h
   test_assets.h
 )
 set(Sources
   basics_test.cpp
   mapping_core_test_main.cpp
+  mini_map_test.cpp
   system_io_test.cpp
   test_assets.cpp
   text_trig_compiler_test.cpp

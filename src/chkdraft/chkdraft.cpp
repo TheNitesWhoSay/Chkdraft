@@ -26,15 +26,37 @@ enum_t(Id, u32, {
 
 void Chkdraft::OnLoadTest()
 {
-    /*auto & map = []() -> GuiMap & {
-        auto map = chkd.maps.NewMap(Sc::Terrain::Tileset::Jungle, 96, 96, Sc::Isom::Brush::Jungle::Default);
-        //map->addUnit(Chk::Unit {map->getNextClassId(), 192, 64, Sc::Unit::Type::StartLocation, 0, 0, 0, Sc::Player::Id::Player2});
+    auto createMap = [&](u16 width, u16 height) -> GuiMap & {
+        auto map = chkd.maps.NewMap(Sc::Terrain::Tileset::Jungle, width, height, Sc::Isom::Brush::Jungle::Default);
         map->setForceFlags(Chk::Force::Force1, Chk::ForceFlags::All & Chk::ForceFlags::xRandomizeStartLocation);
         map->setForceFlags(Chk::Force::Force2, Chk::ForceFlags::All & Chk::ForceFlags::xRandomizeStartLocation);
         map->setPlayerForce(Sc::Player::Id::Player2, Chk::Force::Force2);
+        map->setPlayerForce(Sc::Player::Id::Player3, Chk::Force::Force2);
+        map->setPlayerForce(Sc::Player::Id::Player4, Chk::Force::Force2);
+        map->setPlayerForce(Sc::Player::Id::Player5, Chk::Force::Force2);
+        map->setPlayerForce(Sc::Player::Id::Player6, Chk::Force::Force2);
+        map->setPlayerForce(Sc::Player::Id::Player7, Chk::Force::Force2);
+        map->setPlayerForce(Sc::Player::Id::Player8, Chk::Force::Force2);
         map->setSlotType(1, Sc::Player::SlotType::Computer);
-        _Pragma("warning(suppress: 26716)") return *map;
-    }();
+        map->setSlotType(2, Sc::Player::SlotType::Computer);
+        map->setSlotType(3, Sc::Player::SlotType::Computer);
+        map->setSlotType(4, Sc::Player::SlotType::Computer);
+        map->setSlotType(5, Sc::Player::SlotType::Computer);
+        map->setSlotType(6, Sc::Player::SlotType::Computer);
+        map->setSlotType(7, Sc::Player::SlotType::Computer);
+        map->setSlotType(8, Sc::Player::SlotType::Computer);
+        
+        //int right = map->getPixelWidth();
+        //int bottom = map->getPixelHeight();
+        //for ( int y=256; y<bottom; y+=512 )
+        //{
+        //    for ( int x=256; x<right; x+=512 )
+        //        map->addUnit(Chk::Unit {CM->getNextClassId(), u16(x), u16(y), Sc::Unit::Type::MapRevealer, 0, 0, 0, Sc::Player::Id::Player1});
+        //}
+        return *CM;
+    };
+
+    /*auto & map = createMap(96, 96);
     auto edit = CM->create_action();
     for ( std::size_t i=0; i<scData->units.numUnitTypes(); ++i )
     {

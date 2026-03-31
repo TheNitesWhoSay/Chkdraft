@@ -343,6 +343,15 @@ bool bufferToFile(const std::string & systemFilePath, const std::vector<u8> & bu
     return success;
 }
 
+bool stringToFile(const std::string & systemFilePath, const std::string & str)
+{
+    std::ofstream outFile(std::filesystem::path(asUtf8(systemFilePath)), std::ios_base::binary|std::ios_base::out);
+    outFile.write(reinterpret_cast<const char*>(&str[0]), std::streamsize(str.size()));
+    bool success = outFile.good();
+    outFile.close();
+    return success;
+}
+
 std::vector<std::string> collectLineSeparatedStrings(const std::vector<u8> & buffer)
 {
     std::vector<std::string> result {};
