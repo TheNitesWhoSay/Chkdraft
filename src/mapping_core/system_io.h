@@ -45,6 +45,7 @@ bool patientFindFile(const std::string & filePath, int numWaitTimes, int* waitTi
 std::optional<std::string> fileToString(const std::string & fileName);
 std::optional<std::vector<u8>> fileToBuffer(const std::string & systemFilePath);
 bool bufferToFile(const std::string & systemFilePath, const std::vector<u8> & buffer);
+bool stringToFile(const std::string & systemFilePath, const std::string & str);
 
 std::vector<std::string> collectLineSeparatedStrings(const std::vector<u8> & buffer);
 

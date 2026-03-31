@@ -600,7 +600,7 @@ void GuiMapGraphics::drawPastes()
             auto getDoodadImageId = [&](const auto & doodad) {
                 return doodad.isSprite() ? getImageId(Sc::Sprite::Type(doodad.overlayIndex)) : getImageId(Sc::Unit::Type(doodad.overlayIndex));
             };
-            auto getDoodadImage = [&](const auto & doodad) -> Animation & {
+            auto getDoodadImage = [&](const auto & doodad) -> Animation* {
                 return doodad.isSprite() ? getImage(Sc::Sprite::Type(doodad.overlayIndex)) : getImage(Sc::Unit::Type(doodad.overlayIndex));
             };
 
