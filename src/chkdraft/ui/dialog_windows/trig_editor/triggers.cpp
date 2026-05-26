@@ -672,8 +672,8 @@ std::string TriggersWindow::GetActionString(u8 actionNum, const Chk::Trigger & t
             break;
         case Chk::Action::Type::MoveUnit: // Type2, Type, Players, Location, Number
             ssAction << "Move \x08" << tt.getTrigNumUnits((Chk::Action::NumUnits)action.type2) << "\x0C \x08" << tt.getTrigUnit((Sc::Unit::Type)action.type)
-                << "\x0C for \x08" << tt.getTrigPlayer(action.group) << "\x0C at \'\x08" << tt.getTrigLocation(action.number)
-                << "\x0C\' to \'\x08" << tt.getTrigLocation(action.locationId) << "\x0C\'.";
+                << "\x0C for \x08" << tt.getTrigPlayer(action.group) << "\x0C at \'\x08" << tt.getTrigLocation(action.locationId)
+                << "\x0C\' to \'\x08" << tt.getTrigLocation(action.number) << "\x0C\'.";
             break;
         case Chk::Action::Type::MuteUnitSpeech:
             ssAction << "Mute all non-trigger unit sounds for current player.";
