@@ -465,9 +465,9 @@ namespace Sc {
             u8 returntoIdle;
             u8 attackUnit;
             u8 attackMove;
-            u8 groundWeapon;
+            u16 groundWeapon;
             u8 maxGroundHits;
-            u8 airWeapon;
+            u16 airWeapon;
             u8 maxAirHits;
             u8 aiInternal;
             u32 flags;
@@ -592,9 +592,10 @@ namespace Sc {
             u8 broodWarUnitFlag[TotalTypes];
             u16 starEditAvailabilityFlags[TotalTypes];
         };
+        template <typename WeaponIndex>
         struct alignas(1) DatExtFile
         {
-            static constexpr std::size_t TotalUnits = 3000;
+            static constexpr std::size_t TotalUnits = sizeof(WeaponIndex) == sizeof(u16) ? 3003 : 3000; // TODO: 3003 is temporary
 
             struct alignas(1) Dimensions {
                 u16 width;
@@ -624,9 +625,9 @@ namespace Sc {
             u8 returntoIdle[TotalUnits];
             u8 attackUnit[TotalUnits];
             u8 attackMove[TotalUnits];
-            u8 groundWeapon[TotalUnits];
+            WeaponIndex groundWeapon[TotalUnits];
             u8 maxGroundHits[TotalUnits];
-            u8 airWeapon[TotalUnits];
+            WeaponIndex airWeapon[TotalUnits];
             u8 maxAirHits[TotalUnits];
             u8 aiInternal[TotalUnits];
             u32 flags[TotalUnits];
