@@ -595,7 +595,7 @@ namespace Sc {
         template <typename WeaponIndex>
         struct alignas(1) DatExtFile
         {
-            static constexpr std::size_t TotalUnits = sizeof(WeaponIndex) == sizeof(u16) ? 3003 : 3000; // TODO: 3003 is temporary
+            static constexpr std::size_t TotalUnits = 3000;
 
             struct alignas(1) Dimensions {
                 u16 width;
