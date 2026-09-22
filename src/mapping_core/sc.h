@@ -2973,6 +2973,16 @@ namespace Sc {
             uint16_t megaTileIndex[16]; // megaTileIndex - to VF4/VX4
 
             constexpr bool isBuildable() const { return (flags & Flags::Unbuildable) != Flags::Unbuildable; }
+            constexpr bool isCreep() const { return (flags & Flags::Creep) == Flags::Creep; }
+            constexpr bool isTemporaryCreep() const { return (flags & Flags::TemporaryCreep) == Flags::TemporaryCreep; }
+            constexpr bool isRecedingCreep() const { return (flags & Flags::RecedingCreep) == Flags::RecedingCreep; }
+            constexpr bool providesCover() const { return (flags & Flags::HasDoodadCover) == Flags::HasDoodadCover; }
+            constexpr bool blocksView() const { return (flags & Flags::BlocksView) == Flags::BlocksView; }
+            
+            constexpr bool groupWalkable() const { return (flags & Flags::Walkable) == Flags::Walkable; }
+            constexpr bool groupUnwalkable() const { return (flags & Flags::Unwalkable) == Flags::Unwalkable; }
+            constexpr bool groupMidGround() const { return (flags & Flags::MidGround) == Flags::MidGround; }
+            constexpr bool groupHighGround() const { return (flags & Flags::HighGround) == Flags::HighGround; }
         };
         #pragma pack(pop)
 
@@ -3950,9 +3960,22 @@ namespace Sc {
 
                 inline bool isFlipped() const { return (graphics & Graphics::Flipped) == Graphics::Flipped; }
                 inline u32 vr4Index() const { return (graphics & Graphics::Vr4Index) >> 1; }
+                inline bool operator==(const MiniTileGraphics & other) const { return graphics == other.graphics; }
             };
 
             MiniTileGraphics miniTileGraphics[4][4];
+
+            inline bool operator==(const TileGraphicsEx & other) const {
+                for ( int i=0; i<4; ++i )
+                {
+                    for ( int j=0; j<4; ++j )
+                    {
+                        if ( miniTileGraphics[i][j] != other.miniTileGraphics[i][j] )
+                            return false;
+                    }
+                }
+                return true;
+            }
 
             inline TileGraphicsEx(const TileGraphics & tileGraphics) : miniTileGraphics {
                 {
@@ -4124,6 +4147,7 @@ namespace Sc {
         e.g. StarCraft asset files like "arr\\units.dat" or "tileset\badlands.cv5"
     */
     class Data {
+        bool loadedRemastered = false;
         bool loadUnitGroups();
         bool loadSpriteNames(std::vector<std::string> customSpriteNames, Sc::Sprite::SpriteGroup & spriteGroup);
         bool loadSpriteGroups(ArchiveCluster & archiveCluster, Sc::TblFilePtr imagesTbl, Sc::TblFilePtr statTxt, const TreeGroup* unitGroups);
@@ -4141,6 +4165,7 @@ namespace Sc {
         Pcx tselect;
         Pcx tminimap;
 
+        inline bool isRemastered() const { return loadedRemastered; }
         bool load(Sc::DataFile::BrowserPtr dataFileBrowser = Sc::DataFile::BrowserPtr(new Sc::DataFile::Browser()),
             const std::vector<Sc::DataFile::Descriptor> & dataFiles = Sc::DataFile::getDefaultDataFiles(),
             const std::string & expectedStarCraftDirectory = getDefaultScPath(),
