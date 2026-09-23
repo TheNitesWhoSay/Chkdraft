@@ -32,7 +32,7 @@ class PasteDoodadNode
     const Sc::Terrain::DoodadPlacibility* doodadPlacibility;
 
 public:
-    u16 doodadId = 0;
+    u16 doodadId = 0; // doodadCv5.ddDataIndex
     u16 tileIndex[16][16] {};
     u16 tileWidth = 0;
     u16 tileHeight = 0;

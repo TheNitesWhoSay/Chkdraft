@@ -4046,6 +4046,7 @@ namespace Sc {
         };
 #pragma pack(pop)
         struct Doodad {
+            // ddDataIndex
             enum_t(Type, u16, {
                 // TODO: After loading code is working, index all doodads by fetching tileset+index+name from CV5 doodad/stat.txt entries
             });
@@ -4087,6 +4088,71 @@ namespace Sc {
         static constexpr uint16_t getTileGroup(uint16_t tileValue) { return tileValue / 16; }
 
         static constexpr uint16_t getSubtileValue(uint16_t tileValue) { return tileValue % 16; }
+
+        struct Range
+        {
+            std::uint32_t begin = 0;
+            std::uint32_t end = 0;
+        };
+
+        static inline const std::array<std::vector<Range>, NumTilesets> classicCv5Ranges {
+            std::vector<Range> {{0,              1665}, {1979,4096}},
+            std::vector<Range> {{0,  933}, {1024,1513}, {2046,4096}},
+            std::vector<Range> {{0,                           4096}},
+            std::vector<Range> {{0,              1262}, {1418,4096}},
+            std::vector<Range> {{0,              1578}, {2046,4096}},
+            std::vector<Range> {{0,  770}, {1024,1520}, {2046,4096}},
+            std::vector<Range> {{0,              1415}, {2039,4096}},
+            std::vector<Range> {{0,  797}, {1024,1494}, {2047,4096}}
+        };
+
+        static inline const std::array<std::vector<Range>, NumTilesets> scrCv5Ranges {
+            std::vector<Range> {             {1665, 1979}},
+            std::vector<Range> {{933, 1024}, {1513, 2046}},
+            std::vector<Range> {                         },
+            std::vector<Range> {             {1262, 1418}},
+            std::vector<Range> {             {1578, 2046}},
+            std::vector<Range> {{770, 1024}, {1520, 2046}},
+            std::vector<Range> {             {1415, 2039}},
+            std::vector<Range> {{797, 1024}, {1494, 2047}}
+        };
+
+        static inline const std::array<std::vector<Range>, NumTilesets> classicMtxmTileRanges {
+            std::vector<Range> {{0,                 26640}, {31664, 65536}},
+            std::vector<Range> {{0, 14928}, {16384, 24208}, {32736, 65536}},
+            std::vector<Range> {{0,                                 65536}},
+            std::vector<Range> {{0,                 20192}, {22688, 65536}},
+            std::vector<Range> {{0,                 25248}, {32736, 65536}},
+            std::vector<Range> {{0, 12320}, {16384, 24320}, {32736, 65536}},
+            std::vector<Range> {{0,                 22640}, {32624, 65536}},
+            std::vector<Range> {{0, 12752}, {16384, 23904}, {32752, 65536}}
+        };
+
+        static inline const std::array<std::vector<Range>, NumTilesets> scrMtxmTileRanges {
+            std::vector<Range> {                {26640, 31664}},
+            std::vector<Range> {{14928, 16384}, {24208, 32736}},
+            std::vector<Range> {                              },
+            std::vector<Range> {                {20192, 22688}},
+            std::vector<Range> {                {25248, 32736}},
+            std::vector<Range> {{12320, 16384}, {24320, 32736}},
+            std::vector<Range> {                {22640, 32624}},
+            std::vector<Range> {{12752, 16384}, {23904, 32752}}
+        };
+
+        static inline bool rangesContain(const std::vector<Range> & ranges, std::uint32_t value)
+        {
+            for ( const Range & range : ranges )
+            {
+                if ( value >= range.begin && value < range.end )
+                    return true;
+            }
+            return false;
+        }
+
+        static inline bool isRemasteredTile(Sc::Terrain::Tileset tileset, std::uint16_t tileValue)
+        {
+            return rangesContain(scrMtxmTileRanges[tileset % Sc::Terrain::NumTilesets], tileValue);
+        }
 
         struct Tiles
         {
