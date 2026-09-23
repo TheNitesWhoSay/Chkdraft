@@ -1222,10 +1222,7 @@ std::size_t downgradeSectionTiles(const Sc::Data & scData, Scenario & map, const
             for ( ; i<replacementTiles.size(); ++i )
             {
                 if ( (replacementTiles[i].matchScore & preGraphicsMatchScoreMask) < highestScore )
-                {
-                    // This tile and those after it all score too low to be affected by graphic evaluation
-                    break; 
-                }
+                    break; // This tile and those after it all score too low to be affected by graphic evaluation
 
                 std::uint32_t colorDifference = calcTileColorDifference(tiles, palettedMegaTiles, tileValue, replacementTiles[i].altMtxmTileValue);
                 std::uint32_t colorScore = std::numeric_limits<std::uint32_t>::max()-colorDifference;
