@@ -945,7 +945,7 @@ bool renderTile(const Sc::Terrain::Tiles & tiles, std::uint16_t mtxmTileValue, s
     tileColors.fill(Sc::SystemColor{});
     std::uint16_t megaTileIndex = getMegaTileIndex(tiles, mtxmTileValue);
     if ( megaTileIndex == 0 )
-        return false;
+        return true;
     else
     {
         if ( megaTileIndex >= tiles.tileGraphics.size() )
@@ -1006,7 +1006,22 @@ std::uint32_t calcTileColorDifference(const Sc::Terrain::Tiles & tiles, const st
 
 void removeRemasteredDoodads(const Sc::Data & scData, Scenario & map)
 {
-    // TODO
+    Sc::Terrain::Tileset tilesetIndex = Sc::Terrain::Tileset(map.getTileset() % Sc::Terrain::NumTilesets);
+    const Sc::Terrain::Tiles & tiles = scData.terrain.get(tilesetIndex);
+
+    std::vector<std::size_t> removedDoodadIndexes {};
+    std::ptrdiff_t i = static_cast<std::ptrdiff_t>(map->doodads.size())-1;
+    for ( ; i>=0; --i )
+    {
+        if ( tiles.isRemasteredDoodad(tilesetIndex, map->doodads[i].type) )
+            removedDoodadIndexes.push_back(static_cast<std::size_t>(i));
+    }
+
+    if ( !removedDoodadIndexes.empty() )
+    {
+        auto edit = map.create_action(ActionDescriptor::DowngradeFromRemastered);
+        edit->doodads.remove(removedDoodadIndexes);
+    }
 }
 
 std::size_t downgradeSectionTiles(const Sc::Data & scData, Scenario & map, const std::vector<PalettedTile> & palettedMegaTiles, SectionName sectionName)

@@ -2134,6 +2134,14 @@ std::optional<uint16_t> Sc::Terrain::Tiles::getDoodadGroupIndex(uint16_t doodadI
         return std::nullopt;
 }
 
+bool Sc::Terrain::Tiles::isRemasteredDoodad(Sc::Terrain::Tileset tileset, std::uint16_t doodadId) const
+{
+    if ( auto doodadGroupIndex = getDoodadGroupIndex(doodadId) )
+        return isRemasteredTileGroup(tileset, *doodadGroupIndex);
+
+    return false;
+}
+
 const Sc::Terrain::Tiles & Sc::Terrain::get(const Tileset & tileset) const
 {
     if ( tileset < NumTilesets )

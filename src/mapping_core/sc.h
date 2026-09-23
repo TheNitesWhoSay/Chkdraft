@@ -4149,6 +4149,11 @@ namespace Sc {
             return false;
         }
 
+        static inline bool isRemasteredTileGroup(Sc::Terrain::Tileset tileset, std::uint16_t tileGroup)
+        {
+            return rangesContain(scrCv5Ranges[tileset % Sc::Terrain::NumTilesets], tileGroup);
+        }
+
         static inline bool isRemasteredTile(Sc::Terrain::Tileset tileset, std::uint16_t tileValue)
         {
             return rangesContain(scrMtxmTileRanges[tileset % Sc::Terrain::NumTilesets], tileValue);
@@ -4191,6 +4196,8 @@ namespace Sc {
             static inline size_t getGroupMemberIndex(const u16 & tileIndex) { return size_t(tileIndex & 0xF); }
 
             std::optional<uint16_t> getDoodadGroupIndex(uint16_t doodadId) const;
+
+            bool isRemasteredDoodad(Sc::Terrain::Tileset tileset, std::uint16_t doodadId) const;
 
             inline size_t numMegaTiles() const { return std::max(tileFlags.size(), tileGraphics.size()); }
         };
