@@ -1227,4 +1227,8 @@ void downgradeRemasteredMap()
     downgradeSectionTiles(scData, map, palettedMegaTiles, renderedMegaTiles, SectionName::TILE);
     logger.info() << "Downgrading MTXM section...\n";
     downgradeSectionTiles(scData, map, palettedMegaTiles, renderedMegaTiles, SectionName::MTXM);
+    map.changeVersionTo(Chk::Version::StarCraft_BroodWar);
+    edit->saveType = SaveType::ExpansionScx;
+    repairStrings(false);
+    logger.info() << "Downgrade complete!\n";
 }
