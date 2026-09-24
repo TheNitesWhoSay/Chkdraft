@@ -46,7 +46,7 @@ void LeftBar::NotifyTreeItemSelected(LPARAM newValue)
             break;
 
         case TreeTypeDoodad:
-            chkd.maps.clipboard->setQuickDoodad(u16(itemData));
+            chkd.maps.clipboard->setQuickDoodad(u16(itemData)); // itemData = CV5 tile group index
             CM->Redraw(false);
             break;
 
