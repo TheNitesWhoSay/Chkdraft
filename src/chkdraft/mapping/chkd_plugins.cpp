@@ -878,3 +878,357 @@ void repairStrings(bool compatibilityMode)
     edit->strTailData.reset();
     CM->refreshScenario();
 }
+
+struct PalettedTile
+{
+    u8 px[32*32] {};
+
+    inline bool operator==(const PalettedTile & other) const { return std::memcmp(px, other.px, 32*32) == 0; }
+};
+
+std::vector<PalettedTile> getPalettedMegatiles(const Sc::Terrain::Tiles & tiles)
+{
+    std::size_t megaTileCount = tiles.tileGraphics.size();
+    std::vector<PalettedTile> wpeTiles(megaTileCount, PalettedTile{});
+    for ( std::size_t i=0; i<megaTileCount; ++i )
+    {
+        const Sc::Terrain::TileGraphicsEx & tileGraphics = tiles.tileGraphics[i];
+        for ( std::size_t yMiniTile = 0; yMiniTile < 4; yMiniTile++ )
+        {
+            s64 yMiniOffset = yMiniTile*8;
+            for ( std::size_t xMiniTile = 0; xMiniTile < 4; xMiniTile++ )
+            {
+                const Sc::Terrain::TileGraphicsEx::MiniTileGraphics & miniTileGraphics = tileGraphics.miniTileGraphics[yMiniTile][xMiniTile];
+                bool flipped = miniTileGraphics.isFlipped();
+                size_t vr4Index = size_t(miniTileGraphics.vr4Index());
+                if ( vr4Index < tiles.miniTilePixels.size() )
+                {
+                    const Sc::Terrain::MiniTilePixels & miniTilePixels = tiles.miniTilePixels[vr4Index];
+                    s64 xMiniOffset = xMiniTile*8;
+                    for ( s64 yMiniPixel = yMiniOffset < 0 ? -yMiniOffset : 0; yMiniPixel < 8; yMiniPixel++ )
+                    {
+                        for ( s64 xMiniPixel = xMiniOffset < 0 ? -xMiniOffset : 0; xMiniPixel < 8; xMiniPixel++ )
+                        {
+                            const u8 & wpeIndex = miniTilePixels.wpeIndex[yMiniPixel][flipped ? 7-xMiniPixel : xMiniPixel];
+                            wpeTiles[i].px[size_t((yMiniOffset+yMiniPixel)*32 + (xMiniOffset+xMiniPixel))] = wpeIndex;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return wpeTiles;
+}
+
+std::vector<std::array<Sc::SystemColor, 32*32>> getRenderedMegatiles(const Sc::Terrain::Tiles & tiles, const std::vector<PalettedTile> & palettedMegaTiles)
+{
+    std::size_t megaTileCount = palettedMegaTiles.size();
+    if ( megaTileCount == 0 )
+        return {};
+
+    std::vector<std::array<Sc::SystemColor, 32*32>> renderedMegaTiles(palettedMegaTiles.size(), std::array<Sc::SystemColor, 32*32>{});
+    const std::array<Sc::SystemColor, 256> & pal = tiles.systemColorPalette;
+    for ( std::size_t i=0; i<megaTileCount; ++i )
+    {
+        for ( std::size_t j=0; j<32*32; ++j )
+            renderedMegaTiles[i][j] = pal[palettedMegaTiles[i].px[j]];
+    }
+    return renderedMegaTiles;
+}
+
+struct TileAlternative
+{
+    std::uint16_t altMtxmTileValue = 0;
+    std::uint64_t matchScore = 0;
+
+    inline bool operator<(const TileAlternative & other) { return matchScore > other.matchScore || (matchScore == other.matchScore && altMtxmTileValue < other.altMtxmTileValue); }
+};
+
+std::uint16_t getMegaTileIndex(const Sc::Terrain::Tiles & tiles, std::uint16_t mtxmTileValue)
+{
+    std::uint16_t tileGroupIndex = Sc::Terrain::getTileGroup(mtxmTileValue);
+    std::uint16_t tileGroupMemberIndex = Sc::Terrain::getSubtileValue(mtxmTileValue);
+    if ( tileGroupIndex >= tiles.tileGroups.size() )
+        throw std::invalid_argument("Megatile could not be found for the given tileset data and mtxm index");
+
+    const Sc::Terrain::TileGroup & tileGroup = tiles.tileGroups[tileGroupIndex];
+    std::uint16_t megaTileIndex = tileGroup.megaTileIndex[tileGroupMemberIndex];
+    return megaTileIndex;
+}
+
+std::uint32_t calcTileColorDifference(const Sc::Terrain::Tiles & tiles, const std::vector<PalettedTile> & palettedMegaTiles, const std::vector<std::array<Sc::SystemColor, 32*32>> & renderedMegaTiles, std::uint16_t mtxmTileValue, std::uint16_t otherMtxmTileValue)
+{
+    std::uint16_t megaTileIndex = getMegaTileIndex(tiles, mtxmTileValue);
+    std::uint16_t otherMegaTileIndex = getMegaTileIndex(tiles, otherMtxmTileValue);
+    const std::array<Sc::SystemColor, 32*32> & tileColors = renderedMegaTiles[megaTileIndex < renderedMegaTiles.size() ? megaTileIndex : 0];
+    const std::array<Sc::SystemColor, 32*32> & otherTileColors = renderedMegaTiles[otherMegaTileIndex < renderedMegaTiles.size() ? otherMegaTileIndex : 0];
+
+    double colorDifferenceSum = 0;
+    for ( std::size_t i=0; i<32*32; ++i )
+    {
+        Sc::SystemColor pxColor = tileColors[i];
+        Sc::SystemColor otherPxColor = otherTileColors[i];
+        double redDiff = double(pxColor.red) - double(otherPxColor.red);
+        double greenDiff = double(pxColor.green) - double(otherPxColor.green);
+        double blueDiff = double(pxColor.blue) - double(otherPxColor.blue);
+        colorDifferenceSum += std::sqrt(redDiff*redDiff + greenDiff*greenDiff + blueDiff*blueDiff);
+    }
+    return static_cast<std::uint32_t>(colorDifferenceSum);
+}
+
+void removeRemasteredDoodads(const Sc::Data & scData, Scenario & map)
+{
+    Sc::Terrain::Tileset tilesetIndex = Sc::Terrain::Tileset(map.getTileset() % Sc::Terrain::NumTilesets);
+    const Sc::Terrain::Tiles & tiles = scData.terrain.get(tilesetIndex);
+
+    std::vector<std::size_t> removedDoodadIndexes {};
+    std::ptrdiff_t i = static_cast<std::ptrdiff_t>(map->doodads.size())-1;
+    for ( ; i>=0; --i )
+    {
+        if ( tiles.isRemasteredDoodad(tilesetIndex, map->doodads[i].type) )
+            removedDoodadIndexes.push_back(static_cast<std::size_t>(i));
+    }
+
+    if ( !removedDoodadIndexes.empty() )
+    {
+        auto edit = map.create_action(ActionDescriptor::DowngradeFromRemastered);
+        edit->doodads.remove(removedDoodadIndexes);
+    }
+}
+
+std::size_t downgradeSectionTiles(const Sc::Data & scData, Scenario & map, const std::vector<PalettedTile> & palettedMegaTiles, std::vector<std::array<Sc::SystemColor, 32*32>> & renderedMegaTiles, SectionName sectionName)
+{
+    std::vector<std::size_t> selIndexes {};
+
+    auto edit = map.create_action(ActionDescriptor::DowngradeFromRemastered);
+    std::size_t tileChangeCount = 0;
+    std::vector<std::uint16_t> tileValues {}; 
+    switch ( sectionName )
+    {
+        case SectionName::TILE: tileValues = map->editorTiles; break;
+        case SectionName::MTXM: tileValues = map->tiles; break;
+        default: throw std::invalid_argument("Only valid section names for tile downgrading are TILE and MTXM"); break;
+    }
+
+    Sc::Terrain::Tileset tilesetIndex = Sc::Terrain::Tileset(map.getTileset() % Sc::Terrain::NumTilesets);
+    const Sc::Terrain::Tiles & tiles = scData.terrain.get(tilesetIndex);
+    std::size_t totalTileValues = tileValues.size();
+
+    std::vector<TileAlternative> replacementTiles {};
+    replacementTiles.reserve(65536);
+    for ( std::size_t tileValueIndex=0; tileValueIndex<totalTileValues; ++tileValueIndex )
+    {
+        if ( tileValueIndex%1000 == 0 )
+            logger.info() << tileValueIndex << " / " << totalTileValues << '\n';
+
+        std::uint16_t & tileValue = tileValues[tileValueIndex];
+        if ( !Sc::Terrain::isRemasteredTile(tilesetIndex, tileValue) )
+            continue; // Not remastered, nothing to downgrade
+
+        std::uint16_t tileGroupIndex = Sc::Terrain::getTileGroup(tileValue);
+        std::uint16_t tileGroupMemberIndex = Sc::Terrain::getSubtileValue(tileValue);
+        if ( tileGroupIndex >= tiles.tileGroups.size() )
+            continue; // Out of bounds tile group regardless of the version
+
+        const Sc::Terrain::TileGroup & tileGroup = tiles.tileGroups[tileGroupIndex];
+        std::uint16_t megaTileIndex = tileGroup.megaTileIndex[tileGroupMemberIndex];
+        if ( megaTileIndex == 0 )
+        {
+            tileValue = 0; // Null tile, make sure it's using tileValue 0
+            continue; // Move on to the next tile
+        }
+
+        constexpr std::uint64_t lowByte = 0xFF;
+        std::uint64_t maxMatchScore = 0;
+        replacementTiles.clear();
+        for ( const auto & classicMtxmTileRange : Sc::Terrain::classicMtxmTileRanges[tilesetIndex] )
+        {
+            for ( std::size_t classicMtxmTileValue = classicMtxmTileRange.begin; classicMtxmTileValue < classicMtxmTileRange.end; ++classicMtxmTileValue )
+            {
+                std::uint16_t classicTileGroupIndex = Sc::Terrain::getTileGroup(classicMtxmTileValue);
+                std::uint16_t classicTileGroupMemberIndex = Sc::Terrain::getSubtileValue(classicMtxmTileValue);
+                if ( classicTileGroupIndex >= tiles.tileGroups.size() )
+                    break;
+
+                const Sc::Terrain::TileGroup & classicTileGroup = tiles.tileGroups[classicTileGroupIndex];
+                std::uint16_t classicMegaTileIndex = classicTileGroup.megaTileIndex[classicTileGroupMemberIndex];
+                
+                bool unbuildableMatch = tileGroup.isBuildable() == classicTileGroup.isBuildable();
+                bool creepMatch = tileGroup.isCreep() == classicTileGroup.isCreep();
+                bool temporaryCreepMatch = tileGroup.isTemporaryCreep() == classicTileGroup.isTemporaryCreep();
+                bool recedingCreepMatch = tileGroup.isRecedingCreep() == classicTileGroup.isRecedingCreep();
+                bool megaTileMatch = megaTileIndex == classicMegaTileIndex;
+                bool providesCoverMatch = tileGroup.providesCover() == classicTileGroup.providesCover();
+                bool blocksViewMatch = tileGroup.blocksView() == classicTileGroup.blocksView();
+                bool groupWalkableMatch = tileGroup.groupWalkable() == classicTileGroup.groupWalkable();
+                bool groupUnwalkableMatch = tileGroup.groupUnwalkable() == classicTileGroup.groupUnwalkable();
+                bool groupMidGroundMatch = tileGroup.groupMidGround() == classicTileGroup.groupMidGround();
+                bool groupHighGroundMatch = tileGroup.groupHighGround() == classicTileGroup.groupHighGround();
+                
+                constexpr std::uint64_t true_ = 1;
+                constexpr std::uint64_t false_ = 0;
+                std::uint64_t matchScore = 0;
+                matchScore |= unbuildableMatch ? true_ << std::uint64_t(63) : false_;
+                matchScore |= creepMatch ? true_ << std::uint64_t(62) : false_;
+                matchScore |= temporaryCreepMatch ? true_ <<std::uint64_t(61) : false_;
+                matchScore |= recedingCreepMatch ? true_<<std::uint64_t(60) : false_;
+                matchScore |= megaTileMatch ? true_ << std::uint64_t(59) : false_;
+                if ( (matchScore & 0xF800000000000000) < (maxMatchScore & 0xF800000000000000) )
+                    continue; // Match cannot be better than the max match so far
+
+                // Scan mini-tile flags
+                std::uint64_t walkabilityMatchCount = 0;
+                std::uint64_t elevationMatchScore = 0;
+                std::uint64_t rampMatchCount = 0;
+                for ( std::size_t yMiniTile=0; yMiniTile<4; ++yMiniTile )
+                {
+                    for ( std::size_t xMiniTile=0; xMiniTile<4; ++xMiniTile )
+                    {
+                        Sc::Terrain::TileFlags::MiniTileFlags miniTileFlags = tiles.tileFlags[megaTileIndex].miniTileFlags[yMiniTile][xMiniTile];
+                        Sc::Terrain::TileFlags::MiniTileFlags classicMiniTileFlags = tiles.tileFlags[classicMegaTileIndex].miniTileFlags[yMiniTile][xMiniTile];
+
+                        bool walkabilityMatch = miniTileFlags.isWalkable() == classicMiniTileFlags.isWalkable();
+                        bool rampMatch = miniTileFlags.isRamp() == classicMiniTileFlags.isRamp();
+                        walkabilityMatchCount += walkabilityMatch ? 1 : 0;
+                        rampMatchCount += rampMatch ? 1 : 0;
+
+                        Sc::Terrain::TileElevation tileElevation = miniTileFlags.getElevation();
+                        Sc::Terrain::TileElevation classicTileElevation = classicMiniTileFlags.getElevation();
+
+                        if ( tileElevation == classicTileElevation )
+                            elevationMatchScore += 2;
+                        else
+                            elevationMatchScore += std::uint64_t(2-std::abs(int(tileElevation)-int(classicTileElevation)));
+                    }
+                }
+                
+                matchScore |= walkabilityMatchCount << std::uint64_t(54);
+                matchScore |= providesCoverMatch ? true_ << std::uint64_t(53) : false_;
+                matchScore |= blocksViewMatch ? true_ << std::uint64_t(52) : false_;
+                matchScore |= elevationMatchScore << std::uint64_t(44);
+                if ( (matchScore & 0xFFFFF00000000000) < (maxMatchScore & 0xFFFFF00000000000) ) // Check including minitile properties and more group flags
+                    continue; // Match cannot be better than the max match so far
+                
+                // Perform palette-index check to see if these tiles share the same exact graphics
+                bool sameGraphics = palettedMegaTiles[megaTileIndex] == palettedMegaTiles[classicMegaTileIndex];
+                matchScore |= sameGraphics ? true_ << std::uint64_t(43) : false_;
+                // (the next 2 bits of matchScore are presently unused)
+                
+                if ( (matchScore & 0xFFFFF80000000000) < (maxMatchScore & 0xFFFFF80000000000) ) // Check including paletted check for graphical equivalence
+                    continue; // Match cannot be better than the max match so far
+
+                // At this point in the matchScore the full-tile graphics must be considered, do not perform any more short-circuiting till the end
+                // matchScore |= std::uint64_t(graphicsMatchScore) << std::uint64_t(8)
+
+                maxMatchScore = std::max(maxMatchScore, matchScore); // The lowByte is not considered part of the score till after graphics is applied
+
+                // Apply the lowest 8-bytes to the score then add the score to the matches
+                matchScore |= rampMatchCount << std::uint64_t(4);
+                matchScore |= groupWalkableMatch ? true_ << std::uint64_t(3) : false_;
+                matchScore |= groupUnwalkableMatch ? true_ << std::uint64_t(2) : false_;
+                matchScore |= groupMidGroundMatch ? true_ << std::uint64_t(1) : false_;
+                matchScore |= groupHighGroundMatch ? true_ << std::uint64_t(0) : false_;
+
+                replacementTiles.emplace_back(std::uint16_t(classicMtxmTileValue), matchScore);
+            }
+        }
+
+        if ( replacementTiles.empty() )
+        {
+            tileValue = 0;
+            continue;
+        }
+        
+        std::sort(replacementTiles.begin(), replacementTiles.end());
+
+        constexpr std::uint64_t preGraphicsMatchScoreMask = 0xFFFFFF0000000000; // Sheer off the low-byte
+        std::uint64_t highestScore = (replacementTiles[0].matchScore & preGraphicsMatchScoreMask);
+        if ( replacementTiles.size() >= 2 && highestScore == (replacementTiles[1].matchScore & preGraphicsMatchScoreMask) ) // Multiple tiles scored equal
+        {
+            // Resolve color differences for the replacement tiles with relevant match scores
+            std::size_t i=0;
+            for ( ; i<replacementTiles.size(); ++i )
+            {
+                if ( (replacementTiles[i].matchScore & preGraphicsMatchScoreMask) < highestScore )
+                    break; // This tile and those after it all score too low to be affected by graphic evaluation
+
+                std::uint32_t colorDifference = calcTileColorDifference(tiles, palettedMegaTiles, renderedMegaTiles, tileValue, replacementTiles[i].altMtxmTileValue);
+                std::uint32_t colorScore = std::numeric_limits<std::uint32_t>::max()-colorDifference;
+                replacementTiles[i].matchScore |= std::uint64_t(colorScore) << std::uint64_t(9);
+            }
+            if ( i == replacementTiles.size() )
+                std::sort(replacementTiles.begin(), replacementTiles.end()); // Sort entire vector again
+            else
+                std::sort(replacementTiles.begin(), std::next(replacementTiles.begin(), std::ptrdiff_t(i))); // Sort just the portion of the vector that was updated
+        }
+
+        std::uint64_t replacementScore = replacementTiles[0].matchScore;
+        std::uint64_t replacementWalkabilityMatchCount = ((replacementScore & 0x07C0000000000000) >> 54);
+        if ( replacementWalkabilityMatchCount < 16 )
+        {
+            selIndexes.push_back(tileValueIndex);
+            logger.warn() << "Tile (" << (tileValueIndex % map.getTileWidth()) << ", " << (tileValueIndex / map.getTileWidth()) << ") required walkability changes\n";
+        }
+
+        std::uint16_t newTileValue = replacementTiles[0].altMtxmTileValue;
+        if ( tileValue != newTileValue )
+        {
+            tileValue = replacementTiles[0].altMtxmTileValue;
+            ++tileChangeCount;
+        }
+    }
+    logger.info() << totalTileValues << " / " << totalTileValues << '\n';
+
+    if ( tileChangeCount > 0 )
+    {
+        switch ( sectionName )
+        {
+            case SectionName::TILE: edit->editorTiles = tileValues; break;
+            case SectionName::MTXM: edit->tiles = tileValues; break;
+            default: throw std::logic_error("Unreachable"); break;
+        }
+    }
+    edit->tiles.clear_selections();
+    if ( !selIndexes.empty() )
+        edit->tiles.select(selIndexes);
+    
+    return tileChangeCount;
+}
+
+void downgradeRemasteredMap()
+{
+    if ( CM == nullptr )
+        return;
+
+    GuiMap & map = *CM;
+
+    if ( !chkd.scData )
+    {
+        logger.error() << "Can only downgrade tiles when remastered data is loaded." << std::endl;
+        mb("Can only downgrade tiles when remastered data is loaded.");
+    }
+
+    const auto & scData = *chkd.scData;
+    if ( !scData.isRemastered() )
+    {
+        logger.error() << "Can only downgrade tiles when remastered data is loaded." << std::endl;
+        mb("Can only downgrade tiles when remastered data is loaded.");
+        return;
+    }
+
+    Sc::Terrain::Tileset tilesetIndex = Sc::Terrain::Tileset(map.getTileset() % Sc::Terrain::NumTilesets);
+    std::vector<PalettedTile> palettedMegaTiles = getPalettedMegatiles(scData.terrain.get(tilesetIndex));
+    std::vector<std::array<Sc::SystemColor, 32*32>> renderedMegaTiles = getRenderedMegatiles(scData.terrain.get(tilesetIndex), palettedMegaTiles);
+
+    auto edit = map.create_action(ActionDescriptor::DowngradeFromRemastered);
+    logger.info() << "Downgrading DD2 section...\n";
+    removeRemasteredDoodads(scData, map);
+    logger.info() << "Downgrading TILE section...\n";
+    downgradeSectionTiles(scData, map, palettedMegaTiles, renderedMegaTiles, SectionName::TILE);
+    logger.info() << "Downgrading MTXM section...\n";
+    downgradeSectionTiles(scData, map, palettedMegaTiles, renderedMegaTiles, SectionName::MTXM);
+    map.changeVersionTo(Chk::Version::StarCraft_BroodWar);
+    edit->saveType = SaveType::ExpansionScx;
+    repairStrings(false);
+    logger.info() << "Downgrade complete!\n";
+}
