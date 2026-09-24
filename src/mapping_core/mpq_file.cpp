@@ -1,9 +1,12 @@
 #include "mpq_file.h"
+#include "cross_cut/logger.h"
 #include "cross_cut/simple_icu.h"
 #include <StormLib.h>
 #include "system_io.h"
 #include <iterator>
 #include <vector>
+
+extern Logger logger;
 
 static_assert(WavQuality::Low == MPQ_WAVE_QUALITY_LOW, "WavQuality::Low has the wrong value!");
 static_assert(WavQuality::Med == MPQ_WAVE_QUALITY_MEDIUM, "WavQuality::Med has the wrong value!");
@@ -81,6 +84,11 @@ bool MpqFile::open(const std::string & filePath, bool readOnly, bool createIfNot
     {
         this->filePath = filePath;
         return true;
+    }
+    else
+    {
+        DWORD lastError = GetLastError();
+        logger.info() << "Failed to open \"" << filePath << "\", Error: " << lastError << '\n';
     }
     return false;
 }

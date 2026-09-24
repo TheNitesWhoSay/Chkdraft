@@ -1,8 +1,11 @@
 #include "casc_archive.h"
 #include <CascLib.h>
+#include "cross_cut/logger.h"
 #include "cross_cut/simple_icu.h"
 #include <filesystem>
 #include <fstream>
+
+extern Logger logger;
 
 CascArchive::CascArchive() : ArchiveFile(false), filePath(""), hCasc(NULL)
 {
@@ -55,6 +58,11 @@ bool CascArchive::open(const std::string & filePath, bool readOnly, bool createI
     {
         this->filePath = filePath;
         return true;
+    }
+    else
+    {
+        DWORD lastError = GetLastError();
+        logger.info() << "Failed to open \"" << filePath << "\", Error: " << lastError << '\n';
     }
     return false;
 }
