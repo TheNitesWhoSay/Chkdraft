@@ -2134,6 +2134,14 @@ std::optional<uint16_t> Sc::Terrain::Tiles::getDoodadGroupIndex(uint16_t doodadI
         return std::nullopt;
 }
 
+bool Sc::Terrain::Tiles::isRemasteredDoodad(Sc::Terrain::Tileset tileset, std::uint16_t doodadId) const
+{
+    if ( auto doodadGroupIndex = getDoodadGroupIndex(doodadId) )
+        return isRemasteredTileGroup(tileset, *doodadGroupIndex);
+
+    return false;
+}
+
 const Sc::Terrain::Tiles & Sc::Terrain::get(const Tileset & tileset) const
 {
     if ( tileset < NumTilesets )
@@ -5047,12 +5055,14 @@ bool Sc::Data::load(Sc::DataFile::BrowserPtr dataFileBrowser, const std::vector<
         return false;
     }
 
-    auto archiveCluster = dataFileBrowser->openScDataFiles(dataFiles, expectedStarCraftDirectory, starCraftBrowser);
+    bool loadedRemastered = false;
+    auto archiveCluster = dataFileBrowser->openScDataFiles(loadedRemastered, dataFiles, expectedStarCraftDirectory, starCraftBrowser);
     if ( archiveCluster == nullptr || !archiveCluster->isOpen() )
     {
         logger.error("No archives selected, many features will not work without the game files.\n\nInstall or locate StarCraft for the best experience.");
         return false;
     }
+    this->loadedRemastered = loadedRemastered;
 
     Sc::TblFilePtr statTxt = Sc::TblFilePtr(new Sc::TblFile());
     if ( !statTxt->load(*archiveCluster, "Rez\\stat_txt.tbl") )

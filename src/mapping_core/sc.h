@@ -2973,6 +2973,16 @@ namespace Sc {
             uint16_t megaTileIndex[16]; // megaTileIndex - to VF4/VX4
 
             constexpr bool isBuildable() const { return (flags & Flags::Unbuildable) != Flags::Unbuildable; }
+            constexpr bool isCreep() const { return (flags & Flags::Creep) == Flags::Creep; }
+            constexpr bool isTemporaryCreep() const { return (flags & Flags::TemporaryCreep) == Flags::TemporaryCreep; }
+            constexpr bool isRecedingCreep() const { return (flags & Flags::RecedingCreep) == Flags::RecedingCreep; }
+            constexpr bool providesCover() const { return (flags & Flags::HasDoodadCover) == Flags::HasDoodadCover; }
+            constexpr bool blocksView() const { return (flags & Flags::BlocksView) == Flags::BlocksView; }
+            
+            constexpr bool groupWalkable() const { return (flags & Flags::Walkable) == Flags::Walkable; }
+            constexpr bool groupUnwalkable() const { return (flags & Flags::Unwalkable) == Flags::Unwalkable; }
+            constexpr bool groupMidGround() const { return (flags & Flags::MidGround) == Flags::MidGround; }
+            constexpr bool groupHighGround() const { return (flags & Flags::HighGround) == Flags::HighGround; }
         };
         #pragma pack(pop)
 
@@ -3950,9 +3960,22 @@ namespace Sc {
 
                 inline bool isFlipped() const { return (graphics & Graphics::Flipped) == Graphics::Flipped; }
                 inline u32 vr4Index() const { return (graphics & Graphics::Vr4Index) >> 1; }
+                inline bool operator==(const MiniTileGraphics & other) const { return graphics == other.graphics; }
             };
 
             MiniTileGraphics miniTileGraphics[4][4];
+
+            inline bool operator==(const TileGraphicsEx & other) const {
+                for ( int i=0; i<4; ++i )
+                {
+                    for ( int j=0; j<4; ++j )
+                    {
+                        if ( miniTileGraphics[i][j] != other.miniTileGraphics[i][j] )
+                            return false;
+                    }
+                }
+                return true;
+            }
 
             inline TileGraphicsEx(const TileGraphics & tileGraphics) : miniTileGraphics {
                 {
@@ -4023,6 +4046,7 @@ namespace Sc {
         };
 #pragma pack(pop)
         struct Doodad {
+            // ddDataIndex
             enum_t(Type, u16, {
                 // TODO: After loading code is working, index all doodads by fetching tileset+index+name from CV5 doodad/stat.txt entries
             });
@@ -4065,6 +4089,76 @@ namespace Sc {
 
         static constexpr uint16_t getSubtileValue(uint16_t tileValue) { return tileValue % 16; }
 
+        struct Range
+        {
+            std::uint32_t begin = 0;
+            std::uint32_t end = 0;
+        };
+
+        static inline const std::array<std::vector<Range>, NumTilesets> classicCv5Ranges {
+            std::vector<Range> {{0,              1665}, {1979,4096}},
+            std::vector<Range> {{0,  933}, {1024,1513}, {2046,4096}},
+            std::vector<Range> {{0,                           4096}},
+            std::vector<Range> {{0,              1262}, {1418,4096}},
+            std::vector<Range> {{0,              1578}, {2046,4096}},
+            std::vector<Range> {{0,  770}, {1024,1520}, {2046,4096}},
+            std::vector<Range> {{0,              1415}, {2039,4096}},
+            std::vector<Range> {{0,  797}, {1024,1494}, {2047,4096}}
+        };
+
+        static inline const std::array<std::vector<Range>, NumTilesets> scrCv5Ranges {
+            std::vector<Range> {             {1665, 1979}},
+            std::vector<Range> {{933, 1024}, {1513, 2046}},
+            std::vector<Range> {                         },
+            std::vector<Range> {             {1262, 1418}},
+            std::vector<Range> {             {1578, 2046}},
+            std::vector<Range> {{770, 1024}, {1520, 2046}},
+            std::vector<Range> {             {1415, 2039}},
+            std::vector<Range> {{797, 1024}, {1494, 2047}}
+        };
+
+        static inline const std::array<std::vector<Range>, NumTilesets> classicMtxmTileRanges {
+            std::vector<Range> {{0,                 26640}, {31664, 65536}},
+            std::vector<Range> {{0, 14928}, {16384, 24208}, {32736, 65536}},
+            std::vector<Range> {{0,                                 65536}},
+            std::vector<Range> {{0,                 20192}, {22688, 65536}},
+            std::vector<Range> {{0,                 25248}, {32736, 65536}},
+            std::vector<Range> {{0, 12320}, {16384, 24320}, {32736, 65536}},
+            std::vector<Range> {{0,                 22640}, {32624, 65536}},
+            std::vector<Range> {{0, 12752}, {16384, 23904}, {32752, 65536}}
+        };
+
+        static inline const std::array<std::vector<Range>, NumTilesets> scrMtxmTileRanges {
+            std::vector<Range> {                {26640, 31664}},
+            std::vector<Range> {{14928, 16384}, {24208, 32736}},
+            std::vector<Range> {                              },
+            std::vector<Range> {                {20192, 22688}},
+            std::vector<Range> {                {25248, 32736}},
+            std::vector<Range> {{12320, 16384}, {24320, 32736}},
+            std::vector<Range> {                {22640, 32624}},
+            std::vector<Range> {{12752, 16384}, {23904, 32752}}
+        };
+
+        static inline bool rangesContain(const std::vector<Range> & ranges, std::uint32_t value)
+        {
+            for ( const Range & range : ranges )
+            {
+                if ( value >= range.begin && value < range.end )
+                    return true;
+            }
+            return false;
+        }
+
+        static inline bool isRemasteredTileGroup(Sc::Terrain::Tileset tileset, std::uint16_t tileGroup)
+        {
+            return rangesContain(scrCv5Ranges[tileset % Sc::Terrain::NumTilesets], tileGroup);
+        }
+
+        static inline bool isRemasteredTile(Sc::Terrain::Tileset tileset, std::uint16_t tileValue)
+        {
+            return rangesContain(scrMtxmTileRanges[tileset % Sc::Terrain::NumTilesets], tileValue);
+        }
+
         struct Tiles
         {
             std::vector<TileGroup> tileGroups;
@@ -4103,6 +4197,8 @@ namespace Sc {
 
             std::optional<uint16_t> getDoodadGroupIndex(uint16_t doodadId) const;
 
+            bool isRemasteredDoodad(Sc::Terrain::Tileset tileset, std::uint16_t doodadId) const;
+
             inline size_t numMegaTiles() const { return std::max(tileFlags.size(), tileGraphics.size()); }
         };
 
@@ -4124,6 +4220,7 @@ namespace Sc {
         e.g. StarCraft asset files like "arr\\units.dat" or "tileset\badlands.cv5"
     */
     class Data {
+        bool loadedRemastered = false;
         bool loadUnitGroups();
         bool loadSpriteNames(std::vector<std::string> customSpriteNames, Sc::Sprite::SpriteGroup & spriteGroup);
         bool loadSpriteGroups(ArchiveCluster & archiveCluster, Sc::TblFilePtr imagesTbl, Sc::TblFilePtr statTxt, const TreeGroup* unitGroups);
@@ -4141,6 +4238,7 @@ namespace Sc {
         Pcx tselect;
         Pcx tminimap;
 
+        inline bool isRemastered() const { return loadedRemastered; }
         bool load(Sc::DataFile::BrowserPtr dataFileBrowser = Sc::DataFile::BrowserPtr(new Sc::DataFile::Browser()),
             const std::vector<Sc::DataFile::Descriptor> & dataFiles = Sc::DataFile::getDefaultDataFiles(),
             const std::string & expectedStarCraftDirectory = getDefaultScPath(),

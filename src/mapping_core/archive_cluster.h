@@ -22,7 +22,7 @@ public:
     virtual bool isOpen() const override;
 
     // Closes all contained source ArchiveFile
-    // This has no effect on source ArchiveFiles that are not already ope
+    // This has no effect on source ArchiveFiles that are not already open
     virtual void close() override;
 
     // Checks whether a file exists within the cluster at the given filePath
