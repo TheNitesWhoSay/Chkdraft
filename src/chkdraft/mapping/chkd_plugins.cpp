@@ -959,7 +959,7 @@ std::uint16_t getMegaTileIndex(const Sc::Terrain::Tiles & tiles, std::uint16_t m
 std::uint32_t calcTileColorDifference(const Sc::Terrain::Tiles & tiles, const std::vector<PalettedTile> & palettedMegaTiles, const std::vector<std::array<Sc::SystemColor, 32*32>> & renderedMegaTiles, std::uint16_t mtxmTileValue, std::uint16_t otherMtxmTileValue)
 {
     std::uint16_t megaTileIndex = getMegaTileIndex(tiles, mtxmTileValue);
-    std::uint16_t otherMegaTileIndex = getMegaTileIndex(tiles, mtxmTileValue);
+    std::uint16_t otherMegaTileIndex = getMegaTileIndex(tiles, otherMtxmTileValue);
     const std::array<Sc::SystemColor, 32*32> & tileColors = renderedMegaTiles[megaTileIndex < renderedMegaTiles.size() ? megaTileIndex : 0];
     const std::array<Sc::SystemColor, 32*32> & otherTileColors = renderedMegaTiles[otherMegaTileIndex < renderedMegaTiles.size() ? otherMegaTileIndex : 0];
 
