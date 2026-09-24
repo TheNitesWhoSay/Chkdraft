@@ -920,6 +920,22 @@ std::vector<PalettedTile> getPalettedMegatiles(const Sc::Terrain::Tiles & tiles)
     return wpeTiles;
 }
 
+std::vector<std::array<Sc::SystemColor, 32*32>> getRenderedMegatiles(const Sc::Terrain::Tiles & tiles, const std::vector<PalettedTile> & palettedMegaTiles)
+{
+    std::size_t megaTileCount = palettedMegaTiles.size();
+    if ( megaTileCount == 0 )
+        return {};
+
+    std::vector<std::array<Sc::SystemColor, 32*32>> renderedMegaTiles(palettedMegaTiles.size(), std::array<Sc::SystemColor, 32*32>{});
+    const std::array<Sc::SystemColor, 256> & pal = tiles.systemColorPalette;
+    for ( std::size_t i=0; i<megaTileCount; ++i )
+    {
+        for ( std::size_t j=0; j<32*32; ++j )
+            renderedMegaTiles[i][j] = pal[palettedMegaTiles[i].px[j]];
+    }
+    return renderedMegaTiles;
+}
+
 struct TileAlternative
 {
     std::uint16_t altMtxmTileValue = 0;
@@ -940,66 +956,22 @@ std::uint16_t getMegaTileIndex(const Sc::Terrain::Tiles & tiles, std::uint16_t m
     return megaTileIndex;
 }
 
-bool renderTile(const Sc::Terrain::Tiles & tiles, std::uint16_t mtxmTileValue, std::array<Sc::SystemColor, 32*32> & tileColors)
+std::uint32_t calcTileColorDifference(const Sc::Terrain::Tiles & tiles, const std::vector<PalettedTile> & palettedMegaTiles, const std::vector<std::array<Sc::SystemColor, 32*32>> & renderedMegaTiles, std::uint16_t mtxmTileValue, std::uint16_t otherMtxmTileValue)
 {
-    tileColors.fill(Sc::SystemColor{});
     std::uint16_t megaTileIndex = getMegaTileIndex(tiles, mtxmTileValue);
-    if ( megaTileIndex == 0 )
-        return true;
-    else
-    {
-        if ( megaTileIndex >= tiles.tileGraphics.size() )
-            return false;
-
-        Sc::Terrain::TileGraphicsEx tileGraphics = tiles.tileGraphics[megaTileIndex];
-        for ( std::size_t y=0; y<4; ++y )
-        {
-            s64 yMiniOffset = y*8;
-            for ( std::size_t x=0; x<4; ++x )
-            {
-                Sc::Terrain::TileGraphicsEx::MiniTileGraphics miniTileGraphics = tileGraphics.miniTileGraphics[y][x];
-                bool flipped = miniTileGraphics.isFlipped();
-                size_t vr4Index = size_t(miniTileGraphics.vr4Index());
-
-                if ( vr4Index < tiles.miniTilePixels.size() )
-                {
-                    const Sc::Terrain::MiniTilePixels & miniTilePixels = tiles.miniTilePixels[vr4Index];
-                    s64 xMiniOffset = x*8;
-                    for ( s64 yMiniPixel = yMiniOffset < 0 ? -yMiniOffset : 0; yMiniPixel < 8; yMiniPixel++ )
-                    {
-                        for ( s64 xMiniPixel = xMiniOffset < 0 ? -xMiniOffset : 0; xMiniPixel < 8; xMiniPixel++ )
-                        {
-                            const u8 & wpeIndex = miniTilePixels.wpeIndex[yMiniPixel][flipped ? 7-xMiniPixel : xMiniPixel];
-                            tileColors[size_t((yMiniOffset+yMiniPixel)*32 + (xMiniOffset+xMiniPixel))] = tiles.systemColorPalette[wpeIndex];
-                        }
-                    }
-                }
-            }
-        }
-    }
-    return true;
-}
-
-std::uint32_t calcTileColorDifference(const Sc::Terrain::Tiles & tiles, const std::vector<PalettedTile> & palettedMegaTiles, std::uint16_t mtxmTileValue, std::uint16_t otherMtxmTileValue)
-{
-    std::array<Sc::SystemColor, 32*32> tileColors {};
-    std::array<Sc::SystemColor, 32*32> otherTileColors {};
-    if ( !renderTile(tiles, mtxmTileValue, tileColors) || !renderTile(tiles, otherMtxmTileValue, otherTileColors) )
-        throw std::runtime_error("Failed to render tiles");
+    std::uint16_t otherMegaTileIndex = getMegaTileIndex(tiles, mtxmTileValue);
+    const std::array<Sc::SystemColor, 32*32> & tileColors = renderedMegaTiles[megaTileIndex < renderedMegaTiles.size() ? megaTileIndex : 0];
+    const std::array<Sc::SystemColor, 32*32> & otherTileColors = renderedMegaTiles[otherMegaTileIndex < renderedMegaTiles.size() ? otherMegaTileIndex : 0];
 
     double colorDifferenceSum = 0;
-    for ( std::size_t y=0; y<32; ++y )
+    for ( std::size_t i=0; i<32*32; ++i )
     {
-        for ( std::size_t x=0; x<32; ++x )
-        {
-            std::size_t i = y*32+x;
-            Sc::SystemColor pxColor = tileColors[i];
-            Sc::SystemColor otherPxColor = otherTileColors[i];
-            colorDifferenceSum += std::sqrt(
-                std::pow(double(pxColor.red) - double(otherPxColor.red), 2) +
-                std::pow(double(pxColor.green) - double(otherPxColor.green), 2) +
-                std::pow(double(pxColor.blue) - double(otherPxColor.blue), 2));
-        }
+        Sc::SystemColor pxColor = tileColors[i];
+        Sc::SystemColor otherPxColor = otherTileColors[i];
+        double redDiff = double(pxColor.red) - double(otherPxColor.red);
+        double greenDiff = double(pxColor.green) - double(otherPxColor.green);
+        double blueDiff = double(pxColor.blue) - double(otherPxColor.blue);
+        colorDifferenceSum += std::sqrt(redDiff*redDiff + greenDiff*greenDiff + blueDiff*blueDiff);
     }
     return static_cast<std::uint32_t>(colorDifferenceSum);
 }
@@ -1024,8 +996,11 @@ void removeRemasteredDoodads(const Sc::Data & scData, Scenario & map)
     }
 }
 
-std::size_t downgradeSectionTiles(const Sc::Data & scData, Scenario & map, const std::vector<PalettedTile> & palettedMegaTiles, SectionName sectionName)
+std::size_t downgradeSectionTiles(const Sc::Data & scData, Scenario & map, const std::vector<PalettedTile> & palettedMegaTiles, std::vector<std::array<Sc::SystemColor, 32*32>> & renderedMegaTiles, SectionName sectionName)
 {
+    std::vector<std::size_t> selIndexes {};
+
+    auto edit = map.create_action(ActionDescriptor::DowngradeFromRemastered);
     std::size_t tileChangeCount = 0;
     std::vector<std::uint16_t> tileValues {}; 
     switch ( sectionName )
@@ -1043,6 +1018,9 @@ std::size_t downgradeSectionTiles(const Sc::Data & scData, Scenario & map, const
     replacementTiles.reserve(65536);
     for ( std::size_t tileValueIndex=0; tileValueIndex<totalTileValues; ++tileValueIndex )
     {
+        if ( tileValueIndex%1000 == 0 )
+            logger.info() << tileValueIndex << " / " << totalTileValues << '\n';
+
         std::uint16_t & tileValue = tileValues[tileValueIndex];
         if ( !Sc::Terrain::isRemasteredTile(tilesetIndex, tileValue) )
             continue; // Not remastered, nothing to downgrade
@@ -1174,7 +1152,7 @@ std::size_t downgradeSectionTiles(const Sc::Data & scData, Scenario & map, const
                 if ( (replacementTiles[i].matchScore & preGraphicsMatchScoreMask) < highestScore )
                     break; // This tile and those after it all score too low to be affected by graphic evaluation
 
-                std::uint32_t colorDifference = calcTileColorDifference(tiles, palettedMegaTiles, tileValue, replacementTiles[i].altMtxmTileValue);
+                std::uint32_t colorDifference = calcTileColorDifference(tiles, palettedMegaTiles, renderedMegaTiles, tileValue, replacementTiles[i].altMtxmTileValue);
                 std::uint32_t colorScore = std::numeric_limits<std::uint32_t>::max()-colorDifference;
                 replacementTiles[i].matchScore |= std::uint64_t(colorScore) << std::uint64_t(9);
             }
@@ -1184,6 +1162,14 @@ std::size_t downgradeSectionTiles(const Sc::Data & scData, Scenario & map, const
                 std::sort(replacementTiles.begin(), std::next(replacementTiles.begin(), std::ptrdiff_t(i))); // Sort just the portion of the vector that was updated
         }
 
+        std::uint64_t replacementScore = replacementTiles[0].matchScore;
+        std::uint64_t replacementWalkabilityMatchCount = ((replacementScore & 0x07C0000000000000) >> 54);
+        if ( replacementWalkabilityMatchCount < 16 )
+        {
+            selIndexes.push_back(tileValueIndex);
+            logger.warn() << "Tile (" << (tileValueIndex % map.getTileWidth()) << ", " << (tileValueIndex / map.getTileWidth()) << ") required walkability changes\n";
+        }
+
         std::uint16_t newTileValue = replacementTiles[0].altMtxmTileValue;
         if ( tileValue != newTileValue )
         {
@@ -1191,10 +1177,10 @@ std::size_t downgradeSectionTiles(const Sc::Data & scData, Scenario & map, const
             ++tileChangeCount;
         }
     }
+    logger.info() << totalTileValues << " / " << totalTileValues << '\n';
 
     if ( tileChangeCount > 0 )
     {
-        auto edit = map.create_action(ActionDescriptor::DowngradeFromRemastered);
         switch ( sectionName )
         {
             case SectionName::TILE: edit->editorTiles = tileValues; break;
@@ -1202,6 +1188,10 @@ std::size_t downgradeSectionTiles(const Sc::Data & scData, Scenario & map, const
             default: throw std::logic_error("Unreachable"); break;
         }
     }
+    edit->tiles.clear_selections();
+    if ( !selIndexes.empty() )
+        edit->tiles.select(selIndexes);
+    
     return tileChangeCount;
 }
 
@@ -1228,9 +1218,13 @@ void downgradeRemasteredMap()
 
     Sc::Terrain::Tileset tilesetIndex = Sc::Terrain::Tileset(map.getTileset() % Sc::Terrain::NumTilesets);
     std::vector<PalettedTile> palettedMegaTiles = getPalettedMegatiles(scData.terrain.get(tilesetIndex));
+    std::vector<std::array<Sc::SystemColor, 32*32>> renderedMegaTiles = getRenderedMegatiles(scData.terrain.get(tilesetIndex), palettedMegaTiles);
 
     auto edit = map.create_action(ActionDescriptor::DowngradeFromRemastered);
+    logger.info() << "Downgrading DD2 section...\n";
     removeRemasteredDoodads(scData, map);
-    downgradeSectionTiles(scData, map, palettedMegaTiles, SectionName::TILE);
-    downgradeSectionTiles(scData, map, palettedMegaTiles, SectionName::MTXM);
+    logger.info() << "Downgrading TILE section...\n";
+    downgradeSectionTiles(scData, map, palettedMegaTiles, renderedMegaTiles, SectionName::TILE);
+    logger.info() << "Downgrading MTXM section...\n";
+    downgradeSectionTiles(scData, map, palettedMegaTiles, renderedMegaTiles, SectionName::MTXM);
 }
