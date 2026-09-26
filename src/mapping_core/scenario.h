@@ -577,12 +577,17 @@ struct Scenario : nf::tracked<MapData, Scenario, DescriptorIndex>
 
     bool clearTileSelChanged();
     bool clearFogSelChanged();
+    bool clearObjSelChanged();
     using tiles_path = NF_PATH(root->tiles);
     using editor_tiles_path = NF_PATH(root->editorTiles);
     using tiles_fog_path = NF_PATH(root->tileFog);
+    using doodads_path = NF_PATH(root->doodads);
     void selections_changed(tiles_path);
     void selections_changed(editor_tiles_path);
     void selections_changed(tiles_fog_path);
+    void selections_changed(units_path);
+    void selections_changed(sprites_path);
+    void selections_changed(doodads_path);
 
     using strings_path = NF_PATH(root->strings);
     using string_elem_path = NF_PATH(root->strings[0]);
@@ -657,6 +662,7 @@ private:
     bool mapIsProtected = false; // Flagged if map is protected (not included in tracked data)
     bool tileSelChanged = false; // Flagged when tile sel changes
     bool fogSelChanged = false; // Flagged when fog sel changes
+    bool objSelChanged = false; // Flagged when unit, sprite, or doodad sel changes
 };
 
 #endif

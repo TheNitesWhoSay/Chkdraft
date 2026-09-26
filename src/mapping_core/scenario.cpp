@@ -7786,6 +7786,16 @@ bool Scenario::clearFogSelChanged()
     return false;
 }
 
+bool Scenario::clearObjSelChanged()
+{
+    if ( objSelChanged )
+    {
+        objSelChanged = false;
+        return true;
+    }
+    return false;
+}
+
 void Scenario::selections_changed(tiles_path)
 {
     tileSelChanged = true;
@@ -7799,6 +7809,21 @@ void Scenario::selections_changed(editor_tiles_path)
 void Scenario::selections_changed(tiles_fog_path)
 {
     fogSelChanged = true;
+}
+
+void Scenario::selections_changed(units_path)
+{
+    objSelChanged = true;
+}
+
+void Scenario::selections_changed(sprites_path)
+{
+    objSelChanged = true;
+}
+
+void Scenario::selections_changed(doodads_path)
+{
+    objSelChanged = true;
 }
 
 template <class Edit>

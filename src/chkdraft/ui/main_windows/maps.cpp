@@ -53,6 +53,7 @@ bool Maps::Focus(std::shared_ptr<GuiMap> guiMap)
         chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
         chkd.mainPlot.leftBar.historyTree.RebuildHistoryTree();
         currentlyActiveMap->updateMenu();
+        currentlyActiveMap->updateSelectionStatus();
         return true;
     }
     else
@@ -344,6 +345,7 @@ void Maps::ChangeLayer(Layer newLayer)
             chkd.statusBar.SetText(1, layerString);
         
         UpdatePlayerStatus();
+        currentlyActiveMap->updateSelectionStatus();
     }
 }
 
@@ -955,6 +957,7 @@ void Maps::DisableMapping()
         chkd.statusBar.SetText(1, "");
         chkd.statusBar.SetText(2, "");
         chkd.statusBar.SetText(3, "");
+        chkd.statusBar.SetText(4, "");
 
         chkd.changePasswordWindow->Hide();
     }
