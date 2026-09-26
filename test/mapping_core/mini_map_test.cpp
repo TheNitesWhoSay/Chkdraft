@@ -41,7 +41,12 @@ std::shared_ptr<Scenario> create_scenario(u16 width, u16 height)
 TEST(MiniMapTest, MiniMapTest)
 {
     Sc::Data scData {};
-    TestAssets::LoadScData(scData);
+    if ( !TestAssets::LoadScData(scData) )
+    {
+        GTEST_SKIP() << "Requires StarCraft data files; set the SC_ASSET environment variable to a "
+            "directory containing " << Sc::DataFile::starDatFileName << ", " << Sc::DataFile::brooDatFileName
+            << ", and " << Sc::DataFile::patchRtFileName;
+    }
 
     u16 dims[] {
         64, 64,
