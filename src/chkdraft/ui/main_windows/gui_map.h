@@ -195,6 +195,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCach
                     void notifyUnsavedChanges(); // Adds an asterix onto the map name
                     void notifyNoUnsavedChanges(); // Removes an asterix from the map name
                     void updateMenu(); // Updates which items are checked in the main menu
+                    void updateSelectionStatus(); // Updates the selection count shown in the status bar
 
                     bool CreateThis(HWND hClient, const std::string & title);
                     void ReturnKeyPress();

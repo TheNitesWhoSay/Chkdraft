@@ -4492,6 +4492,34 @@ void GuiMap::checkSelChangeFlags()
 
     if ( clearFogSelChanged() )
         this->tileFogSelectionsChanged();
+
+    if ( clearObjSelChanged() )
+        this->updateSelectionStatus();
+}
+
+void GuiMap::updateSelectionStatus()
+{
+    if ( CM.get() != this )
+        return;
+
+    const char* label = nullptr;
+    std::size_t numSelected = 0;
+    switch ( currLayer )
+    {
+        case Layer::Units: label = "Units"; numSelected = view.units.sel().size(); break;
+        case Layer::Sprites: label = "Sprites"; numSelected = view.sprites.sel().size(); break;
+        case Layer::Doodads: label = "Doodads"; numSelected = view.doodads.sel().size(); break;
+        default: break;
+    }
+
+    if ( label != nullptr && numSelected > 0 )
+    {
+        char selText[64];
+        std::snprintf(selText, sizeof(selText), "%s selected: %zu", label, numSelected);
+        chkd.statusBar.SetText(4, selText);
+    }
+    else
+        chkd.statusBar.SetText(4, "");
 }
 
 void GuiMap::element_added(strings_path, std::size_t index)
