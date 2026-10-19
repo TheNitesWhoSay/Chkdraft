@@ -229,10 +229,8 @@ gl::Texture GraphicsData::loadBmpLuminanceTexture(u8* data, GLsizei width, GLsiz
     return texture;
 }
 
-std::shared_ptr<Animation> GraphicsData::loadSdAnim(Sc::Data & scData, u8* data, u32 index, gl::ContextSemaphore* contextSemaphore)
+std::shared_ptr<Animation> GraphicsData::loadSdAnim(const Sc::Sprite::GrpFile & grp, u8* data, u32 index, gl::ContextSemaphore* contextSemaphore)
 {
-    auto & grp = scData.sprites.getGrp(scData.sprites.getImage(index).grpFile).get();
-
     Animation::Header* header = (Animation::Header*)data;
     u32 entryOffset = *((u32*)&data[sizeof(Animation::Header) + index*sizeof(u32)]);
     Animation::MainSd::Entry* entry = (Animation::MainSd::Entry*)&data[entryOffset];
@@ -280,7 +278,7 @@ std::shared_ptr<Animation> GraphicsData::loadSdAnim(Sc::Data & scData, u8* data,
     return animation;
 }
         
-std::shared_ptr<Animation> GraphicsData::loadHdAnim(bool halfAnim, ArchiveCluster & archiveCluster, const std::filesystem::path & path, ByteBuffer & fileData, gl::ContextSemaphore* contextSemaphore)
+std::shared_ptr<Animation> GraphicsData::loadHdAnim(const Sc::Sprite::GrpFile & grp, bool halfAnim, ArchiveCluster & archiveCluster, const std::filesystem::path & path, ByteBuffer & fileData, gl::ContextSemaphore* contextSemaphore)
 {
     if ( archiveCluster.getFile(path.string(), fileData) )
     {
@@ -290,16 +288,28 @@ std::shared_ptr<Animation> GraphicsData::loadHdAnim(bool halfAnim, ArchiveCluste
         if ( header->fileType != Animation::Header::ANIM )
             throw std::logic_error("Invalid header " + std::to_string(header->fileType));
         else if ( header->version == 0x0101 )
-            throw std::logic_error("loadAnimHD called for SD animation file!");
+            throw std::logic_error("loadHdAnim called for SD animation file!");
         else if ( entry->frames == 0 )
             throw std::logic_error("Animation had no frames!");
 
         auto animation = std::make_shared<Animation>();
         animation->totalFrames = entry->frames;
-        animation->width = entry->grpWidth;
-        animation->height = entry->grpHeight;
         u32 textureWidth = entry->images[0].textureWidth;
         u32 textureHeight = entry->images[0].textureHeight;
+        if ( entry->grpWidth == 0 && entry->grpHeight == 0 ) // zero-width anim
+        {
+            s32 xFrameOffset = grp.frameHeaders[0].xOffset;
+            s32 yFrameOffset = grp.frameHeaders[0].yOffset;
+            s32 vertexLeft = GLfloat(-s32(grp.grpWidth)/2 + s32(xFrameOffset));
+            s32 vertexTop = GLfloat(-s32(grp.grpHeight)/2 + s32(yFrameOffset));
+            animation->width = vertexLeft;
+            animation->height = vertexTop;
+        }
+        else
+        {
+            animation->width = entry->grpWidth;
+            animation->height = entry->grpHeight;
+        }
         animation->xScale = halfAnim ? .5f/textureWidth : 1.0f/textureWidth;
         animation->yScale = halfAnim ? .5f/textureHeight : 1.0f/textureHeight;
 
@@ -1232,6 +1242,7 @@ void GraphicsData::Data::Skin::loadImages(Sc::Data & scData, ArchiveCluster & ar
     {
         for ( u32 i=0; i<header->entries; i++ )
         {
+            const Sc::Sprite::GrpFile & grp = scData.sprites.getGrp(scData.sprites.getImage(i).grpFile).get();
             Animation::MainSd::Entry* entry = (Animation::MainSd::Entry*)&sdData[entryOffsets[i]];
             if ( entry->frames == 0 )
             {
@@ -1242,17 +1253,18 @@ void GraphicsData::Data::Skin::loadImages(Sc::Data & scData, ArchiveCluster & ar
                     (*images)[i] = (*images)[ref->referencedImage];
             }
             else if ( loadSettings.visualQuality == VisualQuality::SD )
-                (*images)[i] = loadSdAnim(scData, sdData, i);
+                (*images)[i] = loadSdAnim(grp, sdData, i);
             else if ( skin.imageUsesSkinTexture[i] != 0 )
-                (*images)[i] = loadHdAnim(halfAnims, archiveCluster, skinAnimPrefix / (std::string("main_") + (to_zero_padded_str(3, i) + ".anim")), fileData);
+                (*images)[i] = loadHdAnim(grp, halfAnims, archiveCluster, skinAnimPrefix / (std::string("main_") + (to_zero_padded_str(3, i) + ".anim")), fileData);
             else
-                (*images)[i] = loadHdAnim(halfAnims, archiveCluster, animPrefix / (std::string("main_") + (to_zero_padded_str(3, i) + ".anim")), fileData);
+                (*images)[i] = loadHdAnim(grp, halfAnims, archiveCluster, animPrefix / (std::string("main_") + (to_zero_padded_str(3, i) + ".anim")), fileData);
         }
     }
     else // Have a context semaphore and loading VisualQuality::HD2/HD which reads ~1000 casc files, use multithreading for up to ~70% speedup
     {
         struct Task
         {
+            const Sc::Sprite::GrpFile* grp;
             bool halfAnim;
             ArchiveCluster* archiveCluster;
             std::filesystem::path path;
@@ -1261,7 +1273,9 @@ void GraphicsData::Data::Skin::loadImages(Sc::Data & scData, ArchiveCluster & ar
 
             size_t requiredMemory = 0;
 
-            void perform(ByteBuffer & memory) { *anim = GraphicsData::loadHdAnim(halfAnim, *archiveCluster, path.string(), memory, contextSemaphore); }
+            void perform(ByteBuffer & memory) {
+                *anim = GraphicsData::loadHdAnim(*grp, halfAnim, *archiveCluster, path.string(), memory, contextSemaphore);
+            }
         };
 
         MemoryTieredTasks<Task> memoryTieredTasks {std::min((unsigned int)12, std::thread::hardware_concurrency()), {
@@ -1277,8 +1291,9 @@ void GraphicsData::Data::Skin::loadImages(Sc::Data & scData, ArchiveCluster & ar
                 Animation::MainSd::Entry* entry = (Animation::MainSd::Entry*)&sdData[entryOffsets[i]];
                 if ( entry->frames > 0 )
                 {
+                    const Sc::Sprite::GrpFile & grp = scData.sprites.getGrp(scData.sprites.getImage(i).grpFile).get();
                     if ( loadSettings.visualQuality == VisualQuality::SD )
-                        (*images)[i] = loadSdAnim(scData, sdData, i);
+                        (*images)[i] = loadSdAnim(grp, sdData, i);
                     else
                     {
                         std::filesystem::path path {};
@@ -1288,6 +1303,7 @@ void GraphicsData::Data::Skin::loadImages(Sc::Data & scData, ArchiveCluster & ar
                             path = animPrefix / (std::string("main_") + (to_zero_padded_str(3, i) + ".anim"));
 
                         memoryTieredTasks.add_task({
+                            .grp = &grp,
                             .halfAnim = loadSettings.visualQuality.halfAnims,
                             .archiveCluster = &archiveCluster,
                             .path = path,
