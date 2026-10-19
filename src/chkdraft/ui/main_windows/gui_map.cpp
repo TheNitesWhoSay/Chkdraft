@@ -480,7 +480,7 @@ void GuiMap::unlinkAndDeleteSelectedUnits()
     auto edit = create_action(ActionDescriptor::DeleteUnits);
     if ( view.units.sel().size() == read.units.size() )
         edit->units.reset();
-    else
+    else if ( selections.hasUnits() )
     {
         for ( auto unitIndex : view.units.sel() )
         {
