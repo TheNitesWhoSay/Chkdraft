@@ -321,7 +321,7 @@ namespace Chk {
             Disabled = 1 // Doodad is disabled
         });
 
-        Sc::Terrain::Doodad::Type type;
+        Sc::Terrain::Doodad::Type type; // ddDataIndex
         u16 xc;
         u16 yc;
         u8 owner;

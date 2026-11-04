@@ -308,30 +308,37 @@ bool Sc::Unit::load(ArchiveCluster & archiveCluster)
     auto extUnitData = Sc::Data::GetAsset(archiveCluster, "arr\\units.datex", true);
     if ( extUnitData )
     {
-        if ( extUnitData->size() != sizeof(Sc::Unit::DatExtFile) )
+        if ( extUnitData->size() != sizeof(Sc::Unit::DatExtFile<u8>) && extUnitData->size() != sizeof(Sc::Unit::DatExtFile<u16>) )
         {
             logger.error() << "Unrecognized UnitDatExt format!" << std::endl;
             return false;
         }
         
-        DatExtFile & dat = (DatExtFile &)extUnitData.value()[0];
-        for ( std::size_t i=0; i<DatExtFile::TotalUnits; i++ )
-        {
-            units.push_back(Sc::Unit::DatEntry {
-                dat.graphics[i], dat.subunit1[i], dat.subunit2[i], u16(0), dat.constructionAnimation[i],
-                dat.unitDirection[i], dat.shieldEnable[i], dat.shieldAmount[i], dat.hitPoints[i], dat.elevationLevel[i],
-                dat.unknown[i], dat.sublabel[i], dat.compAIIdle[i], dat.humanAIIdle[i], dat.returntoIdle[i], dat.attackUnit[i],
-                dat.attackMove[i], dat.groundWeapon[i], dat.maxGroundHits[i], dat.airWeapon[i], dat.maxAirHits[i], dat.aiInternal[i],
-                dat.flags[i], dat.targetAcquisitionRange[i], dat.sightRange[i], dat.armorUpgrade[i], dat.unitSize[i],
-                dat.armor[i], dat.rightClickAction[i], u16(0), dat.whatSoundStart[i], dat.whatSoundEnd[i],
-                u16(0), u16(0), u16(0), u16(0),
-                dat.starEditPlacementBox[i].width, dat.starEditPlacementBox[i].height, u16(0), u16(0),
-                dat.unitExtent[i].left, dat.unitExtent[i].up, dat.unitExtent[i].right, dat.unitExtent[i].down, dat.portrait[i], dat.mineralCost[i],
-                dat.vespeneCost[i], dat.buildTime[i], dat.unknown1[i], dat.starEditGroupFlags[i], dat.supplyProvided[i], dat.supplyRequired[i],
-                dat.spaceRequired[i], dat.spaceProvided[i], dat.buildScore[i], dat.destroyScore[i], dat.unitMapString[i], dat.broodWarUnitFlag[i],
-                dat.starEditAvailabilityFlags[i]
-            });
-        }
+        auto loadExtUnitData = [&]<typename Dat>(const Dat & dat) {
+
+            for ( std::size_t i=0; i<Dat::TotalUnits; i++ )
+            {
+                units.push_back(Sc::Unit::DatEntry {
+                    dat.graphics[i], dat.subunit1[i], dat.subunit2[i], u16(0), dat.constructionAnimation[i],
+                    dat.unitDirection[i], dat.shieldEnable[i], dat.shieldAmount[i], dat.hitPoints[i], dat.elevationLevel[i],
+                    dat.unknown[i], dat.sublabel[i], dat.compAIIdle[i], dat.humanAIIdle[i], dat.returntoIdle[i], dat.attackUnit[i],
+                    dat.attackMove[i], dat.groundWeapon[i], dat.maxGroundHits[i], dat.airWeapon[i], dat.maxAirHits[i], dat.aiInternal[i],
+                    dat.flags[i], dat.targetAcquisitionRange[i], dat.sightRange[i], dat.armorUpgrade[i], dat.unitSize[i],
+                    dat.armor[i], dat.rightClickAction[i], u16(0), dat.whatSoundStart[i], dat.whatSoundEnd[i],
+                    u16(0), u16(0), u16(0), u16(0),
+                    dat.starEditPlacementBox[i].width, dat.starEditPlacementBox[i].height, u16(0), u16(0),
+                    dat.unitExtent[i].left, dat.unitExtent[i].up, dat.unitExtent[i].right, dat.unitExtent[i].down, dat.portrait[i], dat.mineralCost[i],
+                    dat.vespeneCost[i], dat.buildTime[i], dat.unknown1[i], dat.starEditGroupFlags[i], dat.supplyProvided[i], dat.supplyRequired[i],
+                    dat.spaceRequired[i], dat.spaceProvided[i], dat.buildScore[i], dat.destroyScore[i], dat.unitMapString[i], dat.broodWarUnitFlag[i],
+                    dat.starEditAvailabilityFlags[i]
+                });
+            }
+        };
+
+        if ( extUnitData->size() == sizeof(Sc::Unit::DatExtFile<u8>) )
+            loadExtUnitData((const DatExtFile<u8> &)extUnitData.value()[0]);
+        else if ( extUnitData->size() == sizeof(Sc::Unit::DatExtFile<u16>) )
+            loadExtUnitData((const DatExtFile<u16> &)extUnitData.value()[0]);
     }
     else
     {
@@ -2132,6 +2139,14 @@ std::optional<uint16_t> Sc::Terrain::Tiles::getDoodadGroupIndex(uint16_t doodadI
         return found->second;
     else
         return std::nullopt;
+}
+
+bool Sc::Terrain::Tiles::isRemasteredDoodad(Sc::Terrain::Tileset tileset, std::uint16_t doodadId) const
+{
+    if ( auto doodadGroupIndex = getDoodadGroupIndex(doodadId) )
+        return isRemasteredTileGroup(tileset, *doodadGroupIndex);
+
+    return false;
 }
 
 const Sc::Terrain::Tiles & Sc::Terrain::get(const Tileset & tileset) const
@@ -5047,12 +5062,14 @@ bool Sc::Data::load(Sc::DataFile::BrowserPtr dataFileBrowser, const std::vector<
         return false;
     }
 
-    auto archiveCluster = dataFileBrowser->openScDataFiles(dataFiles, expectedStarCraftDirectory, starCraftBrowser);
+    bool loadedRemastered = false;
+    auto archiveCluster = dataFileBrowser->openScDataFiles(loadedRemastered, dataFiles, expectedStarCraftDirectory, starCraftBrowser);
     if ( archiveCluster == nullptr || !archiveCluster->isOpen() )
     {
         logger.error("No archives selected, many features will not work without the game files.\n\nInstall or locate StarCraft for the best experience.");
         return false;
     }
+    this->loadedRemastered = loadedRemastered;
 
     Sc::TblFilePtr statTxt = Sc::TblFilePtr(new Sc::TblFile());
     if ( !statTxt->load(*archiveCluster, "Rez\\stat_txt.tbl") )

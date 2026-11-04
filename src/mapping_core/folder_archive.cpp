@@ -1,7 +1,10 @@
 #include "folder_archive.h"
+#include "cross_cut/logger.h"
 #include <filesystem>
 #include <fstream>
 #include <iterator>
+
+extern Logger logger;
 
 FolderArchive::FolderArchive(bool deleteOnClose) : ArchiveFile(deleteOnClose)
 {
@@ -89,6 +92,7 @@ bool FolderArchive::open(const std::string & filePath, bool readOnly, bool creat
         this->filePath = filePath;
         return true;
     }
+    logger.info() << "Failed to open folder \"" << filePath << "\"\n";
     return false;
 }
 

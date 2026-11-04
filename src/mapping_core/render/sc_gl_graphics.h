@@ -216,8 +216,8 @@ inline namespace DataStructs
         };
 
         u32 totalFrames = 0;
-        u32 width = 0;
-        u32 height = 0;
+        s32 width = 0; // On HD skins, anim widths of zero are replaced with -grpWidth and get drawn with different logic
+        s32 height = 0; // On HD skins, anim heights of zero are replaced with -grpHeight and get drawn with different logic
         float xScale = 0.f;
         float yScale = 0.f;
         gl::Texture diffuse {};
@@ -497,10 +497,15 @@ struct GraphicsData
                 "    vec2 frameTexOffset = image[5];"
                 "    vec2 frameTexFlipper = image[6];"
 
+                "    if ( animSize.x <= 0.0 && animSize.y <= 0.0 ) {"
+                "        gl_Position = posToNdc * vec4(centerPos + animSize + imageScale*(normalPos*frameSize), 0.0, 1.0);"
+                "    } else {"
+                "        vec2 imageOriginOffset = vec2(-frameTexFlipper.x*animSize.x/2.0 + frameTexFlipper.x*framePosOffset.x - frameTexFlipper.y*frameSize.x,"
+                "                                      -animSize.y/2.0 + framePosOffset.y);"
+                "        gl_Position = posToNdc * vec4(centerPos + imageScale*(imageOriginOffset + normalPos*frameSize), 0.0, 1.0);"
+                "    }"
+
                 "    vec2 flippedNormalTex = vec2(frameTexFlipper.x*normalTex.x + frameTexFlipper.y, normalTex.y);"
-                "    vec2 imageOriginOffset = vec2(-frameTexFlipper.x*animSize.x/2.0 + frameTexFlipper.x*framePosOffset.x - frameTexFlipper.y*frameSize.x,"
-                "                                  -animSize.y/2.0 + framePosOffset.y);"
-                "    gl_Position = posToNdc * vec4(centerPos + imageScale*(imageOriginOffset + normalPos*frameSize), 0.0, 1.0);"
                 "    texCoord = animTexScale * (frameTexOffset + flippedNormalTex*frameSize);"
                 "};";
 
@@ -752,9 +757,9 @@ struct GraphicsData
 
     static gl::Texture loadBmpLuminanceTexture(u8* data, GLsizei width, GLsizei height, gl::ContextSemaphore* contextSemaphore = nullptr);
 
-    static std::shared_ptr<Animation> loadSdAnim(Sc::Data & scData, u8* data, u32 index, gl::ContextSemaphore* contextSemaphore = nullptr);
+    static std::shared_ptr<Animation> loadSdAnim(const Sc::Sprite::GrpFile & grp, u8* data, u32 index, gl::ContextSemaphore* contextSemaphore = nullptr);
 
-    static std::shared_ptr<Animation> loadHdAnim(bool halfAnim, ArchiveCluster & archiveCluster, const std::filesystem::path & path, ByteBuffer & fileData, gl::ContextSemaphore* contextSemaphore = nullptr);
+    static std::shared_ptr<Animation> loadHdAnim(const Sc::Sprite::GrpFile & grp, bool halfAnim, ArchiveCluster & archiveCluster, const std::filesystem::path & path, ByteBuffer & fileData, gl::ContextSemaphore* contextSemaphore = nullptr);
 
     static bool loadGrp(ArchiveCluster & archiveCluster, const std::filesystem::path & path, Grp & grp, ByteBuffer & fileData, bool framedTex, bool mergedTex);
 
