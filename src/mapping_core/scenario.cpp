@@ -1119,8 +1119,14 @@ bool Scenario::parse(std::istream & is, bool fromMpq)
 
                 if ( chk.good() || chk.eof() )
                 {
-                    if ( Chk::SectionSize(chk.tellg() - begin) != sectionHeader.sizeInBytes ) // Undersized section
+                    auto sizeRead = Chk::SectionSize(chk.tellg() - begin);
+                    if ( sizeRead < sectionHeader.sizeInBytes && !chk.eof() ) // Read less than the section size
+                    {
                         makeProtected = true;
+                        chk.seekg(sectionHeader.sizeInBytes - sizeRead, std::ios_base::cur); // Seek to the end of the section
+                    }
+                    else if ( sizeRead > sectionHeader.sizeInBytes )
+                        return parsingFailed("Parser code issue: read past the end of a chk section");
                 }
                 else
                     return parsingFailed("Unexpected error reading chk section contents!");

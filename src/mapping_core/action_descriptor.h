@@ -242,7 +242,8 @@ enum class ActionDescriptor
     CompileBriefingTextTrigs,
     // Plugins/Scripts
     RepairSounds,
-    RepairStrings
+    RepairStrings,
+    DowngradeFromRemastered
 };
 
 struct DescriptorIndex {

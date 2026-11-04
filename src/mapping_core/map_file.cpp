@@ -286,21 +286,22 @@ bool MapFile::openMapFile(const std::string & filePath)
 
                 auto tryGetScenario = [&]() -> std::optional<std::string> {
                     try {
-                    if ( auto chkData = MpqFile::getFile("staredit\\scenario.chk", false) )
-                    {
-                        std::stringstream chk(std::ios_base::in|std::ios_base::out|std::ios_base::binary);
-                        chk.write((const char*)&chkData.value()[0], chkData->size());
-                        if ( Scenario::parse(chk, true) )
+                        if ( auto chkData = MpqFile::getFile("staredit\\scenario.chk", false) )
                         {
-                            auto finish = std::chrono::high_resolution_clock::now();
-                            logger.info() << "Map " << mapFilePath << " opened in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
-                            return std::nullopt; // No error
+                            std::stringstream chk(std::ios_base::in|std::ios_base::out|std::ios_base::binary);
+                            chk.write((const char*)&chkData.value()[0], chkData->size());
+                            if ( Scenario::parse(chk, true) )
+                            {
+                                auto finish = std::chrono::high_resolution_clock::now();
+                                logger.info() << "Map " << mapFilePath << " opened in "
+                                    << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms" << std::endl;
+                                return std::nullopt; // No error
+                            }
+                            else
+                                return std::make_optional(std::string("Invalid or missing Scenario file."));
                         }
                         else
                             return std::make_optional(std::string("Invalid or missing Scenario file."));
-                    }
-                    else
-                        return std::make_optional(std::string("Invalid or missing Scenario file."));
                     } catch ( std::exception & e ) {
                         return std::make_optional(std::string("Exception occurred while parsing scenario ") + e.what());
                     } catch ( ... ) {
@@ -317,12 +318,15 @@ bool MapFile::openMapFile(const std::string & filePath)
                     auto locales = MpqFile::getLocales("staredit\\scenario.chk");
                     for ( auto locale : locales )
                     {
-                        MpqFile::setLocale(locale);
-                        if ( tryGetScenario() == std::nullopt ) // No error to report
+                        if ( locale != prevLocale )
                         {
-                            MpqFile::setLocale(prevLocale); // Restore original locale
-                            Scenario::setProtected();
-                            return true;
+                            MpqFile::setLocale(locale);
+                            if ( tryGetScenario() == std::nullopt ) // No error to report
+                            {
+                                MpqFile::setLocale(prevLocale); // Restore original locale
+                                Scenario::setProtected();
+                                return true;
+                            }
                         }
                     }
                     MpqFile::setLocale(prevLocale); // Restore original locale

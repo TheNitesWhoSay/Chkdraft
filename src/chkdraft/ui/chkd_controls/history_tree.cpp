@@ -304,6 +304,7 @@ std::string getActionText(std::size_t actionIndex, const nf::rendered_action<Des
                 // Plugins/Scripts
                 case ActionDescriptor::RepairSounds: actionText += "Repair Sounds"; break;
                 case ActionDescriptor::RepairStrings: actionText += "Repair Strings"; break;
+                case ActionDescriptor::DowngradeFromRemastered: actionText += "Downgrade From Remastered"; break;
                 // Default
                 default: actionText += "TODO: " + std::to_string(std::underlying_type_t<ActionDescriptor>(action.user_data.descriptorIndex)); break;
             }

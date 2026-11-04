@@ -422,13 +422,14 @@
 #define ID_PROFILES_DEFAULT             40682
 #define ID_PROFILES_LOADPROFILE         40683
 #define ID_PROFILES_RELOAD              40684
+#define ID_SCRIPTS_DOWNGRADEFROMREMASTERED 40685
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        175
-#define _APS_NEXT_COMMAND_VALUE         40685
+#define _APS_NEXT_COMMAND_VALUE         40686
 #define _APS_NEXT_CONTROL_VALUE         1161
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

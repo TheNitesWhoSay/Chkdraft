@@ -28,6 +28,7 @@ void Chkdraft::OnLoadTest()
 {
     auto createMap = [&](u16 width, u16 height) -> GuiMap & {
         auto map = chkd.maps.NewMap(Sc::Terrain::Tileset::Jungle, width, height, Sc::Isom::Brush::Jungle::Default);
+        auto edit = map->create_action();
         map->setForceFlags(Chk::Force::Force1, Chk::ForceFlags::All & Chk::ForceFlags::xRandomizeStartLocation);
         map->setForceFlags(Chk::Force::Force2, Chk::ForceFlags::All & Chk::ForceFlags::xRandomizeStartLocation);
         map->setPlayerForce(Sc::Player::Id::Player2, Chk::Force::Force2);
@@ -1153,6 +1154,7 @@ LRESULT Chkdraft::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     case ID_SCRIPTS_REPAIRSOUNDS: repairSounds(); break;
     case ID_SCRIPTS_REPAIRSTRINGS_MIN: repairStrings(false); break;
     case ID_SCRIPTS_REPAIRSTRINGS_MAX: repairStrings(true); break;
+    case ID_SCRIPTS_DOWNGRADEFROMREMASTERED: downgradeRemasteredMap(); break;
 
         // Windows
     case ID_WINDOWS_CASCADE: maps.cascade(); break;

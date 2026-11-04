@@ -129,6 +129,13 @@ std::vector<Sc::DataFile::Descriptor> ChkdDataFileBrowser::getDataFileDescriptor
         bool isOptionalIfCascFound = false;
         std::string fileName = isCasc ? std::string("Data") : getSystemFileName(dataFilePath);
         std::shared_ptr<FileBrowser<u32>> fileBrowser = nullptr;
+        switch ( priority )
+        {
+            case Sc::DataFile::Priority::StarDat: fileBrowser = std::make_shared<FileBrowser<u32>>(Sc::DataFile::getStarDatFilter(), ""); break;
+            case Sc::DataFile::Priority::BrooDat: fileBrowser = std::make_shared<FileBrowser<u32>>(Sc::DataFile::getBrooDatFilter(), ""); break;
+            case Sc::DataFile::Priority::PatchRt: fileBrowser = std::make_shared<FileBrowser<u32>>(Sc::DataFile::getPatchRtFilter(), ""); break;
+            default: fileBrowser = std::make_shared<FileBrowser<u32>>(Sc::DataFile::getDatFileFilter(), ""); break;
+        }
         bool isExpectedInScDirectory = false;
         try {
             isExpectedInScDirectory = std::filesystem::equivalent(std::filesystem::path(dataFilePath),
