@@ -65,6 +65,13 @@ namespace WinLib {
 
     bool GridViewControl::CreateThis(HWND hParent, int x, int y, int width, int height, u64 id)
     {
+        editing = false;
+        ending = false;
+        lButtonDown = false;
+        caretPos = 0;
+        focusedX = -1;
+        focusedY = -1;
+        DeselectAll();
         resize(0, 0);
         u32 style = WS_CHILD|WS_CLIPCHILDREN|LVS_REPORT|LVS_SHOWSELALWAYS|LVS_OWNERDRAWFIXED|LVS_OWNERDATA;
 
