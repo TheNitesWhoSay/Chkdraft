@@ -65,6 +65,7 @@ namespace WinLib {
 
     bool GridViewControl::CreateThis(HWND hParent, int x, int y, int width, int height, u64 id)
     {
+        resize(0, 0);
         u32 style = WS_CHILD|WS_CLIPCHILDREN|LVS_REPORT|LVS_SHOWSELALWAYS|LVS_OWNERDRAWFIXED|LVS_OWNERDATA;
 
         if ( WindowControl::CreateControl(WS_EX_CLIENTEDGE, WC_LISTVIEW, "", style,
