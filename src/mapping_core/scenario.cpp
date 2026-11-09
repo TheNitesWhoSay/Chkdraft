@@ -7156,7 +7156,7 @@ std::size_t Scenario::getTriggerExtension(size_t triggerIndex, bool addIfNotFoun
             if ( (i & Chk::UnusedExtendedTrigDataIndexCheck) != 0 && usedExtensionIndexes.count(u32(i)) == 0 ) // If index is usable and unused
             {
                 edit->triggerExtensions[i] = Chk::ExtendedTrigData(u32(triggerIndex));
-                editTrigger(i).setExtendedDataIndex(read.triggerExtensions.size()-1);
+                editTrigger(triggerIndex).setExtendedDataIndex(read.triggerExtensions.size()-1);
                 return i;
             }
         }
