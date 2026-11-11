@@ -439,49 +439,24 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
         {
             if ( suggestion.data )
             {
-                if ( suggestion.data.value() == size_t(std::numeric_limits<u32>::max()) )
+                if ( argType == Chk::Action::ArgType::String && action.stringId != (u32)suggestion.data.value() )
                 {
-                    size_t newStringId = CM->findString<SingleLineChkdString>(suggestion.str);
-                    if ( newStringId == Chk::StringId::NoString )
-                        newStringId = CM->addString<SingleLineChkdString>(suggestion.str);
-
-                    if ( newStringId != Chk::StringId::NoString )
-                    {
-                        if ( argType == Chk::Action::ArgType::String && action.stringId != (u32)newStringId )
-                        {
-                            editAction.stringId = (u32)newStringId;
-                            CM->deleteUnusedStrings(Chk::Scope::Both);
-                            madeChange = true;
-                        }
-                        else if ( argType == Chk::Action::ArgType::Sound && action.soundStringId != (u32)newStringId )
-                        {
-                            editAction.soundStringId = (u32)newStringId;
-                            CM->deleteUnusedStrings(Chk::Scope::Both);
-                            madeChange = true;
-                        }
-                    }
+                    editAction.stringId = (u32)suggestion.data.value();
+                    CM->deleteUnusedStrings(Chk::Scope::Both);
+                    madeChange = true;
                 }
-                else
+                else if ( argType == Chk::Action::ArgType::Sound && action.soundStringId != (u32)suggestion.data.value() )
                 {
-                    if ( argType == Chk::Action::ArgType::String && action.stringId != (u32)suggestion.data.value() )
-                    {
-                        editAction.stringId = (u32)suggestion.data.value();
-                        CM->deleteUnusedStrings(Chk::Scope::Both);
-                        madeChange = true;
-                    }
-                    else if ( argType == Chk::Action::ArgType::Sound && action.soundStringId != (u32)suggestion.data.value() )
-                    {
-                        editAction.soundStringId = (u32)suggestion.data.value();
-                        CM->deleteUnusedStrings(Chk::Scope::Both);
-                        madeChange = true;
-                    }
+                    editAction.soundStringId = (u32)suggestion.data.value();
+                    CM->deleteUnusedStrings(Chk::Scope::Both);
+                    madeChange = true;
                 }
             }
             else
             {
-                size_t newStringId = CM->findString<SingleLineChkdString>(newText);
+                size_t newStringId = CM->findString<SingleLineChkdString>(suggestion.str);
                 if ( newStringId == Chk::StringId::NoString )
-                    newStringId = CM->findString<SingleLineChkdString>(suggestion.str);
+                    newStringId = CM->addString<SingleLineChkdString>(suggestion.str);
 
                 if ( newStringId != Chk::StringId::NoString )
                 {
@@ -814,7 +789,7 @@ void TrigActionsWindow::SuggestLocation(u32 currLocationId)
             }
         }
     }
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::locationId);
 }
 
 void TrigActionsWindow::SuggestString(u32 currStringId)
@@ -830,7 +805,7 @@ void TrigActionsWindow::SuggestString(u32 currStringId)
                 suggestions.AddItem(SuggestionItem{uint32_t(i), std::string(*str)});
         }
     }
-    suggestions.Show(true);
+    suggestions.Show(Suggestions::Type::FreeformText, decorate::stringIndex, decorate::string);
 }
 
 void TrigActionsWindow::SuggestPlayer(u32 currPlayer)
@@ -844,7 +819,7 @@ void TrigActionsWindow::SuggestPlayer(u32 currPlayer)
     }();
 
     suggestions.AddItems(trigPlayers);
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::player);
 }
 
 void TrigActionsWindow::SuggestUnit(u16 currUnit)
@@ -860,13 +835,13 @@ void TrigActionsWindow::SuggestUnit(u16 currUnit)
                 suggestions.AddItem(SuggestionItem{i, std::string(chkd.scData->units.displayNames[i])});
         }
     }
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::unitId);
 }
 
 void TrigActionsWindow::SuggestNumUnits(u8 currNumUnits)
 {
     suggestions.AddItem(SuggestionItem{Chk::Action::NumUnits::All, std::string("All")});
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::Amount, decorate::numUnits);
 }
 
 void TrigActionsWindow::SuggestCUWP(u32 currCuwp)
@@ -882,7 +857,9 @@ void TrigActionsWindow::SuggestCUWP(u32 currCuwp)
     }
 
     if ( hasCuwps )
-        suggestions.Show();
+    {
+        suggestions.Show(Suggestions::Type::FixedSet, decorate::cuwp);
+    }
 }
 
 void TrigActionsWindow::SuggestTextFlags(u8 currTextFlags)
@@ -906,7 +883,7 @@ void TrigActionsWindow::SuggestScoreType(u16 currType)
     }();
 
     suggestions.AddItems(trigScores);
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::scoreType);
 }
 
 void TrigActionsWindow::SuggestResourceType(u16 currType)
@@ -914,7 +891,7 @@ void TrigActionsWindow::SuggestResourceType(u16 currType)
     suggestions.AddItem(SuggestionItem{Chk::Trigger::ResourceType::Ore, std::string("Ore")});
     suggestions.AddItem(SuggestionItem{Chk::Trigger::ResourceType::OreAndGas, std::string("Ore and Gas")});
     suggestions.AddItem(SuggestionItem{Chk::Trigger::ResourceType::Gas, std::string("Gas")});
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::resourceType);
 }
 
 void TrigActionsWindow::SuggestStateMod(u8 currStateMod)
@@ -922,7 +899,7 @@ void TrigActionsWindow::SuggestStateMod(u8 currStateMod)
     suggestions.AddItem(SuggestionItem{Chk::Trigger::ValueModifier::Disable, "Disable"});
     suggestions.AddItem(SuggestionItem{Chk::Trigger::ValueModifier::Enable, "Enable"});
     suggestions.AddItem(SuggestionItem{Chk::Trigger::ValueModifier::Toggle, "Toggle"});
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::stateMod);
 }
 
 void TrigActionsWindow::SuggestPercent(u32 currPercent)
@@ -930,7 +907,7 @@ void TrigActionsWindow::SuggestPercent(u32 currPercent)
     for ( int i = 0; i <= 100; i++ )
         suggestions.AddItem(SuggestionItem{i, std::to_string(i)});
 
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::percent);
 }
 
 void TrigActionsWindow::SuggestOrder(u8 currOrder)
@@ -943,7 +920,7 @@ void TrigActionsWindow::SuggestOrder(u8 currOrder)
         return orders;
     }();
     suggestions.AddItems(orders);
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::order);
 }
 
 void TrigActionsWindow::SuggestSound(u32 currSound)
@@ -959,7 +936,7 @@ void TrigActionsWindow::SuggestSound(u32 currSound)
                 suggestions.AddItem(SuggestionItem{uint32_t(soundStringId), std::to_string(soundStringId)});
         }
     }
-    suggestions.Show(true);
+    suggestions.Show(Suggestions::Type::FreeformText, decorate::soundStringIndex, decorate::soundPathString);
 }
 
 void TrigActionsWindow::SuggestDuration(u32 currDuration)
@@ -982,7 +959,7 @@ void TrigActionsWindow::SuggestScript(u32 currScript)
             suggestions.AddItem(SuggestionItem{(uint32_t &)scriptIdString, scriptName + " (" + std::string(scriptIdString) + ")"});
         }
     }
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::script);
 }
 
 void TrigActionsWindow::SuggestAllyState(u16 currAllyState)
@@ -995,7 +972,7 @@ void TrigActionsWindow::SuggestAllyState(u16 currAllyState)
         return allyStates;
     }();
     suggestions.AddItems(allyStates);
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::allyState);
 }
 
 void TrigActionsWindow::SuggestNumericMod(u8 currNumericMod)
@@ -1008,7 +985,7 @@ void TrigActionsWindow::SuggestNumericMod(u8 currNumericMod)
         return numericMod;
     }();
     suggestions.AddItems(numericMod);
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::numericMod);
 }
 
 void TrigActionsWindow::SuggestSwitch(u32 currSwitch)
@@ -1027,7 +1004,7 @@ void TrigActionsWindow::SuggestSwitch(u32 currSwitch)
             }
         }
     }
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::switchIndex);
 }
 
 void TrigActionsWindow::SuggestSwitchMod(u8 currSwitchMod)
@@ -1041,7 +1018,7 @@ void TrigActionsWindow::SuggestSwitchMod(u8 currSwitchMod)
         return switchMod;
     }();
     suggestions.AddItems(switchMod);
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::switchMod);
 }
 
 void TrigActionsWindow::SuggestActionType(Chk::Action::Type currActionType)
@@ -1054,7 +1031,7 @@ void TrigActionsWindow::SuggestActionType(Chk::Action::Type currActionType)
         return trigActions;
     }();
     suggestions.AddItems(trigActions);
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::actionType);
 }
 
 void TrigActionsWindow::SuggestFlags(u8 currFlags)

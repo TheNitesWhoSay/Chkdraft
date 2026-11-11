@@ -43,7 +43,9 @@ bool firstStartsWithSecond(const std::string & first, const std::string & second
     return true;
 }
 
-Suggestions::Suggestions() : isShown(false), suggestCurrentTextFirst(false), currentTextItemIndex(-1), modifying(false), currTextItem{std::numeric_limits<uint32_t>::max(), "[]"}
+Suggestions::Suggestions() : isShown(false), currentTextItemIndex(-1), currentNumberItemIndex(-1), modifying(false),
+    currTextItem{std::numeric_limits<uint32_t>::max(), "[]"}, currNumberItem{std::numeric_limits<uint32_t>::max(), "[]"},
+    currentNumberDecorator{}, currentStringDecorator{}
 {
     suggestParent = NULL;
 }
@@ -98,8 +100,9 @@ void Suggestions::SetItems()
     items.sort(alphabetize);
 
     int newSel = -1;
-    bool searchForSel = this->suggestCurrentTextFirst;
+    bool searchForSel = this->suggestionType == Type::FreeformText;
     currentTextItemIndex = -1;
+    currentNumberItemIndex = -1;
     for ( auto & item : items )
     {
         if ( searchForSel )
@@ -129,9 +132,11 @@ void Suggestions::SetItems(const std::vector<SuggestionItem> & items)
     SetItems();
 }
 
-void Suggestions::Show(bool suggestCurrentTextFirst)
+void Suggestions::Show(Type suggestionType, std::function<std::string(std::uint32_t)> numberDecorator, std::function<std::string(const std::string &)> stringDecorator)
 {
-    this->suggestCurrentTextFirst = suggestCurrentTextFirst;
+    this->suggestionType = suggestionType;
+    this->currentNumberDecorator = numberDecorator;
+    this->currentStringDecorator = stringDecorator;
     SetItems();
     ShowWindow(getHandle(), SW_SHOWNA);
     isShown = true;
@@ -176,11 +181,17 @@ void Suggestions::ArrowDown()
 
 SuggestionItem Suggestions::Take()
 {
+    int itemIndex = 0;
     LPARAM itemData = 0;
     if ( !isShown )
         return SuggestionItem{std::nullopt, "0"};
-    else if ( listSuggestions.GetCurSelItem(itemData) )
-        return *((SuggestionItem*)itemData);
+    else if ( listSuggestions.GetCurSelItem(itemData, itemIndex) )
+    {
+        if ( itemIndex == currentTextItemIndex )
+            return SuggestionItem{.data = std::nullopt, .str = this->undecoratedCurrentText};
+        else
+            return *((SuggestionItem*)itemData);
+    }
     else
         return SuggestionItem{std::nullopt, ""};
 }
@@ -214,6 +225,7 @@ void Suggestions::EraseBackground(HDC hDC)
 
 void Suggestions::SuggestFirstStartingWith(const std::string & str)
 {
+    bool foundAnyMatches = false;
     bool exactMatch = false;
     int i = 0;
     if ( !str.empty() )
@@ -222,6 +234,7 @@ void Suggestions::SuggestFirstStartingWith(const std::string & str)
         {
             if ( firstStartsWithSecond(check.str, str) )
             {
+                foundAnyMatches = true;
                 if ( check.str == str )
                     exactMatch = true;
 
@@ -233,43 +246,105 @@ void Suggestions::SuggestFirstStartingWith(const std::string & str)
     if ( i == items.size() )
         i = 0;
 
-    currTextItem.str = str;
+    std::optional<std::uint32_t> currentNumber = [](const std::string & text) -> std::optional<std::uint32_t> {
+        try {
+            std::size_t pos = 0;
+            auto number = std::stoll(text, &pos);
+            if ( pos == text.size() )
+                return std::make_optional(static_cast<std::uint32_t>(number));
+        } catch ( ... ) {}
+        return std::nullopt;
+    }(str);
+    bool isNumber = currentNumber.has_value();
 
-    if ( suggestCurrentTextFirst )
+    this->currTextItem.str = this->currentStringDecorator ? this->currentStringDecorator(str) : str;
+    this->undecoratedCurrentText = str;
+    this->currNumberItem.str = isNumber ? (this->currentNumberDecorator ? this->currentNumberDecorator(*currentNumber) : str) : "";
+    this->currNumberItem.data = currentNumber;
+
+    bool numberExists = currentNumberItemIndex >= 0;
+    bool numberAtWrongIndex = numberExists && currentNumberItemIndex != i;
+    bool removeNumber = numberExists && (!isNumber || numberAtWrongIndex);
+    bool addNumber = isNumber && (!numberExists || removeNumber);
+
+    bool currTextPossible = suggestionType == Type::FreeformText;
+    bool currTextExists = currTextPossible && currentTextItemIndex >= 0;
+    bool currTextAtWrongIndex = currTextExists && (numberExists ? currentTextItemIndex != i+1 : currentTextItemIndex != i);
+    bool removeCurrText = currTextExists && (exactMatch || currTextAtWrongIndex);
+    bool addCurrText = currTextPossible && !exactMatch && (!currTextExists || removeCurrText);
+
+    auto updateSelection = [&]()
+    {
+        bool hasCurrentNumber = currentNumberItemIndex >= 0;
+        bool hasCurrentText = currTextPossible && currentTextItemIndex >= 0;
+        if ( exactMatch ) // Select the exact existing-item match if any
+        {
+            if ( hasCurrentNumber && hasCurrentText )
+                listSuggestions.SetCurSel(i+2);
+            else if ( hasCurrentNumber || hasCurrentText )
+                listSuggestions.SetCurSel(i+1);
+            else
+                listSuggestions.SetCurSel(i);
+        }
+        else if ( hasCurrentText ) // Select the current text
+            listSuggestions.SetCurSel(currentTextItemIndex);
+        else if ( hasCurrentNumber ) // && !hasCurrentText
+        {
+            if ( this->suggestionType == Type::Amount ) // An amount field: prefer the current number
+                listSuggestions.SetCurSel(currentNumberItemIndex);
+            else if ( foundAnyMatches ) // Else prefer the closest matching item if any matched
+                listSuggestions.SetCurSel(currentNumberItemIndex+1);
+            else
+                listSuggestions.SetCurSel(i);
+        }
+        else
+            listSuggestions.SetCurSel(i);
+    };
+    
+    if ( removeNumber || addNumber || removeCurrText || addCurrText ) // Making modifications to the list
     {
         modifying = true;
         listSuggestions.SetRedraw(false);
-        if ( exactMatch )
-        {
-            if ( currentTextItemIndex >= 0 ) // Curr-text item currently in list, remove it
-            {
-                listSuggestions.RemoveItem(currentTextItemIndex);
-                listSuggestions.SetCurSel(i);
-                currentTextItemIndex = -1;
-            }
-            else // Curr-text item already not in list, just update selection
-                listSuggestions.SetCurSel(i);
-        }
-        else if ( currentTextItemIndex < 0 ) // Curr-text item does not exist, create and select it
-        {
-            currentTextItemIndex = i;
-            listSuggestions.InsertItem(i, (LPARAM)&currTextItem);
-            listSuggestions.SetCurSel(currentTextItemIndex);
-        }
-        else if ( currentTextItemIndex >= 0 && currentTextItemIndex != i ) // Curr-text item exists at the wrong index, remove, recreate, and select it
+
+        if ( removeCurrText )
         {
             listSuggestions.RemoveItem(currentTextItemIndex);
-            currentTextItemIndex = i;
-            listSuggestions.InsertItem(currentTextItemIndex, (LPARAM)&currTextItem);
-            listSuggestions.SetCurSel(currentTextItemIndex);
-        } // Else curr-text item exists at the correct index
+            this->currentTextItemIndex = -1;
+        }
 
+        if ( removeNumber )
+        {
+            listSuggestions.RemoveItem(currentNumberItemIndex);
+            this->currentNumberItemIndex = -1;
+            if ( currTextExists && !removeCurrText )
+                --currentTextItemIndex;
+        }
+
+        if ( addNumber )
+        {
+            if ( currTextExists && !removeCurrText )
+                ++currentTextItemIndex;
+
+            this->currentNumberItemIndex = i;
+            listSuggestions.InsertItem(this->currentNumberItemIndex, (LPARAM)&currNumberItem);
+        }
+
+        if ( addCurrText )
+        {
+            this->currentTextItemIndex = currentNumberItemIndex >= 0 ? i+1 : i;
+            listSuggestions.InsertItem(this->currentTextItemIndex, (LPARAM)&currTextItem);
+        }
+
+        updateSelection();
         modifying = false;
         listSuggestions.SetRedraw(true);
         listSuggestions.RedrawThis();
     }
-    else // Not suggesting current-text first
-        listSuggestions.SetCurSel(i);
+    else
+    {
+        updateSelection();
+        listSuggestions.RedrawThis();
+    }
 }
 
 int Suggestions::KeyDown(WPARAM wParam)
@@ -427,3 +502,221 @@ LRESULT Suggestions::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     return 0;
 }
 
+namespace decorate
+{
+    std::string unitId(std::uint32_t number)
+    {
+        if ( number < chkd.scData->units.numReferenceUnitTypes() )
+        {
+            if ( auto str = CM->getUnitName<SingleLineChkdString>((Sc::Unit::Type)number, &chkd.scData.value(), false) )
+                return "(Unit ID " + std::to_string(number) + "): " + *str;
+        }
+        return "(Unit ID): " + std::to_string(number);
+    }
+
+    std::string locationId(std::uint32_t number)
+    {
+        if ( auto locName = CM->getLocationName<SingleLineChkdString>(number) )
+            return "(Location ID " + std::to_string(number) + "): " + *locName;
+        else
+            return "(Location ID): " + std::to_string(number);
+    }
+
+    std::string player(std::uint32_t number)
+    {
+        if ( number < triggerPlayers.size() )
+            return "(Group Index " + std::to_string(number) + "): " + triggerPlayers[number];
+        else
+            return "(Group Index): " + std::to_string(number);
+    }
+
+    std::string numericComparison(std::uint32_t number)
+    {
+        switch ( Chk::Condition::Comparison(number) )
+        {
+            case Chk::Condition::Comparison::AtLeast: return "(Numeric Comparison " + std::to_string(number) + "): At Least";
+            case Chk::Condition::Comparison::AtMost: return "(Numeric Comparison " + std::to_string(number) + "): At Most";
+            case Chk::Condition::Comparison::Exactly: return "(Numeric Comparison " + std::to_string(number) + "): Exactly";
+            default: return "Numeric Comparison Index): " + std::to_string(number);
+        }
+    }
+
+    std::string resourceType(std::uint32_t number)
+    {
+        switch ( Chk::Trigger::ResourceType(number) )
+        {
+            case Chk::Trigger::ResourceType::Ore: return "(Resource Type " + std::to_string(number) + "): Ore";
+            case Chk::Trigger::ResourceType::OreAndGas: return "(Resource Type " + std::to_string(number) + "): Ore and Gas";
+            case Chk::Trigger::ResourceType::Gas: return "(Resource Type " + std::to_string(number) + "): Gas";
+            default: return "(Resource Type Index): " + std::to_string(number);
+        }
+    }
+
+    std::string scoreType(std::uint32_t number)
+    {
+        if ( number < triggerScores.size() )
+            return "(Score Type " + std::to_string(number) + "): " + triggerScores[number];
+        else
+            return "(Score Type Index): " + std::to_string(number);
+    }
+
+    std::string switchIndex(std::uint32_t number)
+    {
+        if ( auto str = CM->getSwitchName<SingleLineChkdString>(number) )
+            return "(Switch Index " + std::to_string(number) + "): " + *str;
+        else
+            return "(Switch Index): " + std::to_string(number);
+    }
+
+    std::string switchState(std::uint32_t number)
+    {
+        switch ( Chk::Condition::Comparison(number) )
+        {
+            case Chk::Condition::Comparison::Set: return "(Switch Index " + std::to_string(number) + "): Set";
+            case Chk::Condition::Comparison::NotSet: return "(Switch Index " + std::to_string(number) + "): Cleared";
+            default: return "(Switch State Index): " + std::to_string(number);
+        }
+    }
+
+    std::string conditionType(std::uint32_t number)
+    {
+        if ( number < triggerConditions.size() )
+            return "(Condition Type Index " + std::to_string(number) + "): " + triggerConditions[number];
+        else
+            return "(Condition Type Index): " + std::to_string(number);
+    }
+
+    std::string stringIndex(std::uint32_t number)
+    {
+        if ( auto str = CM->getString<SingleLineChkdString>(std::size_t(number), Chk::Scope::Game) )
+            return "(String " + std::to_string(number) + "): " + *str;
+        else
+            return "(Unused String Index): " + std::to_string(number);
+    }
+
+    std::string string(const std::string & str)
+    {
+        return "(New String): " + str;
+    }
+
+    std::string numUnits(std::uint32_t number)
+    {
+        if ( Chk::Action::NumUnits(number) == Chk::Action::NumUnits::All )
+            return "(Amount " + std::to_string(number) + "): All";
+        else
+            return "(Amount): " + std::to_string(number);
+    }
+
+    std::string cuwp(std::uint32_t number)
+    {
+        return "(CUWP Index): " + std::to_string(number);
+    }
+
+    std::string stateMod(std::uint32_t number)
+    {
+        switch ( Chk::Trigger::ValueModifier(number) )
+        {
+            case Chk::Trigger::ValueModifier::Disable: return "(State Modifier " + std::to_string(number) + "): Disable";
+            case Chk::Trigger::ValueModifier::Enable: return "(State Modifier " + std::to_string(number) + "): Enable";
+            case Chk::Trigger::ValueModifier::Toggle: return "(State Modifier " + std::to_string(number) + "): Toggle";
+            default: return "(State Modifier Index): " + std::to_string(number);
+        }
+    }
+
+    std::string percent(std::uint32_t number)
+    {
+        return std::to_string(number) + "%";
+    }
+
+    std::string order(std::uint32_t number)
+    {
+        switch ( Chk::Action::Order(number) )
+        {
+            case Chk::Action::Order::Attack: return "(Order " + std::to_string(number) + "): Attack";
+            case Chk::Action::Order::Move: return "(Order " + std::to_string(number) + "): Move";
+            case Chk::Action::Order::Patrol: return "(Order " + std::to_string(number) + "): Patrol";
+            default: return "(Order Index): " + std::to_string(number);
+        }
+    }
+
+    std::string soundStringIndex(std::uint32_t number)
+    {
+        if ( auto str = CM->getString<SingleLineChkdString>(std::size_t(number), Chk::Scope::Game) )
+            return "(String " + std::to_string(number) + "): " + *str;
+        else
+            return "(Unused String Index): " + std::to_string(number);
+    }
+
+    std::string soundPathString(const std::string & str)
+    {
+        return "(New Sound Path String): " + str;
+    }
+
+    std::string script(std::uint32_t number)
+    {
+        std::string aiName {};
+        if ( chkd.scData->ai.getNameById(number, aiName) )
+            return "(Script Value " + std::to_string(number) + "): " + aiName;
+        else
+            return "(Script Value): " + std::to_string(number);
+    }
+
+    std::string allyState(std::uint32_t number)
+    {
+        switch ( Chk::Action::AllianceStatus(number) )
+        {
+            case Chk::Action::AllianceStatus::AlliedVictory: return "(Ally State " + std::to_string(number) + "): Allied Victory";
+            case Chk::Action::AllianceStatus::Ally: return "(Ally State " + std::to_string(number) + "): Ally";
+            case Chk::Action::AllianceStatus::Enemy: return "(Ally State " + std::to_string(number) + "): Enemy";
+            default: return "(Ally State Index): " + std::to_string(number);
+        }
+    }
+
+    std::string numericMod(std::uint32_t number)
+    {
+        switch ( Chk::Trigger::ValueModifier(number) )
+        {
+            case Chk::Trigger::ValueModifier::Add: return "(Value Modifier " + std::to_string(number) + "): Add";
+            case Chk::Trigger::ValueModifier::SetTo: return "(Value Modifier " + std::to_string(number) + "): Set to";
+            case Chk::Trigger::ValueModifier::Subtract: return "(Value Modifier " + std::to_string(number) + "): Subtract";
+            default: return "(Numeric Modifier Index): " + std::to_string(number);
+        }
+    }
+
+    std::string switchMod(std::uint32_t number)
+    {
+        switch ( Chk::Trigger::ValueModifier(number) )
+        {
+            case Chk::Trigger::ValueModifier::Clear: return "(Switch Modifier " + std::to_string(number) + "): Clear";
+            case Chk::Trigger::ValueModifier::Randomize: return "(Switch Modifier " + std::to_string(number) + "): Randomize";
+            case Chk::Trigger::ValueModifier::Set: return "(Switch Modifier " + std::to_string(number) + "): Set";
+            case Chk::Trigger::ValueModifier::Toggle: return "(Switch Modifier " + std::to_string(number) + "): Toggle";
+            default: return "(Switch Modifier Index): " + std::to_string(number);
+        }
+    }
+
+    std::string actionType(std::uint32_t number)
+    {
+        if ( number < triggerActions.size() )
+            return "(Action Type " + std::to_string(number) + "): " + triggerActions[number];
+        else
+            return "(Action Type Index): " + std::to_string(number);
+    }
+
+    std::string briefingSlot(std::uint32_t number)
+    {
+        if ( number < briefingTriggerSlots.size() )
+            return "(Briefing Slot Index " + std::to_string(number) + "): " + briefingTriggerSlots[number];
+        else
+            return "(Briefing Slot Index): " + std::to_string(number);
+    }
+
+    std::string briefingActionType(std::uint32_t number)
+    {
+        if ( number < briefingTriggerActions.size() )
+            return "(Briefing Action Type " + std::to_string(number) + "): " + briefingTriggerActions[number];
+        else
+            return "(Briefing Action Type Index): " + std::to_string(number);
+    }
+
+}

@@ -774,11 +774,7 @@ inline void TextTrigGenerator::appendScript(StringBuffer & output, const Sc::Ai:
         if ( it != scriptTable.end() )
             output += it->second;
         else
-        {
-            output += '\"';
-            output += std::string(((char*)&scriptId)[0], ((char*)&scriptId)[4]);
-            output += '\"';
-        }
+            output += std::to_string(std::uint32_t(scriptId));
     }
 }
 

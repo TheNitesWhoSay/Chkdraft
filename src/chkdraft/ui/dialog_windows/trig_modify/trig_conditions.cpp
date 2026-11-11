@@ -608,7 +608,7 @@ void TrigConditionsWindow::SuggestUnit(u16 currUnit)
                 suggestions.AddItem(SuggestionItem{i, std::string(chkd.scData->units.displayNames[i])});
         }
     }
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::unitId);
 }
 
 void TrigConditionsWindow::SuggestLocation(u32 currLocationId)
@@ -630,7 +630,7 @@ void TrigConditionsWindow::SuggestLocation(u32 currLocationId)
             }
         }
     }
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::locationId);
 }
 
 void TrigConditionsWindow::SuggestPlayer(u32 currPlayer)
@@ -646,7 +646,7 @@ void TrigConditionsWindow::SuggestPlayer(u32 currPlayer)
         }();
         suggestions.AddItems(trigPlayers);
     }
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::player);
 }
 
 void TrigConditionsWindow::SuggestAmount(u32 currAmount)
@@ -659,7 +659,7 @@ void TrigConditionsWindow::SuggestNumericComparison(Chk::Condition::Comparison c
     suggestions.AddItem(SuggestionItem{Chk::Condition::Comparison::AtLeast, "At Least"});
     suggestions.AddItem(SuggestionItem{Chk::Condition::Comparison::AtMost, "At Most"});
     suggestions.AddItem(SuggestionItem{Chk::Condition::Comparison::Exactly, "Exactly"});
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::numericComparison);
 }
 
 void TrigConditionsWindow::SuggestResourceType(u8 currType)
@@ -667,7 +667,7 @@ void TrigConditionsWindow::SuggestResourceType(u8 currType)
     suggestions.AddItem(SuggestionItem{Chk::Trigger::ResourceType::Ore, "Ore"});
     suggestions.AddItem(SuggestionItem{Chk::Trigger::ResourceType::OreAndGas, "Ore and Gas"});
     suggestions.AddItem(SuggestionItem{Chk::Trigger::ResourceType::Gas, "Gas"});
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::resourceType);
 }
 
 void TrigConditionsWindow::SuggestScoreType(u8 currType)
@@ -680,7 +680,7 @@ void TrigConditionsWindow::SuggestScoreType(u8 currType)
         return trigScores;
     }();
     suggestions.AddItems(trigScores);
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::scoreType);
 }
 
 void TrigConditionsWindow::SuggestSwitch(u8 currSwitch)
@@ -699,14 +699,14 @@ void TrigConditionsWindow::SuggestSwitch(u8 currSwitch)
             }
         }
     }
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::switchIndex);
 }
 
 void TrigConditionsWindow::SuggestSwitchState(Chk::Condition::Comparison currSwitchState)
 {
     suggestions.AddItem(SuggestionItem{3, std::string("Cleared")});
     suggestions.AddItem(SuggestionItem{2, std::string("Set")});
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::switchState);
 }
 
 void TrigConditionsWindow::SuggestComparison(Chk::Condition::Comparison currComparison)
@@ -724,7 +724,7 @@ void TrigConditionsWindow::SuggestConditionType(Chk::Condition::Type currConditi
         return trigConditions;
     }();
     suggestions.AddItems(trigConditions);
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::conditionType);
 }
 
 void TrigConditionsWindow::SuggestTypeIndex(u8 currTypeIndex)

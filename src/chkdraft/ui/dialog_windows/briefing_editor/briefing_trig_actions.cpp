@@ -386,49 +386,24 @@ void BriefingTrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const s
         {
             if ( suggestion.data )
             {
-                if ( suggestion.data.value() == size_t(std::numeric_limits<u32>::max()) )
+                if ( argType == Chk::Action::ArgType::String && action.stringId != (u32)suggestion.data.value() )
                 {
-                    size_t newStringId = CM->findString<SingleLineChkdString>(suggestion.str);
-                    if ( newStringId == Chk::StringId::NoString )
-                        newStringId = CM->addString<SingleLineChkdString>(suggestion.str);
-
-                    if ( newStringId != Chk::StringId::NoString )
-                    {
-                        if ( argType == Chk::Action::ArgType::String && action.stringId != (u32)newStringId )
-                        {
-                            editAction.stringId = (u32)newStringId;
-                            CM->deleteUnusedStrings(Chk::Scope::Both);
-                            madeChange = true;
-                        }
-                        else if ( argType == Chk::Action::ArgType::Sound && action.soundStringId != (u32)newStringId )
-                        {
-                            editAction.soundStringId = (u32)newStringId;
-                            CM->deleteUnusedStrings(Chk::Scope::Both);
-                            madeChange = true;
-                        }
-                    }
+                    editAction.stringId = (u32)suggestion.data.value();
+                    CM->deleteUnusedStrings(Chk::Scope::Both);
+                    madeChange = true;
                 }
-                else
+                else if ( argType == Chk::Action::ArgType::Sound && action.soundStringId != (u32)suggestion.data.value() )
                 {
-                    if ( argType == Chk::Action::ArgType::String && action.stringId != (u32)suggestion.data.value() )
-                    {
-                        editAction.stringId = (u32)suggestion.data.value();
-                        CM->deleteUnusedStrings(Chk::Scope::Both);
-                        madeChange = true;
-                    }
-                    else if ( argType == Chk::Action::ArgType::Sound && action.soundStringId != (u32)suggestion.data.value() )
-                    {
-                        editAction.soundStringId = (u32)suggestion.data.value();
-                        CM->deleteUnusedStrings(Chk::Scope::Both);
-                        madeChange = true;
-                    }
+                    editAction.soundStringId = (u32)suggestion.data.value();
+                    CM->deleteUnusedStrings(Chk::Scope::Both);
+                    madeChange = true;
                 }
             }
             else
             {
-                size_t newStringId = CM->findString<SingleLineChkdString>(newText);
+                size_t newStringId = CM->findString<SingleLineChkdString>(suggestion.str);
                 if ( newStringId == Chk::StringId::NoString )
-                    newStringId = CM->findString<SingleLineChkdString>(suggestion.str);
+                    newStringId = CM->addString<SingleLineChkdString>(suggestion.str);
 
                 if ( newStringId != Chk::StringId::NoString )
                 {
@@ -721,7 +696,7 @@ void BriefingTrigActionsWindow::SuggestLocation(u32 currLocationId)
             }
         }
     }
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::locationId);
 }
 
 void BriefingTrigActionsWindow::SuggestString(u32 currStringId)
@@ -737,7 +712,7 @@ void BriefingTrigActionsWindow::SuggestString(u32 currStringId)
                 suggestions.AddItem(SuggestionItem{uint32_t(i), *str});
         }
     }
-    suggestions.Show(true);
+    suggestions.Show(Suggestions::Type::FreeformText, decorate::stringIndex, decorate::string);
 }
 
 void BriefingTrigActionsWindow::SuggestSlot(u32 currSlot)
@@ -750,7 +725,7 @@ void BriefingTrigActionsWindow::SuggestSlot(u32 currSlot)
         return briefingTrigSlots;
     }();
     suggestions.AddItems(briefingTrigSlots);
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::briefingSlot);
 }
 
 void BriefingTrigActionsWindow::SuggestUnit(u16 currUnit)
@@ -767,7 +742,7 @@ void BriefingTrigActionsWindow::SuggestUnit(u16 currUnit)
                 suggestions.AddItem(SuggestionItem{uint32_t(i), std::string(unitDisplayNames[i])});
         }
     }
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::unitId);
 }
 
 void BriefingTrigActionsWindow::SuggestAmount(u32 currAmount)
@@ -788,7 +763,7 @@ void BriefingTrigActionsWindow::SuggestSound(u32 currSound)
                 suggestions.AddItem(SuggestionItem{uint32_t(soundStringId), std::to_string(soundStringId)});
         }
     }
-    suggestions.Show(true);
+    suggestions.Show(Suggestions::Type::FreeformText, decorate::soundStringIndex, decorate::soundPathString);
 }
 
 void BriefingTrigActionsWindow::SuggestDuration(u32 currDuration)
@@ -806,7 +781,7 @@ void BriefingTrigActionsWindow::SuggestNumericMod(u8 currNumericMod)
         return numericMod;
     }();
     suggestions.AddItems(numericMod);
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::numericMod);
 }
 
 void BriefingTrigActionsWindow::SuggestActionType(Chk::Action::Type currActionType)
@@ -819,7 +794,7 @@ void BriefingTrigActionsWindow::SuggestActionType(Chk::Action::Type currActionTy
         return briefingTrigActions;
     }();
     suggestions.AddItems(briefingTrigActions);
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::briefingActionType);
 }
 
 void BriefingTrigActionsWindow::SuggestFlags(u8 currFlags)
