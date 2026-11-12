@@ -747,6 +747,24 @@ bool Chkdraft::DlgKeyListener(HWND hWnd, UINT & msg, WPARAM wParam, LPARAM lPara
                             return true;
                         }
                         break;
+                    case VK_ESCAPE:
+                    case 'E':
+                        if ( GetParent(GetParent(hWnd)) == trigEditorWindow->triggersWindow.trigModifyWindow.conditionsWindow.getHandle() )
+                        {
+                            trigEditorWindow->triggersWindow.trigModifyWindow.conditionsWindow.ProcessKeyDown(wParam, lParam);
+                            return true;
+                        }
+                        else if ( GetParent(GetParent(hWnd)) == trigEditorWindow->triggersWindow.trigModifyWindow.actionsWindow.getHandle() )
+                        {
+                            trigEditorWindow->triggersWindow.trigModifyWindow.actionsWindow.ProcessKeyDown(wParam, lParam);
+                            return true;
+                        }
+                        else if ( GetParent(GetParent(hWnd)) == briefingTrigEditorWindow->briefingTriggersWindow.briefingTrigModifyWindow.briefingActionsWindow.getHandle() )
+                        {
+                            briefingTrigEditorWindow->briefingTriggersWindow.briefingTrigModifyWindow.briefingActionsWindow.ProcessKeyDown(wParam, lParam);
+                            return true;
+                        }
+                        break;
                     case 'Z':
                         if ( (GetKeyState(VK_CONTROL) & 0x8000) && !editFocused && CM != nullptr )
                         {

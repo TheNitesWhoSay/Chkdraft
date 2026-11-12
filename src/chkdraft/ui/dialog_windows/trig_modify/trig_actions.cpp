@@ -152,14 +152,14 @@ void TrigActionsWindow::DoSize()
 
 void TrigActionsWindow::ProcessKeyDown(WPARAM wParam, LPARAM lParam)
 {
-    if ( wParam == VK_TAB || wParam == VK_RETURN )
+    if ( wParam == VK_TAB || wParam == VK_RETURN || wParam == VK_ESCAPE || wParam == 'E' )
         SendMessage(gridActions.getHandle(), WM_KEYDOWN, wParam, lParam);
 }
 
 void TrigActionsWindow::HideSuggestions()
 {
     suggestions.Hide();
-    gridActions.EndEditing();
+    gridActions.EndEditing(true);
 }
 
 void TrigActionsWindow::CndActEnableToggled(u8 actionNum)
@@ -258,6 +258,34 @@ void TrigActionsWindow::Paste()
     isPasting = false;
 }
 
+void TrigActionsWindow::OpenContextualProperties()
+{
+    suggestions.Hide();
+    gridActions.EndEditing(true);
+    gridActions.FocusThis();
+    const Chk::Trigger & trig = CM->getTrigger(trigIndex);
+    int x = -1;
+    int y = -1;
+    if ( gridActions.GetFocusedItem(x, y) && y >= 0 && y < Chk::Trigger::MaxActions )
+    {
+        const Chk::Action & action = trig.action((u8)y);
+        Chk::Action::ArgType argType = action.getClassicArgType(action.actionType, x-2);
+        switch ( argType )
+        {
+            case Chk::Action::ArgType::String: ButtonEditString(); break;
+            case Chk::Action::ArgType::Sound: ButtonEditSound(); break;
+            case Chk::Action::ArgType::CUWP: ButtonEditUnitProperties(); break;
+        }
+    }
+}
+
+void TrigActionsWindow::Escape()
+{
+    suggestions.Hide();
+    gridActions.EndEditing(true);
+    gridActions.FocusThis();
+}
+
 void TrigActionsWindow::RedrawThis()
 {
     auto dc = this->getDeviceContext();
@@ -298,7 +326,7 @@ void TrigActionsWindow::InitializeScriptTable()
 void TrigActionsWindow::CreateSubWindows(HWND hWnd)
 {
     gridActions.CreateThis(hWnd, 2, 40, 100, 100, Id::GRID_ACTIONS);
-    suggestions.CreateThis(hWnd, 0, 0, 262, 95);
+    suggestions.CreateThis(hWnd, 0, 0, 262, 118);
     buttonEditString.CreateThis(hWnd, 0, 0, 100, 22, "Edit String", Id::BUTTON_EDITSTRING);
     buttonEditString.Hide();
     buttonEditSound.CreateThis(hWnd, 0, 0, 100, 22, "Edit Sound", Id::BUTTON_EDITSOUND);
@@ -855,11 +883,8 @@ void TrigActionsWindow::SuggestCUWP(u32 currCuwp)
             suggestions.AddItem(SuggestionItem{uint32_t(i), std::to_string((int)i)});
         }
     }
-
-    if ( hasCuwps )
-    {
-        suggestions.Show(Suggestions::Type::FixedSet, decorate::cuwp);
-    }
+    
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::cuwp);
 }
 
 void TrigActionsWindow::SuggestTextFlags(u8 currTextFlags)
@@ -1282,7 +1307,7 @@ void TrigActionsWindow::GridEditStart(u16 gridItemX, u16 gridItemY)
 
 void TrigActionsWindow::SelConfirmed(WPARAM wParam)
 {
-    gridActions.EndEditing();
+    gridActions.EndEditing(false);
     gridActions.FocusThis();
     SendMessage(gridActions.getHandle(), WM_KEYDOWN, wParam, NULL);
 }
@@ -1295,20 +1320,41 @@ void TrigActionsWindow::NewSelection(u16 gridItemX, u16 gridItemY)
     if ( actionType < Chk::Action::NumActionTypes )
     {
         bool includesString = false, includesSound = false;
+        bool specificallyString = false, specificallySound = false;
         bool isCUWP = (actionType == Chk::Action::Type::CreateUnitWithProperties);
         for ( u8 i = 0; i < Chk::Action::MaxArguments; i++ )
         {
             Chk::Action::ArgType argType = Chk::Action::getClassicArgType(actionType, i);
             if ( argType == Chk::Action::ArgType::String )
+            {
                 includesString = true;
+                if ( i == gridItemX-2 )
+                {
+                    suggestions.EnableContextualPropertiesButton("Edit String (Ctrl+e)");
+                    specificallyString = true;
+                }
+            }
         }
 
         for ( u8 i = 0; i < Chk::Action::MaxArguments; i++ )
         {
             Chk::Action::ArgType argType = Chk::Action::getClassicArgType(actionType, i);
             if ( argType == Chk::Action::ArgType::Sound )
+            {
                 includesSound = true;
+                if ( i == gridItemX-2 )
+                {
+                    suggestions.EnableContextualPropertiesButton("Edit Sound (Ctrl+e)");
+                    specificallySound = true;
+                }
+            }
         }
+
+        bool specificallyCuwp = isCUWP && Chk::Action::getClassicArgType(actionType, gridItemX-2) == Chk::Action::ArgType::CUWP;
+        if ( specificallyCuwp )
+            suggestions.EnableContextualPropertiesButton("Edit CUWP (Ctrl+e)");
+        else if ( !specificallyString && !specificallySound )
+            suggestions.DisableContextualPropertiesButton();
 
         if ( includesString )
             EnableStringEdit();
@@ -1388,7 +1434,7 @@ LRESULT TrigActionsWindow::ShowWindow(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
     if ( (BOOL)wParam == FALSE )
     {
         suggestions.Hide();
-        gridActions.EndEditing();
+        gridActions.EndEditing(true);
         gridActions.KillFocus();
     }
     else
@@ -1455,7 +1501,9 @@ LRESULT TrigActionsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
         case WinLib::GV::WM_GRIDEDITSTART: GridEditStart(LOWORD(wParam), HIWORD(wParam)); break;
         case WinLib::GV::WM_GRIDEDITEND: suggestions.Hide(); break;
         case WinLib::LB::WM_SELCONFIRMED: SelConfirmed(wParam); break;
-        case WinLib::LB::WM_DISMISSED: gridActions.EndEditing(); break;
+        case WinLib::LB::WM_DISMISSED: gridActions.EndEditing(false); break;
+        case WinLib::LB::WM_CANCELLED: Escape(); break;
+        case WinLib::LB::WM_CONTEXTUALPROPERTIES: OpenContextualProperties(); break;
         default: return ClassWindow::WndProc(hWnd, msg, wParam, lParam); break;
     }
     return 0;

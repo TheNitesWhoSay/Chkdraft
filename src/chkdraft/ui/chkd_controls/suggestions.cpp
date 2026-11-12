@@ -8,6 +8,12 @@
 
 extern Logger logger;
 
+enum_t(Id, u32, {
+    TOOLBAR = ID_FIRST,
+    ID_CONTEXTUAL_PROPERTIES,
+    ID_CANCEL
+});
+
 bool alphabetize(const SuggestionItem & first, const SuggestionItem & second)
 {
     // true = first before second, false = second before first
@@ -43,6 +49,72 @@ bool firstStartsWithSecond(const std::string & first, const std::string & second
     return true;
 }
 
+Suggestions::Toolbar::~Toolbar()
+{
+
+}
+
+bool Suggestions::Toolbar::CreateThis(HWND hParent, std::uint64_t windowId)
+{
+    if ( WindowControl::CreateControl(0, TOOLBARCLASSNAME, "", WS_CHILD|WS_VISIBLE|TBSTYLE_TOOLTIPS|CCS_BOTTOM,
+        0, 0, 0, 0, hParent, (HMENU)windowId, false ) )
+    {
+        HWND hTool = getHandle();
+        SendMessage(hTool, TB_BUTTONSTRUCTSIZE, sizeof(TBBUTTON), 0);
+        SendMessage(hTool, TB_SETMAXTEXTROWS, 0, 0);
+
+        // Set toolbar to default button set
+        TBADDBITMAP tbab { .hInst = HINST_COMMCTRL, .nID = IDB_STD_SMALL_COLOR };
+        SendMessage(hTool, TB_ADDBITMAP, 0, (LPARAM)&tbab);
+
+        std::vector<TBBUTTON> buttons {
+            TBBUTTON { .iBitmap = 8, .fsStyle = BTNS_SEP },
+            TBBUTTON { .iBitmap = STD_PROPERTIES, .idCommand = Id::ID_CONTEXTUAL_PROPERTIES,
+                       .fsState = 0, .fsStyle = TBSTYLE_BUTTON, .iString = (INT_PTR)contextualProperties.c_str() },
+            TBBUTTON { .iBitmap = 8, .fsStyle = BTNS_SEP },
+            TBBUTTON { .iBitmap = STD_DELETE, .idCommand = Id::ID_CANCEL,
+                       .fsState = TBSTATE_ENABLED, .fsStyle = TBSTYLE_BUTTON, .iString = (INT_PTR)cancel.c_str() }
+        };
+
+        SendMessage(hTool, TB_ADDBUTTONS, buttons.size(), (LPARAM)&buttons[0]);
+
+        return true;
+    }
+    else
+        return false;
+}
+
+void Suggestions::Toolbar::AutoSize()
+{
+
+}
+
+void Suggestions::Toolbar::EnableContextualPropertiesButton(const std::string & hoverText)
+{
+    SendMessage(getHandle(), TB_ENABLEBUTTON, Id::ID_CONTEXTUAL_PROPERTIES, 1);
+    
+    this->contextualProperties = icux::toUistring(hoverText);
+    TBBUTTONINFO tbUpdate {
+        .cbSize = sizeof(TBBUTTONINFO),
+        .dwMask = TBIF_TEXT,
+        .pszText = &this->contextualProperties[0]
+    };
+    SendMessage(getHandle(), TB_SETBUTTONINFO, Id::ID_CONTEXTUAL_PROPERTIES, (LPARAM)&tbUpdate);
+}
+
+void Suggestions::Toolbar::DisableContextualPropertiesButton()
+{
+    SendMessage(getHandle(), TB_ENABLEBUTTON, Id::ID_CONTEXTUAL_PROPERTIES, 0);
+    
+    this->contextualProperties = icux::toUistring("(Disabled)");
+    TBBUTTONINFO tbUpdate {
+        .cbSize = sizeof(TBBUTTONINFO),
+        .dwMask = TBIF_TEXT,
+        .pszText = &this->contextualProperties[0]
+    };
+    SendMessage(getHandle(), TB_SETBUTTONINFO, Id::ID_CONTEXTUAL_PROPERTIES, (LPARAM)&tbUpdate);
+}
+
 Suggestions::Suggestions() : isShown(false), currentTextItemIndex(-1), currentNumberItemIndex(-1), modifying(false),
     currTextItem{std::numeric_limits<uint32_t>::max(), "[]"}, currNumberItem{std::numeric_limits<uint32_t>::max(), "[]"},
     currentNumberDecorator{}, currentStringDecorator{}
@@ -60,11 +132,13 @@ bool Suggestions::CreateThis(HWND hParent, int x, int y, int width, int height)
     suggestParent = hParent;
     if ( ClassWindow::RegisterWindowClass(0, NULL, NULL, NULL, NULL, "Suggestions", NULL, false) )
     {
-        if ( ClassWindow::CreateClassWindow(WS_EX_TOPMOST, "SuggestionsWindow", WS_POPUP, x, y, width, height, NULL, NULL) )
+        if ( ClassWindow::CreateClassWindow(WS_EX_TOPMOST, "SuggestionsWindow", WS_POPUP, x, y, width, height, hParent, NULL) )
         {
             SetWindowPos(getHandle(), HWND_TOPMOST, 0, 0, 0, 0, SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE);
-            listSuggestions.CreateThis(getHandle(), 0, 0, width, height, true, false, true, false, true, 0);
-            listSuggestions.setDefaultFont(false);
+            toolbar.CreateThis(getHandle(), Id::TOOLBAR);
+            toolbar.AutoSize();
+            listSuggestions.CreateThis(getHandle(), -1, 0, width, height-toolbar.Height(), true, false, true, false, true, 0);
+            this->defaultChildFonts();
             DoSize();
             return true;
         }
@@ -148,6 +222,16 @@ void Suggestions::Hide()
     ShowWindow(getHandle(), SW_HIDE);
 }
 
+void Suggestions::EnableContextualPropertiesButton(const std::string & hoverText)
+{
+    toolbar.EnableContextualPropertiesButton(hoverText);
+}
+
+void Suggestions::DisableContextualPropertiesButton()
+{
+    toolbar.DisableContextualPropertiesButton();
+}
+
 bool Suggestions::SuggestIndex(int index)
 {
     return listSuggestions.SetCurSel(index);
@@ -156,6 +240,16 @@ bool Suggestions::SuggestIndex(int index)
 void Suggestions::SuggestNear(const std::string & str)
 {
     SuggestFirstStartingWith(str);
+}
+
+void Suggestions::OpenContextualProperties()
+{
+    SendMessage(suggestParent, (UINT)WinLib::LB::WM_CONTEXTUALPROPERTIES, NULL, (LPARAM)listSuggestions.getHandle());
+}
+
+void Suggestions::CancelSuggestion()
+{
+    SendMessage(suggestParent, (UINT)WinLib::LB::WM_CANCELLED, NULL, (LPARAM)listSuggestions.getHandle());
 }
 
 bool Suggestions::HasSelection()
@@ -215,12 +309,12 @@ void Suggestions::DoSize()
 
 void Suggestions::EraseBackground(HDC hDC)
 {
-    /*RECT rect = {};
+    RECT rect = {};
     if ( getClientRect(rect) )
     {
-        HBRUSH hbr = WinLib::ResourceManager::getBrush(RGB(255, 0, 0));
+        HBRUSH hbr = WinLib::ResourceManager::getSolidBrush(GetSysColor(COLOR_3DFACE));
         FillRect(hDC, &rect, hbr);
-    }*/
+    }
 }
 
 void Suggestions::SuggestFirstStartingWith(const std::string & str)
@@ -387,8 +481,11 @@ LRESULT Suggestions::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     {
         case LBN_SELCHANGE:
             {
+                int itemIndex = -1;
                 LPARAM itemData = 0;
-                if ( listSuggestions.GetCurSelItem(itemData) )
+                if ( listSuggestions.GetCurSelItem(itemData, itemIndex) &&
+                     itemIndex != this->currentTextItemIndex &&
+                     itemIndex != this->currentNumberItemIndex )
                 {
                     SuggestionItem & suggestionItem = *((SuggestionItem*)itemData);
                     SendMessage(suggestParent, (UINT)WinLib::LB::WM_NEWSELTEXT, 0, (LPARAM)&suggestionItem.str);
@@ -396,7 +493,13 @@ LRESULT Suggestions::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             }
             break;
         default:
-            return ClassWindow::Command(hWnd, wParam, lParam);
+            switch ( LOWORD(wParam) )
+            {
+                case Id::ID_CONTEXTUAL_PROPERTIES: OpenContextualProperties(); break;
+                case Id::ID_CANCEL: CancelSuggestion(); break;
+                default:
+                    return ClassWindow::Command(hWnd, wParam, lParam);
+            }
             break;
     }
     return ClassWindow::Command(hWnd, wParam, lParam);

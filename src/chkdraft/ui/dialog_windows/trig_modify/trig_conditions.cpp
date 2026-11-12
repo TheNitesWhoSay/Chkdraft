@@ -115,16 +115,14 @@ void TrigConditionsWindow::DoSize()
 
 void TrigConditionsWindow::ProcessKeyDown(WPARAM wParam, LPARAM lParam)
 {
-    if ( wParam == VK_TAB )
-        SendMessage(gridConditions.getHandle(), WM_KEYDOWN, wParam, lParam);
-    else if ( wParam == VK_RETURN )
+    if ( wParam == VK_TAB || wParam == VK_RETURN || wParam == VK_ESCAPE || wParam == 'E' )
         SendMessage(gridConditions.getHandle(), WM_KEYDOWN, wParam, lParam);
 }
 
 void TrigConditionsWindow::HideSuggestions()
 {
     suggestions.Hide();
-    gridConditions.EndEditing();
+    gridConditions.EndEditing(true);
 }
 
 void TrigConditionsWindow::CndActEnableToggled(u8 conditionNum)
@@ -222,6 +220,20 @@ void TrigConditionsWindow::Paste()
     isPasting = false;
 }
 
+void TrigConditionsWindow::OpenContextualProperties()
+{
+    suggestions.Hide();
+    gridConditions.EndEditing(true);
+    gridConditions.FocusThis();
+}
+
+void TrigConditionsWindow::Escape()
+{
+    suggestions.Hide();
+    gridConditions.EndEditing(true);
+    gridConditions.FocusThis();
+}
+
 void TrigConditionsWindow::RedrawThis()
 {
     auto dc = this->getDeviceContext();
@@ -244,7 +256,7 @@ void TrigConditionsWindow::FocusGrid()
 void TrigConditionsWindow::CreateSubWindows(HWND hWnd)
 {
     gridConditions.CreateThis(hWnd, 2, 40, 100, 100, Id::GRID_CONDITIONS);
-    suggestions.CreateThis(hWnd, 0, 0, 200, 95);
+    suggestions.CreateThis(hWnd, 0, 0, 200, 118);
     RefreshWindow(trigIndex);
 }
 
@@ -806,7 +818,7 @@ void TrigConditionsWindow::GridEditStart(u16 gridItemX, u16 gridItemY)
 
 void TrigConditionsWindow::SelConfirmed(WPARAM wParam)
 {
-    gridConditions.EndEditing();
+    gridConditions.EndEditing(false);
     gridConditions.FocusThis();
     SendMessage(gridConditions.getHandle(), WM_KEYDOWN, wParam, NULL);
 }
@@ -839,7 +851,7 @@ LRESULT TrigConditionsWindow::ShowWindow(HWND hWnd, UINT msg, WPARAM wParam, LPA
     if ( (BOOL)wParam == FALSE )
     {
         suggestions.Hide();
-        gridConditions.EndEditing();
+        gridConditions.EndEditing(true);
         gridConditions.KillFocus();
     }
     else
@@ -888,7 +900,9 @@ LRESULT TrigConditionsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
         case WinLib::GV::WM_GRIDEDITSTART: GridEditStart(LOWORD(wParam), HIWORD(wParam)); break;
         case WinLib::GV::WM_GRIDEDITEND: suggestions.Hide(); break;
         case WinLib::LB::WM_SELCONFIRMED: SelConfirmed(wParam); break;
-        case WinLib::LB::WM_DISMISSED: gridConditions.EndEditing(); break;
+        case WinLib::LB::WM_DISMISSED: gridConditions.EndEditing(false); break;
+        case WinLib::LB::WM_CANCELLED: Escape(); break;
+        case WinLib::LB::WM_CONTEXTUALPROPERTIES: OpenContextualProperties(); break;
         default: return ClassWindow::WndProc(hWnd, msg, wParam, lParam); break;
     }
     return 0;

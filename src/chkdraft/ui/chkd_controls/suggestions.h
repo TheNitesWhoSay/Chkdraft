@@ -22,6 +22,20 @@ class Suggestions : public WinLib::ClassWindow
             FixedSet // Display closest text match as the current suggestion, if numeric, display "Raw Value: ##" as the current suggestion
         };
 
+        class Toolbar : public WinLib::ToolbarControl
+        {
+            public:
+                virtual ~Toolbar();
+                bool CreateThis(HWND hParent, std::uint64_t windowId);
+                void AutoSize();
+                void EnableContextualPropertiesButton(const std::string & hoverText);
+                void DisableContextualPropertiesButton();
+
+            private:
+                icux::uistring contextualProperties = icux::toUistring("(Disabled)");
+                icux::uistring cancel = icux::toUistring("Cancel (Esc)");
+        };
+
         Suggestions();
         virtual ~Suggestions();
         bool CreateThis(HWND hParent, int x, int y, int width, int height);
@@ -33,8 +47,12 @@ class Suggestions : public WinLib::ClassWindow
         void SetItems(const std::vector<SuggestionItem> & strings); // Adds items to the stored list then sets all stored items up for display
         void Show(Type suggestionType, std::function<std::string(std::uint32_t)> numberDecorator, std::function<std::string(const std::string &)> stringDecorator = {});
         void Hide();
+        void EnableContextualPropertiesButton(const std::string & hoverText);
+        void DisableContextualPropertiesButton();
         bool SuggestIndex(int index);
         void SuggestNear(const std::string & str);
+        void OpenContextualProperties();
+        void CancelSuggestion();
         bool HasSelection();
         void SelectFirst();
         void ArrowUp();
@@ -55,6 +73,7 @@ class Suggestions : public WinLib::ClassWindow
     private:
         HWND suggestParent;
         WinLib::ListBoxControl listSuggestions;
+        Toolbar toolbar;
         std::optional<WinLib::DeviceContext> listDc;
         bool isShown;
         bool isActive;

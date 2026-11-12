@@ -22,6 +22,8 @@ class BriefingTrigActionsWindow : public WinLib::ClassWindow, public ICndActGrid
         virtual void CutSelection();
         virtual void CopySelection();
         virtual void Paste();
+        virtual void OpenContextualProperties() override;
+        virtual void Escape() override;
         virtual void RedrawThis();
         bool IsSuggestionsWindow(HWND hWnd);
         void FocusGrid();

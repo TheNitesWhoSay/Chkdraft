@@ -247,6 +247,16 @@ void CndActGrid::EditTextChanged(const std::string & str)
     suggestions.SuggestNear(str);
     ignoreChange = false;
 }
+    
+void CndActGrid::OpenContextualProperties()
+{
+    user.OpenContextualProperties();
+}
+    
+void CndActGrid::Escape()
+{
+    user.Escape();
+}
 
 BOOL CndActGrid::ProcessTrackA(NMHEADERA* nmHeader)
 {
