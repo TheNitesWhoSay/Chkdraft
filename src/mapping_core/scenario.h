@@ -9,6 +9,7 @@
 #include <optional>
 #include <string>
 #include <map>
+#include <unordered_map>
 #include <vector>
 
 struct Scenario : nf::tracked<MapData, Scenario, DescriptorIndex>
@@ -588,12 +589,78 @@ struct Scenario : nf::tracked<MapData, Scenario, DescriptorIndex>
     using string_elem_path = NF_PATH(root->strings[0]);
     using editor_strings_path = NF_PATH(root->editorStrings);
     using editor_string_elem_path = NF_PATH(root->editorStrings[0]);
+
     virtual void element_added(strings_path, std::size_t index) {}
     virtual void element_removed(strings_path, std::size_t index) {}
     virtual void value_changed(string_elem_path, const std::optional<ScStr> & oldString, const std::optional<ScStr> & newString) {}
     virtual void element_added(editor_strings_path, std::size_t index) {}
     virtual void element_removed(editor_strings_path, std::size_t index) {}
     virtual void value_changed(editor_string_elem_path, const std::optional<ScStr> & oldString, const std::optional<ScStr> & newString) {}
+    
+    // Direct string usage references
+    //using scenario_name_path = NF_PATH(root->scenarioProperties.scenarioNameStringId);
+    //using scenario_description_path = NF_PATH(root->scenarioProperties.scenarioDescriptionStringId);
+    //using force_name_path = NF_PATH(root->forces.forceString[0]);
+    //using orig_unit_name_path = NF_PATH(root->origUnitSettings.nameStringId[0]);
+    //using unit_name_path = NF_PATH(root->unitSettings.nameStringId[0]);
+    //using location_name_path = NF_PATH(root->locations[0].stringId);
+    //using sound_path = NF_PATH(root->soundPaths[0]);
+    //using switch_path = NF_PATH(root->switchNames[0]);
+    //using trigger_action_string_path = NF_PATH(root->triggers[0].actions[0].stringId);
+    //using trigger_action_sound_path = NF_PATH(root->triggers[0].actions[0].soundStringId);
+    //using briefing_action_string_path = NF_PATH(root->briefingTriggers[0].actions[0].stringId);
+    //using briefing_action_sound_path = NF_PATH(root->briefingTriggers[0].actions[0].soundStringId);
+
+    //using trigger_ext_comment_path = NF_PATH(root->triggerExtensions[0].commentStringId);
+    //using trigger_ext_notes_path = NF_PATH(root->triggerExtensions[0].notesStringId);
+    //using trigger_group_comment_path = NF_PATH(root->triggerGroupings[0].commentStringId);
+    //using trigger_group_notes_path = NF_PATH(root->triggerGroupings[0].notesStringId);
+    
+    //using override_scenario_name_path = NF_PATH(root->editorStringOverrides.scenarioName);
+    //using override_scenario_description_path = NF_PATH(root->editorStringOverrides.scenarioDescription);
+    //using override_force_name_path = NF_PATH(root->editorStringOverrides.forceName[0]);
+    //using override_orig_unit_name_path = NF_PATH(root->editorStringOverrides.unitName[0]);
+    //using override_unit_name_path = NF_PATH(root->editorStringOverrides.expUnitName[0]);
+    //using override_sound_path = NF_PATH(root->editorStringOverrides.soundPath[0]);
+    //using override_switch_path = NF_PATH(root->editorStringOverrides.switchName[0]);
+    //using override_location_name_path = NF_PATH(root->editorStringOverrides.locationName[0]);
+
+    // Locations, triggers, briefing triggers, trigger extensions & trigger groups may be dynamically added and removed
+    // requiring element_added and element_removed notifications to track the string usage changes
+    //using location_array_path = NF_PATH(root->locations);
+    //using trigger_array_path = NF_PATH(root->triggers);
+    //using briefing_trigger_array_path = NF_PATH(root->briefingTriggers);
+    //using trigger_ext_array_path = NF_PATH(root->triggerExtensions);
+    //using trigger_group_array_path = NF_PATH(root->triggerGroupings);
+
+    // String usage ancestors (which if overwritten would change string usage)
+    //using scenario_properties_path = NF_PATH(root->scenarioProperties);
+    //using force_string_array_path = NF_PATH(root->forces.forceString);
+    //using forces_path = NF_PATH(root->forces);
+    //using orig_unit_name_array_path = NF_PATH(root->origUnitSettings.nameStringId);
+    //using orig_unit_settings_path = NF_PATH(root->origUnitSettings);
+    //using unit_name_array_path = NF_PATH(root->unitSettings.nameStringId);
+    //using unit_settings_path = NF_PATH(root->unitSettings);
+    //using location_path = NF_PATH(root->locations[0]); // (array above)
+    //using sound_array_path = NF_PATH(root->soundPaths);
+    //using switch_name_array_path = NF_PATH(root->switchNames);
+    //using trigger_action_path = NF_PATH(root->triggers[0].actions[0]);
+    //using trigger_action_array_path = NF_PATH(root->triggers[0].actions);
+    //using trigger_path = NF_PATH(root->triggers[0]);
+    //using trigger_array_path = NF_PATH(root->triggers);
+    //using briefing_action_path = NF_PATH(root->briefingTriggers[0].actions[0]);
+    //using briefing_action_array_path = NF_PATH(root->briefingTriggers[0].actions);
+    //using briefing_trigger_path = NF_PATH(root->briefingTriggers[0]);
+    //using briefing_trigger_array_path = NF_PATH(root->briefingTriggers);
+    //using trigger_ext_path = NF_PATH(root->triggerExtensions[0]);
+    //using trigger_group_path = NF_PATH(root->triggerGroupings[0]);
+    //using override_force_name_array_path = NF_PATH(root->editorStringOverrides.forceName);
+    //using override_orig_unit_name_array_path = NF_PATH(root->editorStringOverrides.unitName);
+    //using override_unit_name_array_path = NF_PATH(root->editorStringOverrides.expUnitName);
+    //using override_sound_array_path = NF_PATH(root->editorStringOverrides.soundPath);
+    //using override_switch_array_path = NF_PATH(root->editorStringOverrides.switchName);
+    //using override_location_array_path = NF_PATH(root->editorStringOverrides.locationName);
+    //using override_strings_path = NF_PATH(root->editorStringOverrides);
 
     virtual void after_action(std::size_t actionIndex) {} // Does nothing unless overridden
 
@@ -657,6 +724,22 @@ private:
     bool mapIsProtected = false; // Flagged if map is protected (not included in tracked data)
     bool tileSelChanged = false; // Flagged when tile sel changes
     bool fogSelChanged = false; // Flagged when fog sel changes
+};
+
+
+struct StrCache
+{
+    std::hash<std::string> hash {};
+    std::unordered_multimap<size_t, size_t> hashToStrIndexes {};
+
+    bool initialized() const;
+    void init(const std::vector<std::optional<ScStr>> & strings);
+    void stringAdded(std::size_t index, const std::optional<ScStr> & str);
+    void stringRemoved(std::size_t index, const std::optional<ScStr> & str);
+    void stringModified(std::size_t index, const std::optional<ScStr> & oldStr, const std::optional<ScStr> & newStr);
+
+    // Returns index of str if located in hash-map as well as in strings, size_t max otherwise
+    std::size_t findStringIndex(const std::string & str, const std::vector<std::optional<ScStr>> & strings) const;
 };
 
 #endif

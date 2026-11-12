@@ -26,7 +26,7 @@ void TextTrigWindow::RefreshWindow()
     updateMenus();
     std::string trigString;
     TextTrigGenerator textTrigs(chkd.profiles().triggers.useAddressesForMemory, chkd.profiles().triggers.deathTableStart);
-    if ( textTrigs.generateTextTrigs((Scenario &)*CM, trigString, chkd.scData.value()) )
+    if ( textTrigs.generateTextTrigs((Scenario &)*CM, CM->getStrCache(), CM->getEditorStrCache(), trigString, chkd.scData.value()) )
     {
         auto start = std::chrono::high_resolution_clock::now();
         SetDialogItemText(IDC_EDIT_TRIGTEXT, trigString);
@@ -60,7 +60,7 @@ BOOL TextTrigWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
     case IDC_COMPSAVE:
         if ( CM != nullptr )
         {
-            if ( CompileEditText(*CM) )
+            if ( CompileEditText(*CM, CM->getStrCache(), CM->getEditorStrCache()) )
             {
                 CM->refreshScenario();
                 RefreshWindow();
@@ -76,7 +76,7 @@ BOOL TextTrigWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
     case ID_COMPILE_TRIGS:
         if ( CM != nullptr )
         {
-            if ( CompileEditText(*CM) )
+            if ( CompileEditText(*CM, CM->getStrCache(), CM->getEditorStrCache()) )
             {
                 CM->refreshScenario();
                 RefreshWindow();
@@ -140,7 +140,7 @@ BOOL TextTrigWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     return TRUE;
 }
 
-bool TextTrigWindow::CompileEditText(Scenario & map)
+bool TextTrigWindow::CompileEditText(Scenario & map, const StrCache & strCache, const StrCache & editorStrCache)
 {
     if ( auto trigText = editControl.GetWinText() )
     {
@@ -148,7 +148,7 @@ bool TextTrigWindow::CompileEditText(Scenario & map)
         TextTrigCompiler compiler(chkd.profiles().triggers.useAddressesForMemory, chkd.profiles().triggers.deathTableStart);
         auto edit = CM->create_action(ActionDescriptor::CompileTextTrigs);
         CM->skipEventRendering();
-        if ( compiler.compileTriggers(*trigText, map, *chkd.scData, 0, map.numTriggers()) )
+        if ( compiler.compileTriggers(*trigText, map, strCache, editorStrCache, *chkd.scData, 0, map.numTriggers()) )
             return true;
         else
             WinLib::Message("Compilation failed.", "Error!");

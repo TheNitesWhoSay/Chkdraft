@@ -67,7 +67,7 @@ void TrigActionsWindow::RefreshWindow(u32 trigIndex)
     this->trigIndex = trigIndex;
     const auto & trig = CM->getTrigger(trigIndex);
     TextTrigGenerator ttg(chkd.profiles().triggers.useAddressesForMemory, chkd.profiles().triggers.deathTableStart, true);
-    if ( ttg.loadScenario((Scenario &)*CM, chkd.scData.value()) )
+    if ( ttg.loadScenario((Scenario &)*CM, CM->getStrCache(), CM->getEditorStrCache(), chkd.scData.value()) )
     {
         for ( u8 y = 0; y<Chk::Trigger::MaxActions; y++ )
         {
@@ -105,7 +105,10 @@ void TrigActionsWindow::RefreshWindow(u32 trigIndex)
             }
         }
 
+        measureDc.emplace(getHandle());
+        measureDc->setDefaultFont();
         gridActions.AutoSizeColumns(DEFAULT_COLUMN_WIDTH, DEFAULT_COLUMN_WIDTH * 4);
+        measureDc = std::nullopt;
     }
     gridActions.RedrawHeader();
 }
@@ -149,14 +152,14 @@ void TrigActionsWindow::DoSize()
 
 void TrigActionsWindow::ProcessKeyDown(WPARAM wParam, LPARAM lParam)
 {
-    if ( wParam == VK_TAB || wParam == VK_RETURN )
+    if ( wParam == VK_TAB || wParam == VK_RETURN || wParam == VK_ESCAPE || wParam == 'E' )
         SendMessage(gridActions.getHandle(), WM_KEYDOWN, wParam, lParam);
 }
 
 void TrigActionsWindow::HideSuggestions()
 {
     suggestions.Hide();
-    gridActions.EndEditing();
+    gridActions.EndEditing(true);
 }
 
 void TrigActionsWindow::CndActEnableToggled(u8 actionNum)
@@ -255,6 +258,34 @@ void TrigActionsWindow::Paste()
     isPasting = false;
 }
 
+void TrigActionsWindow::OpenContextualProperties()
+{
+    suggestions.Hide();
+    gridActions.EndEditing(true);
+    gridActions.FocusThis();
+    const Chk::Trigger & trig = CM->getTrigger(trigIndex);
+    int x = -1;
+    int y = -1;
+    if ( gridActions.GetFocusedItem(x, y) && y >= 0 && y < Chk::Trigger::MaxActions )
+    {
+        const Chk::Action & action = trig.action((u8)y);
+        Chk::Action::ArgType argType = action.getClassicArgType(action.actionType, x-2);
+        switch ( argType )
+        {
+            case Chk::Action::ArgType::String: ButtonEditString(); break;
+            case Chk::Action::ArgType::Sound: ButtonEditSound(); break;
+            case Chk::Action::ArgType::CUWP: ButtonEditUnitProperties(); break;
+        }
+    }
+}
+
+void TrigActionsWindow::Escape()
+{
+    suggestions.Hide();
+    gridActions.EndEditing(true);
+    gridActions.FocusThis();
+}
+
 void TrigActionsWindow::RedrawThis()
 {
     auto dc = this->getDeviceContext();
@@ -295,7 +326,7 @@ void TrigActionsWindow::InitializeScriptTable()
 void TrigActionsWindow::CreateSubWindows(HWND hWnd)
 {
     gridActions.CreateThis(hWnd, 2, 40, 100, 100, Id::GRID_ACTIONS);
-    suggestions.CreateThis(hWnd, 0, 0, 262, 95);
+    suggestions.CreateThis(hWnd, 0, 0, 262, 118);
     buttonEditString.CreateThis(hWnd, 0, 0, 100, 22, "Edit String", Id::BUTTON_EDITSTRING);
     buttonEditString.Hide();
     buttonEditSound.CreateThis(hWnd, 0, 0, 100, 22, "Edit Sound", Id::BUTTON_EDITSOUND);
@@ -436,49 +467,24 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
         {
             if ( suggestion.data )
             {
-                if ( suggestion.data.value() == size_t(std::numeric_limits<u32>::max()) )
+                if ( argType == Chk::Action::ArgType::String && action.stringId != (u32)suggestion.data.value() )
                 {
-                    size_t newStringId = CM->findString<SingleLineChkdString>(suggestion.str);
-                    if ( newStringId == Chk::StringId::NoString )
-                        newStringId = CM->addString<SingleLineChkdString>(suggestion.str);
-
-                    if ( newStringId != Chk::StringId::NoString )
-                    {
-                        if ( argType == Chk::Action::ArgType::String && action.stringId != (u32)newStringId )
-                        {
-                            editAction.stringId = (u32)newStringId;
-                            CM->deleteUnusedStrings(Chk::Scope::Both);
-                            madeChange = true;
-                        }
-                        else if ( argType == Chk::Action::ArgType::Sound && action.soundStringId != (u32)newStringId )
-                        {
-                            editAction.soundStringId = (u32)newStringId;
-                            CM->deleteUnusedStrings(Chk::Scope::Both);
-                            madeChange = true;
-                        }
-                    }
+                    editAction.stringId = (u32)suggestion.data.value();
+                    CM->deleteUnusedStrings(Chk::Scope::Both);
+                    madeChange = true;
                 }
-                else
+                else if ( argType == Chk::Action::ArgType::Sound && action.soundStringId != (u32)suggestion.data.value() )
                 {
-                    if ( argType == Chk::Action::ArgType::String && action.stringId != (u32)suggestion.data.value() )
-                    {
-                        editAction.stringId = (u32)suggestion.data.value();
-                        CM->deleteUnusedStrings(Chk::Scope::Both);
-                        madeChange = true;
-                    }
-                    else if ( argType == Chk::Action::ArgType::Sound && action.soundStringId != (u32)suggestion.data.value() )
-                    {
-                        editAction.soundStringId = (u32)suggestion.data.value();
-                        CM->deleteUnusedStrings(Chk::Scope::Both);
-                        madeChange = true;
-                    }
+                    editAction.soundStringId = (u32)suggestion.data.value();
+                    CM->deleteUnusedStrings(Chk::Scope::Both);
+                    madeChange = true;
                 }
             }
             else
             {
-                size_t newStringId = CM->findString<SingleLineChkdString>(newText);
+                size_t newStringId = CM->findString<SingleLineChkdString>(suggestion.str);
                 if ( newStringId == Chk::StringId::NoString )
-                    newStringId = CM->findString<SingleLineChkdString>(suggestion.str);
+                    newStringId = CM->addString<SingleLineChkdString>(suggestion.str);
 
                 if ( newStringId != Chk::StringId::NoString )
                 {
@@ -531,7 +537,7 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
                     if ( parseChkdStr(chkdNewText, rawUpdateText) )
                     {
                         Chk::Action tempAction {};
-                        if ( auto result = ttc.parseActionArg(rawUpdateText, argument, tempAction, (Scenario &)*CM, *chkd.scData, trigIndex, actionNum, !suggestion.str.empty()) )
+                        if ( auto result = ttc.parseActionArg(rawUpdateText, argument, tempAction, (Scenario &)*CM, CM->getStrCache(), CM->getEditorStrCache(), *chkd.scData, trigIndex, actionNum, !suggestion.str.empty()) )
                         {
                             madeChange = true;
                             copyArg(*result, tempAction);
@@ -540,7 +546,7 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
                     if ( !madeChange && !suggestion.str.empty() && parseChkdStr(suggestion.str, rawSuggestText) )
                     {
                         Chk::Action tempAction {};
-                        if ( auto result = ttc.parseActionArg(rawSuggestText, argument, tempAction, (Scenario &)*CM, *chkd.scData, trigIndex, actionNum, false) )
+                        if ( auto result = ttc.parseActionArg(rawSuggestText, argument, tempAction, (Scenario &)*CM, CM->getStrCache(), CM->getEditorStrCache(), *chkd.scData, trigIndex, actionNum, false) )
                         {
                             madeChange = true;
                             copyArg(*result, tempAction);
@@ -583,7 +589,7 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
                 if ( parseChkdStr(chkdNewText, rawUpdateText) )
                 {
                     Chk::Action tempAction {};
-                    if ( auto result = ttc.parseActionArg(rawUpdateText, argument, tempAction, (Scenario &)*CM, *chkd.scData, trigIndex, actionNum, !suggestion.str.empty()) )
+                    if ( auto result = ttc.parseActionArg(rawUpdateText, argument, tempAction, (Scenario &)*CM, CM->getStrCache(), CM->getEditorStrCache(), *chkd.scData, trigIndex, actionNum, !suggestion.str.empty()) )
                     {
                         madeChange = true;
                         copyArg(*result, tempAction);
@@ -592,7 +598,7 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
                 if ( !madeChange && !suggestion.str.empty() && parseChkdStr(suggestion.str, rawSuggestText) )
                 {
                     Chk::Action tempAction {};
-                    if ( auto result = ttc.parseActionArg(rawSuggestText, argument, tempAction, (Scenario &)*CM, *chkd.scData, trigIndex, actionNum, false) )
+                    if ( auto result = ttc.parseActionArg(rawSuggestText, argument, tempAction, (Scenario &)*CM, CM->getStrCache(), CM->getEditorStrCache(), *chkd.scData, trigIndex, actionNum, false) )
                     {
                         madeChange = true;
                         copyArg(*result, tempAction);
@@ -659,7 +665,7 @@ void TrigActionsWindow::DrawSelectedAction()
         {
             u8 actionNum = (u8)focusedY;
             TextTrigGenerator ttg(chkd.profiles().triggers.useAddressesForMemory, chkd.profiles().triggers.deathTableStart, true);
-            ttg.loadScenario((Scenario &)*CM, chkd.scData.value());
+            ttg.loadScenario((Scenario &)*CM, CM->getStrCache(), CM->getEditorStrCache(), chkd.scData.value());
             ChkdString str = chkd.trigEditorWindow->triggersWindow.GetActionString(actionNum, trig, ttg);
             ttg.clearScenario();
 
@@ -679,17 +685,11 @@ void TrigActionsWindow::DrawSelectedAction()
 
 int TrigActionsWindow::GetGridItemWidth(int gridItemX, int gridItemY)
 {
-    std::string text;
-    if ( gridActions.item(gridItemX, gridItemY).getText(text) )
-    {
-        if ( auto dc = this->getDeviceContext() )
-        {
-            dc.setDefaultFont();
-            UINT width = 0, height = 0;
-            if ( GetStringDrawSize(dc, width, height, text) )
-                return width + 4;
-        }
-    }
+    UINT width = 0, height = 0;
+    const std::string & text = gridActions.item(gridItemX, gridItemY).getText();
+    if ( GetStringDrawSize(*measureDc, width, height, text) )
+        return width + 4;
+
     return 0;
 }
 
@@ -739,10 +739,9 @@ void TrigActionsWindow::DrawGridViewItem(const WinLib::DeviceContext & dc, int g
     int width = ListView_GetColumnWidth(gridActions.getHandle(), gridItemX);
     DrawItemBackground(dc, gridItemX, gridItemY, rcItem, width, xStart);
 
-    std::string text;
     RECT rcClip{xStart, rcItem.top, xStart+width-2, rcItem.bottom};
-    if ( gridActions.item(gridItemX, gridItemY).getText(text) )
-        dc.drawText(text, xStart + 1, rcItem.top, rcClip, true, false);
+    const std::string & text = gridActions.item(gridItemX, gridItemY).getText();
+    dc.drawText(text, xStart + 1, rcItem.top, rcClip, true, false);
 
     if ( !gridActions.item(gridItemX, gridItemY).isDisabled() )
         DrawItemFrame(dc, rcItem, width, xStart);
@@ -818,7 +817,7 @@ void TrigActionsWindow::SuggestLocation(u32 currLocationId)
             }
         }
     }
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::locationId);
 }
 
 void TrigActionsWindow::SuggestString(u32 currStringId)
@@ -834,7 +833,7 @@ void TrigActionsWindow::SuggestString(u32 currStringId)
                 suggestions.AddItem(SuggestionItem{uint32_t(i), std::string(*str)});
         }
     }
-    suggestions.Show(true);
+    suggestions.Show(Suggestions::Type::FreeformText, decorate::stringIndex, decorate::string);
 }
 
 void TrigActionsWindow::SuggestPlayer(u32 currPlayer)
@@ -848,7 +847,7 @@ void TrigActionsWindow::SuggestPlayer(u32 currPlayer)
     }();
 
     suggestions.AddItems(trigPlayers);
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::player);
 }
 
 void TrigActionsWindow::SuggestUnit(u16 currUnit)
@@ -864,13 +863,13 @@ void TrigActionsWindow::SuggestUnit(u16 currUnit)
                 suggestions.AddItem(SuggestionItem{i, std::string(chkd.scData->units.displayNames[i])});
         }
     }
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::unitId);
 }
 
 void TrigActionsWindow::SuggestNumUnits(u8 currNumUnits)
 {
     suggestions.AddItem(SuggestionItem{Chk::Action::NumUnits::All, std::string("All")});
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::Amount, decorate::numUnits);
 }
 
 void TrigActionsWindow::SuggestCUWP(u32 currCuwp)
@@ -884,9 +883,8 @@ void TrigActionsWindow::SuggestCUWP(u32 currCuwp)
             suggestions.AddItem(SuggestionItem{uint32_t(i), std::to_string((int)i)});
         }
     }
-
-    if ( hasCuwps )
-        suggestions.Show();
+    
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::cuwp);
 }
 
 void TrigActionsWindow::SuggestTextFlags(u8 currTextFlags)
@@ -910,7 +908,7 @@ void TrigActionsWindow::SuggestScoreType(u16 currType)
     }();
 
     suggestions.AddItems(trigScores);
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::scoreType);
 }
 
 void TrigActionsWindow::SuggestResourceType(u16 currType)
@@ -918,7 +916,7 @@ void TrigActionsWindow::SuggestResourceType(u16 currType)
     suggestions.AddItem(SuggestionItem{Chk::Trigger::ResourceType::Ore, std::string("Ore")});
     suggestions.AddItem(SuggestionItem{Chk::Trigger::ResourceType::OreAndGas, std::string("Ore and Gas")});
     suggestions.AddItem(SuggestionItem{Chk::Trigger::ResourceType::Gas, std::string("Gas")});
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::resourceType);
 }
 
 void TrigActionsWindow::SuggestStateMod(u8 currStateMod)
@@ -926,7 +924,7 @@ void TrigActionsWindow::SuggestStateMod(u8 currStateMod)
     suggestions.AddItem(SuggestionItem{Chk::Trigger::ValueModifier::Disable, "Disable"});
     suggestions.AddItem(SuggestionItem{Chk::Trigger::ValueModifier::Enable, "Enable"});
     suggestions.AddItem(SuggestionItem{Chk::Trigger::ValueModifier::Toggle, "Toggle"});
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::stateMod);
 }
 
 void TrigActionsWindow::SuggestPercent(u32 currPercent)
@@ -934,7 +932,7 @@ void TrigActionsWindow::SuggestPercent(u32 currPercent)
     for ( int i = 0; i <= 100; i++ )
         suggestions.AddItem(SuggestionItem{i, std::to_string(i)});
 
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::percent);
 }
 
 void TrigActionsWindow::SuggestOrder(u8 currOrder)
@@ -947,7 +945,7 @@ void TrigActionsWindow::SuggestOrder(u8 currOrder)
         return orders;
     }();
     suggestions.AddItems(orders);
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::order);
 }
 
 void TrigActionsWindow::SuggestSound(u32 currSound)
@@ -963,7 +961,7 @@ void TrigActionsWindow::SuggestSound(u32 currSound)
                 suggestions.AddItem(SuggestionItem{uint32_t(soundStringId), std::to_string(soundStringId)});
         }
     }
-    suggestions.Show(true);
+    suggestions.Show(Suggestions::Type::FreeformText, decorate::soundStringIndex, decorate::soundPathString);
 }
 
 void TrigActionsWindow::SuggestDuration(u32 currDuration)
@@ -986,7 +984,7 @@ void TrigActionsWindow::SuggestScript(u32 currScript)
             suggestions.AddItem(SuggestionItem{(uint32_t &)scriptIdString, scriptName + " (" + std::string(scriptIdString) + ")"});
         }
     }
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::script);
 }
 
 void TrigActionsWindow::SuggestAllyState(u16 currAllyState)
@@ -999,7 +997,7 @@ void TrigActionsWindow::SuggestAllyState(u16 currAllyState)
         return allyStates;
     }();
     suggestions.AddItems(allyStates);
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::allyState);
 }
 
 void TrigActionsWindow::SuggestNumericMod(u8 currNumericMod)
@@ -1012,7 +1010,7 @@ void TrigActionsWindow::SuggestNumericMod(u8 currNumericMod)
         return numericMod;
     }();
     suggestions.AddItems(numericMod);
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::numericMod);
 }
 
 void TrigActionsWindow::SuggestSwitch(u32 currSwitch)
@@ -1031,7 +1029,7 @@ void TrigActionsWindow::SuggestSwitch(u32 currSwitch)
             }
         }
     }
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::switchIndex);
 }
 
 void TrigActionsWindow::SuggestSwitchMod(u8 currSwitchMod)
@@ -1045,7 +1043,7 @@ void TrigActionsWindow::SuggestSwitchMod(u8 currSwitchMod)
         return switchMod;
     }();
     suggestions.AddItems(switchMod);
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::switchMod);
 }
 
 void TrigActionsWindow::SuggestActionType(Chk::Action::Type currActionType)
@@ -1058,7 +1056,7 @@ void TrigActionsWindow::SuggestActionType(Chk::Action::Type currActionType)
         return trigActions;
     }();
     suggestions.AddItems(trigActions);
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::actionType);
 }
 
 void TrigActionsWindow::SuggestFlags(u8 currFlags)
@@ -1134,7 +1132,7 @@ void TrigActionsWindow::ButtonEditString()
             }
 
             if ( result > 0 )
-                chkd.trigEditorWindow->triggersWindow.RefreshTrigger(trigIndex);
+                RefreshActionAreas();
 
             SetFocus(gridActions.getHandle());
         }
@@ -1184,7 +1182,7 @@ void TrigActionsWindow::ButtonEditSound()
             }
 
             if ( result > 0 )
-                chkd.trigEditorWindow->triggersWindow.RefreshTrigger(trigIndex);
+                RefreshActionAreas();
 
             SetFocus(gridActions.getHandle());
         }
@@ -1309,7 +1307,7 @@ void TrigActionsWindow::GridEditStart(u16 gridItemX, u16 gridItemY)
 
 void TrigActionsWindow::SelConfirmed(WPARAM wParam)
 {
-    gridActions.EndEditing();
+    gridActions.EndEditing(false);
     gridActions.FocusThis();
     SendMessage(gridActions.getHandle(), WM_KEYDOWN, wParam, NULL);
 }
@@ -1322,20 +1320,41 @@ void TrigActionsWindow::NewSelection(u16 gridItemX, u16 gridItemY)
     if ( actionType < Chk::Action::NumActionTypes )
     {
         bool includesString = false, includesSound = false;
+        bool specificallyString = false, specificallySound = false;
         bool isCUWP = (actionType == Chk::Action::Type::CreateUnitWithProperties);
         for ( u8 i = 0; i < Chk::Action::MaxArguments; i++ )
         {
             Chk::Action::ArgType argType = Chk::Action::getClassicArgType(actionType, i);
             if ( argType == Chk::Action::ArgType::String )
+            {
                 includesString = true;
+                if ( i == gridItemX-2 )
+                {
+                    suggestions.EnableContextualPropertiesButton("Edit String (Ctrl+e)");
+                    specificallyString = true;
+                }
+            }
         }
 
         for ( u8 i = 0; i < Chk::Action::MaxArguments; i++ )
         {
             Chk::Action::ArgType argType = Chk::Action::getClassicArgType(actionType, i);
             if ( argType == Chk::Action::ArgType::Sound )
+            {
                 includesSound = true;
+                if ( i == gridItemX-2 )
+                {
+                    suggestions.EnableContextualPropertiesButton("Edit Sound (Ctrl+e)");
+                    specificallySound = true;
+                }
+            }
         }
+
+        bool specificallyCuwp = isCUWP && Chk::Action::getClassicArgType(actionType, gridItemX-2) == Chk::Action::ArgType::CUWP;
+        if ( specificallyCuwp )
+            suggestions.EnableContextualPropertiesButton("Edit CUWP (Ctrl+e)");
+        else if ( !specificallyString && !specificallySound )
+            suggestions.DisableContextualPropertiesButton();
 
         if ( includesString )
             EnableStringEdit();
@@ -1415,7 +1434,7 @@ LRESULT TrigActionsWindow::ShowWindow(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
     if ( (BOOL)wParam == FALSE )
     {
         suggestions.Hide();
-        gridActions.EndEditing();
+        gridActions.EndEditing(true);
         gridActions.KillFocus();
     }
     else
@@ -1482,7 +1501,9 @@ LRESULT TrigActionsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
         case WinLib::GV::WM_GRIDEDITSTART: GridEditStart(LOWORD(wParam), HIWORD(wParam)); break;
         case WinLib::GV::WM_GRIDEDITEND: suggestions.Hide(); break;
         case WinLib::LB::WM_SELCONFIRMED: SelConfirmed(wParam); break;
-        case WinLib::LB::WM_DISMISSED: gridActions.EndEditing(); break;
+        case WinLib::LB::WM_DISMISSED: gridActions.EndEditing(false); break;
+        case WinLib::LB::WM_CANCELLED: Escape(); break;
+        case WinLib::LB::WM_CONTEXTUALPROPERTIES: OpenContextualProperties(); break;
         default: return ClassWindow::WndProc(hWnd, msg, wParam, lParam); break;
     }
     return 0;

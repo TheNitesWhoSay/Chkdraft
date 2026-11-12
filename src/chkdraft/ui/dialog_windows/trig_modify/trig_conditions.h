@@ -22,6 +22,8 @@ class TrigConditionsWindow : public WinLib::ClassWindow, public ICndActGridUser
         virtual void CutSelection();
         virtual void CopySelection();
         virtual void Paste();
+        virtual void OpenContextualProperties() override;
+        virtual void Escape() override;
         virtual void RedrawThis();
         bool IsSuggestionsWindow(HWND hWnd);
         void FocusGrid();
@@ -35,6 +37,8 @@ class TrigConditionsWindow : public WinLib::ClassWindow, public ICndActGridUser
         CndActGrid gridConditions;
         u32 trigIndex;
         bool isPasting;
+
+        std::optional<WinLib::DeviceContext> measureDc; // HDC for speeding up column measurement
 
         Suggestions & suggestions;
 

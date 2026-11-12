@@ -2085,7 +2085,7 @@ size_t Scenario::addString(const StringType & str, Chk::Scope storageScope, bool
         RawString rawString;
         convertStr<StringType, RawString>(str, rawString);
 
-        size_t stringId = findString<StringType>(str);
+        size_t stringId = findString<StringType>(str, Chk::Scope::Editor);
         if ( stringId != (size_t)Chk::StringId::NoString )
             return stringId; // String already exists, return the id
 
@@ -7155,8 +7155,8 @@ std::size_t Scenario::getTriggerExtension(size_t triggerIndex, bool addIfNotFoun
         {
             if ( (i & Chk::UnusedExtendedTrigDataIndexCheck) != 0 && usedExtensionIndexes.count(u32(i)) == 0 ) // If index is usable and unused
             {
-                edit->triggerExtensions[i] = Chk::ExtendedTrigData{};
-                editTrigger(i).setExtendedDataIndex(read.triggerExtensions.size()-1);
+                edit->triggerExtensions[i] = Chk::ExtendedTrigData(u32(triggerIndex));
+                editTrigger(triggerIndex).setExtendedDataIndex(read.triggerExtensions.size()-1);
                 return i;
             }
         }
@@ -7164,7 +7164,7 @@ std::size_t Scenario::getTriggerExtension(size_t triggerIndex, bool addIfNotFoun
         while ( (read.triggerExtensions.size() & Chk::UnusedExtendedTrigDataIndexCheck) == 0 ) // While next index is unusable
             edit->triggerExtensions.append(Chk::ExtendedTrigData{}); // Put a dummy value in this position
 
-        edit->triggerExtensions.append(Chk::ExtendedTrigData{}); // Put real/usable extension data in this position
+        edit->triggerExtensions.append(Chk::ExtendedTrigData(u32(triggerIndex))); // Put real/usable extension data in this position
         editTrigger(triggerIndex).setExtendedDataIndex(read.triggerExtensions.size()-1);
         return read.triggerExtensions.size()-1;
     }
@@ -7199,19 +7199,7 @@ void Scenario::removeTriggersExtension(size_t triggerIndex)
 void Scenario::deleteTriggerExtension(size_t triggerExtensionIndex)
 {
     if ( triggerExtensionIndex < read.triggerExtensions.size() && triggerExtensionIndex != Chk::ExtendedTrigDataIndex::None )
-    {
-        size_t i = read.triggerExtensions.size();
-        for ( ; i > 0 && (((i-1) & Chk::UnusedExtendedTrigDataIndexCheck) == 0 || i-1 >= read.triggerExtensions.size()); i-- );
-
-        if ( i == 0 )
-            create_action(ActionDescriptor::DeleteExtendedTriggerData)->triggerExtensions.reset();
-        else if ( i < read.triggerExtensions.size() )
-        {
-            std::vector<std::size_t> indexesErased(read.triggerExtensions.size()-i);
-            std::iota(indexesErased.begin(), indexesErased.end(), i);
-            create_action(ActionDescriptor::DeleteExtendedTriggerData)->triggerExtensions.remove(indexesErased);
-        }
-    }
+        create_action(ActionDescriptor::DeleteExtendedTriggerData)->triggerExtensions[triggerExtensionIndex] = Chk::ExtendedTrigData{};
 }
 
 void Scenario::fixTriggerExtensions()
@@ -7990,4 +7978,76 @@ void Scenario::radiallyUpdateTerrain(std::deque<Chk::IsomDiamond> & diamondsToUp
             }
         }
     }
+}
+
+bool StrCache::initialized() const
+{
+    return !hashToStrIndexes.empty();
+}
+
+void StrCache::init(const std::vector<std::optional<ScStr>> & strings)
+{
+    this->hashToStrIndexes.emplace(this->hash(""), 0);
+    std::size_t i = 0;
+    for ( const std::optional<ScStr> & string : strings )
+    {
+        if ( string.has_value() && !string->str.empty() )
+            this->hashToStrIndexes.emplace(this->hash(string->str), i);
+
+        ++i;
+    }
+}
+
+void StrCache::stringAdded(std::size_t index, const std::optional<ScStr> & str)
+{
+    if ( str.has_value() && !str->str.empty() )
+        this->hashToStrIndexes.emplace(this->hash(str->str), index);
+}
+
+void StrCache::stringRemoved(std::size_t index, const std::optional<ScStr> & str)
+{
+    if ( str.has_value() && !str->str.empty() )
+    {
+        auto hash = this->hash(str->str);
+        auto found = this->hashToStrIndexes.equal_range(hash);
+        for ( auto it = found.first; it != found.second; ++it )
+        {
+            if ( it->second == index )
+            {
+                this->hashToStrIndexes.erase(it);
+                break;
+            }
+        }
+    }
+}
+
+void StrCache::stringModified(std::size_t index, const std::optional<ScStr> & oldStr, const std::optional<ScStr> & newStr)
+{
+    bool hasOldStr = oldStr.has_value() && !oldStr->str.empty();
+    bool hasNewStr = newStr.has_value() && !newStr->str.empty();
+    if ( !hasOldStr && hasNewStr )
+        stringAdded(index, newStr);
+    else if ( hasOldStr && !hasNewStr )
+        stringRemoved(index, oldStr);
+    else if ( hasOldStr && hasNewStr && oldStr->str != newStr->str )
+    {
+        stringRemoved(index, oldStr);
+        stringAdded(index, newStr);
+    }
+}
+
+std::size_t StrCache::findStringIndex(const std::string & str, const std::vector<std::optional<ScStr>> & strings) const
+{
+    if ( str.empty() )
+        return 0;
+
+    auto hash = this->hash(str);
+    auto found = this->hashToStrIndexes.equal_range(hash);
+    for ( auto it = found.first; it != found.second; ++it )
+    {
+        auto index = it->second;
+        if ( index < strings.size() && strings[index].has_value() && strings[index]->str == str )
+            return index;
+    }
+    return std::numeric_limits<std::size_t>::max();
 }

@@ -27,7 +27,7 @@ void BriefingTextTrigWindow::RefreshWindow()
     updateMenus();
     std::string briefingTrigString;
     BriefingTextTrigGenerator briefingTextTrigs {};
-    if ( briefingTextTrigs.generateBriefingTextTrigs((Scenario &)*CM, briefingTrigString, chkd.scData.value()) )
+    if ( briefingTextTrigs.generateBriefingTextTrigs((Scenario &)*CM, CM->getStrCache(), CM->getEditorStrCache(), briefingTrigString, chkd.scData.value()) )
     {
         auto start = std::chrono::high_resolution_clock::now();
         SetDialogItemText(IDC_EDIT_TRIGTEXT, briefingTrigString);
@@ -61,7 +61,7 @@ BOOL BriefingTextTrigWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
     case IDC_COMPSAVE:
         if ( CM != nullptr )
         {
-            if ( CompileEditText(*CM) )
+            if ( CompileEditText(*CM, CM->getStrCache(), CM->getEditorStrCache()) )
             {
                 CM->refreshScenario();
                 RefreshWindow();
@@ -77,7 +77,7 @@ BOOL BriefingTextTrigWindow::DlgCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
     case ID_COMPILE_TRIGS:
         if ( CM != nullptr )
         {
-            if ( CompileEditText(*CM) )
+            if ( CompileEditText(*CM, CM->getStrCache(), CM->getEditorStrCache()) )
             {
                 CM->refreshScenario();
                 RefreshWindow();
@@ -141,14 +141,14 @@ BOOL BriefingTextTrigWindow::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
     return TRUE;
 }
 
-bool BriefingTextTrigWindow::CompileEditText(Scenario & map)
+bool BriefingTextTrigWindow::CompileEditText(Scenario & map, const StrCache & strCache, const StrCache & editorStrCache)
 {
     if ( auto briefingTrigText = editControl.GetWinText() )
     {
         BriefingTextTrigCompiler compiler {}; // All data for compilation is gathered on-the-fly, no need to check for updates
         auto edit = CM->create_action(ActionDescriptor::CompileBriefingTextTrigs);
         CM->skipEventRendering();
-        if ( compiler.compileBriefingTriggers(*briefingTrigText, (Scenario &)map, *chkd.scData, 0, map.numBriefingTriggers()) )
+        if ( compiler.compileBriefingTriggers(*briefingTrigText, (Scenario &)map, strCache, editorStrCache, *chkd.scData, 0, map.numBriefingTriggers()) )
             return true;
         else
             WinLib::Message("Compilation failed.", "Error!");

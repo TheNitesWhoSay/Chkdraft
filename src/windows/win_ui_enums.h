@@ -50,6 +50,20 @@ namespace WinLib {
             The LPARAM is unused */
         WM_DISMISSED,
 
+        /** Possibly sent by windows containing ListBoxes to signal an action
+            was taken to cancel the listbox selection, e.g. pressing escape
+            or a cancel button
+            The WPARAM is unused
+            The LPARAM is the handle to the listbox */
+        WM_CANCELLED,
+
+        /** Possibly sent by windows containing ListBoxes to signal that
+            an action was taken to open up contextual properties
+            (e.g. pop-out text editor)
+            The WPARAM is unused
+            The LPARAM is the handle to the listbox */
+        WM_CONTEXTUALPROPERTIES,
+
         LB_LAST
     });
 

@@ -689,6 +689,7 @@ namespace Sc {
         };
         std::vector<UnitGroup> unitGroups;
         std::size_t numUnitTypes() const { return units.size(); }
+        std::size_t numReferenceUnitTypes() const { return units.size() > Sc::Unit::TotalReferenceTypes ? units.size() : Sc::Unit::TotalReferenceTypes; }
         std::size_t numFlingies() const { return flingies.size(); }
 
     private:

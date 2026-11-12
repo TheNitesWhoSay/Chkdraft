@@ -275,7 +275,7 @@ void TrigGeneralWindow::EditCommentFocusLost()
         auto edit = CM->create_action(ActionDescriptor::UpdateTriggerComment);
         auto extensionIndex = CM->getTriggerExtension(trigIndex, addIfNotFound);
         size_t newCommentStringId = CM->addString<ChkdString>(ChkdString(*newCommentText), Chk::Scope::Editor);
-        if ( newCommentStringId != Chk::StringId::NoString )
+        if ( newCommentStringId != Chk::StringId::NoString && newCommentStringId != CM->read.triggerExtensions[extensionIndex].commentStringId )
         {
             edit->triggerExtensions[extensionIndex].commentStringId = (u32)newCommentStringId;
             CM->deleteUnusedStrings(Chk::Scope::Editor);
@@ -293,7 +293,7 @@ void TrigGeneralWindow::EditNotesFocusLost()
         auto edit = CM->create_action(ActionDescriptor::UpdateTriggerNotes);
         auto extensionIndex = CM->getTriggerExtension(trigIndex, addIfNotFound);
         size_t newNotesStringId = CM->addString<ChkdString>(ChkdString(*newNotesText), Chk::Scope::Editor);
-        if ( newNotesStringId != Chk::StringId::NoString )
+        if ( newNotesStringId != Chk::StringId::NoString && newNotesStringId != CM->read.triggerExtensions[extensionIndex].notesStringId )
         {
             edit->triggerExtensions[extensionIndex].notesStringId = (u32)newNotesStringId;
             CM->deleteUnusedStrings(Chk::Scope::Editor);

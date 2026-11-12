@@ -65,6 +65,14 @@ namespace WinLib {
 
     bool GridViewControl::CreateThis(HWND hParent, int x, int y, int width, int height, u64 id)
     {
+        editing = false;
+        ending = false;
+        lButtonDown = false;
+        caretPos = 0;
+        focusedX = -1;
+        focusedY = -1;
+        DeselectAll(true);
+        resize(0, 0);
         u32 style = WS_CHILD|WS_CLIPCHILDREN|LVS_REPORT|LVS_SHOWSELALWAYS|LVS_OWNERDRAWFIXED|LVS_OWNERDATA;
 
         if ( WindowControl::CreateControl(WS_EX_CLIENTEDGE, WC_LISTVIEW, "", style,
@@ -99,9 +107,9 @@ namespace WinLib {
             ListViewControl::RemoveRow(rowNum);
     }
 
-    void GridViewControl::DeselectAll()
+    void GridViewControl::DeselectAll(bool cancel)
     {
-        EndEditing();
+        EndEditing(cancel);
         for ( int y=0; y<numRows; y++ )
         {
             for ( int x=0; x<numColumns; x++ )
@@ -222,7 +230,7 @@ namespace WinLib {
 
     void GridViewControl::FocusItem(int x, int y)
     {
-        EndEditing();
+        EndEditing(true);
         if ( x >= 0 && x < numColumns && y >= 0 && y < numRows && allowSel(x, y) )
         {
             if ( x != focusedX || y != focusedY )
@@ -245,7 +253,7 @@ namespace WinLib {
         }
     }
 
-    void GridViewControl::EndEditing()
+    void GridViewControl::EndEditing(bool cancel)
     {
         if ( !ending )
         {
@@ -254,7 +262,7 @@ namespace WinLib {
             if ( editing == true && editBox.DestroyThis() )
             {
                 editing = false;
-                if ( str && SendMessage(GetParent(getHandle()), GV::WM_GRIDITEMCHANGING, MAKEWPARAM(focusedX, focusedY), (LPARAM)&str) == TRUE )
+                if ( str && !cancel && SendMessage(GetParent(getHandle()), GV::WM_GRIDITEMCHANGING, MAKEWPARAM(focusedX, focusedY), (LPARAM)&str) == TRUE )
                     item(focusedX, focusedY).SetText(*str);
 
                 RedrawThis();
@@ -507,9 +515,7 @@ namespace WinLib {
         for ( int y=0; y<numRows; y++ )
         {
             RECT rect;
-            std::string str;
-            if ( item(x, y).getText(str) &&
-                 ListViewControl::GetItemRect(focusedX, focusedY, rect) )
+            if ( ListViewControl::GetItemRect(focusedX, focusedY, rect) )
             {
                 int itemWidth = (int)SendMessage(GetParent(getHandle()), GV::WM_GETGRIDITEMWIDTH, MAKEWPARAM(x, y), 0);
                 if ( itemWidth > newWidth )
@@ -577,7 +583,7 @@ namespace WinLib {
              ( outsideLeft || outsideTop || outsideRight || outsideBottom ) )
         {
             if ( !(GetKeyState(VK_CONTROL) & 0x8000) )
-                DeselectAll();
+                DeselectAll(true);
 
             int row, col;
             if ( outsideLeft && outsideTop )
@@ -613,7 +619,7 @@ namespace WinLib {
         else if ( ListViewControl::GetItemAt(x, y, dragMoveY, dragMoveX) )
         {
             if ( !(GetKeyState(VK_CONTROL) & 0x8000) )
-                DeselectAll();
+                DeselectAll(true);
 
             SelectSquare(focusedX, focusedY, dragMoveX, dragMoveY);
 
@@ -637,10 +643,8 @@ namespace WinLib {
             int y = -1;
             if ( initChar.empty() && GetItemAt(xClick, yClick, y, x) )
             {
-                std::string str;
-                if ( item(x, y).getText(str) )
-                    editBox.SetText(str);
-            
+                editBox.SetText(item(x, y).getText());
+
                 if ( xClick >= 0 && yClick >= 0 )
                     UpdateCaretPos(xClick, yClick);
             }
@@ -718,6 +722,8 @@ namespace WinLib {
     {
         switch ( wParam )
         {
+            case 'E': if ( GetKeyState(VK_CONTROL) & 0x8000 ) OpenContextualProperties(); break;
+            case VK_ESCAPE: Escape(); break;
             case VK_LEFT: LeftArrowKey(); break;
             case VK_UP: UpArrowKey(); break;
             case VK_RIGHT: RightArrowKey(); break;
@@ -755,7 +761,7 @@ namespace WinLib {
                 }
                 else if ( GetKeyState(VK_SHIFT) & 0x8000 )
                 {
-                    DeselectAll();
+                    DeselectAll(true);
                     SelectSquareTo(x, y);
                 }
                 else if ( GetKeyState(VK_CONTROL) & 0x8000 )
@@ -770,7 +776,7 @@ namespace WinLib {
                 }
                 else // Normal click within items
                 {
-                    DeselectAll();
+                    DeselectAll(false);
                     //if ( editing && focusedX == x && focusedY == y ) // Use if manually doing edits
                     //  UpdateCaretPos(xClick, yClick);
                     FocusItem(x, y);
@@ -784,7 +790,7 @@ namespace WinLib {
         {
             focusedX = -1;
             focusedY = -1;
-            DeselectAll();
+            DeselectAll(true);
             bool outsideLeft = false, outsideTop = false, outsideRight = false, outsideBottom = false;
             if ( contentHitTest(xClick, yClick, outsideLeft, outsideTop, outsideRight, outsideBottom) &&
                  ( outsideLeft || outsideTop || outsideRight || outsideBottom ) )
@@ -847,7 +853,7 @@ namespace WinLib {
             if ( !editing && ListViewControl::GetItemAt(xMove, yMove, dragMoveY, dragMoveX) )
             {
                 if ( !(GetKeyState(VK_CONTROL) & 0x8000) )
-                    DeselectAll();
+                    DeselectAll(true);
 
                 SelectSquare(focusedX, focusedY, dragMoveX, dragMoveY);
                 RedrawThis();
@@ -873,13 +879,17 @@ namespace WinLib {
             DragSelectTo(xRelease, yRelease);
         }
     }
+    
+    void GridViewControl::OpenContextualProperties() {} // Overridden
+
+    void GridViewControl::Escape() {} // Overridden
 
     void GridViewControl::LeftArrowKey()
     {
         // Focus next selectable cell directly to the left of focus
         if ( !editing || allowKeyNavDuringEdit(GVKey::GVLeft) )
         {
-            DeselectAll();
+            DeselectAll(false);
 
             for ( int x = focusedX - 1; x >= 0; x-- )
             {
@@ -897,7 +907,7 @@ namespace WinLib {
         // Focus next selectable cell directly above focus
         if ( !editing || allowKeyNavDuringEdit(GVKey::GVUp) )
         {
-            DeselectAll();
+            DeselectAll(false);
 
             for ( int y = focusedY - 1; y >= 0; y-- )
             {
@@ -915,7 +925,7 @@ namespace WinLib {
         // Focus next selectable cell directly to the right of focus
         if ( !editing || allowKeyNavDuringEdit(GVKey::GVRight) )
         {
-            DeselectAll();
+            DeselectAll(false);
 
             for ( int x = focusedX + 1; x < numColumns; x++ )
             {
@@ -933,7 +943,7 @@ namespace WinLib {
         // Focus next selectable cell directly below focus
         if ( !editing || allowKeyNavDuringEdit(GVKey::GVDown) )
         {
-            DeselectAll();
+            DeselectAll(false);
 
             for ( int y = focusedY + 1; y < numRows; y++ )
             {
@@ -951,7 +961,7 @@ namespace WinLib {
         // Focus next selectable cell
         if ( !editing || allowKeyNavDuringEdit(GVKey::GVTab) )
         {
-            DeselectAll();
+            DeselectAll(false);
 
             for ( int x = focusedX + 1; x < numColumns; x++ )
             {
@@ -981,7 +991,7 @@ namespace WinLib {
         // Focus first selectable cell lower rows
         if ( !editing || allowKeyNavDuringEdit(GVKey::GVReturn) )
         {
-            DeselectAll();
+            DeselectAll(false);
 
             for ( int y = focusedY + 1; y < numRows; y++ )
             {
@@ -1072,7 +1082,7 @@ namespace WinLib {
     {
         switch ( msg )
         {
-            case WM_SETFOCUS: EndEditing(); break; // The GridView rather than the edit box was focused
+            case WM_SETFOCUS: EndEditing(true); break; // The GridView rather than the edit box was focused
             case WM_KEYDOWN: KeyDown(wParam); break;
             case WM_CHAR: Char(icux::toUtf8((wchar_t)wParam)); break;
             case WM_UNICHAR: Char(icux::toUtf8((char32_t)wParam)); break;

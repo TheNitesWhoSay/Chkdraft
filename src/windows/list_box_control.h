@@ -37,6 +37,7 @@ namespace WinLib {
             int GetNumSel(); // Gets the number of items selected (in a multi-selection list box)
             bool GetSelString(int n, std::string & str); // Attempts to get the nth selected item's string (in a multi-selection list box)
             bool GetCurSelItem(LPARAM & itemData); // Attempts to get the currently selected item's data
+            bool GetCurSelItem(LPARAM & itemData, int & itemIndex); // Attempts to get the currently selected item index & data
             bool GetCurSelString(std::string & str); // Attempts to get the currently selected item's string
             bool GetSelItem(int n, LPARAM & itemData); // Attempts to get the nth selected item's data (in a multi-selection list box)
             bool GetItemData(int index, LPARAM & data);
