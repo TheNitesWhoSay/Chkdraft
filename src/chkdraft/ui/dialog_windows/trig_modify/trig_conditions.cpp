@@ -362,6 +362,8 @@ void TrigConditionsWindow::UpdateConditionArg(u8 conditionNum, u8 argNum, const 
 
         const Chk::Trigger & trig = CM->getTrigger(trigIndex);
         Chk::Condition::Argument argument = Chk::Condition::getClassicArg(trig.condition(conditionNum).conditionType, argNum);
+        if ( argument.type == Chk::Condition::ArgType::NoType )
+            return;
 
         auto editedCondition = CM->editTrigger(trigIndex).editCondition(conditionNum);
         const auto & condition = editedCondition.read;

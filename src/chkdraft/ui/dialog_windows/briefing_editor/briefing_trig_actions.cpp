@@ -411,6 +411,9 @@ void BriefingTrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const s
         auto edit = CM->create_action(ActionDescriptor::UpdateBriefingActionArg);
         const auto & briefingTrig = CM->getBriefingTrigger(briefingTrigIndex);
         Chk::Action::ArgType argType = Chk::Action::getBriefingClassicArgType(action.actionType, argNum);
+        if ( argType == Chk::Action::ArgType::NoType )
+            return;
+
         SingleLineChkdString chkdNewText = ChkdString(newText);
 
         auto editedAction = CM->editBriefingTrigger(briefingTrigIndex).editBriefingAction(actionNum);

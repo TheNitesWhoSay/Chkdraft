@@ -446,6 +446,9 @@ void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::stri
     {
         auto edit = CM->create_action(ActionDescriptor::UpdateTriggerActionArg);
         Chk::Action::ArgType argType = Chk::Action::getClassicArgType(action.actionType, argNum);
+        if ( argType == Chk::Action::ArgType::NoType )
+            return;
+
         SingleLineChkdString chkdNewText = ChkdString(newText);
 
         auto editedAction = CM->editTrigger(trigIndex).editAction(actionNum);
