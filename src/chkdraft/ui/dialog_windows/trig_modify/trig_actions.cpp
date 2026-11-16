@@ -227,6 +227,7 @@ void TrigActionsWindow::Paste()
                 bool argEndsByLine = false;
                 size_t argStart = 0, argEnd = 0, argEndSize = 0;
                 size_t pasteStringLength = pasteString.length();
+                auto action = CM->create_action(ActionDescriptor::PasteTriggerActions);
                 while ( argStart < pasteStringLength )
                 {
                     argEnd = gridActions.FindArgEnd(pasteString, argStart, argEndsBy);

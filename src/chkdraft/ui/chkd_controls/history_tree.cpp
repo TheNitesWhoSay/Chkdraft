@@ -290,6 +290,8 @@ std::string getActionText(std::size_t actionIndex, const nf::rendered_action<Des
                 case ActionDescriptor::ToggleIgnoreDefeatDrawFlag: actionText += "Toggle Trig Ignore Defeat Draw Flag"; break;
                 case ActionDescriptor::TogglePausedFlag: actionText += "Toggle Trig Paused Flag"; break;
                 case ActionDescriptor::CompileTextTrigs: actionText += "Compile Text Trigs"; break;
+                case ActionDescriptor::PasteTriggerConditions: actionText += "Paste Trigger Conditions"; break;
+                case ActionDescriptor::PasteTriggerActions: actionText += "Paste Trigger Actions"; break;
                 // BriefingTriggers
                 case ActionDescriptor::AddBriefingTrigger: actionText += "Add Briefing Trigger"; break;
                 case ActionDescriptor::DeleteBriefingTrigger: actionText += "Delete Briefing Trigger"; break;
@@ -301,6 +303,7 @@ std::string getActionText(std::size_t actionIndex, const nf::rendered_action<Des
                 case ActionDescriptor::ChangeBriefingTrigPlayers: actionText += "Change Briefing Trig Players"; break;
                 case ActionDescriptor::UpdateBriefingActionArg: actionText += "Update Briefing Action Arg"; break;
                 case ActionDescriptor::CompileBriefingTextTrigs: actionText += "Compile Briefing Text Trigs"; break;
+                case ActionDescriptor::PasteTriggerBriefingActions: actionText += "Paste Trigger Briefing Actions"; break;
                 // Plugins/Scripts
                 case ActionDescriptor::RepairSounds: actionText += "Repair Sounds"; break;
                 case ActionDescriptor::RepairStrings: actionText += "Repair Strings"; break;

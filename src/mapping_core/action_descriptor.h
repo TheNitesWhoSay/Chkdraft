@@ -229,6 +229,8 @@ enum class ActionDescriptor
     ToggleIgnoreDefeatDrawFlag,
     TogglePausedFlag,
     CompileTextTrigs,
+    PasteTriggerConditions,
+    PasteTriggerActions,
     // BriefingTriggers
     AddBriefingTrigger,
     DeleteBriefingTrigger,
@@ -240,6 +242,7 @@ enum class ActionDescriptor
     ChangeBriefingTrigPlayers,
     UpdateBriefingActionArg,
     CompileBriefingTextTrigs,
+    PasteTriggerBriefingActions,
     // Plugins/Scripts
     RepairSounds,
     RepairStrings,
