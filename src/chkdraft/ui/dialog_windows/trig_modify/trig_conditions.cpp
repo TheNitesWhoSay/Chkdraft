@@ -353,7 +353,11 @@ void TrigConditionsWindow::UpdateConditionArg(u8 conditionNum, u8 argNum, const 
     {
         auto edit = CM->create_action(ActionDescriptor::UpdateTriggerConditionArg);
         RawString rawUpdateText, rawSuggestText;
+        bool suggestionsShown = suggestions.IsShown();
         SuggestionItem suggestion = suggestions.Take();
+        if ( !suggestionsShown )
+            suggestion.str = newText;
+
         TextTrigCompiler ttc(chkd.profiles().triggers.useAddressesForMemory, chkd.profiles().triggers.deathTableStart);
 
         const Chk::Trigger & trig = CM->getTrigger(trigIndex);

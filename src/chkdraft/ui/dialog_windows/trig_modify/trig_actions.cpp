@@ -434,7 +434,11 @@ void TrigActionsWindow::UpdateActionName(u8 actionNum, const std::string & newTe
 void TrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::string & newText, bool refreshImmediately)
 {
     RawString rawUpdateText, rawSuggestText;
+    bool suggestionsShown = suggestions.IsShown();
     SuggestionItem suggestion = suggestions.Take();
+    if ( !suggestionsShown )
+        suggestion.str = newText;
+
     TextTrigCompiler ttc(chkd.profiles().triggers.useAddressesForMemory, chkd.profiles().triggers.deathTableStart);
     auto & trig = CM->getTrigger(trigIndex);
     const Chk::Action & action = trig.action(actionNum);

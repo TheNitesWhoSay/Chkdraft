@@ -399,7 +399,11 @@ void BriefingTrigActionsWindow::UpdateActionName(u8 actionNum, const std::string
 void BriefingTrigActionsWindow::UpdateActionArg(u8 actionNum, u8 argNum, const std::string & newText, bool refreshImmediately)
 {
     RawString rawUpdateText, rawSuggestText;
+    bool suggestionsShown = suggestions.IsShown();
     SuggestionItem suggestion = suggestions.Take();
+    if ( !suggestionsShown )
+        suggestion.str = newText;
+
     BriefingTextTrigCompiler ttc {};
     const Chk::Action & action = CM->getBriefingTrigger(briefingTrigIndex).action(actionNum);
     if ( action.actionType < Chk::Action::NumBriefingActionTypes )
