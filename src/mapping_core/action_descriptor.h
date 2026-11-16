@@ -231,6 +231,10 @@ enum class ActionDescriptor
     CompileTextTrigs,
     PasteTriggerConditions,
     PasteTriggerActions,
+    CutSelectedConditions,
+    CutSelectedActions,
+    DeleteSelectedConditions,
+    DeleteSelectedActions,
     // BriefingTriggers
     AddBriefingTrigger,
     DeleteBriefingTrigger,
@@ -242,7 +246,9 @@ enum class ActionDescriptor
     ChangeBriefingTrigPlayers,
     UpdateBriefingActionArg,
     CompileBriefingTextTrigs,
+    CutSelectedBriefingActions,
     PasteTriggerBriefingActions,
+    DeleteSelectedBriefingActions,
     // Plugins/Scripts
     RepairSounds,
     RepairStrings,

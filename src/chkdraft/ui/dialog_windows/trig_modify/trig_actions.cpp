@@ -48,6 +48,7 @@ bool TrigActionsWindow::CreateThis(HWND hParent, u64 windowId)
 
 bool TrigActionsWindow::DestroyThis()
 {
+    this->deleteSelectionAction.reset();
     suggestions.Hide();
     ClassWindow::DestroyThis();
     this->trigIndex = 0;
@@ -190,6 +191,7 @@ void TrigActionsWindow::CutSelection()
         else
             Error("Problem building clipboard string");
 
+        auto action = CM->create_action(ActionDescriptor::CutSelectedActions);
         gridActions.DeleteSelection();
     }
     else
@@ -636,6 +638,9 @@ BOOL TrigActionsWindow::GridItemChanging(u16 gridItemX, u16 gridItemY, const std
 
 BOOL TrigActionsWindow::GridItemDeleting(u16 gridItemX, u16 gridItemY)
 {
+    if ( !this->deleteSelectionAction )
+        this->deleteSelectionAction.emplace(CM->create_action(ActionDescriptor::DeleteSelectedActions));
+
     auto & trig = CM->getTrigger(trigIndex);
     if ( gridItemY >= 0 && gridItemY < Chk::Trigger::MaxActions )
     {
@@ -1498,7 +1503,7 @@ LRESULT TrigActionsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
         case WinLib::GV::WM_GETGRIDITEMCARETPOS: return -1; break;
         case WinLib::GV::WM_GRIDITEMCHANGING: return GridItemChanging(LOWORD(wParam), HIWORD(wParam), *(std::string*)lParam); break;
         case WinLib::GV::WM_GRIDITEMDELETING: return GridItemDeleting(LOWORD(wParam), HIWORD(wParam)); break;
-        case WinLib::GV::WM_GRIDDELETEFINISHED: RefreshWindow(trigIndex); break;
+        case WinLib::GV::WM_GRIDDELETEFINISHED: this->deleteSelectionAction.reset(); RefreshWindow(trigIndex); break;
         case WinLib::GV::WM_GRIDEDITSTART: GridEditStart(LOWORD(wParam), HIWORD(wParam)); break;
         case WinLib::GV::WM_GRIDEDITEND: suggestions.Hide(); break;
         case WinLib::LB::WM_SELCONFIRMED: SelConfirmed(wParam); break;

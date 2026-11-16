@@ -34,6 +34,7 @@ class TrigConditionsWindow : public WinLib::ClassWindow, public ICndActGridUser
         LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
     private:
+        std::optional<nf::editor<nf::tracked<MapData, Scenario, DescriptorIndex>>> deleteSelectionAction {};
         CndActGrid gridConditions;
         u32 trigIndex;
         bool isPasting;

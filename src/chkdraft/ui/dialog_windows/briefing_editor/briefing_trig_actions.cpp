@@ -47,6 +47,7 @@ bool BriefingTrigActionsWindow::CreateThis(HWND hParent, u64 windowId)
 
 bool BriefingTrigActionsWindow::DestroyThis()
 {
+    this->deleteSelectionAction.reset();
     suggestions.Hide();
     ClassWindow::DestroyThis();
     this->briefingTrigIndex = 0;
@@ -179,6 +180,7 @@ void BriefingTrigActionsWindow::CutSelection()
         else
             Error("Problem building clipboard string");
 
+        auto action = CM->create_action(ActionDescriptor::CutSelectedBriefingActions);
         gridActions.DeleteSelection();
     }
     else
@@ -541,6 +543,9 @@ BOOL BriefingTrigActionsWindow::GridItemChanging(u16 gridItemX, u16 gridItemY, c
 
 BOOL BriefingTrigActionsWindow::GridItemDeleting(u16 gridItemX, u16 gridItemY)
 {
+    if ( !this->deleteSelectionAction )
+        this->deleteSelectionAction.emplace(CM->create_action(ActionDescriptor::DeleteSelectedBriefingActions));
+
     auto & briefingTrig = CM->getBriefingTrigger(briefingTrigIndex);
     if ( gridItemY >= 0 && gridItemY < Chk::Trigger::MaxActions )
     {
@@ -1204,7 +1209,7 @@ LRESULT BriefingTrigActionsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, L
         case WinLib::GV::WM_GETGRIDITEMCARETPOS: return -1; break;
         case WinLib::GV::WM_GRIDITEMCHANGING: return GridItemChanging(LOWORD(wParam), HIWORD(wParam), *(std::string*)lParam); break;
         case WinLib::GV::WM_GRIDITEMDELETING: return GridItemDeleting(LOWORD(wParam), HIWORD(wParam)); break;
-        case WinLib::GV::WM_GRIDDELETEFINISHED: RefreshWindow(briefingTrigIndex); break;
+        case WinLib::GV::WM_GRIDDELETEFINISHED: this->deleteSelectionAction.reset(); RefreshWindow(briefingTrigIndex); break;
         case WinLib::GV::WM_GRIDEDITSTART: GridEditStart(LOWORD(wParam), HIWORD(wParam)); break;
         case WinLib::GV::WM_GRIDEDITEND: suggestions.Hide(); break;
         case WinLib::LB::WM_SELCONFIRMED: SelConfirmed(wParam); break;
