@@ -445,7 +445,14 @@ int Suggestions::KeyDown(WPARAM wParam)
 {
     int currSel = -1;
     switch ( wParam )
-    {
+        {
+        case VK_ESCAPE:
+            CancelSuggestion();
+            break;
+        case 'E':
+            if ( GetKeyState(VK_CONTROL) & 0x8000 )
+                OpenContextualProperties();
+            break;
         case VK_UP:
             listSuggestions.GetCurSel(currSel);
             if ( currSel > 0 )
