@@ -46,6 +46,9 @@ bool WindowsClipboardToString(std::string & str)
                 if ( maxStringSize != 0 )
                 {
                     str = icux::toUtf8((wchar_t*)lockedData, (size_t)maxStringSize/sizeof(icux::codepoint));
+                    if ( !str.empty() && str.back() == '\0' )
+                        str.pop_back();
+
                     success = true;
                 }
                 GlobalUnlock(lockedData);
