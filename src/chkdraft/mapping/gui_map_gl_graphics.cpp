@@ -411,7 +411,8 @@ void GuiMapGraphics::drawPastes()
                     }
                 }
             }
-            drawTileVertices(renderDat->tiles->tilesetGrp, windowDimensions.width, windowDimensions.height, tileToNdc);
+            blackoutTileVertices(tileToNdc);
+            drawTileVertices(renderDat->tiles->tilesetGrp, windowDimensions.width, windowDimensions.height, tileToNdc, false, false);
             if ( !lineVertices.vertices.empty() )
             {
                 auto & solidColorShader = renderDat->shaders->solidColorShader;
@@ -578,7 +579,8 @@ void GuiMapGraphics::drawPastes()
                     }
                 }
             }
-            drawTileVertices(renderDat->tiles->tilesetGrp, windowDimensions.width, windowDimensions.height, tileToNdc);
+            blackoutTileVertices(tileToNdc);
+            drawTileVertices(renderDat->tiles->tilesetGrp, windowDimensions.width, windowDimensions.height, tileToNdc, false, false);
             auto & solidColorShader = renderDat->shaders->solidColorShader;
             solidColorShader.use();
             solidColorShader.posToNdc.setMat4(gameToNdc);
