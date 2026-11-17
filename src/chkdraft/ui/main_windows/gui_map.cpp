@@ -1241,7 +1241,7 @@ void GuiMap::keyScroll()
         s32 oldLeft = screenLeft;
         s32 oldTop = screenTop;
         Scroll(xDirection != 0, yDirection != 0, true, screenLeft+xDirection*32, screenTop+yDirection*32);
-        if ( clipboard.isPasting() && (oldLeft != screenLeft || oldTop != screenTop) )
+        if ( clipboard.isPasting() && isDragging() && (oldLeft != screenLeft || oldTop != screenTop) )
         {
             s32 xDifference = screenLeft-oldLeft;
             s32 yDifference = screenTop-oldTop;

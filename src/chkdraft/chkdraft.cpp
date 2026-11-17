@@ -903,7 +903,7 @@ void Chkdraft::KeyListener(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                         break;
                     }
                 }
-                else if ( CM != nullptr ) // Keys with no modifiers
+                else if ( CM != nullptr && GetParent(hWnd) == maps.getHandle() ) // Keys with no modifiers
                 {
                     switch ( wParam )
                     {
