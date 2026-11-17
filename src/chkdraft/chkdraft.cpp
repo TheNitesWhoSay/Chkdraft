@@ -817,7 +817,7 @@ void Chkdraft::KeyListener(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     {
         case WM_KEYDOWN:
             {
-                switch ( wParam )
+                switch ( wParam ) // Keys together with any modifiers
                 {
                     case VK_SPACE: if ( CM != nullptr ) CM->LockCursor(); return; break;
                     case VK_DELETE: if ( CM != nullptr ) CM->deleteSelection(); return; break;
@@ -901,6 +901,16 @@ void Chkdraft::KeyListener(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                             }(), false);
                         }
                         break;
+                    }
+                }
+                else if ( CM != nullptr ) // Keys with no modifiers
+                {
+                    switch ( wParam )
+                    {
+                        case VK_UP: case VK_DOWN: case VK_LEFT: case VK_RIGHT:
+                        case 'W': case 'A': case 'S': case 'D':
+                            CM->keyScroll();
+                            break;
                     }
                 }
             }

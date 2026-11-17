@@ -89,6 +89,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCach
                     void doubleClickLocation(s32 xClick, s32 yClick);
                     void openTileProperties(s32 xClick, s32 yClick);
                     void EdgeDrag(HWND hWnd, int x, int y);
+                    void keyScroll();
 
                     /** Takes a player number, outputs the string/string index of the associated owner (i.e. rescuable) */
                     u8 GetPlayerOwnerStringId(u8 player);

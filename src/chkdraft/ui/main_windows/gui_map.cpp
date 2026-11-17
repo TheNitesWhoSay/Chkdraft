@@ -1218,6 +1218,40 @@ void GuiMap::EdgeDrag(HWND hWnd, int x, int y)
     }
 }
 
+void GuiMap::keyScroll()
+{
+    bool up = (GetKeyState(VK_UP) & 0x8000) || (GetKeyState('W') & 0x8000);
+    bool down = (GetKeyState(VK_DOWN) & 0x8000) || (GetKeyState('S') & 0x8000);
+    bool left = (GetKeyState(VK_LEFT) & 0x8000) || (GetKeyState('A') & 0x8000);
+    bool right = (GetKeyState(VK_RIGHT) & 0x8000) || (GetKeyState('D') & 0x8000);
+    if ( up && down )
+    {
+        up = false;
+        down = false;
+    }
+    if ( left && right )
+    {
+        left = false;
+        right = false;
+    }
+    s32 xDirection = left ? -1 : (right ? 1 : 0);
+    s32 yDirection = up ? -1 : (down ? 1 : 0);
+    if ( xDirection != 0 || yDirection != 0 )
+    {
+        s32 oldLeft = screenLeft;
+        s32 oldTop = screenTop;
+        Scroll(xDirection != 0, yDirection != 0, true, screenLeft+xDirection*32, screenTop+yDirection*32);
+        if ( clipboard.isPasting() && (oldLeft != screenLeft || oldTop != screenTop) )
+        {
+            s32 xDifference = screenLeft-oldLeft;
+            s32 yDifference = screenTop-oldTop;
+            auto pt = getLastMousePosition();
+            lastMousePosition = {.x = pt.x + xDifference, .y = pt.y + yDifference};
+            paste(lastMousePosition.x, lastMousePosition.y);
+        }
+    }
+}
+
 u8 GuiMap::GetPlayerOwnerStringId(u8 player)
 {
     Sc::Player::SlotType slotType = Scenario::getSlotType(player);
