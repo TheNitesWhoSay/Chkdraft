@@ -74,6 +74,9 @@ bool MpqFile::create(const std::string & filePath)
 
 bool MpqFile::open(const std::string & filePath, bool readOnly, bool createIfNotFound)
 {
+    if ( filePath.empty() )
+        return false;
+
     if ( isOpen(filePath) )
         return true;
 
