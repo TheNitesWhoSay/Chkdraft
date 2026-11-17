@@ -254,6 +254,16 @@ namespace WinLib {
         }
         return false;
     }
+    
+    bool ListBoxControl::GetCurSelItem(LPARAM & itemData, int & itemIndex)
+    {
+        if ( GetCurSel(itemIndex) )
+        {
+            itemData = SendMessage(getHandle(), LB_GETITEMDATA, WPARAM(itemIndex), NULL);
+            return true;
+        }
+        return false;
+    }
 
     bool ListBoxControl::GetSelItem(int index, LPARAM & itemData)
     {

@@ -1612,6 +1612,11 @@ Chk::ExtendedTrigData::ExtendedTrigData() : commentStringId(0), notesStringId(0)
 
 }
 
+Chk::ExtendedTrigData::ExtendedTrigData(u32 trigNum) : commentStringId(0), notesStringId(0), groupId(GroupId::None), trigNum(trigNum), maskId(MaskId::None)
+{
+
+}
+
 bool Chk::ExtendedTrigData::isBlank() const
 {
     return commentStringId == 0 && notesStringId == 0 && groupId == GroupId::None && trigNum == TrigNum::None && maskId == MaskId::None;

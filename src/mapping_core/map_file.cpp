@@ -396,7 +396,7 @@ std::optional<std::vector<std::string>> MapFile::getListfile()
 {
     if ( MpqFile::isOpen() )
         return MpqFile::getListfile();
-    else if ( MpqFile::open(mapFilePath, true, false) )
+    else if ( !MpqFile::getFilePath().empty() && MpqFile::open(mapFilePath, true, false) )
     {
         auto result = MpqFile::getListfile();
         MpqFile::close();

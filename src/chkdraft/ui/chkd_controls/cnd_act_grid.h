@@ -13,6 +13,8 @@ class ICndActGridUser // ~Interface
         virtual void CutSelection() = 0;
         virtual void CopySelection() = 0;
         virtual void Paste() = 0;
+        virtual void OpenContextualProperties() = 0;
+        virtual void Escape() = 0;
         virtual ~ICndActGridUser();
 };
 
@@ -47,6 +49,8 @@ class CndActGrid : public WinLib::GridViewControl
         virtual void StartEditing(int xClick, int yClick, const std::string & initChar);
         virtual void KeyDown(WPARAM wParam);
         virtual void EditTextChanged(const std::string & str);
+        virtual void OpenContextualProperties() override;
+        virtual void Escape() override;
 
         virtual LRESULT Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr);
         virtual LRESULT Command(HWND hWnd, WPARAM wParam, LPARAM lParam);

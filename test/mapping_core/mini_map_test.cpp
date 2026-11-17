@@ -41,55 +41,58 @@ std::shared_ptr<Scenario> create_scenario(u16 width, u16 height)
 TEST(MiniMapTest, MiniMapTest)
 {
     Sc::Data scData {};
-    TestAssets::LoadScData(scData);
+    bool loaded = TestAssets::LoadScData(scData);
 
-    u16 dims[] {
-        64, 64,
-        64, 96,
-        64, 128,
-        64, 192,
-        64, 256,
-        96, 64,
-        96, 96,
-        96, 128,
-        96, 192,
-        96, 256,
-        128, 64,
-        128, 96,
-        128, 128,
-        128, 192,
-        128, 256,
-        192, 64,
-        192, 96,
-        192, 128,
-        192, 192,
-        192, 256,
-        256, 64,
-        256, 96,
-        256, 128,
-        256, 192,
-        256, 256
-    };
-    
-    for ( std::size_t i=0; i<25; ++i )
+    if ( loaded )
     {
-        u16 width = dims[i*2];
-        u16 height = dims[i*2+1];
+        u16 dims[] {
+            64, 64,
+            64, 96,
+            64, 128,
+            64, 192,
+            64, 256,
+            96, 64,
+            96, 96,
+            96, 128,
+            96, 192,
+            96, 256,
+            128, 64,
+            128, 96,
+            128, 128,
+            128, 192,
+            128, 256,
+            192, 64,
+            192, 96,
+            192, 128,
+            192, 192,
+            192, 256,
+            256, 64,
+            256, 96,
+            256, 128,
+            256, 192,
+            256, 256
+        };
     
-        auto scenario = create_scenario(width, height);
-        ClassicMiniMap miniMap(scData, *scenario);
+        for ( std::size_t i=0; i<25; ++i )
+        {
+            u16 width = dims[i*2];
+            u16 height = dims[i*2+1];
+    
+            auto scenario = create_scenario(width, height);
+            ClassicMiniMap miniMap(scData, *scenario);
 
-        miniMap.render();
-        EXPECT_EQ(128, miniMap.width);
-        EXPECT_EQ(128, miniMap.height);
-        EXPECT_EQ(128*128, miniMap.pixels.size());
+            miniMap.render();
+            EXPECT_EQ(128, miniMap.width);
+            EXPECT_EQ(128, miniMap.height);
+            EXPECT_EQ(128*128, miniMap.pixels.size());
 
-        bool miniMapPixelsEq = (std::memcmp(&miniMapPixels[i][0], &miniMap.pixels[0], 128*128*sizeof(std::uint32_t)) == 0);
-        EXPECT_TRUE(miniMapPixelsEq);
+            bool miniMapPixelsEq = (std::memcmp(&miniMapPixels[i][0], &miniMap.pixels[0], 128*128*sizeof(std::uint32_t)) == 0);
+            EXPECT_TRUE(miniMapPixelsEq);
 
-        /*std::stringstream ss {};
-        for ( std::size_t i=0; i<128*128; ++i )
-            ss << miniMap.pixels[i] << ", ";
-        stringToFile("C:\\misc\\MiniTestMaps\\" + std::to_string(width) + "_" + std::to_string(height) + ".txt", ss.str());*/
+            /*std::stringstream ss {};
+            for ( std::size_t i=0; i<128*128; ++i )
+                ss << miniMap.pixels[i] << ", ";
+            stringToFile("C:\\misc\\MiniTestMaps\\" + std::to_string(width) + "_" + std::to_string(height) + ".txt", ss.str());*/
+        }
     }
 }

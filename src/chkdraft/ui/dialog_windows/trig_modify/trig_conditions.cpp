@@ -48,6 +48,7 @@ bool TrigConditionsWindow::CreateThis(HWND hParent, u64 windowId)
 
 bool TrigConditionsWindow::DestroyThis()
 {
+    this->deleteSelectionAction.reset();
     suggestions.Hide();
     ClassWindow::DestroyThis();
     this->trigIndex = 0;
@@ -61,7 +62,7 @@ void TrigConditionsWindow::RefreshWindow(u32 trigIndex)
     this->trigIndex = trigIndex;
     const Chk::Trigger & trig = CM->getTrigger(trigIndex);
     TextTrigGenerator ttg(chkd.profiles().triggers.useAddressesForMemory, chkd.profiles().triggers.deathTableStart, true);
-    if ( ttg.loadScenario((Scenario &)*CM, chkd.scData.value()) )
+    if ( ttg.loadScenario((Scenario &)*CM, CM->getStrCache(), CM->getEditorStrCache(), chkd.scData.value()) )
     {
         for ( u8 y=0; y<Chk::Trigger::MaxConditions; y++ )
         {
@@ -100,7 +101,10 @@ void TrigConditionsWindow::RefreshWindow(u32 trigIndex)
             }
         }
 
+        measureDc.emplace(getHandle());
+        measureDc->setDefaultFont();
         gridConditions.AutoSizeColumns(DEFAULT_COLUMN_WIDTH, DEFAULT_COLUMN_WIDTH * 4);
+        measureDc = std::nullopt;
     }
     gridConditions.RedrawHeader();
 }
@@ -112,16 +116,14 @@ void TrigConditionsWindow::DoSize()
 
 void TrigConditionsWindow::ProcessKeyDown(WPARAM wParam, LPARAM lParam)
 {
-    if ( wParam == VK_TAB )
-        SendMessage(gridConditions.getHandle(), WM_KEYDOWN, wParam, lParam);
-    else if ( wParam == VK_RETURN )
+    if ( wParam == VK_TAB || wParam == VK_RETURN || wParam == VK_ESCAPE || wParam == 'E' )
         SendMessage(gridConditions.getHandle(), WM_KEYDOWN, wParam, lParam);
 }
 
 void TrigConditionsWindow::HideSuggestions()
 {
     suggestions.Hide();
-    gridConditions.EndEditing();
+    gridConditions.EndEditing(true);
 }
 
 void TrigConditionsWindow::CndActEnableToggled(u8 conditionNum)
@@ -151,6 +153,7 @@ void TrigConditionsWindow::CutSelection()
         else
             Error("Problem building clipboard string");
 
+        auto action = CM->create_action(ActionDescriptor::CutSelectedConditions);
         gridConditions.DeleteSelection();
     }
     else
@@ -188,6 +191,7 @@ void TrigConditionsWindow::Paste()
                 bool argEndsByLine = false;
                 size_t argStart = 0, argEnd = 0, argEndSize = 0;
                 size_t pasteStringLength = pasteString.length();
+                auto action = CM->create_action(ActionDescriptor::PasteTriggerConditions);
                 while ( argStart < pasteStringLength )
                 {
                     argEnd = gridConditions.FindArgEnd(pasteString, argStart, argEndsBy);
@@ -219,6 +223,20 @@ void TrigConditionsWindow::Paste()
     isPasting = false;
 }
 
+void TrigConditionsWindow::OpenContextualProperties()
+{
+    suggestions.Hide();
+    gridConditions.EndEditing(true);
+    gridConditions.FocusThis();
+}
+
+void TrigConditionsWindow::Escape()
+{
+    suggestions.Hide();
+    gridConditions.EndEditing(true);
+    gridConditions.FocusThis();
+}
+
 void TrigConditionsWindow::RedrawThis()
 {
     auto dc = this->getDeviceContext();
@@ -241,7 +259,7 @@ void TrigConditionsWindow::FocusGrid()
 void TrigConditionsWindow::CreateSubWindows(HWND hWnd)
 {
     gridConditions.CreateThis(hWnd, 2, 40, 100, 100, Id::GRID_CONDITIONS);
-    suggestions.CreateThis(hWnd, 0, 0, 200, 95);
+    suggestions.CreateThis(hWnd, 0, 0, 200, 118);
     RefreshWindow(trigIndex);
 }
 
@@ -335,11 +353,17 @@ void TrigConditionsWindow::UpdateConditionArg(u8 conditionNum, u8 argNum, const 
     {
         auto edit = CM->create_action(ActionDescriptor::UpdateTriggerConditionArg);
         RawString rawUpdateText, rawSuggestText;
+        bool suggestionsShown = suggestions.IsShown();
         SuggestionItem suggestion = suggestions.Take();
+        if ( !suggestionsShown )
+            suggestion.str = newText;
+
         TextTrigCompiler ttc(chkd.profiles().triggers.useAddressesForMemory, chkd.profiles().triggers.deathTableStart);
 
         const Chk::Trigger & trig = CM->getTrigger(trigIndex);
         Chk::Condition::Argument argument = Chk::Condition::getClassicArg(trig.condition(conditionNum).conditionType, argNum);
+        if ( argument.type == Chk::Condition::ArgType::NoType )
+            return;
 
         auto editedCondition = CM->editTrigger(trigIndex).editCondition(conditionNum);
         const auto & condition = editedCondition.read;
@@ -385,7 +409,7 @@ void TrigConditionsWindow::UpdateConditionArg(u8 conditionNum, u8 argNum, const 
             if ( parseChkdStr(ChkdString(newText), rawUpdateText) )
             {
                 Chk::Condition tempCondition {};
-                if ( auto result = ttc.parseConditionArg(rawUpdateText, argument, tempCondition, (Scenario &)*CM, *chkd.scData, trigIndex, !suggestion.str.empty()) )
+                if ( auto result = ttc.parseConditionArg(rawUpdateText, argument, tempCondition, (Scenario &)*CM, CM->getStrCache(), CM->getEditorStrCache(), *chkd.scData, trigIndex, !suggestion.str.empty()) )
                 {
                     madeChanges = true;
                     copyArg(*result, tempCondition);
@@ -394,7 +418,7 @@ void TrigConditionsWindow::UpdateConditionArg(u8 conditionNum, u8 argNum, const 
             if ( !madeChanges && !suggestion.str.empty() && parseChkdStr(ChkdString(suggestion.str), rawSuggestText) )
             {
                 Chk::Condition tempCondition {};
-                if ( auto result = ttc.parseConditionArg(rawSuggestText, argument, tempCondition, (Scenario &)*CM, *chkd.scData, trigIndex, false) )
+                if ( auto result = ttc.parseConditionArg(rawSuggestText, argument, tempCondition, (Scenario &)*CM, CM->getStrCache(), CM->getEditorStrCache(), *chkd.scData, trigIndex, false) )
                 {
                     madeChanges = true;
                     copyArg(*result, tempCondition);
@@ -426,6 +450,9 @@ BOOL TrigConditionsWindow::GridItemChanging(u16 gridItemX, u16 gridItemY, const 
 
 BOOL TrigConditionsWindow::GridItemDeleting(u16 gridItemX, u16 gridItemY)
 {
+    if ( !this->deleteSelectionAction )
+        this->deleteSelectionAction.emplace(CM->create_action(ActionDescriptor::DeleteSelectedConditions));
+
     const Chk::Trigger & trig = CM->getTrigger(trigIndex);
     if ( gridItemY >= 0 && gridItemY < Chk::Trigger::MaxConditions )
     {
@@ -457,7 +484,7 @@ void TrigConditionsWindow::DrawSelectedCondition()
             u8 conditionNum = (u8)focusedY;
             TextTrigGenerator ttg(chkd.profiles().triggers.useAddressesForMemory, chkd.profiles().triggers.deathTableStart, true);
             std::string str;
-            ttg.loadScenario((Scenario &)*CM, chkd.scData.value());
+            ttg.loadScenario((Scenario &)*CM, CM->getStrCache(), CM->getEditorStrCache(), chkd.scData.value());
             str = chkd.trigEditorWindow->triggersWindow.GetConditionString(conditionNum, trig, ttg);
             ttg.clearScenario();
 
@@ -478,17 +505,11 @@ void TrigConditionsWindow::DrawSelectedCondition()
 
 int TrigConditionsWindow::GetGridItemWidth(int gridItemX, int gridItemY)
 {
-    std::string text;
-    if ( gridConditions.item(gridItemX, gridItemY).getText(text) )
-    {
-        if ( auto dc = this->getDeviceContext() )
-        {
-            dc.setDefaultFont();
-            UINT width = 0, height = 0;
-            if ( GetStringDrawSize(dc, width, height, text) )
-                return width + 4;
-        }
-    }
+    UINT width = 0, height = 0;
+    const std::string & text = gridConditions.item(gridItemX, gridItemY).getText();
+    if ( GetStringDrawSize(*measureDc, width, height, text) )
+        return width + 4;
+
     return 0;
 }
 
@@ -538,9 +559,9 @@ void TrigConditionsWindow::DrawGridViewItem(const WinLib::DeviceContext & dc, in
     int width = ListView_GetColumnWidth(gridConditions.getHandle(), gridItemX);
     DrawItemBackground(dc, gridItemX, gridItemY, rcItem, width, xStart);
 
-    std::string text;
     RECT rcClip{xStart, rcItem.top, xStart+width-2, rcItem.bottom};
-    if ( gridConditions.item(gridItemX, gridItemY).getText(text) && text.length() > 0 )
+    const std::string & text = gridConditions.item(gridItemX, gridItemY).getText();
+    if ( text.length() > 0 )
         dc.drawText(text, xStart + 1, rcItem.top, rcClip, true, false);
 
     if ( !gridConditions.item(gridItemX, gridItemY).isDisabled() )
@@ -611,7 +632,7 @@ void TrigConditionsWindow::SuggestUnit(u16 currUnit)
                 suggestions.AddItem(SuggestionItem{i, std::string(chkd.scData->units.displayNames[i])});
         }
     }
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::unitId);
 }
 
 void TrigConditionsWindow::SuggestLocation(u32 currLocationId)
@@ -633,7 +654,7 @@ void TrigConditionsWindow::SuggestLocation(u32 currLocationId)
             }
         }
     }
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::locationId);
 }
 
 void TrigConditionsWindow::SuggestPlayer(u32 currPlayer)
@@ -649,7 +670,7 @@ void TrigConditionsWindow::SuggestPlayer(u32 currPlayer)
         }();
         suggestions.AddItems(trigPlayers);
     }
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::player);
 }
 
 void TrigConditionsWindow::SuggestAmount(u32 currAmount)
@@ -662,7 +683,7 @@ void TrigConditionsWindow::SuggestNumericComparison(Chk::Condition::Comparison c
     suggestions.AddItem(SuggestionItem{Chk::Condition::Comparison::AtLeast, "At Least"});
     suggestions.AddItem(SuggestionItem{Chk::Condition::Comparison::AtMost, "At Most"});
     suggestions.AddItem(SuggestionItem{Chk::Condition::Comparison::Exactly, "Exactly"});
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::numericComparison);
 }
 
 void TrigConditionsWindow::SuggestResourceType(u8 currType)
@@ -670,7 +691,7 @@ void TrigConditionsWindow::SuggestResourceType(u8 currType)
     suggestions.AddItem(SuggestionItem{Chk::Trigger::ResourceType::Ore, "Ore"});
     suggestions.AddItem(SuggestionItem{Chk::Trigger::ResourceType::OreAndGas, "Ore and Gas"});
     suggestions.AddItem(SuggestionItem{Chk::Trigger::ResourceType::Gas, "Gas"});
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::resourceType);
 }
 
 void TrigConditionsWindow::SuggestScoreType(u8 currType)
@@ -683,7 +704,7 @@ void TrigConditionsWindow::SuggestScoreType(u8 currType)
         return trigScores;
     }();
     suggestions.AddItems(trigScores);
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::scoreType);
 }
 
 void TrigConditionsWindow::SuggestSwitch(u8 currSwitch)
@@ -702,14 +723,14 @@ void TrigConditionsWindow::SuggestSwitch(u8 currSwitch)
             }
         }
     }
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::switchIndex);
 }
 
 void TrigConditionsWindow::SuggestSwitchState(Chk::Condition::Comparison currSwitchState)
 {
     suggestions.AddItem(SuggestionItem{3, std::string("Cleared")});
     suggestions.AddItem(SuggestionItem{2, std::string("Set")});
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::switchState);
 }
 
 void TrigConditionsWindow::SuggestComparison(Chk::Condition::Comparison currComparison)
@@ -727,7 +748,7 @@ void TrigConditionsWindow::SuggestConditionType(Chk::Condition::Type currConditi
         return trigConditions;
     }();
     suggestions.AddItems(trigConditions);
-    suggestions.Show();
+    suggestions.Show(Suggestions::Type::FixedSet, decorate::conditionType);
 }
 
 void TrigConditionsWindow::SuggestTypeIndex(u8 currTypeIndex)
@@ -809,7 +830,7 @@ void TrigConditionsWindow::GridEditStart(u16 gridItemX, u16 gridItemY)
 
 void TrigConditionsWindow::SelConfirmed(WPARAM wParam)
 {
-    gridConditions.EndEditing();
+    gridConditions.EndEditing(false);
     gridConditions.FocusThis();
     SendMessage(gridConditions.getHandle(), WM_KEYDOWN, wParam, NULL);
 }
@@ -842,7 +863,7 @@ LRESULT TrigConditionsWindow::ShowWindow(HWND hWnd, UINT msg, WPARAM wParam, LPA
     if ( (BOOL)wParam == FALSE )
     {
         suggestions.Hide();
-        gridConditions.EndEditing();
+        gridConditions.EndEditing(true);
         gridConditions.KillFocus();
     }
     else
@@ -887,11 +908,13 @@ LRESULT TrigConditionsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
         case WinLib::GV::WM_GETGRIDITEMCARETPOS: return -1; break;
         case WinLib::GV::WM_GRIDITEMCHANGING: return GridItemChanging(LOWORD(wParam), HIWORD(wParam), *(std::string*)lParam); break;
         case WinLib::GV::WM_GRIDITEMDELETING: return GridItemDeleting(LOWORD(wParam), HIWORD(wParam)); break;
-        case WinLib::GV::WM_GRIDDELETEFINISHED: RefreshWindow(trigIndex); break;
+        case WinLib::GV::WM_GRIDDELETEFINISHED: this->deleteSelectionAction.reset(); RefreshWindow(trigIndex); break;
         case WinLib::GV::WM_GRIDEDITSTART: GridEditStart(LOWORD(wParam), HIWORD(wParam)); break;
         case WinLib::GV::WM_GRIDEDITEND: suggestions.Hide(); break;
         case WinLib::LB::WM_SELCONFIRMED: SelConfirmed(wParam); break;
-        case WinLib::LB::WM_DISMISSED: gridConditions.EndEditing(); break;
+        case WinLib::LB::WM_DISMISSED: gridConditions.EndEditing(false); break;
+        case WinLib::LB::WM_CANCELLED: Escape(); break;
+        case WinLib::LB::WM_CONTEXTUALPROPERTIES: OpenContextualProperties(); break;
         default: return ClassWindow::WndProc(hWnd, msg, wParam, lParam); break;
     }
     return 0;

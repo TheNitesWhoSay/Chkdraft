@@ -16,12 +16,12 @@ class TextTrigGenerator
         TextTrigGenerator(bool useAddressesForMemory, u32 deathTableOffset, bool useFancyNoStrings = false);
 
         // Places text trigs representative of the given TRIG section in trigString if successful
-        template <class MapType> bool generateTextTrigs(const MapType & map, std::string & trigString, const Sc::Data & scData);
+        template <class MapType> bool generateTextTrigs(const MapType & map, const StrCache & strCache, const StrCache & editorStrCache, std::string & trigString, const Sc::Data & scData);
 
         // Places text trigs representative of the given trigger in trigString if successful
-        template <class MapType> bool generateTextTrigs(const MapType & map, size_t trigIndex, std::string & trigString, const Sc::Data & scData);
+        template <class MapType> bool generateTextTrigs(const MapType & map, const StrCache & strCache, const StrCache & editorStrCache, size_t trigIndex, std::string & trigString, const Sc::Data & scData);
         
-        template <class MapType> bool loadScenario(const MapType & map, const Sc::Data & scData); // Loads data about the given scenario for use outside text trigs
+        template <class MapType> bool loadScenario(const MapType & map, const StrCache & strCache, const StrCache & editorStrCache, const Sc::Data & scData); // Loads data about the given scenario for use outside text trigs
 
         void clearScenario(); // Clears loaded scenario data
 
@@ -54,7 +54,7 @@ class TextTrigGenerator
     
     protected:
 
-        template <class MapType> bool loadScenario(const MapType & map, bool quoteArgs, bool useCustomNames, const Sc::Data & scData);
+        template <class MapType> bool loadScenario(const MapType & map, const StrCache & strCache, const StrCache & editorStrCache, bool quoteArgs, bool useCustomNames, const Sc::Data & scData);
         bool correctLineEndings(StringBuffer & buf) const; // Corrects any improperly formatted line endings
         
         template <class MapType> bool buildTextTrigs(const MapType & scenario, std::string & trigString);
@@ -117,8 +117,8 @@ class TextTrigGenerator
         template <class MapType> bool prepUnitTable(const MapType & map, bool quoteArgs, bool useCustomNames, const Sc::Data & scData); // Fills unitTable
         template <class MapType> bool prepSwitchTable(const MapType & map, bool quoteArgs); // Fills switchTable
         template <class MapType> bool prepGroupTable(const MapType & map, bool quoteArgs); // Fills groupTable
-        template <class MapType> bool prepScriptTable(const MapType & map, bool quoteArgs); // Fills scriptTable
-        template <class MapType> bool prepStringTable(const MapType & map, bool quoteArgs); // Fills stringTable
+        template <class MapType> bool prepScriptTable(const MapType & map, bool quoteArgs, const Sc::Data & scData); // Fills scriptTable
+        template <class MapType> bool prepStringTable(const MapType & map, const StrCache & strCache, const StrCache & editorStrCache, bool quoteArgs); // Fills stringTable
 };
 
 class BriefingTextTrigGenerator : private TextTrigGenerator
@@ -127,12 +127,12 @@ public:
     BriefingTextTrigGenerator(bool useFancyNoStrings = false);
 
     // Places briefing text trigs representative of the given MBRF section in briefingTrigString if successful
-    template <class MapType> bool generateBriefingTextTrigs(const MapType & map, std::string & briefingTrigString, const Sc::Data & scData);
+    template <class MapType> bool generateBriefingTextTrigs(const MapType & map, const StrCache & strCache, const StrCache & editorStrCache, std::string & briefingTrigString, const Sc::Data & scData);
 
     // Places briefing text trigs representative of the given briefing trigger in briefingTrigString if successful
-    template <class MapType> bool generateBriefingTextTrigs(const MapType & map, size_t briefingTrigIndex, std::string & briefingTrigString, const Sc::Data & scData);
+    template <class MapType> bool generateBriefingTextTrigs(const MapType & map, const StrCache & strCache, const StrCache & editorStrCache, size_t briefingTrigIndex, std::string & briefingTrigString, const Sc::Data & scData);
         
-    template <class MapType> bool loadScenario(const MapType & map, const Sc::Data & scData); // Loads data about the given scenario for use outside briefing text trigs
+    template <class MapType> bool loadScenario(const MapType & map, const StrCache & strCache, const StrCache & editorStrCache, const Sc::Data & scData); // Loads data about the given scenario for use outside briefing text trigs
 
     void clearScenario(); // Clears loaded scenario data
 
@@ -148,7 +148,7 @@ public:
     std::string getBriefingTrigNumber(u32 number) const;
 
 private:
-    template <class MapType> bool loadScenario(const MapType & map, bool quoteArgs, bool useCustomNames, const Sc::Data & scData);
+    template <class MapType> bool loadScenario(const MapType & map, const StrCache & strCache, const StrCache & editorStrCache, bool quoteArgs, bool useCustomNames, const Sc::Data & scData);
 
     template <class MapType> bool buildBriefingTextTrigs(const MapType & scenario, std::string & briefingTrigString);
     bool buildBriefingTextTrig(const Chk::Trigger & trigger, std::string & briefingTrigString);

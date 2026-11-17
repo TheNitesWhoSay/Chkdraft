@@ -41,7 +41,7 @@ namespace WinLib {
             bool AddColumn(int insertAt, const std::string & title, int width, int alignmentFlags);
             void AddRow(int numColumns, LPARAM lParam);
             void RemoveRow(int rowNum);
-            void DeselectAll();
+            void DeselectAll(bool cancel = true);
             void ClearItems();
             bool DeleteAllItems();
             void DeleteSelection();
@@ -50,7 +50,7 @@ namespace WinLib {
             void SelectSquare(int xStart, int yStart, int xEnd, int yEnd);
             void FocusItem(int x, int y);
             void SetEditText(const std::string & text, bool focus = true);
-            void EndEditing();
+            void EndEditing(bool cancel);
             void AutoSizeColumns(int minWidth, int maxWidth);
             void RedrawThis();
         
@@ -82,6 +82,8 @@ namespace WinLib {
             void SetCaretPos(size_t newCaretPos, bool focus = true);
             virtual void Char(const std::string & character);
             virtual void KeyDown(WPARAM wParam);
+            virtual void OpenContextualProperties();
+            virtual void Escape();
 
             /** Called when the GridView alters text in the edit box manually,
                 does not get called when the edit box text is changed via

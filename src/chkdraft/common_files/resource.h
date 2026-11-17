@@ -42,6 +42,10 @@
 #define IDD_DIALOG_SELPROFILE           170
 #define IDD_DIALOG_EDITPROFILES         172
 #define IDD_DIALOG_INPUTSTRING          174
+#define IDB_ARROWUP                     175
+#define IDB_ARROWDOWN                   176
+#define IDB_ARROWLEFT                   177
+#define IDB_ARROWRIGHT                  178
 #define IDC_LIST_TILESET                1007
 #define IDC_LIST_DEFAULTTERRAIN         1008
 #define IDC_EDIT_TRIGTEXT               1009
@@ -428,7 +432,7 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        175
+#define _APS_NEXT_RESOURCE_VALUE        179
 #define _APS_NEXT_COMMAND_VALUE         40686
 #define _APS_NEXT_CONTROL_VALUE         1161
 #define _APS_NEXT_SYMED_VALUE           101
