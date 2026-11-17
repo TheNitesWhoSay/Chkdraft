@@ -43,6 +43,7 @@ class Maps : public WinLib::MdiClient
         void ChangeZoom(bool increment);
         void ChangePlayer(u8 newPlayer, bool updateMapPlayers = true);
         void UpdatePlayerStatus();
+        void UpdateSelectionStatus();
         bool toggleCutCopyPasteTerrain();
         bool toggleCutCopyPasteDoodads();
         bool toggleCutCopyPasteSprites();

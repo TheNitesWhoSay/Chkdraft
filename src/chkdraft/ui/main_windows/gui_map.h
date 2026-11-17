@@ -54,6 +54,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCach
 
 /*   UI Accel   */  Layer getLayer();
                     bool setLayer(Layer newLayer);
+                    std::optional<std::string> getSelectionStatus();
                     TerrainSubLayer getSubLayer();
                     void setSubLayer(TerrainSubLayer newTerrainSubLayer);
                     double getZoom();

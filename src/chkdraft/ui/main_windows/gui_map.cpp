@@ -563,6 +563,37 @@ bool GuiMap::setLayer(Layer newLayer)
     return true;
 }
 
+std::optional<std::string> GuiMap::getSelectionStatus()
+{
+    auto asSelText = [](std::size_t count, const std::string & elemTitle, const std::string & pluralElemTitle) -> std::optional<std::string> {
+        switch ( count )
+        {
+            case 0: return "No " + pluralElemTitle + " selected.";
+            case 1: return "1 " + elemTitle + " selected.";
+            default: return std::to_string(count) + " " + pluralElemTitle + " selected.";
+        }
+    };
+
+    switch ( currLayer )
+    {
+        case Layer::Terrain: return asSelText(view.tiles.sel().size(), "tile", "tiles");
+        case Layer::Doodads: return asSelText(view.doodads.sel().size(), "doodad", "doodads");
+        case Layer::FogEdit: return asSelText(view.tileFog.sel().size(), "fog tile", "fog tiles");
+        case Layer::Locations: return std::nullopt;
+        case Layer::Units: return asSelText(view.units.sel().size(), "unit", "units");
+        case Layer::Sprites: return asSelText(view.sprites.sel().size(), "sprite", "sprites");
+        case Layer::FogView: return std::nullopt;
+        case Layer::CutCopyPaste:
+            return asSelText(view.tiles.sel().size() +
+                    view.tileFog.sel().size() +
+                    view.doodads.sel().size() +
+                    view.units.sel().size() +
+                    view.sprites.sel().size(), "object", "objects");
+        default: return std::nullopt;
+    }
+    return std::nullopt;
+}
+
 TerrainSubLayer GuiMap::getSubLayer()
 {
     return currTerrainSubLayer;
@@ -4503,11 +4534,24 @@ void GuiMap::tileFogSelectionsChanged()
 
 void GuiMap::checkSelChangeFlags()
 {
+    bool anySelChange = false;
     if ( clearTileSelChanged() )
+    {
         this->tileSelectionsChanged();
+        anySelChange = true;
+    }
 
     if ( clearFogSelChanged() )
+    {
         this->tileFogSelectionsChanged();
+        anySelChange = true;
+    }
+
+    if ( clearDoodadSelChanged() || clearUnitSelChanged() || clearSpriteSelChanged() )
+        anySelChange = true;
+
+    if ( anySelChange )
+        chkd.maps.UpdateSelectionStatus();
 }
 
 void GuiMap::element_added(strings_path, std::size_t index)

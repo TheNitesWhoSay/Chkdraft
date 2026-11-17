@@ -344,6 +344,7 @@ void Maps::ChangeLayer(Layer newLayer)
             chkd.statusBar.SetText(1, layerString);
         
         UpdatePlayerStatus();
+        UpdateSelectionStatus();
     }
 }
 
@@ -524,6 +525,20 @@ void Maps::UpdatePlayerStatus()
     std::snprintf(playerText, sizeof(playerText), "Player %i: %s %s", currentlyActiveMap->getCurrPlayer() + 1, color, race);
     chkd.statusBar.SetText(2, playerText);
     chkd.statusBar.SetText(3, forceText);
+}
+
+void Maps::UpdateSelectionStatus()
+{
+    if ( currentlyActiveMap == nullptr )
+    {
+        chkd.statusBar.SetText(4, "");
+        return;
+    }
+
+    if ( auto selectionStatus = currentlyActiveMap->getSelectionStatus() )
+        chkd.statusBar.SetText(4, *selectionStatus);
+    else
+        chkd.statusBar.SetText(4, "");
 }
 
 bool Maps::toggleCutCopyPasteTerrain()
@@ -955,6 +970,7 @@ void Maps::DisableMapping()
         chkd.statusBar.SetText(1, "");
         chkd.statusBar.SetText(2, "");
         chkd.statusBar.SetText(3, "");
+        chkd.statusBar.SetText(4, "");
 
         chkd.changePasswordWindow->Hide();
     }

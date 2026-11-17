@@ -7774,6 +7774,36 @@ bool Scenario::clearFogSelChanged()
     return false;
 }
 
+bool Scenario::clearDoodadSelChanged()
+{
+    if ( doodadSelChanged )
+    {
+        doodadSelChanged = false;
+        return true;
+    }
+    return false;
+}
+
+bool Scenario::clearUnitSelChanged()
+{
+    if ( unitSelChanged )
+    {
+        unitSelChanged = false;
+        return true;
+    }
+    return false;
+}
+
+bool Scenario::clearSpriteSelChanged()
+{
+    if ( spriteSelChanged )
+    {
+        spriteSelChanged = false;
+        return true;
+    }
+    return false;
+}
+
 void Scenario::selections_changed(tiles_path)
 {
     tileSelChanged = true;
@@ -7787,6 +7817,21 @@ void Scenario::selections_changed(editor_tiles_path)
 void Scenario::selections_changed(tiles_fog_path)
 {
     fogSelChanged = true;
+}
+
+void Scenario::selections_changed(doodads_path)
+{
+    doodadSelChanged = true;
+}
+
+void Scenario::selections_changed(units_path)
+{
+    unitSelChanged = true;
+}
+
+void Scenario::selections_changed(sprites_path)
+{
+    spriteSelChanged = true;
 }
 
 template <class Edit>
