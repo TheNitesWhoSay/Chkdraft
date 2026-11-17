@@ -53,6 +53,7 @@ bool Maps::Focus(std::shared_ptr<GuiMap> guiMap)
         chkd.mainPlot.leftBar.mainTree.locTree.RebuildLocationTree();
         chkd.mainPlot.leftBar.historyTree.RebuildHistoryTree();
         currentlyActiveMap->updateMenu();
+        RefreshStatusBar();
         return true;
     }
     else
@@ -539,6 +540,29 @@ void Maps::UpdateSelectionStatus()
         chkd.statusBar.SetText(4, *selectionStatus);
     else
         chkd.statusBar.SetText(4, "");
+}
+
+void Maps::RefreshStatusBar()
+{
+    if ( currentlyActiveMap == nullptr )
+    {
+        chkd.statusBar.SetText(0, "");
+        chkd.statusBar.SetText(1, "");
+        chkd.statusBar.SetText(2, "");
+        chkd.statusBar.SetText(3, "");
+        chkd.statusBar.SetText(4, "");
+    }
+    else
+    {
+        chkd.statusBar.SetText(0, ""); // 0 = coordinates (updated on mouse-move)
+        std::string layerString {};
+        if ( chkd.mainToolbar.layerBox.GetItemText((int)CM->getLayer(), layerString) )
+            chkd.statusBar.SetText(1, layerString);
+
+        UpdatePlayerStatus(); // 2 = player, 3 = force
+
+        UpdateSelectionStatus(); // 4 = selection
+    }
 }
 
 bool Maps::toggleCutCopyPasteTerrain()

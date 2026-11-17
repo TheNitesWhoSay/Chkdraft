@@ -44,6 +44,7 @@ class Maps : public WinLib::MdiClient
         void ChangePlayer(u8 newPlayer, bool updateMapPlayers = true);
         void UpdatePlayerStatus();
         void UpdateSelectionStatus();
+        void RefreshStatusBar();
         bool toggleCutCopyPasteTerrain();
         bool toggleCutCopyPasteDoodads();
         bool toggleCutCopyPasteSprites();
