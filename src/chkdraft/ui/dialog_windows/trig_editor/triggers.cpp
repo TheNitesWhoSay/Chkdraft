@@ -1381,7 +1381,7 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
             break;
 
         case WinLib::LB::WM_PREMEASUREITEMS: // Measuring is time sensative, load necessary items for measuring all triggers once
-            textTrigGenerator.loadScenario((Scenario &)*CM, chkd.scData.value());
+            textTrigGenerator.loadScenario((Scenario &)*CM, CM->getStrCache(), CM->getEditorStrCache(), chkd.scData.value());
             trigListDc.emplace(listTriggers.getHandle());
             trigListDc->setDefaultFont();
             if ( countTillCachePurge == 0 )
@@ -1438,7 +1438,7 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
             break;
 
         case WinLib::LB::WM_PREDRAWITEMS:
-            textTrigGenerator.loadScenario((Scenario &)*CM, chkd.scData.value());
+            textTrigGenerator.loadScenario((Scenario &)*CM, CM->getStrCache(), CM->getEditorStrCache(), chkd.scData.value());
             drawingAll = true;
             break;
 
@@ -1446,7 +1446,7 @@ LRESULT TriggersWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
             if ( wParam == Id::LIST_TRIGGERS )
             {
                 if ( !drawingAll )
-                    textTrigGenerator.loadScenario((Scenario &)*CM, chkd.scData.value());
+                    textTrigGenerator.loadScenario((Scenario &)*CM, CM->getStrCache(), CM->getEditorStrCache(), chkd.scData.value());
 
                 PDRAWITEMSTRUCT pdis = (PDRAWITEMSTRUCT)lParam;
                 bool isSelected = ((pdis->itemState&ODS_SELECTED) == ODS_SELECTED),

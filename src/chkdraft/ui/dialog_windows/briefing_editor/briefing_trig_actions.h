@@ -22,6 +22,8 @@ class BriefingTrigActionsWindow : public WinLib::ClassWindow, public ICndActGrid
         virtual void CutSelection();
         virtual void CopySelection();
         virtual void Paste();
+        virtual void OpenContextualProperties() override;
+        virtual void Escape() override;
         virtual void RedrawThis();
         bool IsSuggestionsWindow(HWND hWnd);
         void FocusGrid();
@@ -33,6 +35,7 @@ class BriefingTrigActionsWindow : public WinLib::ClassWindow, public ICndActGrid
         LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
     private:
+        std::optional<nf::editor<nf::tracked<MapData, Scenario, DescriptorIndex>>> deleteSelectionAction {};
         CndActGrid gridActions;
         WinLib::EditControl editListItem;
         WinLib::ButtonControl buttonEditSound;
@@ -41,6 +44,8 @@ class BriefingTrigActionsWindow : public WinLib::ClassWindow, public ICndActGrid
         bool stringEditEnabled;
         bool soundEditEnabled;
         bool isPasting;
+
+        std::optional<WinLib::DeviceContext> measureDc; // HDC for speeding up column measurement
 
         std::hash<std::string> strHash; // A hasher to help generate tables
 

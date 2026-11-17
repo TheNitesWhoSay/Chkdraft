@@ -563,6 +563,37 @@ bool GuiMap::setLayer(Layer newLayer)
     return true;
 }
 
+std::optional<std::string> GuiMap::getSelectionStatus()
+{
+    auto asSelText = [](std::size_t count, const std::string & elemTitle, const std::string & pluralElemTitle) -> std::optional<std::string> {
+        switch ( count )
+        {
+            case 0: return "No " + pluralElemTitle + " selected.";
+            case 1: return "1 " + elemTitle + " selected.";
+            default: return std::to_string(count) + " " + pluralElemTitle + " selected.";
+        }
+    };
+
+    switch ( currLayer )
+    {
+        case Layer::Terrain: return asSelText(view.tiles.sel().size(), "tile", "tiles");
+        case Layer::Doodads: return asSelText(view.doodads.sel().size(), "doodad", "doodads");
+        case Layer::FogEdit: return asSelText(view.tileFog.sel().size(), "fog tile", "fog tiles");
+        case Layer::Locations: return std::nullopt;
+        case Layer::Units: return asSelText(view.units.sel().size(), "unit", "units");
+        case Layer::Sprites: return asSelText(view.sprites.sel().size(), "sprite", "sprites");
+        case Layer::FogView: return std::nullopt;
+        case Layer::CutCopyPaste:
+            return asSelText(view.tiles.sel().size() +
+                    view.tileFog.sel().size() +
+                    view.doodads.sel().size() +
+                    view.units.sel().size() +
+                    view.sprites.sel().size(), "object", "objects");
+        default: return std::nullopt;
+    }
+    return std::nullopt;
+}
+
 TerrainSubLayer GuiMap::getSubLayer()
 {
     return currTerrainSubLayer;
@@ -4221,6 +4252,22 @@ void GuiMap::OnScDataRefresh()
     scGraphics.emplace(*this, selections);
 }
 
+const StrCache & GuiMap::getStrCache()
+{
+    if ( !strCache.initialized() )
+        strCache.init(read.strings);
+
+    return strCache;
+}
+
+const StrCache & GuiMap::getEditorStrCache()
+{
+    if ( !editorStrCache.initialized() )
+        editorStrCache.init(read.editorStrings);
+
+    return editorStrCache;
+}
+
 void GuiMap::destroyBrush()
 {
     if ( brushAction )
@@ -4487,47 +4534,58 @@ void GuiMap::tileFogSelectionsChanged()
 
 void GuiMap::checkSelChangeFlags()
 {
+    bool anySelChange = false;
     if ( clearTileSelChanged() )
+    {
         this->tileSelectionsChanged();
+        anySelChange = true;
+    }
 
     if ( clearFogSelChanged() )
+    {
         this->tileFogSelectionsChanged();
+        anySelChange = true;
+    }
+
+    if ( clearDoodadSelChanged() || clearUnitSelChanged() || clearSpriteSelChanged() )
+        anySelChange = true;
+
+    if ( anySelChange )
+        chkd.maps.UpdateSelectionStatus();
 }
 
 void GuiMap::element_added(strings_path, std::size_t index)
 {
-    if ( read.strings[index].has_value() )
-        ;//logger.info() << "String added: " << index << " : " << read.strings[index].value() << std::endl;
+    if ( strCache.initialized() )
+        strCache.stringAdded(index, read.strings[index]);
 }
 
 void GuiMap::element_removed(strings_path, std::size_t index)
 {
-    if ( read.strings[index].has_value() )
-        ;//logger.info() << "String removed: " << index << " : " << read.strings[index].value() << std::endl;
+    if ( strCache.initialized() )
+        strCache.stringRemoved(index, read.strings[index]);
 }
 
 void GuiMap::value_changed(string_elem_path route, const std::optional<ScStr> & oldString, const std::optional<ScStr> & newString)
 {
-    const std::size_t index = route.index<0>();
-    //logger.info() << "String[" << index << "] updated from \""
-    //    << (oldString ? (*oldString) : "") << "\" to \"" << (newString ? (*newString) : "") << "\"\n";
+    if ( strCache.initialized() )
+        strCache.stringModified(route.index<0>(), oldString, newString);
 }
 
 void GuiMap::element_added(editor_strings_path, std::size_t index)
 {
-    if ( read.strings[index].has_value() )
-        ;//logger.info() << "Editor string added: " << index << " : " << read.strings[index].value() << std::endl;
+    if ( editorStrCache.initialized() )
+        editorStrCache.stringAdded(index, read.editorStrings[index]);
 }
 
 void GuiMap::element_removed(editor_strings_path, std::size_t index)
 {
-    if ( read.strings[index].has_value() )
-        ;//logger.info() << "Editor string removed: " << index << " : " << read.strings[index].value() << std::endl;
+    if ( editorStrCache.initialized() )
+        editorStrCache.stringRemoved(index, read.editorStrings[index]);
 }
 
 void GuiMap::value_changed(editor_string_elem_path route, const std::optional<ScStr> & oldString, const std::optional<ScStr> & newString)
 {
-    const std::size_t index = route.index<0>();
-    //logger.info() << "Editor string[" << index << "] updated from \""
-    //    << (oldString ? (*oldString) : "") << "\" to \"" << (newString ? (*newString) : "") << "\"\n";
+    if ( editorStrCache.initialized() )
+        editorStrCache.stringModified(route.index<0>(), oldString, newString);
 }

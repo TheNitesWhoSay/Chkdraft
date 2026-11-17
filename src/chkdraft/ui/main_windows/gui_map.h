@@ -54,6 +54,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCach
 
 /*   UI Accel   */  Layer getLayer();
                     bool setLayer(Layer newLayer);
+                    std::optional<std::string> getSelectionStatus();
                     TerrainSubLayer getSubLayer();
                     void setSubLayer(TerrainSubLayer newTerrainSubLayer);
                     double getZoom();
@@ -210,6 +211,9 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCach
                     void OnScDataRefresh();
 
                     point getLastMousePosition() { return lastMousePosition; }
+                    
+                    const StrCache & getStrCache();
+                    const StrCache & getEditorStrCache();
 
 
     protected:
@@ -277,9 +281,12 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCach
                     void tileFogSelectionsChanged();
                     void checkSelChangeFlags();
 
+                    StrCache strCache {};
                     void element_added(strings_path, std::size_t index) override;
                     void element_removed(strings_path, std::size_t index) override;
                     void value_changed(string_elem_path, const std::optional<ScStr> & oldString, const std::optional<ScStr> & newString) override;
+
+                    StrCache editorStrCache {};
                     void element_added(editor_strings_path, std::size_t index) override;
                     void element_removed(editor_strings_path, std::size_t index) override;
                     void value_changed(editor_string_elem_path, const std::optional<ScStr> & oldString, const std::optional<ScStr> & newString) override;

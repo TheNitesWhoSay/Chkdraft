@@ -174,6 +174,15 @@ struct Logger : std::ostream, std::streambuf
             aggregator->trace(message, e);
     }
 
+    void flush()
+    {
+        if ( outputStream != nullptr )
+            outputStream->flush();
+
+        if ( aggregator != nullptr )
+            aggregator->flush();
+    }
+
     static std::shared_ptr<std::ostream> getDefaultOutputStream(); // Gets a reference to the default output stream (std::out)
 
 protected:

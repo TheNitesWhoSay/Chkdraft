@@ -20,9 +20,11 @@ void StringToWindowsClipboard(const std::string & str)
                 {
                     memcpy(lockedData, sysText.c_str(), sysText.size()*sizeof(icux::codepoint) + sizeof(icux::codepoint));
                     GlobalUnlock(lockedData);
-                    SetClipboardData(CF_UNICODETEXT, globalData);
+                    if ( SetClipboardData(CF_UNICODETEXT, globalData) == NULL ) // If SetClipboardData succeeds, it owns globalData
+                        GlobalFree(globalData); // Else, globalData must be free'd
                 }
-                GlobalFree(globalData);
+                else
+                    GlobalFree(globalData); // Lock failed, so globalData must be free'd
             }
         }
         CloseClipboard();
@@ -44,6 +46,9 @@ bool WindowsClipboardToString(std::string & str)
                 if ( maxStringSize != 0 )
                 {
                     str = icux::toUtf8((wchar_t*)lockedData, (size_t)maxStringSize/sizeof(icux::codepoint));
+                    if ( !str.empty() && str.back() == '\0' )
+                        str.pop_back();
+
                     success = true;
                 }
                 GlobalUnlock(lockedData);
