@@ -1170,7 +1170,7 @@ LRESULT Chkdraft::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     case ID_TRIGGERS_CLASSICMAPTRIGGERS: trigEditorWindow->CreateThis(getHandle()); break;
     case ID_TRIGGERS_CLASSICMISSIONBRIEFING: briefingTrigEditorWindow->CreateThis(getHandle()); break;
     case ID_SCENARIO_MAPDIMENSIONS: dimensionsWindow->CreateThis(getHandle()); break;
-    case ID_SCENARIO_DESCRIPTION: case ID_SCENARIO_FORCES: case ID_SCENARIO_UNITSETTINGS:
+    case ID_SCENARIO_PROPERTIES: case ID_SCENARIO_FORCES: case ID_SCENARIO_UNITSETTINGS:
     case ID_SCENARIO_UPGRADESETTINGS: case ID_SCENARIO_TECHSETTINGS: case ID_SCENARIO_STRINGS:
     case ID_SCENARIO_SOUNDEDITOR: OpenMapSettings(LOWORD(wParam)); break;
 
@@ -1364,7 +1364,7 @@ void Chkdraft::OpenMapSettings(u16 menuId)
     {
         switch ( menuId )
         {
-            case ID_SCENARIO_DESCRIPTION: mapSettingsWindow->ChangeTab(MapSettingsWindow::Tab::MapProperties); break;
+            case ID_SCENARIO_PROPERTIES: mapSettingsWindow->ChangeTab(MapSettingsWindow::Tab::MapProperties); break;
             case ID_SCENARIO_FORCES: mapSettingsWindow->ChangeTab(MapSettingsWindow::Tab::Forces); break;
             case ID_SCENARIO_UNITSETTINGS: mapSettingsWindow->ChangeTab(MapSettingsWindow::Tab::UnitSettings); break;
             case ID_SCENARIO_UPGRADESETTINGS: mapSettingsWindow->ChangeTab(MapSettingsWindow::Tab::UpgradeSettings); break;
