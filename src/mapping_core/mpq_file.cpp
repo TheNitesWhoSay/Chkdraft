@@ -90,7 +90,7 @@ bool MpqFile::open(const std::string & filePath, bool readOnly, bool createIfNot
     }
     else
     {
-        DWORD lastError = GetLastError();
+        unsigned long lastError = getLastError();
         logger.info() << "Failed to open \"" << filePath << "\", Error: " << lastError << '\n';
     }
     return false;
