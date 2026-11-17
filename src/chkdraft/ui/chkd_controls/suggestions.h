@@ -33,7 +33,6 @@ class Suggestions : public WinLib::ClassWindow
 
             private:
                 icux::uistring contextualProperties = icux::toUistring("(Disabled)");
-                icux::uistring cancel = icux::toUistring("Cancel (Esc)");
         };
 
         Suggestions();

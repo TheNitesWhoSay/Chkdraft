@@ -11,7 +11,9 @@ extern Logger logger;
 enum_t(Id, u32, {
     TOOLBAR = ID_FIRST,
     ID_CONTEXTUAL_PROPERTIES,
-    ID_CANCEL
+    ID_CANCEL,
+    ID_ADVANCE_CELL,
+    ID_ADVANCE_ROW
 });
 
 bool alphabetize(const SuggestionItem & first, const SuggestionItem & second)
@@ -66,14 +68,35 @@ bool Suggestions::Toolbar::CreateThis(HWND hParent, std::uint64_t windowId)
         // Set toolbar to default button set
         TBADDBITMAP tbab { .hInst = HINST_COMMCTRL, .nID = IDB_STD_SMALL_COLOR };
         SendMessage(hTool, TB_ADDBITMAP, 0, (LPARAM)&tbab);
+        
+        icux::uistring cancel = icux::toUistring("Cancel (Esc)");
+        icux::uistring nextLine = icux::toUistring("Advance Row (Return)");
+        icux::uistring nextCell = icux::toUistring("Advance Cell (Tab)");
+
+        HIMAGELIST hImages = ImageList_Create(16, 16, 0, 2, 2);
+        HBITMAP hBmpDown = WinLib::ResourceManager::getBitmap(IDB_ARROWDOWN, 16, 16, LR_DEFAULTCOLOR);
+        ImageList_Add(hImages, hBmpDown, NULL);
+        TBADDBITMAP tbDown { .hInst = NULL, .nID = (UINT_PTR)hBmpDown };
+        int STD_DOWN = (int)SendMessage(hTool, TB_ADDBITMAP, 1, (LPARAM)&tbDown);
+
+        HBITMAP hBmpRight = WinLib::ResourceManager::getBitmap(IDB_ARROWRIGHT, 16, 16, LR_DEFAULTCOLOR);
+        ImageList_Add(hImages, hBmpRight, NULL);
+        TBADDBITMAP tbRight { .hInst = NULL, .nID = (UINT_PTR)hBmpRight };
+        int STD_RIGHT = (int)SendMessage(hTool, TB_ADDBITMAP, 1, (LPARAM)&tbRight);
 
         std::vector<TBBUTTON> buttons {
             TBBUTTON { .iBitmap = 8, .fsStyle = BTNS_SEP },
+            TBBUTTON { .iBitmap = STD_DELETE, .idCommand = Id::ID_CANCEL,
+                       .fsState = TBSTATE_ENABLED, .fsStyle = TBSTYLE_BUTTON, .iString = (INT_PTR)cancel.c_str() },
+            TBBUTTON { .iBitmap = 8, .fsStyle = BTNS_SEP },
+            TBBUTTON { .iBitmap = STD_DOWN, .idCommand = Id::ID_ADVANCE_ROW,
+                       .fsState = TBSTATE_ENABLED, .fsStyle = TBSTYLE_BUTTON, .iString = (INT_PTR)nextLine.c_str() },
+            TBBUTTON { .iBitmap = 8, .fsStyle = BTNS_SEP },
+            TBBUTTON { .iBitmap = STD_RIGHT, .idCommand = Id::ID_ADVANCE_CELL,
+                       .fsState = TBSTATE_ENABLED, .fsStyle = TBSTYLE_BUTTON, .iString = (INT_PTR)nextCell.c_str() },
+            TBBUTTON { .iBitmap = 8, .fsStyle = BTNS_SEP },
             TBBUTTON { .iBitmap = STD_PROPERTIES, .idCommand = Id::ID_CONTEXTUAL_PROPERTIES,
                        .fsState = 0, .fsStyle = TBSTYLE_BUTTON, .iString = (INT_PTR)contextualProperties.c_str() },
-            TBBUTTON { .iBitmap = 8, .fsStyle = BTNS_SEP },
-            TBBUTTON { .iBitmap = STD_DELETE, .idCommand = Id::ID_CANCEL,
-                       .fsState = TBSTATE_ENABLED, .fsStyle = TBSTYLE_BUTTON, .iString = (INT_PTR)cancel.c_str() }
         };
 
         SendMessage(hTool, TB_ADDBUTTONS, buttons.size(), (LPARAM)&buttons[0]);
@@ -502,8 +525,10 @@ LRESULT Suggestions::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
         default:
             switch ( LOWORD(wParam) )
             {
-                case Id::ID_CONTEXTUAL_PROPERTIES: OpenContextualProperties(); break;
+                case Id::ID_ADVANCE_ROW: SendMessage(suggestParent, (UINT)WinLib::LB::WM_SELCONFIRMED, VK_RETURN, (LPARAM)listSuggestions.getHandle()); break;
+                case Id::ID_ADVANCE_CELL: SendMessage(suggestParent, (UINT)WinLib::LB::WM_SELCONFIRMED, VK_TAB, (LPARAM)listSuggestions.getHandle()); break;
                 case Id::ID_CANCEL: CancelSuggestion(); break;
+                case Id::ID_CONTEXTUAL_PROPERTIES: OpenContextualProperties(); break;
                 default:
                     return ClassWindow::Command(hWnd, wParam, lParam);
             }
