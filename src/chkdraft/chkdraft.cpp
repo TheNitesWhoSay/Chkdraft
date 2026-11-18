@@ -18,8 +18,10 @@ enum_t(Id, u32, {
     IDR_MAIN_MDI,
     IDR_MAIN_PLOT,
     PreDynamicMenus,
-    MenuFirstProfile = PreDynamicMenus+250,
-    PostDynamicMenus = MenuFirstProfile+250,
+    MenuFirstRecentMap = PreDynamicMenus+250,
+    PostRecentMaps = MenuFirstRecentMap+50,
+    MenuFirstProfile = PostRecentMaps,
+    PostDynamicMenus = MenuFirstProfile+200,
     NextToLastId = PostDynamicMenus+500,
     ID_MDI_FIRSTCHILD = (NextToLastId+500) // Keep this higher than all other main window identifiers
 });
@@ -656,6 +658,35 @@ void Chkdraft::ProfileNameUpdated(const ChkdProfile & profile)
     }
 }
 
+void Chkdraft::EmptyRecentMapsList()
+{
+    profiles.clearRecentMaps();
+    UpdateRecentMapMenuItems();
+}
+
+void Chkdraft::UpdateRecentMapMenuItems()
+{
+    const std::vector<std::string> recentMaps = chkd.profiles.getRecentMaps();
+    for ( std::size_t i=Id::MenuFirstRecentMap; i<Id::PostRecentMaps; ++i )
+        DeleteMenu(mainMenu.getHandle(), i, MF_BYCOMMAND);
+
+    for ( std::size_t i=0; i<recentMaps.size(); ++i )
+    {
+        auto uiStr = icux::toUistring(recentMaps[i]);
+        MENUITEMINFO item {
+            .cbSize = sizeof(MENUITEMINFO),
+            .fMask = MIIM_ID|MIIM_TYPE,
+            .fType = MFT_STRING,
+            .wID = static_cast<UINT>(Id::MenuFirstRecentMap+i),
+            .dwTypeData = (LPWSTR)uiStr.c_str(),
+            .cch = (UINT)uiStr.size()
+        };
+        InsertMenuItem(recentMapsMenu, i, TRUE, &item);
+    }
+
+    EnableMenuItem(GetMenu(getHandle()), ID_RECENTMAPS_EMPTYRECENTMAPSLIST, recentMaps.empty() ? MF_DISABLED : MF_ENABLED);
+}
+
 bool Chkdraft::DlgKeyListener(HWND hWnd, UINT & msg, WPARAM wParam, LPARAM lParam)
 {
     switch ( msg )
@@ -817,7 +848,7 @@ void Chkdraft::KeyListener(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     {
         case WM_KEYDOWN:
             {
-                switch ( wParam )
+                switch ( wParam ) // Keys together with any modifiers
                 {
                     case VK_SPACE: if ( CM != nullptr ) CM->LockCursor(); return; break;
                     case VK_DELETE: if ( CM != nullptr ) CM->deleteSelection(); return; break;
@@ -901,6 +932,16 @@ void Chkdraft::KeyListener(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                             }(), false);
                         }
                         break;
+                    }
+                }
+                else if ( CM != nullptr && GetParent(hWnd) == maps.getHandle() ) // Keys with no modifiers
+                {
+                    switch ( wParam )
+                    {
+                        case VK_UP: case VK_DOWN: case VK_LEFT: case VK_RIGHT:
+                        case 'W': case 'A': case 'S': case 'D':
+                            CM->keyScroll();
+                            break;
                     }
                 }
             }
@@ -1043,6 +1084,7 @@ LRESULT Chkdraft::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     case ID_FILE_NEW1: newMap.CreateThis(hWnd); break;
     case ID_FILE_OPEN1: maps.OpenMap(); break;
     case ID_ADVANCED_OPENBACKUPDATABASE: OpenBackupsDirectory(); break;
+    case ID_RECENTMAPS_EMPTYRECENTMAPSLIST: EmptyRecentMapsList(); break;
     case ID_PROFILES_RELOAD: ProfilesReload(); break;
     case ID_PROFILES_FINDPROFILE: OpenFindProfileDialog(); break;
     case ID_PROFILES_EDITPROFILES: OpenEditProfilesDialog(); break;
@@ -1156,11 +1198,14 @@ LRESULT Chkdraft::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     case ID_CUTCOPYPASTE_INCLUDEDOODADTILES: CM->ToggleIncludeDoodadTiles(); break;
     case ID_CUTCOPYPASTE_FILLSIMILARTILES: maps.clipboard->toggleFillSimilarTiles(); break;
 
+        // Key Bindings
+    case ID_KEYBINDINGS_ENABLEWASDSCROLL: CM->toggleEnableWasdScroll(); break;
+
         // Scenario
     case ID_TRIGGERS_CLASSICMAPTRIGGERS: trigEditorWindow->CreateThis(getHandle()); break;
     case ID_TRIGGERS_CLASSICMISSIONBRIEFING: briefingTrigEditorWindow->CreateThis(getHandle()); break;
     case ID_SCENARIO_MAPDIMENSIONS: dimensionsWindow->CreateThis(getHandle()); break;
-    case ID_SCENARIO_DESCRIPTION: case ID_SCENARIO_FORCES: case ID_SCENARIO_UNITSETTINGS:
+    case ID_SCENARIO_PROPERTIES: case ID_SCENARIO_FORCES: case ID_SCENARIO_UNITSETTINGS:
     case ID_SCENARIO_UPGRADESETTINGS: case ID_SCENARIO_TECHSETTINGS: case ID_SCENARIO_STRINGS:
     case ID_SCENARIO_SOUNDEDITOR: OpenMapSettings(LOWORD(wParam)); break;
 
@@ -1195,7 +1240,13 @@ LRESULT Chkdraft::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
         case CBN_EDITCHANGE: ComboEditChanged((HWND)lParam, LOWORD(wParam)); SetFocus(getHandle()); break;
         case CBN_SELCHANGE: ComboSelChanged((HWND)lParam, LOWORD(wParam)); SetFocus(getHandle()); break;
         default:
-            if ( LOWORD(wParam) >= Id::MenuFirstProfile && LOWORD(wParam) < Id::PostDynamicMenus )
+            if ( LOWORD(wParam) >= Id::MenuFirstRecentMap && LOWORD(wParam) < Id::PostRecentMaps )
+            {
+                std::size_t index = LOWORD(wParam) - Id::MenuFirstRecentMap;
+                if ( auto recentMapPath = profiles.getRecentMap(index) )
+                    maps.OpenMap(*recentMapPath);
+            }
+            else if ( LOWORD(wParam) >= Id::MenuFirstProfile && LOWORD(wParam) < Id::PostDynamicMenus )
             {
                 for ( std::size_t i=0; i<profiles.profiles.size(); ++i )
                 {
@@ -1311,8 +1362,10 @@ bool Chkdraft::CreateSubWindows()
                 0, 0, 0, 0, (HMENU)Id::IDR_MAIN_MDI) )
         {
             auto fileMenu = GetSubMenu(mainMenu.getHandle(), 0);
+            recentMapsMenu = GetSubMenu(fileMenu, 3);
             profilesMenu = GetSubMenu(fileMenu, 4);
             UpdateProfilesMenu();
+            UpdateRecentMapMenuItems();
 
             mainPlot.leftBar.SetWidth(360);
             return true;
@@ -1354,7 +1407,7 @@ void Chkdraft::OpenMapSettings(u16 menuId)
     {
         switch ( menuId )
         {
-            case ID_SCENARIO_DESCRIPTION: mapSettingsWindow->ChangeTab(MapSettingsWindow::Tab::MapProperties); break;
+            case ID_SCENARIO_PROPERTIES: mapSettingsWindow->ChangeTab(MapSettingsWindow::Tab::MapProperties); break;
             case ID_SCENARIO_FORCES: mapSettingsWindow->ChangeTab(MapSettingsWindow::Tab::Forces); break;
             case ID_SCENARIO_UNITSETTINGS: mapSettingsWindow->ChangeTab(MapSettingsWindow::Tab::UnitSettings); break;
             case ID_SCENARIO_UPGRADESETTINGS: mapSettingsWindow->ChangeTab(MapSettingsWindow::Tab::UpgradeSettings); break;

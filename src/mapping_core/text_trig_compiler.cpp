@@ -33,7 +33,7 @@ template <class MapType> bool TextTrigCompiler::compileTriggers(std::string & te
 
     try
     {
-        std::vector<RawString> stringContents;
+        StringContents stringContents;
         std::stringstream compilerError;
         if ( cleanText(text, stringContents, compilerError) )
         {
@@ -70,7 +70,7 @@ template <class MapType> bool TextTrigCompiler::compileTrigger(std::string & tex
 
     try
     {
-        std::vector<RawString> stringContents;
+        StringContents stringContents;
         std::stringstream compilerError;
         if ( cleanText(text, stringContents, compilerError) )
         {
@@ -103,7 +103,7 @@ template bool TextTrigCompiler::compileTrigger<LiteScenario>(std::string & text,
 
 bool TextTrigCompiler::parseConditionName(std::string text, Chk::Condition::Type & conditionType) const
 {
-    std::vector<RawString> stringContents;
+    StringContents stringContents;
     std::stringstream unused {};
     if ( !cleanText(text, stringContents, unused) )
         return false;
@@ -153,7 +153,7 @@ template <class MapType> std::optional<Chk::Condition::ArgField> TextTrigCompile
 
     std::string txcd = conditionArgText;
     std::stringstream argumentError;
-    std::vector<RawString> stringContents = { conditionArgText };
+    StringContents stringContents = { .strs = { conditionArgText }, .positions = { 0 } };
     size_t nextString = 0;
     auto result = parseConditionArg(txcd, stringContents, nextString, condition, 0, txcd.size(), argument, argumentError);
     if ( !result )
@@ -172,7 +172,7 @@ template std::optional<Chk::Condition::ArgField> TextTrigCompiler::parseConditio
 
 bool TextTrigCompiler::parseActionName(std::string text, Chk::Action::Type & actionType) const
 {
-    std::vector<RawString> stringContents;
+    StringContents stringContents;
     std::stringstream unused {};
     if ( !cleanText(text, stringContents, unused) )
         return false;
@@ -224,7 +224,7 @@ template <class MapType> std::optional<Chk::Action::ArgField> TextTrigCompiler::
     
     std::string txac = actionArgText;
     std::stringstream argumentError;
-    std::vector<RawString> stringContents = { actionArgText };
+    StringContents stringContents = { .strs = { actionArgText }, .positions = { 0 } };
     size_t nextString = 0;
     auto result = parseActionArg(txac, stringContents, nextString, action, 0, txac.size(), argument, argumentError, trigIndex, actionIndex);
     if ( !result )
@@ -283,7 +283,7 @@ void TextTrigCompiler::clearCompiler()
     newExtendedStringTable.clear();
 }
 
-bool TextTrigCompiler::cleanText(std::string & text, std::vector<RawString> & stringContents, std::stringstream & error) const
+bool TextTrigCompiler::cleanText(std::string & text, StringContents & stringContents, std::stringstream & error) const
 {
     logger.debug() << "Starting text trig cleaning" << std::endl;
     auto start = std::chrono::high_resolution_clock::now();
@@ -327,6 +327,7 @@ bool TextTrigCompiler::cleanText(std::string & text, std::vector<RawString> & st
 
         case '\"': // Found a string
         {
+            stringContents.positions.push_back(dest.size());
             dest += '\"';
             size_t closeQuotePos = findStringEnd(text, pos);
             if ( closeQuotePos == std::string::npos )
@@ -337,7 +338,7 @@ bool TextTrigCompiler::cleanText(std::string & text, std::vector<RawString> & st
             EscString escString = text.substr(pos, closeQuotePos-pos);
             RawString rawString;
             convertStr(escString, rawString);
-            stringContents.push_back(rawString);
+            stringContents.strs.push_back(rawString);
             dest += '\"';
             pos = closeQuotePos+1;
         }
@@ -362,7 +363,7 @@ bool TextTrigCompiler::cleanText(std::string & text, std::vector<RawString> & st
     return true;
 }
 
-bool TextTrigCompiler::parseTriggers(std::string & text, std::vector<RawString> & stringContents, std::vector<Chk::Trigger> & output, std::stringstream & error)
+bool TextTrigCompiler::parseTriggers(std::string & text, StringContents & stringContents, std::vector<Chk::Trigger> & output, std::stringstream & error)
 {
     text.push_back('\0'); // Add a terminating null character
 
@@ -560,7 +561,7 @@ inline bool TextTrigCompiler::parsePartZero(std::string & text, std::stringstrea
     return true;
 }
 
-inline bool TextTrigCompiler::parsePartOne(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting, size_t & playerEnd, size_t & lineEnd)
+inline bool TextTrigCompiler::parsePartOne(std::string & text, StringContents & stringContents, size_t & nextString, Chk::Trigger & output, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting, size_t & playerEnd, size_t & lineEnd)
 {
     //      %PlayerName,
     // or   %PlayerName:Value,
@@ -859,7 +860,7 @@ inline bool TextTrigCompiler::parsePartFour(std::string & text, Chk::Trigger & o
     return true;
 }
 
-inline bool TextTrigCompiler::parsePartFive(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting, u32 & argIndex, size_t & argEnd,
+inline bool TextTrigCompiler::parsePartFive(std::string & text, StringContents & stringContents, size_t & nextString, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting, u32 & argIndex, size_t & argEnd,
     Chk::Condition* & currCondition, Chk::Condition::VirtualType & conditionId)
 {
     //      );
@@ -1090,7 +1091,7 @@ inline bool TextTrigCompiler::parsePartSeven(std::string & text, Chk::Trigger & 
     return true;
 }
 
-inline bool TextTrigCompiler::parsePartEight(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting,
+inline bool TextTrigCompiler::parsePartEight(std::string & text, StringContents & stringContents, size_t & nextString, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting,
     u32 & argIndex, size_t & argEnd, Chk::Action* & currAction, Chk::Action::VirtualType & actionId, size_t trigIndex, size_t actionIndex)
 {
     //      );
@@ -1255,7 +1256,7 @@ inline bool TextTrigCompiler::parsePartEleven(std::string & text, std::stringstr
     return true;
 }
 
-bool TextTrigCompiler::parseExecutingPlayer(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Trigger & currTrig, size_t pos, size_t end) const
+bool TextTrigCompiler::parseExecutingPlayer(std::string & text, StringContents & stringContents, size_t & nextString, Chk::Trigger & currTrig, size_t pos, size_t end) const
 {
     u32 group;
     size_t separator = text.find(':', pos);
@@ -1905,7 +1906,7 @@ bool TextTrigCompiler::parseAction(std::string & text, size_t pos, size_t end, C
     return actionType != Chk::Action::VirtualType::NoAction;
 }
 
-std::optional<Chk::Condition::ArgField> TextTrigCompiler::parseConditionArg(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Condition & currCondition, size_t pos, size_t end, Chk::Condition::Argument argument, std::stringstream & error)
+std::optional<Chk::Condition::ArgField> TextTrigCompiler::parseConditionArg(std::string & text, StringContents & stringContents, size_t & nextString, Chk::Condition & currCondition, size_t pos, size_t end, Chk::Condition::Argument argument, std::stringstream & error)
 {
     // returns whether the condition was true and prints msg to the error message if false
 #define returnMsg(argField, condition, msg)  \
@@ -1988,7 +1989,7 @@ std::optional<Chk::Condition::ArgField> TextTrigCompiler::parseConditionArg(std:
     return std::nullopt;
 }
 
-std::optional<Chk::Action::ArgField> TextTrigCompiler::parseActionArg(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Action & currAction, size_t pos, size_t end, Chk::Action::Argument arg, std::stringstream & error, size_t trigIndex, size_t actionIndex)
+std::optional<Chk::Action::ArgField> TextTrigCompiler::parseActionArg(std::string & text, StringContents & stringContents, size_t & nextString, Chk::Action & currAction, size_t pos, size_t end, Chk::Action::Argument arg, std::stringstream & error, size_t trigIndex, size_t actionIndex)
 {
     switch ( arg.type )
     {
@@ -2129,7 +2130,7 @@ bool TextTrigCompiler::parseExecutionFlags(std::string & text, size_t pos, size_
     return parseBinaryLong(arg, flags, 0, arg.size());
 }
 
-bool TextTrigCompiler::parseString(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end, size_t trigIndex, size_t actionIndex, bool isSound)
+bool TextTrigCompiler::parseString(std::string & text, StringContents & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end, size_t trigIndex, size_t actionIndex, bool isSound)
 {
     if ( text.compare(pos, end-pos, "NOSTRING") == 0 )
     {
@@ -2138,8 +2139,12 @@ bool TextTrigCompiler::parseString(std::string & text, std::vector<RawString> & 
     }
     else if ( pos < end && text[pos] == '\"' )
     {
-        const std::string & str = stringContents[nextString];
-        nextString++;
+        std::size_t check = 0;
+        const std::string & str = stringContents.pull<std::string>(nextString, check);
+        if ( check == pos )
+            nextString++;
+        else
+            return false;
         
         size_t hash = strHash(str);
         auto matches = newStringTable.equal_range(hash);
@@ -2173,7 +2178,7 @@ bool TextTrigCompiler::parseString(std::string & text, std::vector<RawString> & 
         return parseLong(text, dest, pos, end);
 }
 
-bool TextTrigCompiler::parseLocationName(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end) const
+bool TextTrigCompiler::parseLocationName(std::string & text, StringContents & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end) const
 {
     std::string str;
     if ( text.compare(pos, end-pos, "NOLOCATION") == 0 )
@@ -2183,8 +2188,12 @@ bool TextTrigCompiler::parseLocationName(std::string & text, std::vector<RawStri
     }
     else if ( pos < end && text[pos] == '\"' )
     {
-        str = stringContents[nextString];
-        nextString ++;
+        std::size_t check = 0;
+        str = stringContents.pull<std::string>(nextString, check);
+        if ( check == pos )
+            nextString++;
+        else
+            return false;
     }
     else if ( parseLong(text, dest, pos, end) )
         return true;
@@ -2232,7 +2241,7 @@ bool TextTrigCompiler::parseLocationName(std::string & text, std::vector<RawStri
     return success;
 }
 
-bool TextTrigCompiler::parseUnitName(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Sc::Unit::Type & dest, size_t pos, size_t end) const
+bool TextTrigCompiler::parseUnitName(std::string & text, StringContents & stringContents, size_t & nextString, Sc::Unit::Type & dest, size_t pos, size_t end) const
 {
     std::string str;
     if ( text[pos] == '\"' ) // If quoted, ignore quotes
@@ -2240,8 +2249,13 @@ bool TextTrigCompiler::parseUnitName(std::string & text, std::vector<RawString> 
         if ( end-pos < 2 )
             return false;
 
-        str = stringContents[nextString];
-        nextString ++;
+        std::size_t check = 0;
+        str = stringContents.pull<std::string>(nextString, check);
+        if ( check == pos )
+            nextString++;
+        else
+            return false;
+
         pos = 0;
         end = str.size();
     }
@@ -2811,7 +2825,7 @@ bool TextTrigCompiler::parseUnitName(std::string & text, std::vector<RawString> 
     return success;
 }
 
-bool TextTrigCompiler::parseSoundName(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end, size_t trigIndex, size_t actionIndex)
+bool TextTrigCompiler::parseSoundName(std::string & text, StringContents & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end, size_t trigIndex, size_t actionIndex)
 {
     if ( text.compare(pos, end-pos, "NOWAV") == 0  )
     {
@@ -2822,14 +2836,18 @@ bool TextTrigCompiler::parseSoundName(std::string & text, std::vector<RawString>
         return parseString(text, stringContents, nextString, dest, pos, end, trigIndex, actionIndex, true);
 }
 
-bool TextTrigCompiler::parsePlayer(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end) const
+bool TextTrigCompiler::parsePlayer(std::string & text, StringContents & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end) const
 {
     std::string str;
     u32 number = 0;
     if ( text[pos] == '\"' )
     {
-        str = stringContents[nextString];
-        nextString ++;
+        std::size_t check = 0;
+        str = stringContents.pull<std::string>(nextString, check);
+        if ( check == pos )
+            nextString++;
+        else
+            return false;
     }
     else if ( parseLong(text, dest, pos, end) )
         return true;
@@ -3062,13 +3080,17 @@ bool TextTrigCompiler::parsePlayer(std::string & text, std::vector<RawString> & 
     return success;
 }
 
-bool TextTrigCompiler::parseSwitch(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end) const
+bool TextTrigCompiler::parseSwitch(std::string & text, StringContents & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end) const
 {
     std::string str;
     if ( text[pos] == '\"' ) // If quoted, ignore quotes
     {
-        str = stringContents[nextString];
-        nextString ++;
+        std::size_t check = 0;
+        str = stringContents.pull<std::string>(nextString, check);
+        if ( check == pos )
+            nextString++;
+        else
+            return false;
     }
     else if ( parseByte(text, dest, pos, end) )
         return true;
@@ -3134,7 +3156,7 @@ bool TextTrigCompiler::parseSwitch(std::string & text, std::vector<RawString> & 
     return success;
 }
 
-bool TextTrigCompiler::parseSwitch(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end) const
+bool TextTrigCompiler::parseSwitch(std::string & text, StringContents & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end) const
 {
     u8 temp = 0;
     bool success = parseSwitch(text, stringContents, nextString, temp, pos, end);
@@ -3142,7 +3164,7 @@ bool TextTrigCompiler::parseSwitch(std::string & text, std::vector<RawString> & 
     return success;
 }
 
-bool TextTrigCompiler::parseScript(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end) const
+bool TextTrigCompiler::parseScript(std::string & text, StringContents & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end) const
 {
     if ( text.compare(pos, end-pos, "NOSCRIPT") == 0 )
     {
@@ -3154,8 +3176,12 @@ bool TextTrigCompiler::parseScript(std::string & text, std::vector<RawString> & 
     bool isQuoted = text[pos] == '\"';
     if ( isQuoted )
     {
-        str = stringContents[nextString];
-        nextString ++;
+        std::size_t check = 0;
+        str = stringContents.pull<std::string>(nextString, check);
+        if ( check == pos )
+            nextString++;
+        else
+            return false;
     }
     else
         str = text.substr(pos, end-pos);
@@ -3244,10 +3270,11 @@ Chk::Action::Type TextTrigCompiler::extendedToRegularActionType(Chk::Action::Vir
     return (Chk::Action::Type)actionType;
 }
 
-bool TextTrigCompiler::parseNumericComparison(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Condition::Comparison & dest, size_t pos, size_t end) const
+bool TextTrigCompiler::parseNumericComparison(const std::string & text, StringContents & stringContents, size_t & nextString, Chk::Condition::Comparison & dest, size_t pos, size_t end) const
 {
     std::array<char, 12> comparison = {};
-    copyUpperCaseNoSpace(comparison, text, stringContents, nextString, pos, end);
+    if ( !copyUpperCaseNoSpace(comparison, text, stringContents, nextString, pos, end) )
+        return false;
 
     switch ( comparison[0] )
     {
@@ -3262,10 +3289,11 @@ bool TextTrigCompiler::parseNumericComparison(const std::string & text, std::vec
     return false;
 }
 
-bool TextTrigCompiler::parseSwitchState(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Condition::Comparison & dest, size_t pos, size_t end) const
+bool TextTrigCompiler::parseSwitchState(const std::string & text, StringContents & stringContents, size_t & nextString, Chk::Condition::Comparison & dest, size_t pos, size_t end) const
 {
     std::array<char, 8> switchState = {};
-    copyUpperCaseNoSpace(switchState, text, stringContents, nextString, pos, end);
+    if ( !copyUpperCaseNoSpace(switchState, text, stringContents, nextString, pos, end) )
+        return false;
 
     switch ( switchState[0] )
     {
@@ -3282,11 +3310,12 @@ bool TextTrigCompiler::parseSwitchState(const std::string & text, std::vector<Ra
     return false;
 }
 
-bool TextTrigCompiler::parseSpecialUnitAmount(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end) const
+bool TextTrigCompiler::parseSpecialUnitAmount(const std::string & text, StringContents & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end) const
     // All
 {
     std::array<char, 4> specialUnitAmount = {};
-    copyUpperCaseNoSpace(specialUnitAmount, text, stringContents, nextString, pos, end);
+    if ( !copyUpperCaseNoSpace(specialUnitAmount, text, stringContents, nextString, pos, end) )
+        return false;
 
     if ( strcmp(&specialUnitAmount[0], "ALL") == 0 )
     {
@@ -3297,11 +3326,12 @@ bool TextTrigCompiler::parseSpecialUnitAmount(const std::string & text, std::vec
         return false;
 }
 
-bool TextTrigCompiler::parseAllianceStatus(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u16 & dest, size_t pos, size_t end) const
+bool TextTrigCompiler::parseAllianceStatus(const std::string & text, StringContents & stringContents, size_t & nextString, u16 & dest, size_t pos, size_t end) const
     // Ally, Enemy, Allied Victory
 {
     std::array<char, 16> allianceStatus = {};
-    copyUpperCaseNoSpace(allianceStatus, text, stringContents, nextString, pos, end);
+    if ( !copyUpperCaseNoSpace(allianceStatus, text, stringContents, nextString, pos, end) )
+        return false;
 
     switch ( allianceStatus[0] )
     {
@@ -3316,10 +3346,11 @@ bool TextTrigCompiler::parseAllianceStatus(const std::string & text, std::vector
     return false;
 }
 
-bool TextTrigCompiler::parseResourceType(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end) const
+bool TextTrigCompiler::parseResourceType(const std::string & text, StringContents & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end) const
 {
     std::array<char, 12> resourceType = {};
-    copyUpperCaseNoSpace(resourceType, text, stringContents, nextString, pos, end);
+    if ( !copyUpperCaseNoSpace(resourceType, text, stringContents, nextString, pos, end) )
+        return false;
 
     switch ( resourceType[0] )
     {
@@ -3334,10 +3365,11 @@ bool TextTrigCompiler::parseResourceType(const std::string & text, std::vector<R
     return false;
 }
 
-bool TextTrigCompiler::parseScoreType(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end) const
+bool TextTrigCompiler::parseScoreType(const std::string & text, StringContents & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end) const
 {
     std::array<char, 20> scoreType = {};
-    copyUpperCaseNoSpace(scoreType, text, stringContents, nextString, pos, end);
+    if ( !copyUpperCaseNoSpace(scoreType, text, stringContents, nextString, pos, end) )
+        return false;
 
     switch ( scoreType[0] )
     {
@@ -3365,11 +3397,12 @@ bool TextTrigCompiler::parseScoreType(const std::string & text, std::vector<RawS
     return false;
 }
 
-bool TextTrigCompiler::parseTextDisplayFlag(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end) const
+bool TextTrigCompiler::parseTextDisplayFlag(const std::string & text, StringContents & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end) const
     // Always Display, Don't Always Display
 {
     std::array<char, 24> textDisplayFlag = {};
-    copyUpperCaseNoSpace(textDisplayFlag, text, stringContents, nextString, pos, end);
+    if ( !copyUpperCaseNoSpace(textDisplayFlag, text, stringContents, nextString, pos, end) )
+        return false;
 
     switch ( textDisplayFlag[0] )
     {
@@ -3383,11 +3416,12 @@ bool TextTrigCompiler::parseTextDisplayFlag(const std::string & text, std::vecto
     return false;
 }
 
-bool TextTrigCompiler::parseNumericModifier(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end) const
+bool TextTrigCompiler::parseNumericModifier(const std::string & text, StringContents & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end) const
     // Add, subtract, set to
 {
     std::array<char, 12> numericModifier = {};
-    copyUpperCaseNoSpace(numericModifier, text, stringContents, nextString, pos, end);
+    if ( !copyUpperCaseNoSpace(numericModifier, text, stringContents, nextString, pos, end) )
+        return false;
 
     switch ( numericModifier[0] )
     {
@@ -3402,11 +3436,12 @@ bool TextTrigCompiler::parseNumericModifier(const std::string & text, std::vecto
     return false;
 }
 
-bool TextTrigCompiler::parseSwitchMod(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end) const
+bool TextTrigCompiler::parseSwitchMod(const std::string & text, StringContents & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end) const
     // Set, clear, toggle, randomize
 {
     std::array<char, 10> switchMod = {};
-    copyUpperCaseNoSpace(switchMod, text, stringContents, nextString, pos, end);
+    if ( !copyUpperCaseNoSpace(switchMod, text, stringContents, nextString, pos, end) )
+        return false;
 
     switch ( switchMod[0] )
     {
@@ -3426,11 +3461,12 @@ bool TextTrigCompiler::parseSwitchMod(const std::string & text, std::vector<RawS
     return false;
 }
 
-bool TextTrigCompiler::parseStateMod(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end) const
+bool TextTrigCompiler::parseStateMod(const std::string & text, StringContents & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end) const
     // Disable, Disabled, Enable, Enabled, Toggle
 {
     std::array<char, 12> stateMod = {};
-    copyUpperCaseNoSpace(stateMod, text, stringContents, nextString, pos, end);
+    if ( !copyUpperCaseNoSpace(stateMod, text, stringContents, nextString, pos, end) )
+        return false;
 
     switch ( stateMod[0] )
     {
@@ -3449,11 +3485,12 @@ bool TextTrigCompiler::parseStateMod(const std::string & text, std::vector<RawSt
     return false;
 }
 
-bool TextTrigCompiler::parseOrder(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end) const
+bool TextTrigCompiler::parseOrder(const std::string & text, StringContents & stringContents, size_t & nextString, u8 & dest, size_t pos, size_t end) const
     // Attack, move, patrol
 {
     std::array<char, 8> order = {};
-    copyUpperCaseNoSpace(order, text, stringContents, nextString, pos, end);
+    if ( !copyUpperCaseNoSpace(order, text, stringContents, nextString, pos, end) )
+        return false;
 
     switch ( order[0] )
     {
@@ -3515,7 +3552,7 @@ bool TextTrigCompiler::parseActionMaskFlag(const std::string & text, Chk::Action
     return false;
 }
 
-bool TextTrigCompiler::parseResourceType(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u16 & dest, size_t pos, size_t end) const
+bool TextTrigCompiler::parseResourceType(const std::string & text, StringContents & stringContents, size_t & nextString, u16 & dest, size_t pos, size_t end) const
 {
     u8 temp = 0;
     bool success = parseResourceType(text, stringContents, nextString, temp, pos, end);
@@ -3523,7 +3560,7 @@ bool TextTrigCompiler::parseResourceType(const std::string & text, std::vector<R
     return success;
 }
 
-bool TextTrigCompiler::parseScoreType(const std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u16 & dest, size_t pos, size_t end) const
+bool TextTrigCompiler::parseScoreType(const std::string & text, StringContents & stringContents, size_t & nextString, u16 & dest, size_t pos, size_t end) const
 {
     u8 temp = 0;
     bool success = parseScoreType(text, stringContents, nextString, temp, pos, end);
@@ -3881,7 +3918,7 @@ template <class MapType> bool BriefingTextTrigCompiler::compileBriefingTriggers(
     
     try
     {
-        std::vector<RawString> stringContents;
+        StringContents stringContents;
         std::stringstream compilerError;
         if ( TextTrigCompiler::cleanText(text, stringContents, compilerError) )
         {
@@ -3917,7 +3954,7 @@ template <class MapType> bool BriefingTextTrigCompiler::compileBriefingTrigger(s
 
     try
     {
-        std::vector<RawString> stringContents;
+        StringContents stringContents;
         std::stringstream compilerError;
         if ( TextTrigCompiler::cleanText(trigText, stringContents, compilerError) )
         {
@@ -3950,7 +3987,7 @@ template bool BriefingTextTrigCompiler::compileBriefingTrigger<LiteScenario>(std
 
 bool BriefingTextTrigCompiler::parseBriefingActionName(std::string text, Chk::Action::Type & actionType) const
 {
-    std::vector<RawString> stringContents;
+    StringContents stringContents;
     std::stringstream unused {};
     if ( !cleanText(text, stringContents, unused) )
         return false;
@@ -4002,7 +4039,7 @@ template <class MapType> std::optional<Chk::Action::ArgField> BriefingTextTrigCo
     
     std::string txac = actionArgText;
     std::stringstream argumentError;
-    std::vector<RawString> stringContents = { actionArgText };
+    StringContents stringContents = { .strs = { actionArgText }, .positions = { 0 } };
     size_t nextString = 0;
     auto result = parseBriefingActionArg(txac, stringContents, nextString, action, 0, txac.size(), argument, argumentError, trigIndex, actionIndex);
     if ( !result )
@@ -4019,7 +4056,7 @@ template std::optional<Chk::Action::ArgField> BriefingTextTrigCompiler::parseBri
 template std::optional<Chk::Action::ArgField> BriefingTextTrigCompiler::parseBriefingActionArg<LiteScenario>(std::string actionArgText, Chk::Action::Argument argument, Chk::Action & action, const LiteScenario & chk, const StrCache & strCache, const StrCache & editorStrCache, Sc::Data & scData, size_t trigIndex, size_t actionIndex, bool silent);
 #endif
 
-bool BriefingTextTrigCompiler::parseBriefingTriggers(std::string & text, std::vector<RawString> & stringContents, std::vector<Chk::Trigger> & output, std::stringstream & error)
+bool BriefingTextTrigCompiler::parseBriefingTriggers(std::string & text, StringContents & stringContents, std::vector<Chk::Trigger> & output, std::stringstream & error)
 {
     text.push_back('\0'); // Add a terminating null character
     
@@ -4251,7 +4288,7 @@ bool BriefingTextTrigCompiler::parseBriefingActionStartOrEndOfTrigger(std::strin
     return true;
 }
 
-bool BriefingTextTrigCompiler::parseBriefingActionArgOrEndOfAction(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting,
+bool BriefingTextTrigCompiler::parseBriefingActionArgOrEndOfAction(std::string & text, StringContents & stringContents, size_t & nextString, std::stringstream & error, size_t & pos, u32 & line, Expecting & expecting,
     u32 & argIndex, size_t & argEnd, Chk::Action* & currAction, Chk::Action::VirtualType & actionType, size_t trigIndex, size_t actionIndex)
 {
     //      );
@@ -4450,7 +4487,7 @@ bool BriefingTextTrigCompiler::parseBriefingAction(std::string & text, size_t po
     return actionType != Chk::Action::VirtualType::NoAction;
 }
 
-std::optional<Chk::Action::ArgField> BriefingTextTrigCompiler::parseBriefingActionArg(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, Chk::Action & currAction, size_t pos, size_t end, Chk::Action::Argument argument, std::stringstream & error, size_t trigIndex, size_t actionIndex)
+std::optional<Chk::Action::ArgField> BriefingTextTrigCompiler::parseBriefingActionArg(std::string & text, StringContents & stringContents, size_t & nextString, Chk::Action & currAction, size_t pos, size_t end, Chk::Action::Argument argument, std::stringstream & error, size_t trigIndex, size_t actionIndex)
 {
     if ( argument.type == Chk::Action::ArgType::BriefingSlot )
     {
@@ -4462,13 +4499,17 @@ std::optional<Chk::Action::ArgField> BriefingTextTrigCompiler::parseBriefingActi
         return TextTrigCompiler::parseActionArg(text, stringContents, nextString, currAction, pos, end, argument, error, trigIndex, actionIndex);
 }
 
-bool BriefingTextTrigCompiler::parseBriefingSlot(std::string & text, std::vector<RawString> & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end) const
+bool BriefingTextTrigCompiler::parseBriefingSlot(std::string & text, StringContents & stringContents, size_t & nextString, u32 & dest, size_t pos, size_t end) const
 {
     std::string str;
     if ( text[pos] == '\"' ) // If quoted, ignore quotes
     {
-        str = stringContents[nextString];
-        nextString ++;
+        std::size_t check = 0;
+        str = stringContents.pull<std::string>(nextString, check);
+        if ( check == pos )
+            nextString++;
+        else
+            return false;
     }
     else if ( parseLong(text, dest, pos, end) )
         return true;

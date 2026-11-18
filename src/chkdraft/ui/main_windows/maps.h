@@ -34,6 +34,7 @@ class Maps : public WinLib::MdiClient
         void CloseMap(HWND hMap);
         bool CloseAll();
         void CloseActive();
+        void AddRecentMap(const std::string & mapPath);
 
         void UpdateTreeView();
         void SetGrid(s16 xSize, s16 ySize);

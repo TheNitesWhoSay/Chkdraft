@@ -242,3 +242,74 @@ bool ChkdProfiles::nameUsed(const std::string & profileName) const
     }
     return false;
 }
+
+bool ChkdProfiles::addRecentMap(const std::string & recentMap)
+{
+    bool changed = false;
+    ChkdProfile* profile = getCurrProfile();
+    if ( profile != nullptr )
+    {
+        std::vector<std::string> & recentMapPaths = profile->recentMaps;
+        bool hasExistingPaths = !recentMapPaths.empty();
+        if ( recentMapPaths.empty() )
+        {
+            recentMapPaths.push_back(recentMap);
+            changed = true;
+        }
+        else
+        {
+            auto existingMatch = std::find(recentMapPaths.begin(), recentMapPaths.end(), recentMap);
+            if ( existingMatch == recentMapPaths.end() ) // Not already present
+            {
+                recentMapPaths.insert(recentMapPaths.begin(), recentMap); // Add at the beginning
+                changed = true;
+            }
+            else if ( existingMatch != recentMapPaths.begin() ) // Already present but not already at the beginning
+            {
+                recentMapPaths.erase(existingMatch); // Remove from wherever it is
+                recentMapPaths.insert(recentMapPaths.begin(), recentMap); // Add at the beginning
+                changed = true;
+            }
+            if ( recentMapPaths.size() > 20 )
+            {
+                recentMapPaths.resize(20);
+                changed = true;
+            }
+        }
+    }
+    if ( changed )
+        this->saveCurrProfile();
+
+    return changed;
+}
+
+const std::vector<std::string> & ChkdProfiles::getRecentMaps()
+{
+    ChkdProfile* profile = getCurrProfile();
+    if ( profile != nullptr )
+        return profile->recentMaps;
+    else
+    {
+        static std::vector<std::string> empty {};
+        return empty;
+    }
+}
+
+std::optional<std::string> ChkdProfiles::getRecentMap(std::size_t index)
+{
+    ChkdProfile* profile = getCurrProfile();
+    if ( profile != nullptr && index < profile->recentMaps.size() )
+        return profile->recentMaps[index];
+    else
+        return std::nullopt;
+}
+
+void ChkdProfiles::clearRecentMaps()
+{
+    ChkdProfile* profile = getCurrProfile();
+    if ( profile != nullptr )
+    {
+        profile->recentMaps.clear();
+        this->saveCurrProfile();
+    }
+}

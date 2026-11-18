@@ -134,6 +134,16 @@ namespace WinLib {
             case WM_CHAR:
                 if ( (GetKeyState(VK_CONTROL) & 0x8000) )
                     return 0; // Prevent ctrl + key from causing beeps
+                else
+                {
+                    switch ( wParam )
+                    {
+                        case '0': case '1': case '2': case '3': case '4':
+                        case '5': case '6': case '7': case '8': case '9':
+                        case 0x2D: case 0x3D: // - and = respectively
+                            return 0; // Prevent number keys, - and = from causing beeps
+                    }
+                }
                 break;
         }
         return WindowControl::ControlProc(hWnd, msg, wParam, lParam);
