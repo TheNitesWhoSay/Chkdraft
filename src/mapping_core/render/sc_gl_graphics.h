@@ -403,6 +403,34 @@ struct GraphicsData
             }
         };
 
+        class SolidPaletteColorShader : public TextureVertexShader
+        {
+            static constexpr std::string_view fragmentCode =
+                "#version 330 core\n"
+
+                "out vec4 fragColorOut;"
+                "uniform vec4 solidColor;"
+
+                "void main() {"
+                "    fragColorOut = solidColor;"
+                "};";
+        public:
+
+            gl::uniform::Mat4 posToNdc { "posToNdc" };
+            gl::uniform::Color solidColor { "solidColor" };
+
+            void load() {
+                gl::Program::create();
+                TextureVertexShader::attach();
+                gl::Program::attachShader(gl::Shader(gl::Shader::Type::fragment, fragmentCode));
+                gl::Program::link();
+                gl::Program::use();
+                gl::Program::findUniforms(posToNdc, solidColor);
+                posToNdc.loadIdentity();
+                solidColor.setColor(0xFFFFFFFF);
+            }
+        };
+
         class ClassicPaletteShader : public TextureVertexShader
         {
             static constexpr std::string_view fragmentCode =
@@ -691,6 +719,7 @@ struct GraphicsData
         HeatShader heatShader {}; // Remastered
         SimpleShader simpleShader {}; // Remastered
         SolidColorShader solidColorShader {}; // Remastered & Classic
+        SolidPaletteColorShader solidPaletteColorShader {}; // Remastered & Classic
         ClassicPaletteShader classicPaletteShader {}; // Classic
             
         void loadClassic();
@@ -962,6 +991,7 @@ public:
     void drawTileBuildabilityVertices();
     void drawTileElevationVertices();
     void drawTileOverlays();
+    void blackoutTileVertices(const glm::mat4x4 & positionTransformation);
     void drawTileVertices(Grp & tilesetGrp, s32 width, s32 height, const glm::mat4x4 & positionTransformation, bool isBaseTerrain = false);
     void drawTerrain();
     void drawTilesetIndexed(s32 left, s32 top, s32 width, s32 height, s32 scrollY, std::optional<u16> selectedTile);

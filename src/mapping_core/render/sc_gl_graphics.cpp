@@ -17,6 +17,9 @@ void GraphicsData::Shaders::loadClassic()
 
     if ( !solidColorShader.hasShaders() )
         solidColorShader.load();
+
+    if ( !solidPaletteColorShader.hasShaders() )
+        solidPaletteColorShader.load();
 }
 
 void GraphicsData::Shaders::load(ArchiveCluster & archiveCluster)
@@ -105,6 +108,9 @@ void GraphicsData::Shaders::load(ArchiveCluster & archiveCluster)
 
     if ( !solidColorShader.hasShaders() )
         solidColorShader.load();
+
+    if ( !solidPaletteColorShader.hasShaders() )
+        solidPaletteColorShader.load();
 }
 
 void GraphicsData::loadSkin(Skin & skin, ArchiveCluster & archiveCluster, VisualQuality visualQuality, ByteBuffer & fileData)
@@ -2347,6 +2353,20 @@ void MapGraphics::drawTileOverlays()
 
         drawTileElevationVertices();
     }
+}
+
+void MapGraphics::blackoutTileVertices(const glm::mat4x4 & positionTransformation)
+{
+    if ( tileVertices.vertices.empty() )
+        return;
+    
+    renderDat->shaders->solidPaletteColorShader.use();
+    renderDat->shaders->solidPaletteColorShader.posToNdc.setMat4(positionTransformation);
+    renderDat->shaders->solidPaletteColorShader.solidColor.setColor(0xFF000000);
+
+    tileVertices.bind();
+    tileVertices.bufferData(gl::UsageHint::DynamicDraw);
+    tileVertices.drawTriangles();
 }
 
 void MapGraphics::drawTileVertices(Grp & tilesetGrp, s32 width, s32 height, const glm::mat4x4 & positionTransformation, bool isBaseTerrain)

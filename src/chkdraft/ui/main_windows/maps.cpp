@@ -169,6 +169,7 @@ bool Maps::OpenMap(const std::string & fileName)
                     chkd.profiles().useRemastered ? chkd.profiles().remastered.defaultSkin : chkd.profiles().classic.defaultSkin));
                 currentlyActiveMap->Redraw(true);
                 currentlyActiveMap->refreshScenario();
+                AddRecentMap(currentlyActiveMap->getFilePath());
                 logger.info() << "Initialized map [ID:" << newMap->getMapId() << "] from " << newMap->getFilePath() << std::endl;
                 return true;
             } 
@@ -202,6 +203,7 @@ bool Maps::SaveCurr(bool saveAs)
     if ( currentlyActiveMap->SaveFile(saveAs) )
     {
         currentlyActiveMap->SetWinText(currentlyActiveMap->getFilePath());
+        AddRecentMap(currentlyActiveMap->getFilePath());
         if ( saveAs )
             currentlyActiveMap->refreshScenario();
 
@@ -245,6 +247,12 @@ void Maps::CloseActive()
         if ( currentlyActiveMap->CanExit() )
             SendMessage(MdiClient::getHandle(), WM_MDIDESTROY, (WPARAM)MdiClient::getActive(), 0);
     }
+}
+
+void Maps::AddRecentMap(const std::string & mapPath)
+{
+    if ( chkd.profiles.addRecentMap(mapPath) )
+        chkd.UpdateRecentMapMenuItems();
 }
 
 void Maps::UpdateTreeView()

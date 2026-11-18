@@ -79,6 +79,8 @@ class Chkdraft : public WinLib::ClassWindow
                     void UpdateProfilesMenu(); // Doesn't remove existing menu items but adds new profiles and updates existing
                     void RemoveProfileFromMenu(ChkdProfile & profile);
                     void ProfileNameUpdated(const ChkdProfile & profile);
+                    void EmptyRecentMapsList();
+                    void UpdateRecentMapMenuItems();
 
     protected:
 
@@ -99,6 +101,7 @@ class Chkdraft : public WinLib::ClassWindow
 
 /*     Data     */  HWND currDialog;
                     HMENU profilesMenu = NULL;
+                    HMENU recentMapsMenu = NULL;
                     bool editFocused;
                     Logger logFile;
                     std::string logFilePath;
