@@ -107,9 +107,10 @@ struct ChkdProfile
     TriggerSettings triggers {};
     UnitSettings units {};
     SpriteSettings sprites {};
+    std::vector<std::string> recentMaps {};
 
     REFLECT(ChkdProfile, profileName, additionalProfileDirectories, isDefaultProfile, autoLoadOnStart, useRemastered,
-        remastered, classic, history, logger, triggers, units, sprites)
+        remastered, classic, history, logger, triggers, units, sprites, recentMaps)
 
     void fixPathsToForwardSlash();
     void saveProfile();
@@ -137,6 +138,10 @@ public:
     void loadProfiles();
     ChkdProfiles();
     bool nameUsed(const std::string & profileName) const;
+    bool addRecentMap(const std::string & recentMap); // Adds recentMap to the recentMaps for the current profile, returns true if the recent maps was changed
+    const std::vector<std::string> & getRecentMaps();
+    std::optional<std::string> getRecentMap(std::size_t index);
+    void clearRecentMaps();
 };
 
 #endif
