@@ -1166,6 +1166,9 @@ LRESULT Chkdraft::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     case ID_CUTCOPYPASTE_INCLUDEDOODADTILES: CM->ToggleIncludeDoodadTiles(); break;
     case ID_CUTCOPYPASTE_FILLSIMILARTILES: maps.clipboard->toggleFillSimilarTiles(); break;
 
+        // Key Bindings
+    case ID_KEYBINDINGS_ENABLEWASDSCROLL: CM->toggleEnableWasdScroll(); break;
+
         // Scenario
     case ID_TRIGGERS_CLASSICMAPTRIGGERS: trigEditorWindow->CreateThis(getHandle()); break;
     case ID_TRIGGERS_CLASSICMISSIONBRIEFING: briefingTrigEditorWindow->CreateThis(getHandle()); break;

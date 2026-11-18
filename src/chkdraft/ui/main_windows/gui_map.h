@@ -71,6 +71,8 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCach
                     void toggleCutCopyPasteUnits();
                     bool getCutCopyPasteFog() const;
                     void toggleCutCopyPasteFog();
+                    bool getEnableWasdScroll() const;
+                    void toggleEnableWasdScroll();
                     bool isDragging();
                     void setDragging(bool dragging);
 
@@ -188,6 +190,7 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCach
                     void UpdateUnitMenuItems();
                     void UpdateSpriteMenuItems();
                     void UpdateCutCopyPasteMenuItems();
+                    void UpdateKeyBindingsMenuItems();
 
                     void Scroll(bool scrollX, bool scrollY, bool validateBorder, s32 newLeft = -1, s32 newTop = -1);
 
@@ -342,6 +345,8 @@ class GuiMap : public MapFile, public WinLib::ClassWindow, private Chk::IsomCach
                     bool cutCopyPasteSprites = true;
                     bool cutCopyPasteUnits = true;
                     bool cutCopyPasteFog = false;
+
+                    bool enableWasdScroll = false;
 
                     bool skipEventRender = false;
 

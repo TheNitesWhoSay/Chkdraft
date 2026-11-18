@@ -427,13 +427,16 @@
 #define ID_PROFILES_LOADPROFILE         40683
 #define ID_PROFILES_RELOAD              40684
 #define ID_SCRIPTS_DOWNGRADEFROMREMASTERED 40685
+#define ID_EDITOR_HOTKEYS               40686
+#define ID_KEYBINDINGS_ENABLEWASDSCROLL 40687
+#define ID_EDITOR_SOUNDS                40688
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        179
-#define _APS_NEXT_COMMAND_VALUE         40686
+#define _APS_NEXT_COMMAND_VALUE         40689
 #define _APS_NEXT_CONTROL_VALUE         1161
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

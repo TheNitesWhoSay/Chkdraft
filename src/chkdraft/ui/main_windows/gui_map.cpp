@@ -687,6 +687,17 @@ void GuiMap::toggleCutCopyPasteFog()
     cutCopyPasteFog = !cutCopyPasteFog;
 }
 
+bool GuiMap::getEnableWasdScroll() const
+{
+    return enableWasdScroll;
+}
+
+void GuiMap::toggleEnableWasdScroll()
+{
+    enableWasdScroll = !enableWasdScroll;
+    chkd.mainMenu.SetCheck(ID_KEYBINDINGS_ENABLEWASDSCROLL, enableWasdScroll);
+}
+
 bool GuiMap::isDragging()
 {
     return dragging;
@@ -1220,10 +1231,10 @@ void GuiMap::EdgeDrag(HWND hWnd, int x, int y)
 
 void GuiMap::keyScroll()
 {
-    bool up = (GetKeyState(VK_UP) & 0x8000) || (GetKeyState('W') & 0x8000);
-    bool down = (GetKeyState(VK_DOWN) & 0x8000) || (GetKeyState('S') & 0x8000);
-    bool left = (GetKeyState(VK_LEFT) & 0x8000) || (GetKeyState('A') & 0x8000);
-    bool right = (GetKeyState(VK_RIGHT) & 0x8000) || (GetKeyState('D') & 0x8000);
+    bool up = (GetKeyState(VK_UP) & 0x8000) || (enableWasdScroll && (GetKeyState('W') & 0x8000));
+    bool down = (GetKeyState(VK_DOWN) & 0x8000) || (enableWasdScroll && (GetKeyState('S') & 0x8000));
+    bool left = (GetKeyState(VK_LEFT) & 0x8000) || (enableWasdScroll && (GetKeyState('A') & 0x8000));
+    bool right = (GetKeyState(VK_RIGHT) & 0x8000) || (enableWasdScroll && (GetKeyState('D') & 0x8000));
     if ( up && down )
     {
         up = false;
@@ -2902,6 +2913,11 @@ void GuiMap::UpdateCutCopyPasteMenuItems()
     chkd.mainMenu.SetCheck(ID_CUTCOPYPASTE_FILLSIMILARTILES, clipboard.getFillSimilarTiles());
 }
 
+void GuiMap::UpdateKeyBindingsMenuItems()
+{
+    chkd.mainMenu.SetCheck(ID_KEYBINDINGS_ENABLEWASDSCROLL, enableWasdScroll);
+}
+
 void GuiMap::Scroll(bool scrollX, bool scrollY, bool validateBorder, s32 newLeft, s32 newTop)
 {
     SCROLLINFO scrollbars = { };
@@ -2992,6 +3008,7 @@ void GuiMap::updateMenu()
     UpdateUnitMenuItems();
     UpdateSpriteMenuItems();
     UpdateCutCopyPasteMenuItems();
+    UpdateKeyBindingsMenuItems();
     chkd.mainToolbar.checkTerrain.SetCheck(cutCopyPasteTerrain);
     chkd.mainToolbar.checkDoodads.SetCheck(cutCopyPasteDoodads);
     chkd.mainToolbar.checkSprites.SetCheck(cutCopyPasteSprites);
