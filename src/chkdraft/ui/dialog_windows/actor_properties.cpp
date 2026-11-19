@@ -5,13 +5,12 @@
 #include "chkdraft/mapping/gui_map_gl_graphics.h"
 #include <CommCtrl.h>
 
-enum class ActorListColumn { DrawListIndex, Type, UnitSpriteIndex, Priority, Name };
-
 enum_t(Id, u32, {
     ActorList = ID_FIRST,
     ButtonCustomColor,
 
     ButtonPausePlay = IDC_BUTTON_PAUSEPLAY,
+    CheckAutoRefresh = IDC_CHECK_AUTOREFRESH,
     CheckAutoRestart = IDC_CHECK_AUTORESTART,
     EditActorDirection = IDC_EDIT_ACTORDIRECTION,
     EditElevation = IDC_EDIT_ELEVATION,
@@ -63,6 +62,7 @@ bool ActorPropertiesWindow::CreateThis(HWND hParent)
 bool ActorPropertiesWindow::CreateSubWindows(HWND hWnd)
 {
     buttonPausePlayAnimation.FindThis(hWnd, Id::ButtonPausePlay);
+    checkAutoRefresh.FindThis(hWnd, Id::CheckAutoRefresh);
     checkAutoRestart.FindThis(hWnd, Id::CheckAutoRestart);
     editActorDirection.FindThis(hWnd, Id::EditActorDirection);
     editElevation.FindThis(hWnd, Id::EditElevation);
@@ -274,6 +274,91 @@ void ActorPropertiesWindow::RepopulateList()
     initilizing = false;
 }
 
+void ActorPropertiesWindow::RefreshAnimFrame()
+{
+    if ( !autoRefresh )
+        return;
+
+    const MapActor* actor = getActiveActor();
+    if ( actor == nullptr )
+    {
+        DisableActorEditing();
+        return;
+    }
+
+    // Check/refresh the actor fields
+    if ( actor->paused != lastRefreshedActorData.paused )
+        buttonPausePlayAnimation.SetText(actor->paused ? "Play Animation" : "Pause Animation");
+    if ( actor->autoRestart != lastRefreshedActorData.autoRestart )
+        checkAutoRestart.SetCheck(actor->autoRestart);
+    if ( actor->direction != lastRefreshedActorData.direction )
+        editActorDirection.SetEditNum(actor->direction);
+    if ( actor->elevation != lastRefreshedActorData.elevation )
+        editElevation.SetEditNum(actor->elevation);
+    if ( actor->lastSetAnim != lastRefreshedActorData.lastSetAnim )
+        dropAnimation.SetSel(actor->lastSetAnim % 28);
+    
+    if ( std::memcmp(&actor->usedImages, lastRefreshedActorData.usedImages, sizeof(MapActor::usedImages)) != 0 )
+        RefreshActorImageList(actor);
+    else if ( actor->usedImages[this->selectedImageSlot] == 0 )
+    {
+        this->selectedImageSlot = actor->primaryImageSlot;
+        listboxImages.SetCurSel(actor->primaryImageSlot);
+        checkPrimaryImage.SetCheck(true);
+    }
+
+    lastRefreshedActorData = *actor;
+
+    MapImage* image = getActiveImage();
+    if ( image == nullptr )
+    {
+        DisableImageEditing();
+        return;
+    }
+    
+    // Check/refresh the image fields
+    if ( image->imageId != lastRefreshedImageData.imageId )
+        editImageId.SetEditNum(image->imageId);
+    if ( image->iScriptId != lastRefreshedImageData.iScriptId )
+        editIscriptId.SetEditNum(image->iScriptId);
+    if ( image->owner != lastRefreshedImageData.owner )
+        editOwner.SetEditNum(image->owner);
+    if ( image->direction != lastRefreshedImageData.direction )
+        editImageDirection.SetEditNum(image->direction);
+    if ( image->xc != lastRefreshedImageData.xc )
+        editImageX.SetEditNum(image->xc);
+    if ( image->yc != lastRefreshedImageData.yc )
+        editImageY.SetEditNum(image->yc);
+    if ( image->xOffset != lastRefreshedImageData.xOffset )
+        editOffsetX.SetEditNum(image->xOffset);
+    if ( image->yOffset != lastRefreshedImageData.yOffset )
+        editOffsetY.SetEditNum(image->yOffset);
+    if ( image->baseFrame != lastRefreshedImageData.baseFrame )
+        editBaseFrame.SetEditNum(image->baseFrame);
+    if ( image->frame != lastRefreshedImageData.frame )
+        editGrpFrame.SetEditNum(image->frame);
+    if ( image->flipped != lastRefreshedImageData.flipped )
+        checkFlipped.SetCheck(image->flipped);
+    if ( image->rotation != lastRefreshedImageData.rotation )
+        checkRotationEnabled.SetCheck(image->rotation);
+    if ( image->hidden != lastRefreshedImageData.hidden )
+        checkHidden.SetCheck(image->hidden);
+    if ( image->drawIfCloaked != lastRefreshedImageData.drawIfCloaked )
+        checkDrawIfCloaked.SetCheck(image->drawIfCloaked);
+    if ( image->remapping != lastRefreshedImageData.remapping )
+        dropRemapping.SetSel(int(image->remapping)%7);
+    if ( image->selColor != lastRefreshedImageData.selColor )
+        dropSelectionColor.SetSel(int(image->selColor)%5);
+    if ( image->drawFunction != lastRefreshedImageData.drawFunction )
+    {
+        int drawFunc = int(image->drawFunction)%(int(MapImage::DrawFunction::None)+1);
+        dropDrawFunction.SetSel(drawFunc);
+    }
+
+    lastRefreshedImageData = *image;
+    lastRefreshedImageData.animation = nullptr;
+}
+
 void ActorPropertiesWindow::EnableActorEditing()
 {
     if ( selectedActorIndex != noSelectedActor )
@@ -286,6 +371,7 @@ void ActorPropertiesWindow::EnableActorEditing()
         }
 
         buttonPausePlayAnimation.EnableThis();
+        checkAutoRefresh.EnableThis();
         checkAutoRestart.EnableThis();
         editActorDirection.EnableThis();
         editElevation.EnableThis();
@@ -320,32 +406,16 @@ void ActorPropertiesWindow::DisableActorEditing()
     if ( selectedActorIndex == noSelectedActor )
     {
         buttonPausePlayAnimation.SetText("Pause Animation");
+        checkAutoRefresh.SetCheck(false);
         checkAutoRestart.SetCheck(false);
         editActorDirection.SetText("");
         editElevation.SetText("");
         dropAnimation.SetSel(0);
         listboxImages.ClearItems();
         checkPrimaryImage.SetCheck(false);
-        
-        editImageId.SetText("");
-        editIscriptId.SetText("");
-        editOwner.SetText("");
-        editImageDirection.SetText("");
-        editImageX.SetText("");
-        editImageY.SetText("");
-        editOffsetX.SetText("");
-        editOffsetY.SetText("");
-        editBaseFrame.SetText("");
-        editGrpFrame.SetText("");
-        checkFlipped.SetCheck(false);
-        checkRotationEnabled.SetCheck(false);
-        checkHidden.SetCheck(false);
-        checkDrawIfCloaked.SetCheck(false);
-        dropRemapping.SetSel(0);
-        dropSelectionColor.SetSel(0);
-        dropDrawFunction.SetSel(0);
 
         buttonPausePlayAnimation.DisableThis();
+        checkAutoRefresh.DisableThis();
         checkAutoRestart.DisableThis();
         editActorDirection.DisableThis();
         editElevation.DisableThis();
@@ -353,24 +423,47 @@ void ActorPropertiesWindow::DisableActorEditing()
         listboxImages.DisableThis();
         checkPrimaryImage.DisableThis();
 
-        editImageId.DisableThis();
-        editIscriptId.DisableThis();
-        editOwner.DisableThis();
-        editImageDirection.DisableThis();
-        editImageX.DisableThis();
-        editImageY.DisableThis();
-        editOffsetX.DisableThis();
-        editOffsetY.DisableThis();
-        editBaseFrame.DisableThis();
-        editGrpFrame.DisableThis();
-        checkFlipped.DisableThis();
-        checkRotationEnabled.DisableThis();
-        checkHidden.DisableThis();
-        checkDrawIfCloaked.DisableThis();
-        dropRemapping.DisableThis();
-        dropSelectionColor.DisableThis();
-        dropDrawFunction.DisableThis();
+        DisableImageEditing();
     }
+}
+
+void ActorPropertiesWindow::DisableImageEditing()
+{
+    editImageId.SetText("");
+    editIscriptId.SetText("");
+    editOwner.SetText("");
+    editImageDirection.SetText("");
+    editImageX.SetText("");
+    editImageY.SetText("");
+    editOffsetX.SetText("");
+    editOffsetY.SetText("");
+    editBaseFrame.SetText("");
+    editGrpFrame.SetText("");
+    checkFlipped.SetCheck(false);
+    checkRotationEnabled.SetCheck(false);
+    checkHidden.SetCheck(false);
+    checkDrawIfCloaked.SetCheck(false);
+    dropRemapping.SetSel(0);
+    dropSelectionColor.SetSel(0);
+    dropDrawFunction.SetSel(0);
+
+    editImageId.DisableThis();
+    editIscriptId.DisableThis();
+    editOwner.DisableThis();
+    editImageDirection.DisableThis();
+    editImageX.DisableThis();
+    editImageY.DisableThis();
+    editOffsetX.DisableThis();
+    editOffsetY.DisableThis();
+    editBaseFrame.DisableThis();
+    editGrpFrame.DisableThis();
+    checkFlipped.DisableThis();
+    checkRotationEnabled.DisableThis();
+    checkHidden.DisableThis();
+    checkDrawIfCloaked.DisableThis();
+    dropRemapping.DisableThis();
+    dropSelectionColor.DisableThis();
+    dropDrawFunction.DisableThis();
 }
 
 void ActorPropertiesWindow::UpdateActorFieldText()
@@ -380,11 +473,48 @@ void ActorPropertiesWindow::UpdateActorFieldText()
         return;
 
     buttonPausePlayAnimation.SetText(actor->paused ? "Play Animation" : "Pause Animation");
+    checkAutoRefresh.SetCheck(this->autoRefresh);
     checkAutoRestart.SetCheck(actor->autoRestart);
     editActorDirection.SetEditNum(actor->direction);
     editElevation.SetEditNum(actor->elevation);
     dropAnimation.SetSel(actor->lastSetAnim % 28);
     
+    RefreshActorImageList(actor);
+    lastRefreshedActorData = *actor;
+
+    UpdateImageFieldText();
+}
+
+void ActorPropertiesWindow::UpdateImageFieldText()
+{
+    MapImage* image = getActiveImage();
+    if ( image == nullptr )
+        return;
+
+    editImageId.SetEditNum(image->imageId);
+    editIscriptId.SetEditNum(image->iScriptId);
+    editOwner.SetEditNum(image->owner);
+    editImageDirection.SetEditNum(image->direction);
+    editImageX.SetEditNum(image->xc);
+    editImageY.SetEditNum(image->yc);
+    editOffsetX.SetEditNum(image->xOffset);
+    editOffsetY.SetEditNum(image->yOffset);
+    editBaseFrame.SetEditNum(image->baseFrame);
+    editGrpFrame.SetEditNum(image->frame);
+    checkFlipped.SetCheck(image->flipped);
+    checkRotationEnabled.SetCheck(image->rotation);
+    checkHidden.SetCheck(image->hidden);
+    checkDrawIfCloaked.SetCheck(image->drawIfCloaked);
+    int drawFunc = int(image->drawFunction)%(int(MapImage::DrawFunction::None)+1);
+    dropRemapping.SetSel(int(image->remapping)%7);
+    dropSelectionColor.SetSel(int(image->selColor)%5);
+    dropDrawFunction.SetSel(drawFunc);
+    lastRefreshedImageData = *image;
+    lastRefreshedImageData.animation = nullptr;
+}
+
+void ActorPropertiesWindow::RefreshActorImageList(const MapActor* actor)
+{
     listboxImages.SetRedraw(false);
     listboxImages.ClearItems();
     auto primaryImageSlot = actor->primaryImageSlot;
@@ -421,34 +551,6 @@ void ActorPropertiesWindow::UpdateActorFieldText()
     listboxImages.SetCurSel(primaryImageIndex);
     listboxImages.SetRedraw(true);
     checkPrimaryImage.SetCheck(true);
-
-    UpdateImageFieldText();
-}
-
-void ActorPropertiesWindow::UpdateImageFieldText()
-{
-    MapImage* image = getActiveImage();
-    if ( image == nullptr )
-        return;
-
-    editImageId.SetEditNum(image->imageId);
-    editIscriptId.SetEditNum(image->iScriptId);
-    editOwner.SetEditNum(image->owner);
-    editImageDirection.SetEditNum(image->direction);
-    editImageX.SetEditNum(image->xc);
-    editImageY.SetEditNum(image->yc);
-    editOffsetX.SetEditNum(image->xOffset);
-    editOffsetY.SetEditNum(image->yOffset);
-    editBaseFrame.SetEditNum(image->baseFrame);
-    editGrpFrame.SetEditNum(image->frame);
-    checkFlipped.SetCheck(image->flipped);
-    checkRotationEnabled.SetCheck(image->rotation);
-    checkHidden.SetCheck(image->hidden);
-    checkDrawIfCloaked.SetCheck(image->drawIfCloaked);
-    int drawFunc = int(image->drawFunction)%(int(MapImage::DrawFunction::None)+1);
-    dropRemapping.SetSel(int(image->remapping)%7);
-    dropSelectionColor.SetSel(int(image->selColor)%5);
-    dropDrawFunction.SetSel(drawFunc);
 }
 
 void ActorPropertiesWindow::ImageSelectionChanged()
@@ -755,6 +857,11 @@ void ActorPropertiesWindow::NotifyPausePlayClicked()
     }
 }
 
+void ActorPropertiesWindow::NotifyAutoRefreshClicked()
+{
+    this->autoRefresh = !this->autoRefresh;
+}
+
 void ActorPropertiesWindow::NotifyAutoRestartClicked()
 {
     MapActor* actor = getActiveActor();
@@ -837,6 +944,7 @@ void ActorPropertiesWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
     switch ( idFrom )
     {
     case Id::ButtonPausePlay: NotifyPausePlayClicked(); break;
+    case Id::CheckAutoRefresh: NotifyAutoRefreshClicked(); break;
     case Id::CheckAutoRestart: NotifyAutoRestartClicked(); break;
     case Id::CheckPrimaryImage: NotifyPrimaryImageClicked(); break;
     case Id::CheckFlipped: NotifyFlippedClicked(); break;
