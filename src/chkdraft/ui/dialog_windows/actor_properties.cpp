@@ -9,6 +9,7 @@ enum_t(Id, u32, {
     ActorList = ID_FIRST,
     ButtonCustomColor,
 
+    ButtonResetActor = IDC_RESET_ACTOR,
     ButtonPausePlay = IDC_BUTTON_PAUSEPLAY,
     CheckAutoRefresh = IDC_CHECK_AUTOREFRESH,
     CheckAutoRestart = IDC_CHECK_AUTORESTART,
@@ -61,6 +62,7 @@ bool ActorPropertiesWindow::CreateThis(HWND hParent)
 
 bool ActorPropertiesWindow::CreateSubWindows(HWND hWnd)
 {
+    buttonResetActor.FindThis(hWnd, Id::ButtonResetActor);
     buttonPausePlayAnimation.FindThis(hWnd, Id::ButtonPausePlay);
     checkAutoRefresh.FindThis(hWnd, Id::CheckAutoRefresh);
     checkAutoRestart.FindThis(hWnd, Id::CheckAutoRestart);
@@ -370,6 +372,7 @@ void ActorPropertiesWindow::EnableActorEditing()
             return;
         }
 
+        buttonResetActor.EnableThis();
         buttonPausePlayAnimation.EnableThis();
         checkAutoRefresh.EnableThis();
         checkAutoRestart.EnableThis();
@@ -414,6 +417,7 @@ void ActorPropertiesWindow::DisableActorEditing()
         listboxImages.ClearItems();
         checkPrimaryImage.SetCheck(false);
 
+        buttonResetActor.DisableThis();
         buttonPausePlayAnimation.DisableThis();
         checkAutoRefresh.DisableThis();
         checkAutoRestart.DisableThis();
@@ -837,6 +841,21 @@ void ActorPropertiesWindow::DrawFuncSelectionChanged()
     }
 }
 
+void ActorPropertiesWindow::NotifyResetActorClicked()
+{
+    MapActor* actor = getActiveActor();
+    if ( actor != nullptr )
+    {
+        ActorContext actorContext {
+            .currentTick = chkd.gameClock.currentTick(),
+            .animations = *CM->animations,
+            .actor = *actor,
+            .isUnit = (CM->animations->drawList[actor->drawListIndex] & MapAnimations::FlagUnitActor) == MapAnimations::FlagUnitActor
+        };
+        CM->animations->restartActor(actorContext);
+    }
+}
+
 void ActorPropertiesWindow::NotifyPausePlayClicked()
 {
     MapActor* actor = getActiveActor();
@@ -943,6 +962,7 @@ void ActorPropertiesWindow::NotifyButtonClicked(int idFrom, HWND hWndFrom)
 {
     switch ( idFrom )
     {
+    case Id::ButtonResetActor: NotifyResetActorClicked(); break;
     case Id::ButtonPausePlay: NotifyPausePlayClicked(); break;
     case Id::CheckAutoRefresh: NotifyAutoRefreshClicked(); break;
     case Id::CheckAutoRestart: NotifyAutoRestartClicked(); break;

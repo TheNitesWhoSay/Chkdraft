@@ -53,6 +53,7 @@ class ActorPropertiesWindow : public WinLib::ClassDialog
         void SelColorSelectionChanged();
         void DrawFuncSelectionChanged();
 
+        void NotifyResetActorClicked();
         void NotifyPausePlayClicked();
         void NotifyAutoRefreshClicked();
         void NotifyAutoRestartClicked();
@@ -86,6 +87,7 @@ class ActorPropertiesWindow : public WinLib::ClassDialog
         std::optional<WinLib::DeviceContext> imageListDc {}; // Sound list HDC for speeding up string measurement
         std::string imageStrings[10] {};
 
+        WinLib::ButtonControl buttonResetActor;
         WinLib::ButtonControl buttonPausePlayAnimation;
         WinLib::CheckBoxControl checkAutoRefresh;
         WinLib::CheckBoxControl checkAutoRestart;
