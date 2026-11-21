@@ -23,6 +23,8 @@ namespace WinLib {
 
             bool operator==(HWND hWnd); // Tests whether the encapsulated handle equals this handle
             HWND getHandle() const;
+            bool isCreated() const;
+            bool isShown() const; // Checks whether this window individually is created & shown (not considering whether the parents are)
             HWND getParent();
             DeviceContext getDeviceContext();
 

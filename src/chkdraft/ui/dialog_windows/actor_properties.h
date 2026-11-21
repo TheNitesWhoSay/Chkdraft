@@ -5,7 +5,7 @@
 #include <mapping_core/mapping_core.h>
 #include "ui/chkd_controls/player_dropdown.h"
 
-enum class ActorListColumn;
+enum class ActorListColumn { DrawListIndex, Type, UnitSpriteIndex, Priority, Name };
 
 class ActorPropertiesWindow : public WinLib::ClassDialog
 {
@@ -21,12 +21,16 @@ class ActorPropertiesWindow : public WinLib::ClassDialog
         void DeselectIndex(u16 drawListIndex);
         void UpdateEnabledState();
         void RepopulateList();
+        void RefreshAnimFrame();
 
     protected:
         void EnableActorEditing();
         void DisableActorEditing();
+        void DisableImageEditing();
+        void ViewActor(const MapActor* actor);
         void UpdateActorFieldText();
         void UpdateImageFieldText();
+        void RefreshActorImageList(const MapActor* actor);
         void ImageSelectionChanged();
         void LvItemChanged(NMHDR* nmhdr);
 
@@ -50,7 +54,9 @@ class ActorPropertiesWindow : public WinLib::ClassDialog
         void SelColorSelectionChanged();
         void DrawFuncSelectionChanged();
 
+        void NotifyResetActorClicked();
         void NotifyPausePlayClicked();
+        void NotifyAutoRefreshClicked();
         void NotifyAutoRestartClicked();
         void NotifyPrimaryImageClicked();
         void NotifyFlippedClicked();
@@ -82,7 +88,9 @@ class ActorPropertiesWindow : public WinLib::ClassDialog
         std::optional<WinLib::DeviceContext> imageListDc {}; // Sound list HDC for speeding up string measurement
         std::string imageStrings[10] {};
 
+        WinLib::ButtonControl buttonResetActor;
         WinLib::ButtonControl buttonPausePlayAnimation;
+        WinLib::CheckBoxControl checkAutoRefresh;
         WinLib::CheckBoxControl checkAutoRestart;
         WinLib::EditControl editActorDirection;
         WinLib::EditControl editElevation;
@@ -109,9 +117,13 @@ class ActorPropertiesWindow : public WinLib::ClassDialog
         WinLib::ButtonControl buttonCustomColor;
         WinLib::DropdownControl dropDrawFunction;
 
-        ActorListColumn columnSortedBy;
-        bool flipSort;
-        bool initilizing;
+        ActorListColumn columnSortedBy = ActorListColumn::Priority;
+        bool flipSort = false;
+        bool initilizing = true;
+        bool autoRefresh = true;
+
+        MapActor lastRefreshedActorData {};
+        MapImage lastRefreshedImageData {}; // Note that the animation pointer is always null
 
         WinLib::ListViewControl listActors;
 };

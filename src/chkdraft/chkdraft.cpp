@@ -219,7 +219,11 @@ int Chkdraft::Run(LPSTR lpCmdLine, int nCmdShow)
         }
 
         if ( CM != nullptr && CM->Animate() )
+        {
             CM->Redraw(false);
+            if ( actorWindow && actorWindow->isShown() )
+                actorWindow->RefreshAnimFrame();
+        }
 
         std::this_thread::sleep_for(std::chrono::milliseconds(1)); // Avoid consuming a core
 

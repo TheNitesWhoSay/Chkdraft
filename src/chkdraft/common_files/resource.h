@@ -159,6 +159,7 @@
 #define IDC_BUTTON_ADVANCED             1104
 #define IDC_BUTTON_GRAPHICS             1104
 #define IDC_BUTTON_FINDPROFILE          1104
+#define IDC_RESET_ACTOR                 1104
 #define IDC_BUTTON2                     1105
 #define IDC_INVERTY                     1105
 #define IDC_CHANGEPASSAPPLY             1105
@@ -228,6 +229,7 @@
 #define IDC_CHECK_FLIPPED               1158
 #define IDC_CHECK_ROTATIONENABLED       1159
 #define IDC_STATIC_PROMPT               1160
+#define IDC_CHECK_AUTOREFRESH           1161
 #define ID_FILE_NEW1                    40025
 #define ID_FILE_OPEN1                   40026
 #define ID_ADVANCED_OPENBACKUPDATABASE  40027
@@ -438,7 +440,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        179
 #define _APS_NEXT_COMMAND_VALUE         40690
-#define _APS_NEXT_CONTROL_VALUE         1161
+#define _APS_NEXT_CONTROL_VALUE         1162
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
