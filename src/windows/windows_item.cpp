@@ -37,6 +37,17 @@ namespace WinLib {
         return windowsItemHandle;
     }
 
+    bool WindowsItem::isCreated() const
+    {
+        return windowsItemHandle != NULL;
+    }
+    
+    bool WindowsItem::isShown() const
+    {
+        return windowsItemHandle != NULL &&
+            (GetWindowLong(windowsItemHandle, GWL_STYLE) & WS_VISIBLE) == WS_VISIBLE;
+    }
+
     HWND WindowsItem::getParent()
     {
         return ::GetParent(getHandle());

@@ -4346,17 +4346,25 @@ void GuiMap::windowBoundsChanged()
 void GuiMap::element_added(units_path, std::size_t index)
 {
     animations->addUnit(index, view.units.attached_data(index));
+    if ( chkd.actorWindow && chkd.actorWindow->isShown() )
+        chkd.actorWindow->RepopulateList();
 }
 
 void GuiMap::element_removed(units_path, std::size_t index)
 {
     animations->removeUnit(index, view.units.attached_data(index));
+    if ( chkd.actorWindow && chkd.actorWindow->isShown() )
+        chkd.actorWindow->RepopulateList();
 }
 
 void GuiMap::element_moved(units_path, std::size_t oldIndex, std::size_t newIndex)
 {
     if ( oldIndex != newIndex )
+    {
         animations->updateUnitIndex(oldIndex, newIndex);
+        if ( chkd.actorWindow && chkd.actorWindow->isShown() )
+            chkd.actorWindow->RepopulateList();
+    }
 }
 
 void GuiMap::value_changed(unit_type_path path, Sc::Unit::Type oldType, Sc::Unit::Type newType)
@@ -4365,6 +4373,8 @@ void GuiMap::value_changed(unit_type_path path, Sc::Unit::Type oldType, Sc::Unit
     {
         std::size_t unitIndex = static_cast<std::size_t>(path.template index<0>());
         animations->updateUnitType(unitIndex, newType);
+        if ( chkd.actorWindow && chkd.actorWindow->isShown() )
+            chkd.actorWindow->RepopulateList();
     }
 }
 
@@ -4425,17 +4435,25 @@ void GuiMap::value_changed(unit_relation_flags_path path, u16 oldRelationFlags, 
 void GuiMap::element_added(sprites_path, std::size_t index)
 {
     animations->addSprite(index, view.sprites.attached_data(index));
+    if ( chkd.actorWindow && chkd.actorWindow->isShown() )
+        chkd.actorWindow->RepopulateList();
 }
 
 void GuiMap::element_removed(sprites_path, std::size_t index)
 {
     animations->removeSprite(index, view.sprites.attached_data(index));
+    if ( chkd.actorWindow && chkd.actorWindow->isShown() )
+        chkd.actorWindow->RepopulateList();
 }
 
 void GuiMap::element_moved(sprites_path, std::size_t oldIndex, std::size_t newIndex)
 {
     if ( oldIndex != newIndex )
+    {
         animations->updateSpriteIndex(oldIndex, newIndex);
+        if ( chkd.actorWindow && chkd.actorWindow->isShown() )
+            chkd.actorWindow->RepopulateList();
+    }
 }
 
 void GuiMap::value_changed(sprite_type_path path, Sc::Sprite::Type oldType, Sc::Sprite::Type newType)
@@ -4444,6 +4462,8 @@ void GuiMap::value_changed(sprite_type_path path, Sc::Sprite::Type oldType, Sc::
     {
         std::size_t spriteIndex = static_cast<std::size_t>(path.template index<0>());
         animations->updateSpriteType(spriteIndex, newType);
+        if ( chkd.actorWindow && chkd.actorWindow->isShown() )
+            chkd.actorWindow->RepopulateList();
     }
 }
 
@@ -4462,6 +4482,8 @@ void GuiMap::value_changed(sprite_flags_path path, u16 oldFlags, u16 newFlags)
     {
         std::size_t spriteIndex = static_cast<std::size_t>(path.template index<0>());
         animations->updateSpriteFlags(spriteIndex, oldFlags, newFlags);
+        if ( chkd.actorWindow && chkd.actorWindow->isShown() )
+            chkd.actorWindow->RepopulateList();
     }
 }
 
