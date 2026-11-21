@@ -470,6 +470,23 @@ void ActorPropertiesWindow::DisableImageEditing()
     dropDrawFunction.DisableThis();
 }
 
+void ActorPropertiesWindow::ViewActor(const MapActor* actor)
+{
+    if ( actor == nullptr )
+        return;
+
+    if ( actor->drawListIndex < CM->animations->drawList.size() )
+    {
+        std::uint64_t drawListValue = CM->animations->drawList[actor->drawListIndex];
+        std::size_t unitOrSpriteIndex = drawListValue & MapAnimations::MaskIndex;
+        bool isUnit = (drawListValue & MapAnimations::FlagUnitActor) == MapAnimations::FlagUnitActor;
+        if ( isUnit && unitOrSpriteIndex < CM->read.units.size() )
+            CM->viewUnit(unitOrSpriteIndex);
+        else if ( !isUnit && unitOrSpriteIndex < CM->read.sprites.size() )
+            CM->viewSprite(unitOrSpriteIndex);
+    }
+}
+
 void ActorPropertiesWindow::UpdateActorFieldText()
 {
     const MapActor* actor = getActiveActor();
@@ -585,6 +602,8 @@ void ActorPropertiesWindow::LvItemChanged(NMHDR* nmhdr)
             EnableActorEditing();
         else
             UpdateActorFieldText();
+
+        ViewActor(getActiveActor());
     }
     else if ( itemInfo->uOldState & LVIS_SELECTED && selectedActorIndex != noSelectedActor ) // From selected to not selected, remove item from selection
     {
@@ -1148,8 +1167,11 @@ MapActor* ActorPropertiesWindow::getActiveActor()
 {
     if ( selectedActorIndex == noSelectedActor || selectedActorIndex == 0 || selectedActorIndex > CM->animations->drawList.size() )
     {
-        selectedActorIndex = noSelectedActor;
-        DisableActorEditing();
+        if ( selectedActorIndex != noSelectedActor )
+        {
+            selectedActorIndex = noSelectedActor;
+            DisableActorEditing();
+        }
         return nullptr;
     }
 

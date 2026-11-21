@@ -27,6 +27,7 @@ class ActorPropertiesWindow : public WinLib::ClassDialog
         void EnableActorEditing();
         void DisableActorEditing();
         void DisableImageEditing();
+        void ViewActor(const MapActor* actor);
         void UpdateActorFieldText();
         void UpdateImageFieldText();
         void RefreshActorImageList(const MapActor* actor);
