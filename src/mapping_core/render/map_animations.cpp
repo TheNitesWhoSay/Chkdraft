@@ -140,6 +140,33 @@ void AnimContext::clearActor(MapActor & actor)
     actor = {};
 }
 
+void AnimContext::resetActor(ActorContext & context, const Scenario & scenario)
+{
+    u16 drawListIndex = context.actor.drawListIndex;
+    if ( drawListIndex < drawList.size() )
+    {
+        std::size_t unitOrSpriteIndex = drawList[drawListIndex] & AnimContext::MaskIndex;
+        if ( (context.isUnit && unitOrSpriteIndex < scenario->units.size()) || (!context.isUnit && unitOrSpriteIndex < scenario->sprites.size()) )
+        {
+            for ( auto usedImageIndex : context.actor.usedImages )
+                removeImage(usedImageIndex);
+
+            context.actor = {};
+            context.actor.drawListIndex = drawListIndex;
+            if ( context.isUnit )
+            {
+                const Chk::Unit & unit = scenario->units[unitOrSpriteIndex];
+                initializeUnitActor(context.actor, false, unitOrSpriteIndex, unit, unit.xc, unit.yc, true);
+            }
+            else
+            {
+                const Chk::Sprite & sprite = scenario->sprites[unitOrSpriteIndex];
+                initializeSpriteActor(context.actor, false, unitOrSpriteIndex, sprite, sprite.xc, sprite.yc, true);
+            }
+        }
+    }
+}
+
 void AnimContext::restartActor(ActorContext & context)
 {
     auto & actor = context.actor;
@@ -196,10 +223,19 @@ void AnimContext::restartActor(ActorContext & context)
     }
 }
 
-void AnimContext::initializeActor(MapActor & actor, u8 direction, u16 imageId, u8 owner, s32 xc, s32 yc, u32 iScriptId, bool isUnit, bool autoRestart, std::uint64_t drawListValue)
+void AnimContext::initializeActor(MapActor & actor, u8 direction, u16 imageId, u8 owner, s32 xc, s32 yc, u32 iScriptId, bool isUnit, bool autoRestart, std::uint64_t drawListValue, bool reuseDrawListIndex)
 {
-    actor.drawListIndex = drawList.size();
-    drawList.push_back(drawListValue);
+    if ( !reuseDrawListIndex ) // not reusing the current drawListIndex, create a new draw list entry
+    {
+        actor.drawListIndex = drawList.size();
+        drawList.push_back(drawListValue);
+    }
+    else if ( drawList[actor.drawListIndex] != drawListValue ) // reusing drawListIndex and the drawListValue changed, update it & mark the draw list as dirty
+    {
+        drawListDirty = true;
+        drawList[actor.drawListIndex] = drawListValue;
+    }
+
     actor.direction = direction;
 
     u16 imageIndex = createImage();
@@ -244,7 +280,7 @@ void AnimContext::initSpecialCases(MapActor & actor, std::size_t type, bool isUn
     }
 }
 
-void AnimContext::initializeUnitActor(MapActor & actor, bool isClipboard, std::size_t unitIndex, const Chk::Unit & unit, s32 xc, s32 yc)
+void AnimContext::initializeUnitActor(MapActor & actor, bool isClipboard, std::size_t unitIndex, const Chk::Unit & unit, s32 xc, s32 yc, bool reuseDrawListIndex)
 {
     auto unitType = unit.type < scData.units.numUnitTypes() ? unit.type : Sc::Unit::Type::TerranMarine;
     const auto & unitDat = scData.units.getUnit(unitType);
@@ -262,7 +298,7 @@ void AnimContext::initializeUnitActor(MapActor & actor, bool isClipboard, std::s
         (std::uint64_t(unitIndex) | FlagDrawUnit | FlagUnitActor | (isSubUnit ? FlagIsTurret : 0) |
             (std::uint64_t(yc) << ShiftY) | (std::uint64_t(actor.elevation) << ShiftElevation));
 
-    initializeActor(actor, direction, getImageId(scData, unit), unit.owner, xc, yc, iScriptId, true, false, drawListValue);
+    initializeActor(actor, direction, getImageId(scData, unit), unit.owner, xc, yc, iScriptId, true, false, drawListValue, reuseDrawListIndex);
     initSpecialCases(actor, std::size_t(unitType), true);
 
     // Update draw func if applicable
@@ -285,7 +321,7 @@ void AnimContext::initializeUnitActor(MapActor & actor, bool isClipboard, std::s
         actor.setAnim(Sc::Sprite::AnimHeader::Landing, gameClock.currentTick(), true, *this);
 }
 
-void AnimContext::initializeSpriteActor(MapActor & actor, bool isClipboard, std::size_t spriteIndex, const Chk::Sprite & sprite, s32 xc, s32 yc)
+void AnimContext::initializeSpriteActor(MapActor & actor, bool isClipboard, std::size_t spriteIndex, const Chk::Sprite & sprite, s32 xc, s32 yc, bool reuseDrawListIndex)
 {
     bool isSpriteUnit = sprite.isUnit();
     auto spriteType = isSpriteUnit ? (Sc::Unit::Type(sprite.type) < scData.units.numUnitTypes() ? sprite.type : Sc::Sprite::Type(0)) :
@@ -310,7 +346,7 @@ void AnimContext::initializeSpriteActor(MapActor & actor, bool isClipboard, std:
         (std::uint64_t(spriteIndex) | (isSpriteUnit ? FlagDrawUnit : 0) | (isSubUnit ? FlagIsTurret : 0) |
             (std::uint64_t(yc) << ShiftY) | (std::uint64_t(actor.elevation) << ShiftElevation));
 
-    initializeActor(actor, 0, getImageId(scData, sprite), sprite.owner, xc, yc, iScriptId, false, autoRestart, drawListValue);
+    initializeActor(actor, 0, getImageId(scData, sprite), sprite.owner, xc, yc, iScriptId, false, autoRestart, drawListValue, reuseDrawListIndex);
     initSpecialCases(actor, std::size_t(spriteType), false, isSpriteUnit);
 
     // Update anim if applicable

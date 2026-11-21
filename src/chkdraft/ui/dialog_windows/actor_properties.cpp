@@ -852,7 +852,8 @@ void ActorPropertiesWindow::NotifyResetActorClicked()
             .actor = *actor,
             .isUnit = (CM->animations->drawList[actor->drawListIndex] & MapAnimations::FlagUnitActor) == MapAnimations::FlagUnitActor
         };
-        CM->animations->restartActor(actorContext);
+        CM->animations->resetActor(actorContext, *CM);
+        RepopulateList();
     }
 }
 
