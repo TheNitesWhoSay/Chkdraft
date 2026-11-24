@@ -1709,7 +1709,9 @@ namespace Chk {
         u32 expUnitName[Sc::Unit::TotalTypes] {};
         u32 soundPath[Chk::TotalSounds] {};
         u32 switchName[Chk::TotalSwitches] {};
-        u32 locationName[Chk::TotalLocations] {};
+        u32 locationName[Chk::TotalLocations] {}; // Location index 255 mapped to locationName[0], otherwise just index with the locationId
+        
+        const u32 & getLocationName(std::size_t locationId) const { return locationId == 255 ? locationName[0] : locationName[locationId]; }
 
         REFLECT(OSTR, version, scenarioName, scenarioDescription, forceName, unitName, expUnitName, soundPath, switchName, locationName)
     };

@@ -131,7 +131,7 @@ void GuiMapGraphics::drawTemporaryLocations()
     {
         drawSelectionRectangle({ GLfloat(start.x), GLfloat(start.y), GLfloat(end.x), GLfloat(end.y) });
     }
-    else if ( selectedLocation != NO_LOCATION && selectedLocation < guiMap.numLocations() ) // Draw location resize/movement graphics
+    else if ( selectedLocation != NO_LOCATION && selectedLocation <= guiMap.numLocations() ) // Draw location resize/movement graphics
     {
         auto locFlags = guiMap.selections.getLocationFlags();
         const Chk::Location & loc = guiMap.getLocation((size_t)selectedLocation);

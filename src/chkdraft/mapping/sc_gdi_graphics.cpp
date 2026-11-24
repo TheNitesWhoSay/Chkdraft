@@ -300,7 +300,7 @@ void Graphics::DrawLocations(ChkdBitmap & bitmap, bool showAnywhere)
 {
     u32 bitMax = screenWidth*screenHeight;
 
-    for ( size_t locationId=1; locationId<map.numLocations(); ++locationId )
+    for ( size_t locationId=1; locationId<=map.numLocations(); ++locationId )
     {
         const auto & location = map->locations[locationId];
         if ( locationId != Chk::LocationId::Anywhere || showAnywhere )
@@ -2135,7 +2135,7 @@ void DrawTempLocs(const WinLib::DeviceContext & dc, u32 screenLeft, u32 screenTo
     else 
     {
         u16 selectedLocation = selections.getSelectedLocation();
-        if ( selectedLocation != NO_LOCATION && selectedLocation < map.numLocations() ) // Draw location resize/movement graphics
+        if ( selectedLocation != NO_LOCATION && selectedLocation <= map.numLocations() ) // Draw location resize/movement graphics
         {
             const Chk::Location & loc = map.getLocation((size_t)selectedLocation);
             s32 locLeft = loc.left-screenLeft;
