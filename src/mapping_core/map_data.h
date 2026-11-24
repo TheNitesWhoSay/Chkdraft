@@ -78,7 +78,7 @@ struct MapData
     std::vector<Chk::Sprite> sprites {}; NOTE(sprites, nf::attach_data<MapActor>, nf::index_size<u32>) // Auto-maintains parallel-array of MapActors
     std::vector<Chk::Doodad> doodads {};
     std::vector<Chk::Unit> units {}; NOTE(units, nf::attach_data<MapActor>, nf::index_size<u32>) // Auto-maintains parallel-array of MapActors
-    std::vector<Chk::Location> locations {};
+    std::vector<Chk::Location> locations {}; // Zeroth slot is unused (loc index 0 = No Location)
 
     Chk::DIM dimensions {};
     Sc::Terrain::Tileset tileset {Sc::Terrain::Tileset::Badlands};
