@@ -1815,8 +1815,8 @@ size_t LiteScenario::rescopeString(size_t stringId, Chk::Scope changeStorageScop
             {
                 if ( stringId == this->locations[i].stringId )
                 {
-                    stringIdsReplaced.insert(this->editorStringOverrides.locationName[i]);
-                    this->editorStringOverrides.locationName[i] = u32(newStringId);
+                    stringIdsReplaced.insert(this->editorStringOverrides.getLocationName(i));
+                    this->editorStringOverrides.locationName[i == 255 ? 0 : i] = u32(newStringId);
                 }
             }
 
@@ -1885,7 +1885,7 @@ size_t LiteScenario::rescopeString(size_t stringId, Chk::Scope changeStorageScop
             size_t numLocations = this->numLocations();
             for ( size_t i=1; i<=numLocations; i++ )
             {
-                if ( stringId == this->editorStringOverrides.locationName[i] )
+                if ( stringId == this->editorStringOverrides.getLocationName(i) )
                 {
                     Chk::Location & location = getLocation(i);
                     stringIdsReplaced.insert(location.stringId);
@@ -1974,8 +1974,8 @@ size_t LiteScenario::getSwitchNameStringId(size_t switchIndex, Chk::Scope storag
 size_t LiteScenario::getLocationNameStringId(size_t locationId, Chk::Scope storageScope) const
 {
     if ( storageScope == Chk::Scope::Editor )
-        return this->editorStringOverrides.locationName[locationId];
-    else if ( locationId < numLocations() )
+        return this->editorStringOverrides.getLocationName(locationId);
+    else if ( locationId <= numLocations() )
         return locations[locationId].stringId;
     else
         return 0;
@@ -2070,8 +2070,8 @@ void LiteScenario::setSwitchNameStringId(size_t switchIndex, size_t switchNameSt
 void LiteScenario::setLocationNameStringId(size_t locationId, size_t locationNameStringId, Chk::Scope storageScope)
 {
     if ( storageScope == Chk::Scope::Editor )
-        this->editorStringOverrides.locationName[locationId] = u32(locationNameStringId);
-    else if ( locationId < numLocations() )
+        this->editorStringOverrides.locationName[locationId == 255 ? 0 : locationId] = u32(locationNameStringId);
+    else if ( locationId <= numLocations() )
         locations[locationId].stringId = u16(locationNameStringId);
 }
 
@@ -2168,7 +2168,7 @@ template std::optional<SingleLineChkdString> LiteScenario::getSwitchName<SingleL
 template <typename StringType>
 std::optional<StringType> LiteScenario::getLocationName(size_t locationId, Chk::Scope storageScope) const
 {
-    return getString<StringType>((locationId > 0 && locationId <= numLocations() ? getLocation(locationId).stringId : 0), this->editorStringOverrides.locationName[locationId], storageScope);
+    return getString<StringType>((locationId > 0 && locationId <= numLocations() ? getLocation(locationId).stringId : 0), this->editorStringOverrides.getLocationName(locationId), storageScope);
 }
 template std::optional<RawString> LiteScenario::getLocationName<RawString>(size_t locationId, Chk::Scope storageScope) const;
 template std::optional<EscString> LiteScenario::getLocationName<EscString>(size_t locationId, Chk::Scope storageScope) const;
@@ -2357,7 +2357,7 @@ void LiteScenario::setLocationName(size_t locationId, const StringType & locatio
             if ( storageScope == Chk::Scope::Game )
                 createAction()->locations[locationId].stringId = (u16)newStringId;
             else if ( storageScope == Chk::Scope::Editor )
-                createAction()->editorStringOverrides.locationName[locationId] = u32(newStringId);
+                createAction()->editorStringOverrides.locationName[locationId == 255 ? 0 : locationId] = u32(newStringId);
         }
     }
 }
@@ -2848,7 +2848,7 @@ void LiteScenario::upgradeKstrToCurrent()
             }
         }
 
-        for ( size_t locationIndex=0; locationIndex<locations.size(); locationIndex++ )
+        for ( size_t locationIndex=1; locationIndex<locations.size(); locationIndex++ )
         {
             auto & location = locations[locationIndex];
             if ( location.stringId > strCapacity &&
@@ -2856,7 +2856,7 @@ void LiteScenario::upgradeKstrToCurrent()
                  location.stringId < 65536 &&
                  size_t(65536-location.stringId) < editorStrings.size() )
             {
-                editorStringOverrides.locationName[locationIndex] = 65536-location.stringId;
+                editorStringOverrides.locationName[locationIndex == 255 ? 0 : locationIndex] = 65536-location.stringId;
                 location.stringId = Chk::StringId::NoString;
             }
         }
@@ -4446,7 +4446,7 @@ bool LiteScenario::moveLocation(size_t locationIdFrom, size_t locationIdTo, bool
 
 bool LiteScenario::isBlank(size_t locationId) const
 {
-    return locationId >= locations.size() || locations[locationId].isBlank();
+    return locationId == 0 || locationId >= locations.size() || locations[locationId].isBlank();
 }
 
 void LiteScenario::downsizeOutOfBoundsLocations()
@@ -4573,7 +4573,7 @@ void LiteScenario::appendLocationStrUsage(size_t stringId, std::vector<Chk::Stri
     if ( (userMask & Chk::StringUserFlag::Location) == Chk::StringUserFlag::Location )
     {
         u16 u16StringId = (u16)stringId;
-        for ( size_t i=0; i<locations.size(); i++ )
+        for ( size_t i=1; i<locations.size(); i++ )
         {
             if ( stringId == locations[i].stringId )
                 stringUsers.push_back(Chk::StringUser(Chk::StringUserFlag::Location, i));

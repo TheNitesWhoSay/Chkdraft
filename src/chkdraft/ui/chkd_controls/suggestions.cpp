@@ -306,11 +306,10 @@ SuggestionItem Suggestions::Take()
     {
         if ( itemIndex == currentTextItemIndex )
             return SuggestionItem{.data = std::nullopt, .str = this->undecoratedCurrentText};
-        else
+        else if ( itemData > 0 )
             return *((SuggestionItem*)itemData);
     }
-    else
-        return SuggestionItem{std::nullopt, ""};
+    return SuggestionItem{std::nullopt, ""};
 }
 
 bool Suggestions::HasItems()

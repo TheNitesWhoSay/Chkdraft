@@ -799,7 +799,7 @@ void Maps::updateCursor(s32 xc, s32 yc)
     if ( currentlyActiveMap->getLayer() == Layer::Locations )
     {
         u16 selectedLocation = selections.getSelectedLocation();
-        if ( selectedLocation != NO_LOCATION && selectedLocation < currentlyActiveMap->numLocations() )
+        if ( selectedLocation != NO_LOCATION && selectedLocation <= currentlyActiveMap->numLocations() )
         {
             const Chk::Location & loc = currentlyActiveMap->getLocation(selectedLocation);
             s32 locationLeft = std::min(loc.left, loc.right),

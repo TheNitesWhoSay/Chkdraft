@@ -402,7 +402,7 @@ void GuiMap::setDimensions(u16 newTileWidth, u16 newTileHeight, u16 sizeValidati
             edit->units[i].yc += 32*topEdge;
         }
     }
-    for ( std::size_t i=0; i<read.locations.size(); ++i )
+    for ( std::size_t i=1; i<read.locations.size(); ++i )
     {
         const auto & location = read.locations[i];
         if ( location.isBlank() )
@@ -1024,7 +1024,7 @@ void GuiMap::viewSprite(u16 spriteIndex)
 void GuiMap::viewLocation(u16 locationId)
 {
     RECT rect {};
-    if ( locationId < Scenario::numLocations() && GetClientRect(getHandle(), &rect) != 0 )
+    if ( locationId <= Scenario::numLocations() && GetClientRect(getHandle(), &rect) != 0 )
     {
         const Chk::Location & location = Scenario::getLocation(locationId);
         s32 width = rect.right - rect.left,
@@ -1049,7 +1049,7 @@ LocSelFlags GuiMap::getLocSelFlags(s32 xc, s32 yc)
     if ( currLayer == Layer::Locations )
     {
         u16 selectedLocation = selections.getSelectedLocation();
-        if ( selectedLocation != NO_LOCATION && selectedLocation < Scenario::numLocations() ) // If location is selected, determine which part of it is hovered by mouse
+        if ( selectedLocation != NO_LOCATION && selectedLocation <= Scenario::numLocations() ) // If location is selected, determine which part of it is hovered by mouse
         {
             const Chk::Location & loc = Scenario::getLocation(selectedLocation);
             s32 locationLeft = std::min(loc.left, loc.right),
@@ -1130,7 +1130,7 @@ void GuiMap::doubleClickLocation(s32 xPos, s32 yPos)
         selectedLoc = selections.getSelectedLocation();
     }
 
-    if ( selectedLoc != NO_LOCATION && selectedLoc < Scenario::numLocations() )
+    if ( selectedLoc != NO_LOCATION && selectedLoc <= Scenario::numLocations() )
     {
         const Chk::Location & locRef = Scenario::getLocation(selectedLoc);
         s32 locLeft = std::min(locRef.left, locRef.right),
@@ -1507,7 +1507,7 @@ void GuiMap::deleteSelection()
             chkd.locationWindow->DestroyThis();
                 
         u16 index = selections.getSelectedLocation();
-        if ( index != NO_LOCATION && index < Scenario::numLocations() )
+        if ( index != NO_LOCATION && index <= Scenario::numLocations() )
         {
             const Chk::Location & loc = Scenario::getLocation(index);
 
@@ -3718,7 +3718,7 @@ void GuiMap::FinalizeLocationDrag(HWND hWnd, int mapX, int mapY, WPARAM wParam)
         {
             setActionDescription(ActionDescriptor::MoveLocation);
             u16 selectedLocation = selections.getSelectedLocation();
-            if ( selectedLocation != NO_LOCATION && selectedLocation < Scenario::numLocations() )
+            if ( selectedLocation != NO_LOCATION && selectedLocation <= Scenario::numLocations() )
             {
                 const Chk::Location & loc = Scenario::getLocation(selectedLocation);
                 LocSelFlags selFlags = selections.getLocationFlags();
