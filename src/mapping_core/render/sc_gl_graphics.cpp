@@ -3100,7 +3100,7 @@ void MapGraphics::drawLocations(bool showAnywhere, u16 selectedLocation)
     lineVertices.clear();
     triangleVertices.clear();
     triangleVertices2.clear();
-    for ( size_t i=0; i<map->locations.size(); ++i )
+    for ( size_t i=1; i<map->locations.size(); ++i )
     {
         if ( i == Chk::LocationId::Anywhere && !showAnywhere )
             continue;
@@ -3157,7 +3157,7 @@ void MapGraphics::drawLocations(bool showAnywhere, u16 selectedLocation)
         lineVertices.bufferData(gl::UsageHint::DynamicDraw);
         lineVertices.drawLines();
 
-        if ( selectedLocation != 0 && selectedLocation < map.numLocations() )
+        if ( selectedLocation != 0 && selectedLocation <= map.numLocations() )
         {
             lineVertices.vertices.clear();
             auto & location = map.getLocation(selectedLocation);
@@ -3185,7 +3185,7 @@ void MapGraphics::drawLocations(bool showAnywhere, u16 selectedLocation)
         textFont->clippedTextShader.verticalFlip.setValue(verticallyFlipped ? -1.f : 1.f);
         textFont->setColor(255, 255, 0);
 
-        for ( size_t i=0; i<map->locations.size(); ++i )
+        for ( size_t i=1; i<map->locations.size(); ++i )
         {
             if ( i == Chk::LocationId::Anywhere && !showAnywhere )
                 continue;
@@ -3217,7 +3217,7 @@ void MapGraphics::drawLocations(bool showAnywhere, u16 selectedLocation)
         textFont->textShader.glyphScaling.setMat2(glyphScaling);
         textFont->textShader.textPosToNdc.setMat4(gameToNdc);
         textFont->setColor(255, 255, 0);
-        for ( size_t i=0; i<map->locations.size(); ++i )
+        for ( size_t i=1; i<map->locations.size(); ++i )
         {
             const auto & location = map->locations[i];
             auto locationName = map.getLocationName<RawString>(i);

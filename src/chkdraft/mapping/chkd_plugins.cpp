@@ -413,7 +413,7 @@ void repairStrings(bool compatibilityMode)
         edit->strings.swap(std::size_t(0), map->strings.size()-1);
     }
 
-    for ( size_t i=0; i<map->locations.size(); ++i )
+    for ( size_t i=1; i<map->locations.size(); ++i )
     {
         const auto & location = map->locations[i];
         if ( location.stringId >= map->strings.size() )
@@ -758,16 +758,16 @@ void repairStrings(bool compatibilityMode)
 
     for ( size_t i=0; i<Chk::TotalLocations; ++i )
     {
-        if ( map->editorStringOverrides.locationName[i] != Chk::StringId::NoString && map->editorStringOverrides.locationName[i] >= map->editorStrings.size() )
+        if ( map->editorStringOverrides.locationName[i] != Chk::StringId::NoString && map->editorStringOverrides.getLocationName(i) >= map->editorStrings.size() )
         {
             logger.warn() << "Editor-string override for location index " << i << " had an out-of-bounds string, the string has been cleared.\n";
-            edit->editorStringOverrides.locationName[i] = Chk::StringId::NoString;
+            edit->editorStringOverrides.locationName[i == 255 ? 0 : i] = Chk::StringId::NoString;
         }
-        else if ( map->editorStringOverrides.locationName[i] != Chk::StringId::NoString &&
-            (!map->editorStrings[map->editorStringOverrides.locationName[i]] || map->editorStrings[map->editorStringOverrides.locationName[i]]->empty()) )
+        else if ( map->editorStringOverrides.getLocationName(i) != Chk::StringId::NoString &&
+            (!map->editorStrings[map->editorStringOverrides.getLocationName(i)] || map->editorStrings[map->editorStringOverrides.getLocationName(i)]->empty()) )
         {
             logger.warn() << "Editor-string override for location index " << i << " referred to an empty string, the string has been cleared.\n";
-            edit->editorStringOverrides.locationName[i] = Chk::StringId::NoString;
+            edit->editorStringOverrides.locationName[i == 255 ? 0 : i] = Chk::StringId::NoString;
         }
     }
 
